@@ -13,6 +13,7 @@ import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.immutable.WorkflowState;
@@ -58,12 +59,12 @@ public final class CreateWorkflowInstanceProcessor
       final MutableElementInstanceState elementInstanceState,
       final MutableVariableState variablesState,
       final KeyGenerator keyGenerator,
-      final StateWriter stateWriter) {
+      final Writers writers) {
     this.workflowState = workflowState;
     this.elementInstanceState = elementInstanceState;
     this.variablesState = variablesState;
     this.keyGenerator = keyGenerator;
-    this.stateWriter = stateWriter;
+    stateWriter = writers.state();
   }
 
   @Override

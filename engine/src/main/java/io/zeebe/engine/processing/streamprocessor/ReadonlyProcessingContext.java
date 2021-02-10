@@ -8,11 +8,8 @@
 package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.db.TransactionContext;
-import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
@@ -37,8 +34,11 @@ public interface ReadonlyProcessingContext {
    */
   int getMaxFragmentSize();
 
-  /** @return the writer, which is used by the processor to write follow up events */
+  /** @return the actual log stream writer, used to write any record */
   TypedStreamWriter getLogStreamWriter();
+
+  /** @return the specific writers, like command, response, etc */
+  Writers getWriters();
 
   /** @return the pool, which contains the mapping from ValueType to UnpackedObject (record) */
   RecordValues getRecordValues();
@@ -52,21 +52,9 @@ public interface ReadonlyProcessingContext {
   /** @return the transaction context for the current actor */
   TransactionContext getTransactionContext();
 
-  /** @return the response writer, which is used during processing */
-  CommandResponseWriter getCommandResponseWriter();
-
   /** @return condition which indicates, whether the processing should stop or not */
   BooleanSupplier getAbortCondition();
 
   /** @return the consumer of events to apply their state changes */
   EventApplier getEventApplier();
-
-  /** @return the writer of events that also changes state for each event it writes */
-  StateWriter getStateWriter();
-
-  /** @return the writer, which is used by the processors to write (follow-up) commands */
-  TypedCommandWriter getCommandWriter();
-
-  /** @return the writer, which is used by the processors to write command rejections */
-  TypedRejectionWriter getRejectionWriter();
 }

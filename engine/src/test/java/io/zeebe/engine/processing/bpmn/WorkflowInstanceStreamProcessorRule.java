@@ -119,7 +119,7 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
               new CatchEventBehavior(
                   zeebeState, expressionProcessor, mockSubscriptionCommandSender, 1),
               new DueDateTimerChecker(zeebeState.getTimerState()),
-              processingContext.getStateWriter());
+              processingContext.getWriters());
 
           JobEventProcessors.addJobProcessors(
               typedRecordProcessors, zeebeState, type -> {}, Integer.MAX_VALUE);

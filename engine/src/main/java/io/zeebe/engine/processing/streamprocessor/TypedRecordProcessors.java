@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.streamprocessor;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
@@ -27,23 +28,16 @@ public final class TypedRecordProcessors {
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
 
-  private TypedRecordProcessors(
-      final KeyGenerator keyGenerator,
-      final StateWriter stateWriter,
-      final TypedCommandWriter commandWriter,
-      final TypedRejectionWriter rejectionWriter) {
+  private TypedRecordProcessors(final KeyGenerator keyGenerator, final Writers writers) {
     this.keyGenerator = keyGenerator;
-    this.stateWriter = stateWriter;
-    this.commandWriter = commandWriter;
-    this.rejectionWriter = rejectionWriter;
+    stateWriter = writers.state();
+    commandWriter = writers.command();
+    rejectionWriter = writers.rejection();
   }
 
   public static TypedRecordProcessors processors(
-      final KeyGenerator keyGenerator,
-      final StateWriter stateWriter,
-      final TypedCommandWriter commandWriter,
-      final TypedRejectionWriter rejectionWriter) {
-    return new TypedRecordProcessors(keyGenerator, stateWriter, commandWriter, rejectionWriter);
+      final KeyGenerator keyGenerator, final Writers writers) {
+    return new TypedRecordProcessors(keyGenerator, writers);
   }
 
   // TODO: could remove the ValueType argument as it follows from the intent

@@ -59,8 +59,7 @@ public class StreamProcessingComposite {
           processingContext.onProcessedListener(onProcessedListener);
           return factory.build(
               TypedRecordProcessors.processors(
-                  zeebeState.getKeyGenerator(), processingContext.getStateWriter(),
-                  processingContext.getCommandWriter(), processingContext.getRejectionWriter()),
+                  zeebeState.getKeyGenerator(), processingContext.getWriters()),
               processingContext);
         });
   }

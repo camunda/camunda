@@ -23,7 +23,7 @@ import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableWorkflowState;
@@ -47,19 +47,16 @@ public final class EngineProcessors {
 
     final var actor = processingContext.getActor();
     final ZeebeState zeebeState = processingContext.getZeebeState();
-    final var stateWriter = processingContext.getStateWriter();
-    final var commandWriter = processingContext.getCommandWriter();
-    final var rejectionWriter = processingContext.getRejectionWriter();
+    final var writers = processingContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
-        TypedRecordProcessors.processors(
-            zeebeState.getKeyGenerator(), stateWriter, commandWriter, rejectionWriter);
+        TypedRecordProcessors.processors(zeebeState.getKeyGenerator(), writers);
 
     final LogStream stream = processingContext.getLogStream();
     final int partitionId = stream.getPartitionId();
     final int maxFragmentSize = processingContext.getMaxFragmentSize();
 
     addDistributeDeploymentProcessors(
-        actor, zeebeState, typedRecordProcessors, deploymentDistributor, stateWriter);
+        actor, zeebeState, typedRecordProcessors, deploymentDistributor, writers);
 
     final var variablesState = zeebeState.getVariableState();
     final var expressionProcessor =
@@ -77,8 +74,8 @@ public final class EngineProcessors {
         typedRecordProcessors,
         deploymentResponder,
         expressionProcessor,
-        stateWriter);
-    addMessageProcessors(subscriptionCommandSender, zeebeState, typedRecordProcessors, stateWriter);
+        writers);
+    addMessageProcessors(subscriptionCommandSender, zeebeState, typedRecordProcessors, writers);
 
     final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor =
         addWorkflowProcessors(
@@ -87,22 +84,14 @@ public final class EngineProcessors {
             typedRecordProcessors,
             subscriptionCommandSender,
             catchEventBehavior,
-            stateWriter);
+            writers);
 
     final JobErrorThrownProcessor jobErrorThrownProcessor =
         addJobProcessors(
-            zeebeState,
-            typedRecordProcessors,
-            onJobsAvailableCallback,
-            maxFragmentSize,
-            stateWriter);
+            zeebeState, typedRecordProcessors, onJobsAvailableCallback, maxFragmentSize, writers);
 
     addIncidentProcessors(
-        zeebeState,
-        bpmnStreamProcessor,
-        typedRecordProcessors,
-        jobErrorThrownProcessor,
-        stateWriter);
+        zeebeState, bpmnStreamProcessor, typedRecordProcessors, jobErrorThrownProcessor, writers);
 
     return typedRecordProcessors;
   }
@@ -112,7 +101,7 @@ public final class EngineProcessors {
       final ZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
       final DeploymentDistributor deploymentDistributor,
-      final StateWriter stateWriter) {
+      final Writers writers) {
 
     final DeploymentDistributeProcessor deploymentDistributeProcessor =
         new DeploymentDistributeProcessor(
@@ -128,7 +117,7 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final CatchEventBehavior catchEventBehavior,
-      final StateWriter stateWriter) {
+      final Writers writers) {
     final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getTimerState());
     return WorkflowEventProcessors.addWorkflowProcessors(
         zeebeState,
@@ -137,7 +126,7 @@ public final class EngineProcessors {
         subscriptionCommandSender,
         catchEventBehavior,
         timerChecker,
-        stateWriter);
+        writers);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
@@ -147,7 +136,7 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final DeploymentResponder deploymentResponder,
       final ExpressionProcessor expressionProcessor,
-      final StateWriter stateWriter) {
+      final Writers writers) {
     final MutableWorkflowState workflowState = zeebeState.getWorkflowState();
     final boolean isDeploymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
     if (isDeploymentPartition) {
@@ -169,7 +158,7 @@ public final class EngineProcessors {
       final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final JobErrorThrownProcessor jobErrorThrownProcessor,
-      final StateWriter stateWriter) {
+      final Writers writers) {
     IncidentEventProcessors.addProcessors(
         typedRecordProcessors, zeebeState, bpmnStreamProcessor, jobErrorThrownProcessor);
   }
@@ -179,7 +168,7 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Consumer<String> onJobsAvailableCallback,
       final int maxFragmentSize,
-      final StateWriter stateWriter) {
+      final Writers writers) {
     return JobEventProcessors.addJobProcessors(
         typedRecordProcessors, zeebeState, onJobsAvailableCallback, maxFragmentSize);
   }
@@ -188,7 +177,7 @@ public final class EngineProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final ZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
-      final StateWriter stateWriter) {
+      final Writers writers) {
     MessageEventProcessors.addMessageProcessors(
         typedRecordProcessors, zeebeState, subscriptionCommandSender);
   }

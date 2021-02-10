@@ -77,11 +77,7 @@ public final class TypedStreamProcessorTest {
         STREAM_NAME,
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) ->
-            TypedRecordProcessors.processors(
-                    keyGenerator,
-                    processingContext.getStateWriter(),
-                    processingContext.getCommandWriter(),
-                    processingContext.getRejectionWriter())
+            TypedRecordProcessors.processors(keyGenerator, processingContext.getWriters())
                 .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new BatchProcessor()));
     final long firstEventPosition =
         streams
@@ -114,11 +110,7 @@ public final class TypedStreamProcessorTest {
         STREAM_NAME,
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) ->
-            TypedRecordProcessors.processors(
-                    keyGenerator,
-                    processingContext.getStateWriter(),
-                    processingContext.getCommandWriter(),
-                    processingContext.getRejectionWriter())
+            TypedRecordProcessors.processors(keyGenerator, processingContext.getWriters())
                 .onCommand(
                     ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new ErrorProneProcessor()));
     final AtomicLong requestId = new AtomicLong(0);
