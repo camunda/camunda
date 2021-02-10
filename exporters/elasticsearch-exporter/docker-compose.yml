@@ -11,7 +11,7 @@ services:
             - cluster.name=test
 
     kibana:
-        image: docker.elastic.co/kibana/kibana-oss:6.8.13
+        image: docker.elastic.co/kibana/kibana-oss:6.8.14
         ports:
             - "5601:5601"
         links:
