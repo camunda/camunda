@@ -120,19 +120,20 @@ public class SegmentedJournal implements Journal {
         log.debug("{} - Compacting {} segment(s)", name, compactSegments.size());
         for (final JournalSegment segment : compactSegments.values()) {
           log.trace("Deleting segment: {}", segment);
-          segment.compactIndex(index);
           segment.close();
           segment.delete();
           journalMetrics.decSegmentCount();
         }
         compactSegments.clear();
       }
+      journalIndex.deleteUntil(index);
       resetHead(getFirstSegment().index());
     }
   }
 
   @Override
   public void reset(final long nextIndex) {
+    journalIndex.clear();
     writer.reset(nextIndex);
   }
 
