@@ -3,7 +3,7 @@
   "version": "1.1.0-SNAPSHOT",
   "private": true,
   "dependencies": {
-    "@apollo/client": "^3.3.8",
+    "@apollo/client": "^3.3.9",
     "@camunda-cloud/common-ui": "^0.0.14",
     "@camunda-cloud/common-ui-react": "^0.0.14",
     "@testing-library/jest-dom": "^5.11.9",
