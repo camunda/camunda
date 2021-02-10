@@ -18,7 +18,7 @@
       <artifactId>camunda-operate-common</artifactId>
       <version>${project.version}</version>
     </dependency>
-    
+
      <dependency>
       <groupId>org.camunda.operate</groupId>
       <artifactId>camunda-operate-els-schema</artifactId>
@@ -130,18 +130,18 @@
       <artifactId>camunda-operate-webjar</artifactId>
       <version>${project.version}</version>
     </dependency>
-    
+
     <!-- Micrometer Prometheus -->
     <dependency>
   	  <groupId>io.micrometer</groupId>
   	  <artifactId>micrometer-registry-prometheus</artifactId>
     </dependency>
-    
+
      <!-- OAuth0 -->
    <dependency>
   	  <groupId>com.auth0</groupId>
   	  <artifactId>mvc-auth-commons</artifactId>
-  	  <version>(1.0,2.0)</version>
+  	  <version>1.4.0</version>
   </dependency>
 
     <!-- TEST -->
