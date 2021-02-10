@@ -13,12 +13,10 @@ import io.zeebe.snapshots.broker.SnapshotId;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.ReceivedSnapshot;
 import io.zeebe.snapshots.raft.SnapshotChunk;
-import io.zeebe.util.ChecksumUtil;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -27,7 +25,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -245,9 +242,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       return;
     }
 
-    final var filePaths =
-        Arrays.stream(files).sorted().map(File::toPath).collect(Collectors.toList());
-    if (!verifyChecksums(future, filePaths)) {
+    if (!verifyChecksums(future)) {
       return;
     }
 
@@ -259,27 +254,21 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
   }
 
-  private boolean verifyChecksums(
-      final CompletableActorFuture<PersistedSnapshot> future,
-      final java.util.List<Path> filePaths) {
-    final long actualSnapshotChecksum;
+  private boolean verifyChecksums(final CompletableActorFuture<PersistedSnapshot> future) {
+
     try {
-      actualSnapshotChecksum = ChecksumUtil.createCombinedChecksum(filePaths);
+      if (SnapshotChecksum.verify(directory)) {
+        return true;
+      } else {
+        future.completeExceptionally(
+            new IllegalStateException("Snapshot is corrupted. Checksum does not match"));
+        return false;
+      }
     } catch (final IOException e) {
       future.completeExceptionally(
           new UncheckedIOException("Unexpected exception on calculating snapshot checksum.", e));
       return false;
     }
-
-    if (actualSnapshotChecksum != expectedSnapshotChecksum) {
-      future.completeExceptionally(
-          new IllegalStateException(
-              String.format(
-                  "Expected snapshot checksum %d, but calculated %d.",
-                  expectedSnapshotChecksum, actualSnapshotChecksum)));
-      return false;
-    }
-    return true;
   }
 
   @Override

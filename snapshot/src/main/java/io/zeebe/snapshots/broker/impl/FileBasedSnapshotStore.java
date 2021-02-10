@@ -110,11 +110,21 @@ public final class FileBasedSnapshotStore extends Actor
     return latestPersistedSnapshot;
   }
 
-  private FileBasedSnapshot collectSnapshot(final Path path) {
+  private FileBasedSnapshot collectSnapshot(final Path path) throws IOException {
     final var optionalMeta = FileBasedSnapshotMetadata.ofPath(path);
     if (optionalMeta.isPresent()) {
       final var metadata = optionalMeta.get();
-      return new FileBasedSnapshot(path, metadata);
+      try {
+        if (SnapshotChecksum.verify(path)) {
+          return new FileBasedSnapshot(path, metadata);
+        } else {
+          LOGGER.warn(
+              "Cannot load snapshot in {}. The checksum stored does not match the checksum calculated.",
+              path);
+        }
+      } catch (final Exception e) {
+        LOGGER.warn("Could not load snapshot in {}", path, e);
+      }
     } else {
       LOGGER.warn("Expected snapshot file format to be %d-%d-%d-%d, but was {}", path);
     }

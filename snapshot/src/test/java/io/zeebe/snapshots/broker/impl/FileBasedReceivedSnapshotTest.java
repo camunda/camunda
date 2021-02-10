@@ -25,6 +25,7 @@ import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -89,7 +90,10 @@ public class FileBasedReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    takeAndReceiveSnapshot(index, term);
+
+    final var persistedSnapshot = takeSnapshot(index, term);
+    receiveSnapshot(persistedSnapshot);
+    final var snapshotFiles = persistedSnapshot.getPath().toFile().list();
 
     // then
     assertThat(receiverSnapshotsDir.toFile().listFiles()).isEmpty();
@@ -100,7 +104,10 @@ public class FileBasedReceivedSnapshotTest {
 
     final var dir = files[0];
     final var snapshotFileList = dir.listFiles();
-    assertThat(snapshotFileList).isNotNull().extracting(File::getName).containsExactly("file1.txt");
+    assertThat(snapshotFileList)
+        .isNotNull()
+        .extracting(File::getName)
+        .containsExactlyInAnyOrder(snapshotFiles);
   }
 
   @Test
@@ -119,7 +126,7 @@ public class FileBasedReceivedSnapshotTest {
     }
 
     // when
-    receivedSnapshot.abort();
+    receivedSnapshot.abort().join();
 
     // then
     assertThat(receiverSnapshotsDir.toFile().listFiles()).isEmpty();
@@ -146,7 +153,9 @@ public class FileBasedReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var receivedSnapshot = takeAndReceiveSnapshot(index, term);
+    final var persistedSnapshot = takeSnapshot(index, term);
+    final var receivedSnapshot = receiveSnapshot(persistedSnapshot);
+    final var persistedSnapshotFiles = persistedSnapshot.getPath().toFile().list();
 
     // when
     final var snapshot = receivedSnapshot.persist().join();
@@ -163,7 +172,10 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(dir).hasName(snapshot.getId());
 
     final var snapshotFileList = dir.listFiles();
-    assertThat(snapshotFileList).isNotNull().extracting(File::getName).containsExactly("file1.txt");
+    assertThat(snapshotFileList)
+        .isNotNull()
+        .extracting(File::getName)
+        .containsExactlyInAnyOrder(persistedSnapshotFiles);
   }
 
   @Test
@@ -171,7 +183,10 @@ public class FileBasedReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var snapshot = takeAndReceiveSnapshot(index, term).persist().join();
+
+    final var persistedSnapshot = takeSnapshot(index, term);
+    receiveSnapshot(persistedSnapshot).persist().join();
+    final var persistedSnapshotFiles = persistedSnapshot.getPath().toFile().list();
 
     // when
     receiverSnapshotStore.purgePendingSnapshots().join();
@@ -184,10 +199,13 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(files).isNotNull().hasSize(1);
 
     final var dir = files[0];
-    assertThat(dir).hasName(snapshot.getId());
+    assertThat(dir).hasName(persistedSnapshot.getId());
 
     final var snapshotFileList = dir.listFiles();
-    assertThat(snapshotFileList).isNotNull().extracting(File::getName).containsExactly("file1.txt");
+    assertThat(snapshotFileList)
+        .isNotNull()
+        .extracting(File::getName)
+        .containsExactlyInAnyOrder(persistedSnapshotFiles);
   }
 
   @Test
@@ -198,7 +216,7 @@ public class FileBasedReceivedSnapshotTest {
     takeAndReceiveSnapshot(index, term).persist().join();
 
     // when
-    takeAndReceiveSnapshot(index + 1, term).persist().join();
+    final var committedSnapshot = takeAndReceiveSnapshot(index + 1, term).persist().join();
 
     // then
     assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
@@ -213,7 +231,7 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(committedSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactly(committedSnapshot.getPath().toFile().list());
   }
 
   @Test
@@ -224,7 +242,8 @@ public class FileBasedReceivedSnapshotTest {
     takeAndReceiveSnapshot(index, term);
 
     // when
-    takeAndReceiveSnapshot(index + 1, term).persist().join();
+    final var committedSnapshot = takeAndReceiveSnapshot(index + 1, term).persist().join();
+    final var committedSnapshotFiles = committedSnapshot.getPath().toFile().list();
 
     // then
     assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
@@ -239,7 +258,7 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(committedSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactlyInAnyOrder(committedSnapshotFiles);
   }
 
   @Test
@@ -254,7 +273,7 @@ public class FileBasedReceivedSnapshotTest {
         temporaryFolder.newFolder("other").toPath(), "1");
     final var otherStore = fileBasedSnapshotStoreFactory.getConstructableSnapshotStore("1");
     final var olderTransient = otherStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
-    olderTransient.take(this::takeSnapshot);
+    olderTransient.take(this::takeSnapshot).join();
     final var olderPersistedSnapshot = olderTransient.persist().join();
 
     final PersistedSnapshot newPersistedSnapshot = takeSnapshot(index + 1, term);
@@ -273,7 +292,7 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(pendingSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactlyInAnyOrder(newPersistedSnapshot.getPath().toFile().list());
 
     final var snapshotDirs = receiverSnapshotsDir.toFile().listFiles();
     assertThat(snapshotDirs).isNotNull().hasSize(1);
@@ -283,7 +302,7 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(committedSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactlyInAnyOrder(olderPersistedSnapshot.getPath().toFile().list());
   }
 
   @Test
@@ -323,6 +342,7 @@ public class FileBasedReceivedSnapshotTest {
     final var index = 1L;
     final var term = 0L;
     final var persistedSnapshot = takeSnapshot(index, term);
+    final var snapshotFiles = persistedSnapshot.getPath().toFile().list();
 
     // when
     receiveSnapshot(persistedSnapshot);
@@ -341,7 +361,10 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(dir).hasName(persistedSnapshot.getId() + "-1");
 
     final var snapshotFileList = dir.listFiles();
-    assertThat(snapshotFileList).isNotNull().extracting(File::getName).containsExactly("file1.txt");
+    assertThat(snapshotFileList)
+        .isNotNull()
+        .extracting(File::getName)
+        .containsExactlyInAnyOrder(snapshotFiles);
 
     final var otherDir = files.get(1);
     assertThat(otherDir).hasName(persistedSnapshot.getId() + "-2");
@@ -350,7 +373,7 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(otherSnapshotFileList)
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactlyInAnyOrder(snapshotFiles);
   }
 
   @Test
@@ -377,7 +400,7 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(committedSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactly(persistedSnapshot.getPath().toFile().list());
 
     assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
   }
@@ -406,7 +429,7 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(committedSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactlyInAnyOrder(persistedSnapshot.getPath().toFile().list());
 
     assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
   }
@@ -421,13 +444,14 @@ public class FileBasedReceivedSnapshotTest {
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
     final var persistedSnapshot = transientSnapshot.persist().join();
+
+    corruptSnapshotFile(persistedSnapshot, "file3");
+
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       while (snapshotChunkReader.hasNext()) {
-        receivedSnapshot.apply(
-            SnapshotChunkWrapper.withDifferentSnapshotChecksum(
-                snapshotChunkReader.next(), 0xCAFEL));
+        receivedSnapshot.apply(snapshotChunkReader.next());
       }
     }
     assertThatThrownBy(() -> receivedSnapshot.persist().join())
@@ -508,19 +532,50 @@ public class FileBasedReceivedSnapshotTest {
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
     final var persistedSnapshot = transientSnapshot.persist().join();
+
+    corruptSnapshotFile(persistedSnapshot, "file3");
+
+    // when
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       while (snapshotChunkReader.hasNext()) {
-        receivedSnapshot.apply(
-            SnapshotChunkWrapper.withDifferentSnapshotChecksum(
-                snapshotChunkReader.next(), 0xCAFEL));
+        receivedSnapshot.apply(snapshotChunkReader.next());
       }
     }
 
-    // when - then
+    // then
     assertThatThrownBy(() -> receivedSnapshot.persist().join())
-        .hasCauseInstanceOf(IllegalStateException.class);
+        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Snapshot is corrupted");
+  }
+
+  @Test
+  public void shouldNotPersistWhenSnapshotIsPartial() throws Exception {
+    // given
+    final var index = 1L;
+    final var term = 0L;
+    final var transientSnapshot =
+        senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
+    transientSnapshot.take(
+        p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
+    final var persistedSnapshot = transientSnapshot.persist().join();
+
+    deleteSnapshotFile(persistedSnapshot, "file3");
+
+    // when
+    final var receivedSnapshot =
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
+      while (snapshotChunkReader.hasNext()) {
+        receivedSnapshot.apply(snapshotChunkReader.next());
+      }
+    }
+
+    // then
+    assertThatThrownBy(() -> receivedSnapshot.persist().join())
+        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Snapshot is corrupted");
   }
 
   @Test
@@ -653,5 +708,19 @@ public class FileBasedReceivedSnapshotTest {
       throw new UncheckedIOException(e);
     }
     return true;
+  }
+
+  private void corruptSnapshotFile(
+      final PersistedSnapshot persistedSnapshot, final String corruptedFileName)
+      throws IOException {
+    final var file = persistedSnapshot.getPath().resolve(corruptedFileName).toFile();
+    try (final RandomAccessFile corruptedFile = new RandomAccessFile(file, "rw")) {
+      corruptedFile.writeLong(123456L);
+    }
+  }
+
+  private void deleteSnapshotFile(
+      final PersistedSnapshot persistedSnapshot, final String deletedFileName) {
+    persistedSnapshot.getPath().resolve(deletedFileName).toFile().delete();
   }
 }

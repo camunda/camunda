@@ -63,7 +63,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   @Override
   public SnapshotChunkReader newChunkReader() {
     try {
-      return new FileBasedSnapshotChunkReader(directory);
+      return new FileBasedSnapshotChunkReader(directory, SnapshotChecksum.read(directory));
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }

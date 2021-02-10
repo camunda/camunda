@@ -65,6 +65,11 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
         isValid = takeSnapshot.test(getPath());
         if (!isValid) {
           abortInternal();
+        } else if (!directory.toFile().exists() || directory.toFile().listFiles().length == 0) {
+          // If no snapshot files are created, snapshot is not valid
+          isValid = false;
+        } else {
+          calculateAndPersistChecksum();
         }
         takenFuture.complete(isValid);
       } catch (final Exception exception) {
@@ -73,6 +78,11 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
         takenFuture.completeExceptionally(exception);
       }
     }
+  }
+
+  private void calculateAndPersistChecksum() throws IOException {
+    final var checksum = SnapshotChecksum.calculate(directory);
+    SnapshotChecksum.persist(directory, checksum);
   }
 
   @Override
@@ -98,6 +108,11 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
           if (!isValid) {
             future.completeExceptionally(
                 new IllegalStateException("Snapshot is not valid. It may have been deleted."));
+            return;
+          }
+          if (!SnapshotChecksum.hasChecksum(getPath())) {
+            future.completeExceptionally(
+                new IllegalStateException("Snapshot is not valid. There is no checksum file."));
             return;
           }
           try {
