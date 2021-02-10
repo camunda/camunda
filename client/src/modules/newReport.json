@@ -22,13 +22,8 @@
         "tableColumns": {
           "includeNewVariables": true,
           "includedColumns": [],
-          "excludedColumns": []
-        },
-        "columnOrder": {
-          "inputVariables": [],
-          "instanceProps": [],
-          "outputVariables": [],
-          "variables": []
+          "excludedColumns": [],
+          "columnOrder": []
         },
         "targetValue": {
           "countChart": {
@@ -153,13 +148,8 @@
         "tableColumns": {
           "includeNewVariables": true,
           "includedColumns": [],
-          "excludedColumns": []
-        },
-        "columnOrder": {
-          "inputVariables": [],
-          "instanceProps": [],
-          "outputVariables": [],
-          "variables": []
+          "excludedColumns": [],
+          "columnOrder": []
         },
         "targetValue": {
           "countChart": {

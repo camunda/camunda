@@ -21,10 +21,7 @@ export default function processDecisionRawData(
   {
     report: {
       data: {
-        configuration: {
-          tableColumns,
-          columnOrder = {instanceProps: [], variables: [], inputVariables: [], outputVariables: []},
-        },
+        configuration: {tableColumns},
       },
       result: {data: result},
     },
@@ -113,7 +110,7 @@ export default function processDecisionRawData(
       })
     );
 
-  const {sortedHead, sortedBody} = sortColumns(head, body, columnOrder);
+  const {sortedHead, sortedBody} = sortColumns(head, body, tableColumns.columnOrder);
 
   return {head: sortedHead, body: sortedBody};
 }

@@ -69,11 +69,11 @@ it('should contain the Component from the visualizations based on the type', () 
   expect(node.find(typeB)).toExist();
 });
 
-it('should reset to defaults', () => {
+it('should reset to defaults except for columnOrder', () => {
   const spy = jest.fn();
   const node = shallow(
     <Configuration
-      report={{data: {configuration: {}}}}
+      report={{data: {configuration: {tableColumns: {columnOrder: ['test']}}}}}
       type="typeA"
       onChange={spy}
       configuration={{}}
@@ -84,4 +84,5 @@ it('should reset to defaults', () => {
 
   expect(spy).toHaveBeenCalled();
   expect(spy.mock.calls[0][0].configuration.precision).toEqual({$set: null});
+  expect(spy.mock.calls[0][0].configuration.tableColumns.$set.columnOrder).toEqual(['test']);
 });

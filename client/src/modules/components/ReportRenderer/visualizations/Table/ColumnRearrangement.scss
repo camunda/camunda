@@ -20,14 +20,6 @@
   box-shadow: 2px 0 0 var(--green-base-44) inset;
 }
 
-.Table tr .ColumnRearrangement__dropTarget--invalid-left {
-  box-shadow: -2px 0 0 var(--red-base-62) inset;
-}
-
-.Table tr .ColumnRearrangement__dropTarget--invalid-right {
-  box-shadow: 2px 0 0 var(--red-base-62) inset;
-}
-
 .ColumnRearrangement__dragPreview {
   background-color: var(--white);
   width: 250px;

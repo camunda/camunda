@@ -111,14 +111,7 @@ export default withErrorHandling(
               includeNewVariables: true,
               includedColumns: [],
               excludedColumns: [],
-            },
-          },
-          columnOrder: {
-            $set: {
-              inputVariables: [],
-              instanceProps: [],
-              outputVariables: [],
-              variables: [],
+              columnOrder: [],
             },
           },
           heatmapTargetValue: {

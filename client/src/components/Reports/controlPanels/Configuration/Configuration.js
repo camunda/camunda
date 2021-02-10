@@ -68,6 +68,7 @@ export default class Configuration extends React.Component {
           includeNewVariables: true,
           includedColumns: [],
           excludedColumns: [],
+          columnOrder: this.props.report.data.configuration.tableColumns.columnOrder,
         },
         pointMarkers: true,
         xLabel: '',

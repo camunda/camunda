@@ -65,14 +65,7 @@ export class DecisionControlPanel extends React.Component {
             includeNewVariables: true,
             includedColumns: [],
             excludedColumns: [],
-          },
-        },
-        columnOrder: {
-          $set: {
-            inputVariables: [],
-            instanceProps: [],
-            outputVariables: [],
-            variables: [],
+            columnOrder: [],
           },
         },
         xml: {

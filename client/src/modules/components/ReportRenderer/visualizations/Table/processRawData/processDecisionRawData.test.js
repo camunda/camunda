@@ -14,6 +14,7 @@ const data = {
       includeNewVariables: true,
       includedColumns: [],
       excludedColumns: [],
+      columnOrder: [],
     },
   },
 };

@@ -18,12 +18,7 @@ const body = [
 ];
 
 it('should apply column order', () => {
-  const columnOrder = {
-    instanceProps: ['prop2', 'processInstanceId'],
-    variables: ['variable:var1', 'variable:var2'],
-    inputVariables: [],
-    outputVariables: [],
-  };
+  const columnOrder = ['prop2', 'processInstanceId', 'variable:var1', 'variable:var2'];
 
   expect(sortColumns(head, body, columnOrder)).toEqual({
     sortedHead: [
@@ -40,12 +35,7 @@ it('should apply column order', () => {
 });
 
 it('should return the original head and body if no sorting is applied', () => {
-  const columnOrder = {
-    instanceProps: [],
-    variables: [],
-    inputVariables: [],
-    outputVariables: [],
-  };
+  const columnOrder = [];
 
   const {sortedHead, sortedBody} = sortColumns(head, body, columnOrder);
 
@@ -53,23 +43,18 @@ it('should return the original head and body if no sorting is applied', () => {
   expect(sortedBody).toBe(body);
 });
 
-it('should prepend columns without specified column position', () => {
-  const columnOrder = {
-    instanceProps: ['processInstanceId'],
-    variables: ['variable:var1'],
-    inputVariables: [],
-    outputVariables: [],
-  };
+it('should prepend columns without specified column order', () => {
+  const columnOrder = ['processInstanceId', 'variable:var1'];
 
   expect(sortColumns(head, body, columnOrder)).toEqual({
     sortedBody: [
-      ['bar', 'foo', '', '12'],
-      ['abc', 'xyz', 'true', ''],
+      ['bar', '', 'foo', '12'],
+      ['abc', 'true', 'xyz', ''],
     ],
     sortedHead: [
       'prop2',
-      'processInstanceId',
       {id: 'variable:var2', label: 'Var: var2', type: 'variables'},
+      'processInstanceId',
       {id: 'variable:var1', label: 'Var: var1', type: 'variables'},
     ],
   });
