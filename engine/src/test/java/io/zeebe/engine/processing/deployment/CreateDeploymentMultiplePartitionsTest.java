@@ -16,7 +16,9 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
@@ -103,6 +105,32 @@ public final class CreateDeploymentMultiplePartitionsTest {
 
     assertThat(deploymentRecords).hasSize(1);
     assertThat(deploymentRecords.get(0).getPartitionId()).isEqualTo(DEPLOYMENT_PARTITION);
+  }
+
+  @Test
+  public void shouldWriteDistributingRecordsForOtherPartitions() {
+    // when
+    final long deploymentKey = ENGINE.deployment().withXmlResource(WORKFLOW).deploy().getKey();
+
+    // then
+    final List<Record<DeploymentDistributionRecordValue>> deploymentDistributionRecords =
+        RecordingExporter.deploymentDistributionRecords()
+            .withIntent(DeploymentDistributionIntent.DISTRIBUTING)
+            .limit(2)
+            .asList();
+
+    assertThat(deploymentDistributionRecords)
+        .extracting(Record::getKey)
+        .containsOnly(deploymentKey);
+
+    assertThat(deploymentDistributionRecords)
+        .extracting(Record::getPartitionId)
+        .containsOnly(DEPLOYMENT_PARTITION);
+
+    assertThat(deploymentDistributionRecords)
+        .extracting(Record::getValue)
+        .extracting(DeploymentDistributionRecordValue::getPartitionId)
+        .containsExactly(2, 3);
   }
 
   @Test

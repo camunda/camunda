@@ -74,7 +74,8 @@ public final class EngineProcessors {
         typedRecordProcessors,
         deploymentResponder,
         expressionProcessor,
-        writers);
+        writers,
+        partitionsCount);
     addMessageProcessors(subscriptionCommandSender, zeebeState, typedRecordProcessors, writers);
 
     final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor =
@@ -136,12 +137,18 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final DeploymentResponder deploymentResponder,
       final ExpressionProcessor expressionProcessor,
-      final Writers writers) {
+      final Writers writers,
+      final int partitionsCount) {
     final MutableWorkflowState workflowState = zeebeState.getWorkflowState();
     final boolean isDeploymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
     if (isDeploymentPartition) {
       DeploymentEventProcessors.addTransformingDeploymentProcessor(
-          typedRecordProcessors, zeebeState, catchEventBehavior, expressionProcessor);
+          typedRecordProcessors,
+          zeebeState,
+          catchEventBehavior,
+          expressionProcessor,
+          partitionsCount,
+          writers);
     } else {
       DeploymentEventProcessors.addDeploymentCreateProcessor(
           typedRecordProcessors, workflowState, deploymentResponder, partitionId);

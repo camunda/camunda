@@ -35,7 +35,8 @@ public interface Intent {
           VariableDocumentIntent.class,
           WorkflowInstanceCreationIntent.class,
           ErrorIntent.class,
-          WorkflowIntent.class);
+          WorkflowIntent.class,
+          DeploymentDistributionIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN =
       new Intent() {
@@ -88,6 +89,8 @@ public interface Intent {
         return WorkflowInstanceResultIntent.from(intent);
       case WORKFLOW:
         return WorkflowIntent.from(intent);
+      case DEPLOYMENT_DISTRIBUTION:
+        return DeploymentDistributionIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -133,6 +136,8 @@ public interface Intent {
         return WorkflowInstanceResultIntent.valueOf(intent);
       case WORKFLOW:
         return WorkflowIntent.valueOf(intent);
+      case DEPLOYMENT_DISTRIBUTION:
+        return DeploymentDistributionIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

@@ -37,6 +37,7 @@
       <validValue name="ERROR">20</validValue>
       <validValue name="WORKFLOW_INSTANCE_RESULT">21</validValue>
       <validValue name="WORKFLOW">22</validValue>
+      <validValue name="DEPLOYMENT_DISTRIBUTION">23</validValue>
     </enum>
 
     <enum name="RecordType" encodingType="uint8">
