@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatm
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -399,22 +398,16 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
       procInst1.getDefinitionId(), variables
     );
     final ProcessInstanceEngineDto procInst3 = engineIntegrationExtension.startProcessInstance(
-      procInst1.getDefinitionId(), Collections.singletonMap("doubleVar", 1000.0)
+      procInst1.getDefinitionId(), Collections.singletonMap("doubleVar", 66000.0)
     );
-
-    final OffsetDateTime startOfToday = dateFreezer().freezeDateAndReturn().truncatedTo(ChronoUnit.DAYS);
-    engineDatabaseExtension.changeProcessInstanceStartDate(procInst1.getId(), startOfToday);
-    engineDatabaseExtension.changeProcessInstanceStartDate(procInst2.getId(), startOfToday);
-    engineDatabaseExtension.changeProcessInstanceStartDate(procInst3.getId(), startOfToday.minusDays(1));
 
     importAllEngineEntitiesFromScratch();
 
-    // when grouped by variable with bucket size of 1.0 (value ranges of 1-1k makes 1k group by buckets)
-    // and distributed by start date (automatic=80 buckets) we get 80k buckets exceeding the elastic limit of 65k
+    // when grouped by variable with bucket size of 1.0 (values ranges 1-66k makes 66k buckets)
+    // which exceeds the elastic limit of 65k
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket.html
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE_BY_START_DATE)
-      .setDistributeByDateInterval(AggregateByDateUnit.AUTOMATIC)
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(procInst1.getProcessDefinitionKey())
       .setProcessDefinitionVersion(procInst1.getProcessDefinitionVersion())
       .setVariableType(VariableType.DOUBLE)

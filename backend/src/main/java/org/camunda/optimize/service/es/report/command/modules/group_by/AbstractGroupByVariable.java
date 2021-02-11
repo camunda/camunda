@@ -46,8 +46,8 @@ import static org.camunda.optimize.service.es.report.command.service.VariableAgg
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.MISSING_VARIABLES_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.NESTED_FLOWNODE_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.NESTED_VARIABLE_AGGREGATION;
-import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLES_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLE_HISTOGRAM_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLES_INSTANCE_COUNT_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
@@ -185,7 +185,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     }
     MultiBucketsAggregation variableTerms = filteredParentAgg.getAggregations().get(VARIABLES_AGGREGATION);
     if (variableTerms == null) {
-      variableTerms = filteredParentAgg.getAggregations().get(RANGE_AGGREGATION);
+      variableTerms = filteredParentAgg.getAggregations().get(VARIABLE_HISTOGRAM_AGGREGATION);
     }
 
     Map<String, Aggregations> bucketAggregations =

@@ -46,7 +46,8 @@ public class VariableAggregationService {
   public static final String FILTERED_INSTANCE_COUNT_AGGREGATION = "filteredInstCount";
   public static final String VARIABLES_INSTANCE_COUNT_AGGREGATION = "instCount";
   public static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
-  public static final String RANGE_AGGREGATION = "rangeAggregation";
+  public static final String VARIABLE_HISTOGRAM_AGGREGATION = "numberVariableHistogram";
+
 
   private final ConfigurationService configurationService;
   private final NumberVariableAggregationService numberVariableAggregationService;
@@ -70,6 +71,7 @@ public class VariableAggregationService {
         if (VariableType.getNumericTypes().contains(context.getVariableType())) {
           return numberVariableAggregationService.createNumberVariableAggregation(context);
         }
+
         return Optional.empty();
     }
   }
