@@ -21,6 +21,7 @@ public class RawDataDecisionInstanceDto {
   protected String decisionDefinitionKey;
   protected String decisionDefinitionId;
   protected String decisionInstanceId;
+  protected String processInstanceId;
   protected OffsetDateTime evaluationDateTime;
   protected String engineName;
   protected String tenantId;

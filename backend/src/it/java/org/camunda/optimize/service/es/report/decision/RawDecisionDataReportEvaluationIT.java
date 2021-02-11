@@ -86,6 +86,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     assertThat(rawDataDecisionInstanceDto.getDecisionInstanceId()).isNotNull();
     assertThat(rawDataDecisionInstanceDto.getEngineName()).isNotNull();
     assertThat(rawDataDecisionInstanceDto.getEvaluationDateTime()).isNotNull();
+    assertThat(rawDataDecisionInstanceDto.getProcessInstanceId()).isNull();
 
     final Map<String, InputVariableEntry> receivedInputVariables = rawDataDecisionInstanceDto.getInputVariables();
     assertInputVariablesMatchExcepted(inputs, receivedInputVariables);

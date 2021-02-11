@@ -91,6 +91,7 @@ public class RawDecisionDataResultDtoMapper {
       decisionInstanceDto.getDecisionDefinitionKey(),
       decisionInstanceDto.getDecisionDefinitionId(),
       decisionInstanceDto.getDecisionInstanceId(),
+      decisionInstanceDto.getProcessInstanceId(),
       decisionInstanceDto.getEvaluationDateTime(),
       decisionInstanceDto.getEngine(),
       decisionInstanceDto.getTenantId(),
