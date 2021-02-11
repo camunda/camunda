@@ -68,7 +68,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
   /** Recover future is completed after reprocessing is done. */
-  private ActorFuture<Long> recoverFuture;
+  private ActorFuture<Positions> recoverFuture;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorScheduler = processorBuilder.getActorScheduler();
@@ -126,12 +126,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
       actor.runOnCompletion(
           recoverFuture,
-          (lastReprocessedPosition, throwable) -> {
+          (positions, throwable) -> {
             if (throwable != null) {
               LOG.error("Unexpected error on recovery happens.", throwable);
               onFailure(throwable);
             } else {
-              onRecovered(lastReprocessedPosition);
+              onRecovered(positions);
               new StreamProcessorMetrics(partitionId)
                   .recoveryTime(System.currentTimeMillis() - startTime);
             }
@@ -278,8 +278,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     return zeebeState;
   }
 
-  private void onRecovered(final long lastReprocessedPosition) {
-    phase = Phase.PROCESSING;
+  private void onRecovered(final Positions restoredPositions) {
     onCommitPositionUpdatedCondition =
         actor.onCondition(
             getName() + "-on-commit-position-updated", processingStateMachine::readNextEvent);
@@ -287,7 +286,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
     // start reading
     lifecycleAwareListeners.forEach(l -> l.onRecovered(processingContext));
-    processingStateMachine.startProcessing(lastReprocessedPosition);
+    processingStateMachine.startProcessing(restoredPositions);
+    phase = Phase.PROCESSING;
     if (!shouldProcess) {
       setStateToPausedAndNotifyListeners();
     }
@@ -391,5 +391,36 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     PROCESSING,
     FAILED,
     PAUSED,
+  }
+
+  static final class Positions {
+    private long lastWrittenPositions = StreamProcessor.UNSET_POSITION;
+    private long lastSuccessfulProcessedPosition = StreamProcessor.UNSET_POSITION;
+
+    public long getLastWrittenPositions() {
+      return lastWrittenPositions;
+    }
+
+    public long getLastSuccessfulProcessedPosition() {
+      return lastSuccessfulProcessedPosition;
+    }
+
+    public void setLastWrittenPositions(final long lastWrittenPositions) {
+      this.lastWrittenPositions = lastWrittenPositions;
+    }
+
+    public void setLastSuccessfulProcessedPosition(final long lastSuccessfulProcessedPosition) {
+      this.lastSuccessfulProcessedPosition = lastSuccessfulProcessedPosition;
+    }
+
+    @Override
+    public String toString() {
+      return "Positions{"
+          + "lastWrittenPositions="
+          + lastWrittenPositions
+          + ", lastSuccessfulProcessedPosition="
+          + lastSuccessfulProcessedPosition
+          + '}';
+    }
   }
 }

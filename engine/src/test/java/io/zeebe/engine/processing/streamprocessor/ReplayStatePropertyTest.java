@@ -99,6 +99,7 @@ public class ReplayStatePropertyTest {
             () ->
                 assertThat(engineRule.getStreamProcessor(1).getCurrentPhase().join())
                     .isEqualTo(Phase.PROCESSING));
+    waitForProcessingToStop();
 
     // then
     final var replayState = engineRule.collectState();

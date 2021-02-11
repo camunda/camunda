@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.streamprocessor;
 import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDbTransaction;
 import io.zeebe.engine.metrics.StreamProcessorMetrics;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor.Positions;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriterImpl;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -478,10 +479,17 @@ public final class ProcessingStateMachine {
     return !onErrorHandlingLoop;
   }
 
-  public void startProcessing(final long lastReprocessedPosition) {
+  public void startProcessing(final Positions restoredPositions) {
+
     if (lastSuccessfulProcessedEventPosition == StreamProcessor.UNSET_POSITION) {
-      lastSuccessfulProcessedEventPosition = lastReprocessedPosition;
+      lastSuccessfulProcessedEventPosition = restoredPositions.getLastSuccessfulProcessedPosition();
     }
+
+    if (lastWrittenEventPosition == StreamProcessor.UNSET_POSITION) {
+      lastWrittenEventPosition = restoredPositions.getLastWrittenPositions();
+      writtenEventPosition = lastWrittenEventPosition;
+    }
+
     actor.submit(this::readNextEvent);
   }
 }

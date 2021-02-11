@@ -603,11 +603,13 @@ public final class StreamProcessorReprocessingTest {
   }
 
   @Test
-  public void shouldUpdateLastProcessedPositionAfterReprocessing() throws Exception {
+  public void shouldRestorePositionsAfterReprocessing() throws Exception {
     // given
     final long firstPosition =
         streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
-    streamProcessorRule.writeWorkflowInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
+    final long secondPosition =
+        streamProcessorRule.writeWorkflowInstanceEventWithSource(
+            ELEMENT_ACTIVATED, 1, firstPosition);
 
     waitUntil(
         () ->
@@ -634,6 +636,7 @@ public final class StreamProcessorReprocessingTest {
     recoveredLatch.await();
 
     assertThat(streamProcessor.getLastProcessedPositionAsync().get()).isEqualTo(firstPosition);
+    assertThat(streamProcessor.getLastWrittenPositionAsync().get()).isEqualTo(secondPosition);
   }
 
   @Test

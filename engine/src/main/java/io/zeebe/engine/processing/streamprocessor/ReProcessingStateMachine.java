@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.streamprocessor;
 import io.zeebe.db.TransactionContext;
 import io.zeebe.db.TransactionOperation;
 import io.zeebe.db.ZeebeDbTransaction;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor.Positions;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.ReprocessingStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -127,18 +128,18 @@ public final class ReProcessingStateMachine {
   private final BooleanSupplier abortCondition;
   private final Set<Long> failedEventPositions = new HashSet<>();
   // current iteration
-  private long lastSourceEventPosition;
   private long lastFollowUpEventPosition;
   private long snapshotPosition;
   private long highestRecordKey = -1L;
 
   private final Map<Long, Long> lastGeneratedKeyBySourceCommandPosition = new HashMap<>();
 
-  private ActorFuture<Long> recoveryFuture;
+  private ActorFuture<Positions> recoveryFuture;
   private LoggedEvent currentEvent;
   private TypedRecordProcessor eventProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
   private final boolean detectReprocessingInconsistency;
+  private Positions positions;
 
   public ReProcessingStateMachine(final ProcessingContext context) {
     actor = context.getActor();
@@ -164,34 +165,42 @@ public final class ReProcessingStateMachine {
    *
    * @return a ActorFuture with last reprocessed position
    */
-  ActorFuture<Long> startRecover(final long snapshotPosition) {
+  ActorFuture<Positions> startRecover(final long snapshotPosition) {
     recoveryFuture = new CompletableActorFuture<>();
-
     this.snapshotPosition = snapshotPosition;
 
-    LOG.trace("Start scanning the log for error events.");
-    lastSourceEventPosition = scanLog(snapshotPosition);
-    LOG.trace("Finished scanning the log for error events.");
+    LOG.trace("Start scanning the log for error events and last positions.");
+    positions = restoreProcessingState(snapshotPosition);
+    LOG.trace("Finished scanning the log for error events. Restored positions {}.", positions);
 
-    if (lastSourceEventPosition > snapshotPosition) {
+    if (positions.getLastSuccessfulProcessedPosition() > snapshotPosition) {
       LOG.info(
           "Processor starts reprocessing, until last source event position {}",
-          lastSourceEventPosition);
+          positions.getLastSuccessfulProcessedPosition());
       logStreamReader.seekToNextEvent(snapshotPosition);
       reprocessNextEvent();
     } else if (snapshotPosition > 0) {
-      recoveryFuture.complete(snapshotPosition);
+      positions.setLastSuccessfulProcessedPosition(snapshotPosition);
+      recoveryFuture.complete(positions);
     } else {
-      recoveryFuture.complete(StreamProcessor.UNSET_POSITION);
+      recoveryFuture.complete(positions);
     }
+
     return recoveryFuture;
   }
 
-  private long scanLog(final long snapshotPosition) {
-    long lastSourceEventPosition = -1L;
+  /**
+   * Restores the processing state via scanning the log and finding the last processed and written
+   * positions. It will also look for error events to store failed event positions.
+   *
+   * @param snapshotPosition the positions where to scan starts
+   * @return the restored processing positions
+   */
+  private Positions restoreProcessingState(final long snapshotPosition) {
+    final var restoredPositions = new Positions();
 
     if (logStreamReader.hasNext()) {
-      lastSourceEventPosition = snapshotPosition;
+      long lastSourceEventPosition = snapshotPosition;
 
       long lastPosition = snapshotPosition;
       while (logStreamReader.hasNext()) {
@@ -252,11 +261,13 @@ public final class ReProcessingStateMachine {
         }
       }
 
+      restoredPositions.setLastSuccessfulProcessedPosition(lastSourceEventPosition);
+      restoredPositions.setLastWrittenPositions(lastPosition);
       // reset position
       logStreamReader.seek(snapshotPosition + 1);
     }
 
-    return lastSourceEventPosition;
+    return restoredPositions;
   }
 
   private void readNextEvent() {
@@ -385,7 +396,7 @@ public final class ReProcessingStateMachine {
             .ifPresent(keyGeneratorControls::setKeyIfHigher);
       }
 
-    } else if (recordPosition <= lastSourceEventPosition) {
+    } else if (recordPosition <= positions.getLastSuccessfulProcessedPosition()) {
       // skip records that are not yet processed
       reprocessingStreamWriter.configureSourceContext(recordPosition);
 
@@ -427,21 +438,21 @@ public final class ReProcessingStateMachine {
       LOG.info(LOG_STMT_REPROCESSING_FINISHED, currentEvent.getPosition());
 
       // reset the position to the first event where the processing should start
-      logStreamReader.seekToNextEvent(lastSourceEventPosition);
+      logStreamReader.seekToNextEvent(positions.getLastSuccessfulProcessedPosition());
 
-      onRecovered(lastSourceEventPosition);
+      onRecovered();
     } else {
       actor.submit(this::reprocessNextEvent);
     }
   }
 
-  private void onRecovered(final long lastProcessedPosition) {
+  private void onRecovered() {
     keyGeneratorControls.setKeyIfHigher(highestRecordKey);
 
     failedEventPositions.clear();
     lastGeneratedKeyBySourceCommandPosition.clear();
 
-    recoveryFuture.complete(lastProcessedPosition);
+    recoveryFuture.complete(positions);
   }
 
   private void verifyRecordMatchesToReprocessing(final TypedRecord<?> currentEvent) {
