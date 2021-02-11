@@ -601,13 +601,28 @@
         <groupId>net.jqwik</groupId>
         <artifactId>jqwik</artifactId>
         <version>${version.jqwik}</version>
+        <!-- This version (1.1.1) conflict with junit's dependency (1.1.0) -->
+        <exclusions>
+          <exclusion>
+            <groupId>org.apiguardian</groupId>
+            <artifactId>apiguardian-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
         <groupId>net.jqwik</groupId>
         <artifactId>jqwik-api</artifactId>
         <version>${version.jqwik}</version>
+        <exclusions>
+          <!-- This version (1.1.1) conflict with junit's dependency (1.1.0) -->
+          <exclusion>
+            <groupId>org.apiguardian</groupId>
+            <artifactId>apiguardian-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
+
       <dependency>
         <groupId>org.jmock</groupId>
         <artifactId>jmock</artifactId>
