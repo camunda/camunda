@@ -8,7 +8,7 @@
 package io.zeebe.snapshots.raft;
 
 import io.zeebe.util.CloseableSilently;
-import java.io.IOException;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.util.Optional;
 
 /**
@@ -37,25 +37,27 @@ public interface PersistedSnapshotStore extends CloseableSilently {
   /**
    * Purges all ongoing pending/transient/volatile snapshots.
    *
-   * @throws IOException when there was an unexpected IO issue
+   * @return future which will be completed when all pending snapshots are deleted
    */
-  void purgePendingSnapshots() throws IOException;
+  ActorFuture<Void> purgePendingSnapshots();
 
   /**
    * Adds an {@link PersistedSnapshotListener} to the store, which is notified when a new {@link
    * PersistedSnapshot} is persisted at this store.
    *
    * @param listener the listener which should be added and notified later
+   * @return
    */
-  void addSnapshotListener(PersistedSnapshotListener listener);
+  ActorFuture<Boolean> addSnapshotListener(PersistedSnapshotListener listener);
 
   /**
    * Removes an registered {@link PersistedSnapshotListener} from the store. The listener will no
    * longer called when a new {@link PersistedSnapshot} is persisted at this store.
    *
    * @param listener the listener which should be removed
+   * @return
    */
-  void removeSnapshotListener(PersistedSnapshotListener listener);
+  ActorFuture<Boolean> removeSnapshotListener(PersistedSnapshotListener listener);
 
   /**
    * @return the snapshot index of the latest {@link PersistedSnapshot}
@@ -69,6 +71,8 @@ public interface PersistedSnapshotStore extends CloseableSilently {
    * <p>The snapshot store will be deleted by simply reading {@code snapshot} file names from disk
    * and deleting snapshot files directly. Deleting the snapshot store does not involve reading any
    * snapshot files into memory.
+   *
+   * @return
    */
-  void delete();
+  ActorFuture<Void> delete();
 }

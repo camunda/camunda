@@ -21,6 +21,8 @@ import io.zeebe.snapshots.raft.PersistableSnapshot;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.TransientSnapshot;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,6 +40,7 @@ public final class StateControllerImplTest {
 
   @Rule public final TemporaryFolder tempFolderRule = new TemporaryFolder();
   @Rule public final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
+  @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
   private final MutableLong exporterPosition = new MutableLong(Long.MAX_VALUE);
   private StateControllerImpl snapshotController;
@@ -47,7 +50,7 @@ public final class StateControllerImplTest {
   public void setup() throws IOException {
     final var rootDirectory = tempFolderRule.newFolder("state").toPath();
 
-    final var factory = new FileBasedSnapshotStoreFactory();
+    final var factory = new FileBasedSnapshotStoreFactory(actorSchedulerRule.get());
     factory.createReceivableSnapshotStore(rootDirectory, "1");
     store = factory.getConstructableSnapshotStore("1");
 
@@ -87,7 +90,8 @@ public final class StateControllerImplTest {
 
     // when
     final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition);
-    final var snapshot = tmpSnapshot.map(TransientSnapshot::persist).orElseThrow();
+    final var snapshot =
+        tmpSnapshot.map(TransientSnapshot::persist).map(ActorFuture::join).orElseThrow();
 
     // then
     assertThat(snapshot)
@@ -160,11 +164,13 @@ public final class StateControllerImplTest {
         snapshotController
             .takeTransientSnapshot(snapshotPosition)
             .map(PersistableSnapshot::persist)
+            .map(ActorFuture::join)
             .orElseThrow();
 
     // when
     final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition + 1);
-    final var snapshot = tmpSnapshot.map(TransientSnapshot::persist).orElseThrow();
+    final var snapshot =
+        tmpSnapshot.map(TransientSnapshot::persist).map(ActorFuture::join).orElseThrow();
 
     // then
     assertThat(snapshot)
@@ -187,12 +193,14 @@ public final class StateControllerImplTest {
         snapshotController
             .takeTransientSnapshot(snapshotPosition)
             .map(PersistableSnapshot::persist)
+            .map(ActorFuture::join)
             .orElseThrow();
 
     // when
     exporterPosition.set(snapshotPosition + 1);
     final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition);
-    final var snapshot = tmpSnapshot.map(TransientSnapshot::persist).orElseThrow();
+    final var snapshot =
+        tmpSnapshot.map(TransientSnapshot::persist).map(ActorFuture::join).orElseThrow();
 
     // then
     assertThat(snapshot)
@@ -296,7 +304,7 @@ public final class StateControllerImplTest {
 
   private File takeSnapshot(final long position) {
     final var snapshot = snapshotController.takeTransientSnapshot(position).orElseThrow();
-    return snapshot.persist().getPath().toFile();
+    return snapshot.persist().join().getPath().toFile();
   }
 
   private void corruptLatestSnapshot() throws IOException {
