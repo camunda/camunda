@@ -1,12 +1,11 @@
 /*
- * Copyright 2017-present Open Networking Foundation
  * Copyright © 2020 camunda services GmbH (info@camunda.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,13 +16,6 @@
 package io.atomix.raft.storage.log;
 
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.storage.journal.DelegatingJournalWriter;
-import io.atomix.storage.journal.SegmentedJournalWriter;
+import io.atomix.storage.journal.JournalWriter;
 
-/** Raft log writer. */
-public class RaftLogWriter extends DelegatingJournalWriter<RaftLogEntry> {
-
-  public RaftLogWriter(final SegmentedJournalWriter<RaftLogEntry> writer) {
-    super(writer);
-  }
-}
+public interface RaftLogWriter extends JournalWriter<RaftLogEntry> {}
