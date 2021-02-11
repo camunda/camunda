@@ -63,7 +63,10 @@ public final class MessageStreamProcessorTest {
         (typedRecordProcessors, processingContext) -> {
           final var zeebeState = processingContext.getZeebeState();
           MessageEventProcessors.addMessageProcessors(
-              typedRecordProcessors, zeebeState, mockSubscriptionCommandSender);
+              typedRecordProcessors,
+              zeebeState,
+              mockSubscriptionCommandSender,
+              processingContext.getWriters());
           return typedRecordProcessors;
         });
   }

@@ -110,8 +110,8 @@ public final class BlacklistInstanceTest {
       ////////////////////////////////////////
       {ValueType.MESSAGE, MessageIntent.PUBLISH, false},
       {ValueType.MESSAGE, MessageIntent.PUBLISHED, false},
-      {ValueType.MESSAGE, MessageIntent.DELETE, false},
-      {ValueType.MESSAGE, MessageIntent.DELETED, false},
+      {ValueType.MESSAGE, MessageIntent.EXPIRE, false},
+      {ValueType.MESSAGE, MessageIntent.EXPIRED, false},
 
       ////////////////////////////////////////
       ////////// MSG START EVENT SUB /////////

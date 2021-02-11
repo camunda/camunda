@@ -9,18 +9,18 @@ package io.zeebe.engine.processing.message;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.record.intent.MessageIntent;
 
-public final class DeleteMessageProcessor implements TypedRecordProcessor<MessageRecord> {
+public final class MessageExpireProcessor implements TypedRecordProcessor<MessageRecord> {
 
-  private final MutableMessageState messageState;
+  private final StateWriter stateWriter;
 
-  public DeleteMessageProcessor(final MutableMessageState messageState) {
-    this.messageState = messageState;
+  public MessageExpireProcessor(final StateWriter stateWriter) {
+    this.stateWriter = stateWriter;
   }
 
   @Override
@@ -29,8 +29,6 @@ public final class DeleteMessageProcessor implements TypedRecordProcessor<Messag
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter) {
 
-    streamWriter.appendFollowUpEvent(record.getKey(), MessageIntent.DELETED, record.getValue());
-
-    messageState.remove(record.getKey());
+    stateWriter.appendFollowUpEvent(record.getKey(), MessageIntent.EXPIRED, record.getValue());
   }
 }

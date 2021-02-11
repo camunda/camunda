@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.message;
 
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
@@ -25,7 +26,8 @@ public final class MessageEventProcessors {
   public static void addMessageProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final ZeebeState zeebeState,
-      final SubscriptionCommandSender subscriptionCommandSender) {
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final Writers writers) {
 
     final MutableMessageState messageState = zeebeState.getMessageState();
     final MutableMessageSubscriptionState subscriptionState =
@@ -48,7 +50,7 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 keyGenerator))
         .onCommand(
-            ValueType.MESSAGE, MessageIntent.DELETE, new DeleteMessageProcessor(messageState))
+            ValueType.MESSAGE, MessageIntent.EXPIRE, new MessageExpireProcessor(writers.state()))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.OPEN,

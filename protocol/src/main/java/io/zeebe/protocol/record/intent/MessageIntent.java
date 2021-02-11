@@ -19,8 +19,8 @@ public enum MessageIntent implements Intent {
   PUBLISH((short) 0),
   PUBLISHED((short) 1),
 
-  DELETE((short) 2),
-  DELETED((short) 3);
+  EXPIRE((short) 2),
+  EXPIRED((short) 3);
 
   private final short value;
 
@@ -40,9 +40,9 @@ public enum MessageIntent implements Intent {
       case 1:
         return PUBLISHED;
       case 2:
-        return DELETE;
+        return EXPIRE;
       case 3:
-        return DELETED;
+        return EXPIRED;
       default:
         return Intent.UNKNOWN;
     }
