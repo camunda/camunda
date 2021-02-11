@@ -956,11 +956,12 @@ public final class MultiInstanceActivityTest {
     assertThat(
             RecordingExporter.messageSubscriptionRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
-                .limit(4))
+                .limit(5))
         .extracting(Record::getIntent)
         .containsExactly(
             MessageSubscriptionIntent.OPEN,
             MessageSubscriptionIntent.OPENED,
+            MessageSubscriptionIntent.CORRELATING,
             MessageSubscriptionIntent.CORRELATE,
             MessageSubscriptionIntent.CORRELATED);
 
@@ -1074,11 +1075,12 @@ public final class MultiInstanceActivityTest {
     assertThat(
             RecordingExporter.messageSubscriptionRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
-                .limit(6))
+                .limit(7))
         .extracting(Record::getIntent)
         .containsExactly(
             MessageSubscriptionIntent.OPEN,
             MessageSubscriptionIntent.OPENED,
+            MessageSubscriptionIntent.CORRELATING,
             MessageSubscriptionIntent.CORRELATE,
             MessageSubscriptionIntent.CORRELATED,
             MessageSubscriptionIntent.CLOSE,

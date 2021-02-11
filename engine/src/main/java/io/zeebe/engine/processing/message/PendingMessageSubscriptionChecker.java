@@ -45,7 +45,9 @@ public final class PendingMessageSubscriptionChecker implements Runnable {
             subscription.getCorrelationKey());
 
     if (success) {
-      subscriptionState.updateSentTimeInTransaction(subscription, ActorClock.currentTimeMillis());
+      // TODO (saig0): the state change of the sent time should be reflected by a record (#6364)
+      final var sentTime = ActorClock.currentTimeMillis();
+      subscriptionState.updateSentTimeInTransaction(subscription, sentTime);
     }
 
     return success;

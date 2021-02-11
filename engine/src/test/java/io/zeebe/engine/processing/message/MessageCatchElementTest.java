@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.message;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
@@ -241,25 +242,36 @@ public final class MessageCatchElementTest {
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
         getFirstElementRecord(enteredState);
 
+    getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.OPENED);
+
     // when
-    ENGINE_RULE
-        .message()
-        .withCorrelationKey(correlationKey)
-        .withName(MESSAGE_NAME)
-        .withVariables(asMsgPack("foo", "bar"))
-        .publish();
+    final var messagePublished =
+        ENGINE_RULE
+            .message()
+            .withCorrelationKey(correlationKey)
+            .withName(MESSAGE_NAME)
+            .withVariables(asMsgPack("foo", "bar"))
+            .publish();
 
     // then
-    final Record<MessageSubscriptionRecordValue> subscription =
-        getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CORRELATED);
+    final var subscriptionCorrelating =
+        getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CORRELATING);
 
-    assertThat(subscription.getValueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
-    assertThat(subscription.getRecordType()).isEqualTo(RecordType.EVENT);
-
-    Assertions.assertThat(subscription.getValue())
+    Assertions.assertThat(subscriptionCorrelating.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
-        .hasMessageName("order canceled")
+        .hasMessageName(MESSAGE_NAME)
+        .hasCorrelationKey(correlationKey)
+        .hasBpmnProcessId(bpmnProcessId)
+        .hasMessageKey(messagePublished.getKey());
+
+    final Record<MessageSubscriptionRecordValue> subscriptionCorrelated =
+        getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CORRELATED);
+
+    Assertions.assertThat(subscriptionCorrelated.getValue())
+        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasElementInstanceKey(catchEventEntered.getKey())
+        .hasMessageName(MESSAGE_NAME)
         .hasCorrelationKey("");
   }
 
@@ -335,6 +347,34 @@ public final class MessageCatchElementTest {
                 .withElementId(SEQUENCE_FLOW_ID)
                 .exists())
         .isTrue();
+  }
+
+  @Test
+  public void testMessageSubscriptionLifecycle() {
+    // given
+    getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.OPENED);
+
+    // when
+    ENGINE_RULE
+        .message()
+        .withCorrelationKey(correlationKey)
+        .withName(MESSAGE_NAME)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
+
+    // then
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withMessageName(MESSAGE_NAME)
+                .limit(5))
+        .extracting(Record::getRecordType, Record::getIntent)
+        .containsExactly(
+            tuple(RecordType.COMMAND, MessageSubscriptionIntent.OPEN),
+            tuple(RecordType.EVENT, MessageSubscriptionIntent.OPENED),
+            tuple(RecordType.EVENT, MessageSubscriptionIntent.CORRELATING),
+            tuple(RecordType.COMMAND, MessageSubscriptionIntent.CORRELATE),
+            tuple(RecordType.EVENT, MessageSubscriptionIntent.CORRELATED));
   }
 
   private Record<WorkflowInstanceRecordValue> getFirstElementRecord(

@@ -42,13 +42,14 @@ public final class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE,
             MessageIntent.PUBLISH,
-            new PublishMessageProcessor(
+            new MessagePublishProcessor(
                 messageState,
                 subscriptionState,
                 startEventSubscriptionState,
                 eventScopeInstanceState,
                 subscriptionCommandSender,
-                keyGenerator))
+                keyGenerator,
+                writers))
         .onCommand(
             ValueType.MESSAGE, MessageIntent.EXPIRE, new MessageExpireProcessor(writers.state()))
         .onCommand(

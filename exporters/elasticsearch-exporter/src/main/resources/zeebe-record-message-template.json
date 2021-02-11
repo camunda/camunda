@@ -26,6 +26,9 @@
             },
             "variables": {
               "enabled": false
+            },
+            "deadline": {
+              "type": "long"
             }
           }
         }
