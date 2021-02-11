@@ -38,7 +38,6 @@ public class EventProcessInstanceImportMediatorFactory {
   private final BeanFactory beanFactory;
 
   private final ConfigurationService configurationService;
-  private final BackoffCalculator idleBackoffCalculator;
 
   private final EventProcessInstanceWriterFactory eventProcessInstanceWriterFactory;
   private final EventFetcherFactory eventFetcherFactory;
@@ -58,7 +57,7 @@ public class EventProcessInstanceImportMediatorFactory {
         eventFetcherFactory.createEventFetcherForEventSource(importSource.getEventSource()),
         createImportService(publishedStateDto, importSource.getEventSource()),
         configurationService,
-        idleBackoffCalculator
+        new BackoffCalculator(configurationService)
       ))
       .collect(Collectors.toList());
   }

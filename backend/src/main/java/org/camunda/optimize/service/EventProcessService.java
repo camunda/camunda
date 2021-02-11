@@ -274,11 +274,11 @@ public class EventProcessService {
                             .collect(toList()))
       .build();
 
-    final IdResponseDto procesPublishStateId =
+    final IdResponseDto processPublishStateId =
       eventProcessPublishStateWriter.createEventProcessPublishState(processPublishState);
     eventProcessPublishStateWriter.deleteAllEventProcessPublishStatesForEventProcessMappingIdExceptOne(
       eventProcessMappingId,
-      procesPublishStateId.getId()
+      processPublishStateId.getId()
     );
   }
 

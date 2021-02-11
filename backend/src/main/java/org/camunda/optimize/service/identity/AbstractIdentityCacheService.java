@@ -106,7 +106,7 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
       final OffsetDateTime stopRetryingTime = Optional
         .ofNullable(cronExpression.next(LocalDateUtil.getCurrentDateTime()))
         .orElseThrow(() -> new OptimizeRuntimeException("Could not calculate next cron temporal."))
-        .minusSeconds(backoffCalculator.getMaximumBackoffSeconds());
+        .minusSeconds(backoffCalculator.getMaximumBackoffMilliseconds());
       boolean shouldRetry = true;
       while (shouldRetry) {
         try {

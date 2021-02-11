@@ -97,8 +97,8 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler<?, ?>, 
   private void calculateNewDateUntilIsBlocked() {
     if (idleBackoffCalculator.isMaximumBackoffReached()) {
       logger.debug(
-        "Maximum idle backoff reached, this mediator will not backoff any further than {}s.",
-        idleBackoffCalculator.getMaximumBackoffSeconds()
+        "Maximum idle backoff reached, this mediator will not backoff any further than {}ms.",
+        idleBackoffCalculator.getMaximumBackoffMilliseconds()
       );
     }
     final long sleepTime = idleBackoffCalculator.calculateSleepTime();
