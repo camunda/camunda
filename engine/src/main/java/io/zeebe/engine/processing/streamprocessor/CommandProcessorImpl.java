@@ -13,6 +13,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RejectionType;
@@ -51,14 +52,12 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
   public CommandProcessorImpl(
       final CommandProcessor<T> commandProcessor,
       final KeyGenerator keyGenerator,
-      final StateWriter stateWriter,
-      final TypedCommandWriter commandWriter,
-      final TypedRejectionWriter rejectionWriter) {
+      final Writers writers) {
     wrappedProcessor = commandProcessor;
     this.keyGenerator = keyGenerator;
-    this.stateWriter = stateWriter;
-    this.commandWriter = commandWriter;
-    this.rejectionWriter = rejectionWriter;
+    stateWriter = writers.state();
+    commandWriter = writers.command();
+    rejectionWriter = writers.rejection();
   }
 
   @Override

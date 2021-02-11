@@ -7,9 +7,6 @@
  */
 package io.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -24,15 +21,11 @@ public final class TypedRecordProcessors {
   private final RecordProcessorMap recordProcessorMap = new RecordProcessorMap();
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private final KeyGenerator keyGenerator;
-  private final StateWriter stateWriter;
-  private final TypedCommandWriter commandWriter;
-  private final TypedRejectionWriter rejectionWriter;
+  private final Writers writers;
 
   private TypedRecordProcessors(final KeyGenerator keyGenerator, final Writers writers) {
     this.keyGenerator = keyGenerator;
-    stateWriter = writers.state();
-    commandWriter = writers.command();
-    rejectionWriter = writers.rejection();
+    this.writers = writers;
   }
 
   public static TypedRecordProcessors processors(
@@ -63,9 +56,7 @@ public final class TypedRecordProcessors {
 
   public <T extends UnifiedRecordValue> TypedRecordProcessors onCommand(
       final ValueType valueType, final Intent intent, final CommandProcessor<T> commandProcessor) {
-    final var processor =
-        new CommandProcessorImpl<>(
-            commandProcessor, keyGenerator, stateWriter, commandWriter, rejectionWriter);
+    final var processor = new CommandProcessorImpl<>(commandProcessor, keyGenerator, writers);
     return onCommand(valueType, intent, processor);
   }
 

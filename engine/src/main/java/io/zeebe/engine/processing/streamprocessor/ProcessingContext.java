@@ -11,7 +11,6 @@ import io.zeebe.db.TransactionContext;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.EventApplier;
@@ -39,14 +38,12 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private ZeebeDbState zeebeState;
   private TransactionContext transactionContext;
   private EventApplier eventApplier;
-  private StateWriter stateWriter;
 
   private BooleanSupplier abortCondition;
   private Consumer<TypedRecord> onProcessedListener = record -> {};
   private Consumer<LoggedEvent> onSkippedListener = record -> {};
   private int maxFragmentSize;
   private boolean detectReprocessingInconsistency;
-  private Writers writers;
 
   public ProcessingContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -154,12 +151,10 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   @Override
   public Writers getWriters() {
-    if (writers == null) {
-      // lazy init, because statewriter depends on both logstreamWriter and eventApplier
-      final var stateWriter = new EventApplyingStateWriter(logStreamWriter, eventApplier);
-      writers = new Writers(logStreamWriter, stateWriter, commandResponseWriter);
-    }
-    return writers;
+    // todo (#6202): cleanup - revisit after migration is finished
+    // create newly every time, because the specific writers may differ over time
+    final var stateWriter = new EventApplyingStateWriter(logStreamWriter, eventApplier);
+    return new Writers(logStreamWriter, stateWriter, commandResponseWriter);
   }
 
   @Override
