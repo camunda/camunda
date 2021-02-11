@@ -38,6 +38,7 @@ import io.zeebe.protocol.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceResultRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
@@ -143,6 +144,10 @@ public final class RecordingExporter implements Exporter {
 
   public static DeploymentRecordStream deploymentRecords(final DeploymentIntent intent) {
     return deploymentRecords().withIntent(intent);
+  }
+
+  public static WorkflowRecordStream workflowRecords() {
+    return new WorkflowRecordStream(records(ValueType.WORKFLOW, DeployedWorkflow.class));
   }
 
   public static JobRecordStream jobRecords() {

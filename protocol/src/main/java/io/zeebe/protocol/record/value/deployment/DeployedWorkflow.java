@@ -15,8 +15,10 @@
  */
 package io.zeebe.protocol.record.value.deployment;
 
+import io.zeebe.protocol.record.RecordValue;
+
 /** Represents a deployed workflow. */
-public interface DeployedWorkflow {
+public interface DeployedWorkflow extends RecordValue {
   /** @return the bpmn process ID of this workflow */
   String getBpmnProcessId();
 

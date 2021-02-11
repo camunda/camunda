@@ -30,7 +30,7 @@ public enum WorkflowIntent implements Intent {
 
   public static Intent from(final short value) {
     switch (value) {
-      case 1:
+      case 0:
         return CREATED;
       default:
         return UNKNOWN;

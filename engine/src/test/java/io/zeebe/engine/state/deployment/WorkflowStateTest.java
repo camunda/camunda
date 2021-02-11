@@ -151,6 +151,72 @@ public final class WorkflowStateTest {
   }
 
   @Test
+  public void shouldPutWorkflowToState() {
+    // given
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
+    final var workflowRecord = deploymentRecord.workflows().iterator().next();
+
+    // when
+    workflowState.putWorkflow(workflowRecord.getKey(), workflowRecord);
+
+    // then
+    final DeployedWorkflow deployedWorkflow =
+        workflowState.getWorkflowByProcessIdAndVersion(wrapString("processId"), 1);
+
+    assertThat(deployedWorkflow).isNotNull();
+    assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo(wrapString("processId"));
+    assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
+    assertThat(deployedWorkflow.getKey()).isEqualTo(workflowRecord.getKey());
+    assertThat(deployedWorkflow.getResource()).isEqualTo(workflowRecord.getResourceBuffer());
+    assertThat(deployedWorkflow.getResourceName())
+        .isEqualTo(workflowRecord.getResourceNameBuffer());
+
+    final var workflowByKey = workflowState.getWorkflowByKey(workflowRecord.getKey());
+    assertThat(workflowByKey).isNotNull();
+    assertThat(workflowByKey.getBpmnProcessId()).isEqualTo(wrapString("processId"));
+    assertThat(workflowByKey.getVersion()).isEqualTo(1);
+    assertThat(workflowByKey.getKey()).isEqualTo(workflowRecord.getKey());
+    assertThat(workflowByKey.getResource()).isEqualTo(workflowRecord.getResourceBuffer());
+    assertThat(workflowByKey.getResourceName()).isEqualTo(workflowRecord.getResourceNameBuffer());
+  }
+
+  @Test
+  public void shouldUpdateLatestDigestOnPutWorkflowToState() {
+    // given
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
+    final var workflowRecord = deploymentRecord.workflows().iterator().next();
+
+    // when
+    workflowState.putWorkflow(workflowRecord.getKey(), workflowRecord);
+
+    // then
+    final var checksum = workflowState.getLatestVersionDigest(wrapString("processId"));
+    assertThat(checksum).isEqualTo(workflowRecord.getChecksumBuffer());
+  }
+
+  @Test
+  public void shouldUpdateLatestWorkflowOnPutWorkflowToState() {
+    // given
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
+    final var workflowRecord = deploymentRecord.workflows().iterator().next();
+
+    // when
+    workflowState.putWorkflow(workflowRecord.getKey(), workflowRecord);
+
+    // then
+    final DeployedWorkflow deployedWorkflow =
+        workflowState.getLatestWorkflowVersionByProcessId(wrapString("processId"));
+
+    assertThat(deployedWorkflow).isNotNull();
+    assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo(wrapString("processId"));
+    assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
+    assertThat(deployedWorkflow.getKey()).isEqualTo(workflowRecord.getKey());
+    assertThat(deployedWorkflow.getResource()).isEqualTo(workflowRecord.getResourceBuffer());
+    assertThat(deployedWorkflow.getResourceName())
+        .isEqualTo(workflowRecord.getResourceNameBuffer());
+  }
+
+  @Test
   public void shouldNotOverwritePreviousRecord() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
