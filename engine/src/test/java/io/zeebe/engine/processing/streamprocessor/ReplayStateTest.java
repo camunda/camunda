@@ -54,7 +54,15 @@ public final class ReplayStateTest {
         .withElementType(BpmnElementType.SERVICE_TASK)
         .await();
 
-    RecordingExporter.jobRecords(JobIntent.CREATED).await();
+    final var jobCreated = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+
+    Awaitility.await("await until the last record is processed")
+        .untilAsserted(
+            () -> {
+              final var processedPosition =
+                  engine.getStreamProcessor(1).getLastProcessedPositionAsync().join();
+              assertThat(processedPosition).isEqualTo(jobCreated.getPosition());
+            });
 
     processingState = engine.collectState();
     engine.stop();

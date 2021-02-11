@@ -183,6 +183,10 @@ public final class StreamProcessorRule implements TestRule {
     return streamProcessingComposite.getZeebeState();
   }
 
+  public long getLastSuccessfulProcessedRecordPosition() {
+    return streamProcessingComposite.getLastSuccessfulProcessedRecordPosition();
+  }
+
   public RecordStream events() {
     return new RecordStream(streams.events(getLogName(startPartitionId)));
   }

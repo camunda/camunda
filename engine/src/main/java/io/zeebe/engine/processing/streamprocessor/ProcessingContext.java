@@ -12,7 +12,10 @@ import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.EventApplier;
+import io.zeebe.engine.state.KeyGeneratorControls;
+import io.zeebe.engine.state.ZeebeDbState;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.util.sched.ActorControl;
@@ -29,7 +32,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   private RecordValues recordValues;
   private RecordProcessorMap recordProcessorMap;
-  private ZeebeState zeebeState;
+  private ZeebeDbState zeebeState;
   private TransactionContext transactionContext;
   private EventApplier eventApplier;
 
@@ -63,7 +66,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
-  public ProcessingContext zeebeState(final ZeebeState zeebeState) {
+  public ProcessingContext zeebeState(final ZeebeDbState zeebeState) {
     this.zeebeState = zeebeState;
     return this;
   }
@@ -108,6 +111,14 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   public ProcessingContext eventApplier(final EventApplier eventApplier) {
     this.eventApplier = eventApplier;
     return this;
+  }
+
+  public KeyGeneratorControls getKeyGeneratorControls() {
+    return zeebeState.getKeyGeneratorControls();
+  }
+
+  public MutableLastProcessedPositionState getLastProcessedPositionState() {
+    return zeebeState.getLastProcessedPositionState();
   }
 
   @Override

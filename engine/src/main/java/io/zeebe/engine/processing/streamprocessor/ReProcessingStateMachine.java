@@ -14,10 +14,13 @@ import io.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.ReprocessingStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.state.EventApplier;
+import io.zeebe.engine.state.KeyGeneratorControls;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -28,7 +31,10 @@ import io.zeebe.util.retry.RetryStrategy;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -95,8 +101,10 @@ public final class ReProcessingStateMachine {
           recordMetadata.getRecordType() == RecordType.EVENT
               || !MigratedStreamProcessors.isMigrated(recordMetadata.getValueType());
 
-  protected final RecordMetadata metadata = new RecordMetadata();
+  private final RecordMetadata metadata = new RecordMetadata();
   private final ZeebeState zeebeState;
+  private final KeyGeneratorControls keyGeneratorControls;
+  private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final ActorControl actor;
   private final ErrorRecord errorRecord = new ErrorRecord();
   private final TypedEventImpl typedEvent;
@@ -122,6 +130,9 @@ public final class ReProcessingStateMachine {
   private long lastSourceEventPosition;
   private long lastFollowUpEventPosition;
   private long snapshotPosition;
+  private long highestRecordKey = -1L;
+
+  private final Map<Long, Long> lastGeneratedKeyBySourceCommandPosition = new HashMap<>();
 
   private ActorFuture<Long> recoveryFuture;
   private LoggedEvent currentEvent;
@@ -138,8 +149,10 @@ public final class ReProcessingStateMachine {
     zeebeState = context.getZeebeState();
     abortCondition = context.getAbortCondition();
     eventApplier = context.getEventApplier();
-    typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
+    keyGeneratorControls = context.getKeyGeneratorControls();
+    lastProcessedPositionState = context.getLastProcessedPositionState();
 
+    typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
     updateStateRetryStrategy = new EndlessRetryStrategy(actor);
     processRetryStrategy = new EndlessRetryStrategy(actor);
     detectReprocessingInconsistency = context.isDetectReprocessingInconsistency();
@@ -215,6 +228,27 @@ public final class ReProcessingStateMachine {
           if (currentPosition > lastFollowUpEventPosition) {
             lastFollowUpEventPosition = currentPosition;
           }
+        }
+
+        final UnifiedRecordValue recordValue =
+            recordValues.readRecordValue(newEvent, metadata.getValueType());
+        typedEvent.wrap(newEvent, metadata, recordValue);
+
+        if (MigratedStreamProcessors.isMigrated(typedEvent)
+            && typedEvent.getRecordType() == RecordType.COMMAND) {
+          // store the highest key of a processed command for supporting legacy processors
+          // - initialize the map to store the key of the follow-up record afterward
+          lastGeneratedKeyBySourceCommandPosition.put(currentPosition, -1L);
+        }
+
+        final var recordKey = newEvent.getKey();
+        // records from other partitions should not influence the key generator of this partition
+        if (Protocol.decodePartitionId(recordKey) == zeebeState.getPartitionId()) {
+          lastGeneratedKeyBySourceCommandPosition.computeIfPresent(
+              sourceEventPosition, (position, key) -> Math.max(recordKey, key));
+
+          // remember the highest key on the stream to restore the key generator after replay
+          highestRecordKey = Math.max(recordKey, highestRecordKey);
         }
       }
 
@@ -327,7 +361,7 @@ public final class ReProcessingStateMachine {
             if (isNotOnBlacklist) {
               reprocessRecord(currentEvent);
             }
-            zeebeState.getLastProcessedPositionState().markAsProcessed(position);
+            lastProcessedPositionState.markAsProcessed(position);
           };
     }
     return operationOnProcessing;
@@ -344,6 +378,11 @@ public final class ReProcessingStateMachine {
 
         eventApplier.applyState(
             currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
+
+      } else if (currentEvent.getRecordType() == RecordType.COMMAND) {
+        // restore the key generator because it is used by not yet migrated processors
+        Optional.ofNullable(lastGeneratedKeyBySourceCommandPosition.get(currentEvent.getPosition()))
+            .ifPresent(keyGeneratorControls::setKeyIfHigher);
       }
 
     } else if (recordPosition <= lastSourceEventPosition) {
@@ -397,8 +436,12 @@ public final class ReProcessingStateMachine {
   }
 
   private void onRecovered(final long lastProcessedPosition) {
-    recoveryFuture.complete(lastProcessedPosition);
+    keyGeneratorControls.setKeyIfHigher(highestRecordKey);
+
     failedEventPositions.clear();
+    lastGeneratedKeyBySourceCommandPosition.clear();
+
+    recoveryFuture.complete(lastProcessedPosition);
   }
 
   private void verifyRecordMatchesToReprocessing(final TypedRecord<?> currentEvent) {

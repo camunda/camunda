@@ -16,6 +16,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.immutable.LastProcessedPositionState;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.RecordType;
@@ -31,6 +32,7 @@ public class StreamProcessingComposite {
   private final int partitionId;
   private final ZeebeDbFactory zeebeDbFactory;
   private ZeebeState zeebeState;
+  private LastProcessedPositionState lastProcessedPositionState;
 
   public StreamProcessingComposite(
       final TestStreams streams, final int partitionId, final ZeebeDbFactory zeebeDbFactory) {
@@ -53,6 +55,7 @@ public class StreamProcessingComposite {
     return startTypedStreamProcessor(
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
+          lastProcessedPositionState = processingContext.getLastProcessedPositionState();
           processingContext.onProcessedListener(onProcessedListener);
           return factory.build(
               TypedRecordProcessors.processors(zeebeState.getKeyGenerator()), processingContext);
@@ -72,6 +75,7 @@ public class StreamProcessingComposite {
         zeebeDbFactory,
         (processingContext -> {
           zeebeState = processingContext.getZeebeState();
+          lastProcessedPositionState = processingContext.getLastProcessedPositionState();
           return factory.createProcessors(processingContext);
         }),
         detectReprocessingInconsistency);
@@ -103,6 +107,10 @@ public class StreamProcessingComposite {
 
   public ZeebeState getZeebeState() {
     return zeebeState;
+  }
+
+  public long getLastSuccessfulProcessedRecordPosition() {
+    return lastProcessedPositionState.getLastSuccessfulProcessedRecordPosition();
   }
 
   public RecordStream events() {

@@ -56,7 +56,7 @@ public final class KeyGeneratorTest {
     final ZeebeDb<ZbColumnFamilies> newDb = stateRule.createNewDb();
     final int secondPartitionId = Protocol.DEPLOYMENT_PARTITION + 1;
     final ZeebeState otherZeebeState =
-        new ZeebeState(secondPartitionId, newDb, newDb.createContext());
+        new ZeebeDbState(secondPartitionId, newDb, newDb.createContext());
 
     final KeyGenerator keyGenerator2 = otherZeebeState.getKeyGenerator();
 

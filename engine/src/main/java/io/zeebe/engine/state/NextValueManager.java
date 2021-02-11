@@ -42,19 +42,29 @@ public final class NextValueManager {
   }
 
   public long getNextValue(final String key) {
-    nextValueKey.wrapString(key);
-
-    final NextValue readValue = nextValueColumnFamily.get(nextValueKey);
-
-    long previousKey = initialValue;
-    if (readValue != null) {
-      previousKey = readValue.get();
-    }
-
+    final long previousKey = getCurrentValue(key);
     final long nextKey = previousKey + 1;
     nextValue.set(nextKey);
     nextValueColumnFamily.put(nextValueKey, nextValue);
 
     return nextKey;
+  }
+
+  public void setValue(final String key, final long value) {
+    nextValueKey.wrapString(key);
+    nextValue.set(value);
+    nextValueColumnFamily.put(nextValueKey, nextValue);
+  }
+
+  public long getCurrentValue(final String key) {
+    nextValueKey.wrapString(key);
+
+    final NextValue readValue = nextValueColumnFamily.get(nextValueKey);
+
+    long currentValue = initialValue;
+    if (readValue != null) {
+      currentValue = readValue.get();
+    }
+    return currentValue;
   }
 }

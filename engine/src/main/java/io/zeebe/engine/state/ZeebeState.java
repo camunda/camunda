@@ -9,27 +9,12 @@ package io.zeebe.engine.state;
 
 import io.zeebe.db.DbKey;
 import io.zeebe.db.DbValue;
-import io.zeebe.db.TransactionContext;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.engine.state.deployment.DbDeploymentState;
-import io.zeebe.engine.state.deployment.DbWorkflowState;
-import io.zeebe.engine.state.instance.DbElementInstanceState;
-import io.zeebe.engine.state.instance.DbEventScopeInstanceState;
-import io.zeebe.engine.state.instance.DbIncidentState;
-import io.zeebe.engine.state.instance.DbJobState;
-import io.zeebe.engine.state.instance.DbTimerInstanceState;
-import io.zeebe.engine.state.instance.DbVariableState;
-import io.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
-import io.zeebe.engine.state.message.DbMessageState;
-import io.zeebe.engine.state.message.DbMessageSubscriptionState;
-import io.zeebe.engine.state.message.DbWorkflowInstanceSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableBlackListState;
 import io.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableIncidentState;
 import io.zeebe.engine.state.mutable.MutableJobState;
-import io.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -37,141 +22,46 @@ import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableWorkflowState;
-import io.zeebe.engine.state.processing.DbBlackListState;
-import io.zeebe.engine.state.processing.DbKeyGenerator;
-import io.zeebe.engine.state.processing.DbLastProcessedPositionState;
-import io.zeebe.protocol.Protocol;
 import java.util.function.BiConsumer;
 
-public class ZeebeState {
+public interface ZeebeState {
 
-  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
-  private final KeyGenerator keyGenerator;
+  MutableDeploymentState getDeploymentState();
 
-  private final MutableWorkflowState workflowState;
-  private final MutableTimerInstanceState timerInstanceState;
-  private final MutableElementInstanceState elementInstanceState;
-  private final MutableEventScopeInstanceState eventScopeInstanceState;
-  private final MutableVariableState variableState;
+  MutableWorkflowState getWorkflowState();
 
-  private final MutableDeploymentState deploymentState;
-  private final MutableJobState jobState;
-  private final MutableMessageState messageState;
-  private final MutableMessageSubscriptionState messageSubscriptionState;
-  private final MutableMessageStartEventSubscriptionState messageStartEventSubscriptionState;
-  private final MutableWorkflowInstanceSubscriptionState workflowInstanceSubscriptionState;
-  private final MutableIncidentState incidentState;
-  private final MutableBlackListState blackListState;
-  private final MutableLastProcessedPositionState lastProcessedPositionState;
+  MutableJobState getJobState();
 
-  private final int partitionId;
+  MutableMessageState getMessageState();
 
-  public ZeebeState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    this(Protocol.DEPLOYMENT_PARTITION, zeebeDb, transactionContext);
-  }
+  MutableMessageSubscriptionState getMessageSubscriptionState();
 
-  public ZeebeState(
-      final int partitionId,
-      final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final TransactionContext transactionContext) {
-    this.partitionId = partitionId;
-    this.zeebeDb = zeebeDb;
-    keyGenerator = new DbKeyGenerator(partitionId, zeebeDb, transactionContext);
+  MutableMessageStartEventSubscriptionState getMessageStartEventSubscriptionState();
 
-    variableState = new DbVariableState(zeebeDb, transactionContext, keyGenerator);
-    workflowState = new DbWorkflowState(zeebeDb, transactionContext);
-    timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
-    elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
-    eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);
+  MutableWorkflowInstanceSubscriptionState getWorkflowInstanceSubscriptionState();
 
-    deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
-    jobState = new DbJobState(zeebeDb, transactionContext, partitionId);
-    messageState = new DbMessageState(zeebeDb, transactionContext);
-    messageSubscriptionState = new DbMessageSubscriptionState(zeebeDb, transactionContext);
-    messageStartEventSubscriptionState =
-        new DbMessageStartEventSubscriptionState(zeebeDb, transactionContext);
-    workflowInstanceSubscriptionState =
-        new DbWorkflowInstanceSubscriptionState(zeebeDb, transactionContext);
-    incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
-    blackListState = new DbBlackListState(zeebeDb, transactionContext);
-    lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, transactionContext);
-  }
+  MutableIncidentState getIncidentState();
 
-  public MutableDeploymentState getDeploymentState() {
-    return deploymentState;
-  }
+  KeyGenerator getKeyGenerator();
 
-  public MutableWorkflowState getWorkflowState() {
-    return workflowState;
-  }
+  MutableBlackListState getBlackListState();
 
-  public MutableJobState getJobState() {
-    return jobState;
-  }
+  MutableVariableState getVariableState();
 
-  public MutableMessageState getMessageState() {
-    return messageState;
-  }
+  MutableTimerInstanceState getTimerState();
 
-  public MutableMessageSubscriptionState getMessageSubscriptionState() {
-    return messageSubscriptionState;
-  }
+  MutableElementInstanceState getElementInstanceState();
 
-  public MutableMessageStartEventSubscriptionState getMessageStartEventSubscriptionState() {
-    return messageStartEventSubscriptionState;
-  }
+  MutableEventScopeInstanceState getEventScopeInstanceState();
 
-  public MutableWorkflowInstanceSubscriptionState getWorkflowInstanceSubscriptionState() {
-    return workflowInstanceSubscriptionState;
-  }
+  int getPartitionId();
 
-  public MutableIncidentState getIncidentState() {
-    return incidentState;
-  }
-
-  public KeyGenerator getKeyGenerator() {
-    return keyGenerator;
-  }
-
-  public MutableBlackListState getBlackListState() {
-    return blackListState;
-  }
-
-  public MutableLastProcessedPositionState getLastProcessedPositionState() {
-    return lastProcessedPositionState;
-  }
-
-  public int getPartitionId() {
-    return partitionId;
-  }
-
-  public boolean isEmpty(final ZbColumnFamilies column) {
-    final var newContext = zeebeDb.createContext();
-    return zeebeDb.isEmpty(column, newContext);
-  }
-
-  public MutableVariableState getVariableState() {
-    return variableState;
-  }
-
-  public MutableTimerInstanceState getTimerState() {
-    return timerInstanceState;
-  }
-
-  public MutableElementInstanceState getElementInstanceState() {
-    return elementInstanceState;
-  }
-
-  public MutableEventScopeInstanceState getEventScopeInstanceState() {
-    return eventScopeInstanceState;
-  }
+  boolean isEmpty(final ZbColumnFamilies column);
 
   /**
-   * This method iterates over all entries for a given column family and presents each entry to the
-   * consumer
+   * Iterates over all entries for a given column family and presents each entry to the consumer.
    *
-   * <p><strong>Hint</strong> This method should only be used in tests
+   * <p><strong>Hint</strong> Should only be used in tests.
    *
    * @param columnFamily the enum instance of the column family
    * @param keyInstance this instance defines the type of the column family key type
@@ -180,16 +70,9 @@ public class ZeebeState {
    * @param <KeyType> the key type of the column family
    * @param <ValueType> the value type of the column family
    */
-  public <KeyType extends DbKey, ValueType extends DbValue> void forEach(
+  <KeyType extends DbKey, ValueType extends DbValue> void forEach(
       final ZbColumnFamilies columnFamily,
       final KeyType keyInstance,
       final ValueType valueInstance,
-      final BiConsumer<KeyType, ValueType> visitor) {
-
-    final var newContext = zeebeDb.createContext();
-
-    zeebeDb
-        .createColumnFamily(columnFamily, newContext, keyInstance, valueInstance)
-        .forEach(visitor);
-  }
+      final BiConsumer<KeyType, ValueType> visitor);
 }

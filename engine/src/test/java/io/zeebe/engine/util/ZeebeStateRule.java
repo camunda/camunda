@@ -11,6 +11,7 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZbColumnFamilies;
+import io.zeebe.engine.state.ZeebeDbState;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.Protocol;
 import org.junit.rules.ExternalResource;
@@ -36,7 +37,7 @@ public final class ZeebeStateRule extends ExternalResource {
     tempFolder.create();
     db = createNewDb();
 
-    zeebeState = new ZeebeState(partition, db, db.createContext());
+    zeebeState = new ZeebeDbState(partition, db, db.createContext());
   }
 
   @Override
