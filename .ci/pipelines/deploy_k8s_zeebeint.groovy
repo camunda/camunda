@@ -93,7 +93,7 @@ pipeline {
               ./cmd/k8s/deploy-template-to-branch \
                 ${WORKSPACE}/infra-core/camunda-ci-v2/deployments/optimize-branch \
                 ${WORKSPACE}/optimize/.ci/zeebeint-deployment \
-                ${params.BRANCH} \
+                ${params.BRANCH.toLowerCase().replaceAll(/[^a-z0-9-]/, '-')} \
                 optimize
             """)
           }

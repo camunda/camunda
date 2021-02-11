@@ -576,7 +576,7 @@ String getGitCommitHash() {
 }
 
 String getBranchSlug() {
-  return env.CHANGE_BRANCH.toLowerCase().replaceAll(/[^a-z0-9-]/, '-')
+  return getBranchName().toLowerCase().replaceAll(/[^a-z0-9-]/, '-')
 }
 
 String getImageTag() {
@@ -584,7 +584,7 @@ String getImageTag() {
 }
 
 String getBranchName() {
-  return env.BRANCH_NAME == 'master' ? 'master' : env.CHANGE_BRANCH
+  return (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'prototype_zeebeint') ? env.BRANCH_NAME : env.CHANGE_BRANCH
 }
 
 void integrationTestSteps(String engineVersion = 'latest') {
