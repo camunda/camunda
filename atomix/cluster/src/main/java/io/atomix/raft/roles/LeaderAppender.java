@@ -55,7 +55,7 @@ final class LeaderAppender extends AbstractAppender {
   LeaderAppender(final LeaderRole leader) {
     super(leader.raft);
     leaderTime = System.currentTimeMillis();
-    leaderIndex = raft.getLogWriter().getNextIndex();
+    leaderIndex = raft.getLog().getNextIndex();
     heartbeatTime = leaderTime;
     electionTimeout = raft.getElectionTimeout().toMillis();
     heartbeatInterval = raft.getHeartbeatInterval().toMillis();
@@ -473,7 +473,7 @@ final class LeaderAppender extends AbstractAppender {
     // request/response)
     // ensure all commit futures are completed and cleared.
     if (members.isEmpty()) {
-      final long commitIndex = raft.getLogWriter().getLastIndex();
+      final long commitIndex = raft.getLog().getLastIndex();
       final long previousCommitIndex = raft.setCommitIndex(commitIndex);
       if (commitIndex > previousCommitIndex) {
         log.trace("Committed entries up to {}", commitIndex);

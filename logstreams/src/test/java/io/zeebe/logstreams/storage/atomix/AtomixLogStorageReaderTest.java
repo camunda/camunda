@@ -106,7 +106,6 @@ public final class AtomixLogStorageReaderTest {
     final var second =
         storageRule
             .getRaftLog()
-            .writer()
             .append(new ConfigurationEntry(1, System.currentTimeMillis(), Collections.emptyList()));
     final var third = append(5, 8, allocateData(2));
 
@@ -129,7 +128,6 @@ public final class AtomixLogStorageReaderTest {
     final var expected = append(1, 4, allocateData(1));
     storageRule
         .getRaftLog()
-        .writer()
         .append(new ConfigurationEntry(1, System.currentTimeMillis(), Collections.emptyList()));
 
     // when
@@ -161,7 +159,6 @@ public final class AtomixLogStorageReaderTest {
     final var entry =
         storageRule
             .getRaftLog()
-            .writer()
             .append(new ConfigurationEntry(1, System.currentTimeMillis(), Collections.emptyList()));
     final var isEmpty = reader.isEmpty();
 
@@ -179,7 +176,6 @@ public final class AtomixLogStorageReaderTest {
     final var entry =
         storageRule
             .getRaftLog()
-            .writer()
             .append(new ConfigurationEntry(1, System.currentTimeMillis(), Collections.emptyList()));
     final var expected = append(1, 4, allocateData(1));
 

@@ -112,7 +112,7 @@ public final class AtomixLogStorageRule extends ExternalResource
       final AppendListener listener) {
     final ZeebeEntry zbEntry =
         new ZeebeEntry(0, System.currentTimeMillis(), lowestPosition, highestPosition, data);
-    final Indexed<RaftLogEntry> lastEntry = raftLog.writer().getLastEntry();
+    final Indexed<RaftLogEntry> lastEntry = raftLog.getLastEntry();
 
     ZeebeEntry lastZbEntry = null;
     if (lastEntry != null && lastEntry.type() == ZeebeEntry.class) {
@@ -130,10 +130,10 @@ public final class AtomixLogStorageRule extends ExternalResource
       return;
     }
 
-    final Indexed<ZeebeEntry> entry = raftLog.writer().append(zbEntry);
+    final Indexed<ZeebeEntry> entry = raftLog.append(zbEntry);
 
     listener.onWrite(entry);
-    raftLog.writer().commit(entry.index());
+    raftLog.commit(entry.index());
 
     listener.onCommit(entry);
     if (positionListener != null) {

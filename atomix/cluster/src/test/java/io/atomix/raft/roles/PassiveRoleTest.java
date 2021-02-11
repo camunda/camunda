@@ -31,7 +31,6 @@ import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
-import io.atomix.raft.storage.log.RaftLogWriter;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.StorageException.InvalidChecksum;
@@ -59,7 +58,7 @@ public class PassiveRoleTest {
       new Builder().register(Namespaces.BASIC).register(ZeebeEntry.class).build();
   @Rule public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
   private final ZeebeEntry entry = new ZeebeEntry(1, 1, 0, 1, ByteBuffer.allocate(0));
-  private RaftLogWriter writer;
+  private RaftLog log;
   private PassiveRole role;
 
   @Before
@@ -67,8 +66,8 @@ public class PassiveRoleTest {
     final RaftStorage storage = mock(RaftStorage.class);
     when(storage.namespace()).thenReturn(NAMESPACE);
 
-    writer = mock(RaftLogWriter.class);
-    when(writer.getLastIndex()).thenReturn(1L);
+    log = mock(RaftLog.class);
+    when(log.getLastIndex()).thenReturn(1L);
 
     final PersistedSnapshot snapshot = mock(PersistedSnapshot.class);
     when(snapshot.getIndex()).thenReturn(1L);
@@ -79,7 +78,7 @@ public class PassiveRoleTest {
 
     final RaftContext ctx = mock(RaftContext.class);
     when(ctx.getStorage()).thenReturn(storage);
-    when(ctx.getLogWriter()).thenReturn(writer);
+    when(ctx.getLog()).thenReturn(log);
     when(ctx.getPersistedSnapshotStore()).thenReturn(store);
     when(ctx.getTerm()).thenReturn(1L);
     when(ctx.getReplicationMetrics()).thenReturn(mock(RaftReplicationMetrics.class));
@@ -104,7 +103,7 @@ public class PassiveRoleTest {
   @Test
   public void shouldAppendEntryWithCorrectChecksum() {
     // given
-    when(writer.append(any(), anyLong())).thenReturn(new Indexed<>(1, entry, 1, 1));
+    when(log.append(any(), anyLong())).thenReturn(new Indexed<>(1, entry, 1, 1));
     final List<RaftLogEntry> entries = generateEntries(1);
     final List<Long> checksums = getChecksums(entries);
     final AppendRequest request = new AppendRequest(2, "", 1, 1, entries, checksums, 1);
@@ -114,14 +113,14 @@ public class PassiveRoleTest {
 
     // then
     assertThat(response.succeeded()).isTrue();
-    verify(writer).append(any(ZeebeEntry.class), eq(checksums.get(0)));
-    verify(writer, never()).append(any(ZeebeEntry.class));
+    verify(log).append(any(ZeebeEntry.class), eq(checksums.get(0)));
+    verify(log, never()).append(any(ZeebeEntry.class));
   }
 
   @Test
   public void shouldNotValidateIfNoChecksum() {
     // given
-    when(writer.append(any(ZeebeEntry.class))).thenReturn(new Indexed<>(1, entry, 1, 1));
+    when(log.append(any(ZeebeEntry.class))).thenReturn(new Indexed<>(1, entry, 1, 1));
     final List<RaftLogEntry> entries = generateEntries(1);
     final AppendRequest request = new AppendRequest(2, "", 1, 1, entries, null, 1);
 
@@ -130,14 +129,14 @@ public class PassiveRoleTest {
 
     // then
     assertThat(response.succeeded()).isTrue();
-    verify(writer).append(any(ZeebeEntry.class));
-    verify(writer, never()).append(any(ZeebeEntry.class), anyLong());
+    verify(log).append(any(ZeebeEntry.class));
+    verify(log, never()).append(any(ZeebeEntry.class), anyLong());
   }
 
   @Test
   public void shouldFailAppendWithIncorrectChecksum() {
     // given
-    when(writer.append(any(ZeebeEntry.class), anyLong()))
+    when(log.append(any(ZeebeEntry.class), anyLong()))
         .thenReturn(new Indexed<>(1, entry, 1, 1))
         .thenThrow(new InvalidChecksum("expected"));
     final List<RaftLogEntry> entries = generateEntries(2);
@@ -151,7 +150,7 @@ public class PassiveRoleTest {
     // then
     assertThat(response.succeeded()).isFalse();
     assertThat(response.lastLogIndex()).isEqualTo(2);
-    verify(writer, times(2)).append(any(ZeebeEntry.class), anyLong());
+    verify(log, times(2)).append(any(ZeebeEntry.class), anyLong());
   }
 
   private List<RaftLogEntry> generateEntries(final int numEntries) {

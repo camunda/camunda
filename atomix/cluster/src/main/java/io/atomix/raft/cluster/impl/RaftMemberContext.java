@@ -79,11 +79,11 @@ public final class RaftMemberContext {
 
     switch (member.getType()) {
       case PASSIVE:
-        reader = log.openReader(log.writer().getLastIndex() + 1, Mode.COMMITS);
+        reader = log.openReader(log.getLastIndex() + 1, Mode.COMMITS);
         break;
       case PROMOTABLE:
       case ACTIVE:
-        reader = log.openReader(log.writer().getLastIndex() + 1, Mode.ALL);
+        reader = log.openReader(log.getLastIndex() + 1, Mode.ALL);
         break;
       default:
         LoggerFactory.getLogger(RaftMemberContext.class)
