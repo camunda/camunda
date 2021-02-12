@@ -43,17 +43,19 @@
     {
       "id": "42cd4c8c-fda9-4cec-8276-54d3c74a57b0",
       "type": "camunda",
-      "eventScope": "all",
-      "processDefinitionKey": "invoice",
-      "processDefinitionName": "Invoice Receipt with alternative correlation variable",
-      "versions": [
-        "all"
-      ],
-      "tenants": [
-        null
-      ],
-      "tracedByBusinessKey": false,
-      "traceVariable": "alternativeCorrelationVariable"
+      "configuration":{
+        "eventScope": "all",
+        "processDefinitionKey": "invoice",
+        "processDefinitionName": "Invoice Receipt with alternative correlation variable",
+        "versions": [
+          "all"
+        ],
+        "tenants": [
+          null
+        ],
+        "tracedByBusinessKey": false,
+        "traceVariable": "alternativeCorrelationVariable"
+      }
     }
   ]
 }
