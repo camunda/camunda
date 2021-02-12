@@ -8,6 +8,7 @@
 package io.zeebe.engine.util;
 
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.test.util.bpmn.random.AbstractExecutionStep;
 import io.zeebe.test.util.bpmn.random.blocks.ExclusiveGatewayBlockBuilder.StepPickConditionCase;
 import io.zeebe.test.util.bpmn.random.blocks.ExclusiveGatewayBlockBuilder.StepPickDefaultCase;
@@ -17,7 +18,6 @@ import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivat
 import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateAndFailJob;
 import io.zeebe.test.util.bpmn.random.blocks.StepStartProcessInstance;
 import io.zeebe.test.util.record.RecordingExporter;
-import java.time.Duration;
 
 /** This class executes individual {@link AbstractExecutionStep} for a given workflow */
 public class WorkflowExecutor {
@@ -84,19 +84,25 @@ public class WorkflowExecutor {
   }
 
   private void publicMessage(final StepPublishMessage publishMessage) {
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+        .withMessageName(publishMessage.getMessageName())
+        .withCorrelationKey(IntermediateMessageCatchEventBlockBuilder.CORRELATION_KEY_VALUE)
+        .await();
+
     engineRule
         .message()
         .withName(publishMessage.getMessageName())
         .withCorrelationKey(IntermediateMessageCatchEventBlockBuilder.CORRELATION_KEY_VALUE)
-        .withTimeToLive(Duration.ofSeconds(10))
         .publish();
 
-    // TODO Wait for message being correlated
     /*
      * If we don't wait for the message to be correlated, then this will happen asynchronously.
      * Especially in ReplayStatePropertyTest this prevents us from capturing database
      * state at precise points where we know that the system is idle.
      */
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+        .withMessageName(publishMessage.getMessageName())
+        .await();
   }
 
   private void createWorkflowInstance(final StepStartProcessInstance startProcess) {

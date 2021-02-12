@@ -13,6 +13,7 @@ import io.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.engine.util.WorkflowExecutor;
+import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -22,18 +23,25 @@ import io.zeebe.test.util.bpmn.random.TestDataGenerator;
 import io.zeebe.test.util.bpmn.random.TestDataGenerator.TestDataRecord;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Collection;
+import java.util.stream.Collectors;
 import org.assertj.core.api.SoftAssertions;
 import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RunWith(Parameterized.class)
 public class ReplayStatePropertyTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ReplayStatePropertyTest.class);
 
   private static final int WORKFLOW_COUNT = 5;
   private static final int EXECUTION_PATH_COUNT = 5;
@@ -43,6 +51,8 @@ public class ReplayStatePropertyTest {
       EngineRule.singlePartition()
           .withOnProcessedCallback(record -> lastProcessedPosition = record.getPosition())
           .withOnSkippedCallback(record -> lastProcessedPosition = record.getPosition());
+
+  @Rule public TestWatcher failedTestDataPrinter = new FailedTestDataPrinter();
 
   @Parameter public TestDataRecord record;
 
@@ -150,6 +160,28 @@ public class ReplayStatePropertyTest {
 
   @Parameters(name = "{0}")
   public static Collection<TestDataRecord> getTestRecords() {
+    // use the following code to rerun a specific test case:
+    //    final var workflowSeed = 8354930473519021610L;
+    //    final var executionPathSeed = 4913527714508155594L;
+    //    return List.of(TestDataGenerator.regenerateTestRecord(workflowSeed, executionPathSeed));
     return TestDataGenerator.generateTestRecords(WORKFLOW_COUNT, EXECUTION_PATH_COUNT);
+  }
+
+  private final class FailedTestDataPrinter extends TestWatcher {
+
+    @Override
+    protected void failed(final Throwable e, final Description description) {
+      LOGGER.info("Data of failed test case: {}", record);
+      LOGGER.info(
+          "Workflow of failed test case:{}{}",
+          System.lineSeparator(),
+          Bpmn.convertToString(record.getBpmnModel()));
+      LOGGER.info(
+          "Execution path of failed test case:{}{}",
+          System.lineSeparator(),
+          record.getExecutionPath().getSteps().stream()
+              .map(AbstractExecutionStep::toString)
+              .collect(Collectors.joining(System.lineSeparator())));
+    }
   }
 }
