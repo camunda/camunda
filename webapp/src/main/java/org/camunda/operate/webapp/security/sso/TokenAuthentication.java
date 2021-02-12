@@ -5,15 +5,12 @@
  */
 package org.camunda.operate.webapp.security.sso;
 
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
-
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-
-import org.camunda.operate.webapp.security.OperateURIs;
+import com.auth0.Tokens;
+import com.auth0.jwt.JWT;
 import com.auth0.jwt.exceptions.JWTDecodeException;
+import com.auth0.jwt.interfaces.Claim;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import org.camunda.operate.webapp.security.OperateURIs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +20,12 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.stereotype.Component;
 
-import com.auth0.Tokens;
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.interfaces.Claim;
-import com.auth0.jwt.interfaces.DecodedJWT;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 @Profile(OperateURIs.SSO_AUTH_PROFILE)
 @Component
@@ -78,12 +77,12 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   public boolean isAuthenticated() {
     return authenticated && !hasExpired();
   }
-  
+
   public void authenticate(Tokens tokens) {
     jwt = JWT.decode(tokens.getIdToken());
     Claim claim = jwt.getClaim(config.getClaimName());
     tryAuthenticateAsListOfStrings(claim);
-    if( !authenticated ){
+    if (!authenticated) {
       tryAuthenticateAsListOfMaps(claim);
     }
     if (!authenticated) {
@@ -98,10 +97,11 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
         authenticated = claims.stream().anyMatch(idEqualsOrganization);
       }
     } catch (JWTDecodeException e) {
-      logger.debug("Read organization claim as list of maps failed.",e);
+      logger.debug("Read organization claim as list of maps failed.", e);
     }
   }
 
+  @Deprecated
   private void tryAuthenticateAsListOfStrings(Claim claim) {
     try {
       List<String> claims = claim.asList(String.class);
@@ -109,7 +109,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
         authenticated = claims.contains(config.getOrganization());
       }
     } catch (JWTDecodeException e) {
-      logger.debug("Read organization claim as list of strings failed.",e);
+      logger.debug("Read organization claim as list of strings failed.", e);
     }
   }
 
@@ -117,7 +117,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
    * Gets the claims for this JWT token. <br>
    * For an ID token, claims represent user profile information such as the
    * user's name, profile, picture, etc. <br>
-   * 
+   *
    * @see <a href="https://auth0.com/docs/tokens/id-token">ID Token
    *      Documentation</a>
    * @return a Map containing the claims of the token.

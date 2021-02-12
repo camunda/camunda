@@ -48,14 +48,19 @@ public class SSOController {
    */
   @RequestMapping(value = LOGIN_RESOURCE, method = { RequestMethod.GET, RequestMethod.POST })
   public String login(final HttpServletRequest req,final HttpServletResponse res) {
-    String authorizeUrl = authenticationController.buildAuthorizeUrl(req, res, getRedirectURI(req, CALLBACK_URI))
-        .withAudience(String.format("https://%s/userinfo", config.getBackendDomain())) // get user profile
-        .withScope("openid profile email") // which info we request
-        .build();
+    final String authorizeUrl = getAuthorizeUrl(req, res);
     logger.debug("Redirect Login to {}", authorizeUrl);
     return "redirect:" + authorizeUrl;
   }
 
+  private String getAuthorizeUrl(final HttpServletRequest req, final HttpServletResponse res) {
+    return authenticationController
+        .buildAuthorizeUrl(req, res, getRedirectURI(req, CALLBACK_URI))
+        .withAudience(
+            String.format("https://%s/userinfo", config.getBackendDomain())) // get user profile
+        .withScope("openid profile email") // which info we request
+        .build();
+  }
 
   /**
    * Logged in callback -  Is called by auth0 with results of user authentication (GET) <br/>
@@ -66,8 +71,8 @@ public class SSOController {
    * @throws IOException
    */
   @RequestMapping(value = CALLBACK_URI, method = RequestMethod.GET)
-  public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res) throws ServletException, IOException {
-    logger.debug("Called back by auth0.");
+  public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res) throws IOException {
+    logger.debug("Called back by auth0 with {} {}", req.getRequestURI(), req.getQueryString());
     try {
       Tokens tokens = authenticationController.handle(req, res);
       TokenAuthentication authentication =  beanFactory.getBean(TokenAuthentication.class);
@@ -139,7 +144,11 @@ public class SSOController {
     if ((req.getScheme().equals("http") && req.getServerPort() != 80) || (req.getScheme().equals("https") && req.getServerPort() != 443)) {
       redirectUri += ":" + req.getServerPort();
     }
-    return redirectUri + req.getContextPath() + redirectTo;
+    final String clusterId = req.getContextPath().replaceAll("/", "");
+    final String result =
+        redirectUri + /* req.getContextPath()+ */ redirectTo + "?uuid=" + clusterId;
+    logger.debug("RedirectURI: {}", result);
+    return result;
   }
 
 }
