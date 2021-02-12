@@ -106,14 +106,7 @@ export default withErrorHandling(
         processDefinitionVersions: {$set: versions},
         tenantIds: {$set: tenantIds},
         configuration: {
-          tableColumns: {
-            $set: {
-              includeNewVariables: true,
-              includedColumns: [],
-              excludedColumns: [],
-              columnOrder: [],
-            },
-          },
+          tableColumns: {columnOrder: {$set: []}},
           heatmapTargetValue: {
             $set: {
               active: false,

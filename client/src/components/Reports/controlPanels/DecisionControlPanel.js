@@ -60,14 +60,7 @@ export class DecisionControlPanel extends React.Component {
       decisionDefinitionVersions: {$set: versions},
       tenantIds: {$set: tenantIds},
       configuration: {
-        tableColumns: {
-          $set: {
-            includeNewVariables: true,
-            includedColumns: [],
-            excludedColumns: [],
-            columnOrder: [],
-          },
-        },
+        tableColumns: {columnOrder: {$set: []}},
         xml: {
           $set:
             key && versions && versions[0]
