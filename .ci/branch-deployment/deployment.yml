@@ -45,7 +45,7 @@ spec:
         image: "gcr.io/ci-30-162810/camunda-optimize:@VERSION@"
         imagePullPolicy: Always
         env:
-        - name: JAVA_OPTS
+        - name: OPTIMIZE_JAVA_OPTS
           value: |
             -Xms2g
             -Xmx2g

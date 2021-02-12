@@ -33,7 +33,7 @@ services:
       - DB_USERNAME=camunda
       - DB_URL=jdbc:postgresql://postgres:5432/engine
       - TZ=Europe/Berlin
-      - JAVA_OPTS=-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m
+      - OPTIMIZE_JAVA_OPTS=-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m
     ports:
       - 8080:8080
       - 9092:9092
