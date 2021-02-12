@@ -16,6 +16,7 @@
  */
 package io.atomix.raft.storage.log;
 
+import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.Indexed;
@@ -53,11 +54,24 @@ public class RaftLog implements Closeable {
   }
 
   public RaftLogReader openReader(final long index) {
-    return openReader(index, JournalReader.Mode.ALL);
+    return openReader(index, Mode.ALL);
   }
 
-  public RaftLogReader openReader(final long index, final JournalReader.Mode mode) {
-    return new RaftLogReader(journal.openReader(index, mode));
+  public RaftLogReader openReader(final long index, final Mode mode) {
+    final JournalReader.Mode journalReaderMode;
+
+    switch (mode) {
+      case ALL:
+        journalReaderMode = JournalReader.Mode.ALL;
+        break;
+      case COMMITS:
+        journalReaderMode = JournalReader.Mode.COMMITS;
+        break;
+      default:
+        throw new IllegalStateException("Expected mode to be one of ALL, COMMITS, but was " + mode);
+    }
+
+    return new RaftLogReader(journal.openReader(index, journalReaderMode));
   }
 
   public boolean isOpen() {

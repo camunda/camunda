@@ -26,11 +26,11 @@ import io.atomix.raft.protocol.ControllableRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.log.RaftLogReader;
+import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.zeebe.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.storage.StorageLevel;
-import io.atomix.storage.journal.JournalReader;
-import io.atomix.storage.journal.JournalReader.Mode;
 import io.zeebe.util.collection.Tuple;
 import java.io.File;
 import java.io.IOException;
@@ -326,7 +326,7 @@ public final class ControllableRaftContexts {
             .max(Long::compareTo)
             .orElseThrow();
     assertThat(index).isEqualTo(commitIndexOnLeader);
-    readers.values().forEach(JournalReader::close);
+    readers.values().forEach(RaftLogReader::close);
   }
 
   public void assertOnlyOneLeader() {

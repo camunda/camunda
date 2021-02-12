@@ -353,7 +353,7 @@ public abstract class AbstractJournalTest {
   @Test
   public void testWriteReadCommittedEntries() {
     final JournalWriter<TestEntry> writer = journal.writer();
-    final JournalReader<TestEntry> reader = journal.openReader(1, JournalReader.Mode.COMMITS);
+    final JournalReader<TestEntry> reader = journal.openReader(1, Mode.COMMITS);
 
     for (int i = 1; i <= entriesPerSegment * 5; i++) {
       writer.append(ENTRY);
@@ -374,10 +374,8 @@ public abstract class AbstractJournalTest {
   @Test
   public void testReadAfterCompact() {
     final JournalWriter<TestEntry> writer = journal.writer();
-    final JournalReader<TestEntry> uncommittedReader =
-        journal.openReader(1, JournalReader.Mode.ALL);
-    final JournalReader<TestEntry> committedReader =
-        journal.openReader(1, JournalReader.Mode.COMMITS);
+    final JournalReader<TestEntry> uncommittedReader = journal.openReader(1, Mode.ALL);
+    final JournalReader<TestEntry> committedReader = journal.openReader(1, Mode.COMMITS);
 
     for (int i = 1; i <= entriesPerSegment * 10; i++) {
       assertEquals(i, writer.append(ENTRY).index());

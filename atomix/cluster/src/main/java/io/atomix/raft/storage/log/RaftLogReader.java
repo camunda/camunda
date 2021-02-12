@@ -17,12 +17,76 @@
 package io.atomix.raft.storage.log;
 
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.storage.journal.DelegatingJournalReader;
+import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalReader;
 
 /** Raft log reader. */
-public class RaftLogReader extends DelegatingJournalReader<RaftLogEntry> {
+public class RaftLogReader implements java.util.Iterator<Indexed<RaftLogEntry>>, AutoCloseable {
+  private final JournalReader<RaftLogEntry> delegate;
+
   RaftLogReader(final JournalReader<RaftLogEntry> delegate) {
-    super(delegate);
+    this.delegate = delegate;
+  }
+
+  public boolean isEmpty() {
+    return delegate.isEmpty();
+  }
+
+  public long getFirstIndex() {
+    return delegate.getFirstIndex();
+  }
+
+  public long getLastIndex() {
+    return delegate.getLastIndex();
+  }
+
+  public long getCurrentIndex() {
+    return delegate.getCurrentIndex();
+  }
+
+  public Indexed<RaftLogEntry> getCurrentEntry() {
+    return delegate.getCurrentEntry();
+  }
+
+  public long getNextIndex() {
+    return delegate.getNextIndex();
+  }
+
+  @Override
+  public boolean hasNext() {
+    return delegate.hasNext();
+  }
+
+  @Override
+  public Indexed<RaftLogEntry> next() {
+    return delegate.next();
+  }
+
+  public void reset() {
+    delegate.reset();
+  }
+
+  public void reset(final long index) {
+    delegate.reset(index);
+  }
+
+  @Override
+  public void close() {
+    delegate.close();
+  }
+
+  @Override
+  public String toString() {
+    return "RaftLogReader{" + "delegate=" + delegate + '}';
+  }
+
+  /** Raft log reader mode. */
+  public enum Mode {
+
+    /** Reads all entries from the log. */
+    ALL,
+
+    /** Reads committed entries from the log. */
+    COMMITS,
   }
 }

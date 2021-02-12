@@ -19,6 +19,7 @@ package io.atomix.storage.journal;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import io.atomix.storage.journal.JournalReader.Mode;
 import org.junit.Test;
 
 /** Persistent journal test base. */
@@ -46,7 +47,7 @@ public abstract class PersistentJournalTest extends AbstractJournalTest {
     // Reopen the journal and create a reader.
     journal = createJournal();
     writer = journal.writer();
-    final JournalReader<TestEntry> reader = journal.openReader(1, JournalReader.Mode.COMMITS);
+    final JournalReader<TestEntry> reader = journal.openReader(1, Mode.COMMITS);
     writer.append(ENTRY);
     writer.append(ENTRY);
     writer.commit(entriesPerSegment * 3);

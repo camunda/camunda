@@ -22,7 +22,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.storage.journal.JournalReader.Mode;
+import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.zeebe.snapshots.raft.SnapshotChunkReader;
 import java.nio.ByteBuffer;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
