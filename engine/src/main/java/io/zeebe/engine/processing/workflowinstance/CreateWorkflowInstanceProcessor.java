@@ -12,7 +12,8 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.immutable.WorkflowState;
@@ -51,23 +52,25 @@ public final class CreateWorkflowInstanceProcessor
   private final MutableElementInstanceState elementInstanceState;
   private final MutableVariableState variablesState;
   private final KeyGenerator keyGenerator;
+  private final StateWriter stateWriter;
 
   public CreateWorkflowInstanceProcessor(
       final WorkflowState workflowState,
       final MutableElementInstanceState elementInstanceState,
       final MutableVariableState variablesState,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final Writers writers) {
     this.workflowState = workflowState;
     this.elementInstanceState = elementInstanceState;
     this.variablesState = variablesState;
     this.keyGenerator = keyGenerator;
+    stateWriter = writers.state();
   }
 
   @Override
   public boolean onCommand(
       final TypedRecord<WorkflowInstanceCreationRecord> command,
-      final CommandControl<WorkflowInstanceCreationRecord> controller,
-      final TypedStreamWriter streamWriter) {
+      final CommandControl<WorkflowInstanceCreationRecord> controller) {
     final WorkflowInstanceCreationRecord record = command.getValue();
     final DeployedWorkflow workflow = getWorkflow(record, controller);
     if (workflow == null || !isValidWorkflow(controller, workflow)) {
@@ -80,7 +83,7 @@ public final class CreateWorkflowInstanceProcessor
     }
 
     final ElementInstance workflowInstance = createElementInstance(workflow, workflowInstanceKey);
-    streamWriter.appendFollowUpEvent(
+    stateWriter.appendFollowUpEvent(
         workflowInstanceKey,
         WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         workflowInstance.getValue());

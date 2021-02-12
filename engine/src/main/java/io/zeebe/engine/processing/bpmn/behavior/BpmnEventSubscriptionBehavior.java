@@ -232,7 +232,7 @@ public final class BpmnEventSubscriptionBehavior {
       final long elementInstanceKey,
       final WorkflowInstanceRecord eventRecord) {
 
-    streamWriter.appendNewEvent(
+    streamWriter.appendFollowUpEvent(
         elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
 
     stateBehavior.createElementInstanceInFlowScope(context, elementInstanceKey, eventRecord);
@@ -373,7 +373,7 @@ public final class BpmnEventSubscriptionBehavior {
         deferredRecord -> {
           final var elementInstanceKey = deferredRecord.getKey();
 
-          streamWriter.appendNewEvent(
+          streamWriter.appendFollowUpEvent(
               elementInstanceKey,
               WorkflowInstanceIntent.ELEMENT_ACTIVATING,
               deferredRecord.getValue());
@@ -459,7 +459,7 @@ public final class BpmnEventSubscriptionBehavior {
                 final var elementInstanceKey = record.getKey();
                 final var interruptingRecord = record.getValue();
 
-                streamWriter.appendNewEvent(
+                streamWriter.appendFollowUpEvent(
                     elementInstanceKey,
                     WorkflowInstanceIntent.ELEMENT_ACTIVATING,
                     interruptingRecord);

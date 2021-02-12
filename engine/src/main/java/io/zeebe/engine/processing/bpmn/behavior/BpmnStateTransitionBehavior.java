@@ -128,7 +128,7 @@ public final class BpmnStateTransitionBehavior {
             .setElementId(sequenceFlow.getId())
             .setBpmnElementType(sequenceFlow.getElementType());
 
-    streamWriter.appendNewEvent(
+    streamWriter.appendFollowUpEvent(
         keyGenerator.nextKey(), WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
 
     stateBehavior.spawnToken(context);
@@ -146,7 +146,7 @@ public final class BpmnStateTransitionBehavior {
 
     final var childInstanceKey = keyGenerator.nextKey();
 
-    streamWriter.appendNewEvent(
+    streamWriter.appendFollowUpEvent(
         childInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, childInstanceRecord);
 
     stateBehavior.updateElementInstance(context, ElementInstance::spawnToken);
@@ -166,7 +166,7 @@ public final class BpmnStateTransitionBehavior {
 
     final var elementInstanceKey = keyGenerator.nextKey();
 
-    streamWriter.appendNewEvent(
+    streamWriter.appendFollowUpEvent(
         elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, elementInstanceRecord);
 
     stateBehavior.createElementInstanceInFlowScope(

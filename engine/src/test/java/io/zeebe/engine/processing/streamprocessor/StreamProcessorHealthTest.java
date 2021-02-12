@@ -187,7 +187,7 @@ public class StreamProcessorHealthTest {
               mockedLogStreamWriter =
                   new WrappedStreamWriter(processingContext.getLogStreamWriter());
               processingContext.logStreamWriter(mockedLogStreamWriter);
-              return processors(zeebeState.getKeyGenerator())
+              return processors(zeebeState.getKeyGenerator(), processingContext.getWriters())
                   .onEvent(
                       ValueType.WORKFLOW_INSTANCE,
                       ELEMENT_ACTIVATING,
@@ -257,11 +257,6 @@ public class StreamProcessorHealthTest {
     @Override
     public void configureSourceContext(final long sourceRecordPosition) {
       wrappedWriter.configureSourceContext(sourceRecordPosition);
-    }
-
-    @Override
-    public void appendNewEvent(final long key, final Intent intent, final RecordValue value) {
-      wrappedWriter.appendNewEvent(key, intent, value);
     }
 
     @Override

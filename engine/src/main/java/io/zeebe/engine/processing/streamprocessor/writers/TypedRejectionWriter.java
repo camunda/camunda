@@ -7,17 +7,22 @@
  */
 package io.zeebe.engine.processing.streamprocessor.writers;
 
+import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordValue;
-import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.RejectionType;
 import java.util.function.UnaryOperator;
 
-public interface TypedEventWriter {
+public interface TypedRejectionWriter {
 
-  void appendFollowUpEvent(long key, Intent intent, RecordValue value);
+  void appendRejection(
+      TypedRecord<? extends RecordValue> command, RejectionType type, String reason);
 
   /** @deprecated The modifier parameter is not used at the time of writing */
   @Deprecated
-  void appendFollowUpEvent(
-      long key, Intent intent, RecordValue value, UnaryOperator<RecordMetadata> modifier);
+  void appendRejection(
+      TypedRecord<? extends RecordValue> command,
+      RejectionType type,
+      String reason,
+      UnaryOperator<RecordMetadata> modifier);
 }

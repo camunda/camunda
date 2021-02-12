@@ -158,11 +158,6 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
   }
 
   @Override
-  public void appendNewEvent(final long key, final Intent intent, final RecordValue value) {
-    appendRecord(key, RecordType.EVENT, intent, value, NO_MODIFIER);
-  }
-
-  @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
     appendRecord(key, RecordType.EVENT, intent, value, NO_MODIFIER);
   }

@@ -121,7 +121,7 @@ public final class StreamProcessorBuilder {
     Objects.requireNonNull(actorScheduler, "No task scheduler provided.");
     Objects.requireNonNull(processingContext.getLogStream(), "No log stream provided.");
     Objects.requireNonNull(
-        processingContext.getCommandResponseWriter(), "No command response writer provided.");
+        processingContext.getWriters().response(), "No command response writer provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
     Objects.requireNonNull(eventApplierFactory, "No factory for the event supplier provided.");
   }
