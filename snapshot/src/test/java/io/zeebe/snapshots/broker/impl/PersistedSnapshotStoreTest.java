@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
+import io.zeebe.util.sched.ActorScheduler;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,12 +24,19 @@ public class PersistedSnapshotStoreTest {
 
   @Before
   public void before() {
-    final FileBasedSnapshotStoreFactory factory = new FileBasedSnapshotStoreFactory();
+    final FileBasedSnapshotStoreFactory factory =
+        new FileBasedSnapshotStoreFactory(createActorScheduler());
 
     final var partitionName = "1";
     final var root = temporaryFolder.getRoot();
 
     persistedSnapshotStore = factory.createReceivableSnapshotStore(root.toPath(), partitionName);
+  }
+
+  private ActorScheduler createActorScheduler() {
+    final var actorScheduler = ActorScheduler.newActorScheduler().build();
+    actorScheduler.start();
+    return actorScheduler;
   }
 
   @Test

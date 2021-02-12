@@ -38,7 +38,7 @@ public final class AtomixFactoryTest {
 
     // when
     final var atomix =
-        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory());
+        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory(null));
 
     // then
     final var config = getPartitionGroupConfig(atomix);
@@ -53,7 +53,7 @@ public final class AtomixFactoryTest {
 
     // when
     final var atomix =
-        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory());
+        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory(null));
 
     // then
     final var config = getPartitionGroupConfig(atomix);
@@ -68,7 +68,7 @@ public final class AtomixFactoryTest {
 
     // when
     final var atomix =
-        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory());
+        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory(null));
 
     // then
     final var config = getPartitionGroupConfig(atomix);
@@ -83,7 +83,7 @@ public final class AtomixFactoryTest {
 
     // when
     final var atomix =
-        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory());
+        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory(null));
 
     // then
     final var config = getPartitionGroupConfig(atomix);
