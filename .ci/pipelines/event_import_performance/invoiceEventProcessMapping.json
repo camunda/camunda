@@ -43,10 +43,11 @@
     {
       "id": "42cd4c8c-fda9-4cec-8276-54d3c74a57b0",
       "type": "camunda",
-      "configuration":{
-        "eventScope": "all",
+      "configuration": {
+        "eventScope": [
+          "process_instance"
+        ],
         "processDefinitionKey": "invoice",
-        "processDefinitionName": "Invoice Receipt with alternative correlation variable",
         "versions": [
           "all"
         ],
