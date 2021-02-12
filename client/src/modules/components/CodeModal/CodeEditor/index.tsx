@@ -27,7 +27,7 @@ function CodeEditor({contentEditable, initialValue}: Props) {
   useEffect(() => {
     setCodeHTML(
       renderCodeLines(
-        isValidJSON(initialValue)
+        initialValue !== undefined && isValidJSON(initialValue)
           ? createBeautyfiedJSON(initialValue, 2)
           : initialValue
       )

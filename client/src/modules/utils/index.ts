@@ -4,11 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export function isValidJSON(text: any) {
+export function isValidJSON(text: string) {
   try {
     JSON.parse(text);
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }

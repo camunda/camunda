@@ -10,27 +10,29 @@ import {Input} from 'modules/components/Input';
 
 const FiltersForm = styled.form`
   width: 328px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 0 10px;
+  display: grid;
+  grid-template-columns: 17px 1fr 17px;
+  grid-column-gap: 3px;
+  justify-content: center;
+  padding: 0 2px;
 `;
 
 const Row = styled.div`
-  display: flex;
-  margin-right: 20px;
-  margin-left: 20px;
+  grid-column-start: 2;
+  width: 100%;
+  height: fit-content;
 
   &:not(:last-child) {
-    margin-bottom: 20px;
+    padding-bottom: 20px;
   }
 
   &:first-child {
-    margin-top: 20px;
+    padding-top: 20px;
   }
 `;
 
 const VariableRow = styled(Row)`
+  display: flex;
   ${Input} {
     width: 50%;
   }

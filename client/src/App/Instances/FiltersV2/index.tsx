@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import {useRef} from 'react';
 import {Form, Field} from 'react-final-form';
 import {useHistory} from 'react-router-dom';
 
@@ -16,26 +16,18 @@ import Textarea from 'modules/components/Textarea';
 import {Input} from 'modules/components/Input';
 import {CheckboxGroup} from './CheckboxGroup';
 import Button from 'modules/components/Button';
-
-type FieldsType =
-  | 'workflow'
-  | 'workflowVersion'
-  | 'ids'
-  | 'errorMessage'
-  | 'startDate'
-  | 'endDate'
-  | 'flowNodeId'
-  | 'variableName'
-  | 'variableValue'
-  | 'operationId'
-  | 'active'
-  | 'incidents'
-  | 'completed'
-  | 'canceled';
-
-type FiltersType = {
-  [key in FieldsType]?: string;
-};
+import {AutoSubmit} from './AutoSubmit';
+import {isFieldValid} from './isFieldValid';
+import {Error, VariableError} from './Error';
+import {FieldsType, FiltersType} from './types';
+import {
+  submissionValidator,
+  handleIdsFieldValidation,
+  handleStartDateFieldValidation,
+  handleEndDateFieldValidation,
+  handleVariableValueFieldValidation,
+  handleOperationIdFieldValidation,
+} from './validators';
 
 const FIELDS: FieldsType[] = [
   'workflow',
@@ -86,6 +78,9 @@ function parseFilters(filters: FiltersType) {
 
 const Filters: React.FC = () => {
   const history = useHistory();
+  const initialValues = useRef(
+    parseFilters(getFilters(history.location.search, FIELDS))
+  );
 
   function setFiltersToURL(filters: FiltersType = {}) {
     const oldParams = Object.fromEntries(
@@ -115,11 +110,30 @@ const Filters: React.FC = () => {
 
   return (
     <Form<FiltersType>
-      onSubmit={setFiltersToURL}
-      initialValues={parseFilters(getFilters(history.location.search, FIELDS))}
+      onSubmit={(values) => {
+        const errors = submissionValidator(values);
+
+        if (errors !== null) {
+          return errors;
+        }
+
+        setFiltersToURL(values);
+      }}
+      initialValues={initialValues.current}
     >
       {({handleSubmit, pristine, form}) => (
         <FiltersForm onSubmit={handleSubmit}>
+          <AutoSubmit
+            fieldsToSkipTimeout={[
+              'workflow',
+              'workflowVersion',
+              'flowNodeId',
+              'active',
+              'incidents',
+              'completed',
+              'canceled',
+            ]}
+          />
           <Row>
             <WorkflowField />
           </Row>
@@ -127,53 +141,88 @@ const Filters: React.FC = () => {
             <WorkflowVersionField />
           </Row>
           <Row>
-            <Field name="ids">
-              {({input}) => (
+            <Field name="ids" validate={handleIdsFieldValidation}>
+              {({input, meta}) => (
                 <Textarea
                   {...input}
+                  aria-invalid={!isFieldValid(meta)}
                   placeholder="Instance Id(s) separated by space or comma"
                 />
               )}
             </Field>
           </Row>
+          <Error name="ids" />
           <Row>
             <Field name="errorMessage">
               {({input}) => <Input {...input} placeholder="Error Message" />}
             </Field>
           </Row>
           <Row>
-            <Field name="startDate">
-              {({input}) => (
+            <Field name="startDate" validate={handleStartDateFieldValidation}>
+              {({input, meta}) => (
                 <Input
                   {...input}
+                  aria-invalid={!isFieldValid(meta)}
                   placeholder="Start Date YYYY-MM-DD hh:mm:ss"
                 />
               )}
             </Field>
           </Row>
+          <Error name="startDate" />
           <Row>
-            <Field name="endDate">
-              {({input}) => (
-                <Input {...input} placeholder="End Date YYYY-MM-DD hh:mm:ss" />
+            <Field name="endDate" validate={handleEndDateFieldValidation}>
+              {({input, meta}) => (
+                <Input
+                  {...input}
+                  aria-invalid={!isFieldValid(meta)}
+                  placeholder="End Date YYYY-MM-DD hh:mm:ss"
+                />
               )}
             </Field>
           </Row>
+          <Error name="endDate" />
           <Row>
             <FlowNodeField />
           </Row>
           <VariableRow>
             <Field name="variableName">
-              {({input}) => <Input {...input} placeholder="Variable" />}
+              {({input, meta}) => (
+                <Input
+                  {...input}
+                  aria-invalid={!isFieldValid(meta)}
+                  placeholder="Variable"
+                />
+              )}
             </Field>
-            <Field name="variableValue">
-              {({input}) => <Input {...input} placeholder="Value" />}
+            <Field
+              name="variableValue"
+              validate={handleVariableValueFieldValidation}
+            >
+              {({input, meta}) => (
+                <Input
+                  {...input}
+                  aria-invalid={!isFieldValid(meta)}
+                  placeholder="Value"
+                />
+              )}
             </Field>
           </VariableRow>
+          <VariableError names={['variableName', 'variableValue']} />
           <Row>
-            <Field name="operationId">
-              {({input}) => <Input {...input} placeholder="Operation Id" />}
+            <Field
+              name="operationId"
+              validate={handleOperationIdFieldValidation}
+            >
+              {({input, meta}) => (
+                <Input
+                  {...input}
+                  aria-invalid={!isFieldValid(meta)}
+                  placeholder="Operation Id"
+                />
+              )}
             </Field>
           </Row>
+          <Error name="operationId" />
           <Row>
             <CheckboxGroup
               groupLabel="Running Instances"
@@ -205,7 +254,6 @@ const Filters: React.FC = () => {
             />
           </Row>
           <Row>
-            <button type="submit">Filter</button>
             <Button
               title="Reset filters"
               size="small"
