@@ -16,12 +16,15 @@
 package io.atomix.raft.snapshot;
 
 import io.atomix.utils.time.WallClockTimestamp;
+import io.zeebe.snapshots.broker.SnapshotId;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.ReceivedSnapshot;
 import io.zeebe.snapshots.raft.SnapshotChunk;
 import io.zeebe.snapshots.raft.SnapshotChunkReader;
 import io.zeebe.util.StringUtil;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -38,7 +41,6 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
   private final WallClockTimestamp timestamp;
   private final String id;
   private final NavigableMap<String, String> chunks = new TreeMap<>();
-  private ByteBuffer nextExpected;
 
   InMemorySnapshot(final TestSnapshotStore testSnapshotStore, final String snapshotId) {
     this.testSnapshotStore = testSnapshotStore;
@@ -58,7 +60,7 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
     this.index = index;
     this.term = term;
     this.timestamp = timestamp;
-    this.id = String.format("%d-%d-%d", index, term, timestamp.unixTimestamp());
+    id = String.format("%d-%d-%d", index, term, timestamp.unixTimestamp());
   }
 
   public static InMemorySnapshot newPersistedSnapshot(
@@ -161,33 +163,55 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
   }
 
   @Override
-  public boolean containsChunk(final ByteBuffer chunkId) {
-    return chunks.containsKey(BufferUtil.bufferAsString(new UnsafeBuffer(chunkId)));
-  }
-
-  @Override
-  public boolean isExpectedChunk(final ByteBuffer chunkId) {
-    return chunkId.equals(nextExpected);
-  }
-
-  @Override
-  public void setNextExpected(final ByteBuffer nextChunkId) {
-    nextExpected = nextChunkId;
-  }
-
-  @Override
-  public boolean apply(final SnapshotChunk chunk) throws IOException {
+  public ActorFuture<Boolean> apply(final SnapshotChunk chunk) throws IOException {
     chunks.put(chunk.getChunkName(), StringUtil.fromBytes(chunk.getContent()));
-    return true;
+    return CompletableActorFuture.completed(true);
   }
 
   @Override
-  public void abort() {}
+  public ActorFuture<Void> abort() {
+    return CompletableActorFuture.completed(null);
+  }
 
   @Override
-  public PersistedSnapshot persist() {
+  public ActorFuture<PersistedSnapshot> persist() {
     testSnapshotStore.newSnapshot(this);
-    return this;
+    return CompletableActorFuture.completed(this);
+  }
+
+  @Override
+  public SnapshotId snapshotId() {
+    return new SnapshotId() {
+      @Override
+      public long getIndex() {
+        return index;
+      }
+
+      @Override
+      public long getTerm() {
+        return term;
+      }
+
+      @Override
+      public long getProcessedPosition() {
+        return 0;
+      }
+
+      @Override
+      public long getExportedPosition() {
+        return 0;
+      }
+
+      @Override
+      public WallClockTimestamp getTimestamp() {
+        return timestamp;
+      }
+
+      @Override
+      public String getSnapshotIdAsString() {
+        return id;
+      }
+    };
   }
 
   @Override

@@ -9,15 +9,18 @@ package io.zeebe.snapshots.broker.impl;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
+import io.zeebe.snapshots.broker.SnapshotId;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.ReceivedSnapshot;
 import io.zeebe.snapshots.raft.SnapshotChunk;
 import io.zeebe.util.ChecksumUtil;
 import io.zeebe.util.FileUtil;
+import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -25,7 +28,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,9 +38,9 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private static final boolean SUCCESS = true;
 
   private final Path directory;
+  private final ActorControl actor;
   private final FileBasedSnapshotStore snapshotStore;
 
-  private ByteBuffer expectedId;
   private final FileBasedSnapshotMetadata metadata;
   private long expectedSnapshotChecksum;
   private int expectedTotalCount;
@@ -46,10 +48,12 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   FileBasedReceivedSnapshot(
       final FileBasedSnapshotMetadata metadata,
       final Path directory,
-      final FileBasedSnapshotStore snapshotStore) {
+      final FileBasedSnapshotStore snapshotStore,
+      final ActorControl actor) {
     this.metadata = metadata;
     this.snapshotStore = snapshotStore;
     this.directory = directory;
+    this.actor = actor;
     expectedSnapshotChecksum = Long.MIN_VALUE;
     expectedTotalCount = Integer.MIN_VALUE;
   }
@@ -60,26 +64,19 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   @Override
-  public boolean containsChunk(final ByteBuffer chunkId) {
-    return Files.exists(directory.resolve(getFile(chunkId)));
+  public ActorFuture<Boolean> apply(final SnapshotChunk snapshotChunk) throws IOException {
+    return actor.call(() -> applyInternal(snapshotChunk));
   }
 
-  @Override
-  public boolean isExpectedChunk(final ByteBuffer chunkId) {
-    if (expectedId == null) {
-      return chunkId == null;
+  private boolean containsChunk(final String chunkId) {
+    return Files.exists(directory.resolve(chunkId));
+  }
+
+  private boolean applyInternal(final SnapshotChunk snapshotChunk) throws IOException {
+    if (containsChunk(snapshotChunk.getChunkName())) {
+      return true;
     }
 
-    return expectedId.equals(chunkId);
-  }
-
-  @Override
-  public void setNextExpected(final ByteBuffer nextChunkId) {
-    expectedId = nextChunkId;
-  }
-
-  @Override
-  public boolean apply(final SnapshotChunk snapshotChunk) throws IOException {
     final var currentSnapshotChecksum = snapshotChunk.getSnapshotChecksum();
 
     if (isSnapshotIdInvalid(snapshotChunk.getSnapshotId())) {
@@ -106,16 +103,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       return SUCCESS;
     }
 
-    final long expectedChecksum = snapshotChunk.getChecksum();
-    final long actualChecksum = SnapshotChunkUtil.createChecksum(snapshotChunk.getContent());
-
-    if (expectedChecksum != actualChecksum) {
-      LOGGER.warn(
-          "Expected to have checksum {} for snapshot chunk {} ({}), but calculated {}",
-          expectedChecksum,
-          chunkName,
-          snapshotId,
-          actualChecksum);
+    if (isChunkChecksumInvalid(snapshotChunk, snapshotId, chunkName)) {
       return FAILED;
     }
 
@@ -130,6 +118,23 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
     LOGGER.debug("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
     return writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
+  }
+
+  private boolean isChunkChecksumInvalid(
+      final SnapshotChunk snapshotChunk, final String snapshotId, final String chunkName) {
+    final long expectedChecksum = snapshotChunk.getChecksum();
+    final long actualChecksum = SnapshotChunkUtil.createChecksum(snapshotChunk.getContent());
+
+    if (expectedChecksum != actualChecksum) {
+      LOGGER.warn(
+          "Expected to have checksum {} for snapshot chunk {} ({}), but calculated {}",
+          expectedChecksum,
+          chunkName,
+          snapshotId,
+          actualChecksum);
+      return true;
+    }
+    return false;
   }
 
   private boolean isSnapshotChecksumInvalid(final long currentSnapshotChecksum) {
@@ -178,7 +183,29 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   @Override
-  public void abort() {
+  public ActorFuture<Void> abort() {
+    final CompletableActorFuture<Void> abortFuture = new CompletableActorFuture<>();
+    actor.run(
+        () -> {
+          abortInternal();
+          abortFuture.complete(null);
+        });
+    return abortFuture;
+  }
+
+  @Override
+  public ActorFuture<PersistedSnapshot> persist() {
+    final CompletableActorFuture<PersistedSnapshot> future = new CompletableActorFuture<>();
+    actor.call(() -> persistInternal(future));
+    return future;
+  }
+
+  @Override
+  public SnapshotId snapshotId() {
+    return metadata;
+  }
+
+  private void abortInternal() {
     try {
       LOGGER.debug("DELETE dir {}", directory);
       FileUtil.deleteFolder(directory);
@@ -189,52 +216,70 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
           nsfe);
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete pending snapshot {}", this, e);
+    } finally {
+      snapshotStore.removePendingSnapshot(this);
     }
   }
 
-  @Override
-  public PersistedSnapshot persist() {
+  private void persistInternal(final CompletableActorFuture<PersistedSnapshot> future) {
     if (snapshotStore.hasSnapshotId(metadata.getSnapshotIdAsString())) {
-      abort();
-      return snapshotStore.getLatestSnapshot().orElseThrow();
+      abortInternal();
+      future.complete(snapshotStore.getLatestSnapshot().orElseThrow());
+      return;
     }
 
     final var files = directory.toFile().listFiles();
-    Objects.requireNonNull(files, "No chunks have been applied yet");
+    try {
+      Objects.requireNonNull(files, "No chunks have been applied yet");
+    } catch (final Exception e) {
+      future.completeExceptionally(e);
+      return;
+    }
 
     if (files.length != expectedTotalCount) {
-      throw new IllegalStateException(
-          String.format(
-              "Expected '%d' chunk files for this snapshot, but found '%d'. Files are: %s.",
-              expectedSnapshotChecksum, files.length, Arrays.toString(files)));
+      future.completeExceptionally(
+          new IllegalStateException(
+              String.format(
+                  "Expected '%d' chunk files for this snapshot, but found '%d'. Files are: %s.",
+                  expectedSnapshotChecksum, files.length, Arrays.toString(files))));
+      return;
     }
 
     final var filePaths =
         Arrays.stream(files).sorted().map(File::toPath).collect(Collectors.toList());
+    if (!verifyChecksums(future, filePaths)) {
+      return;
+    }
+
+    try {
+      final PersistedSnapshot value = snapshotStore.newSnapshot(metadata, directory);
+      future.complete(value);
+    } catch (final Exception e) {
+      future.completeExceptionally(e);
+    }
+  }
+
+  private boolean verifyChecksums(
+      final CompletableActorFuture<PersistedSnapshot> future,
+      final java.util.List<Path> filePaths) {
     final long actualSnapshotChecksum;
     try {
       actualSnapshotChecksum = ChecksumUtil.createCombinedChecksum(filePaths);
     } catch (final IOException e) {
-      throw new UncheckedIOException("Unexpected exception on calculating snapshot checksum.", e);
+      future.completeExceptionally(
+          new UncheckedIOException("Unexpected exception on calculating snapshot checksum.", e));
+      return false;
     }
 
     if (actualSnapshotChecksum != expectedSnapshotChecksum) {
-      throw new IllegalStateException(
-          String.format(
-              "Expected snapshot checksum %d, but calculated %d.",
-              expectedSnapshotChecksum, actualSnapshotChecksum));
+      future.completeExceptionally(
+          new IllegalStateException(
+              String.format(
+                  "Expected snapshot checksum %d, but calculated %d.",
+                  expectedSnapshotChecksum, actualSnapshotChecksum)));
+      return false;
     }
-
-    return snapshotStore.newSnapshot(metadata, directory);
-  }
-
-  public Path getPath() {
-    return directory;
-  }
-
-  private String getFile(final ByteBuffer chunkId) {
-    final var view = new UnsafeBuffer(chunkId);
-    return view.getStringWithoutLengthAscii(0, chunkId.remaining());
+    return true;
   }
 
   @Override
@@ -244,8 +289,6 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         + directory
         + ", snapshotStore="
         + snapshotStore
-        + ", expectedId="
-        + expectedId
         + ", metadata="
         + metadata
         + '}';

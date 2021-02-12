@@ -68,7 +68,7 @@ public final class AsyncSnapshotingTest {
   @Before
   public void setup() throws IOException {
     final var rootDirectory = tempFolderRule.getRoot().toPath();
-    final var factory = new FileBasedSnapshotStoreFactory();
+    final var factory = new FileBasedSnapshotStoreFactory(actorSchedulerRule.get());
     final String partitionName = "1";
     factory.createReceivableSnapshotStore(rootDirectory, partitionName);
     persistedSnapshotStore = factory.getConstructableSnapshotStore(partitionName);

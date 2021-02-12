@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.util.FileUtil;
+import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -38,7 +39,7 @@ public class FileBasedSnapshotStoreTest {
 
   @Before
   public void before() {
-    factory = new FileBasedSnapshotStoreFactory();
+    factory = new FileBasedSnapshotStoreFactory(createActorScheduler());
     partitionName = "1";
     root = temporaryFolder.getRoot();
 
@@ -51,6 +52,12 @@ public class FileBasedSnapshotStoreTest {
             .resolve(FileBasedSnapshotStoreFactory.SNAPSHOTS_DIRECTORY);
     pendingSnapshotsDir =
         temporaryFolder.getRoot().toPath().resolve(FileBasedSnapshotStoreFactory.PENDING_DIRECTORY);
+  }
+
+  private ActorScheduler createActorScheduler() {
+    final var actorScheduler = ActorScheduler.newActorScheduler().build();
+    actorScheduler.start();
+    return actorScheduler;
   }
 
   @Test
@@ -67,7 +74,7 @@ public class FileBasedSnapshotStoreTest {
     // given
 
     // when
-    factory.getPersistedSnapshotStore(partitionName).delete();
+    factory.getPersistedSnapshotStore(partitionName).delete().join();
 
     // then
     assertThat(pendingSnapshotsDir).doesNotExist();
@@ -85,11 +92,11 @@ public class FileBasedSnapshotStoreTest {
             .newTransientSnapshot(index, term, 1, 0)
             .orElseThrow();
     transientSnapshot.take(this::createSnapshotDir);
-    final var persistedSnapshot = transientSnapshot.persist();
+    final var persistedSnapshot = transientSnapshot.persist().join();
 
     // when
     final var snapshotStore =
-        new FileBasedSnapshotStoreFactory()
+        new FileBasedSnapshotStoreFactory(createActorScheduler())
             .createReceivableSnapshotStore(root.toPath(), partitionName);
 
     // then
@@ -121,7 +128,7 @@ public class FileBasedSnapshotStoreTest {
 
     // when
     final var snapshotStore =
-        new FileBasedSnapshotStoreFactory()
+        new FileBasedSnapshotStoreFactory(createActorScheduler())
             .createReceivableSnapshotStore(root.toPath(), partitionName);
 
     // then
