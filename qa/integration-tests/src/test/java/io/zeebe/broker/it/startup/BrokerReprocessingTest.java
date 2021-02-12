@@ -168,19 +168,16 @@ public final class BrokerReprocessingTest {
         .send()
         .join();
 
-    assertJobCreated("foo");
+    final var jobFoo = RecordingExporter.jobRecords(JobIntent.CREATED).withType("foo").getFirst();
 
     // when
     reprocessingTrigger.accept(this);
-
     clientRule
         .getClient()
-        .newWorker()
-        .jobType("foo")
-        .handler(
-            (client, job) ->
-                client.newCompleteCommand(job.getKey()).variables(NULL_VARIABLES).send())
-        .open();
+        .newCompleteCommand(jobFoo.getKey())
+        .variables(NULL_VARIABLES)
+        .send()
+        .join();
 
     // then
     assertJobCompleted();
