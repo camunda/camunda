@@ -95,8 +95,10 @@ public final class ProcessingStateMachine {
       "Expected to process event '{}' successfully on stream processor, but caught recoverable exception. Retry processing.";
   private static final String PROCESSING_ERROR_MESSAGE =
       "Expected to process event '%s' without errors, but exception occurred with message '%s' .";
-  private static final String NOTIFY_LISTENER_ERROR_MESSAGE =
-      "Expected to invoke processed listener for event {} successfully, but exception was thrown.";
+  private static final String NOTIFY_PROCESSED_LISTENER_ERROR_MESSAGE =
+      "Expected to invoke processed listener for record {} successfully, but exception was thrown.";
+  private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
+      "Expected to invoke skipped listener for record {} successfully, but exception was thrown.";
 
   private static final String LOG_ERROR_EVENT_COMMITTED =
       "Error event was committed, we continue with processing.";
@@ -132,7 +134,8 @@ public final class ProcessingStateMachine {
   private final RecordProcessorMap recordProcessorMap;
   private final TypedEventImpl typedEvent;
   private final StreamProcessorMetrics metrics;
-  private final Consumer<TypedRecord> onProcessed;
+  private final Consumer<TypedRecord> onProcessedListener;
+  private final Consumer<LoggedEvent> onSkippedListener;
 
   // current iteration
   private SideEffectProducer sideEffectProducer;
@@ -173,10 +176,12 @@ public final class ProcessingStateMachine {
     responseWriter = new TypedResponseWriterImpl(context.getCommandResponseWriter(), partitionId);
 
     metrics = new StreamProcessorMetrics(partitionId);
-    onProcessed = context.getOnProcessedListener();
+    onProcessedListener = context.getOnProcessedListener();
+    onSkippedListener = context.getOnSkippedListener();
   }
 
   private void skipRecord() {
+    notifySkippedListener(currentEvent);
     actor.submit(this::readNextEvent);
     metrics.eventSkipped();
   }
@@ -437,14 +442,6 @@ public final class ProcessingStateMachine {
         });
   }
 
-  private void notifyListener() {
-    try {
-      onProcessed.accept(typedEvent);
-    } catch (final Exception e) {
-      LOG.error(NOTIFY_LISTENER_ERROR_MESSAGE, currentEvent, e);
-    }
-  }
-
   private void executeSideEffects() {
     final ActorFuture<Boolean> retryFuture =
         sideEffectsRetryStrategy.runWithRetry(sideEffectProducer::flush, abortCondition);
@@ -456,7 +453,7 @@ public final class ProcessingStateMachine {
             LOG.error(ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED, currentEvent, throwable);
           }
 
-          notifyListener();
+          notifyProcessedListener(typedEvent);
 
           metrics.processingDuration(
               metadata.getRecordType(), processingStartTime, ActorClock.currentTimeMillis());
@@ -464,6 +461,22 @@ public final class ProcessingStateMachine {
           currentProcessor = null;
           actor.submit(this::readNextEvent);
         });
+  }
+
+  private void notifyProcessedListener(final TypedRecord processedRecord) {
+    try {
+      onProcessedListener.accept(processedRecord);
+    } catch (final Exception e) {
+      LOG.error(NOTIFY_PROCESSED_LISTENER_ERROR_MESSAGE, processedRecord, e);
+    }
+  }
+
+  private void notifySkippedListener(final LoggedEvent skippedRecord) {
+    try {
+      onSkippedListener.accept(skippedRecord);
+    } catch (final Exception e) {
+      LOG.error(NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE, skippedRecord, e);
+    }
   }
 
   public long getLastSuccessfulProcessedEventPosition() {

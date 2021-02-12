@@ -187,6 +187,10 @@ public final class StreamProcessorRule implements TestRule {
     return streamProcessingComposite.getLastSuccessfulProcessedRecordPosition();
   }
 
+  public long getLastWrittenPosition(final int partitionId) {
+    return streams.getLastWrittenPosition(getLogName(partitionId));
+  }
+
   public RecordStream events() {
     return new RecordStream(streams.events(getLogName(startPartitionId)));
   }
