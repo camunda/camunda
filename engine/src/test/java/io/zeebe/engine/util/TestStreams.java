@@ -137,7 +137,7 @@ public final class TestStreams {
         logStream -> listLogStorage.setPositionListener(logStream::setCommitPosition));
   }
 
-  public SynchronousLogStream createLogStream(
+  private SynchronousLogStream createLogStream(
       final String name,
       final int partitionId,
       final LogStorage logStorage,
@@ -157,6 +157,11 @@ public final class TestStreams {
     closeables.manage(logContext);
     closeables.manage(() -> logContextMap.remove(name));
     return logStream;
+  }
+
+  public long getLastWrittenPosition(final String name) {
+    // the position of a written record is directly committed, we can use it as a synonym
+    return getLogStream(name).getCommitPosition();
   }
 
   public SynchronousLogStream getLogStream(final String name) {

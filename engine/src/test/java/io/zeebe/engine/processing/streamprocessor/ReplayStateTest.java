@@ -28,12 +28,17 @@ import org.junit.Test;
 
 public final class ReplayStateTest {
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule
+  public final EngineRule engine =
+      EngineRule.singlePartition()
+          .withOnProcessedCallback(record -> lastProcessedPosition = record.getPosition())
+          .withOnSkippedCallback(record -> lastProcessedPosition = record.getPosition());
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
+  private long lastProcessedPosition = -1L;
   private long workflowInstanceKey;
   private Map<ZbColumnFamilies, Map<Object, Object>> processingState;
 
@@ -57,12 +62,7 @@ public final class ReplayStateTest {
     final var jobCreated = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
 
     Awaitility.await("await until the last record is processed")
-        .untilAsserted(
-            () -> {
-              final var processedPosition =
-                  engine.getStreamProcessor(1).getLastProcessedPositionAsync().join();
-              assertThat(processedPosition).isEqualTo(jobCreated.getPosition());
-            });
+        .untilAsserted(() -> assertThat(lastProcessedPosition).isEqualTo(jobCreated.getPosition()));
 
     processingState = engine.collectState();
     engine.stop();
@@ -109,15 +109,19 @@ public final class ReplayStateTest {
 
     final var softly = new SoftAssertions();
 
-    processingState.forEach(
-        (column, processingEntries) -> {
-          final var replayEntries = replayState.get(column);
+    processingState.entrySet().stream()
+        .filter(entry -> entry.getKey() != ZbColumnFamilies.DEFAULT)
+        .forEach(
+            entry -> {
+              final var column = entry.getKey();
+              final var processingEntries = entry.getValue();
+              final var replayEntries = replayState.get(column);
 
-          softly
-              .assertThat(replayEntries)
-              .describedAs("The state column '%s' has different entries after replay", column)
-              .containsExactlyInAnyOrderEntriesOf(processingEntries);
-        });
+              softly
+                  .assertThat(replayEntries)
+                  .describedAs("The state column '%s' has different entries after replay", column)
+                  .containsExactlyInAnyOrderEntriesOf(processingEntries);
+            });
 
     softly.assertAll();
   }

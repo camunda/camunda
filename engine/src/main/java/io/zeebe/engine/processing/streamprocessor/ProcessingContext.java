@@ -18,6 +18,7 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.util.sched.ActorControl;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -38,6 +39,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   private BooleanSupplier abortCondition;
   private Consumer<TypedRecord> onProcessedListener = record -> {};
+  private Consumer<LoggedEvent> onSkippedListener = record -> {};
   private int maxFragmentSize;
   private boolean detectReprocessingInconsistency;
 
@@ -94,6 +96,11 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public ProcessingContext onProcessedListener(final Consumer<TypedRecord> onProcessedListener) {
     this.onProcessedListener = onProcessedListener;
+    return this;
+  }
+
+  public ProcessingContext onSkippedListener(final Consumer<LoggedEvent> onSkippedListener) {
+    this.onSkippedListener = onSkippedListener;
     return this;
   }
 
@@ -178,6 +185,10 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public Consumer<TypedRecord> getOnProcessedListener() {
     return onProcessedListener;
+  }
+
+  public Consumer<LoggedEvent> getOnSkippedListener() {
+    return onSkippedListener;
   }
 
   public boolean isDetectReprocessingInconsistency() {

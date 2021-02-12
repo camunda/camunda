@@ -24,6 +24,7 @@ import io.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.streamprocessor.TypedEventImpl;
+import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
@@ -89,6 +90,8 @@ public final class EngineRule extends ExternalResource {
   private final int partitionCount;
   private final boolean explicitStart;
   private Consumer<String> jobsAvailableCallback = type -> {};
+  private Consumer<TypedRecord> onProcessedCallback = record -> {};
+  private Consumer<LoggedEvent> onSkippedCallback = record -> {};
   private DeploymentDistributor deploymentDistributor = new DeploymentDistributionImpl();
 
   private final Int2ObjectHashMap<SubscriptionCommandMessageHandler> subscriptionHandlers =
@@ -166,6 +169,16 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withOnProcessedCallback(final Consumer<TypedRecord> onProcessedCallback) {
+    this.onProcessedCallback = onProcessedCallback;
+    return this;
+  }
+
+  public EngineRule withOnSkippedCallback(final Consumer<LoggedEvent> onSkippedCallback) {
+    this.onSkippedCallback = onSkippedCallback;
+    return this;
+  }
+
   private void startProcessors() {
     startProcessors(false);
   }
@@ -187,7 +200,9 @@ public final class EngineRule extends ExternalResource {
               partitionId,
               (processingContext) ->
                   EngineProcessors.createEngineProcessors(
-                          processingContext,
+                          processingContext
+                              .onProcessedListener(onProcessedCallback)
+                              .onSkippedListener(onSkippedCallback),
                           partitionCount,
                           new SubscriptionCommandSender(
                               partitionId, new PartitionCommandSenderImpl()),
@@ -261,6 +276,10 @@ public final class EngineRule extends ExternalResource {
 
   public StreamProcessor getStreamProcessor(final int partitionId) {
     return environmentRule.getStreamProcessor(partitionId);
+  }
+
+  public long getLastWrittenPosition(final int partitionId) {
+    return environmentRule.getLastWrittenPosition(partitionId);
   }
 
   public DeploymentClient deployment() {
