@@ -25,12 +25,14 @@ import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -150,6 +152,49 @@ public final class CreateDeploymentTest {
         .extracting(DeploymentResource::getResource)
         .contains(
             Bpmn.convertToString(WORKFLOW).getBytes(), Bpmn.convertToString(WORKFLOW_2).getBytes());
+  }
+
+  @Test
+  public void shouldWriteWorkflowRecordsOnDeployment() {
+    // given
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource("process.bpmn", WORKFLOW)
+            .withXmlResource("process2.bpmn", WORKFLOW_2)
+            .deploy()
+            .getValue();
+
+    // then
+    final var workflowKeyList =
+        deployment.getDeployedWorkflows().stream()
+            .map(DeployedWorkflow::getWorkflowKey)
+            .collect(Collectors.toList());
+
+    final var workflowRecordKeys =
+        RecordingExporter.workflowRecords()
+            .limit(2)
+            .map(Record::getKey)
+            .collect(Collectors.toList());
+    assertThat(workflowKeyList).hasSameElementsAs(workflowRecordKeys);
+
+    final var firstWorkflowRecord =
+        RecordingExporter.workflowRecords().withBpmnProcessId(PROCESS_ID).getFirst();
+    assertThat(firstWorkflowRecord).isNotNull();
+    assertThat(firstWorkflowRecord.getValue().getResourceName()).isEqualTo("process.bpmn");
+    assertThat(firstWorkflowRecord.getValue().getVersion()).isEqualTo(1);
+    assertThat(firstWorkflowRecord.getKey())
+        .isEqualTo(firstWorkflowRecord.getValue().getWorkflowKey());
+
+    final var secondWorkflowRecord =
+        RecordingExporter.workflowRecords().withBpmnProcessId(PROCESS_ID_2).getFirst();
+    assertThat(secondWorkflowRecord).isNotNull();
+    assertThat(secondWorkflowRecord.getValue().getResourceName()).isEqualTo("process2.bpmn");
+    assertThat(secondWorkflowRecord.getValue().getVersion()).isEqualTo(1);
+    assertThat(secondWorkflowRecord.getKey())
+        .isEqualTo(secondWorkflowRecord.getValue().getWorkflowKey());
   }
 
   @Test

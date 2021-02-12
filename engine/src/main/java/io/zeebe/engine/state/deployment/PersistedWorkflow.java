@@ -14,7 +14,7 @@ import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
-import io.zeebe.protocol.impl.record.value.deployment.Workflow;
+import io.zeebe.protocol.impl.record.value.deployment.WorkflowRecord;
 import org.agrona.DirectBuffer;
 
 public final class PersistedWorkflow extends UnpackedObject implements DbValue {
@@ -32,13 +32,25 @@ public final class PersistedWorkflow extends UnpackedObject implements DbValue {
         .declareProperty(resourceProp);
   }
 
+  @Deprecated
   public void wrap(
-      final DeploymentResource resource, final Workflow workflow, final long workflowKey) {
-    bpmnProcessIdProp.setValue(workflow.getBpmnProcessIdBuffer());
+      final DeploymentResource resource,
+      final WorkflowRecord workflowRecord,
+      final long workflowKey) {
+    bpmnProcessIdProp.setValue(workflowRecord.getBpmnProcessIdBuffer());
     resourceNameProp.setValue(resource.getResourceNameBuffer());
     resourceProp.setValue(resource.getResourceBuffer());
 
-    versionProp.setValue(workflow.getVersion());
+    versionProp.setValue(workflowRecord.getVersion());
+    keyProp.setValue(workflowKey);
+  }
+
+  public void wrap(final WorkflowRecord workflowRecord, final long workflowKey) {
+    bpmnProcessIdProp.setValue(workflowRecord.getBpmnProcessIdBuffer());
+    resourceNameProp.setValue(workflowRecord.getResourceNameBuffer());
+    resourceProp.setValue(workflowRecord.getResourceBuffer());
+
+    versionProp.setValue(workflowRecord.getVersion());
     keyProp.setValue(workflowKey);
   }
 

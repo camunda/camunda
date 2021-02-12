@@ -122,6 +122,8 @@ public final class JsonSerializableToJsonTest {
               final String bpmnProcessId = "testProcess";
               final long workflowKey = 123;
               final int workflowVersion = 12;
+              final DirectBuffer checksum = wrapString("checksum");
+
               final DeploymentRecord record = new DeploymentRecord();
               record
                   .resources()
@@ -135,7 +137,9 @@ public final class JsonSerializableToJsonTest {
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setKey(workflowKey)
                   .setResourceName(wrapString(resourceName))
-                  .setVersion(workflowVersion);
+                  .setVersion(workflowVersion)
+                  .setChecksum(checksum)
+                  .setResource(resource);
 
               final int key = 1234;
               final int position = 4321;
@@ -145,7 +149,7 @@ public final class JsonSerializableToJsonTest {
               return new CopiedRecord<>(
                   record, recordMetadata, key, 0, position, sourcePosition, timestamp);
             },
-        "{'partitionId':0,'recordType':'COMMAND','intent':'CREATE','valueType':'DEPLOYMENT','rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','key':1234,'position':4321,'sourceRecordPosition':231,'value':{'deployedWorkflows':[{'bpmnProcessId':'testProcess','version':12,'resourceName':'resource','workflowKey':123}],'resources':[{'resourceName':'resource','resourceType':'BPMN_XML','resource':'Y29udGVudHM='}]},'timestamp':2191, 'brokerVersion':'1.2.3'}"
+        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','sourceRecordPosition':231,'value':{'deployedWorkflows':[{'resource':'Y29udGVudHM=','version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','workflowKey':123}],'resources':[{'resourceName':'resource','resourceType':'BPMN_XML','resource':'Y29udGVudHM='}]}}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// DeploymentRecord ///////////////////////////////////////
@@ -160,6 +164,7 @@ public final class JsonSerializableToJsonTest {
               final String bpmnProcessId = "testProcess";
               final long workflowKey = 123;
               final int workflowVersion = 12;
+              final DirectBuffer checksum = wrapString("checksum");
               final DeploymentRecord record = new DeploymentRecord();
               record
                   .resources()
@@ -173,10 +178,12 @@ public final class JsonSerializableToJsonTest {
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setKey(workflowKey)
                   .setResourceName(wrapString(resourceName))
-                  .setVersion(workflowVersion);
+                  .setVersion(workflowVersion)
+                  .setChecksum(checksum)
+                  .setResource(resource);
               return record;
             },
-        "{'resources':[{'resourceType':'BPMN_XML','resourceName':'resource','resource':'Y29udGVudHM='}],'deployedWorkflows':[{'bpmnProcessId':'testProcess','version':12,'workflowKey':123,'resourceName':'resource'}]}"
+        "{'resources':[{'resourceType':'BPMN_XML','resourceName':'resource','resource':'Y29udGVudHM='}],'deployedWorkflows':[{'resource':'Y29udGVudHM=','checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'workflowKey':123,'resourceName':'resource'}]}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// Empty DeploymentRecord /////////////////////////////////

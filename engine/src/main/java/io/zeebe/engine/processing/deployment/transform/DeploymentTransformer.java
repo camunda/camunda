@@ -12,6 +12,7 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.deployment.model.BpmnFactory;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
@@ -22,6 +23,7 @@ import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.WorkflowIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -47,9 +49,13 @@ public final class DeploymentTransformer {
   // internal changes during processing
   private RejectionType rejectionType;
   private String rejectionReason;
+  private final StateWriter stateWriter;
 
   public DeploymentTransformer(
-      final ZeebeState zeebeState, final ExpressionProcessor expressionProcessor) {
+      final StateWriter stateWriter,
+      final ZeebeState zeebeState,
+      final ExpressionProcessor expressionProcessor) {
+    this.stateWriter = stateWriter;
     workflowState = zeebeState.getWorkflowState();
     keyGenerator = zeebeState.getKeyGenerator();
     validator = BpmnFactory.createValidator(expressionProcessor);
@@ -157,7 +163,7 @@ public final class DeploymentTransformer {
         final String bpmnProcessId = workflow.getId();
         final DeployedWorkflow lastWorkflow =
             workflowState.getLatestWorkflowVersionByProcessId(BufferUtil.wrapString(bpmnProcessId));
-        final long key;
+        final long workflowKey;
         final int version;
 
         final DirectBuffer lastDigest =
@@ -166,21 +172,27 @@ public final class DeploymentTransformer {
             new UnsafeBuffer(digestGenerator.digest(deploymentResource.getResource()));
 
         if (isDuplicateOfLatest(deploymentResource, resourceDigest, lastWorkflow, lastDigest)) {
-          key = lastWorkflow.getKey();
+          workflowKey = lastWorkflow.getKey();
           version = lastWorkflow.getVersion();
         } else {
-          key = keyGenerator.nextKey();
+          workflowKey = keyGenerator.nextKey();
+          // TODO(zell): after migrating all deployment processors to new event sourcing model we
+          // can remove this from here
+          // we should then get here the next version, but not changing the state
           version = workflowState.incrementAndGetWorkflowVersion(bpmnProcessId);
           workflowState.putLatestVersionDigest(wrapString(bpmnProcessId), resourceDigest);
         }
 
-        deploymentEvent
-            .workflows()
-            .add()
+        final var workflowRecord = deploymentEvent.workflows().add();
+        workflowRecord
             .setBpmnProcessId(BufferUtil.wrapString(workflow.getId()))
             .setVersion(version)
-            .setKey(key)
-            .setResourceName(deploymentResource.getResourceNameBuffer());
+            .setKey(workflowKey)
+            .setChecksum(resourceDigest)
+            .setResourceName(deploymentResource.getResourceNameBuffer())
+            .setResource(deploymentResource.getResourceBuffer());
+
+        stateWriter.appendFollowUpEvent(workflowKey, WorkflowIntent.CREATED, workflowRecord);
       }
     }
   }

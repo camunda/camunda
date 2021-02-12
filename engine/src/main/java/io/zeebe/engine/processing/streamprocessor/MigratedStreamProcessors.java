@@ -37,6 +37,7 @@ public final class MigratedStreamProcessors {
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.TESTING_ONLY);
 
     MIGRATED_VALUE_TYPES.put(ValueType.ERROR, MIGRATED);
+    MIGRATED_VALUE_TYPES.put(ValueType.WORKFLOW, MIGRATED);
   }
 
   private MigratedStreamProcessors() {}

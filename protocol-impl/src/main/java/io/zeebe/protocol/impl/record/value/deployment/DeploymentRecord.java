@@ -24,14 +24,14 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   private final ArrayProperty<DeploymentResource> resourcesProp =
       new ArrayProperty<>(RESOURCES, new DeploymentResource());
 
-  private final ArrayProperty<Workflow> workflowsProp =
-      new ArrayProperty<>(WORKFLOWS, new Workflow());
+  private final ArrayProperty<WorkflowRecord> workflowsProp =
+      new ArrayProperty<>(WORKFLOWS, new WorkflowRecord());
 
   public DeploymentRecord() {
     declareProperty(resourcesProp).declareProperty(workflowsProp);
   }
 
-  public ValueArray<Workflow> workflows() {
+  public ValueArray<WorkflowRecord> workflows() {
     return workflowsProp;
   }
 
@@ -61,14 +61,14 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   public List<DeployedWorkflow> getDeployedWorkflows() {
     final List<DeployedWorkflow> workflows = new ArrayList<>();
 
-    for (final Workflow workflow : workflowsProp) {
-      final byte[] bytes = new byte[workflow.getLength()];
+    for (final WorkflowRecord workflowRecord : workflowsProp) {
+      final byte[] bytes = new byte[workflowRecord.getLength()];
       final UnsafeBuffer copyBuffer = new UnsafeBuffer(bytes);
-      workflow.write(copyBuffer, 0);
+      workflowRecord.write(copyBuffer, 0);
 
-      final Workflow copiedWorkflow = new Workflow();
-      copiedWorkflow.wrap(copyBuffer);
-      workflows.add(copiedWorkflow);
+      final WorkflowRecord copiedWorkflowRecord = new WorkflowRecord();
+      copiedWorkflowRecord.wrap(copyBuffer);
+      workflows.add(copiedWorkflowRecord);
     }
 
     return workflows;

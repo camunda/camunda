@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.deployment;
 
 import static io.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 
+import io.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
@@ -19,17 +20,19 @@ import io.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.appliers.EventAppliers;
 import io.zeebe.engine.state.immutable.TimerInstanceState;
 import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.deployment.Workflow;
+import io.zeebe.protocol.impl.record.value.deployment.WorkflowRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.util.Either;
@@ -50,16 +53,22 @@ public final class TransformingDeploymentCreateProcessor
   private final CatchEventBehavior catchEventBehavior;
   private final KeyGenerator keyGenerator;
   private final ExpressionProcessor expressionProcessor;
+  private final EventAppliers eventAppliers;
+  private final TypedStreamWriterProxy typedStreamWriterProxy;
+  private final StateWriter stateWriter;
 
   public TransformingDeploymentCreateProcessor(
       final ZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
       final ExpressionProcessor expressionProcessor) {
+    eventAppliers = new EventAppliers(zeebeState);
     workflowState = zeebeState.getWorkflowState();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
     timerInstanceState = zeebeState.getTimerState();
     keyGenerator = zeebeState.getKeyGenerator();
-    deploymentTransformer = new DeploymentTransformer(zeebeState, expressionProcessor);
+    typedStreamWriterProxy = new TypedStreamWriterProxy();
+    stateWriter = new StateWriter(typedStreamWriterProxy, eventAppliers);
+    deploymentTransformer = new DeploymentTransformer(stateWriter, zeebeState, expressionProcessor);
     this.catchEventBehavior = catchEventBehavior;
     this.expressionProcessor = expressionProcessor;
   }
@@ -70,6 +79,7 @@ public final class TransformingDeploymentCreateProcessor
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
+    typedStreamWriterProxy.wrap(streamWriter);
     final DeploymentRecord deploymentEvent = command.getValue();
 
     final boolean accepted = deploymentTransformer.transform(deploymentEvent);
@@ -102,12 +112,12 @@ public final class TransformingDeploymentCreateProcessor
 
   private void createTimerIfTimerStartEvent(
       final TypedRecord<DeploymentRecord> record, final TypedStreamWriter streamWriter) {
-    for (final Workflow workflow : record.getValue().workflows()) {
+    for (final WorkflowRecord workflowRecord : record.getValue().workflows()) {
       final List<ExecutableStartEvent> startEvents =
-          workflowState.getWorkflowByKey(workflow.getKey()).getWorkflow().getStartEvents();
+          workflowState.getWorkflowByKey(workflowRecord.getKey()).getWorkflow().getStartEvents();
       boolean hasAtLeastOneTimer = false;
 
-      unsubscribeFromPreviousTimers(streamWriter, workflow);
+      unsubscribeFromPreviousTimers(streamWriter, workflowRecord);
 
       for (final ExecutableCatchEventElement startEvent : startEvents) {
         if (startEvent.isTimer()) {
@@ -125,7 +135,7 @@ public final class TransformingDeploymentCreateProcessor
           catchEventBehavior.subscribeToTimerEvent(
               NO_ELEMENT_INSTANCE,
               NO_ELEMENT_INSTANCE,
-              workflow.getKey(),
+              workflowRecord.getKey(),
               startEvent.getId(),
               timerOrError.get(),
               streamWriter);
@@ -133,23 +143,26 @@ public final class TransformingDeploymentCreateProcessor
       }
 
       if (hasAtLeastOneTimer) {
-        eventScopeInstanceState.createIfNotExists(workflow.getKey(), Collections.emptyList());
+        eventScopeInstanceState.createIfNotExists(workflowRecord.getKey(), Collections.emptyList());
       }
     }
   }
 
   private void unsubscribeFromPreviousTimers(
-      final TypedStreamWriter streamWriter, final Workflow workflow) {
+      final TypedStreamWriter streamWriter, final WorkflowRecord workflowRecord) {
     timerInstanceState.forEachTimerForElementInstance(
-        NO_ELEMENT_INSTANCE, timer -> unsubscribeFromPreviousTimer(streamWriter, workflow, timer));
+        NO_ELEMENT_INSTANCE,
+        timer -> unsubscribeFromPreviousTimer(streamWriter, workflowRecord, timer));
   }
 
   private void unsubscribeFromPreviousTimer(
-      final TypedStreamWriter streamWriter, final Workflow workflow, final TimerInstance timer) {
+      final TypedStreamWriter streamWriter,
+      final WorkflowRecord workflowRecord,
+      final TimerInstance timer) {
     final DirectBuffer timerBpmnId =
         workflowState.getWorkflowByKey(timer.getWorkflowKey()).getBpmnProcessId();
 
-    if (timerBpmnId.equals(workflow.getBpmnProcessIdBuffer())) {
+    if (timerBpmnId.equals(workflowRecord.getBpmnProcessIdBuffer())) {
       catchEventBehavior.unsubscribeFromTimerEvent(timer, streamWriter);
     }
   }
