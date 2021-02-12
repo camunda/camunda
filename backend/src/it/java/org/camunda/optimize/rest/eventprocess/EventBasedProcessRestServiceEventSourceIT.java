@@ -18,6 +18,8 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -27,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -35,7 +38,7 @@ import static org.camunda.optimize.test.optimize.EventProcessClient.createExtern
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntryForGroup;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
 
-public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT {
+public class EventBasedProcessRestServiceEventSourceIT extends AbstractEventProcessIT {
 
   private final String PROCESS_DEF_KEY_1 = "aProcessDefinitionKey_1";
   private final String PROCESS_DEF_KEY_2 = "aProcessDefinitionKey_2";
@@ -148,6 +151,45 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     List<EventSourceEntryDto<?>> savedSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
       .getEventSources();
     assertEventSourcesContainsExpectedEntries(savedSources, eventSources);
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidExternalEventSourceCombinations")
+  public void createEventProcessMapping_invalidExternalEventSourceCombination(final List<EventSourceEntryDto<?>> sources) {
+    // given
+    EventProcessMappingDto eventProcessMappingDto =
+      eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
+        Collections.emptyMap(), "process name", createTwoEventAndOneTaskActivitiesProcessDefinitionXml(), sources
+      );
+
+    // when
+    final Response response =
+      eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidExternalEventSourceCombinations")
+  public void updateEventProcessMapping_invalidExternalEventSourceCombination(final List<EventSourceEntryDto<?>> sources) {
+    // given
+    String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(
+      eventProcessClient.buildEventProcessMappingDto(createTwoEventAndOneTaskActivitiesProcessDefinitionXml())
+    );
+    EventProcessMappingDto updateDto = eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
+      Collections.emptyMap(),
+      "new process name",
+      createTwoEventAndOneTaskActivitiesProcessDefinitionXml()
+    );
+    updateDto.setEventSources(sources);
+
+    // when
+    Response response = eventProcessClient
+      .createUpdateEventProcessMappingRequest(storedEventProcessMappingId, updateDto).execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test

@@ -46,8 +46,8 @@ public class CorrelatableExternalEventsTraceDto extends CorrelatableInstanceDto 
 
   @Override
   public String getSourceIdentifier() {
-    // TODO Autogeneration will be supported for multiple groups in OPT-4541
-    return EventSourceType.EXTERNAL.getId() + ":" + "allExternalEventGroups";
+    // Autogeneration is only supported for external groups when they are a single bucket of events without group
+    return EventSourceType.EXTERNAL.getId() + ":" + "optimize_allExternalEventGroups";
   }
 
   @Override

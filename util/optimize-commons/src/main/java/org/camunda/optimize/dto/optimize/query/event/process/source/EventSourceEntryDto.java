@@ -18,6 +18,7 @@ import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.service.util.IdGenerator;
 
 import javax.validation.constraints.NotNull;
+import java.util.Optional;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
@@ -44,6 +45,7 @@ public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
   @NotNull
   protected CONFIG configuration;
 
+  // This source identifier is only used internally by Optimize for logic such as autogeneration
   @JsonIgnore
   public String getSourceIdentifier() {
     if (EventSourceType.CAMUNDA.equals(getSourceType())) {
@@ -51,9 +53,10 @@ public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
     } else {
       final ExternalEventSourceConfigDto externalSourceConfig = (ExternalEventSourceConfigDto) configuration;
       if (externalSourceConfig.isIncludeAllGroups()) {
-        return getSourceType() + ":" + "allExternalEventGroups";
+        return getSourceType() + ":" + "optimize_allExternalEventGroups";
       } else {
-        return getSourceType() + ":" + externalSourceConfig.getGroup();
+        return getSourceType() + ":" +
+          Optional.ofNullable(externalSourceConfig.getGroup()).orElse("optimize_noGroupSpecified");
       }
     }
   }

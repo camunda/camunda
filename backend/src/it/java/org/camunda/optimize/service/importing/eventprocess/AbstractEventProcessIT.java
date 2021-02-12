@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEvent
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -56,6 +57,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -71,6 +73,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntryForGroup;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
@@ -834,10 +838,24 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     );
   }
 
+  @SuppressWarnings(UNUSED)
   protected static Stream<Arguments> exclusiveAndEventBasedGatewayXmlVariations() {
     return Stream.of(
       Arguments.of(EXCLUSIVE_GATEWAY_TYPE, EXCLUSIVE_GATEWAY_TYPE, createExclusiveGatewayProcessDefinitionXml()),
       Arguments.of(EVENT_BASED_GATEWAY_TYPE, EXCLUSIVE_GATEWAY_TYPE, createEventBasedGatewayProcessDefinitionXml())
+    );
+  }
+
+  @SuppressWarnings(UNUSED)
+  protected static Stream<List<EventSourceEntryDto<?>>> invalidExternalEventSourceCombinations() {
+    return Stream.of(
+      Arrays.asList(createExternalEventAllGroupsSourceEntry(), createExternalEventAllGroupsSourceEntry()),
+      Arrays.asList(createExternalEventAllGroupsSourceEntry(), createExternalEventSourceEntryForGroup("aGroup")),
+      Arrays.asList(createExternalEventSourceEntryForGroup("aGroup"), createExternalEventSourceEntryForGroup("aGroup")),
+      Collections.singletonList(
+        createExternalEventAllGroupsSourceEntry().toBuilder()
+          .configuration(ExternalEventSourceConfigDto.builder().includeAllGroups(true).group("groupName").build())
+          .build())
     );
   }
 

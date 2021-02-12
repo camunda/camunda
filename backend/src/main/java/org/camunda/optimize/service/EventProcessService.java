@@ -124,7 +124,7 @@ public class EventProcessService {
     final EventProcessMappingDto eventProcessMappingDto =
       EventProcessMappingCreateRequestDto.to(userId, createRequestDto);
     validateMappingsAndXmlCompatibility(eventProcessMappingDto);
-    validateEventSources(userId, eventProcessMappingDto);
+    validateEventSources(userId, eventProcessMappingDto.getEventSources());
     return eventProcessMappingWriter.createEventProcessMapping(eventProcessMappingDto);
   }
 
@@ -140,7 +140,7 @@ public class EventProcessService {
       .eventSources(eventSources)
       .roles(Collections.singletonList(new EventProcessRoleRequestDto(new IdentityDto(userId, IdentityType.USER))))
       .build();
-    validateEventSources(userId, eventProcessMappingDto);
+    validateEventSources(userId, eventProcessMappingDto.getEventSources());
     validateAutogenerationEventSourceScopes(eventProcessMappingDto);
     if (eventSources.stream().anyMatch(source -> source.getSourceType().equals(EventSourceType.EXTERNAL)) &&
       !configurationService.getEventBasedProcessConfiguration().getEventImport().isEnabled()) {
@@ -168,7 +168,7 @@ public class EventProcessService {
       .eventSources(updateRequest.getEventSources())
       .build();
     validateMappingsAndXmlCompatibility(eventProcessMappingDto);
-    validateEventSources(userId, eventProcessMappingDto);
+    validateEventSources(userId, eventProcessMappingDto.getEventSources());
     eventProcessMappingWriter.updateEventProcessMapping(eventProcessMappingDto);
   }
 
@@ -212,8 +212,15 @@ public class EventProcessService {
       id -> eventProcessPublishStateReader.getEventProcessPublishStateByEventProcessId(id).orElse(null)
     ));
 
-    eventProcessMapping.ifPresent(eventProcessMappingDto ->
-                                    validateAccessToCamundaEventSourcesOrFail(userId, eventProcessMappingDto));
+    eventProcessMapping.ifPresent(
+      eventProcessMappingDto -> {
+        final List<CamundaEventSourceEntryDto> camundaSources = eventProcessMappingDto.getEventSources()
+          .stream()
+          .filter(CamundaEventSourceEntryDto.class::isInstance)
+          .map(CamundaEventSourceEntryDto.class::cast)
+          .collect(toList());
+        validateAccessToCamundaEventSourcesOrFail(userId, camundaSources);
+      });
     return eventProcessMapping.orElseThrow(() -> {
       final String message = String.format(
         "Event based process does not exist! Tried to retrieve event based process with id: %s.", eventProcessMappingId
@@ -339,37 +346,43 @@ public class EventProcessService {
       .collect(toList());
   }
 
-  private void validateEventSources(final String userId, final EventProcessMappingDto eventProcessMappingDto) {
-    final List<EventSourceEntryDto<?>> eventSources = eventProcessMappingDto.getEventSources();
+  public void validateEventSources(final String userId, final List<EventSourceEntryDto<?>> eventSources) {
     if (eventSources == null || eventSources.contains(null)) {
       throw new OptimizeValidationException("Sources for an event based process cannot be null");
     }
-    final List<CamundaEventSourceEntryDto> invalidTracingConfig = eventProcessMappingDto.getEventSources()
-      .stream()
-      .filter(CamundaEventSourceEntryDto.class::isInstance)
-      .map(CamundaEventSourceEntryDto.class::cast)
-      .filter(source -> !source.getConfiguration().isTracedByBusinessKey() &&
-        StringUtils.isEmpty(source.getConfiguration().getTraceVariable()))
-      .collect(toList());
+    final Map<EventSourceType, List<EventSourceEntryDto<?>>> sourceByType = eventSources.stream()
+      .collect(Collectors.groupingBy(EventSourceEntryDto::getSourceType));
+    List<ExternalEventSourceEntryDto> externalSources =
+      sourceByType.getOrDefault(EventSourceType.EXTERNAL, Collections.emptyList()).stream()
+        .map(ExternalEventSourceEntryDto.class::cast)
+        .collect(toList());
+    List<CamundaEventSourceEntryDto> camundaSources =
+      sourceByType.getOrDefault(EventSourceType.CAMUNDA, Collections.emptyList()).stream()
+        .map(CamundaEventSourceEntryDto.class::cast)
+        .collect(toList());
+
+    final List<CamundaEventSourceEntryDto> invalidTracingConfig =
+      camundaSources.stream()
+        .filter(source -> !source.getConfiguration().isTracedByBusinessKey() &&
+          StringUtils.isEmpty(source.getConfiguration().getTraceVariable()))
+        .collect(toList());
     if (!invalidTracingConfig.isEmpty()) {
       throw new OptimizeValidationException(String.format(
         "The Camunda event sources with keys %s are traced by variable but do not have a variable name set.",
         invalidTracingConfig
       ));
     }
-    validateAccessToCamundaEventSourcesOrFail(userId, eventProcessMappingDto);
-    validateNoDuplicateCamundaEventSources(eventProcessMappingDto);
-    validateNoEventProcessesAsEventSource(eventProcessMappingDto);
-    validateCamundaEventSourcesAreImported(eventProcessMappingDto);
-    validateCompatibleExternalEventSources(eventProcessMappingDto);
+    validateAccessToCamundaEventSourcesOrFail(userId, camundaSources);
+    validateNoDuplicateCamundaEventSources(camundaSources);
+    validateNoEventProcessesAsEventSource(camundaSources);
+    validateCamundaEventSourcesAreImported(camundaSources);
+    validateCompatibleExternalEventSources(externalSources);
   }
 
-  private void validateCamundaEventSourcesAreImported(final EventProcessMappingDto eventProcessMappingDto) {
+  private void validateCamundaEventSourcesAreImported(final List<CamundaEventSourceEntryDto> camundaSources) {
     final Set<String> camundaEventIndexSuffixes =
       camundaActivityEventReader.getIndexSuffixesForCurrentActivityIndices();
-    final List<String> unimportedEventCamundaSources = eventProcessMappingDto.getEventSources().stream()
-      .filter(CamundaEventSourceEntryDto.class::isInstance)
-      .map(CamundaEventSourceEntryDto.class::cast)
+    final List<String> unimportedEventCamundaSources = camundaSources.stream()
       .map(camundaSource -> camundaSource.getConfiguration().getProcessDefinitionKey().toLowerCase())
       .filter(definitionKey -> !camundaEventIndexSuffixes.contains(definitionKey))
       .collect(toList());
@@ -406,11 +419,10 @@ public class EventProcessService {
 
   }
 
-  private void validateNoEventProcessesAsEventSource(final EventProcessMappingDto eventProcessMappingDto) {
-    List<String> eventProcessSourceKeys = eventProcessMappingDto.getEventSources()
+  private void validateNoEventProcessesAsEventSource(final List<CamundaEventSourceEntryDto> camundaSources) {
+    List<String> eventProcessSourceKeys = camundaSources
       .stream()
-      .filter(eventSource -> EventSourceType.CAMUNDA.equals(eventSource.getSourceType()))
-      .map(source -> ((CamundaEventSourceConfigDto) source.getConfiguration()).getProcessDefinitionKey())
+      .map(source -> source.getConfiguration().getProcessDefinitionKey())
       .filter(key -> eventProcessDefinitionService.getEventProcessDefinitionByKey(key).isPresent())
       .collect(toList());
     if (!eventProcessSourceKeys.isEmpty()) {
@@ -432,10 +444,10 @@ public class EventProcessService {
   }
 
   private void validateAccessToCamundaEventSourcesOrFail(final String userId,
-                                                         final EventProcessMappingDto eventProcessMappingDto) {
-    final Set<String> notAuthorizedProcesses = eventProcessMappingDto.getEventSources().stream()
+                                                         final List<CamundaEventSourceEntryDto> camundaSources) {
+    final Set<String> notAuthorizedProcesses = camundaSources.stream()
       .filter(eventSource -> !validateEventSourceAuthorisation(userId, eventSource))
-      .map(source -> ((CamundaEventSourceConfigDto) source.getConfiguration()).getProcessDefinitionKey())
+      .map(source -> source.getConfiguration().getProcessDefinitionKey())
       .collect(Collectors.toSet());
     if (!notAuthorizedProcesses.isEmpty()) {
       final String errorMessage = String.format(
@@ -446,12 +458,11 @@ public class EventProcessService {
     }
   }
 
-  private void validateNoDuplicateCamundaEventSources(final EventProcessMappingDto eventProcessMappingDto) {
+  private void validateNoDuplicateCamundaEventSources(final List<CamundaEventSourceEntryDto> camundaSources) {
     Set<String> processDefinitionKeys = new HashSet<>();
-    final Set<String> duplicates = eventProcessMappingDto.getEventSources()
+    final Set<String> duplicates = camundaSources
       .stream()
-      .filter(eventSourceEntryDto -> EventSourceType.CAMUNDA.equals(eventSourceEntryDto.getSourceType()))
-      .map(source -> ((CamundaEventSourceConfigDto) source.getConfiguration()).getProcessDefinitionKey())
+      .map(source -> source.getConfiguration().getProcessDefinitionKey())
       .filter(Objects::nonNull)
       .filter(key -> !processDefinitionKeys.add(key))
       .collect(toSet());
@@ -463,12 +474,9 @@ public class EventProcessService {
     }
   }
 
-  private void validateCompatibleExternalEventSources(final EventProcessMappingDto eventProcessMappingDto) {
+  public static void validateCompatibleExternalEventSources(final List<ExternalEventSourceEntryDto> externalSources) {
     final Map<Boolean, List<ExternalEventSourceEntryDto>> externalSourcesByIncludeAllGroups =
-      eventProcessMappingDto.getEventSources().stream()
-        .filter(ExternalEventSourceEntryDto.class::isInstance)
-        .map(ExternalEventSourceEntryDto.class::cast)
-        .collect(Collectors.groupingBy(source -> source.getConfiguration().isIncludeAllGroups()));
+      externalSources.stream().collect(Collectors.groupingBy(source -> source.getConfiguration().isIncludeAllGroups()));
     final List<ExternalEventSourceEntryDto> sourcesForAllGroups =
       externalSourcesByIncludeAllGroups.getOrDefault(true, Collections.emptyList());
     if (sourcesForAllGroups.size() > 1) {
@@ -486,7 +494,7 @@ public class EventProcessService {
           "included as an event source. Individual groups selected: %s", sourcesForSpecificGroups));
     }
     final List<String> duplicateGroups = sourcesForSpecificGroups.stream()
-      .map(source -> source.getConfiguration().getGroup())
+      .map(EventSourceEntryDto::getSourceIdentifier)
       .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
       .entrySet()
       .stream()
@@ -495,7 +503,7 @@ public class EventProcessService {
       .collect(toList());
     if (!duplicateGroups.isEmpty()) {
       throw new OptimizeValidationException(String.format(
-        "The following group names were supplied for more than one external event source: %s",
+        "The following group identifiers were supplied for more than one external event source: %s",
         sourcesForSpecificGroups
       ));
     }

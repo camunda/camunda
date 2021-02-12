@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 @Component
 @AllArgsConstructor
 public class EventMappingCleanupService {
+
   private final EventCountService eventCountService;
 
   public Map<String, EventMappingDto> doMappingCleanup(final String userId,
