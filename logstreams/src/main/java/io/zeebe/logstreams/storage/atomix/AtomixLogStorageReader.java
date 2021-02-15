@@ -51,18 +51,21 @@ public final class AtomixLogStorageReader implements LogStorageReader {
       return LogStorage.OP_RESULT_NO_DATA;
     }
 
-    final var result =
-        findEntry(address)
-            .map(indexed -> wrapEntryData(indexed, readBuffer))
-            .orElse(LogStorage.OP_RESULT_NO_DATA);
-
-    if (result < 0) {
-      return result;
-    } else if (result == 0) {
+    final Optional<Indexed<ZeebeEntry>> maybeEntry = findEntry(address);
+    if (maybeEntry.isEmpty()) {
       return LogStorage.OP_RESULT_NO_DATA;
     }
 
-    return reader.getNextIndex();
+    final Indexed<ZeebeEntry> entry = maybeEntry.get();
+    final long serializedRecordsLength = wrapEntryData(entry, readBuffer);
+
+    if (serializedRecordsLength < 0) {
+      return serializedRecordsLength;
+    }
+
+    // for now assume how indexes increase - in the future we should rewrite how we read the
+    // logstream to completely ignore addresses entirely
+    return entry.index() + 1;
   }
 
   /**
@@ -85,7 +88,7 @@ public final class AtomixLogStorageReader implements LogStorageReader {
       final var indexed = reader.next();
       if (indexed.type() == ZeebeEntry.class) {
         wrapEntryData(indexed.cast(), readBuffer);
-        return reader.getNextIndex();
+        return indexed.index() + 1;
       }
 
       index--;
@@ -148,9 +151,10 @@ public final class AtomixLogStorageReader implements LogStorageReader {
       }
     }
 
-    if (reader.getNextIndex() != index) {
-      reader.reset(index);
-    }
+    // in the future, reset/seek to the same index will be a NOOP so we can just call it all the
+    // time; right now it's a bit slow, but we will immediately implement the new journal so this
+    // is fine
+    reader.reset(index);
 
     while (reader.hasNext()) {
       final var entry = reader.next();

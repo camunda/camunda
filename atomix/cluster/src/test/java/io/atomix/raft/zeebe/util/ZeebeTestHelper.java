@@ -21,6 +21,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
+import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.journal.Indexed;
@@ -92,8 +93,11 @@ public class ZeebeTestHelper {
       final RaftPartitionServer partition, final Indexed<ZeebeEntry> indexed) {
     try (final RaftLogReader reader = partition.openReader(indexed.index(), Mode.COMMITS)) {
 
-      if (reader.hasNext() && reader.getNextIndex() == indexed.index()) {
-        return isEntryEqualTo(reader.next().cast(), indexed);
+      if (reader.hasNext()) {
+        final Indexed<RaftLogEntry> entry = reader.next();
+        if (entry.index() == indexed.index()) {
+          return isEntryEqualTo(entry.cast(), indexed);
+        }
       }
     }
 

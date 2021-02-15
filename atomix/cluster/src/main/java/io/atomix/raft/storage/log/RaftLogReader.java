@@ -48,10 +48,6 @@ public class RaftLogReader implements java.util.Iterator<Indexed<RaftLogEntry>>,
     return delegate.getCurrentEntry();
   }
 
-  public long getNextIndex() {
-    return delegate.getNextIndex();
-  }
-
   @Override
   public boolean hasNext() {
     return delegate.hasNext();
