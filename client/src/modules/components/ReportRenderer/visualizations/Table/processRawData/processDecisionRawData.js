@@ -56,6 +56,10 @@ export default function processDecisionRawData(
         return cockpitLink(endpoints, instance, 'decision');
       }
 
+      if (entry === 'processInstanceId') {
+        return cockpitLink(endpoints, instance, 'process');
+      }
+
       if (entry === 'evaluationDateTime' && instance[entry]) {
         return format(parseISO(instance[entry]), "yyyy-MM-dd HH:mm:ss 'UTC'X");
       }

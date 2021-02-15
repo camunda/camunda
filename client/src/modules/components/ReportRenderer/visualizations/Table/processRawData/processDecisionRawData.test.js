@@ -19,7 +19,7 @@ const data = {
   },
 };
 
-it('should make the decision instance id a link', () => {
+it('should display decision and process instance ids as links', () => {
   const cell = processDecisionRawData(
     {
       report: {
@@ -28,6 +28,7 @@ it('should make the decision instance id a link', () => {
           data: [
             {
               decisionInstanceId: '123',
+              processInstanceId: '456',
               engineName: '1',
               inputVariables: {},
               outputVariables: {},
@@ -38,10 +39,11 @@ it('should make the decision instance id a link', () => {
       },
     },
     {1: {endpoint: 'http://camunda.com', engineName: 'a'}}
-  ).body[0][0];
+  ).body[0];
 
-  expect(cell.type).toBe('a');
-  expect(cell.props.href).toBe('http://camunda.com/app/cockpit/a/#/decision-instance/123');
+  expect(cell[0].type).toBe('a');
+  expect(cell[0].props.href).toBe('http://camunda.com/app/cockpit/a/#/decision-instance/123');
+  expect(cell[1].props.href).toBe('http://camunda.com/app/cockpit/a/#/process-instance/456');
 });
 
 it('should return correct table props for decision tables', () => {
