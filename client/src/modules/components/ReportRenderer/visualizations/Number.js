@@ -67,9 +67,11 @@ export default function Number({report, formatter}) {
   }
 
   return (
-    <div className="Number" ref={numberText}>
-      <div className="data">{formatter(result.data, precision)}</div>
-      <div className="label">{viewString}</div>
+    <div className="Number">
+      <div className="container" ref={numberText}>
+        <div className="data">{formatter(result.data, precision)}</div>
+        <div className="label">{viewString}</div>
+      </div>
     </div>
   );
 }
