@@ -74,6 +74,11 @@ export default withErrorHandling(
     variableExists = (varName) =>
       this.state.variables.some((variable) => variable.name === varName);
 
+    filterNonExistingVariables = (columns) =>
+      columns.filter((col) =>
+        col.startsWith('variable:') ? this.variableExists(col.split(':')[1]) : true
+      );
+
     getVariableConfig = () => {
       const {view, groupBy, distributedBy} = this.props.report.data;
 
@@ -111,7 +116,6 @@ export default withErrorHandling(
         processDefinitionVersions: {$set: versions},
         tenantIds: {$set: tenantIds},
         configuration: {
-          tableColumns: {columnOrder: {$set: []}},
           heatmapTargetValue: {
             $set: {
               active: false,
@@ -135,12 +139,19 @@ export default withErrorHandling(
       };
 
       const variableConfig = this.getVariableConfig();
-      if (variableConfig) {
+      const columnOrder = this.props.report.data.configuration.tableColumns.columnOrder;
+      if (variableConfig || columnOrder.length) {
         this.props.setLoading(true);
         await this.loadVariables(definitionData);
         this.props.setLoading(false);
-        if (!this.variableExists(variableConfig.name)) {
+        if (variableConfig && !this.variableExists(variableConfig.name)) {
           variableConfig.reset(change);
+        }
+
+        if (columnOrder.length) {
+          change.configuration.tableColumns = {
+            columnOrder: {$set: this.filterNonExistingVariables(columnOrder)},
+          };
         }
       } else {
         this.loadVariables(definitionData);

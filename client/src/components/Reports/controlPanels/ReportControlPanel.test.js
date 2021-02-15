@@ -55,7 +55,7 @@ const report = {
     groupBy: {type: 'none', unit: null},
     visualization: 'number',
     filter: [],
-    configuration: {xml: 'fooXml'},
+    configuration: {xml: 'fooXml', tableColumns: {columnOrder: []}},
   },
   result: {instanceCount: 3, instanceCountWithoutFilters: 5},
 };
@@ -293,7 +293,7 @@ it('should reset distributed by variable report when changing to a definition th
 });
 
 it('should not reset variable report when changing to a definition that has the same variable', async () => {
-  loadVariables.mockReturnValue([{name: 'doubleVar'}]);
+  loadVariables.mockReturnValueOnce([{name: 'doubleVar'}]);
   const spy = jest.fn();
   const node = shallow(
     <ReportControlPanel
@@ -317,7 +317,6 @@ it('should reset definition specific configurations on definition change', async
 
   await node.find(DefinitionSelection).prop('onChange')({});
 
-  expect(spy.mock.calls[0][0].configuration.tableColumns).toBeDefined();
   expect(spy.mock.calls[0][0].configuration.heatmapTargetValue).toBeDefined();
   expect(spy.mock.calls[0][0].configuration.processPart).toBeDefined();
 });
@@ -354,4 +353,32 @@ it('should allow collapsing sections', () => {
 
   node.find('.source').find(Button).simulate('click');
   expect(node.find('.source')).not.toHaveClassName('hidden');
+});
+
+it('should filter non existing variables from columnOrder configuration', async () => {
+  loadVariables.mockReturnValueOnce([{name: 'existingVariable'}]);
+  const reportWithConfig = {
+    data: {
+      ...report.data,
+      configuration: {
+        xml: 'someXml',
+        tableColumns: {columnOrder: ['variable:nonExistingVariable', 'variable:existingVariable']},
+      },
+    },
+  };
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel
+      {...props}
+      updateReport={spy}
+      report={reportWithConfig}
+      setLoading={() => {}}
+    />
+  );
+
+  await node.find(DefinitionSelection).prop('onChange')({});
+
+  expect(spy.mock.calls[0][0].configuration.tableColumns).toEqual({
+    columnOrder: {$set: ['variable:existingVariable']},
+  });
 });

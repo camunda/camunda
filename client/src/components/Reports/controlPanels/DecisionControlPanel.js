@@ -56,6 +56,16 @@ export class DecisionControlPanel extends React.Component {
   variableExists = (type, varName) =>
     this.state.variables[type].some((variable) => variable.id === varName);
 
+  filterNonExistingVariables = (columns) =>
+    columns.filter((col) => {
+      if (col.includes('Variable:')) {
+        const [type, name] = col.split(':');
+        return this.variableExists(type, name);
+      }
+
+      return true;
+    });
+
   changeDefinition = async ({key, versions, tenantIds, name}) => {
     const {groupBy} = this.props.report.data;
 
@@ -65,7 +75,6 @@ export class DecisionControlPanel extends React.Component {
       decisionDefinitionVersions: {$set: versions},
       tenantIds: {$set: tenantIds},
       configuration: {
-        tableColumns: {columnOrder: {$set: []}},
         xml: {
           $set:
             key && versions && versions[0]
@@ -81,13 +90,22 @@ export class DecisionControlPanel extends React.Component {
       tenantIds,
     };
 
-    if (['inputVariable', 'outputVariable'].includes(groupBy?.type)) {
+    const columnOrder = this.props.report.data.configuration.tableColumns.columnOrder;
+    const variableReport = ['inputVariable', 'outputVariable'].includes(groupBy?.type);
+
+    if (variableReport || columnOrder.length) {
       this.props.setLoading(true);
       await this.loadVariables(definitionData);
       this.props.setLoading(false);
-      if (!this.variableExists(groupBy.type, groupBy.value.id)) {
+      if (variableReport && !this.variableExists(groupBy.type, groupBy.value.id)) {
         change.groupBy = {$set: null};
         change.visualization = {$set: null};
+      }
+
+      if (columnOrder.length) {
+        change.configuration.tableColumns = {
+          columnOrder: {$set: this.filterNonExistingVariables(columnOrder)},
+        };
       }
     } else {
       this.loadVariables(definitionData);

@@ -53,6 +53,7 @@ const report = {
     filter: [],
     configuration: {
       xml: 'someXml',
+      tableColumns: {columnOrder: []},
     },
   },
   result: {instanceCount: 3, instanceCountWithoutFilters: 5},
@@ -156,13 +157,38 @@ it('should not reset variable report when changing to a definition that has the 
   expect(spy.mock.calls[0][0].groupBy).toEqual(undefined);
 });
 
-it('should reset definition specific configurations on definition change', async () => {
+it('should remove non existing variables from columnOrder configuration', async () => {
+  loadInputVariables.mockReturnValueOnce([{id: 'existingVariable', name: 'variable name'}]);
+
+  const reportWithConfig = {
+    data: {
+      ...report.data,
+      configuration: {
+        xml: 'someXml',
+        tableColumns: {
+          columnOrder: ['inputVariable:nonExistingVariable', 'inputVariable:existingVariable'],
+        },
+      },
+    },
+  };
+
   const spy = jest.fn();
-  const node = shallow(<DecisionControlPanel {...props} updateReport={spy} />);
+  const node = shallow(
+    <DecisionControlPanel
+      {...props}
+      report={reportWithConfig}
+      updateReport={spy}
+      setLoading={() => {}}
+    />
+  );
+
+  await flushPromises();
 
   await node.find(DefinitionSelection).prop('onChange')({});
 
-  expect(spy.mock.calls[0][0].configuration.tableColumns).toBeDefined();
+  expect(spy.mock.calls[0][0].configuration.tableColumns).toEqual({
+    columnOrder: {$set: ['inputVariable:existingVariable']},
+  });
 });
 
 it('should not crash when no decisionDefinition is selected', () => {

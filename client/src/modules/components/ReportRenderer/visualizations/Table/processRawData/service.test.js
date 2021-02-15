@@ -43,19 +43,19 @@ it('should return the original head and body if no sorting is applied', () => {
   expect(sortedBody).toBe(body);
 });
 
-it('should prepend columns without specified column order', () => {
+it('should append columns without specified column order', () => {
   const columnOrder = ['processInstanceId', 'variable:var1'];
 
   expect(sortColumns(head, body, columnOrder)).toEqual({
     sortedBody: [
-      ['bar', '', 'foo', '12'],
-      ['abc', 'true', 'xyz', ''],
+      ['foo', '12', 'bar', ''],
+      ['xyz', '', 'abc', 'true'],
     ],
     sortedHead: [
-      'prop2',
-      {id: 'variable:var2', label: 'Var: var2', type: 'variables'},
       'processInstanceId',
       {id: 'variable:var1', label: 'Var: var1', type: 'variables'},
+      'prop2',
+      {id: 'variable:var2', label: 'Var: var2', type: 'variables'},
     ],
   });
 });
