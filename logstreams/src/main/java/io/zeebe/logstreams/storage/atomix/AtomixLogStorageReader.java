@@ -25,19 +25,26 @@ public final class AtomixLogStorageReader implements LogStorageReader {
     this.zeebeIndexMapping = zeebeIndexMapping;
   }
 
+  /**
+   * Naive implementation that reads the whole log to check for a {@link ZeebeEntry}. Most of the
+   * log should be made of these, so in practice this should be fast enough, however callers should
+   * take care when calling this method.
+   *
+   * <p>The reader will be positioned either at the end of the log, or at the position of the first
+   * {@link ZeebeEntry} encountered, such that reading the next entry will return the entry after
+   * it.
+   *
+   * @return true if there are no {@link ZeebeEntry}, false otherwise
+   */
   @Override
   public boolean isEmpty() {
-    if (!reader.isEmpty()) {
-      // although seemingly inefficient, the log will contain mostly ZeebeEntry entries and a few
-      // InitialEntry, so this should be rather fast in practice
-      reader.reset();
-      while (reader.hasNext()) {
-        if (reader.next().type() == ZeebeEntry.class) {
-          return false;
-        }
+    reader.reset();
+
+    while (reader.hasNext()) {
+      if (reader.next().type() == ZeebeEntry.class) {
+        return false;
       }
     }
-
     return true;
   }
 

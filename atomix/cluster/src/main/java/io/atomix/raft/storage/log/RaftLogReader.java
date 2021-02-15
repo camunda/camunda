@@ -28,10 +28,6 @@ public class RaftLogReader implements java.util.Iterator<Indexed<RaftLogEntry>>,
     this.delegate = delegate;
   }
 
-  public boolean isEmpty() {
-    return delegate.isEmpty();
-  }
-
   public long getFirstIndex() {
     return delegate.getFirstIndex();
   }
