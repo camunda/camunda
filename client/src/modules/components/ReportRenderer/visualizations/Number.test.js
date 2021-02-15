@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import update from 'immutability-helper';
 
 import {reportConfig} from 'services';
 
@@ -16,6 +17,8 @@ jest.mock('services', () => {
   return {
     formatters: {
       convertDurationToSingleNumber: () => 12,
+      frequency: (data) => data,
+      duration: (data) => data,
     },
     reportConfig: {
       process: {
@@ -36,22 +39,16 @@ const report = {
       targetValue: {active: false},
     },
     view: {
-      property: 'frequency',
+      properties: ['frequency'],
     },
     visualization: 'Number',
   },
-  result: {data: 1234},
+  result: {measures: [{data: 1234}]},
 };
 
 it('should display the number provided per data property', () => {
-  const node = shallow(<Number report={report} formatter={(v) => v} />);
+  const node = shallow(<Number report={report} />);
   expect(node).toIncludeText('1234');
-});
-
-it('should format data according to the provided formatter', () => {
-  const node = shallow(<Number report={report} formatter={(v) => 2 * v} />);
-
-  expect(node).toIncludeText('246');
 });
 
 it('should display a progress bar if target values are active', () => {
@@ -74,19 +71,19 @@ it('should display a progress bar if target values are active', () => {
 });
 
 it('should show the view label underneath the number', () => {
-  const node = shallow(<Number report={report} formatter={(v) => v} />);
+  const node = shallow(<Number report={report} />);
   expect(node).toIncludeText('Process Instance Count');
 
   reportConfig.process.findSelectedOption.mockReturnValueOnce({key: 'pi_duration'});
   node.setProps({
     report: {
       reportType: 'process',
-      result: {data: 123},
+      result: {measures: [{data: 123, aggregationType: 'avg', property: 'duration'}]},
       data: {
-        configuration: {aggregationType: 'avg', targetValue: {active: false}},
+        configuration: {targetValue: {active: false}},
         view: {
           entity: 'processInstance',
-          property: 'duration',
+          properties: ['duration'],
         },
         visualization: 'Number',
       },
@@ -94,4 +91,25 @@ it('should show the view label underneath the number', () => {
   });
 
   expect(node).toIncludeText('Process Instance Duration - Avg');
+});
+
+it('should show multiple measures', () => {
+  const node = shallow(
+    <Number
+      report={update(report, {
+        data: {view: {properties: {$set: ['frequency', 'duration']}}},
+        result: {
+          measures: {
+            $set: [
+              {data: 26, property: 'frequency'},
+              {data: 618294147, propery: 'duration'},
+            ],
+          },
+        },
+      })}
+    />
+  );
+
+  expect(node.find('.data').length).toBe(2);
+  expect(node.find('.label').length).toBe(2);
 });

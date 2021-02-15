@@ -5,19 +5,24 @@
  */
 
 export const view = [
-  {key: 'rawData', group: 'raw', data: {property: 'rawData', entity: null}},
+  {key: 'rawData', group: 'raw', data: {properties: ['rawData'], entity: null}},
   {
     key: 'pi',
     options: [
       {
         key: 'pi_count',
         group: 'pi_count',
-        data: {property: 'frequency', entity: 'processInstance'},
+        data: {properties: ['frequency'], entity: 'processInstance'},
       },
       {
         key: 'pi_duration',
         group: 'pi_duration',
-        data: {property: 'duration', entity: 'processInstance'},
+        data: {properties: ['duration'], entity: 'processInstance'},
+      },
+      {
+        key: 'pi_multi',
+        group: 'pi_multi',
+        data: {properties: ['frequency', 'duration'], entity: 'processInstance'},
       },
     ],
   },
@@ -27,12 +32,17 @@ export const view = [
       {
         key: 'in_count',
         group: 'in_count',
-        data: {property: 'frequency', entity: 'incident'},
+        data: {properties: ['frequency'], entity: 'incident'},
       },
       {
         key: 'in_resolutionDuration',
         group: 'in_resolutionDuration',
-        data: {property: 'duration', entity: 'incident'},
+        data: {properties: ['duration'], entity: 'incident'},
+      },
+      {
+        key: 'in_multi',
+        group: 'in_multi',
+        data: {properties: ['frequency', 'duration'], entity: 'incident'},
       },
     ],
   },
@@ -42,9 +52,13 @@ export const view = [
       {
         key: 'fn_count',
         group: 'fn_count',
-        data: {property: 'frequency', entity: 'flowNode'},
+        data: {properties: ['frequency'], entity: 'flowNode'},
       },
-      {key: 'fn_duration', group: 'fn_duration', data: {property: 'duration', entity: 'flowNode'}},
+      {
+        key: 'fn_duration',
+        group: 'fn_duration',
+        data: {properties: ['duration'], entity: 'flowNode'},
+      },
     ],
   },
   {
@@ -53,12 +67,12 @@ export const view = [
       {
         key: 'userTask_count',
         group: 'userTask_count',
-        data: {property: 'frequency', entity: 'userTask'},
+        data: {properties: ['frequency'], entity: 'userTask'},
       },
       {
         key: 'userTask_duration',
         group: 'userTask_duration',
-        data: {property: 'duration', entity: 'userTask'},
+        data: {properties: ['duration'], entity: 'userTask'},
       },
     ],
   },
@@ -151,6 +165,9 @@ export const combinations = {
     variable: ['table', 'chart'],
     duration: ['table', 'chart'],
   },
+  pi_multi: {
+    none: ['number'],
+  },
   in_resolutionDuration: {
     none: ['number'],
     fn: ['table', 'chart', 'heat'],
@@ -158,6 +175,9 @@ export const combinations = {
   in_count: {
     none: ['number'],
     fn: ['table', 'chart', 'heat'],
+  },
+  in_multi: {
+    none: ['number'],
   },
   fn_duration: {
     fn: ['table', 'chart', 'heat'],

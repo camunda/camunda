@@ -13,7 +13,9 @@ import AggregationType from './AggregationType';
 
 it('should render nothing if the current result is no duration and the view is not variable', () => {
   const node = shallow(
-    <AggregationType report={{data: {view: {entity: null}}, result: {type: 'rawData'}}} />
+    <AggregationType
+      report={{data: {view: {entity: null, properties: ['rawData']}}, result: {type: 'rawData'}}}
+    />
   );
 
   expect(node).toMatchSnapshot();
@@ -22,7 +24,9 @@ it('should render nothing if the current result is no duration and the view is n
 it('should render an aggregation selection for duration reports', () => {
   const node = shallow(
     <AggregationType
-      report={{data: {view: {property: 'duration'}, configuration: {aggregationType: 'median'}}}}
+      report={{
+        data: {view: {properties: ['duration']}, configuration: {aggregationType: 'median'}},
+      }}
     />
   );
 
@@ -32,7 +36,12 @@ it('should render an aggregation selection for duration reports', () => {
 it('should render an additional sum field for variable reports', () => {
   const node = shallow(
     <AggregationType
-      report={{data: {view: {entity: 'variable'}, configuration: {aggregationType: 'sum'}}}}
+      report={{
+        data: {
+          view: {entity: 'variable', properties: [{}]},
+          configuration: {aggregationType: 'sum'},
+        },
+      }}
     />
   );
 
@@ -48,7 +57,9 @@ it('should reevaluate the report when changing the aggregation type', () => {
 
   const node = shallow(
     <AggregationType
-      report={{data: {view: {property: 'duration'}, configuration: {aggregationType: 'median'}}}}
+      report={{
+        data: {view: {properties: ['duration']}, configuration: {aggregationType: 'median'}},
+      }}
       onChange={spy}
     />
   );
@@ -65,7 +76,7 @@ it('should hide median aggregation if processpart is defined', () => {
     <AggregationType
       report={{
         data: {
-          view: {property: 'duration'},
+          view: {properties: ['duration']},
           configuration: {aggregationType: 'avg', processPart: 'defined'},
         },
       }}

@@ -29,7 +29,7 @@ export default function processDefaultData({formatter = (v) => v, report}) {
     labels[0] = t('report.view.userTask');
   }
 
-  const displayRelativeValue = view.property === 'frequency' && !hideRelativeValue;
+  const displayRelativeValue = view.properties[0] === 'frequency' && !hideRelativeValue;
   const displayAbsoluteValue = isDurationReport(report) || !hideAbsoluteValue;
 
   if (!displayAbsoluteValue) {

@@ -7,7 +7,7 @@
 import {post} from 'request';
 
 export function isDurationReport(report) {
-  return report?.data?.view?.property === 'duration';
+  return report?.data?.view?.properties.includes('duration');
 }
 
 export async function evaluateReport(payload, filter = [], query = {}) {

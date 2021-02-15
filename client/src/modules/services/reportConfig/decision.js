@@ -5,11 +5,11 @@
  */
 
 export const view = [
-  {key: 'rawData', group: 'raw', data: {property: 'rawData'}},
+  {key: 'rawData', group: 'raw', data: {properties: ['rawData']}},
   {
     key: 'evaluationCount',
     group: 'count',
-    data: {property: 'frequency'},
+    data: {properties: ['frequency']},
   },
 ];
 

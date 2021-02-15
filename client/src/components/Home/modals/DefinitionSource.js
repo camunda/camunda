@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import equal from 'deep-equal';
+import equal from 'fast-deep-equal';
 
 import {t} from 'translation';
 import {Typeahead, LoadingIndicator, Form, Labeled, Checklist} from 'components';

@@ -8,7 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
-import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables} from 'services';
+import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables, reportConfig} from 'services';
 import {DefinitionSelection, Button} from 'components';
 
 import ReportSelect from './ReportSelect';
@@ -51,7 +51,7 @@ const report = {
     processDefinitionKey: 'aKey',
     processDefinitionVersions: ['aVersion'],
     tenantIds: [],
-    view: {entity: 'processInstance', property: 'frequency'},
+    view: {entity: 'processInstance', properties: ['frequency']},
     groupBy: {type: 'none', unit: null},
     visualization: 'number',
     filter: [],
@@ -81,7 +81,7 @@ it('should call the provided updateReport property function when a setting chang
 
 it('should disable the groupBy Select if view is not selected', () => {
   const node = shallow(
-    <ReportControlPanel {...props} report={{...report, data: {...report.data, view: ''}}} />
+    <ReportControlPanel {...props} report={{...report, data: {...report.data, view: null}}} />
   );
 
   expect(node.find(ReportSelect).at(1)).toBeDisabled();
@@ -127,7 +127,7 @@ it('should load the flownode names and hand them to the filter and process part'
       {...props}
       report={{
         ...report,
-        data: {...report.data, view: {entity: 'processInstance', property: 'duration'}},
+        data: {...report.data, view: {entity: 'processInstance', properties: ['duration']}},
       }}
     />
   );
@@ -146,7 +146,7 @@ it('should only display process part button if view is process instance duration
       {...props}
       report={{
         ...report,
-        data: {...report.data, view: {entity: 'processInstance', property: 'duration'}},
+        data: {...report.data, view: {entity: 'processInstance', properties: ['duration']}},
       }}
     />
   );
@@ -156,7 +156,7 @@ it('should only display process part button if view is process instance duration
   node.setProps({
     report: {
       ...report,
-      data: {...report.data, view: {entity: 'processInstance', property: 'frequency'}},
+      data: {...report.data, view: {entity: 'processInstance', properties: ['frequency']}},
     },
   });
 
@@ -173,7 +173,7 @@ it('should set aggregation to avergage if aggregation is median after setting a 
         ...report,
         data: {
           ...report.data,
-          view: {entity: 'processInstance', property: 'duration'},
+          view: {entity: 'processInstance', properties: ['duration']},
           configuration: {
             ...report.data.configuration,
             aggregationType: 'median',
@@ -199,7 +199,7 @@ it('should only display target value button if view is flownode duration', () =>
         data: {
           ...report.data,
           visualization: 'heat',
-          view: {entity: 'flowNode', property: 'duration'},
+          view: {entity: 'flowNode', properties: ['duration']},
         },
       }}
     />
@@ -208,7 +208,10 @@ it('should only display target value button if view is flownode duration', () =>
   expect(node.find('TargetValueComparison')).toExist();
 
   node.setProps({
-    report: {...report, data: {...report.data, view: {entity: 'flowNode', property: 'frequency'}}},
+    report: {
+      ...report,
+      data: {...report.data, view: {entity: 'flowNode', properties: ['frequency']}},
+    },
   });
 
   expect(node.find('TargetValueComparison')).not.toExist();
@@ -258,7 +261,7 @@ it('should reset variable view report when changing to a definition that does no
           ...report.data,
           view: {
             entity: 'variable',
-            property: {name: 'doubleVar', type: 'Double'},
+            properties: [{name: 'doubleVar', type: 'Double'}],
           },
         },
       }}
@@ -420,19 +423,19 @@ it('should show the number of process instances in the current Filter', () => {
 it('should show a measure selection for views that have a measure', () => {
   const node = shallow(<ReportControlPanel {...props} />);
 
-  expect(node).toIncludeText('Measure');
-  expect(node.find('Select').prop('value')).toBe('frequency');
+  expect(node.find('Measure')).toExist();
+  expect(node.find('Measure').prop('report')).toBe(props.report.data);
 });
 
 it('should show not show a measure selection where it does not make sense', () => {
   const node = shallow(
     <ReportControlPanel
       {...props}
-      report={update(props.report, {data: {view: {$set: {entity: null, property: 'rawData'}}}})}
+      report={update(props.report, {data: {view: {$set: {entity: null, properties: ['rawData']}}}})}
     />
   );
 
-  expect(node).not.toIncludeText('Measure');
+  expect(node.find('Measure')).not.toExist();
 });
 
 it('should allow collapsing sections', () => {
@@ -493,4 +496,23 @@ it('should add new variables to includedColumns when switching definition/versio
   expect(spy.mock.calls[0][0].configuration.tableColumns.includedColumns).toEqual({
     $set: ['variable:existingVariable', 'variable:newVariable'],
   });
+});
+
+it('should call updateReport with correct payload when adding measures', () => {
+  const spy = jest.fn();
+  const node = shallow(<ReportControlPanel {...props} updateReport={spy} />);
+
+  const reportUpdateMock = {};
+  reportConfig.process.update.mockReturnValueOnce(reportUpdateMock);
+  node.find('.addMeasure').find(Button).simulate('click');
+
+  expect(reportConfig.process.update).toHaveBeenCalledWith(
+    'view',
+    {
+      entity: 'processInstance',
+      properties: ['frequency', 'duration'],
+    },
+    {...props, updateReport: spy}
+  );
+  expect(spy).toHaveBeenCalledWith(reportUpdateMock, true);
 });

@@ -28,7 +28,7 @@ export function Heatmap({report, formatter, mightFail, context}) {
     name,
     result,
     data: {
-      view: {property},
+      view: {properties},
       configuration: {
         alwaysShowAbsolute,
         alwaysShowRelative,
@@ -39,7 +39,7 @@ export function Heatmap({report, formatter, mightFail, context}) {
     },
   } = report;
 
-  const isDuration = property.toLowerCase().includes('duration');
+  const isDuration = properties[0].toLowerCase().includes('duration');
   const alwaysShow = isDuration ? alwaysShowAbsolute : alwaysShowAbsolute || alwaysShowRelative;
 
   if (!xml || !result) {

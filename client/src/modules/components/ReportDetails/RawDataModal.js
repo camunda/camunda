@@ -35,7 +35,7 @@ export function RawDataModal({name, report, close, mightFail}) {
               },
               view: {
                 entity: null,
-                property: 'rawData',
+                properties: ['rawData'],
               },
               groupBy: {
                 type: 'none',

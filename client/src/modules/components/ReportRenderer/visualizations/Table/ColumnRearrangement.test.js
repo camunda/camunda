@@ -12,7 +12,7 @@ jest.mock('./processRawData', () => jest.fn());
 
 it('should render child node', () => {
   const node = shallow(
-    <ColumnRearrangement report={{result: {data: {}}, data: {view: {}}}}>
+    <ColumnRearrangement report={{result: {data: {}}, data: {view: {properties: []}}}}>
       some child content
     </ColumnRearrangement>
   );

@@ -15,7 +15,8 @@ import {Form} from 'components';
 export default function TableConfig({report, onChange}) {
   let typeSpecificComponent = null;
 
-  const {property} = (report.combined ? Object.values(report.result.data)[0] : report).data.view;
+  const property = (report.combined ? Object.values(report.result.data)[0] : report).data.view
+    .properties[0];
 
   const groupBy = !report.combined && report.data.groupBy.type;
 

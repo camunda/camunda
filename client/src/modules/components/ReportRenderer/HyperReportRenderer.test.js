@@ -19,7 +19,7 @@ it('should convert a hypermap to a combined report', () => {
           processDefinitionKey: 'aKey',
           processDefinitionVersion: '1',
           view: {
-            property: 'duration',
+            properties: ['duration'],
             entity: 'userTask',
           },
           groupBy: {
@@ -81,7 +81,7 @@ it('should format single reports names for hyper reports distributed by date var
           processDefinitionKey: 'aKey',
           processDefinitionVersion: '1',
           view: {
-            property: 'frequency',
+            properties: ['frequency'],
             entity: 'processInstance',
           },
           groupBy: {

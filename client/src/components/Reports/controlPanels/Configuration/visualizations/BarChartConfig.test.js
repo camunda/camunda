@@ -22,7 +22,7 @@ const barReport = {
   combined: false,
   data: {
     visualization: 'bar',
-    view: {property: 'frequency'},
+    view: {properties: ['frequency']},
     groupBy: {},
     distributedBy: {type: 'none', value: null},
     configuration,
@@ -40,7 +40,7 @@ it('should not display show instance count and color picker for combined reports
       report={{
         ...barReport,
         combined: true,
-        result: {data: {test: {data: {view: {property: 'frequency'}}}}},
+        result: {data: {test: {data: {view: {properties: ['frequency']}}}}},
       }}
     />
   );

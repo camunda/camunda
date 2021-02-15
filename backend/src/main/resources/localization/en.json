@@ -248,6 +248,7 @@
     "reportSetup": "Report Setup",
     "downloadCSV": "Download CSV",
     "measure": "Measure",
+    "addMeasure": "Add Measure",
     "templates": {
       "blank": "Blank report",
       "heatmap": "Heatmap: Flownode count",
@@ -284,6 +285,7 @@
       "userTask": "User Task",
       "count": "Count",
       "duration": "Duration",
+      "multi": "Count and Duration",
       "evaluationCount": "Evaluation Count",
       "variable": "Variable",
       "process": "Process View",

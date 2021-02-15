@@ -28,12 +28,17 @@ config.process.update = (type, data, props) => {
       changes.configuration.aggregationType = {$set: 'avg'};
     }
 
-    if (data.property !== 'duration' || data.entity !== 'processInstance') {
+    if (data.properties[0] !== 'duration' || data.entity !== 'processInstance') {
       changes.configuration.processPart = {$set: null};
     }
 
     if (data.entity === 'userTask' && props.report.data.view?.entity !== 'userTask') {
       changes.configuration.hiddenNodes = {$set: {active: false, keys: []}};
+    }
+
+    if (data.properties.length > 1) {
+      // multi-measure reports do not support goals
+      changes.configuration.targetValue = {active: {$set: false}};
     }
   }
 
@@ -87,7 +92,7 @@ function shouldResetDistributedBy(type, data, report) {
       }
 
       // flow node reports: reset when changing from count to duration view when grouped by duration
-      if (data.property === 'duration' && report.groupBy.type === 'duration') {
+      if (data.properties[0] === 'duration' && report.groupBy.type === 'duration') {
         return true;
       }
     }
@@ -119,7 +124,7 @@ function shouldResetDistributedBy(type, data, report) {
       }
 
       // user task report: reset when changing from count to duration view when grouped by duration
-      if (data.property === 'duration' && report.groupBy.type === 'duration') {
+      if (data.properties[0] === 'duration' && report.groupBy.type === 'duration') {
         return true;
       }
     }
@@ -159,7 +164,7 @@ function getDefaultSorting({reportType, data: {view, groupBy, visualization}}) {
     return null;
   }
 
-  if (view?.property === 'rawData') {
+  if ((view?.properties?.[0] ?? view?.property) === 'rawData') {
     const by = reportType === 'process' ? 'startDate' : 'evaluationDateTime';
     return {by, order: 'desc'};
   }

@@ -31,7 +31,7 @@ const props = {
       processDefinitionName: 'aName',
       processDefinitionVersions: ['2', '1'],
       tenantIds: ['sales', 'consulting'],
-      view: {property: 'frequency', entity: 'processInstance'},
+      view: {properties: ['frequency'], entity: 'processInstance'},
       groupBy: {type: 'startDate', value: {unit: 'automatic'}},
     },
     name: 'Report Name',
@@ -91,7 +91,7 @@ it('should not show tenant section on share pages', () => {
 it('should have special handling for variable views', () => {
   const variableReport = update(props.report, {
     data: {
-      view: {$set: {entity: 'variable', property: {name: 'x', type: 'Integer'}}},
+      view: {$set: {entity: 'variable', properties: [{name: 'x', type: 'Integer'}]}},
       groupBy: {$set: {type: 'none', value: null}},
     },
   });

@@ -21,7 +21,7 @@ const configuration = {
 
 const lineReport = {
   combined: false,
-  data: {visualization: 'line', view: {property: 'frequency'}, configuration},
+  data: {visualization: 'line', view: {properties: ['frequency']}, configuration},
 };
 
 it('it should display correct configuration for linechart', () => {

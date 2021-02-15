@@ -7,7 +7,7 @@
 import React from 'react';
 import {withRouter} from 'react-router-dom';
 import update from 'immutability-helper';
-import deepEqual from 'deep-equal';
+import deepEqual from 'fast-deep-equal';
 
 import {evaluateReport} from 'services';
 import {DashboardRenderer, EntityNameForm} from 'components';

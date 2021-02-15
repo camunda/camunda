@@ -16,7 +16,7 @@ export default class ProcessReportRenderer extends React.Component {
     const Component = this.getComponent();
     const props = {
       ...this.props,
-      formatter: getFormatter(report.data.view.property),
+      formatter: getFormatter(report.data.view.properties[0]),
       report: {...this.props.report, result: processResult(this.props.report)},
     };
 

@@ -197,6 +197,35 @@
     }
   }
 
+  &.small {
+    font-size: 11px;
+    background: none;
+    border: none;
+    color: var(--grey-darken-13);
+    padding: 3px;
+    padding-top: 2px;
+    border-radius: 2px;
+
+    &:hover {
+      background-color: var(--silver-darken-87);
+    }
+
+    &:active,
+    &.active {
+      background-color: var(--silver-darken-80);
+    }
+
+    &:disabled,
+    &[disabled] {
+      opacity: 0.5;
+    }
+
+    .Icon:first-child {
+      margin-right: 3px;
+      transform: translateY(1px);
+    }
+  }
+
   &.main {
     color: var(--grey-darken-33);
     font-size: 14px;

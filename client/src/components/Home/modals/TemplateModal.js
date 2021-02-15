@@ -7,7 +7,7 @@
 import React, {useState, useEffect} from 'react';
 import {Link} from 'react-router-dom';
 import classnames from 'classnames';
-import deepEqual from 'deep-equal';
+import deepEqual from 'fast-deep-equal';
 
 import {Button, Modal, DefinitionSelection, BPMNDiagram} from 'components';
 import {loadProcessDefinitionXml} from 'services';

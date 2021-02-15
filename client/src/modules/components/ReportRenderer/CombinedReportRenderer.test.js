@@ -36,7 +36,7 @@ const reportA = {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: '1',
     view: {
-      property: 'foo',
+      properties: ['foo'],
     },
     groupBy: {
       type: 'processInstance',

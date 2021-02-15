@@ -53,7 +53,7 @@ const templateState = {
       dimensions: {height: 2, width: 4},
       report: {
         name: 'A Report Name',
-        data: {view: {entity: 'processInstance', property: 'frequency'}},
+        data: {view: {entity: 'processInstance', properties: ['frequency']}},
       },
     },
   ],

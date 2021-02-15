@@ -15,7 +15,7 @@ export default function UserTaskDurationTime({
   },
   onChange,
 }) {
-  if (view && view.entity === 'userTask' && view.property === 'duration') {
+  if (view && view.entity === 'userTask' && view.properties.includes('duration')) {
     return (
       <li className="UserTaskDurationTime">
         <span className="label">{t('report.config.userTaskDuration.legend')}</span>

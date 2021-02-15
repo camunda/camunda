@@ -24,7 +24,7 @@ const {formatTenantName} = formatters;
 
 function getSelectedView(view, groupBy, type) {
   if (view.entity === 'variable') {
-    return `${t('report.view.variable')} ${view.property.name}`;
+    return `${t('report.view.variable')} ${view.properties[0].name}`;
   }
 
   const config = reportConfig[type];

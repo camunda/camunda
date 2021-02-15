@@ -16,7 +16,7 @@ const validProps = {
       processDefinitionVersion: 1,
       view: {
         entity: 'flowNode',
-        property: 'duration',
+        properties: ['duration'],
       },
       groupBy: {
         type: 'flowNodes',
@@ -60,7 +60,7 @@ const invalidProps = {
       processDefinitionVersion: 1,
       view: {
         entity: 'flowNode',
-        property: 'duration',
+        properties: ['duration'],
       },
       groupBy: {
         type: 'None',

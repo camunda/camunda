@@ -23,8 +23,16 @@ jest.mock('services', () => {
   return {
     ...rest,
     loadReports: jest.fn().mockReturnValue([
-      {id: '1', data: {visualization: 'table', view: {property: 'frequency'}}, name: 'Report 1'},
-      {id: '2', data: {visualization: 'number', view: {property: 'duration'}}, name: 'Report 2'},
+      {
+        id: '1',
+        data: {visualization: 'table', view: {properties: ['frequency']}},
+        name: 'Report 1',
+      },
+      {
+        id: '2',
+        data: {visualization: 'number', view: {properties: ['duration']}},
+        name: 'Report 2',
+      },
       {combined: true, id: '3', data: {visualization: 'number'}, name: 'Report 3'},
     ]),
   };

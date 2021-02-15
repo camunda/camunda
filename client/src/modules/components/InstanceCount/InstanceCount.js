@@ -5,7 +5,7 @@
  */
 
 import React, {useState} from 'react';
-import equals from 'deep-equal';
+import equals from 'fast-deep-equal';
 import update from 'immutability-helper';
 
 import {Popover} from 'components';

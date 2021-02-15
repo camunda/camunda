@@ -248,6 +248,7 @@
     "reportSetup": "Einstellungen",
     "downloadCSV": "CSV herunterladen",
     "measure": "Maß",
+    "addMeasure": "Maß hinzufügen",
     "templates": {
       "blank": "Leerer Bericht",
       "heatmap": "Heatmap: Prozessknoten Anzahl",
@@ -284,6 +285,7 @@
       "userTask": "Benutzeraufgabe",
       "count": "Anzahl",
       "duration": "Dauer",
+      "multi": "Anzahl und Dauer",
       "evaluationCount": "Evaluierungsanzahl",
       "variable": "Variable",
       "process": "Prozessansicht",

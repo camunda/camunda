@@ -11,12 +11,14 @@ import UserTaskDurationTime from './UserTaskDurationTime';
 
 it('should render nothing if the current result does is no duration or no user task', () => {
   const node = shallow(
-    <UserTaskDurationTime report={{data: {view: {entity: 'flowNodes', property: 'duration'}}}} />
+    <UserTaskDurationTime
+      report={{data: {view: {entity: 'flowNodes', properties: ['duration']}}}}
+    />
   );
 
   expect(node).toMatchSnapshot();
 
-  node.setProps({report: {data: {view: {entity: 'userTask', property: 'frequency'}}}});
+  node.setProps({report: {data: {view: {entity: 'userTask', properties: ['frequency']}}}});
 
   expect(node).toMatchSnapshot();
 });
@@ -27,7 +29,7 @@ it('should render an duration type selection for user task duration reports', ()
       report={{
         data: {
           configuration: {userTaskDurationTime: 'total'},
-          view: {entity: 'userTask', property: 'duration'},
+          view: {entity: 'userTask', properties: ['duration']},
         },
       }}
     />
@@ -44,7 +46,7 @@ it('should reevaluate the report when changing the duration type', () => {
       report={{
         data: {
           configuration: {userTaskDurationTime: 'total'},
-          view: {entity: 'userTask', property: 'duration'},
+          view: {entity: 'userTask', properties: ['duration']},
         },
       }}
       onChange={spy}

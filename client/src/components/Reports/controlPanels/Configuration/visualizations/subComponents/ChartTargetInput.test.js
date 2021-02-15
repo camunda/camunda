@@ -18,7 +18,7 @@ const validProps = {
       processDefinitionVersion: 1,
       view: {
         entity: 'flowNode',
-        property: 'duration',
+        properties: ['duration'],
       },
       visualization: 'bar',
       configuration: {
@@ -84,7 +84,7 @@ it('should hide select dateFormat dropdown when viewProperty is not equal durati
         processDefinitionVersion: 1,
         view: {
           entity: 'flowNode',
-          property: 'frequency',
+          properties: ['frequency'],
         },
         visualization: 'bar',
         configuration: {
@@ -121,7 +121,7 @@ it('should display select date format if combined report is duration report', as
             data: {
               visualization: 'bar',
               view: {
-                property: 'duration',
+                properties: ['duration'],
               },
             },
           },

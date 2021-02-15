@@ -12,7 +12,7 @@ it('should process duration reports', () => {
       data: {
         groupBy: {},
         view: {
-          property: 'duration',
+          properties: ['duration'],
           entity: 'processInstance',
         },
         configuration: {},
@@ -50,7 +50,7 @@ it('should filter hidden flow nodes', () => {
           type: 'flowNodes',
           value: '',
         },
-        view: {property: ''},
+        view: {properties: ['']},
       },
     })
   ).toEqual({
@@ -70,7 +70,7 @@ it('should add a label to data with variable value key "missing"', () => {
           type: 'variable',
           value: '',
         },
-        view: {property: ''},
+        view: {properties: ['']},
       },
     })
   ).toEqual({

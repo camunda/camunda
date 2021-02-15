@@ -10,7 +10,7 @@ import classnames from 'classnames';
 import './Button.scss';
 
 export default React.forwardRef(function Button(
-  {active, main, primary, warning, icon, className, link, ...props},
+  {active, main, primary, warning, icon, small, className, link, ...props},
   ref
 ) {
   return (
@@ -22,6 +22,7 @@ export default React.forwardRef(function Button(
         main,
         warning,
         icon,
+        small,
         link,
         active,
       })}

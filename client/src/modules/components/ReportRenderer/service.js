@@ -33,7 +33,7 @@ export function processResult(report) {
 
   const filteredResult = filterResult(result, data);
   const formattedResult = formatResult(filteredResult, data);
-  if (data.view.property.toLowerCase?.().includes('duration')) {
+  if (data.view.properties[0].toLowerCase?.().includes('duration')) {
     if (formattedResult.type === 'number') {
       return {...formattedResult, data: formattedResult.data};
     }

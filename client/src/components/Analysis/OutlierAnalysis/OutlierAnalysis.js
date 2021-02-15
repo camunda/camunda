@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import equal from 'deep-equal';
+import equal from 'fast-deep-equal';
 import classnames from 'classnames';
 
 import {t} from 'translation';

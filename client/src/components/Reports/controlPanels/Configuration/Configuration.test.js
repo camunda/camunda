@@ -48,7 +48,7 @@ it('should be disabled if the report is combined with a duration view', () => {
       report={{
         combined: true,
         data: {reports: [{id: 'test'}]},
-        result: {test: {data: {view: {property: 'duration'}}}},
+        result: {test: {data: {view: {properties: ['duration']}}}},
       }}
     />
   );

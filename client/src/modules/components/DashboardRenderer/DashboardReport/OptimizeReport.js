@@ -15,7 +15,7 @@ import {
   InstanceCount,
 } from 'components';
 import {withErrorHandling} from 'HOC';
-import deepEqual from 'deep-equal';
+import deepEqual from 'fast-deep-equal';
 
 import {themed} from 'theme';
 

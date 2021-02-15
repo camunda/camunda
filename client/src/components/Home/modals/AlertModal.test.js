@@ -51,12 +51,20 @@ const initialAlert = {
 };
 
 const reports = [
-  {id: '5', name: 'Some Report', data: {view: {property: 'frequency'}, visualization: 'number'}},
-  {id: '8', name: 'Nice report', data: {view: {property: 'frequency'}, visualization: 'number'}},
+  {
+    id: '5',
+    name: 'Some Report',
+    data: {view: {properties: ['frequency']}, visualization: 'number'},
+  },
+  {
+    id: '8',
+    name: 'Nice report',
+    data: {view: {properties: ['frequency']}, visualization: 'number'},
+  },
   {
     id: '9',
     name: 'Nice report',
-    data: {view: {property: 'duration'}, visualization: 'number'},
+    data: {view: {properties: ['duration']}, visualization: 'number'},
   },
 ];
 

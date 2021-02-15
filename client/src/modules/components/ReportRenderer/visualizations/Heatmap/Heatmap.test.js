@@ -47,7 +47,7 @@ const report = {
       xml: 'some diagram XML',
     },
     view: {
-      property: 'frequency',
+      properties: ['frequency'],
     },
     visualization: 'heat',
   },

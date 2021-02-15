@@ -93,7 +93,7 @@ it('should apply templates from the location state', async () => {
             processDefinitionName: 'Definition Name',
             processDefinitionVersions: ['latest'],
             tenantIds: [null, 'a'],
-            view: {entity: 'flowNode', property: 'frequency'},
+            view: {entity: 'flowNode', properties: ['frequency']},
             groupBy: {type: 'flowNodes', value: null},
             visualization: 'heat',
           },

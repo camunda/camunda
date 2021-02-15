@@ -27,7 +27,7 @@ const report = {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: '1',
     view: {
-      property: 'foo',
+      properties: ['foo'],
       entity: 'whatever',
     },
     groupBy: {
@@ -64,7 +64,7 @@ const exampleDurationReport = {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: '1',
     view: {
-      property: 'foo',
+      properties: ['foo'],
       entity: 'whatever',
     },
     groupBy: {

@@ -6,7 +6,7 @@
 
 import React from 'react';
 import update from 'immutability-helper';
-import deepEqual from 'deep-equal';
+import deepEqual from 'fast-deep-equal';
 
 import {EntityNameForm, BPMNDiagram, LoadingIndicator} from 'components';
 import {withErrorHandling, withUser} from 'HOC';

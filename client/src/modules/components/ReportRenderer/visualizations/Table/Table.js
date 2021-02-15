@@ -21,7 +21,7 @@ import './Table.scss';
 export function Table(props) {
   const {report, updateReport, mightFail, loadReport} = props;
   const {reportType, combined, data, result} = report;
-  const needEndpoint = result && !combined && data.view?.property === 'rawData';
+  const needEndpoint = result && !combined && data.view?.properties[0] === 'rawData';
 
   const [camundaEndpoints, setCamundaEndpoints] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -62,7 +62,7 @@ export function Table(props) {
 
     let tableData;
     // raw data
-    if (data.view.property === 'rawData') {
+    if (data.view.properties[0] === 'rawData') {
       tableData = processRawData[reportType](props, camundaEndpoints);
       tableData.fetchData = fetchData;
       tableData.loading = loading;

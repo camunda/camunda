@@ -14,7 +14,7 @@ export default class ColumnRearrangement extends React.Component {
   render() {
     const {updateReport, report} = this.props;
     // not raw data report
-    if (report.combined || report.data.view.property !== 'rawData' || !updateReport) {
+    if (report.combined || report.data.view.properties[0] !== 'rawData' || !updateReport) {
       return this.props.children;
     }
     return (

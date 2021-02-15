@@ -13,7 +13,7 @@ export function isDurationHeatmap({
   return (
     view &&
     (view.entity === 'flowNode' || view.entity === 'userTask') &&
-    view.property === 'duration' &&
+    view.properties[0] === 'duration' &&
     visualization === 'heat' &&
     processDefinitionKey &&
     processDefinitionVersions &&
@@ -22,5 +22,5 @@ export function isDurationHeatmap({
 }
 
 export function isProcessInstanceDuration({view}) {
-  return view && view.entity === 'processInstance' && view.property === 'duration';
+  return view && view.entity === 'processInstance' && view.properties[0] === 'duration';
 }

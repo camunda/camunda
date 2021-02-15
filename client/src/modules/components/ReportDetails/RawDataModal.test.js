@@ -43,7 +43,7 @@ it('evaluate the raw data of the report on mount', () => {
           xml: 'xml data',
         },
         groupBy: {type: 'none', value: null},
-        view: {entity: null, property: 'rawData'},
+        view: {entity: null, properties: ['rawData']},
         visualization: 'table',
       },
     },

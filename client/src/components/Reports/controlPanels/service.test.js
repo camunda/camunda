@@ -6,10 +6,10 @@
 
 import {isDurationHeatmap, isProcessInstanceDuration} from './service';
 
-it('Should correctly check for duration heatmap', () => {
+it('should correctly check for duration heatmap', () => {
   expect(
     isDurationHeatmap({
-      view: {entity: 'flowNode', property: 'duration'},
+      view: {entity: 'flowNode', properties: ['duration']},
       visualization: 'heat',
       processDefinitionKey: 'test',
       processDefinitionVersions: ['test'],
@@ -20,7 +20,7 @@ it('Should correctly check for duration heatmap', () => {
 it('should work for user task reports', () => {
   expect(
     isDurationHeatmap({
-      view: {entity: 'userTask', property: 'duration'},
+      view: {entity: 'userTask', properties: ['duration']},
       visualization: 'heat',
       processDefinitionKey: 'test',
       processDefinitionVersions: ['test'],
@@ -29,7 +29,7 @@ it('should work for user task reports', () => {
 
   expect(
     isDurationHeatmap({
-      view: {entity: 'userTask', property: 'frequency'},
+      view: {entity: 'userTask', properties: ['frequency']},
       visualization: 'heat',
       processDefinitionKey: 'test',
       processDefinitionVersions: ['test'],
@@ -39,6 +39,6 @@ it('should work for user task reports', () => {
 
 it('should correclty check for process instance duration reports', () => {
   expect(
-    isProcessInstanceDuration({view: {entity: 'processInstance', property: 'duration'}})
+    isProcessInstanceDuration({view: {entity: 'processInstance', properties: ['duration']}})
   ).toBeTruthy();
 });

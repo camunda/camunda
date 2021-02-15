@@ -18,7 +18,7 @@ jest.mock('./defaultChart', () => jest.fn());
 const report = {
   data: {
     configuration: {targetValue: {active: false}},
-    view: {property: 'frequency'},
+    view: {properties: ['frequency']},
     groupBy: {
       value: '',
       type: '',

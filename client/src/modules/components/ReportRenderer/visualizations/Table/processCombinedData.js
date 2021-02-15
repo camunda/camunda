@@ -18,7 +18,7 @@ export default function processCombinedData({formatter, report}) {
   } = report.data;
   const {view, groupBy} = Object.values(report.result.data)[0].data;
 
-  const displayRelativeValue = view.property === 'frequency' && !hideRelativeValue;
+  const displayRelativeValue = view.properties[0] === 'frequency' && !hideRelativeValue;
   const displayAbsoluteValue = !hideAbsoluteValue;
 
   const keysLabel = labels[0][0];

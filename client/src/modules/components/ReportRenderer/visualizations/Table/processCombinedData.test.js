@@ -27,7 +27,7 @@ jest.mock('./service', () => ({
 const singleReport = {
   reportType: 'process',
   data: {
-    view: {property: 'frequency'},
+    view: {properties: ['frequency']},
     groupBy: {type: 'none'},
   },
 };

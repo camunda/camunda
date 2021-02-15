@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import deepEqual from 'deep-equal';
+import deepEqual from 'fast-deep-equal';
 
 import {ErrorBoundary, MessageBox} from 'components';
 import {formatters, getReportResult} from 'services';
@@ -102,7 +102,7 @@ function containsData(report) {
 
     return (
       instanceCount ||
-      (report.data.view.property === 'frequency' && report.data.visualization === 'number')
+      (report.data.view.properties.includes('frequency') && report.data.visualization === 'number')
     );
   }
 }

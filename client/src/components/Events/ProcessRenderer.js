@@ -5,7 +5,7 @@
  */
 
 import React, {useEffect} from 'react';
-import deepEqual from 'deep-equal';
+import deepEqual from 'fast-deep-equal';
 import ReactDOM from 'react-dom';
 import Checkmark from './Checkmark';
 

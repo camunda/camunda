@@ -27,7 +27,7 @@ export default function DashboardTemplateModal({onClose}) {
           report: {
             name: t('dashboard.templates.totalInstances'),
             data: {
-              view: {entity: 'processInstance', property: 'frequency'},
+              view: {entity: 'processInstance', properties: ['frequency']},
               groupBy: {type: 'none', value: null},
               visualization: 'number',
             },
@@ -39,7 +39,7 @@ export default function DashboardTemplateModal({onClose}) {
           report: {
             name: t('dashboard.templates.avgDuration'),
             data: {
-              view: {entity: 'processInstance', property: 'duration'},
+              view: {entity: 'processInstance', properties: ['duration']},
               groupBy: {type: 'none', value: null},
               visualization: 'number',
             },
@@ -51,7 +51,7 @@ export default function DashboardTemplateModal({onClose}) {
           report: {
             name: t('dashboard.templates.instanceTrends'),
             data: {
-              view: {entity: 'processInstance', property: 'frequency'},
+              view: {entity: 'processInstance', properties: ['frequency']},
               groupBy: {type: 'startDate', value: {unit: 'automatic'}},
               visualization: 'bar',
               configuration: {
@@ -67,7 +67,7 @@ export default function DashboardTemplateModal({onClose}) {
           report: {
             name: t('dashboard.templates.durationTrends'),
             data: {
-              view: {entity: 'processInstance', property: 'duration'},
+              view: {entity: 'processInstance', properties: ['duration']},
               groupBy: {type: 'startDate', value: {unit: 'automatic'}},
               visualization: 'bar',
               configuration: {
@@ -83,7 +83,7 @@ export default function DashboardTemplateModal({onClose}) {
           report: {
             name: t('dashboard.templates.flownodeFrequency'),
             data: {
-              view: {entity: 'flowNode', property: 'frequency'},
+              view: {entity: 'flowNode', properties: ['frequency']},
               groupBy: {type: 'flowNodes', value: null},
               visualization: 'heat',
             },
@@ -95,7 +95,7 @@ export default function DashboardTemplateModal({onClose}) {
           report: {
             name: t('dashboard.templates.flownodeDuration'),
             data: {
-              view: {entity: 'flowNode', property: 'duration'},
+              view: {entity: 'flowNode', properties: ['duration']},
               groupBy: {type: 'flowNodes', value: null},
               visualization: 'heat',
             },
@@ -114,7 +114,7 @@ export default function DashboardTemplateModal({onClose}) {
           report: {
             name: t('dashboard.templates.idleTime'),
             data: {
-              view: {entity: 'userTask', property: 'duration'},
+              view: {entity: 'userTask', properties: ['duration']},
               groupBy: {type: 'userTasks', value: null},
               visualization: 'heat',
               configuration: {userTaskDurationTime: 'idle'},
@@ -127,7 +127,7 @@ export default function DashboardTemplateModal({onClose}) {
           report: {
             name: t('dashboard.templates.workTime'),
             data: {
-              view: {entity: 'userTask', property: 'duration'},
+              view: {entity: 'userTask', properties: ['duration']},
               groupBy: {type: 'userTasks', value: null},
               visualization: 'heat',
               configuration: {userTaskDurationTime: 'work'},
@@ -140,7 +140,7 @@ export default function DashboardTemplateModal({onClose}) {
           report: {
             name: t('dashboard.templates.tasksStarted'),
             data: {
-              view: {entity: 'userTask', property: 'frequency'},
+              view: {entity: 'userTask', properties: ['frequency']},
               groupBy: {type: 'startDate', value: {unit: 'month'}},
               visualization: 'bar',
               distributedBy: {type: 'assignee', value: null},
@@ -157,7 +157,7 @@ export default function DashboardTemplateModal({onClose}) {
           report: {
             name: t('dashboard.templates.tasksCompleted'),
             data: {
-              view: {entity: 'userTask', property: 'frequency'},
+              view: {entity: 'userTask', properties: ['frequency']},
               groupBy: {type: 'endDate', value: {unit: 'month'}},
               visualization: 'bar',
               distributedBy: {type: 'assignee', value: null},

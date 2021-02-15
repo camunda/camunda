@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {withRouter} from 'react-router-dom';
-import equal from 'deep-equal';
+import equal from 'fast-deep-equal';
 
 import {loadReports, getCollection} from 'services';
 import {Popover, ColorPicker} from 'components';
@@ -39,7 +39,8 @@ export default withRouter(
           report.reportType === 'process' &&
           acceptedVisualizations.includes(report.data.visualization) &&
           report.data.distributedBy.type === 'none' &&
-          report.data.view.property !== 'rawData'
+          report.data.view.properties.length === 1 &&
+          report.data.view.properties[0] !== 'rawData'
       );
 
       this.setState({reports});
@@ -141,10 +142,10 @@ export default withRouter(
         (data.view.entity === 'flowNode' && referenceReport.view.entity === 'userTask') ||
         (data.view.entity === 'userTask' && referenceReport.view.entity === 'flowNode');
 
-      const identicalProperty = data.view.property === referenceReport.view.property;
+      const identicalProperty = data.view.properties[0] === referenceReport.view.properties[0];
       const bothDurationReports =
-        data.view.property.toLowerCase?.().includes('duration') &&
-        referenceReport.view.property.toLowerCase?.().includes('duration');
+        data.view.properties[0].toLowerCase?.().includes('duration') &&
+        referenceReport.view.properties[0].toLowerCase?.().includes('duration');
       const bothVariableReports =
         data.view.entity === 'variable' && referenceReport.view.entity === 'variable';
 

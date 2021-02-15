@@ -37,7 +37,7 @@ export default function DecisionReportRenderer(props) {
     <div className="component">
       <Component
         {...props}
-        formatter={getFormatter(view.property)}
+        formatter={getFormatter(view.properties[0])}
         report={{...props.report, result: processResult(props.report)}}
       />
     </div>

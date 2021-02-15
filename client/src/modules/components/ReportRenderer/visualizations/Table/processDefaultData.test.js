@@ -33,7 +33,7 @@ const report = {
       value: {},
       type: '',
     },
-    view: {property: 'frequency'},
+    view: {properties: ['frequency']},
     configuration: {
       tableColumns: {
         includeNewVariables: true,

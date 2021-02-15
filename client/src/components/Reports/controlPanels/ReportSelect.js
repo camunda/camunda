@@ -5,11 +5,11 @@
  */
 
 import React from 'react';
+import equal from 'fast-deep-equal';
+import update from 'immutability-helper';
 
 import {Select} from 'components';
 import {reportConfig} from 'services';
-import equal from 'deep-equal';
-import update from 'immutability-helper';
 
 import './ReportSelect.scss';
 import {t} from 'translation';
@@ -24,7 +24,7 @@ function ReportSelect({type, field, value, disabled, onChange, variables, report
     options = addVariables(
       options,
       variables,
-      (entity, property) => ({entity, property}),
+      (entity, property) => ({entity, properties: [property]}),
       ({type}) => ['Float', 'Integer', 'Short', 'Long', 'Double'].includes(type)
     );
 
@@ -34,7 +34,8 @@ function ReportSelect({type, field, value, disabled, onChange, variables, report
           return option;
         } else {
           return (
-            option.options.find(({data}) => data.property === value?.property) || option.options[0]
+            option.options.find(({data}) => equal(data.properties, value?.properties)) ||
+            option.options[0]
           );
         }
       });

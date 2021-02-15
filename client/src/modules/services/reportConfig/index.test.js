@@ -12,8 +12,8 @@ describe('process update', () => {
   it('should reset hidden nodes configuration when switching to user task view', () => {
     const changes = config.process.update(
       'view',
-      {property: 'duration', entity: 'userTask'},
-      {report: {data: {view: {entity: 'flowNode', property: 'duration'}, configuration: {}}}}
+      {properties: ['duration'], entity: 'userTask'},
+      {report: {data: {view: {entity: 'flowNode', properties: ['duration']}, configuration: {}}}}
     );
 
     expect(changes.configuration.hiddenNodes).toEqual({$set: {active: false, keys: []}});
@@ -21,10 +21,14 @@ describe('process update', () => {
   it('should not reset hidden nodes configuration when switching between different flow node views', () => {
     const changes = config.process.update(
       'view',
-      {property: 'duration', entity: 'flowNode'},
+      {properties: ['duration'], entity: 'flowNode'},
       {
         report: {
-          data: {view: {entity: 'flowNode', property: 'frequency'}, groupBy: {}, configuration: {}},
+          data: {
+            view: {entity: 'flowNode', properties: ['frequency']},
+            groupBy: {},
+            configuration: {},
+          },
         },
       }
     );
@@ -35,7 +39,7 @@ describe('process update', () => {
   it('should reset aggregation type if its incompatible outside variable reports', () => {
     const changes = config.process.update(
       'view',
-      {property: 'duration', entity: 'processInstance'},
+      {properties: ['duration'], entity: 'processInstance'},
       {report: {data: {configuration: {aggregationType: 'sum'}}, configuration: {}}}
     );
 
@@ -49,7 +53,7 @@ describe('process update', () => {
       {
         report: {
           reportType: 'decision',
-          data: {visualization: 'table', view: {property: 'rawData'}},
+          data: {visualization: 'table', view: {properties: ['rawData']}},
         },
       }
     );
@@ -92,7 +96,7 @@ describe('process update', () => {
       {
         report: {
           data: {
-            view: {entity: 'userTask'},
+            view: {entity: 'userTask', properties: ['frequency']},
             distributedBy: {type: 'assignee', value: null},
           },
         },
@@ -107,7 +111,7 @@ describe('process update', () => {
       {
         report: {
           data: {
-            view: {entity: 'userTask'},
+            view: {entity: 'userTask', properties: ['frequency']},
             distributedBy: {type: 'assignee', value: null},
           },
         },
@@ -150,11 +154,11 @@ describe('process update', () => {
   it('should keep distributed by compatible when changing view', () => {
     let changes = config.process.update(
       'view',
-      {entity: 'flowNode'},
+      {entity: 'flowNode', properties: ['frequency']},
       {
         report: {
           data: {
-            view: {entity: 'processInstance'},
+            view: {entity: 'processInstance', properties: ['frequency']},
             distributedBy: {type: 'variable', value: {}},
             configuration: {},
           },
@@ -165,11 +169,11 @@ describe('process update', () => {
 
     changes = config.process.update(
       'view',
-      {entity: 'flowNode', property: 'duration'},
+      {entity: 'flowNode', properties: ['duration']},
       {
         report: {
           data: {
-            view: {entity: 'flowNode', property: 'count'},
+            view: {entity: 'flowNode', properties: ['frequency']},
             groupBy: {type: 'duration'},
             distributedBy: {type: 'flowNode', value: null},
             configuration: {},
@@ -213,5 +217,21 @@ describe('process update', () => {
     );
 
     expect(changes.distributedBy).not.toBeDefined();
+  });
+
+  it('should deactivate target value when switching to multi-measure', () => {
+    const changes = config.process.update(
+      'view',
+      {properties: ['frequency', 'duration'], entity: 'processInstance'},
+      {
+        report: {
+          data: {
+            configuration: {targetValue: {active: true, countProgress: {}, durationProgress: {}}},
+          },
+        },
+      }
+    );
+
+    expect(changes.configuration.targetValue).toEqual({active: {$set: false}});
   });
 });

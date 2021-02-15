@@ -71,7 +71,9 @@ exports[`it should display correct configuration for barchart 1`] = `
             },
             "groupBy": Object {},
             "view": Object {
-              "property": "frequency",
+              "properties": Array [
+                "frequency",
+              ],
             },
             "visualization": "bar",
           },

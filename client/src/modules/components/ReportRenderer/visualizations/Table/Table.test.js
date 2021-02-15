@@ -27,7 +27,7 @@ const report = {
       value: {},
       type: '',
     },
-    view: {property: 'duration'},
+    view: {properties: ['duration']},
     configuration: {
       tableColumns: {
         includeNewVariables: true,
@@ -58,7 +58,7 @@ it('should get the camunda endpoints for raw data', () => {
       {...props}
       report={{
         ...report,
-        data: {...report.data, view: {property: 'rawData'}},
+        data: {...report.data, view: {properties: ['rawData']}},
         result: {data: [1, 2, 3], pagination: {limit: 20}},
       }}
     />
@@ -124,7 +124,7 @@ it('should reload report with correct pagination parameters', async () => {
       loadReport={spy}
       report={{
         ...report,
-        data: {...report.data, view: {property: 'rawData'}},
+        data: {...report.data, view: {properties: ['rawData']}},
         result: {data: [1, 2, 3], pagination: {limit: 20}},
       }}
     />

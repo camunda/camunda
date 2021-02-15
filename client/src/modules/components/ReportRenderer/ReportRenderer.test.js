@@ -19,7 +19,7 @@ const reportTemplate = {
     processDefinitionKey: 'aKey',
     processDefinitionVersions: ['1'],
     view: {
-      property: 'foo',
+      properties: ['foo'],
       entity: 'whatever',
     },
     groupBy: {
@@ -204,7 +204,7 @@ describe('SetupNotice', () => {
       data: {
         ...reportTemplate.data,
         view: {
-          property: 'rawData',
+          properties: ['rawData'],
         },
       },
     };
@@ -236,7 +236,7 @@ describe('NoDataNotice', () => {
       data: {
         ...reportTemplate.data,
         view: {
-          property: 'frequency',
+          properties: ['frequency'],
           entity: 'processInstance',
         },
         groupBy: {

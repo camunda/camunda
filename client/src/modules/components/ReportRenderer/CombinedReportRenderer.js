@@ -35,7 +35,7 @@ export default withErrorHandling(
           <Component
             {...this.props}
             report={processedReport}
-            formatter={getFormatter(view.property)}
+            formatter={getFormatter(view.properties[0])}
           />
         </div>
       );

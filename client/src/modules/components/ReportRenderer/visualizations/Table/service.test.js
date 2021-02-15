@@ -149,7 +149,7 @@ it('should return correct combined table report data properties', () => {
     combined: false,
     data: {
       view: {
-        property: 'foo',
+        properties: ['foo'],
       },
       groupBy: {
         type: 'startDate',

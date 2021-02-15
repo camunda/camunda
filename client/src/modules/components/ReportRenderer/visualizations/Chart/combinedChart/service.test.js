@@ -31,7 +31,7 @@ it('should return correct cominbed chart repot data properties for single report
     combined: false,
     data: {
       view: {
-        property: 'foo',
+        properties: ['foo'],
       },
       groupBy: {
         type: 'startDate',

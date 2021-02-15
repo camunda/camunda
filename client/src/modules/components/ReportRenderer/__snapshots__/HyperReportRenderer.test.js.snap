@@ -51,7 +51,9 @@ exports[`should convert a hypermap to a combined report 1`] = `
               "processDefinitionVersion": "1",
               "view": Object {
                 "entity": "userTask",
-                "property": "duration",
+                "properties": Array [
+                  "duration",
+                ],
               },
               "visualization": "bar",
             },
@@ -102,7 +104,9 @@ exports[`should convert a hypermap to a combined report 1`] = `
               "processDefinitionVersion": "1",
               "view": Object {
                 "entity": "userTask",
-                "property": "duration",
+                "properties": Array [
+                  "duration",
+                ],
               },
               "visualization": "bar",
             },

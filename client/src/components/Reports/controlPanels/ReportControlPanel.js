@@ -7,7 +7,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {DefinitionSelection, Select, Icon, Button} from 'components';
+import {DefinitionSelection, Icon, Button} from 'components';
 import {Filter} from 'filter';
 import {withErrorHandling} from 'HOC';
 import {getFlowNodeNames, reportConfig, loadProcessDefinitionXml, loadVariables} from 'services';
@@ -20,6 +20,7 @@ import UserTaskDurationTime from './UserTaskDurationTime';
 import ReportSelect from './ReportSelect';
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
+import Measure from './Measure';
 import {isDurationHeatmap, isProcessInstanceDuration} from './service';
 
 import './ReportControlPanel.scss';
@@ -107,7 +108,7 @@ export default withErrorHandling(
 
       if (view?.entity === 'variable') {
         return {
-          name: view.property.name,
+          name: view.properties[0].name,
           reset: (change) => {
             change.view = {$set: null};
             change.groupBy = {$set: null};
@@ -209,7 +210,12 @@ export default withErrorHandling(
       const {data, result} = this.props.report;
       const {showSource, showSetup, showFilter, scrolled, flowNodeNames, variables} = this.state;
 
-      const shouldDisplayMeasure = ['frequency', 'duration'].includes(data.view?.property);
+      const shouldDisplayMeasure = ['frequency', 'duration'].includes(data.view?.properties[0]);
+      const isSupportedMultiMeasureView = ['processInstance', 'incident'].includes(
+        data.view?.entity
+      );
+      const shouldAllowAddingMeasure =
+        data.view?.properties.length === 1 && shouldDisplayMeasure && isSupportedMultiMeasureView;
 
       return (
         <div className="ReportControlPanel">
@@ -252,6 +258,21 @@ export default withErrorHandling(
               </Button>
             </h3>
             <ul>
+              <li className="addMeasure">
+                <Button
+                  small
+                  disabled={!shouldAllowAddingMeasure}
+                  onClick={() =>
+                    this.updateReport('view', {
+                      ...data.view,
+                      properties: ['frequency', 'duration'],
+                    })
+                  }
+                >
+                  <Icon type="plus" />
+                  {t('report.addMeasure')}
+                </Button>
+              </li>
               <li className="select">
                 <span className="label">{t(`report.view.label`)}</span>
                 <ReportSelect
@@ -264,22 +285,7 @@ export default withErrorHandling(
                   onChange={(newValue) => this.updateReport('view', newValue)}
                 />
               </li>
-              {shouldDisplayMeasure && (
-                <li className="select">
-                  <span className="label">{t('report.measure')}</span>
-                  <Select
-                    value={data.view.property}
-                    onChange={(property) => this.updateReport('view', {...data.view, property})}
-                  >
-                    <Select.Option value="frequency">{t('report.view.count')}</Select.Option>
-                    <Select.Option value="duration">
-                      {data.view.entity === 'incident'
-                        ? t('report.view.resolutionDuration')
-                        : t('report.view.duration')}
-                    </Select.Option>
-                  </Select>
-                </li>
-              )}
+              {shouldDisplayMeasure && <Measure report={data} updateReport={this.updateReport} />}
               <li className="select">
                 <span className="label">{t(`report.groupBy.label`)}</span>
                 <ReportSelect

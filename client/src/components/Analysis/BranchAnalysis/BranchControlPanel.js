@@ -6,7 +6,7 @@
 
 import update from 'immutability-helper';
 import React from 'react';
-import equal from 'deep-equal';
+import equal from 'fast-deep-equal';
 
 import {DefinitionSelection, SelectionPreview} from 'components';
 import {Filter} from 'filter';
