@@ -528,17 +528,41 @@
           # write_buffer_size: 67108864
 
         # Enables RocksDB statistics, which will be written to the RocksDB log file.
-        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_STATISTICS_ENABLED
-        # statisticsEnabled: false
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_ENABLESTATISTICS
+        # enableStatistics: false
 
         # Configures the memory limit, which can be used by RocksDB. Be aware that this setting only applies to RocksDB, which is used by the Zeebe's state management and that
         # an RocksDB instance is used per partition.
-        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORY_LIMIT
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
         # memoryLimit: 512MB
 
         # Configures how many files are kept open by RocksDB, per default it is unlimited (-1).
         # This is a performance optimization: if you set a value greater than zero, it will keep track and cap the number of open
         # files in the TableCache. On accessing the files it needs to look them up in the cache.
         # You should configure this property if the maximum open files are limited on your system, or if you have thousands of files in your RocksDB state as there is a memory overhead to keeping all of them open, and setting maxOpenFiles will bound that.
-        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MAX_OPEN_FILES
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MAXOPENFILES
         # maxOpenFiles: -1
+
+        # Configures the maximum number of simultaneous write buffers/memtables RocksDB will have in memory. Normally about 2/3s of the memoryLimit
+        # is used by the write buffers, and this is shared equally by each write buffers. This means the higher maxWriteBufferNumber is, the less
+        # memory is available for each. This means you will flush less data at once, but may flush more often.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MAXWRITEBUFFERNUMBER
+        # maxWriteBufferNumber: 6
+
+        # Configures how many write buffers should be full before they are merged and flushed to disk. Having a higher number here means you may
+        # flush less often, but will flush more data at once. Have a lower one means flushing more often, but flushing less data at once.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MINWRITEBUFFERNUMBERTOMERGE
+        # minWriteBufferNumberToMerge: 3
+
+        # Configures a rate limit for write I/O of RocksDB. Setting any value less than or equal to 0 will disable this, which is the default setting.
+        # Setting a rate limit on the write I/O can help achieve more stable performance by avoiding write spikes consuming all available IOPS, leading to
+        # more predictable read rates.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_IORATEBYTESPERSECOND
+        # ioRateBytesPerSecond: 0
+
+        # Configures if the RocksDB write-ahead-log is used or not. By default, every write in RocksDB goes to the active write buffer and the WAL; this
+        # helps recover a RocksDB instance should it crash before the write buffer is flushed. Zeebe however only recovers from specific point-in-time snapshot,
+        # and never from a previously active RocksDB instance, which makes it a good candidate to disable the WAL. It's currently disabled by default as
+        # performance is a bit less predictable when disabling the WAL.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_DISABLEWAL
+        # disableWal: false

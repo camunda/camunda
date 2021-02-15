@@ -74,7 +74,8 @@ public final class ZeebeRocksDbFactoryTest {
         (ZeebeRocksDbFactory<DefaultColumnFamily>) ZeebeRocksDbFactory.newFactory();
     final var factoryWithCustomOptions =
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
-            ZeebeRocksDbFactory.newFactory(RocksDbConfiguration.of(customProperties));
+            ZeebeRocksDbFactory.newFactory(
+                new RocksDbConfiguration().setColumnFamilyOptions(customProperties));
 
     // when
     final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
@@ -106,7 +107,8 @@ public final class ZeebeRocksDbFactoryTest {
 
     final var factoryWithCustomOptions =
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
-            ZeebeRocksDbFactory.newFactory(RocksDbConfiguration.of(customProperties));
+            ZeebeRocksDbFactory.newFactory(
+                new RocksDbConfiguration().setColumnFamilyOptions(customProperties));
 
     // expect
     assertThatThrownBy(
