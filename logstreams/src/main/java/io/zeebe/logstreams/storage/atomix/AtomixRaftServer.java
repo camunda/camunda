@@ -9,8 +9,8 @@ package io.zeebe.logstreams.storage.atomix;
 
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.storage.log.RaftLogReader;
+import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.atomix.storage.journal.JournalReader.Mode;
 import java.util.Optional;
 
 public final class AtomixRaftServer implements AtomixReaderFactory, AtomixAppenderSupplier {

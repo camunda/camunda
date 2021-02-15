@@ -16,6 +16,7 @@
  */
 package io.atomix.storage.journal;
 
+import io.atomix.storage.journal.JournalReader.Mode;
 import java.io.Closeable;
 
 /**
@@ -47,7 +48,7 @@ public interface Journal<E> extends Closeable {
    * @param mode the reader mode
    * @return A new journal reader.
    */
-  JournalReader<E> openReader(long index, JournalReader.Mode mode);
+  JournalReader<E> openReader(long index, Mode mode);
 
   /**
    * Returns a boolean indicating whether the journal is open.

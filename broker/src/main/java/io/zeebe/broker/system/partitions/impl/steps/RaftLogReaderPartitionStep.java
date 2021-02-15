@@ -7,7 +7,7 @@
  */
 package io.zeebe.broker.system.partitions.impl.steps;
 
-import io.atomix.storage.journal.JournalReader.Mode;
+import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.partitions.PartitionContext;
 import io.zeebe.broker.system.partitions.PartitionStep;
