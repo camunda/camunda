@@ -175,6 +175,7 @@ pipeline {
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/test-java.sh')
+                            runMavenContainerCommand('.ci/scripts/distribution/random-test-java.sh')
                         }
                     }
 

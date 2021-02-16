@@ -25,7 +25,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class RandomWorkflowExecutionPropertyTest {
+public class WorkflowExecutionRandomizedPropertyTest {
 
   /*
    * Some notes on scaling of these tests:
