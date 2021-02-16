@@ -186,6 +186,6 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers) {
     MessageEventProcessors.addMessageProcessors(
-        typedRecordProcessors, zeebeState, subscriptionCommandSender);
+        typedRecordProcessors, zeebeState, subscriptionCommandSender, writers);
   }
 }

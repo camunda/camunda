@@ -46,7 +46,7 @@ public final class MessageTimeToLiveChecker implements Runnable {
     }
 
     writer.reset();
-    writer.appendFollowUpCommand(message.getKey(), MessageIntent.DELETE, deleteMessageCommand);
+    writer.appendFollowUpCommand(message.getKey(), MessageIntent.EXPIRE, deleteMessageCommand);
 
     final long position = writer.flush();
     return position > 0;

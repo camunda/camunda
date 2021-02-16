@@ -14,6 +14,7 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowIntent;
 import java.util.HashMap;
@@ -46,6 +47,8 @@ public final class EventAppliers implements EventApplier {
 
     register(WorkflowIntent.CREATED, new WorkflowCreatedApplier(state));
     register(DeploymentDistributionIntent.DISTRIBUTING, new DeploymentDistributionApplier(state));
+
+    register(MessageIntent.EXPIRED, new MessageExpiredApplier(state.getMessageState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

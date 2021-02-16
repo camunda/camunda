@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -38,6 +39,11 @@ public final class MigratedStreamProcessors {
 
     MIGRATED_VALUE_TYPES.put(ValueType.ERROR, MIGRATED);
     MIGRATED_VALUE_TYPES.put(ValueType.WORKFLOW, MIGRATED);
+    MIGRATED_VALUE_TYPES.put(
+        ValueType.MESSAGE,
+        record ->
+            record.getIntent() == MessageIntent.EXPIRE
+                || record.getIntent() == MessageIntent.EXPIRED);
   }
 
   private MigratedStreamProcessors() {}

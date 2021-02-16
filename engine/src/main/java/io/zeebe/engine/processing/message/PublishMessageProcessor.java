@@ -116,7 +116,7 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
 
     } else {
       // don't need to add the message to the store - it can not be correlated afterwards
-      streamWriter.appendFollowUpEvent(messageKey, MessageIntent.DELETED, messageRecord);
+      streamWriter.appendFollowUpEvent(messageKey, MessageIntent.EXPIRED, messageRecord);
     }
   }
 

@@ -303,11 +303,6 @@ public final class ReProcessingStateMachine {
       LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, currentEvent, e);
     }
 
-    if (eventProcessor == null) {
-      onRecordReprocessed(currentEvent);
-      return;
-    }
-
     final UnifiedRecordValue value =
         recordValues.readRecordValue(currentEvent, metadata.getValueType());
     typedEvent.wrap(currentEvent, metadata, value);
@@ -385,7 +380,7 @@ public final class ReProcessingStateMachine {
             .ifPresent(keyGeneratorControls::setKeyIfHigher);
       }
 
-    } else if (recordPosition <= lastSourceEventPosition) {
+    } else if (recordPosition <= lastSourceEventPosition && eventProcessor != null) {
       // skip records that are not yet processed
       reprocessingStreamWriter.configureSourceContext(recordPosition);
 

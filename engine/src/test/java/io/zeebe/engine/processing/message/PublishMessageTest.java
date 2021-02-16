@@ -185,7 +185,7 @@ public final class PublishMessageTest {
     // then
     final Record<MessageRecordValue> deletedEvent =
         RecordingExporter.messageRecords()
-            .withIntent(MessageIntent.DELETED)
+            .withIntent(MessageIntent.EXPIRED)
             .withRecordKey(publishedRecord.getKey())
             .getFirst();
 
@@ -208,7 +208,7 @@ public final class PublishMessageTest {
     // then
     final Record<MessageRecordValue> deletedEvent =
         RecordingExporter.messageRecords()
-            .withIntent(MessageIntent.DELETED)
+            .withIntent(MessageIntent.EXPIRED)
             .withRecordKey(publishedRecord.getKey())
             .getFirst();
 

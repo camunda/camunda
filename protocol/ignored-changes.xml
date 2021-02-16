@@ -25,4 +25,15 @@
     <!-- final modifier was added to class -->
     <differenceType>3003</differenceType>
   </difference>
+  <!-- same intents are renamed for version 1.0.0 -->
+  <difference>
+    <className>io/zeebe/protocol/record/intent/MessageIntent</className>
+    <differenceType>6001</differenceType>
+    <field>DELETE</field>
+  </difference>
+  <difference>
+    <className>io/zeebe/protocol/record/intent/MessageIntent</className>
+    <differenceType>6001</differenceType>
+    <field>DELETED</field>
+  </difference>
 </differences>
