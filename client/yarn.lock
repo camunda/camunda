@@ -4606,13 +4606,6 @@ babel-preset-react-app@^10.0.0:
     babel-plugin-macros "2.8.0"
     babel-plugin-transform-react-remove-prop-types "0.4.24"
 
-babel-runtime@^5.8.34:
-  version "5.8.38"
-  resolved "https://registry.yarnpkg.com/babel-runtime/-/babel-runtime-5.8.38.tgz#1c0b02eb63312f5f087ff20450827b425c9d4c19"
-  integrity sha1-HAsC62MxL18If/IEUIJ7QlydTBk=
-  dependencies:
-    core-js "^1.0.0"
-
 babel-runtime@^6.26.0:
   version "6.26.0"
   resolved "https://registry.yarnpkg.com/babel-runtime/-/babel-runtime-6.26.0.tgz#965c7058668e82b55d7bfe04ff2337bc8b5647fe"
@@ -5859,11 +5852,6 @@ core-js-pure@^3.0.0, core-js-pure@^3.0.1:
   resolved "https://registry.yarnpkg.com/core-js-pure/-/core-js-pure-3.6.5.tgz#c79e75f5e38dbc85a662d91eea52b8256d53b813"
   integrity sha512-lacdXOimsiD0QyNf9BC/mxivNJ/ybBGJXQFKzRekp1WTHoVUWsUHEn+2T8GJAzzIhyOuXA+gOxCVN3l+5PLPUA==
 
-core-js@^1.0.0:
-  version "1.2.7"
-  resolved "https://registry.yarnpkg.com/core-js/-/core-js-1.2.7.tgz#652294c14651db28fa93bd2d5ff2983a4f08c636"
-  integrity sha1-ZSKUwUZR2yj6k70tX/KYOk8IxjY=
-
 core-js@^2.4.0:
   version "2.6.11"
   resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.6.11.tgz#38831469f9922bded8ee21c9dc46985e0399308c"
@@ -6409,19 +6397,12 @@ debug@2.6.9, debug@^2.2.0, debug@^2.3.3, debug@^2.6.0, debug@^2.6.9:
   dependencies:
     ms "2.0.0"
 
-debug@4, debug@^4.0.1, debug@^4.1.0, debug@^4.1.1, debug@^4.2.0, debug@^4.3.0, debug@^4.3.1:
+debug@4, debug@4.3.1, debug@^4.0.1, debug@^4.1.0, debug@^4.1.1, debug@^4.2.0, debug@^4.3.0, debug@^4.3.1:
   version "4.3.1"
   resolved "https://registry.yarnpkg.com/debug/-/debug-4.3.1.tgz#f0d229c505e0c6d8c49ac553d1b13dc183f6b2ee"
   integrity sha512-doEwdvm4PCeK4K3RQN2ZC2BYUBaxwLARCqZmMjtF8a51J2Rb0xpVloFRnCODwqjpwnAoao4pelN8l3RJdv3gRQ==
   dependencies:
     ms "2.1.2"
-
-debug@4.1.1:
-  version "4.1.1"
-  resolved "https://registry.yarnpkg.com/debug/-/debug-4.1.1.tgz#3b72260255109c6b589cee050f1d516139664791"
-  integrity sha512-pYAIzeRo8J6KPEaJ0VWOh5Pzkbw/RetuzehGM7QRRX5he4fPHx2rdKMB256ehJCkX+XRQm16eZLqLNS8RSZXZw==
-  dependencies:
-    ms "^2.1.1"
 
 debug@^3.0.0, debug@^3.0.1, debug@^3.1.1, debug@^3.2.5, debug@^3.2.6:
   version "3.2.6"
@@ -7502,10 +7483,10 @@ esm@^3.2.25:
   resolved "https://registry.yarnpkg.com/esm/-/esm-3.2.25.tgz#342c18c29d56157688ba5ce31f8431fbb795cc10"
   integrity sha512-U1suiZ2oDVWv4zPO56S0NcR5QriEahGtdN2OR6FiOG4WJvcjBVFB0qI4+eKoWFH483PKGuLuu6V8Z4T5g63UVA==
 
-esotope-hammerhead@0.5.7:
-  version "0.5.7"
-  resolved "https://registry.yarnpkg.com/esotope-hammerhead/-/esotope-hammerhead-0.5.7.tgz#a5895cd4a89f724debf9c5638a76e12fd1ae7f18"
-  integrity sha512-5aDxLOFlwjwq4UH/aOGXZlSR0nyBJSTsSpdgcDs6DMjpcMxT+uaDRl1ZbQuIa57E5blHR5/Qt6X8EdXYCq10QA==
+esotope-hammerhead@0.5.8:
+  version "0.5.8"
+  resolved "https://registry.yarnpkg.com/esotope-hammerhead/-/esotope-hammerhead-0.5.8.tgz#df6463860d3bb0367cc0925e69b6bb66ed8bff73"
+  integrity sha512-nghD/3J4tcCNy9SfBirYDqGjfhK2i10MGM1COMq/PXgZjHKEwdiOt+vcvKoL6hD3QiGYCRKcLe0tWFuAsoJpzg==
   dependencies:
     "@types/estree" "^0.0.39"
 
@@ -9017,7 +8998,7 @@ htmlparser2@^3.3.0:
     inherits "^2.0.1"
     readable-stream "^3.1.1"
 
-http-cache-semantics@^4.0.0:
+http-cache-semantics@^4.0.0, http-cache-semantics@^4.1.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/http-cache-semantics/-/http-cache-semantics-4.1.0.tgz#49e91c5cbf36c9b94bcfcd71c23d5249ec74e390"
   integrity sha512-carPklcUh7ROWRK7Cv27RPtdhYhUsela/ue5/jKzjegVvXDqM2ILE9Q2BGn9JZJh1g87cp56su/FgQSzcWS8cQ==
@@ -9125,6 +9106,11 @@ human-signals@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/human-signals/-/human-signals-2.1.0.tgz#dc91fcba42e4d06e4abaed33b3e7a3c02f514ea0"
   integrity sha512-B4FFZ6q/T2jhhksgkbEW3HBvWIfDW85snkQgawt07S7J5QXTk6BkNV+0yAeZrM5QpMAdYlocGoljn0sJ/WQkFw==
+
+humanize-duration@^3.25.0:
+  version "3.25.1"
+  resolved "https://registry.yarnpkg.com/humanize-duration/-/humanize-duration-3.25.1.tgz#50e12bf4b3f515ec91106107ee981e8cfe955d6f"
+  integrity sha512-P+dRo48gpLgc2R9tMRgiDRNULPKCmqFYgguwqOO2C0fjO35TgdURDQDANSR1Nt92iHlbHGMxOTnsB8H8xnMa2Q==
 
 husky@^4.3.8:
   version "4.3.8"
@@ -16341,10 +16327,10 @@ testcafe-browser-tools@2.0.13:
     read-file-relative "^1.2.0"
     which-promise "^1.0.0"
 
-testcafe-hammerhead@18.0.0:
-  version "18.0.0"
-  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-18.0.0.tgz#e4f08e80512ab13e1accd89fe35cb6719937a2fb"
-  integrity sha512-qtyzxo1TuIJJ0S2z5Cy+GRHv5V3o6HQlKfH1iv3/U1qJQNs53sRYtZ3+B5b/ddefPbCF5opZdY6uLhhBlj8X/w==
+testcafe-hammerhead@19.2.3:
+  version "19.2.3"
+  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-19.2.3.tgz#bfd03cc071a16f2411665d627b998db3f639e316"
+  integrity sha512-tJPMe1xNe3OWVwZdwxcpnSI0wn8z63rcmZUTeYChSByqfMqlpiyQ8Z+HgsMMuKJaivHIhYatKiLmBBrjfy2iHQ==
   dependencies:
     acorn-hammerhead "^0.3.0"
     asar "^2.0.1"
@@ -16352,10 +16338,11 @@ testcafe-hammerhead@18.0.0:
     brotli "^1.3.1"
     crypto-md5 "^1.0.0"
     css "2.2.3"
-    debug "4.1.1"
-    esotope-hammerhead "0.5.7"
+    debug "4.3.1"
+    esotope-hammerhead "0.5.8"
+    http-cache-semantics "^4.1.0"
     iconv-lite "0.5.1"
-    lodash "^4.17.19"
+    lodash "^4.17.20"
     lru-cache "2.6.3"
     match-url-wildcard "0.0.4"
     merge-stream "^1.0.1"
@@ -16371,13 +16358,43 @@ testcafe-hammerhead@18.0.0:
     tunnel-agent "0.6.0"
     webauth "^1.1.0"
 
-testcafe-legacy-api@4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/testcafe-legacy-api/-/testcafe-legacy-api-4.0.0.tgz#700bacce8d16028250d41b643051645b4cfe7cd5"
-  integrity sha512-Tn+YEH8hqDPQs/1/d+A9G+FdfejougtoWX0wRxrLq5ECYy2qxwH8p9EGDUNatLm0IFIumVpcz2tSZkvRpfKLSg==
+testcafe-hammerhead@>=19.1.1:
+  version "19.3.0"
+  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-19.3.0.tgz#5f1007147710b6d7a9ed7fb8821d84ca6eb3d5b7"
+  integrity sha512-OH3LJuCw5O9i1SiEmY1MkTcglsxYhV6qXPXPutdhg0LXEPO8mFvvQAoS1a21JxzgM4aQ+Ju0gNpHMk1ynF8bIA==
+  dependencies:
+    acorn-hammerhead "^0.3.0"
+    asar "^2.0.1"
+    bowser "1.6.0"
+    brotli "^1.3.1"
+    crypto-md5 "^1.0.0"
+    css "2.2.3"
+    debug "4.3.1"
+    esotope-hammerhead "0.5.8"
+    http-cache-semantics "^4.1.0"
+    iconv-lite "0.5.1"
+    lodash "^4.17.20"
+    lru-cache "2.6.3"
+    match-url-wildcard "0.0.4"
+    merge-stream "^1.0.1"
+    mime "~1.4.1"
+    mustache "^2.1.1"
+    nanoid "^3.1.12"
+    os-family "^1.0.0"
+    parse5 "2.2.3"
+    pinkie "2.0.4"
+    read-file-relative "^1.2.0"
+    semver "5.5.0"
+    tough-cookie "2.3.3"
+    tunnel-agent "0.6.0"
+    webauth "^1.1.0"
+
+testcafe-legacy-api@4.2.3:
+  version "4.2.3"
+  resolved "https://registry.yarnpkg.com/testcafe-legacy-api/-/testcafe-legacy-api-4.2.3.tgz#022d875ddc2f1bf41cbe78d886af650349621a9a"
+  integrity sha512-2eTFrtq1Ynq+ad58cmlr1XqKx02cg0LTvzKRFGxTOWats7bDEDTNTmtDcKPFlq+QAejBLbW87ltlAp7+ok/xWg==
   dependencies:
     async "0.2.6"
-    babel-runtime "^5.8.34"
     dedent "^0.6.0"
     highlight-es "^1.0.0"
     is-jquery-obj "^0.1.0"
@@ -16388,7 +16405,9 @@ testcafe-legacy-api@4.0.0:
     parse5 "^2.1.5"
     pify "^2.3.0"
     pinkie "^2.0.1"
+    read-file-relative "^1.2.0"
     strip-bom "^2.0.0"
+    testcafe-hammerhead ">=19.1.1"
 
 testcafe-reporter-json@^2.1.0:
   version "2.2.0"
@@ -16415,10 +16434,10 @@ testcafe-reporter-xunit@^2.1.0:
   resolved "https://registry.yarnpkg.com/testcafe-reporter-xunit/-/testcafe-reporter-xunit-2.1.0.tgz#e6d66c572ce15af266706af0fd610b2a841dd443"
   integrity sha1-5tZsVyzhWvJmcGrw/WELKoQd1EM=
 
-testcafe@^1.10.1:
-  version "1.10.1"
-  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.10.1.tgz#0dc33954eabbdfb6ea018b789eb21b5557b35582"
-  integrity sha512-c1ErVj+QvQR7fqJs/XVa4S7Ctl5Hf5bxnkTaFVl4Qt2QlliL3EAXtL3WjCOx65Pd8BatxTWUCXJ5NVwAvq7jWg==
+testcafe@^1.11.0:
+  version "1.11.0"
+  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.11.0.tgz#d0a44bd6d380c6328137ee4e49a7a1fddbf48b3a"
+  integrity sha512-7niwd/Oj0fJbeidDyiKo6Idms287w5wpnzDswMCPGDJ0fQpVZCvJLDQuFcTEZMhncC8pEed0Up0Bdl50zyVLJA==
   dependencies:
     "@babel/core" "^7.12.1"
     "@babel/plugin-proposal-async-generator-functions" "^7.12.1"
@@ -16429,10 +16448,12 @@ testcafe@^1.10.1:
     "@babel/plugin-syntax-import-meta" "^7.10.4"
     "@babel/plugin-transform-async-to-generator" "^7.12.1"
     "@babel/plugin-transform-exponentiation-operator" "^7.12.1"
+    "@babel/plugin-transform-for-of" "^7.12.1"
     "@babel/plugin-transform-runtime" "^7.12.1"
     "@babel/preset-env" "^7.12.1"
     "@babel/preset-flow" "^7.12.1"
     "@babel/preset-react" "^7.12.1"
+    "@babel/runtime" "^7.12.5"
     "@types/node" "^10.12.19"
     async-exit-hook "^1.1.2"
     babel-plugin-module-resolver "^4.0.0"
@@ -16446,7 +16467,7 @@ testcafe@^1.10.1:
     chrome-remote-interface "^0.25.3"
     coffeescript "^2.3.1"
     commander "^2.8.1"
-    debug "^2.2.0"
+    debug "^4.3.1"
     dedent "^0.4.0"
     del "^3.0.0"
     device-specs "^1.0.0"
@@ -16459,6 +16480,7 @@ testcafe@^1.10.1:
     globby "^9.2.0"
     graceful-fs "^4.1.11"
     graphlib "^2.1.5"
+    humanize-duration "^3.25.0"
     import-lazy "^3.1.0"
     indent-string "^1.2.2"
     is-ci "^1.0.10"
@@ -16481,6 +16503,7 @@ testcafe@^1.10.1:
     pify "^2.3.0"
     pinkie "^2.0.4"
     pngjs "^3.3.1"
+    pretty-hrtime "^1.0.3"
     promisify-event "^1.0.0"
     qrcode-terminal "^0.10.0"
     read-file-relative "^1.2.0"
@@ -16492,8 +16515,8 @@ testcafe@^1.10.1:
     source-map-support "^0.5.16"
     strip-bom "^2.0.0"
     testcafe-browser-tools "2.0.13"
-    testcafe-hammerhead "18.0.0"
-    testcafe-legacy-api "4.0.0"
+    testcafe-hammerhead "19.2.3"
+    testcafe-legacy-api "4.2.3"
     testcafe-reporter-json "^2.1.0"
     testcafe-reporter-list "^2.1.0"
     testcafe-reporter-minimal "^2.1.0"
