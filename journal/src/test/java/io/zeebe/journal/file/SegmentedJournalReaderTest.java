@@ -28,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class SegmentedJournalReaderTest {
+class SegmentedJournalReaderTest {
 
   private static final int ENTRIES_PER_SEGMENT = 2;
   @TempDir Path directory;
@@ -48,7 +48,7 @@ public class SegmentedJournalReaderTest {
   private SegmentedJournal journal;
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     journal =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data").toFile())
@@ -60,7 +60,7 @@ public class SegmentedJournalReaderTest {
   }
 
   @Test
-  public void shouldReadAfterCompact() {
+  void shouldReadAfterCompact() {
     // given
     final int entriesPerSegment = 10;
     long asqn = 1;
