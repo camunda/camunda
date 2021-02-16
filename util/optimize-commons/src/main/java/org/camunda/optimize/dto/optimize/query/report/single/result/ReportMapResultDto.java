@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.result;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
@@ -17,16 +18,25 @@ import java.util.Optional;
 @Data
 public class ReportMapResultDto implements DecisionReportResultDto, ProcessReportResultDto {
 
-  private List<MapResultEntryDto> data = new ArrayList<>();
   private long instanceCount;
   private long instanceCountWithoutFilters;
-
-  public Optional<MapResultEntryDto> getEntryForKey(final String key) {
-    return data.stream().filter(entry -> key.equals(entry.getKey())).findFirst();
-  }
+  private List<MeasureDto<List<MapResultEntryDto>>> measures = new ArrayList<>();
 
   @Override
   public ResultType getType() {
     return ResultType.MAP;
+  }
+
+  public Optional<MapResultEntryDto> getEntryForKey(final String key) {
+    return getFirstMeasureData().stream().filter(entry -> key.equals(entry.getKey())).findFirst();
+  }
+
+  public void addMeasure(MeasureDto<List<MapResultEntryDto>> measure) {
+    this.measures.add(measure);
+  }
+
+  @JsonIgnore
+  public List<MapResultEntryDto> getFirstMeasureData() {
+    return measures.stream().findFirst().map(MeasureDto::getData).orElse(null);
   }
 }

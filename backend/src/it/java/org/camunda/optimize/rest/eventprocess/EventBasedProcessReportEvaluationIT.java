@@ -126,7 +126,7 @@ public class EventBasedProcessReportEvaluationIT extends AbstractEventProcessIT 
     // then the event process instance appears in the results
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(result.getData()).hasSize(expectedResults.size())
+    assertThat(result.getFirstMeasureData()).hasSize(expectedResults.size())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(expectedResults);
   }

@@ -9,6 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
@@ -54,7 +56,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
 
     // then
     // @formatter:off
-    final List<String> collect = result.getData().stream()
+    final List<String> collect = result.getFirstMeasureData().stream()
       .flatMap(entry -> entry.getValue().stream())
       .map(MapResultEntryDto::getKey)
       .collect(Collectors.toList());
@@ -115,6 +117,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     final HyperMapAsserter.GroupByAdder groupByAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
     if (candidateGroup1Count != null) {
       groupByAsserter.distributedByContains(

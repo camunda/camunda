@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.date.distributedby.variable;
 
 import org.assertj.core.util.Maps;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
@@ -51,8 +53,8 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVarWithPart
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   @Test
@@ -79,8 +81,8 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVarWithPart
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   @Test
@@ -116,8 +118,9 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVarWithPart
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfReferenceDate))
-        .distributedByContains("a string", 2000.)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains(localDateTimeToString(startOfReferenceDate))
+          .distributedByContains("a string", 2000.)
       .doAssert(result);
     // @formatter:on
   }

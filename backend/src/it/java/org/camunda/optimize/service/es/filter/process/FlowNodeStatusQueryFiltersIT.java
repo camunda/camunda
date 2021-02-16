@@ -53,7 +53,7 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
     assertThat(result.getEntryForKey(USER_TASK_2)).isPresent().get().extracting(MapResultEntryDto::getValue)
@@ -82,7 +82,7 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(result.getData()).hasSize(3);
+    assertThat(result.getFirstMeasureData()).hasSize(3);
     assertThat(result.getEntryForKey(START_EVENT)).isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(3.);
     assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
@@ -113,7 +113,7 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(result.getData()).hasSize(4);
+    assertThat(result.getFirstMeasureData()).hasSize(4);
     assertThat(result.getEntryForKey(START_EVENT)).isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(3.);
     assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
@@ -146,7 +146,7 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
     assertThat(result.getEntryForKey(USER_TASK_2)).isPresent().get().extracting(MapResultEntryDto::getValue)
@@ -178,7 +178,7 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
     assertThat(result.getInstanceCount()).isZero();
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
     // but no data is contained as no flow node can be running AND completed/canceled
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   @Test
@@ -205,7 +205,7 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
     assertThat(result.getEntryForKey(USER_TASK_2)).isPresent().get().extracting(MapResultEntryDto::getValue)
@@ -247,7 +247,7 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
   }

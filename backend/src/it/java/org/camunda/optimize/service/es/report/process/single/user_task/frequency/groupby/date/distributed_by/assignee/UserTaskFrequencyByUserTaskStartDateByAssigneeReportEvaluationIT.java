@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.frequency.groupby.date.distributed_by.assignee;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -52,9 +53,10 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(groupedByDayDateAsString(referenceDate))
-      .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-      .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(referenceDate))
+          .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
       .doAssert(result);
     // @formatter:on
   }
@@ -90,6 +92,7 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
     final HyperMapAsserter.GroupByAdder groupByAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(expectedInstanceCount)
       .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
     if (assignee1Count != null) {
       groupByAsserter.distributedByContains(DEFAULT_USERNAME, assignee1Count, DEFAULT_FULLNAME);
@@ -128,6 +131,7 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
       .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
       .doAssert(result);

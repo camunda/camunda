@@ -5,9 +5,15 @@
  */
 package org.camunda.optimize.service.es.report.util;
 
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,14 +37,33 @@ public class MapResultAsserter {
     return this;
   }
 
+  @Deprecated
   public MapResultAsserter groupedByContains(String distributedByKey, Double result) {
-    expectedResult.getData().add(new MapResultEntryDto(distributedByKey, result, distributedByKey));
     return this;
   }
 
+  @Deprecated
   public MapResultAsserter groupedByContains(String distributedByKey, Double result, String label) {
-    expectedResult.getData().add(new MapResultEntryDto(distributedByKey, result, label));
     return this;
+  }
+
+  public MeasureAdder measure(final ViewProperty viewProperty) {
+    return measure(viewProperty, null);
+  }
+
+  public MeasureAdder measure(final ViewProperty viewProperty,
+                                               final AggregationType aggregationType) {
+    return measure(viewProperty, aggregationType, null);
+  }
+
+  public MeasureAdder measure(final ViewProperty viewProperty,
+                                               final AggregationType aggregationType,
+                                               final UserTaskDurationTime userTaskDurationTime) {
+    return new MeasureAdder(this, viewProperty, aggregationType, userTaskDurationTime);
+  }
+
+  private void addMeasure(MeasureDto<List<MapResultEntryDto>> measure) {
+    expectedResult.addMeasure(measure);
   }
 
   public void doAssert(ReportMapResultDto actualResult) {
@@ -58,14 +83,14 @@ public class MapResultAsserter {
         actualResult.getInstanceCountWithoutFilters()
       ))
       .isEqualTo(expectedResult.getInstanceCountWithoutFilters());
-    assertThat(actualResult.getData())
+    assertThat(actualResult.getFirstMeasureData())
       .as("Data should not be null.")
       .isNotNull();
-    assertThat(actualResult.getData().size())
+    assertThat(actualResult.getFirstMeasureData().size())
       .as("The number of group by keys does not match!")
-      .isEqualTo(expectedResult.getData().size());
+      .isEqualTo(expectedResult.getFirstMeasureData().size());
 
-    actualResult.getData().forEach(actualGroupByEntry -> {
+    actualResult.getFirstMeasureData().forEach(actualGroupByEntry -> {
       Optional<MapResultEntryDto> expectedGroupBy =
         expectedResult.getEntryForKey(actualGroupByEntry.getKey());
       doAssertsOnGroupByEntry(actualGroupByEntry, expectedGroupBy);
@@ -74,6 +99,41 @@ public class MapResultAsserter {
     // this line is just to make sure that no new fields have been added that
     // should be compared and that the ordering of the lists matches.
     assertThat(actualResult).isEqualTo(expectedResult);
+  }
+
+  public class MeasureAdder {
+
+    private MapResultAsserter asserter;
+    private MeasureDto<List<MapResultEntryDto>> measure;
+
+    public MeasureAdder(final MapResultAsserter mapAsserter,
+                        final ViewProperty viewProperty,
+                        final AggregationType aggregationType,
+                        final UserTaskDurationTime userTaskDurationTime) {
+      this.asserter = mapAsserter;
+      this.measure = MeasureDto.of(viewProperty, aggregationType, userTaskDurationTime, new ArrayList<>());
+
+    }
+
+    public MeasureAdder groupedByContains(String distributedByKey, Double result) {
+      measure.getData().add(new MapResultEntryDto(distributedByKey, result, distributedByKey));
+      return this;
+    }
+
+    public MeasureAdder groupedByContains(String distributedByKey, Double result, String label) {
+      measure.getData().add(new MapResultEntryDto(distributedByKey, result, label));
+      return this;
+    }
+
+    public MapResultAsserter add() {
+      asserter.addMeasure(measure);
+      return asserter;
+    }
+
+    public void doAssert(ReportMapResultDto actualResult) {
+      add();
+      asserter.doAssert(actualResult);
+    }
   }
 
   private void doAssertsOnGroupByEntry(final MapResultEntryDto actualGroupByEntry,

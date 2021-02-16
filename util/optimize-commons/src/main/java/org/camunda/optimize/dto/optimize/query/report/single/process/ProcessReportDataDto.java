@@ -16,6 +16,7 @@ import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -25,7 +26,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
@@ -84,11 +84,16 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     this.processDefinitionVersions = Lists.newArrayList(processDefinitionVersion);
   }
 
+  @Override
+  public List<ViewProperty> getViewProperties() {
+    return view.getProperties();
+  }
+
   @JsonIgnore
   public boolean isFrequencyReport() {
     return Optional.ofNullable(view)
       .map(ProcessViewDto::getProperty)
-      .map(p -> p.equals(ProcessViewProperty.FREQUENCY))
+      .map(p -> p.equals(ViewProperty.FREQUENCY))
       .orElse(false);
   }
 

@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
@@ -30,7 +31,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -189,7 +189,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto PIDuration_startDateYear_barData = new ProcessReportDataBuilderHelper()
       .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
-      .viewProperty(ProcessViewProperty.DURATION)
+      .viewProperty(ViewProperty.DURATION)
       .groupByType(ProcessGroupByType.START_DATE)
       .groupByDateInterval(AggregateByDateUnit.YEAR)
       .processDefinitionKey("key")
@@ -576,9 +576,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getResult()
       .getData();
     assertThat(resultMap).hasSize(2);
-    List<MapResultEntryDto> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
+    List<MapResultEntryDto> flowNodeToCount = resultMap.get(singleReportId).getResult().getFirstMeasureData();
     assertThat(flowNodeToCount).hasSize(3);
-    List<MapResultEntryDto> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getData();
+    List<MapResultEntryDto> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getFirstMeasureData();
     assertThat(flowNodeToCount2).hasSize(3);
   }
 
@@ -606,14 +606,14 @@ public class CombinedReportHandlingIT extends AbstractIT {
       result.getResult().getData().get(runningInstanceReportId).getResult();
     assertThat(resultRunningInstance.getInstanceCount()).isEqualTo(1);
     assertThat(resultRunningInstance.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(resultRunningInstance.getData())
+    assertThat(resultRunningInstance.getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(null, 1., 1.);
 
     ReportMapResultDto resultCompletedInstance = result.getResult().getData().get(completedInstanceReportId).getResult();
     assertThat(resultCompletedInstance.getInstanceCount()).isEqualTo(1);
     assertThat(resultCompletedInstance.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getResult().getData().get(completedInstanceReportId).getResult().getData())
+    assertThat(result.getResult().getData().get(completedInstanceReportId).getResult().getFirstMeasureData())
       .hasSize(3)
       .extracting(MapResultEntryDto::getValue)
       .doesNotContainNull();
@@ -634,7 +634,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     resultRunningInstance = result.getResult().getData().get(runningInstanceReportId).getResult();
     assertThat(resultRunningInstance.getInstanceCount()).isEqualTo(1);
     assertThat(resultRunningInstance.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(filteredResult.getResult().getData().get(runningInstanceReportId).getResult().getData())
+    assertThat(filteredResult.getResult().getData().get(runningInstanceReportId).getResult().getFirstMeasureData())
       .hasSize(3)
       .extracting(MapResultEntryDto::getValue)
       .containsOnlyNulls();
@@ -642,7 +642,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     resultCompletedInstance = result.getResult().getData().get(completedInstanceReportId).getResult();
     assertThat(resultCompletedInstance.getInstanceCount()).isEqualTo(1);
     assertThat(resultCompletedInstance.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(filteredResult.getResult().getData().get(completedInstanceReportId).getResult().getData())
+    assertThat(filteredResult.getResult().getData().get(completedInstanceReportId).getResult().getFirstMeasureData())
       .hasSize(3)
       .extracting(MapResultEntryDto::getValue)
       .doesNotContainNull();
@@ -682,7 +682,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       filteredResult.getResult().getData().get(reportWithCandidateGroup).getResult();
     assertThat(resultWithCandidateGroup.getInstanceCount()).isZero();
     assertThat(resultWithCandidateGroup.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(resultWithCandidateGroup.getData())
+    assertThat(resultWithCandidateGroup.getFirstMeasureData())
       .hasSize(3)
       .extracting(MapResultEntryDto::getValue)
       .containsOnlyNulls();
@@ -690,7 +690,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ReportMapResultDto resultWithAssignee = filteredResult.getResult().getData().get(reportWithAssignee).getResult();
     assertThat(resultWithAssignee.getInstanceCount()).isEqualTo(1);
     assertThat(resultWithAssignee.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(resultWithAssignee.getData())
+    assertThat(resultWithAssignee.getFirstMeasureData())
       .hasSize(3)
       .extracting(MapResultEntryDto::getValue)
       .doesNotContainNull();
@@ -708,7 +708,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     resultWithAssignee = filteredResult.getResult().getData().get(reportWithAssignee).getResult();
     assertThat(resultWithAssignee.getInstanceCount()).isZero();
     assertThat(resultWithAssignee.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(filteredResult.getResult().getData().get(reportWithAssignee).getResult().getData())
+    assertThat(filteredResult.getResult().getData().get(reportWithAssignee).getResult().getFirstMeasureData())
       .hasSize(3)
       .extracting(MapResultEntryDto::getValue)
       .containsOnlyNulls();
@@ -716,7 +716,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     resultWithCandidateGroup = filteredResult.getResult().getData().get(reportWithCandidateGroup).getResult();
     assertThat(resultWithCandidateGroup.getInstanceCount()).isEqualTo(1);
     assertThat(resultWithCandidateGroup.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(resultWithCandidateGroup.getData())
+    assertThat(resultWithCandidateGroup.getFirstMeasureData())
       .hasSize(3)
       .extracting(MapResultEntryDto::getValue)
       .doesNotContainNull();
@@ -745,7 +745,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(result.getReportDefinition().getId()).isEqualTo(combinedReportId);
     assertThat(result.getResult().getData().entrySet())
       .hasSize(2)
-      .allSatisfy(reportResult -> assertThat(reportResult.getValue().getResult().getData())
+      .allSatisfy(reportResult -> assertThat(reportResult.getValue().getResult().getFirstMeasureData())
         .hasSize(3)
         .extracting(MapResultEntryDto::getValue)
         .doesNotContainNull()
@@ -763,7 +763,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(filteredResult.getReportDefinition().getId()).isEqualTo(combinedReportId);
     assertThat(filteredResult.getResult().getData().entrySet())
       .hasSize(2)
-      .allSatisfy(reportResult -> assertThat(reportResult.getValue().getResult().getData())
+      .allSatisfy(reportResult -> assertThat(reportResult.getValue().getResult().getFirstMeasureData())
         .hasSize(3)
         .extracting(MapResultEntryDto::getValue)
         .containsOnlyNulls()
@@ -787,7 +787,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(result.getReportDefinition().getId()).isEqualTo(combinedReportId);
     assertThat(result.getResult().getData().entrySet())
       .hasSize(2)
-      .allSatisfy(reportResult -> assertThat(reportResult.getValue().getResult().getData())
+      .allSatisfy(reportResult -> assertThat(reportResult.getValue().getResult().getFirstMeasureData())
         .hasSize(3)
         .extracting(MapResultEntryDto::getValue)
         .doesNotContainNull()
@@ -806,7 +806,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(filteredResult.getReportDefinition().getId()).isEqualTo(combinedReportId);
     assertThat(filteredResult.getResult().getData().entrySet())
       .hasSize(2)
-      .allSatisfy(reportResult -> assertThat(reportResult.getValue().getResult().getData())
+      .allSatisfy(reportResult -> assertThat(reportResult.getValue().getResult().getFirstMeasureData())
         .hasSize(3)
         .extracting(MapResultEntryDto::getValue)
         .containsOnlyNulls()
@@ -829,10 +829,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then both reports contain the expected data instance
     assertThat(result.getReportDefinition().getId()).isEqualTo(combinedReportId);
     assertThat(result.getResult().getData().entrySet()).hasSize(2);
-    assertThat(result.getResult().getData().get(report1).getResult().getData())
+    assertThat(result.getResult().getData().get(report1).getResult().getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(null, 1., 1.);
-    assertThat(result.getResult().getData().get(report2).getResult().getData())
+    assertThat(result.getResult().getData().get(report2).getResult().getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(null, 1., 1.);
 
@@ -845,10 +845,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then the filter is ignored as the filter name/type is not known
     assertThat(filteredResult.getReportDefinition().getId()).isEqualTo(combinedReportId);
     assertThat(filteredResult.getResult().getData().entrySet()).hasSize(2);
-    assertThat(filteredResult.getResult().getData().get(report1).getResult().getData())
+    assertThat(filteredResult.getResult().getData().get(report1).getResult().getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(null, 1., 1.);
-    assertThat(filteredResult.getResult().getData().get(report2).getResult().getData())
+    assertThat(filteredResult.getResult().getData().get(report2).getResult().getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(null, 1., 1.);
   }
@@ -873,10 +873,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then both reports contain the expected data instance
     assertThat(result.getReportDefinition().getId()).isEqualTo(combinedReportId);
     assertThat(result.getResult().getData().entrySet()).hasSize(2);
-    assertThat(result.getResult().getData().get(variableReport).getResult().getData())
+    assertThat(result.getResult().getData().get(variableReport).getResult().getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(null, 1., 1.);
-    assertThat(result.getResult().getData().get(noVariableReport).getResult().getData())
+    assertThat(result.getResult().getData().get(noVariableReport).getResult().getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(null, 1., 1.);
 
@@ -889,10 +889,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then the filter is applied to the report where it exists and ignored in the no variable report
     assertThat(filteredResult.getReportDefinition().getId()).isEqualTo(combinedReportId);
     assertThat(filteredResult.getResult().getData().entrySet()).hasSize(2);
-    assertThat(filteredResult.getResult().getData().get(variableReport).getResult().getData())
+    assertThat(filteredResult.getResult().getData().get(variableReport).getResult().getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsOnlyNulls();
-    assertThat(filteredResult.getResult().getData().get(noVariableReport).getResult().getData())
+    assertThat(filteredResult.getResult().getData().get(noVariableReport).getResult().getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(null, 1., 1.);
   }
@@ -919,10 +919,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then both reports contain the expected data instance
     assertThat(result.getReportDefinition().getId()).isEqualTo(combinedReportId);
     assertThat(result.getResult().getData().entrySet()).hasSize(2);
-    assertThat(result.getResult().getData().get(report1).getResult().getData())
+    assertThat(result.getResult().getData().get(report1).getResult().getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(null, 1., 1.);
-    assertThat(result.getResult().getData().get(report2).getResult().getData())
+    assertThat(result.getResult().getData().get(report2).getResult().getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(null, 1., 1.);
 
@@ -935,10 +935,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then the filter is applied to both reports correctly
     assertThat(filteredResult.getReportDefinition().getId()).isEqualTo(combinedReportId);
     assertThat(filteredResult.getResult().getData().entrySet()).hasSize(2);
-    assertThat(filteredResult.getResult().getData().get(report1).getResult().getData())
+    assertThat(filteredResult.getResult().getData().get(report1).getResult().getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsOnlyNulls();
-    assertThat(filteredResult.getResult().getData().get(report2).getResult().getData())
+    assertThat(filteredResult.getResult().getData().get(report2).getResult().getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsOnlyNulls();
 
@@ -950,10 +950,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then the filter is applied to both reports correctly
     assertThat(filteredResult.getReportDefinition().getId()).isEqualTo(combinedReportId);
     assertThat(filteredResult.getResult().getData().entrySet()).hasSize(2);
-    assertThat(filteredResult.getResult().getData().get(report1).getResult().getData())
+    assertThat(filteredResult.getResult().getData().get(report1).getResult().getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(null, 1., 1.);
-    assertThat(filteredResult.getResult().getData().get(report2).getResult().getData())
+    assertThat(filteredResult.getResult().getData().get(report2).getResult().getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsOnlyNulls();
   }
@@ -979,11 +979,11 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(resultMap).hasSize(2);
     List<MapResultEntryDto> userTaskCount1 = resultMap.get(totalDurationReportId)
       .getResult()
-      .getData();
+      .getFirstMeasureData();
     assertThat(userTaskCount1).hasSize(1);
     List<MapResultEntryDto> userTaskCount2 = resultMap.get(idleDurationReportId)
       .getResult()
-      .getData();
+      .getFirstMeasureData();
     assertThat(userTaskCount2).hasSize(1);
   }
 
@@ -1008,11 +1008,11 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(resultMap).hasSize(2);
     List<MapResultEntryDto> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId)
       .getResult()
-      .getData();
+      .getFirstMeasureData();
     assertThat(userTaskCount1).hasSize(1);
     List<MapResultEntryDto> userTaskCount2 = resultMap.get(flowNodeDurationReportId)
       .getResult()
-      .getData();
+      .getFirstMeasureData();
     assertThat(userTaskCount2).hasSize(3);
   }
 
@@ -1046,12 +1046,12 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     final ReportMapResultDto result1 = resultMap.get(singleReportId1)
       .getResult();
-    final List<MapResultEntryDto> resultData1 = result1.getData();
+    final List<MapResultEntryDto> resultData1 = result1.getFirstMeasureData();
     assertThat(resultData1).isNotNull().hasSize(1);
 
     final ReportMapResultDto result2 = resultMap.get(singleReportId2)
       .getResult();
-    final List<MapResultEntryDto> resultData2 = result2.getData();
+    final List<MapResultEntryDto> resultData2 = result2.getFirstMeasureData();
     assertThat(resultData2)
       .isNotNull()
       .hasSize(3);
@@ -1240,9 +1240,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
       result.getData();
 
     assertThat(resultMap).hasSize(2);
-    List<MapResultEntryDto> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
+    List<MapResultEntryDto> flowNodeToCount = resultMap.get(singleReportId).getResult().getFirstMeasureData();
     assertThat(flowNodeToCount).hasSize(3);
-    List<MapResultEntryDto> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getData();
+    List<MapResultEntryDto> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getFirstMeasureData();
     assertThat(flowNodeToCount2).hasSize(3);
   }
 
@@ -1428,14 +1428,14 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     final ReportMapResultDto result1 = resultMap.get(singleReportId1)
       .getResult();
-    final List<MapResultEntryDto> resultData1 = result1.getData();
+    final List<MapResultEntryDto> resultData1 = result1.getFirstMeasureData();
     assertThat(resultData1)
       .isNotNull()
       .hasSize(1);
 
     final ReportMapResultDto result2 = resultMap.get(singleReportId2)
       .getResult();
-    final List<MapResultEntryDto> resultData2 = result2.getData();
+    final List<MapResultEntryDto> resultData2 = result2.getFirstMeasureData();
     assertThat(resultData2)
       .isNotNull()
       .hasSize(3);
@@ -1481,14 +1481,14 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     final ReportMapResultDto result1 = resultMap.get(groupedByEndDateReportId)
       .getResult();
-    final List<MapResultEntryDto> resultData1 = result1.getData();
+    final List<MapResultEntryDto> resultData1 = result1.getFirstMeasureData();
     assertThat(resultData1)
       .isNotNull()
       .hasSize(1);
 
     final ReportMapResultDto result2 = resultMap.get(groupedByStartDateReportId)
       .getResult();
-    final List<MapResultEntryDto> resultData2 = result2.getData();
+    final List<MapResultEntryDto> resultData2 = result2.getFirstMeasureData();
     assertThat(resultData2)
       .isNotNull()
       .hasSize(3);
@@ -1534,14 +1534,14 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     final ReportMapResultDto result1 = resultMap.get(groupedByEndDateReportId)
       .getResult();
-    final List<MapResultEntryDto> resultData1 = result1.getData();
+    final List<MapResultEntryDto> resultData1 = result1.getFirstMeasureData();
     assertThat(resultData1)
       .isNotNull()
       .hasSize(1);
 
     final ReportMapResultDto result2 = resultMap.get(groupedByStartDateReportId)
       .getResult();
-    final List<MapResultEntryDto> resultData2 = result2.getData();
+    final List<MapResultEntryDto> resultData2 = result2.getFirstMeasureData();
     assertThat(resultData2)
       .isNotNull()
       .hasSize(3);

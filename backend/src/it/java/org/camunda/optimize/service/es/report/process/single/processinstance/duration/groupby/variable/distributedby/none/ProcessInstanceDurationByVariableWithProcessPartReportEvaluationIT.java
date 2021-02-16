@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -23,7 +24,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Runn
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -111,7 +111,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName()).isEqualTo(DEFAULT_VARIABLE_NAME);
@@ -119,7 +119,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     final Double calculatedResult = result.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue();
     assertThat(calculatedResult).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
   }
@@ -162,14 +162,14 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName()).isEqualTo(DEFAULT_VARIABLE_NAME);
     assertThat(variableGroupByDto.getValue().getType()).isEqualTo(DEFAULT_VARIABLE_TYPE);
 
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     final Double calculatedResult = result.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue();
     assertThat(calculatedResult).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
   }
@@ -204,8 +204,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(result.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 2000., 9000.));
     assertThat(result.getEntryForKey(DEFAULT_VARIABLE_VALUE + 2).get().getValue())
@@ -253,7 +253,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
@@ -302,7 +302,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
-      final List<MapResultEntryDto> resultData = result.getData();
+      final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
       assertThat(resultData).hasSize(3);
       final List<Double> bucketValues = resultData.stream()
         .map(MapResultEntryDto::getValue)
@@ -357,7 +357,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     // then
     aggregationTypes.forEach((AggregationType aggType) -> {
       final ReportMapResultDto resultDto = results.get(aggType).getResult();
-      assertThat(resultDto.getData()).hasSize(3);
+      assertThat(resultDto.getFirstMeasureData()).hasSize(3);
       assertThat(resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue())
         .isEqualTo(calculateExpectedValueGivenDurations(1000., 9000., 2000.).get(aggType));
     });
@@ -395,8 +395,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).isEmpty();
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData()).isEmpty();
   }
 
   @SneakyThrows
@@ -652,7 +652,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(resultDto.getFirstMeasureData()).hasSize(1);
     assertThat(resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE))
       .isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(2000.));
@@ -683,8 +683,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData().isEmpty()).isTrue();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData().isEmpty()).isTrue();
   }
 
   @Test
@@ -711,8 +711,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData().isEmpty()).isTrue();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData().isEmpty()).isTrue();
   }
 
   @Test
@@ -732,8 +732,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData().isEmpty()).isTrue();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData().isEmpty()).isTrue();
   }
 
   @Test
@@ -763,7 +763,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(resultDto.getFirstMeasureData()).hasSize(1);
     assertThat(resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.));
   }
@@ -827,8 +827,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData()).hasSize(1);
     assertThat(resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
 
@@ -846,8 +846,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData()).hasSize(1);
     assertThat(resultDto.getEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(4000.));
   }
@@ -889,8 +889,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
 
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(2);
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData()).hasSize(2);
     assertThat(resultDto.getEntryForKey("1").get().getValue()).isEqualTo(1000.);
     assertThat(resultDto.getEntryForKey(MISSING_VARIABLE_KEY).get().getValue()).isEqualTo(2000.);
   }
@@ -933,8 +933,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
 
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(2);
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData()).hasSize(2);
     assertThat(resultDto.getEntryForKey("bar1").get().getValue()).isEqualTo(1000.);
     assertThat(resultDto.getEntryForKey(MISSING_VARIABLE_KEY).get().getValue()).isEqualTo(5000.);
   }
@@ -973,7 +973,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
-      final List<MapResultEntryDto> resultData = result.getData();
+      final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
       assertThat(resultData).isNotNull();
       if (VariableType.DATE.equals(variableType)) {
         assertThat(resultData).hasSize(1);
@@ -1034,7 +1034,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setEndFlowNodeId(END_EVENT)
       .build();
     reportData.getConfiguration().setGroupByDateVariableUnit(unit);
-    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getFirstMeasureData();
 
     // then
     assertThat(resultData).isNotNull();
@@ -1088,7 +1088,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     // buckets span across all variable values (buckets are in descending order, so the first bucket is based on the
@@ -1126,7 +1126,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
   }

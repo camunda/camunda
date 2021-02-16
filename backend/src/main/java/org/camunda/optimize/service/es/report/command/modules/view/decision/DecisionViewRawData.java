@@ -9,13 +9,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -206,7 +206,7 @@ public class DecisionViewRawData extends DecisionViewPart {
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto dataForCommandKey) {
     final DecisionViewDto view = new DecisionViewDto();
-    view.setProperty(DecisionViewProperty.RAW_DATA);
+    view.setProperty(ViewProperty.RAW_DATA);
     dataForCommandKey.setView(view);
   }
 

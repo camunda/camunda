@@ -78,7 +78,7 @@ public class ProcessInstanceDurationByInstanceEndDateReportEvaluationIT
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     ZonedDateTime startOfEndDate = truncateToStartOfUnit(endDate, ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfEndDate));
     assertThat(
@@ -127,7 +127,7 @@ public class ProcessInstanceDurationByInstanceEndDateReportEvaluationIT
 
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(5);
 
     assertThat(resultData.get(0).getKey())
@@ -174,7 +174,7 @@ public class ProcessInstanceDurationByInstanceEndDateReportEvaluationIT
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isEmpty();
 
   }
@@ -202,7 +202,7 @@ public class ProcessInstanceDurationByInstanceEndDateReportEvaluationIT
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
 
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
 
     assertThat(resultData).isNotNull().hasSize(1);
 

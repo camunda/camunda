@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.flownode.frequency
 import com.google.common.collect.ImmutableList;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -101,17 +102,19 @@ public class FlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
 
     // then
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
+    // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(createDurationBucketKey(completedActivityInstanceDurations))
-      .distributedByContains(END_EVENT, 1., END_EVENT)
-      .distributedByContains(START_EVENT, 2., START_EVENT)
-      .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
-      .groupByContains(createDurationBucketKey((int) Duration.between(startTime, currentTime).toMillis()))
-      .distributedByContains(END_EVENT, null, END_EVENT)
-      .distributedByContains(START_EVENT, null, START_EVENT)
-      .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(createDurationBucketKey(completedActivityInstanceDurations))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(START_EVENT, 2., START_EVENT)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
+        .groupByContains(createDurationBucketKey((int) Duration.between(startTime, currentTime).toMillis()))
+        .distributedByContains(END_EVENT, null, END_EVENT)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
       .doAssert(resultDto);
     // @formatter:on
   }
@@ -142,7 +145,7 @@ public class FlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
     assertThat(result.getDataEntryForKey(createDurationBucketKey(1000))).isPresent();
     assertThat(result.getDataEntryForKey(createDurationBucketKey(5000))).isPresent();
     assertThat(result.getDataEntryForKey(createDurationBucketKey(10000))).isNotPresent();
-    assertThat(result.getData()).allSatisfy(bucket -> {
+    assertThat(result.getFirstMeasureData()).allSatisfy(bucket -> {
       if (bucket.getKey().equals(createDurationBucketKey(1000)) ||
         bucket.getKey().equals(createDurationBucketKey(5000))) {
         assertThat(bucket.getValue())

@@ -43,11 +43,11 @@ public class CombinedFlowNodeByVariableReportIT extends AbstractProcessDefinitio
     assertThat(result.getData()).hasSize(2);
     assertThat(result.getData().values())
       .allSatisfy(singleResult -> {
-        assertThat(singleResult.getResult().getData())
+        assertThat(singleResult.getResult().getFirstMeasureData())
           .hasSize(1)
           .extracting(MapResultEntryDto::getKey)
           .containsOnly("aStringValue");
-        assertThat(singleResult.getResult().getData())
+        assertThat(singleResult.getResult().getFirstMeasureData())
           .extracting(MapResultEntryDto::getValue)
           .containsOnly(4.);
       });
@@ -77,11 +77,11 @@ public class CombinedFlowNodeByVariableReportIT extends AbstractProcessDefinitio
     assertThat(result.getData()).hasSize(2);
     assertThat(result.getData().values())
       .allSatisfy(singleResult -> {
-        assertThat(singleResult.getResult().getData())
+        assertThat(singleResult.getResult().getFirstMeasureData())
           .hasSize(1)
           .extracting(MapResultEntryDto::getKey)
           .containsOnly("aStringValue");
-        assertThat(singleResult.getResult().getData())
+        assertThat(singleResult.getResult().getFirstMeasureData())
           .extracting(MapResultEntryDto::getValue)
           .containsOnly(10.);
       });

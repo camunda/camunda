@@ -10,9 +10,11 @@ import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -42,7 +44,7 @@ public class CombinedProcessReportResultTest {
     final List<MapResultEntryDto> resultDtoMap = new ArrayList<>();
     resultDtoMap.add(new MapResultEntryDto("900.0", 1.));
     resultDtoMap.add(new MapResultEntryDto("10.99", 1.));
-    mapResultDto.setData(resultDtoMap);
+    mapResultDto.addMeasure(MeasureDto.of(ViewProperty.RAW_DATA, resultDtoMap));
     final List<SingleReportResultDto> mapResultDtos = Lists.newArrayList(
       mapResultDto,
       mapResultDto
@@ -93,10 +95,10 @@ public class CombinedProcessReportResultTest {
 
     // given
     final NumberResultDto numberResultDto1 = new NumberResultDto();
-    numberResultDto1.setData(5.);
+    numberResultDto1.addMeasure(MeasureDto.of(ViewProperty.FREQUENCY, 5.));
 
     final NumberResultDto numberResultDto2 = new NumberResultDto();
-    numberResultDto2.setData(2.);
+    numberResultDto2.addMeasure(MeasureDto.of(ViewProperty.FREQUENCY, 2.));
 
     final ArrayList<SingleReportResultDto> resultDtos = Lists.newArrayList(
       numberResultDto1,
@@ -125,7 +127,7 @@ public class CombinedProcessReportResultTest {
     // given
 
     final NumberResultDto durReportDto = new NumberResultDto();
-    durReportDto.setData(6.);
+    durReportDto.addMeasure(MeasureDto.of(ViewProperty.DURATION, 6.));
 
     final ArrayList<SingleReportResultDto> resultDtos = Lists.newArrayList(
       durReportDto,
@@ -164,7 +166,7 @@ public class CombinedProcessReportResultTest {
     List<MapResultEntryDto> data = new ArrayList<>();
     data.add(new MapResultEntryDto("test1", 3.));
     data.add(new MapResultEntryDto("test2", 6.));
-    durMapReportDto.setData(data);
+    durMapReportDto.addMeasure(MeasureDto.of(ViewProperty.DURATION, data));
 
     final ArrayList<SingleReportResultDto> resultDtos = Lists.newArrayList(
       durMapReportDto,

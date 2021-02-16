@@ -53,8 +53,8 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(flowNodeStatusTestValues.expectedInstanceCount);
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
       .get()
@@ -82,8 +82,8 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
       .get()

@@ -12,6 +12,7 @@ import org.camunda.optimize.service.export.CSVUtils;
 
 import javax.validation.constraints.NotNull;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.List;
 
 public class SingleDecisionMapReportResult
@@ -19,12 +20,12 @@ public class SingleDecisionMapReportResult
 
   public SingleDecisionMapReportResult(@NotNull final ReportMapResultDto reportResult,
                                        @NotNull final SingleDecisionReportDefinitionRequestDto reportDefinition) {
-    super(reportResult, reportDefinition);
+    super(Collections.singletonList(reportResult), reportDefinition);
   }
 
   @Override
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
-    final List<String[]> csvStrings = CSVUtils.map(reportResult.getData(), limit, offset);
+    final List<String[]> csvStrings = CSVUtils.map(getResultAsDto().getFirstMeasureData(), limit, offset);
 
     final String normalizedCommandKey =
       reportDefinition.getData().getView().createCommandKey().replace("-", "_");

@@ -79,7 +79,7 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
     // then
     assertThat(numberResult.getInstanceCount()).isEqualTo(1L);
     assertThat(numberResult.getInstanceCountWithoutFilters()).isEqualTo(4L);
-    assertThat(numberResult.getData()).isEqualTo(1.);
+    assertThat(numberResult.getFirstMeasureData()).isEqualTo(1.);
   }
 
   @Test
@@ -115,7 +115,7 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(4L);
     // both flow nodes are part of the response as the view filter does not apply to flow nodes
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).hasSize(2);
   }
 
   private static Stream<Arguments> filterLevelAndExpectedResult() {
@@ -156,7 +156,7 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
 
     // then
     assertThat(numberResult.getInstanceCount()).isEqualTo(2L);
-    assertThat(numberResult.getData()).isEqualTo(firstExpectedResult);
+    assertThat(numberResult.getFirstMeasureData()).isEqualTo(firstExpectedResult);
 
     // when I add the flow node filter as well
     reportData.setFilter(
@@ -173,7 +173,7 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
     // then
     assertThat(numberResult.getInstanceCount()).isEqualTo(1L);
     assertThat(numberResult.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(numberResult.getData()).isEqualTo(secondExpectedResult);
+    assertThat(numberResult.getFirstMeasureData()).isEqualTo(secondExpectedResult);
   }
 
   private List<ProcessFilterDto<?>> openIncidentFilter(final FilterApplicationLevel filterLevel) {

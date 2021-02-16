@@ -5,36 +5,30 @@
  */
 package org.camunda.optimize.dto.optimize.query.report;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NonNull;
 
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Objects;
 
-public abstract class ReportEvaluationResult<Result extends ReportResultDto,
-  ReportDefinition extends ReportDefinitionDto> {
+@AllArgsConstructor
+@Data
+public abstract class ReportEvaluationResult<R extends ReportResultDto, D extends ReportDefinitionDto> {
 
-  protected final Result reportResult;
-  protected final ReportDefinition reportDefinition;
-
-  public ReportEvaluationResult(@NonNull Result reportResult, @NonNull ReportDefinition reportDefinition) {
-    Objects.requireNonNull(reportResult, "The report result dto is not allowed to be null!");
-    Objects.requireNonNull(reportDefinition, "The report data dto is not allowed to be null!");
-    this.reportResult = reportResult;
-    this.reportDefinition = reportDefinition;
-  }
+  @NonNull
+  protected final List<R> results;
+  @NonNull
+  protected final D reportDefinition;
 
   public String getId() {
     return reportDefinition.getId();
   }
 
-  public Result getResultAsDto() {
-    return reportResult;
+  public R getResultAsDto() {
+    return results.stream().findFirst().orElse(null);
   }
 
   public abstract List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone);
 
-  public ReportDefinition getReportDefinition() {
-    return reportDefinition;
-  }
 }

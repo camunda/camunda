@@ -66,7 +66,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData.get(0).getValue()).isEqualTo(1.);
     assertThat(resultData.get(resultData.size() - 1).getValue()).isEqualTo(2.);
@@ -97,7 +97,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Double::intValue).sum()).isEqualTo(3);
     assertThat(resultData.get(0).getValue()).isEqualTo(1.);
@@ -115,7 +115,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isEmpty();
   }
 
@@ -133,7 +133,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then the single data point should be grouped by month
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(1);
     ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
     String nowStrippedToMonthAsString = localDateTimeToString(nowStrippedToMonth);
@@ -254,7 +254,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     int resultSize) {
     assertThat(resultMap).hasSize(resultSize);
     for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
-      final List<MapResultEntryDto> resultData = result.getResult().getData();
+      final List<MapResultEntryDto> resultData = result.getResult().getFirstMeasureData();
       assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
       assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startRange));
       assertIsInRangeOfLastInterval(resultData.get(resultData.size() - 1).getKey(), startRange, endRange);

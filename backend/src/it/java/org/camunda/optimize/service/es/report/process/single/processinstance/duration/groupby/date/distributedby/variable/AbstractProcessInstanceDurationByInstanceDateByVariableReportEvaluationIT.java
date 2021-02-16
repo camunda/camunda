@@ -7,6 +7,8 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.du
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -14,7 +16,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
@@ -82,7 +83,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(procInstance.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy()
       .getValue()).getUnit()).isEqualTo(AggregateByDateUnit.DAY);
@@ -95,8 +96,9 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfReferenceDate))
-        .distributedByContains("a string", 1000.)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains(localDateTimeToString(startOfReferenceDate))
+          .distributedByContains("a string", 1000.)
       .doAssert(evaluationResponse.getResult());
     // @formatter:on
   }
@@ -122,7 +124,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(procInstance.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy()
       .getValue()).getUnit()).isEqualTo(AggregateByDateUnit.DAY);
@@ -135,8 +137,9 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfReferenceDate))
-        .distributedByContains("a string", 1000.)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains(localDateTimeToString(startOfReferenceDate))
+          .distributedByContains("a string", 1000.)
       .doAssert(evaluationResponse.getResult());
     // @formatter:on
   }
@@ -176,15 +179,16 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
-      .groupByContains(localDateTimeToString(startOfReferenceDate.plusDays(2)))
-        .distributedByContains("a string", 3000.)
-        .distributedByContains("another string", null)
-      .groupByContains(localDateTimeToString(startOfReferenceDate.plusDays(1)))
-        .distributedByContains("a string", null)
-        .distributedByContains("another string", 2000.)
-      .groupByContains(localDateTimeToString(startOfReferenceDate))
-        .distributedByContains("a string", 1000.)
-        .distributedByContains("another string", null)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains(localDateTimeToString(startOfReferenceDate.plusDays(2)))
+          .distributedByContains("a string", 3000.)
+          .distributedByContains("another string", null)
+        .groupByContains(localDateTimeToString(startOfReferenceDate.plusDays(1)))
+          .distributedByContains("a string", null)
+          .distributedByContains("another string", 2000.)
+        .groupByContains(localDateTimeToString(startOfReferenceDate))
+          .distributedByContains("a string", 1000.)
+          .distributedByContains("another string", null)
       .doAssert(result);
     // @formatter:on
   }
@@ -224,10 +228,11 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
-      .groupByContains(localDateTimeToString(startOfReferenceDate))
-        .distributedByContains("a string", 1000.)
-        .distributedByContains("another string", 2000.)
-        .distributedByContains("this is also a string", 3000.)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains(localDateTimeToString(startOfReferenceDate))
+          .distributedByContains("a string", 1000.)
+          .distributedByContains("another string", 2000.)
+          .distributedByContains("this is also a string", 3000.)
       .doAssert(result);
     // @formatter:on
   }
@@ -255,8 +260,9 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfReferenceDate))
-        .distributedByContains("a string", 1000.)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains(localDateTimeToString(startOfReferenceDate))
+          .distributedByContains("a string", 1000.)
       .doAssert(result);
     // @formatter:on
   }
@@ -284,7 +290,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
       final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
       // then
-      assertThat(result.getData()
+      assertThat(result.getFirstMeasureData()
                    .stream()
                    .flatMap(hyperEntry -> hyperEntry.getValue().stream())
                    .filter(mapEntry -> mapEntry.getValue() != null)
@@ -292,7 +298,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
                    .sum())
         .withFailMessage("Failed instance duration assertion on variable " + entry.getKey())
         .isEqualTo(1000L);
-      assertThat(result.getData()
+      assertThat(result.getFirstMeasureData()
                    .stream()
                    .flatMap(hyperEntry -> hyperEntry.getValue().stream())
                    .map(MapResultEntryDto::getKey))
@@ -328,9 +334,10 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(localDateTimeToString(startOfReferenceDate))
-        .distributedByContains("a string", 1000.)
-        .distributedByContains(MISSING_VARIABLE_KEY, 2000.)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains(localDateTimeToString(startOfReferenceDate))
+          .distributedByContains("a string", 1000.)
+          .distributedByContains(MISSING_VARIABLE_KEY, 2000.)
       .doAssert(result);
     // @formatter:on
   }
@@ -356,8 +363,9 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfReferenceDate))
-        .distributedByContains("a string", 1000.)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains(localDateTimeToString(startOfReferenceDate))
+          .distributedByContains("a string", 1000.)
       .doAssert(result);
     // @formatter:on
   }
@@ -388,8 +396,9 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(truncatedReferenceDate))
-        .distributedByContains(localDateTimeToString(truncatedDateVariableValue), 1000.0)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains(localDateTimeToString(truncatedReferenceDate))
+          .distributedByContains(localDateTimeToString(truncatedDateVariableValue), 1000.0)
       .doAssert(result);
     // @formatter:on
   }
@@ -421,9 +430,9 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     // then result has 80 buckets each and they include both instances
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(1);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .extracting(HyperMapResultEntryDto::getValue)
       .allSatisfy(
         resultEntries -> {
@@ -483,10 +492,11 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("50.00", 1000.)
-        .distributedByContains("150.00", 1000.)
-        .distributedByContains("250.00", 1000.)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains(localDateTimeToString(startOfToday))
+          .distributedByContains("50.00", 1000.)
+          .distributedByContains("150.00", 1000.)
+          .distributedByContains("250.00", 1000.)
       .doAssert(result);
     // @formatter:on
   }
@@ -518,6 +528,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
         .groupByContains(localDateTimeToString(startOfToday))
       .doAssert(result);
     // @formatter:on
@@ -538,7 +549,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .flatExtracting(HyperMapResultEntryDto::getValue)
       .extracting(MapResultEntryDto::getKey)
       .isNotEmpty()
@@ -591,9 +602,10 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     HyperMapAsserter.asserter()
       .processInstanceCount(5L)
       .processInstanceCountWithoutFilters(5L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1000.)
-        .distributedByContains(MISSING_VARIABLE_KEY, 2000.)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains(localDateTimeToString(startOfToday))
+          .distributedByContains("a string", 1000.)
+          .distributedByContains(MISSING_VARIABLE_KEY, 2000.)
       .doAssert(result);
     // @formatter:on
   }

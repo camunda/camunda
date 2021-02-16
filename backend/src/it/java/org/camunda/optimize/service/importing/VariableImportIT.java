@@ -42,7 +42,6 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
@@ -431,8 +430,8 @@ public class VariableImportIT extends AbstractImportIT {
       .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-    assertThat(result.getData()).isNotNull();
-    List<MapResultEntryDto> flowNodeIdToExecutionFrequency = result.getData();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    List<MapResultEntryDto> flowNodeIdToExecutionFrequency = result.getFirstMeasureData();
     for (MapResultEntryDto frequency : flowNodeIdToExecutionFrequency) {
       assertThat(frequency.getValue()).isEqualTo(4L);
     }

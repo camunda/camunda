@@ -87,11 +87,11 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
     if (expectedUserTaskCount != null) {
-      assertThat(result.getData())
+      assertThat(result.getFirstMeasureData())
         .extracting(MapResultEntryDto::getValue)
         .containsExactly(expectedUserTaskCount);
     } else {
-      assertThat(result.getData()).isEmpty();
+      assertThat(result.getFirstMeasureData()).isEmpty();
     }
   }
 
@@ -137,11 +137,11 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
     if (expectedUserTaskCount != null) {
-      assertThat(result.getData())
+      assertThat(result.getFirstMeasureData())
         .extracting(MapResultEntryDto::getValue)
         .containsExactly(expectedUserTaskCount);
     } else {
-      assertThat(result.getData()).isEmpty();
+      assertThat(result.getFirstMeasureData()).isEmpty();
     }
   }
 
@@ -184,11 +184,11 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
     if (expectedUserTaskCount != null) {
-      assertThat(result.getData())
+      assertThat(result.getFirstMeasureData())
         .extracting(MapResultEntryDto::getValue)
         .containsExactly(expectedUserTaskCount);
     } else {
-      assertThat(result.getData()).isEmpty();
+      assertThat(result.getFirstMeasureData()).isEmpty();
     }
   }
 
@@ -236,11 +236,11 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
     if (expectedUserTaskCount != null) {
-      assertThat(result.getData())
+      assertThat(result.getFirstMeasureData())
         .extracting(MapResultEntryDto::getValue)
         .containsExactly(expectedUserTaskCount);
     } else {
-      assertThat(result.getData()).isEmpty();
+      assertThat(result.getFirstMeasureData()).isEmpty();
     }
   }
 
@@ -292,11 +292,11 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
     if (expectedUserTaskCount != null) {
-      assertThat(result.getData())
+      assertThat(result.getFirstMeasureData())
         .extracting(MapResultEntryDto::getValue)
         .containsExactly(expectedUserTaskCount);
     } else {
-      assertThat(result.getData()).isEmpty();
+      assertThat(result.getFirstMeasureData()).isEmpty();
     }
   }
 
@@ -314,7 +314,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the single data point should be grouped by month
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(1);
     ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
     String nowStrippedToMonthAsString = localDateTimeToString(nowStrippedToMonth);

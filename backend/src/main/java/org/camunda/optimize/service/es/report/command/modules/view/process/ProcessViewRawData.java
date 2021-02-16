@@ -9,11 +9,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
@@ -158,7 +158,7 @@ public class ProcessViewRawData extends ProcessViewPart {
 
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.setView(new ProcessViewDto(ProcessViewProperty.RAW_DATA));
+    dataForCommandKey.setView(new ProcessViewDto(ViewProperty.RAW_DATA));
   }
 
   private void addNewVariablesAndDtoFieldsToTableColumnConfig(final ExecutionContext<ProcessReportDataDto> context,

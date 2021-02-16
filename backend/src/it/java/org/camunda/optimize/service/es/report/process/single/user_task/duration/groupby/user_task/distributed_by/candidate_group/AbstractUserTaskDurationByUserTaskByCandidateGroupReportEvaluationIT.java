@@ -12,6 +12,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
@@ -22,7 +23,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
@@ -106,7 +106,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTime()).isEqualTo(getUserTaskDurationTime());
     assertThat(resultReportDataDto.getDistributedBy().getType())
       .isEqualTo(DistributedByType.CANDIDATE_GROUP);
@@ -116,18 +116,19 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 20., FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 20., SECOND_CANDIDATE_GROUP_NAME)
-      .groupByContains(USER_TASK_A)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 20., FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-      .groupByContains(USER_TASK_B)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 20., SECOND_CANDIDATE_GROUP_NAME)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 20., FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+        .groupByContains(USER_TASK_2)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 20., SECOND_CANDIDATE_GROUP_NAME)
+        .groupByContains(USER_TASK_A)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 20., FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+        .groupByContains(USER_TASK_B)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 20., SECOND_CANDIDATE_GROUP_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -159,8 +160,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_ID)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_ID)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -194,7 +196,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTime()).isEqualTo(getUserTaskDurationTime());
     assertThat(resultReportDataDto.getDistributedBy().getType())
       .isEqualTo(DistributedByType.CANDIDATE_GROUP);
@@ -208,26 +210,27 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_A)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_B)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(
+            FIRST_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]),
+            FIRST_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_2)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_A)
+          .distributedByContains(
+            FIRST_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]),
+            FIRST_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_B)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -259,12 +262,13 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 10., FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 20., FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 20., SECOND_CANDIDATE_GROUP_NAME)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 10., FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+        .groupByContains(USER_TASK_2)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 20., FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 20., SECOND_CANDIDATE_GROUP_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -307,38 +311,39 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(
-          SECOND_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]),
-          SECOND_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_A)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_B)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(
-          SECOND_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]),
-          SECOND_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(
+            FIRST_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS),
+            FIRST_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_2)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(
+            SECOND_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]),
+            SECOND_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_A)
+          .distributedByContains(
+            FIRST_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS),
+            FIRST_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_B)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(
+            SECOND_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]),
+            SECOND_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -386,38 +391,39 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(
-          SECOND_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
-          SECOND_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_A)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_B)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(
-          SECOND_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
-          SECOND_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+      .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(
+            FIRST_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+            FIRST_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_2)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(
+            SECOND_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
+            SECOND_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_A)
+          .distributedByContains(
+            FIRST_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+            FIRST_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_B)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(
+            SECOND_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
+            SECOND_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
       .doAssert(actualResults.get(aggType));
     // @formatter:on
   }
@@ -463,22 +469,23 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(
-          SECOND_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
-          SECOND_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+      .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(
+            FIRST_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+            FIRST_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_2)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(
+            SECOND_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
+            SECOND_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
       .doAssert(results.get(aggType));
     // @formatter:on
   }
@@ -513,14 +520,15 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     aggregationTypes.forEach((AggregationType aggType) -> {
       // @formatter:off
       HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-        .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), SECOND_CANDIDATE_GROUP_NAME)
-        .groupByContains(USER_TASK_1)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), FIRST_CANDIDATE_GROUP_NAME)
-          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+        .processInstanceCount(2L)
+        .processInstanceCountWithoutFilters(2L)
+        .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
+          .groupByContains(USER_TASK_2)
+            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+            .distributedByContains(SECOND_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), SECOND_CANDIDATE_GROUP_NAME)
+          .groupByContains(USER_TASK_1)
+            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), FIRST_CANDIDATE_GROUP_NAME)
+            .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
         .doAssert(results.get(aggType));
       // @formatter:on
     });
@@ -564,14 +572,15 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     aggregationTypes.forEach((AggregationType aggType) -> {
       // @formatter:off
       HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-        .groupByContains(USER_TASK_1, "thisLabelComesSecond")
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), FIRST_CANDIDATE_GROUP_NAME)
-          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-        .groupByContains(USER_TASK_2, "thisLabelComesFirst")
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), SECOND_CANDIDATE_GROUP_NAME)
+        .processInstanceCount(2L)
+        .processInstanceCountWithoutFilters(2L)
+        .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
+          .groupByContains(USER_TASK_1, "thisLabelComesSecond")
+            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), FIRST_CANDIDATE_GROUP_NAME)
+            .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+          .groupByContains(USER_TASK_2, "thisLabelComesFirst")
+            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+            .distributedByContains(SECOND_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), SECOND_CANDIDATE_GROUP_NAME)
         .doAssert(results.get(aggType));
       // @formatter:on
     });
@@ -607,20 +616,21 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurationsDefaultAggr(20., 40.),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID,  null, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(
-          SECOND_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurationsDefaultAggr(40.),
-          SECOND_CANDIDATE_GROUP_NAME
-        )
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(
+            FIRST_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(20., 40.),
+            FIRST_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+        .groupByContains(USER_TASK_2)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID,  null, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(
+            SECOND_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(40.),
+            SECOND_CANDIDATE_GROUP_NAME
+          )
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -660,20 +670,21 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurationsDefaultAggr(20., 40.),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(
-          SECOND_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurationsDefaultAggr(40.),
-          SECOND_CANDIDATE_GROUP_NAME
-        )
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(
+            FIRST_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(20., 40.),
+            FIRST_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+        .groupByContains(USER_TASK_2)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(
+            SECOND_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(40.),
+            SECOND_CANDIDATE_GROUP_NAME
+          )
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -708,12 +719,13 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurationsDefaultAggr(20., 40.),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(
+            FIRST_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(20., 40.),
+            FIRST_CANDIDATE_GROUP_NAME
+          )
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -753,12 +765,13 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurationsDefaultAggr(20., 40.),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(
+            FIRST_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(20., 40.),
+            FIRST_CANDIDATE_GROUP_NAME
+          )
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -816,24 +829,26 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurationsDefaultAggr(setDurations1),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(
+            FIRST_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(setDurations1),
+            FIRST_CANDIDATE_GROUP_NAME
+          )
       .doAssert(result1);
 
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(
-          FIRST_CANDIDATE_GROUP_ID,
-          calculateExpectedValueGivenDurationsDefaultAggr(setDurations2[0]),
-          FIRST_CANDIDATE_GROUP_NAME
-        )
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(
+            FIRST_CANDIDATE_GROUP_ID,
+            calculateExpectedValueGivenDurationsDefaultAggr(setDurations2[0]),
+            FIRST_CANDIDATE_GROUP_NAME
+          )
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
       .doAssert(result2);
     // @formatter:on
   }
@@ -888,12 +903,13 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       HyperMapAsserter.asserter()
         .processInstanceCount(3L)
         .processInstanceCountWithoutFilters(3L)
-        .groupByContains(USER_TASK_1)
-          .distributedByContains(
-            FIRST_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(setDurations).get(aggType),
-            FIRST_CANDIDATE_GROUP_NAME
-          )
+        .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
+          .groupByContains(USER_TASK_1)
+            .distributedByContains(
+              FIRST_CANDIDATE_GROUP_ID,
+              calculateExpectedValueGivenDurations(setDurations).get(aggType),
+              FIRST_CANDIDATE_GROUP_NAME
+            )
         .doAssert(results.get(aggType));
       // @formatter:on
     });
@@ -908,7 +924,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   private static Stream<Arguments> flowNodeStatusProcessFilters() {
@@ -965,7 +981,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(actualResult.getData()).hasSize(expectedDataSize);
+    assertThat(actualResult.getFirstMeasureData()).hasSize(expectedDataSize);
     assertEvaluateReportWithFlowNodeStatusFilter(actualResult, processFilter);
   }
 
@@ -1007,8 +1023,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 10., FIRST_CANDIDATE_GROUP_NAME)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 10., FIRST_CANDIDATE_GROUP_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -1039,8 +1056,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     HyperMapAsserter.asserter()
       .processInstanceCount(11L)
       .processInstanceCountWithoutFilters(11L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 5., FIRST_CANDIDATE_GROUP_NAME)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 5., FIRST_CANDIDATE_GROUP_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -1070,8 +1088,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
     // then
     ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
-    assertThat(actualResult.getData()).isNotNull();
-    assertThat(actualResult.getData()).hasSize(1);
+    assertThat(actualResult.getFirstMeasureData()).isNotNull();
+    assertThat(actualResult.getFirstMeasureData()).hasSize(1);
 
     // when
     reportData = createReport(processDefinition);
@@ -1079,13 +1097,14 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(actualResult.getData()).isNotNull().hasSize(1);
+    assertThat(actualResult.getFirstMeasureData()).isNotNull().hasSize(1);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 10., FIRST_CANDIDATE_GROUP_NAME)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 10., FIRST_CANDIDATE_GROUP_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -1160,9 +1179,10 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
+    final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(expectedInstanceCount)
-      .processInstanceCountWithoutFilters(1);
+      .processInstanceCountWithoutFilters(1)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime());
     expectedResult.forEach((userTaskId, distributionResults) -> {
       final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
       distributionResults.forEach(
@@ -1265,9 +1285,10 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
+    final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(expectedInstanceCount)
-      .processInstanceCountWithoutFilters(2);
+      .processInstanceCountWithoutFilters(2)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime());
     expectedResult.forEach((userTaskId, distributionResults) -> {
       final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
       distributionResults.forEach(
@@ -1345,9 +1366,10 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
+    final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(expectedInstanceCount)
-      .processInstanceCountWithoutFilters(1);
+      .processInstanceCountWithoutFilters(1)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime());
     expectedResult.forEach((userTaskId, distributionResults) -> {
       final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
       distributionResults.forEach(
@@ -1449,9 +1471,10 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
+    final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(expectedInstanceCount)
-      .processInstanceCountWithoutFilters(2);
+      .processInstanceCountWithoutFilters(2)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime());
     expectedResult.forEach((userTaskId, distributionResults) -> {
       final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
       distributionResults.forEach(
@@ -1481,7 +1504,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     final ProcessReportDataDto dataDto = createReport(DEFAULT_PROCESS_ID, "1");
-    dataDto.getView().setProperties((ProcessViewProperty) null);
+    dataDto.getView().setProperties((ViewProperty) null);
 
     // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);

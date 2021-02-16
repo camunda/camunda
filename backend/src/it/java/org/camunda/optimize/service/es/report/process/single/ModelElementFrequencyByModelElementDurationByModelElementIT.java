@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.process.single;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
@@ -16,7 +17,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
@@ -75,7 +75,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(definition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(getProcessViewEntity());
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.DURATION);
     assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(getDistributedByType());
 
@@ -83,6 +83,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(createDurationBucketKey(durationInMilliseconds))
       .distributedByContains(createExpectedDistributedByEntries(1.0D))
       .doAssert(result);
@@ -108,7 +109,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(definition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(getProcessViewEntity());
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.DURATION);
     assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(getDistributedByType());
 
@@ -116,6 +117,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(createDurationBucketKey(durationInMilliseconds))
       .distributedByContains(createExpectedDistributedByEntries(1.0D))
       .doAssert(result);
@@ -144,7 +146,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     // then
     final ReportHyperMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(0L);
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   @Test
@@ -167,6 +169,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(createDurationBucketKey(durationInMilliseconds))
       .distributedByContains(createExpectedDistributedByEntries(1.0D))
       .doAssert(result);
@@ -212,6 +215,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(createDurationBucketKey(durationInMilliseconds))
       .distributedByContains(createExpectedDistributedByEntries(2.0D))
       .doAssert(result);
@@ -232,7 +236,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // then
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       // if the data range fits into the default max bucket number of 80, we should see a bucket for each value
       .hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION)
@@ -256,7 +260,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // then
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       // buckets from 1000ms (nearest lower power of 10 to min value) to 2000ms (start and end inclusive)
       // in intervals of 100ms (nearest power of 10 interval for this range)
       .hasSize(11)
@@ -292,6 +296,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(createDurationBucketKey(10))
       .distributedByContains(createExpectedDistributedByEntries(1.0D))
       .groupByContains(createDurationBucketKey(110))
@@ -342,7 +347,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // then
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       .hasSize(3)
       .extracting(HyperMapResultEntryDto::getKey)
@@ -377,7 +382,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // then
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData()).isNotNull().isEmpty();
+    assertThat(resultDto.getFirstMeasureData()).isNotNull().isEmpty();
   }
 
   @Test
@@ -398,7 +403,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // then
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .hasSize(20)
       .isSortedAccordingTo(Comparator.comparing(byDurationEntry -> Double.valueOf(byDurationEntry.getKey())));
   }

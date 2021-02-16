@@ -84,7 +84,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
 
     // then
     final int expectedNumberOfBuckets = 3;
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData)
       .isNotNull()
       .hasSize(expectedNumberOfBuckets);
@@ -134,7 +134,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the bucket range is based on earliest and latest start date
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
 
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(2);
@@ -173,7 +173,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the bucket range is earliest to latest start date
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
 
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(4);

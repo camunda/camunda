@@ -51,7 +51,7 @@ public class CsvExportServiceTest {
   public void rawProcessReportCsvExport() {
     // given
     final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
-    rawDataProcessReportResultDto.setData(RawDataHelper.getRawDataProcessInstanceDtos());
+    rawDataProcessReportResultDto.addMeasureData(RawDataHelper.getRawDataProcessInstanceDtos());
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(
         rawDataProcessReportResultDto,
@@ -76,7 +76,7 @@ public class CsvExportServiceTest {
   public void rawDecisionReportCsvExport() {
     // given
     final RawDataDecisionReportResultDto rawDataDecisionReportResultDto = new RawDataDecisionReportResultDto();
-    rawDataDecisionReportResultDto.setData(RawDataHelper.getRawDataDecisionInstanceDtos());
+    rawDataDecisionReportResultDto.addMeasureData(RawDataHelper.getRawDataDecisionInstanceDtos());
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(
         rawDataDecisionReportResultDto,

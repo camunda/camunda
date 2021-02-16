@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.frequency.groupby.usertask.duration.distributed_by.usertask;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
@@ -59,12 +60,15 @@ public class UserTaskFrequencyByUserTaskWorkDurationByUserTaskIT
     // then we expect two instances in a complete result, however as for one no work time could be calculated there
     // is just one duration bucket with one user task instance present
     final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
+    // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(createDurationBucketKey(completedUserTaskDuration))
-      .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(createDurationBucketKey(completedUserTaskDuration))
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
       .doAssert(resultDto);
+    // @formatter:on
   }
 
 }

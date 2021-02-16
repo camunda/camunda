@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.user_task.distributed_by.assignee;
 
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedFlowNodesOnlyFilterDto;
@@ -62,6 +64,7 @@ public class UserTaskTotalDurationByUserTaskByAssigneeReportEvaluationIT
       HyperMapAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
+        .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, 700., DEFAULT_FULLNAME)
           .groupByContains(USER_TASK_2)
@@ -73,6 +76,7 @@ public class UserTaskTotalDurationByUserTaskByAssigneeReportEvaluationIT
       HyperMapAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
+        .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, 100., DEFAULT_FULLNAME)
         .doAssert(result);
@@ -82,6 +86,7 @@ public class UserTaskTotalDurationByUserTaskByAssigneeReportEvaluationIT
       HyperMapAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
+        .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, 100., DEFAULT_FULLNAME)
         .doAssert(result);

@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.user_task.frequenc
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -55,9 +56,10 @@ public class UserTaskFrequencyByUserTaskStartDateByUserTaskReportEvaluationIT
     HyperMapAsserter.asserter()
       .processInstanceCount(flowNodeStatusTestValues.expectedInstanceCount)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-      .distributedByContains(USER_TASK_1, flowNodeStatusTestValues.expectedUserTask1Count, USER_TASK_1_NAME)
-      .distributedByContains(USER_TASK_2, flowNodeStatusTestValues.expectedUserTask2Count, USER_TASK_2_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+          .distributedByContains(USER_TASK_1, flowNodeStatusTestValues.expectedUserTask1Count, USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, flowNodeStatusTestValues.expectedUserTask2Count, USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -92,9 +94,10 @@ public class UserTaskFrequencyByUserTaskStartDateByUserTaskReportEvaluationIT
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-      .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-      .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }

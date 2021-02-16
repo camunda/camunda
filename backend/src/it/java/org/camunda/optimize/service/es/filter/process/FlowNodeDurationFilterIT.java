@@ -77,11 +77,11 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     // then
     assertThat(greaterThanTen.getInstanceCount()).isEqualTo(1L);
     assertThat(greaterThanTen.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(greaterThanTen.getData()).hasSize(2).extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+    assertThat(greaterThanTen.getFirstMeasureData()).hasSize(2).extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(Arrays.asList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, 1.)));
     assertThat(lessThanEqualsTen.getInstanceCount()).isEqualTo(1L);
     assertThat(lessThanEqualsTen.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(lessThanEqualsTen.getData()).hasSize(2)
+    assertThat(lessThanEqualsTen.getFirstMeasureData()).hasSize(2)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(Arrays.asList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, 1.)));
   }
@@ -120,12 +120,12 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
 
     // then
     assertThat(greaterThanFilter.getInstanceCount()).isEqualTo(1L);
-    assertThat(greaterThanFilter.getData()).hasSize(1);
+    assertThat(greaterThanFilter.getFirstMeasureData()).hasSize(1);
     assertThat(greaterThanFilter.getEntryForKey(USER_TASK_1)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
 
     assertThat(lessThanFilter.getInstanceCount()).isEqualTo(1L);
-    assertThat(lessThanFilter.getData()).hasSize(1);
+    assertThat(lessThanFilter.getFirstMeasureData()).hasSize(1);
     assertThat(lessThanFilter.getEntryForKey(USER_TASK_2)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
@@ -158,7 +158,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     // then only the data from the second instance will be included in the result
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(result.getData()).hasSize(2)
+    assertThat(result.getFirstMeasureData()).hasSize(2)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(Arrays.asList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, null)));
   }
@@ -188,7 +188,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(result.getEntryForKey(USER_TASK_2)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
@@ -235,12 +235,12 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     // then
     assertThat(resultBothTasksDurationGreaterTen.getInstanceCount()).isEqualTo(1L);
     assertThat(resultBothTasksDurationGreaterTen.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(resultBothTasksDurationGreaterTen.getData()).hasSize(2)
+    assertThat(resultBothTasksDurationGreaterTen.getFirstMeasureData()).hasSize(2)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(Arrays.asList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, 1.)));
     assertThat(resultOneTaskWithLowerTen.getInstanceCount()).isEqualTo(1L);
     assertThat(resultOneTaskWithLowerTen.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(resultOneTaskWithLowerTen.getData()).hasSize(2)
+    assertThat(resultOneTaskWithLowerTen.getFirstMeasureData()).hasSize(2)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(Arrays.asList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, 1.)));
   }
@@ -286,11 +286,11 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
 
     // then
     assertThat(resultBothTasksDurationGreaterTen.getInstanceCount()).isEqualTo(1L);
-    assertThat(resultBothTasksDurationGreaterTen.getData()).hasSize(2)
+    assertThat(resultBothTasksDurationGreaterTen.getFirstMeasureData()).hasSize(2)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(Arrays.asList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, 1.)));
     assertThat(resultOneTaskWithLowerTen.getInstanceCount()).isEqualTo(1L);
-    assertThat(resultOneTaskWithLowerTen.getData()).hasSize(1)
+    assertThat(resultOneTaskWithLowerTen.getFirstMeasureData()).hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(Collections.singletonList(Tuple.tuple(USER_TASK_1, 1.)));
   }
@@ -420,13 +420,13 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
 
     // then
     assertThat(resultBothTasksDurationGreaterTen.getInstanceCount()).isEqualTo(1L);
-    assertThat(resultBothTasksDurationGreaterTen.getData()).hasSize(2)
+    assertThat(resultBothTasksDurationGreaterTen.getFirstMeasureData()).hasSize(2)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(Arrays.asList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, 1.)));
     assertThat(resultOneTaskWithLowerTen.getInstanceCount()).isZero();
-    assertThat(resultOneTaskWithLowerTen.getData()).isEmpty();
+    assertThat(resultOneTaskWithLowerTen.getFirstMeasureData()).isEmpty();
     assertThat(resultBothTasksWithLowerTen.getInstanceCount()).isZero();
-    assertThat(resultBothTasksWithLowerTen.getData()).isEmpty();
+    assertThat(resultBothTasksWithLowerTen.getFirstMeasureData()).isEmpty();
   }
 
   @ParameterizedTest
@@ -580,17 +580,17 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
 
     // then
     assertThat(greaterViewAndInstanceFilters.getInstanceCount()).isEqualTo(1L);
-    assertThat(greaterViewAndInstanceFilters.getData()).hasSize(1);
+    assertThat(greaterViewAndInstanceFilters.getFirstMeasureData()).hasSize(1);
     assertThat(greaterViewAndInstanceFilters.getEntryForKey(USER_TASK_1)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
 
     assertThat(lessThanViewAndInstanceFilters.getInstanceCount()).isEqualTo(1L);
-    assertThat(lessThanViewAndInstanceFilters.getData()).hasSize(1);
+    assertThat(lessThanViewAndInstanceFilters.getFirstMeasureData()).hasSize(1);
     assertThat(lessThanViewAndInstanceFilters.getEntryForKey(USER_TASK_2)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
 
     assertThat(greaterViewAndLessInstanceFilters.getInstanceCount()).isZero();
-    assertThat(greaterViewAndLessInstanceFilters.getData()).isEmpty();
+    assertThat(greaterViewAndLessInstanceFilters.getFirstMeasureData()).isEmpty();
   }
 
   private ProcessReportDataDto createUserTaskReportWithFilters(final ProcessDefinitionEngineDto definition,

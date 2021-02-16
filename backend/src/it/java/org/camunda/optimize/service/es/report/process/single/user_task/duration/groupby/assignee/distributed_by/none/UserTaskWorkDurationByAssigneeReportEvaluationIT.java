@@ -65,8 +65,8 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
 
   @Override
   protected void assertMap_ForOneProcessWithUnassignedTasks(final double setDuration, final ReportMapResultDto result) {
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME))
@@ -77,7 +77,7 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
 
   @Override
   protected void assertMap_ForSeveralProcesses(final ReportMapResultDto result) {
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME))
@@ -106,7 +106,7 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
 
   @Override
   protected void assertMap_ForMultipleEvents(final ReportMapResultDto result) {
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME))
@@ -133,14 +133,14 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
   @Override
   protected void assertMap_otherProcessDefinitionsDoNotInfluenceResult(final ReportMapResultDto result1,
                                                                        final ReportMapResultDto result2) {
-    assertThat(result1.getData()).hasSize(1);
+    assertThat(result1.getFirstMeasureData()).hasSize(1);
     assertThat(result1.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " for result 1")
         .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
       );
 
-    assertThat(result2.getData()).hasSize(1);
+    assertThat(result2.getFirstMeasureData()).hasSize(1);
     assertThat(result2.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " for result 2")
@@ -150,7 +150,7 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
 
   @Override
   protected void assertCustomOrderOnResultValueIsApplied(ReportMapResultDto result) {
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).hasSize(2);
     assertCorrectValueOrdering(result);
   }
 

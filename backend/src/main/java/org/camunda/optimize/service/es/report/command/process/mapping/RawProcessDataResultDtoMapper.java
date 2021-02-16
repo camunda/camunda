@@ -91,7 +91,7 @@ public class RawProcessDataResultDtoMapper {
                                                      final Long totalHits,
                                                      final ExecutionContext<ProcessReportDataDto> context) {
     final RawDataProcessReportResultDto result = new RawDataProcessReportResultDto();
-    result.setData(limitedRawDataResult);
+    result.addMeasureData(limitedRawDataResult);
     result.setInstanceCount(totalHits);
     result.setInstanceCountWithoutFilters(context.getUnfilteredInstanceCount());
     result.setPagination(context.getPagination());

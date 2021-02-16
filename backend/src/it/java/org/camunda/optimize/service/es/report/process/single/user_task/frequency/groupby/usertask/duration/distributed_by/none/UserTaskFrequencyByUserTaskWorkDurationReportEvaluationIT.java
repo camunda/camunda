@@ -82,7 +82,7 @@ public class UserTaskFrequencyByUserTaskWorkDurationReportEvaluationIT
     // is just one duration bucket with one user task instance present
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .contains(

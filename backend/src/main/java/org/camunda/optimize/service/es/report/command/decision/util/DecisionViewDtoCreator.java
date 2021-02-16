@@ -5,21 +5,20 @@
  */
 package org.camunda.optimize.service.es.report.command.decision.util;
 
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty;
-
 
 public class DecisionViewDtoCreator {
 
   public static DecisionViewDto createDecisionRawDataView() {
     DecisionViewDto view = new DecisionViewDto();
-    view.setProperty(DecisionViewProperty.RAW_DATA);
+    view.setProperty(ViewProperty.RAW_DATA);
     return view;
   }
 
   public static DecisionViewDto createCountFrequencyView() {
     DecisionViewDto view = new DecisionViewDto();
-    view.setProperty(DecisionViewProperty.FREQUENCY);
+    view.setProperty(ViewProperty.FREQUENCY);
     return view;
   }
 

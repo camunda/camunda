@@ -13,6 +13,7 @@ import org.camunda.optimize.service.export.CSVUtils;
 
 import javax.validation.constraints.NotNull;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -22,7 +23,7 @@ public class SingleProcessNumberReportResult
 
   public SingleProcessNumberReportResult(@NotNull final NumberResultDto reportResult,
                                          @NotNull final SingleProcessReportDefinitionRequestDto reportDefinition) {
-    super(reportResult, reportDefinition);
+    super(Collections.singletonList(reportResult), reportDefinition);
   }
 
   @Override
@@ -36,7 +37,7 @@ public class SingleProcessNumberReportResult
 
   private List<String[]> frequencyNumberAsCsv() {
     final List<String[]> csvStrings = new LinkedList<>();
-    csvStrings.add(new String[]{String.valueOf(reportResult.getData())});
+    csvStrings.add(new String[]{String.valueOf(getResultAsDto().getFirstMeasureData())});
 
     final String normalizedCommandKey =
       reportDefinition.getData().getView().createCommandKey().replace("-", "_");
@@ -47,7 +48,7 @@ public class SingleProcessNumberReportResult
 
   private List<String[]> durationNumberAsCsv() {
     final List<String[]> csvStrings = new LinkedList<>();
-    Double result = reportResult.getData();
+    Double result = getResultAsDto().getFirstMeasureData();
     csvStrings.add(new String[]{String.valueOf(result)});
 
     final String normalizedCommandKey =
@@ -64,6 +65,6 @@ public class SingleProcessNumberReportResult
 
   @Override
   public Double getResultAsNumber() {
-    return reportResult.getData();
+    return getResultAsDto().getFirstMeasureData();
   }
 }

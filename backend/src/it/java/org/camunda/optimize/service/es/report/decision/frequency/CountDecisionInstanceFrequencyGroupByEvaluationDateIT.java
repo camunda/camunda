@@ -65,9 +65,9 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
-    assertThat(result.getData().get(0).getValue()).isEqualTo(3.);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
+    assertThat(result.getFirstMeasureData().get(0).getValue()).isEqualTo(3.);
   }
 
   @Test
@@ -93,7 +93,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(5L);
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(2);
     assertThat(resultData.get(0).getValue()).isEqualTo(2.);
@@ -136,7 +136,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     ).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     assertThat(resultData.get(0).getKey())
       .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS));
@@ -192,7 +192,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     final ReportMapResultDto result = evaluationResult.getResult();
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     assertThat(resultData.get(0).getKey())
       .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS));
@@ -245,7 +245,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     final ReportMapResultDto result = evaluationResult.getResult();
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
@@ -287,7 +287,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final List<MapResultEntryDto> resultData = evaluationResult.getResult().getData();
+    final List<MapResultEntryDto> resultData = evaluationResult.getResult().getFirstMeasureData();
     assertThat(resultData).hasSize(5);
 
     assertThat(resultData.get(0).getKey())
@@ -346,7 +346,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     ).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     assertThat(resultData.get(0).getKey())
       .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(lastEvaluationDateFilter, chronoUnit));
@@ -389,7 +389,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     ).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData.get(0).getValue()).isEqualTo(2.);
     assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Double::intValue).sum()).isEqualTo(5);
@@ -416,7 +416,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(5L);
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull().hasSize(1);
     assertThat(resultData.get(0).getValue()).isEqualTo(5.);
   }
@@ -444,7 +444,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(5L);
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull().hasSize(1);
     assertThat(resultData.get(0).getValue()).isEqualTo(5.);
   }
@@ -511,7 +511,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // then
     final ReportMapResultDto result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData)
       .isNotNull()
       .hasSize(1);

@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.fr
 import com.google.common.collect.ImmutableList;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
@@ -16,7 +17,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -70,12 +70,12 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.DURATION);
 
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactly(Tuple.tuple(createDurationBucketKey(1000), 1.0D));
@@ -103,12 +103,12 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.DURATION);
 
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactly(Tuple.tuple(createDurationBucketKey(durationInMilliseconds), 1.0D));
@@ -139,7 +139,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(0L);
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   @Test
@@ -162,7 +162,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactly(Tuple.tuple(createDurationBucketKey(durationInMilliseconds), 1.0D));
@@ -206,7 +206,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .contains(
@@ -237,7 +237,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       // we expect buckets from 1000ms (finished instance) to 5000ms (running instance in relation to currentTime)
       // in intervals of 100ms (interval us rounded up to nearest power of 10)
       .hasSize(41)
@@ -268,7 +268,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
     assertThat(resultDto.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .contains(1.0, 1.0);
   }
@@ -292,7 +292,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       // if the data range fits into the default max bucket number of 80, we should see a bucket for each value
       .hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION)
@@ -323,7 +323,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       // buckets from 1000ms (nearest lower power of 10 to min value) to 2000ms (start and end inclusive)
       // in intervals of 100ms (nearest power of 10 interval for this range)
@@ -361,7 +361,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       .hasSize(3)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
@@ -414,7 +414,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       .hasSize(3)
       .extracting(MapResultEntryDto::getKey)
@@ -451,7 +451,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData()).isNotNull().isEmpty();
+    assertThat(resultDto.getFirstMeasureData()).isNotNull().isEmpty();
   }
 
   @Test
@@ -474,7 +474,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .hasSize(20)
       .isSortedAccordingTo(Comparator.comparing(byDurationEntry -> Double.valueOf(byDurationEntry.getKey())))
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
@@ -504,7 +504,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .hasSize(2)
       .isSortedAccordingTo(
         Comparator.<MapResultEntryDto, Double>comparing(byDurationEntry -> Double.valueOf(byDurationEntry.getKey()))
@@ -536,7 +536,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .hasSize(2)
       .isSortedAccordingTo(Comparator.comparing(MapResultEntryDto::getValue).reversed())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)

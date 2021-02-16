@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableSet;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,18 +26,18 @@ public class ProcessViewDto implements Combinable {
   );
 
   protected ProcessViewEntity entity;
-  protected List<ProcessViewProperty> properties = new ArrayList<>();
+  protected List<ViewProperty> properties = new ArrayList<>();
 
   public ProcessViewDto() {
     super();
   }
 
-  public ProcessViewDto(ProcessViewProperty property) {
+  public ProcessViewDto(ViewProperty property) {
     this(null, property);
   }
 
   public ProcessViewDto(final ProcessViewEntity entity,
-                        final ProcessViewProperty property) {
+                        final ViewProperty property) {
     this.entity = entity;
     this.properties.add(property);
   }
@@ -61,13 +62,13 @@ public class ProcessViewDto implements Combinable {
 
   // to be removed with OPT-4871 when the result evaluation needs to read all properties
   @Deprecated
-  public ProcessViewProperty getProperty() {
+  public ViewProperty getProperty() {
     return this.properties != null && !this.properties.isEmpty() ? properties.get(0) : null;
   }
 
   // to be removed with OPT-4872, just here for jackson and API backwards compatibility thus protected
   @Deprecated
-  protected void setProperty(final ProcessViewProperty property) {
+  protected void setProperty(final ViewProperty property) {
     if (this.properties == null || this.properties.isEmpty()) {
       this.properties = Arrays.asList(property);
     } else {
@@ -75,7 +76,7 @@ public class ProcessViewDto implements Combinable {
     }
   }
 
-  public void setProperties(final ProcessViewProperty... properties) {
+  public void setProperties(final ViewProperty... properties) {
     this.properties = Arrays.asList(properties);
   }
 

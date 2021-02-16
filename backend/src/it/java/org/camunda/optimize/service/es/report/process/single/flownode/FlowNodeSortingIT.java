@@ -7,15 +7,15 @@ package org.camunda.optimize.service.es.report.process.single.flownode;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.Comparator;
@@ -50,7 +50,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData.size(), is(4));
     assertThat(getExecutedFlowNodeCount(result), is(4L));
     final List<String> resultLabels = resultData.stream()
@@ -85,7 +85,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData.size(), is(4));
     assertThat(getExecutedFlowNodeDuration(result), is(4L));
     final List<String> resultLabels = resultData.stream()
@@ -126,7 +126,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData.size(), is(4));
     assertThat(getExecutedFlowNodeCount(result), is(4L));
     final List<String> resultLabels = resultData.stream()
@@ -167,7 +167,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData.size(), is(4));
     assertThat(getExecutedFlowNodeCount(result), is(4L));
     final List<String> resultLabels = resultData.stream()
@@ -204,7 +204,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData.size(), is(4));
     final List<String> resultLabels = resultData.stream()
       .map(MapResultEntryDto::getLabel)
@@ -239,7 +239,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData.size(), is(4));
     // end activity not executed due running userTask
     assertThat(getExecutedFlowNodeDuration(result), is(3L));
@@ -300,11 +300,11 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
   }
 
   private long getExecutedFlowNodeCount(ReportMapResultDto resultList) {
-    return resultList.getData().stream().filter(result -> result.getValue() > 0).count();
+    return resultList.getFirstMeasureData().stream().filter(result -> result.getValue() > 0).count();
   }
 
   private long getExecutedFlowNodeDuration(ReportMapResultDto resultList) {
-    return resultList.getData()
+    return resultList.getFirstMeasureData()
       .stream()
       .map(MapResultEntryDto::getValue)
       .filter(Objects::nonNull)

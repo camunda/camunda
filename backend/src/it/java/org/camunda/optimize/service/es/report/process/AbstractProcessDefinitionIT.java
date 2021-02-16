@@ -436,7 +436,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
     assertThat(resultMap).hasSize(resultSize);
     for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
-      final List<MapResultEntryDto> resultData = result.getResult().getData();
+      final List<MapResultEntryDto> resultData = result.getResult().getFirstMeasureData();
       assertThat(resultData.size()).isEqualTo(expectedNumberOfBuckets);
       assertThat(resultData.get(0).getKey()).isEqualTo(decimalFormat.format(startRange));
       assertThat(resultData.get(resultData.size() - 1).getKey()).isEqualTo(decimalFormat.format(endRange));

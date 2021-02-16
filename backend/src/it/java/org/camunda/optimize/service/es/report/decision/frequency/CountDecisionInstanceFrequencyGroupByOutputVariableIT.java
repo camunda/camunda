@@ -76,7 +76,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getKey()).isEqualTo(expectedClassificationOutputValue);
@@ -116,7 +116,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(4L);
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(2);
     assertThat(resultData.get(0).getKey()).isEqualTo("false");
@@ -172,7 +172,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(4L);
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData.stream().mapToDouble(MapResultEntryDto::getValue).sum()).isEqualTo(4L);
   }
@@ -222,7 +222,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(4L);
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(3);
     assertThat(resultData.stream().map(MapResultEntryDto::getKey).collect(toList()))
@@ -265,7 +265,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       VariableType.DOUBLE,
       30.0,
       5.0
-    ).getResult().getData();
+    ).getResult().getFirstMeasureData();
 
     // then the result is empty
     assertThat(resultData).isNotNull();
@@ -303,7 +303,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       outputVarName,
       null,
       VariableType.INTEGER
-    ).getResult().getData();
+    ).getResult().getFirstMeasureData();
 
     // then the result includes all instances
     assertThat(resultData).isNotNull();
@@ -341,7 +341,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       outputVarName,
       null,
       VariableType.DOUBLE
-    ).getResult().getData();
+    ).getResult().getFirstMeasureData();
 
     // then the result includes all instances
     assertThat(resultData).isNotNull();
@@ -381,7 +381,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       outputVarName,
       null,
       VariableType.DOUBLE
-    ).getResult().getData();
+    ).getResult().getFirstMeasureData();
 
     // then the amount of buckets does not exceed NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION
     // (a precaution to avoid too many buckets for distributed reports)
@@ -433,7 +433,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getKey()).isEqualTo("true");
@@ -470,7 +470,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(4L);
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getKey()).isEqualTo(expectedClassificationOutputValue);
@@ -507,7 +507,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(4L);
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getKey()).isEqualTo(auditValue);
@@ -544,7 +544,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getKey()).isEqualTo(auditValue);
@@ -619,7 +619,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(toList());
     assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
@@ -666,7 +666,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(toList());
     assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
@@ -720,9 +720,9 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
-    assertThat(result.getData().get(0).getValue()).isEqualTo(1.);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
+    assertThat(result.getFirstMeasureData().get(0).getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -756,7 +756,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData.get(0).getValue()).isEqualTo(2.);
@@ -794,7 +794,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(toList());
     assertThat(resultKeys).isSortedAccordingTo(Comparator.naturalOrder());
   }
@@ -825,7 +825,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     // when
     final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
       definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, unit
-    ).getResult().getData();
+    ).getResult().getFirstMeasureData();
 
     // then
     assertThat(resultData).isNotNull();
@@ -871,7 +871,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
 
@@ -906,7 +906,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
   }
@@ -949,8 +949,8 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(result.getEntryForKey("testValidMatch").get().getValue()).isEqualTo(1.);
     assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(2.);
   }
@@ -986,8 +986,8 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(result.getEntryForKey("1.00").get().getValue()).isEqualTo(1.);
     assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(1.);
   }

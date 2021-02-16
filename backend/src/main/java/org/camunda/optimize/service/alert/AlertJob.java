@@ -10,8 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
@@ -206,7 +206,7 @@ public class AlertJob implements Job {
   private boolean isDurationReport(ReportDefinitionDto reportDefinition) {
     if (reportDefinition.getData() instanceof ProcessReportDataDto) {
       ProcessReportDataDto data = (ProcessReportDataDto) reportDefinition.getData();
-      return data.getView().getProperty().equals(ProcessViewProperty.DURATION);
+      return data.getView().getProperty().equals(ViewProperty.DURATION);
     }
     return false;
   }

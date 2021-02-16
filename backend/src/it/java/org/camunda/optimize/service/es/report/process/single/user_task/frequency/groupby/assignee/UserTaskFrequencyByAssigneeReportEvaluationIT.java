@@ -12,13 +12,13 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -98,11 +98,11 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
 
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME))
       .isPresent().get()
@@ -136,7 +136,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
       .containsExactly(calculateExpectedValueGivenDurationsDefaultAggr(1.), DEFAULT_USERNAME);
@@ -165,12 +165,12 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
 
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
-    assertThat(result.getData().stream().map(MapResultEntryDto::getKey).collect(toSet()))
+    assertThat(result.getFirstMeasureData().stream().map(MapResultEntryDto::getKey).collect(toSet()))
       .containsExactlyInAnyOrder(DEFAULT_USERNAME, DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
@@ -201,9 +201,9 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).hasSize(3);
+    assertThat(result.getFirstMeasureData()).hasSize(3);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(3L);
-    assertThat(result.getData().stream().map(MapResultEntryDto::getKey).collect(toSet()))
+    assertThat(result.getFirstMeasureData().stream().map(MapResultEntryDto::getKey).collect(toSet()))
       .containsExactlyInAnyOrder(DEFAULT_USERNAME, SECOND_USER, DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
@@ -238,7 +238,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(2);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(toList());
@@ -266,7 +266,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(2);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
     final List<String> resultLabels = resultData.stream()
@@ -296,7 +296,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).hasSize(3);
+    assertThat(result.getFirstMeasureData()).hasSize(3);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(3L);
     assertCorrectValueOrdering(result);
   }
@@ -326,12 +326,12 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     final ReportMapResultDto result2 = reportClient.evaluateMapReport(reportData2).getResult();
 
     // then
-    assertThat(result1.getData()).hasSize(1);
+    assertThat(result1.getFirstMeasureData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result1)).isEqualTo(1L);
     assertThat(result1.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(2.);
 
-    assertThat(result2.getData()).hasSize(1);
+    assertThat(result2.getFirstMeasureData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result2)).isEqualTo(1L);
     assertThat(result2.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
@@ -367,7 +367,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   public static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
@@ -411,7 +411,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(expectedResult);
   }
@@ -463,7 +463,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(expectedResult);
   }
@@ -518,7 +518,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(expectedResult);
   }
@@ -576,7 +576,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(expectedResult);
   }
@@ -643,7 +643,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat((long) result.getData().size()).isEqualTo(
+    assertThat((long) result.getFirstMeasureData().size()).isEqualTo(
       flowNodeStatusTestValues.getExpectedFrequencyValues().values().stream().filter(Objects::nonNull).count());
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(flowNodeStatusTestValues.getExpectedFrequencyValues().get(DEFAULT_USERNAME));
@@ -684,7 +684,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
     assertThat(result.getEntryForKey(SECOND_USER).map(MapResultEntryDto::getValue).orElse(null))
@@ -719,7 +719,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(2.);
@@ -743,7 +743,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(11.);
@@ -769,8 +769,8 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).isEmpty();
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(0L);
 
     // when
@@ -779,8 +779,8 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     assertThat(result.getEntryForKey(DEFAULT_USERNAME)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
@@ -803,7 +803,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
-    dataDto.getView().setProperties((ProcessViewProperty) null);
+    dataDto.getView().setProperties((ViewProperty) null);
 
     // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
@@ -892,7 +892,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
   }
 
   private long getExecutedFlowNodeCount(ReportMapResultDto resultList) {
-    return resultList.getData()
+    return resultList.getFirstMeasureData()
       .stream()
       .map(MapResultEntryDto::getValue)
       .filter(Objects::nonNull)
@@ -900,7 +900,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
   }
 
   private void assertCorrectValueOrdering(ReportMapResultDto result) {
-    List<MapResultEntryDto> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     final List<Double> bucketValues = resultData.stream()
       .map(MapResultEntryDto::getValue)
       .collect(toList());

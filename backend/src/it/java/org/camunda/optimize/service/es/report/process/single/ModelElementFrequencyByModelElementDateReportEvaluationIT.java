@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.process.single;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -15,7 +16,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -74,7 +74,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(getExpectedViewEntity());
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy()).isNotNull();
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(resultReportDataDto.getGroupBy().getValue())
@@ -84,8 +84,8 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
@@ -114,8 +114,8 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
@@ -148,7 +148,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(4)
       .extracting(MapResultEntryDto::getKey)
       .isSortedAccordingTo(Comparator.naturalOrder());
@@ -178,7 +178,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(4)
       .extracting(MapResultEntryDto::getKey)
       .isSortedAccordingTo(Comparator.comparing(String::toString).reversed());
@@ -213,7 +213,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(3)
       .isSortedAccordingTo(Comparator.comparing(MapResultEntryDto::getValue).reversed());
   }
@@ -240,7 +240,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(2);
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
@@ -268,7 +268,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
@@ -304,7 +304,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(1);
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
@@ -352,7 +352,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).hasSize(1);
   }
 
   @Test
@@ -450,7 +450,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isEmpty();
   }
 
@@ -470,7 +470,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Double::intValue).sum()).isEqualTo(6);
     assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(2.);
@@ -493,7 +493,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(2.);
     assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(4.);
@@ -525,7 +525,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(groupingCount);
     final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, groupByUnitAsChrono);
     // startDate is groupingCount - 1 in the past from final start of unit
@@ -545,7 +545,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     int resultSize) {
     assertThat(resultMap).hasSize(resultSize);
     for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
-      final List<MapResultEntryDto> resultData = result.getResult().getData();
+      final List<MapResultEntryDto> resultData = result.getResult().getFirstMeasureData();
       assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
       assertThat(resultData).first().extracting(MapResultEntryDto::getKey).isEqualTo(localDateTimeToString(startRange));
       assertIsInRangeOfLastInterval(resultData.get(resultData.size() - 1).getKey(), startRange, endRange);
@@ -631,7 +631,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
   }
 
   protected long getExecutedFlowNodeCount(ReportMapResultDto resultList) {
-    return resultList.getData()
+    return resultList.getFirstMeasureData()
       .stream()
       .map(MapResultEntryDto::getValue)
       .filter(Objects::nonNull)

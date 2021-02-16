@@ -9,6 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -100,8 +102,9 @@ public abstract class UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluat
     HyperMapAsserter.asserter()
       .processInstanceCount(flowNodeStatusTestValues.getExpectedInstanceCount())
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-      .distributedByContains(USER_TASK_1, getCorrectTestExecutionValue(flowNodeStatusTestValues), USER_TASK_1_NAME)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+          .distributedByContains(USER_TASK_1, getCorrectTestExecutionValue(flowNodeStatusTestValues), USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }

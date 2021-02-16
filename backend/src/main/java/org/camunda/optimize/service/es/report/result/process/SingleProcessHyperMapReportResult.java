@@ -19,6 +19,7 @@ import org.camunda.optimize.service.export.CSVUtils;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -29,12 +30,12 @@ public class SingleProcessHyperMapReportResult
 
   public SingleProcessHyperMapReportResult(@NonNull final ReportHyperMapResultDto reportResult,
                                            @NonNull final SingleProcessReportDefinitionRequestDto reportDefinition) {
-    super(reportResult, reportDefinition);
+    super(Collections.singletonList(reportResult), reportDefinition);
   }
 
   @Override
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
-    return mapHyperMapReportResultsToCsvList(limit, offset, reportResult);
+    return mapHyperMapReportResultsToCsvList(limit, offset, getResultAsDto());
   }
 
   private List<String[]> mapHyperMapReportResultsToCsvList(
@@ -66,7 +67,7 @@ public class SingleProcessHyperMapReportResult
     final ReportHyperMapResultDto hyperMapResult) {
 
     return Streams.mapWithIndex(
-      hyperMapResult.getData().stream(),
+      hyperMapResult.getFirstMeasureData().stream(),
       (hyperMapResultEntry, index) -> mapSingleHyperMapResultEntry(limit, hyperMapResultEntry, index > 0)
     )
       .collect(Collectors.toList());

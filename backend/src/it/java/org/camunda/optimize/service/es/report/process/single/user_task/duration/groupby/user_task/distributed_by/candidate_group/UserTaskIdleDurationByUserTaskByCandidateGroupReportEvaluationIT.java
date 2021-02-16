@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.user_task.distributed_by.candidate_group;
 
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
@@ -60,6 +62,7 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
       HyperMapAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
+        .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
             .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 200., FIRST_CANDIDATE_GROUP_NAME)
           .groupByContains(USER_TASK_2)
@@ -71,6 +74,7 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
       HyperMapAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
+        .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
             .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 100., FIRST_CANDIDATE_GROUP_NAME)
         .doAssert(result);
@@ -80,6 +84,7 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
       HyperMapAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
+        .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
             .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 700., FIRST_CANDIDATE_GROUP_NAME)
           .groupByContains(USER_TASK_2)

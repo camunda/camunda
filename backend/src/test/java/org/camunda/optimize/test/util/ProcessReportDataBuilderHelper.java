@@ -7,6 +7,7 @@ package org.camunda.optimize.test.util;
 
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -17,7 +18,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
@@ -50,7 +50,7 @@ public class ProcessReportDataBuilderHelper {
   private List<String> processDefinitionVersions;
 
   private ProcessViewEntity viewEntity = null;
-  private ProcessViewProperty viewProperty = ProcessViewProperty.RAW_DATA;
+  private ViewProperty viewProperty = ViewProperty.RAW_DATA;
   private ProcessGroupByType groupByType = ProcessGroupByType.NONE;
   private DistributedByType distributedByType = DistributedByType.NONE;
   private ProcessVisualization visualization = ProcessVisualization.TABLE;
@@ -152,7 +152,7 @@ public class ProcessReportDataBuilderHelper {
     return this;
   }
 
-  public ProcessReportDataBuilderHelper viewProperty(ProcessViewProperty viewProperty) {
+  public ProcessReportDataBuilderHelper viewProperty(ViewProperty viewProperty) {
     this.viewProperty = viewProperty;
     return this;
   }

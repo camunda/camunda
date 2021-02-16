@@ -8,13 +8,13 @@ package org.camunda.optimize.upgrade.migrate33To34;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.factories.Upgrade33To34PlanFactory;
@@ -75,11 +75,11 @@ public class MigrateToMultiMeasureReportConfigurationIT extends AbstractUpgrade3
     // AND previous values are migrated to new properties as expected
     assertThat(getProcessReportWithId("view-property-frequency")).isPresent().get()
       .satisfies(report -> {
-        assertThat(report.getData().getView().getProperties()).containsExactly(ProcessViewProperty.FREQUENCY);
+        assertThat(report.getData().getView().getProperties()).containsExactly(ViewProperty.FREQUENCY);
       });
     assertThat(getProcessReportWithId("view-property-duration-avg-total")).isPresent().get()
       .satisfies(report -> {
-        assertThat(report.getData().getView().getProperties()).containsExactly(ProcessViewProperty.DURATION);
+        assertThat(report.getData().getView().getProperties()).containsExactly(ViewProperty.DURATION);
         assertThat(report.getData().getConfiguration().getAggregationTypes()).containsExactly(AggregationType.AVERAGE);
         assertThat(report.getData()
                      .getConfiguration()
@@ -87,7 +87,7 @@ public class MigrateToMultiMeasureReportConfigurationIT extends AbstractUpgrade3
       });
     assertThat(getProcessReportWithId("view-property-duration-min-idle")).isPresent().get()
       .satisfies(report -> {
-        assertThat(report.getData().getView().getProperties()).containsExactly(ProcessViewProperty.DURATION);
+        assertThat(report.getData().getView().getProperties()).containsExactly(ViewProperty.DURATION);
         assertThat(report.getData().getConfiguration().getAggregationTypes()).containsExactly(AggregationType.MIN);
         assertThat(report.getData()
                      .getConfiguration()
@@ -95,7 +95,7 @@ public class MigrateToMultiMeasureReportConfigurationIT extends AbstractUpgrade3
       });
     assertThat(getProcessReportWithId("view-property-duration-max-work")).isPresent().get()
       .satisfies(report -> {
-        assertThat(report.getData().getView().getProperties()).containsExactly(ProcessViewProperty.DURATION);
+        assertThat(report.getData().getView().getProperties()).containsExactly(ViewProperty.DURATION);
         assertThat(report.getData().getConfiguration().getAggregationTypes()).containsExactly(AggregationType.MAX);
         assertThat(report.getData()
                      .getConfiguration()
@@ -103,7 +103,7 @@ public class MigrateToMultiMeasureReportConfigurationIT extends AbstractUpgrade3
       });
     assertThat(getProcessReportWithId("view-property-rawData")).isPresent().get()
       .satisfies(report -> {
-        assertThat(report.getData().getView().getProperties()).containsExactly(ProcessViewProperty.RAW_DATA);
+        assertThat(report.getData().getView().getProperties()).containsExactly(ViewProperty.RAW_DATA);
       });
     // this case shouldn't be a real case it's just here to ensure this state does not cause the update to abort
     assertThat(getProcessReportWithId("view-property-null-null-null")).isPresent().get()

@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.view.process.frequency;
 
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -21,7 +21,7 @@ public class ProcessViewCountFlowNodeFrequency extends ProcessViewFrequency {
   public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
     ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.FLOW_NODE);
-    view.setProperties(ProcessViewProperty.FREQUENCY);
+    view.setProperties(ViewProperty.FREQUENCY);
     dataForCommandKey.setView(view);
   }
 }

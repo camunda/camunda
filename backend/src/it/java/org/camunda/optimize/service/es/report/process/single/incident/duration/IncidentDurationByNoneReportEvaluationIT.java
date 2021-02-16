@@ -6,13 +6,13 @@
 package org.camunda.optimize.service.es.report.process.single.incident.duration;
 
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -86,12 +86,12 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly("1");
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.INCIDENT);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
 
     final NumberResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       .isEqualTo(1000.);
   }
@@ -118,8 +118,8 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).isEqualTo(2000.);
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData()).isEqualTo(2000.);
   }
 
   @Test
@@ -144,7 +144,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       .isEqualTo(3000.);
   }
@@ -171,7 +171,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       .isEqualTo(2000.);
   }
@@ -201,7 +201,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(3L);
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       .isEqualTo(3000.); // uses the average by default
   }
@@ -232,7 +232,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       .isEqualTo(55_000.);
   }
@@ -263,7 +263,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       .isEqualTo(3000.);
   }
@@ -309,7 +309,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).isEqualTo(1000.);
+    assertThat(result.getFirstMeasureData()).isEqualTo(1000.);
   }
 
   @Test
@@ -337,7 +337,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // then the result has two process instances
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getData()).isEqualTo(2000.);
+    assertThat(result.getFirstMeasureData()).isEqualTo(2000.);
 
     // when I create a running process instances only filter
     List<ProcessFilterDto<?>> runningProcessInstancesOnly = ProcessFilterBuilder
@@ -350,7 +350,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // then we only get instance 1 because there's only one running
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).isEqualTo(3000.);
+    assertThat(result.getFirstMeasureData()).isEqualTo(3000.);
   }
 
   private Stream<Arguments> filterAndExpectedResult() {
@@ -391,7 +391,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(result.getData()).isEqualTo(expectedResult);
+    assertThat(result.getFirstMeasureData()).isEqualTo(expectedResult);
   }
 
   @Test
@@ -410,7 +410,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
-    assertThat(resultDto.getData()).isNull();
+    assertThat(resultDto.getFirstMeasureData()).isNull();
   }
 
   @Test
@@ -434,7 +434,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       .isEqualTo(3000.);
   }
@@ -477,7 +477,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(3L);
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       .isEqualTo(expectedResult);
   }

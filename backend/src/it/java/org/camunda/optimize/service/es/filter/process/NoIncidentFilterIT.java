@@ -73,7 +73,7 @@ public class NoIncidentFilterIT extends AbstractFilterIT {
     // then
     assertThat(numberResult.getInstanceCount()).isEqualTo(1L);
     assertThat(numberResult.getInstanceCountWithoutFilters()).isEqualTo(4L);
-    assertThat(numberResult.getData()).isEqualTo(0.);
+    assertThat(numberResult.getFirstMeasureData()).isEqualTo(0.);
   }
 
   @Test

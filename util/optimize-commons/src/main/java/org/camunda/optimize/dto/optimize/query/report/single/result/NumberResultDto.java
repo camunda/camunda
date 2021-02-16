@@ -5,19 +5,33 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.result;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class NumberResultDto implements DecisionReportResultDto, ProcessReportResultDto {
 
   private long instanceCount;
   private long instanceCountWithoutFilters;
-  private Double data;
+  private List<MeasureDto<Double>> measures = new ArrayList<>();
 
   @Override
   public ResultType getType() {
     return ResultType.NUMBER;
   }
+
+  public void addMeasure(MeasureDto<Double> measure) {
+    this.measures.add(measure);
+  }
+
+  @JsonIgnore
+  public Double getFirstMeasureData() {
+    return measures.stream().findFirst().map(MeasureDto::getData).orElse(null);
+  }
+
 }

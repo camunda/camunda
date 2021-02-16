@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
@@ -30,7 +31,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -239,7 +239,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     // then
     OffsetDateTime expectedDate =
       ZonedDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneId.of("Atlantic/Cape_Verde")).toOffsetDateTime();
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(1)
       .first()
       .extracting(MapResultEntryDto::getKey)
@@ -428,7 +428,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       // @formatter:on
 
     // then
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey)
       .first()
@@ -473,7 +473,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     assertThat(resultMap.values())
       .hasSize(2)
       .extracting(AuthorizedProcessReportEvaluationResultDto::getResult)
-      .flatExtracting(ReportMapResultDto::getData)
+      .flatExtracting(ReportMapResultDto::getFirstMeasureData)
       .extracting(MapResultEntryDto::getKey)
       .hasSize(2)
       .first()
@@ -520,7 +520,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     assertThat(combinedResultMap).hasSize(2);
     for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> value : combinedResultMap.values()) {
       final ReportMapResultDto resultMap = value.getResult();
-      final List<String> dateAsStringDateResultEntries = resultMap.getData()
+      final List<String> dateAsStringDateResultEntries = resultMap.getFirstMeasureData()
         .stream()
         .map(MapResultEntryDto::getKey)
         .collect(Collectors.toList());
@@ -567,7 +567,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       // @formatter:on
 
     // then
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(1)
       .first()
       .extracting(MapResultEntryDto::getKey)
@@ -605,7 +605,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     // @formatter:on
 
     // then
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(1)
       .first()
       .extracting(MapResultEntryDto::getKey)
@@ -644,7 +644,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .getResult();
 
     // then
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(1)
       .first()
       .extracting(MapResultEntryDto::getKey)
@@ -664,7 +664,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     final ProcessReportDataDto rawDataReport = new ProcessReportDataBuilderHelper()
       .processDefinitionKey(processInstance.getProcessDefinitionKey())
       .processDefinitionVersions(Collections.singletonList(processInstance.getProcessDefinitionVersion()))
-      .viewProperty(ProcessViewProperty.RAW_DATA)
+      .viewProperty(ViewProperty.RAW_DATA)
       .visualization(ProcessVisualization.TABLE)
       .build();
 
@@ -824,7 +824,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .getResult();
 
     // then there should be a result
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(1)
       .last()
       .extracting(MapResultEntryDto::getValue)
@@ -857,7 +857,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(1)
       .first()
       .extracting(MapResultEntryDto::getValue)
@@ -908,7 +908,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
 
     // then
     // if the timezone of the request was not respected then the result would be not be empty
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   @Test
@@ -967,16 +967,16 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     if (result instanceof ReportHyperMapResultDto) {
       ReportHyperMapResultDto hyperMapResultDto = (ReportHyperMapResultDto) result;
       if (reportData.getDistributedBy().getValue() instanceof DateDistributedByValueDto) {
-        return hyperMapResultDto.getData().stream()
+        return hyperMapResultDto.getFirstMeasureData().stream()
           .flatMap(hyperEntry -> hyperEntry.getValue().stream())
           .map(MapResultEntryDto::getKey)
           .collect(Collectors.toList());
       } else {
-        return hyperMapResultDto.getData().stream().map(HyperMapResultEntryDto::getKey).collect(Collectors.toList());
+        return hyperMapResultDto.getFirstMeasureData().stream().map(HyperMapResultEntryDto::getKey).collect(Collectors.toList());
       }
     } else if (result instanceof ReportMapResultDto) {
       ReportMapResultDto reportMapResultDto = (ReportMapResultDto) result;
-      return reportMapResultDto.getData().stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
+      return reportMapResultDto.getFirstMeasureData().stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     } else {
       throw new OptimizeIntegrationTestException("Unknown result type!");
     }

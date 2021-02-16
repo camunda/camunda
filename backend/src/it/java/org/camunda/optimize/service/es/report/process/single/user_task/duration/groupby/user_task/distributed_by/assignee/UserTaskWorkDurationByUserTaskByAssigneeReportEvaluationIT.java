@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.user_task.distributed_by.assignee;
 
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -66,6 +67,7 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
       HyperMapAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
+        .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, 500., DEFAULT_FULLNAME)
           .groupByContains(USER_TASK_2)
@@ -77,6 +79,7 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
       HyperMapAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
+        .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, 100., DEFAULT_FULLNAME)
         .doAssert(result);
@@ -87,6 +90,7 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
       HyperMapAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
+        .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, 100., DEFAULT_FULLNAME)
         .doAssert(result);
@@ -102,18 +106,19 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]), DEFAULT_FULLNAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_A)
-        .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]), DEFAULT_FULLNAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_B)
-        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]), DEFAULT_FULLNAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_2)
+          .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_A)
+          .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]), DEFAULT_FULLNAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_B)
+          .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
       .doAssert(result);
     // @formatter:on
   }
@@ -125,22 +130,23 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), DEFAULT_FULLNAME)
-        .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_2)
-        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-        .distributedByContains(SECOND_USER, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), SECOND_USER_FULLNAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_A)
-        .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), DEFAULT_FULLNAME)
-        .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .groupByContains(USER_TASK_B)
-        .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-        .distributedByContains(SECOND_USER, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), SECOND_USER_FULLNAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+      .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), DEFAULT_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_2)
+          .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
+          .distributedByContains(SECOND_USER, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), SECOND_USER_FULLNAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_A)
+          .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), DEFAULT_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+        .groupByContains(USER_TASK_B)
+          .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
+          .distributedByContains(SECOND_USER, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), SECOND_USER_FULLNAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
       .doAssert(results.get(aggType));
     // @formatter:on
   }
@@ -153,16 +159,18 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(setDurations1), DEFAULT_FULLNAME)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(setDurations1), DEFAULT_FULLNAME)
       .doAssert(result1);
 
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(USER_TASK_1)
-        .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(setDurations2[0]), DEFAULT_FULLNAME)
-        .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(setDurations2[0]), DEFAULT_FULLNAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
       .doAssert(result2);
     // @formatter:on
   }

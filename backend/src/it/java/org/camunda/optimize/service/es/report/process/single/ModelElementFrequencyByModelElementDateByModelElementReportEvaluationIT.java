@@ -84,7 +84,7 @@ public abstract class ModelElementFrequencyByModelElementDateByModelElementRepor
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final List<HyperMapResultEntryDto> resultData = result.getData();
+    final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertFirstValueEquals(resultData, 1.);
     assertLastValueEquals(resultData, 2.);
@@ -101,7 +101,7 @@ public abstract class ModelElementFrequencyByModelElementDateByModelElementRepor
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final List<HyperMapResultEntryDto> resultData = result.getData();
+    final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isEmpty();
   }
 

@@ -8,6 +8,8 @@ package org.camunda.optimize.service.es.report.process.single.user_task.duration
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
@@ -58,7 +60,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
 
     // then
     // @formatter:off
-    final List<String> collect = result.getData().stream()
+    final List<String> collect = result.getFirstMeasureData().stream()
       .flatMap(entry -> entry.getValue().stream())
       .map(MapResultEntryDto::getKey)
       .collect(Collectors.toList());
@@ -103,8 +105,9 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
     HyperMapAsserter.asserter()
       .processInstanceCount(flowNodeStatusValues.expectedInstanceCount)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(DEFAULT_USERNAME, getCorrectTestExecutionValue(flowNodeStatusValues), DEFAULT_FULLNAME)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+          .distributedByContains(DEFAULT_USERNAME, getCorrectTestExecutionValue(flowNodeStatusValues), DEFAULT_FULLNAME)
       .doAssert(result);
     // @formatter:on
   }

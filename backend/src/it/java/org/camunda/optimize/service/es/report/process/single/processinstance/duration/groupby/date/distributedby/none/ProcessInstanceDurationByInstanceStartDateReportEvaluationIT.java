@@ -80,7 +80,7 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(startDate, ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
     assertThat(resultData.get(0).getValue())
@@ -124,7 +124,7 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
 
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(5);
 
     assertThat(resultData.get(0).getKey())
@@ -171,7 +171,7 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
 
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
 
     assertThat(resultData)
       .isNotNull()
@@ -235,7 +235,7 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getFirstMeasureData();
     assertThat(resultData)
       .isNotNull()
       .hasSize(1);
@@ -289,7 +289,7 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getFirstMeasureData();
     assertThat(resultData)
       .isNotNull()
       .hasSize(1);

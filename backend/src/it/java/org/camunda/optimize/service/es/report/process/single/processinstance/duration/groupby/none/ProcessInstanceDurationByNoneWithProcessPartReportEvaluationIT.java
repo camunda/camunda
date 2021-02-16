@@ -7,13 +7,13 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.du
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -89,12 +89,12 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
     assertThat(resultReportDataDto.getConfiguration().getProcessPart()).isPresent();
 
     assertThat(evaluationResponse.getResult().getInstanceCount()).isEqualTo(1L);
-    Double calculatedResult = evaluationResponse.getResult().getData();
+    Double calculatedResult = evaluationResponse.getResult().getFirstMeasureData();
     assertThat(calculatedResult).isEqualTo(1000.);
   }
 
@@ -131,7 +131,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
 
     // then
     assertThat(evaluationResponse.getResult().getInstanceCount()).isEqualTo(1L);
-    Double calculatedResult = evaluationResponse.getResult().getData();
+    Double calculatedResult = evaluationResponse.getResult().getFirstMeasureData();
     assertThat(calculatedResult).isEqualTo(activityDurationInSeconds * 1000.);
   }
 
@@ -170,11 +170,11 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
     assertThat(resultReportDataDto.getConfiguration().getProcessPart()).isPresent();
 
-    Double calculatedResult = evaluationResponse.getResult().getData();
+    Double calculatedResult = evaluationResponse.getResult().getFirstMeasureData();
     assertThat(calculatedResult).isEqualTo(1000.);
   }
 
@@ -236,7 +236,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    Double calculatedResult = resultDto.getData();
+    Double calculatedResult = resultDto.getFirstMeasureData();
     assertThat(calculatedResult).isEqualTo(2000.);
   }
 
@@ -264,7 +264,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    Double calculatedResult = resultDto.getData();
+    Double calculatedResult = resultDto.getFirstMeasureData();
     assertThat(calculatedResult).isNull();
   }
 
@@ -309,7 +309,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    Double calculatedResult = resultDto.getData();
+    Double calculatedResult = resultDto.getFirstMeasureData();
     assertThat(calculatedResult).isNull();
   }
 
@@ -335,7 +335,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    Double calculatedResult = resultDto.getData();
+    Double calculatedResult = resultDto.getFirstMeasureData();
     assertThat(resultDto.getInstanceCount()).isEqualTo(0L);
     assertThat(calculatedResult).isNull();
   }
@@ -362,7 +362,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    Double calculatedResult = resultDto.getData();
+    Double calculatedResult = resultDto.getFirstMeasureData();
     assertThat(resultDto.getInstanceCount()).isEqualTo(0L);
     assertThat(calculatedResult).isNull();
   }
@@ -381,7 +381,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    Double calculatedResult = resultDto.getData();
+    Double calculatedResult = resultDto.getFirstMeasureData();
     assertThat(resultDto.getInstanceCount()).isEqualTo(0L);
     assertThat(calculatedResult).isNull();
   }
@@ -469,7 +469,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    Double calculatedResult = resultDto.getData();
+    Double calculatedResult = resultDto.getFirstMeasureData();
     assertThat(calculatedResult).isEqualTo(1000.);
 
     // when
@@ -477,7 +477,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    calculatedResult = resultDto.getData();
+    calculatedResult = resultDto.getFirstMeasureData();
     assertThat(resultDto.getInstanceCount()).isEqualTo(0L);
     assertThat(calculatedResult).isNull();
   }
@@ -519,12 +519,12 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
 
   private void assertAggregationResults(
     Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> results) {
-    assertThat(results.get(AVERAGE).getResult().getData()).isNotNull();
-    assertThat(results.get(AVERAGE).getResult().getData()).isEqualTo(4000.);
-    assertThat(results.get(MIN).getResult().getData()).isNotNull();
-    assertThat(results.get(MIN).getResult().getData()).isEqualTo(1000.);
-    assertThat(results.get(MAX).getResult().getData()).isNotNull();
-    assertThat(results.get(MAX).getResult().getData()).isEqualTo(9000.);
+    assertThat(results.get(AVERAGE).getResult().getFirstMeasureData()).isNotNull();
+    assertThat(results.get(AVERAGE).getResult().getFirstMeasureData()).isEqualTo(4000.);
+    assertThat(results.get(MIN).getResult().getFirstMeasureData()).isNotNull();
+    assertThat(results.get(MIN).getResult().getFirstMeasureData()).isEqualTo(1000.);
+    assertThat(results.get(MAX).getResult().getFirstMeasureData()).isNotNull();
+    assertThat(results.get(MAX).getResult().getFirstMeasureData()).isEqualTo(9000.);
   }
 
   private ProcessReportDataDto createReport(String definitionKey, String definitionVersion, String start, String end) {

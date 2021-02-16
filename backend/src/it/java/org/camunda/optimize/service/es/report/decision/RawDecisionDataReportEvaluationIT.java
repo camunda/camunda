@@ -8,13 +8,13 @@ package org.camunda.optimize.service.es.report.decision;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -100,7 +100,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     assertThat(resultDataDto.getView())
       .isNotNull()
       .extracting(DecisionViewDto::getProperty)
-      .isEqualTo(DecisionViewProperty.RAW_DATA);
+      .isEqualTo(ViewProperty.RAW_DATA);
   }
 
   @Test

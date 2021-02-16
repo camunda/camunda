@@ -133,7 +133,7 @@ public class RawDecisionDataResultDtoMapper {
                                                       final Long totalHits,
                                                       final ExecutionContext<DecisionReportDataDto> context) {
     final RawDataDecisionReportResultDto result = new RawDataDecisionReportResultDto();
-    result.setData(limitedRawDataResult);
+    result.addMeasureData(limitedRawDataResult);
     result.setInstanceCount(totalHits);
     result.setInstanceCountWithoutFilters(context.getUnfilteredInstanceCount());
     result.setPagination(context.getPagination());

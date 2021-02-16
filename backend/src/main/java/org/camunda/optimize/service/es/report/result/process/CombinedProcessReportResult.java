@@ -38,14 +38,14 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 public class CombinedProcessReportResult
   extends ReportEvaluationResult<CombinedProcessReportResultDto<?>, CombinedReportDefinitionRequestDto> {
 
-  public CombinedProcessReportResult(@NotNull final CombinedProcessReportResultDto reportResult,
+  public CombinedProcessReportResult(@NotNull final CombinedProcessReportResultDto<?> reportResult,
                                      @NotNull final CombinedReportDefinitionRequestDto reportDefinition) {
-    super(reportResult, reportDefinition);
+    super(Collections.singletonList(reportResult), reportDefinition);
   }
 
   @Override
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
-    Optional<ResultType> resultType = reportResult.getSingleReportResultType();
+    Optional<ResultType> resultType = getResultAsDto().getSingleReportResultType();
     return resultType.map(r -> mapCombinedNumberReportResultsToCsvList(limit, offset, r))
       .orElseGet(() -> {
         log.debug("No reports to evaluate are available in the combined report. Returning empty csv instead.");
@@ -62,14 +62,14 @@ public class CombinedProcessReportResult
         csvStrings = mapCombinedMapReportResultsToCsvList(
           limit,
           offset,
-          (CombinedProcessReportResultDto<ReportMapResultDto>) reportResult
+          (CombinedProcessReportResultDto<ReportMapResultDto>) getResultAsDto()
         );
         break;
       case NUMBER:
         csvStrings = mapCombinedNumberReportResultsToCsvList(
           1,
           0,
-          (CombinedProcessReportResultDto<NumberResultDto>) reportResult
+          (CombinedProcessReportResultDto<NumberResultDto>) getResultAsDto()
         );
         break;
       default:
@@ -111,7 +111,7 @@ public class CombinedProcessReportResult
     final Set<String> allLabels = collectAllLabels(combinedResult);
     final List<List<String[]>> reportResultTable = new ArrayList<>();
     combinedResult.getData().values().forEach(singleResult -> {
-      final List<MapResultEntryDto> data = singleResult.getResultAsDto().getData();
+      final List<MapResultEntryDto> data = singleResult.getResultAsDto().getFirstMeasureData();
       final Set<String> labelsInData = data.stream().map(MapResultEntryDto::getLabel).collect(Collectors.toSet());
       final Sets.SetView<String> newLabels = Sets.difference(allLabels, labelsInData);
       final List<MapResultEntryDto> enrichedData = new ArrayList<>(data);
@@ -133,7 +133,7 @@ public class CombinedProcessReportResult
         evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
       ))
       .map(ReportEvaluationResult::getResultAsDto)
-      .flatMap(r -> r.getData().stream())
+      .flatMap(r -> r.getFirstMeasureData().stream())
       .map(MapResultEntryDto::getLabel)
       .collect(Collectors.toSet());
   }

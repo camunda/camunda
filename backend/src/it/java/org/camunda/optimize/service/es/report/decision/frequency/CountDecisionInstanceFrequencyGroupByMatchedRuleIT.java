@@ -13,8 +13,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
@@ -91,8 +91,8 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     // then
     assertThat(result.getInstanceCount(), is(6L));
 
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(4));
+    assertThat(result.getFirstMeasureData(), is(notNullValue()));
+    assertThat(result.getFirstMeasureData().size(), is(4));
     assertThat(result.getEntryForKey(INVOICE_RULE_1_ID).get().getValue(), is(2.));
     assertThat(result.getEntryForKey(INVOICE_RULE_2_ID).get().getValue(), is(1.));
     assertThat(result.getEntryForKey(INVOICE_RULE_3_ID).get().getValue(), is(2.));
@@ -139,7 +139,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData.size(), is(4));
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
@@ -189,7 +189,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData.size(), is(4));
     final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
@@ -245,8 +245,8 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
 
     // then
     assertThat(result.getInstanceCount(), is(8L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(4));
+    assertThat(result.getFirstMeasureData(), is(notNullValue()));
+    assertThat(result.getFirstMeasureData().size(), is(4));
     assertThat(result.getEntryForKey(INVOICE_RULE_1_ID).get().getValue(), is(4.));
     assertThat(result.getEntryForKey(INVOICE_RULE_2_ID).get().getValue(), is(1.));
     assertThat(result.getEntryForKey(INVOICE_RULE_3_ID).get().getValue(), is(2.));
@@ -285,7 +285,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
 
     // then
     assertThat(result.getInstanceCount(), is(1L));
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(resultData.get(0).getKey(), is(INVOICE_RULE_2_ID));
@@ -318,8 +318,8 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
 
     // then
     assertThat(result.getInstanceCount(), is(3L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(2));
+    assertThat(result.getFirstMeasureData(), is(notNullValue()));
+    assertThat(result.getFirstMeasureData().size(), is(2));
     assertThat(result.getEntryForKey(BEVERAGES_RULE_1_ID).get().getValue(), is(2.));
     assertThat(result.getEntryForKey(BEVERAGES_RULE_2_ID).get().getValue(), is(1.));
   }
@@ -350,7 +350,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
 
     // then
     assertThat(result.getInstanceCount(), is(2L));
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(resultData.get(0).getValue(), is(2.));

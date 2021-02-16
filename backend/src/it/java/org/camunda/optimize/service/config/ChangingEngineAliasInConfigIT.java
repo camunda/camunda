@@ -12,12 +12,12 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.test.engine.OutlierDistributionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
@@ -162,7 +162,7 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
     return new ProcessReportDataBuilderHelper()
       .processDefinitionKey(processDefinitionKey)
       .processDefinitionVersion(ALL_VERSIONS)
-      .viewProperty(ProcessViewProperty.RAW_DATA)
+      .viewProperty(ViewProperty.RAW_DATA)
       .visualization(ProcessVisualization.TABLE)
       .build();
   }

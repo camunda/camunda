@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.report.result.NumberResult;
 
 import javax.validation.constraints.NotNull;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -21,13 +22,13 @@ public class SingleDecisionNumberReportResult
 
   public SingleDecisionNumberReportResult(@NotNull final NumberResultDto reportResult,
                                           @NotNull final SingleDecisionReportDefinitionRequestDto reportDefinition) {
-    super(reportResult, reportDefinition);
+    super(Collections.singletonList(reportResult), reportDefinition);
   }
 
   @Override
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
     final List<String[]> csvStrings = new LinkedList<>();
-    csvStrings.add(new String[]{String.valueOf(reportResult.getData())});
+    csvStrings.add(new String[]{String.valueOf(getResultAsDto().getFirstMeasureData())});
 
     final String normalizedCommandKey =
       reportDefinition.getData().getView().createCommandKey().replace("-", "_");
@@ -38,6 +39,6 @@ public class SingleDecisionNumberReportResult
 
   @Override
   public Double getResultAsNumber() {
-    return reportResult.getData();
+    return getResultAsDto().getFirstMeasureData();
   }
 }

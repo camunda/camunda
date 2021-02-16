@@ -250,7 +250,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // then only the usertask with the assignee is included
     assertThat(result.getInstanceCount()).isEqualTo(1);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_1);
+    assertThat(result.getFirstMeasureData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_1);
 
     // when filtering for usertasks without the assignee
     result = reportClient.evaluateMapReport(
@@ -261,7 +261,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // then only the usertask without the assignee is included
     assertThat(result.getInstanceCount()).isEqualTo(1);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_2);
+    assertThat(result.getFirstMeasureData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_2);
   }
 
   @Test
@@ -285,7 +285,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // then only the usertask with the candidate group is included
     assertThat(result.getInstanceCount()).isEqualTo(1);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_1);
+    assertThat(result.getFirstMeasureData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_1);
 
     // when filtering for usertasks without the candidate group
     result = reportClient.evaluateMapReport(
@@ -296,7 +296,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // then only the usertask without the candidate group is included
     assertThat(result.getInstanceCount()).isEqualTo(1);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_2);
+    assertThat(result.getFirstMeasureData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_2);
   }
 
   @Test
@@ -320,7 +320,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // then the additional and report filters are combined with "and" and hence returns no results
     assertThat(result.getInstanceCount()).isZero();
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   @Test
@@ -346,7 +346,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // then the additional and report filters are combined with "and" and hence return no results
     assertThat(result.getInstanceCount()).isZero();
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   @Test

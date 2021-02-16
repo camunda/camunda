@@ -169,7 +169,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .isNotNull()
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
@@ -194,7 +194,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .isNotNull()
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)

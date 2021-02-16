@@ -133,7 +133,7 @@ public class RollingDateFilterIT extends AbstractDateFilterIT {
     ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isEmpty();
   }
 

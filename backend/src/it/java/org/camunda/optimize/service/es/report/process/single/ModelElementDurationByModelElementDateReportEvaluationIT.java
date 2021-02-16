@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.process.single;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -16,7 +17,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
@@ -78,7 +78,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(getViewEntity());
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy()).isNotNull();
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(resultReportDataDto.getGroupBy().getValue())
@@ -88,8 +88,8 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
 
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
@@ -124,8 +124,8 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
@@ -163,7 +163,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(groupingCount);
     // startDate is groupingCount - 1 in the past from now
     OffsetDateTime startDate = now.minus(groupingCount - 1, groupByUnitAsChrono);
@@ -218,8 +218,8 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).hasSize(1);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData()).hasSize(1);
+    assertThat(result.getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(10.);
   }
@@ -235,7 +235,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isEmpty();
   }
 
@@ -330,7 +330,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     int resultSize) {
     assertThat(resultMap).hasSize(resultSize);
     for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
-      final List<MapResultEntryDto> resultData = result.getResult().getData();
+      final List<MapResultEntryDto> resultData = result.getResult().getFirstMeasureData();
       assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
       assertThat(resultData).first().extracting(MapResultEntryDto::getKey).isEqualTo(localDateTimeToString(startRange));
       assertIsInRangeOfLastInterval(resultData.get(resultData.size() - 1).getKey(), startRange, endRange);
@@ -439,7 +439,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
   }
 
   private long getExecutedFlowNodeCount(ReportMapResultDto resultList) {
-    return resultList.getData()
+    return resultList.getFirstMeasureData()
       .stream()
       .map(MapResultEntryDto::getValue)
       .filter(Objects::nonNull)

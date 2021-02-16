@@ -357,11 +357,11 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     List<AuthorizedProcessReportEvaluationResultDto<SingleReportResultDto>> singleReportResults =
       new ArrayList<>(result.getData().values());
     List<String> bucketKeys1 = ((ReportMapResultDto) singleReportResults.get(0).getResult())
-      .getData()
+      .getFirstMeasureData()
       .stream()
       .map(MapResultEntryDto::getKey).collect(toList());
     List<String> bucketKeys2 = ((ReportMapResultDto) singleReportResults.get(1).getResult())
-      .getData()
+      .getFirstMeasureData()
       .stream()
       .map(MapResultEntryDto::getKey).collect(toList());
     assertThat(bucketKeys1).isEqualTo(bucketKeys2);

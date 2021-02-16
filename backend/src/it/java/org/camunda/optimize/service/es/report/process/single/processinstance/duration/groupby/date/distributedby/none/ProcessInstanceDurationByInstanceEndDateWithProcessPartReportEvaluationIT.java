@@ -87,7 +87,7 @@ public class ProcessInstanceDurationByInstanceEndDateWithProcessPartReportEvalua
 
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData.size()).isEqualTo(5);
 
     assertThat(resultData.get(0).getKey())

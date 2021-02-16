@@ -17,7 +17,6 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.rest.mapper.ReportRestMapper;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.report.ReportEvaluationService;
@@ -169,10 +168,10 @@ public class ReportRestService {
   @Path("/{id}/evaluate")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public AuthorizedEvaluationResultDto evaluateReportByIdWithFilters(@Context ContainerRequestContext requestContext,
-                                                                     @PathParam("id") String reportId,
-                                                                     @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
-                                                                     AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter) {
+  public Object evaluateReportByIdWithFilters(@Context ContainerRequestContext requestContext,
+                                              @PathParam("id") String reportId,
+                                              @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
+                                              AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);
     final AuthorizedReportEvaluationResult reportEvaluationResult =
@@ -195,7 +194,7 @@ public class ReportRestService {
   @Path("/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public AuthorizedEvaluationResultDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
+  public Object evaluateProvidedReport(@Context ContainerRequestContext requestContext,
                                                               @NotNull ReportDefinitionDto reportDefinitionDto,
                                                               @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);

@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -19,7 +20,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
@@ -77,7 +77,7 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.FLOW_NODE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy()).isNotNull();
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(resultReportDataDto.getGroupBy().getValue())
@@ -92,10 +92,11 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(localDateTimeToString(startOfToday))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -126,10 +127,11 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(localDateTimeToString(startOfToday))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -174,13 +176,14 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(groupedByDayDateAsString(referenceDate))
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(mergingGatewayId, 1., mergingGatewayId)
-        .distributedByContains(splittingGatewayId, 1., splittingGatewayLabel)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(referenceDate))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(mergingGatewayId, 1., mergingGatewayId)
+          .distributedByContains(splittingGatewayId, 1., splittingGatewayLabel)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -211,18 +214,19 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(START_EVENT, null, START_EVENT)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(END_EVENT, null, END_EVENT)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(END_EVENT, null, END_EVENT)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(START_EVENT, null, START_EVENT)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(START_EVENT, null, START_EVENT)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
+          .distributedByContains(END_EVENT, null, END_EVENT)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+          .distributedByContains(END_EVENT, null, END_EVENT)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(START_EVENT, null, START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -254,18 +258,19 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(START_EVENT, null, START_EVENT)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(END_EVENT, null, END_EVENT)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(END_EVENT, null, END_EVENT)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(START_EVENT, null, START_EVENT)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(START_EVENT, null, START_EVENT)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+          .distributedByContains(END_EVENT, null, END_EVENT)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
+          .distributedByContains(END_EVENT, null, END_EVENT)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(START_EVENT, null, START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -303,15 +308,16 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(START_EVENT, null, START_EVENT)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(START_EVENT, 2., START_EVENT)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(START_EVENT, null, START_EVENT)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(START_EVENT, 2., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -342,12 +348,13 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(END_EVENT, 2., END_EVENT)
-        .distributedByContains(START_EVENT, null, START_EVENT)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(END_EVENT, null, END_EVENT)
-        .distributedByContains(START_EVENT, 2., START_EVENT)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+          .distributedByContains(END_EVENT, 2., END_EVENT)
+          .distributedByContains(START_EVENT, null, START_EVENT)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+          .distributedByContains(END_EVENT, null, END_EVENT)
+          .distributedByContains(START_EVENT, 2., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -373,15 +380,16 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(START_EVENT, null, START_EVENT)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(END_EVENT, null, END_EVENT)
-        .distributedByContains(START_EVENT, null, START_EVENT)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(END_EVENT, null, END_EVENT)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(START_EVENT, null, START_EVENT)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+          .distributedByContains(END_EVENT, null, END_EVENT)
+          .distributedByContains(START_EVENT, null, START_EVENT)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+          .distributedByContains(END_EVENT, null, END_EVENT)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -416,6 +424,7 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.GroupByAdder groupByAdder = HyperMapAsserter.asserter()
       .processInstanceCount(groupingCount)
       .processInstanceCountWithoutFilters(groupingCount)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(groupedByDateAsString(referenceDate.plus(0, groupByUnitAsChrono), groupByUnitAsChrono))
       .distributedByContains(END_EVENT, 1., END_EVENT)
       .distributedByContains(START_EVENT, 1., START_EVENT);
@@ -456,9 +465,10 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -486,10 +496,11 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(referenceDate))
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(referenceDate))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -526,10 +537,11 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(referenceDate))
-        .distributedByContains(END_EVENT, null, END_EVENT)
-        .distributedByContains(START_EVENT, null, START_EVENT)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(referenceDate))
+          .distributedByContains(END_EVENT, null, END_EVENT)
+          .distributedByContains(START_EVENT, null, START_EVENT)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -558,7 +570,7 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final List<HyperMapResultEntryDto> resultData = result.getData();
+    final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertFirstValueEquals(resultData, 1.);
     assertLastValueEquals(resultData, 1.);
@@ -596,11 +608,12 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(END_EVENT, 2., END_EVENT)
-        .distributedByContains(START_EVENT, 2., START_EVENT)
-        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+          .distributedByContains(END_EVENT, 2., END_EVENT)
+          .distributedByContains(START_EVENT, 2., START_EVENT)
+          .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -632,11 +645,12 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(END_EVENT, 2., END_EVENT)
-        .distributedByContains(START_EVENT, 2., START_EVENT)
-        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+          .distributedByContains(END_EVENT, 2., END_EVENT)
+          .distributedByContains(START_EVENT, 2., START_EVENT)
+          .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -665,10 +679,11 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(END_EVENT, 2., END_EVENT)
-        .distributedByContains(START_EVENT, 2., START_EVENT)
-        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+          .distributedByContains(END_EVENT, 2., END_EVENT)
+          .distributedByContains(START_EVENT, 2., START_EVENT)
+          .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -700,10 +715,11 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(END_EVENT, 2., END_EVENT)
-        .distributedByContains(START_EVENT, 2., START_EVENT)
-        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+          .distributedByContains(END_EVENT, 2., END_EVENT)
+          .distributedByContains(START_EVENT, 2., START_EVENT)
+          .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }

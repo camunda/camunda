@@ -7,10 +7,10 @@ package org.camunda.optimize.service.es.report.command.modules.view.process.freq
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -23,6 +23,6 @@ public class ProcessViewIncidentFrequency extends ProcessViewFrequency {
 
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.setView(new ProcessViewDto(ProcessViewEntity.INCIDENT, ProcessViewProperty.FREQUENCY));
+    dataForCommandKey.setView(new ProcessViewDto(ProcessViewEntity.INCIDENT, ViewProperty.FREQUENCY));
   }
 }

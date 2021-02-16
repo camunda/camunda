@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.frequency.groupby.date.distributed_by.candidate_group;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -49,6 +50,7 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(groupedByDayDateAsString(referenceDate))
       .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
       .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
@@ -80,6 +82,7 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
     final HyperMapAsserter.GroupByAdder groupByAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(expectedInstanceCount)
       .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
     if (candidateGroup1Count != null) {
       groupByAsserter.distributedByContains(FIRST_CANDIDATE_GROUP_ID, candidateGroup1Count, FIRST_CANDIDATE_GROUP_NAME);
@@ -115,6 +118,7 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
       .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
       .doAssert(result);

@@ -70,7 +70,7 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final List<HyperMapResultEntryDto> resultData = result.getData();
+    final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isEmpty();
   }
 

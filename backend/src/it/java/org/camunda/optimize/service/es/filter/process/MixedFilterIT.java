@@ -388,7 +388,7 @@ public class MixedFilterIT extends AbstractFilterIT {
 
     // then
     assertThat(numberResult.getInstanceCount()).isEqualTo(3L);
-    assertThat(numberResult.getData()).isEqualTo(4.);
+    assertThat(numberResult.getFirstMeasureData()).isEqualTo(4.);
 
     // when I add a resolved + open incident filter
     reportData.setFilter(
@@ -403,7 +403,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     // then I get only the process instance with the resolved and the open incident pending
     assertThat(numberResult.getInstanceCount()).isEqualTo(1L);
     assertThat(numberResult.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(numberResult.getData()).isEqualTo(2.);
+    assertThat(numberResult.getFirstMeasureData()).isEqualTo(2.);
   }
 
   @ParameterizedTest
@@ -604,16 +604,16 @@ public class MixedFilterIT extends AbstractFilterIT {
       case COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE:
       case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK:
       case INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE:
-        assertThat(((ReportMapResultDto) reportResult).getData()).isEmpty();
+        assertThat(((ReportMapResultDto) reportResult).getFirstMeasureData()).isEmpty();
         break;
       case RAW_DATA:
         assertThat(((RawDataProcessReportResultDto) reportResult).getData()).isEmpty();
         break;
       case COUNT_PROC_INST_FREQ_GROUP_BY_NONE:
-        assertThat(((NumberResultDto) reportResult).getData()).isZero();
+        assertThat(((NumberResultDto) reportResult).getFirstMeasureData()).isZero();
         break;
       case VARIABLE_AGGREGATION_GROUP_BY_NONE:
-        assertThat(((NumberResultDto) reportResult).getData()).isNull();
+        assertThat(((NumberResultDto) reportResult).getFirstMeasureData()).isNull();
         break;
       default:
         throw new OptimizeIntegrationTestException(

@@ -8,13 +8,14 @@ package org.camunda.optimize.dto.optimize.query.report.single.decision.view;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 
 import java.util.Objects;
 
 @Data
 public class DecisionViewDto implements Combinable {
 
-  protected DecisionViewProperty property;
+  protected ViewProperty property;
 
   public DecisionViewDto() {
     super();
@@ -39,10 +40,4 @@ public class DecisionViewDto implements Combinable {
     return property.toString();
   }
 
-  @Override
-  public String toString() {
-    return "DecisionViewDto{" +
-      "property='" + property + '\'' +
-      '}';
-  }
 }

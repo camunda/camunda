@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.process;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -20,7 +21,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
@@ -224,7 +224,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessReportDataDto reportData = new ProcessReportDataBuilderHelper()
       .processDefinitionKey(processKey)
       .processDefinitionVersions(Collections.singletonList(ALL_VERSIONS))
-      .viewProperty(ProcessViewProperty.RAW_DATA)
+      .viewProperty(ViewProperty.RAW_DATA)
       .build();
     reportData.setTenantIds(selectedTenants);
     RawDataProcessReportResultDto result = evaluateRawReportWithDefaultPagination(reportData).getResult();
@@ -461,7 +461,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(resultDataDto1.getView())
       .isNotNull()
       .extracting(ProcessViewDto::getProperty)
-      .isEqualTo(ProcessViewProperty.RAW_DATA);
+      .isEqualTo(ViewProperty.RAW_DATA);
     assertThat(result1.getData()).isNotNull().isEmpty();
 
     // when
@@ -509,7 +509,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(resultDataDto1.getProcessDefinitionKey()).isEqualTo(processInstance.getProcessDefinitionKey());
     assertThat(resultDataDto1.getDefinitionVersions()).containsExactly(processInstance.getProcessDefinitionVersion());
     assertThat(resultDataDto1.getView()).isNotNull();
-    assertThat(resultDataDto1.getView().getProperty()).isEqualTo(ProcessViewProperty.RAW_DATA);
+    assertThat(resultDataDto1.getView().getProperty()).isEqualTo(ViewProperty.RAW_DATA);
     assertThat(result1.getData()).isNotNull();
     assertThat(result1.getData()).isEmpty();
 
@@ -570,7 +570,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessReportDataDto reportData = new ProcessReportDataBuilderHelper()
       .processDefinitionKey(processDefinition.getKey())
       .processDefinitionVersions(Collections.singletonList(processDefinition.getVersionAsString()))
-      .viewProperty(ProcessViewProperty.RAW_DATA)
+      .viewProperty(ViewProperty.RAW_DATA)
       .build();
 
     List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder
@@ -607,7 +607,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessReportDataDto reportData = new ProcessReportDataBuilderHelper()
       .processDefinitionKey(processDefinition.getKey())
       .processDefinitionVersions(Collections.singletonList(processDefinition.getVersionAsString()))
-      .viewProperty(ProcessViewProperty.RAW_DATA)
+      .viewProperty(ViewProperty.RAW_DATA)
       .build();
 
     reportData.getFilter().addAll(filtersToApply);
@@ -636,7 +636,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .processDefinitionKey(null)
       .processDefinitionVersions(null)
       .viewEntity(null)
-      .viewProperty(ProcessViewProperty.RAW_DATA)
+      .viewProperty(ViewProperty.RAW_DATA)
       .visualization(ProcessVisualization.TABLE)
       .build();
 
@@ -685,7 +685,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .processDefinitionKey(null)
       .processDefinitionVersions(null)
       .viewEntity(null)
-      .viewProperty(ProcessViewProperty.RAW_DATA)
+      .viewProperty(ViewProperty.RAW_DATA)
       .visualization(null)
       .build();
 
@@ -1084,7 +1084,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(resultDataDto.getView())
       .isNotNull()
       .extracting(ProcessViewDto::getProperty)
-      .isEqualTo(ProcessViewProperty.RAW_DATA);
+      .isEqualTo(ViewProperty.RAW_DATA);
     assertThat(result.getResult().getData()).isNotNull().hasSize(expectedDataSize);
   }
 
@@ -1104,7 +1104,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessReportDataDto reportData = new ProcessReportDataBuilderHelper()
       .processDefinitionKey(processDefinitionKey)
       .processDefinitionVersions(Collections.singletonList(processDefinitionVersion))
-      .viewProperty(ProcessViewProperty.RAW_DATA)
+      .viewProperty(ViewProperty.RAW_DATA)
       .visualization(ProcessVisualization.TABLE)
       .build();
 
@@ -1115,7 +1115,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     return new ProcessReportDataBuilderHelper()
       .processDefinitionKey(processInstance.getProcessDefinitionKey())
       .processDefinitionVersions(Collections.singletonList(processInstance.getProcessDefinitionVersion()))
-      .viewProperty(ProcessViewProperty.RAW_DATA)
+      .viewProperty(ViewProperty.RAW_DATA)
       .visualization(ProcessVisualization.TABLE)
       .build();
   }

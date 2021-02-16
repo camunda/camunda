@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -21,7 +22,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -106,7 +106,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName()).isEqualTo("foo");
@@ -114,10 +114,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData()).hasSize(1);
 
-    final List<MapResultEntryDto> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getFirstMeasureData();
     final MapResultEntryDto resultEntry = resultData.get(0);
     assertThat(resultEntry).isNotNull();
     assertThat(resultEntry.getKey()).isEqualTo("bar");
@@ -156,7 +156,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstance.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName()).isEqualTo("foo");
@@ -164,10 +164,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData()).hasSize(1);
 
-    final List<MapResultEntryDto> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getFirstMeasureData();
     final MapResultEntryDto resultEntry = resultData.get(0);
     assertThat(resultEntry).isNotNull();
     assertThat(resultEntry.getKey()).isEqualTo("bar");
@@ -203,7 +203,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     // expect ascending order
@@ -241,7 +241,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
-      final List<MapResultEntryDto> resultData = result.getData();
+      final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
       assertThat(resultData).hasSize(3);
       final List<Double> bucketValues = resultData.stream()
         .map(MapResultEntryDto::getValue)
@@ -280,7 +280,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final List<MapResultEntryDto> resultData = response.getResult().getData();
+    final List<MapResultEntryDto> resultData = response.getResult().getFirstMeasureData();
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(resultKeys).isSortedAccordingTo(Comparator.naturalOrder());
   }
@@ -318,7 +318,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
 
-    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getKey()).isEqualTo("bar2");
@@ -387,7 +387,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processDefinitionDto.getVersionAsString());
 
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getEntryForKey("bar1").get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
     assertThat(result.getEntryForKey("bar2").get().getValue())
@@ -427,15 +427,15 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(3);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(3);
-    assertThat(resultDto.getData().stream()
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData()).hasSize(3);
+    assertThat(resultDto.getFirstMeasureData().stream()
                  .map(MapResultEntryDto::getKey)
                  .collect(toList()))
       .containsExactly("10.00", "110.00", "210.00");
-    assertThat(resultDto.getData().get(0).getValue()).isEqualTo(1000L);
-    assertThat(resultDto.getData().get(1).getValue()).isEqualTo(1000L);
-    assertThat(resultDto.getData().get(2).getValue()).isEqualTo(1000L);
+    assertThat(resultDto.getFirstMeasureData().get(0).getValue()).isEqualTo(1000L);
+    assertThat(resultDto.getFirstMeasureData().get(1).getValue()).isEqualTo(1000L);
+    assertThat(resultDto.getFirstMeasureData().get(2).getValue()).isEqualTo(1000L);
   }
 
   @Test
@@ -469,9 +469,9 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     // then the correct baseline is used and both instances are included in the result
     assertThat(resultDto.getInstanceCount()).isEqualTo(2);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData().get(0).getKey()).isEqualTo("-300.00");
-    assertThat(resultDto.getData()
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData().get(0).getKey()).isEqualTo("-300.00");
+    assertThat(resultDto.getFirstMeasureData()
                  .stream()
                  .map(MapResultEntryDto::getValue)
                  .filter(Objects::nonNull)
@@ -508,8 +508,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the result is empty
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).isEmpty();
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData()).isEmpty();
   }
 
   @Test
@@ -538,8 +538,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the result includes all instances
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData())
       .filteredOn(result -> result.getValue() != null)
       .extracting(MapResultEntryDto::getValue)
       .containsExactlyInAnyOrder(1000.0, 1000.0);
@@ -571,8 +571,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the result includes all instances
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData())
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData())
       .extracting(MapResultEntryDto::getKey)
       .allMatch(key -> key.length() - key.indexOf(".") - 1 == 2); // key should have two chars after the decimal
   }
@@ -600,7 +600,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.LONG)
       .build();
 
-    final List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+    final List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getFirstMeasureData();
 
     // then the amount of buckets does not exceed NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION
     // (a precaution to avoid too many buckets for distributed reports)
@@ -875,7 +875,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getValue()).isEqualTo(runningProcInstStartDate.until(now, MILLIS));
@@ -930,7 +930,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
@@ -979,7 +979,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getValue())
@@ -1041,7 +1041,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getValue()).isEqualTo(runningProcInstStartDate.until(now, MILLIS));
@@ -1082,7 +1082,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
 
-    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(2);
     assertThat(resultData.get(0).getKey()).isEqualTo("1");
@@ -1125,7 +1125,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
 
-    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getKey()).isEqualTo("bar1");
@@ -1165,9 +1165,9 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
-      assertThat(resultDto.getData()).isNotNull();
+      assertThat(resultDto.getFirstMeasureData()).isNotNull();
 
-      final List<MapResultEntryDto> resultData = resultDto.getData();
+      final List<MapResultEntryDto> resultData = resultDto.getFirstMeasureData();
       if (VariableType.DATE.equals(variableType)) {
         assertThat(resultData).hasSize(1);
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
@@ -1256,8 +1256,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(result.getEntryForKey("withValue").get().getValue()).isEqualTo(testStartDate.until(testEndDate, MILLIS));
     assertThat(result.getEntryForKey("missing").get().getValue())
       .isEqualTo(
@@ -1312,8 +1312,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(result.getEntryForKey("1.00").get().getValue())
       .isEqualTo(testStartDate.until(testEndDate, MILLIS));
     assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(400.);
@@ -1350,7 +1350,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto> resultData = resultDto.getData();
+    List<MapResultEntryDto> resultData = resultDto.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
 
@@ -1359,7 +1359,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    resultData = resultDto.getData();
+    resultData = resultDto.getFirstMeasureData();
     assertThat(resultData).hasSize(1);
     assertThat(resultData.get(0).getKey()).isEqualTo("bar");
     assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
@@ -1398,7 +1398,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.STRING)
       .build();
 
-    dataDto.getView().setProperties((ProcessViewProperty) null);
+    dataDto.getView().setProperties((ViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
@@ -1503,7 +1503,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.DATE)
       .build();
     reportData.getConfiguration().setGroupByDateVariableUnit(unit);
-    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getFirstMeasureData();
 
     // then
     // there is one bucket per instance since the date variables are each one bucket span apart
@@ -1556,7 +1556,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     // then
     assertThat(result.getInstanceCount()).isEqualTo(numberOfInstances);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(numberOfInstances);
-    List<MapResultEntryDto> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     // bucket span covers the values of all date variables (buckets are in descending order, so the first bucket is
@@ -1571,7 +1571,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     assertThat(startOfFirstBucket).isBeforeOrEqualTo(firstTruncatedDateVariableValue);
     assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .filteredOn(Objects::nonNull)
       .containsExactly(1000., 1000., 1000.); // each instance with duration 1000. falls into one bucket
@@ -1597,7 +1597,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
   }

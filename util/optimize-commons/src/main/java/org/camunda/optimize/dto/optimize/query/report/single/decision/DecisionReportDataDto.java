@@ -12,6 +12,7 @@ import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByType;
@@ -64,6 +65,11 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
   @JsonIgnore
   public void setDecisionDefinitionVersion(String definitionVersion) {
     this.decisionDefinitionVersions = Lists.newArrayList(definitionVersion);
+  }
+
+  @Override
+  public List<ViewProperty> getViewProperties() {
+    return Collections.singletonList(view.getProperty());
   }
 
   @JsonIgnore

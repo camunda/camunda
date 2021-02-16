@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,5 +38,8 @@ public abstract class SingleReportDataDto implements ReportDataDto, Combinable {
   public abstract String getDefinitionName();
 
   public abstract List<String> getTenantIds();
+
+  @JsonIgnore
+  public abstract List<ViewProperty> getViewProperties();
 
 }

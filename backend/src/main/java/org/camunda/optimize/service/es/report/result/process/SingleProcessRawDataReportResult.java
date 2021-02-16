@@ -13,6 +13,7 @@ import org.camunda.optimize.service.export.CSVUtils;
 
 import javax.validation.constraints.NotNull;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.List;
 
 import static org.camunda.optimize.service.security.util.LocalDateUtil.atSameTimezoneOffsetDateTime;
@@ -22,12 +23,12 @@ public class SingleProcessRawDataReportResult
 
   public SingleProcessRawDataReportResult(@NotNull final RawDataProcessReportResultDto reportResult,
                                           @NotNull final SingleProcessReportDefinitionRequestDto reportDefinition) {
-    super(reportResult, reportDefinition);
+    super(Collections.singletonList(reportResult), reportDefinition);
   }
 
   @Override
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
-    List<RawDataProcessInstanceDto> rawData = reportResult.getData();
+    List<RawDataProcessInstanceDto> rawData = getResultAsDto().getData();
     rawData.forEach(raw -> {
       raw.setStartDate(atSameTimezoneOffsetDateTime(raw.getStartDate(), timezone));
       raw.setEndDate(atSameTimezoneOffsetDateTime(raw.getEndDate(), timezone));

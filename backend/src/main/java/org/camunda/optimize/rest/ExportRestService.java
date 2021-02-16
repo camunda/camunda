@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -15,7 +16,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
@@ -130,7 +130,7 @@ public class ExportRestService {
                                              .includedColumns(request.getIncludedColumns())
                                              .build())
                              .build())
-            .view(new ProcessViewDto(ProcessViewProperty.RAW_DATA))
+            .view(new ProcessViewDto(ViewProperty.RAW_DATA))
             .groupBy(new NoneGroupByDto())
             .visualization(ProcessVisualization.TABLE)
             .build()

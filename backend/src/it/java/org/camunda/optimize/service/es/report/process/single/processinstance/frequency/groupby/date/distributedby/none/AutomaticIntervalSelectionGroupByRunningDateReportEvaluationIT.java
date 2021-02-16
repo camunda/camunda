@@ -61,7 +61,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
 
     // then
     final int expectedNumberOfBuckets = NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(expectedNumberOfBuckets);
   }
@@ -88,7 +88,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
     final ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
 
     // bucket span should include the full runtime of both instances
@@ -125,7 +125,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
     ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isEmpty();
   }
 
@@ -150,7 +150,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
     final ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then the single data point should be grouped by month
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(1);
     final ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
     final String nowStrippedToMonthAsString = zonedDateTimeToString(nowStrippedToMonth);
@@ -184,7 +184,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
     assertResultIsInCorrectRanges(
       new Date(now.plusDays(6).toInstant().toEpochMilli()),
       new Date(now.plusDays(1).toInstant().toEpochMilli()),
-      resultMap.values().stream().map(resultDto -> resultDto.getResult().getData()).collect(toList())
+      resultMap.values().stream().map(resultDto -> resultDto.getResult().getFirstMeasureData()).collect(toList())
     );
   }
 
@@ -214,7 +214,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
     assertResultIsInCorrectRanges(
       new Date(now.plusDays(6).toInstant().toEpochMilli()),
       new Date(now.plusDays(1).toInstant().toEpochMilli()),
-      resultMap.values().stream().map(resultDto -> resultDto.getResult().getData()).collect(toList())
+      resultMap.values().stream().map(resultDto -> resultDto.getResult().getFirstMeasureData()).collect(toList())
     );
   }
 
@@ -240,7 +240,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
     assertResultIsInCorrectRanges(
       new Date(now.plusDays(6).toInstant().toEpochMilli()),
       new Date(now.plusDays(1).toInstant().toEpochMilli()),
-      resultMap.values().stream().map(resultDto -> resultDto.getResult().getData()).collect(toList())
+      resultMap.values().stream().map(resultDto -> resultDto.getResult().getFirstMeasureData()).collect(toList())
     );
   }
 

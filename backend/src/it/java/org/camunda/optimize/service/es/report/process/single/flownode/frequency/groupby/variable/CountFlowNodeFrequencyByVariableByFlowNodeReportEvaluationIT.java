@@ -7,13 +7,13 @@ package org.camunda.optimize.service.es.report.process.single.flownode.frequency
 
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -77,7 +77,7 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.FLOW_NODE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(DistributedByType.FLOW_NODE);
     final VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
@@ -88,6 +88,7 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains("aStringValue")
         .distributedByContains(END_EVENT, 1., END_EVENT)
         .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
@@ -118,6 +119,7 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains("1.00")
         .distributedByContains(END_EVENT, 1., END_EVENT)
         .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
@@ -160,21 +162,22 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
-      .groupByContains("10.00")
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
-      .groupByContains("110.00")
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
-      .groupByContains("210.00")
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains("10.00")
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
+        .groupByContains("110.00")
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
+        .groupByContains("210.00")
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
       .doAssert(result);
     //@formatter:on
   }
@@ -213,9 +216,10 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    HyperMapAsserter asserter = HyperMapAsserter.asserter()
+    HyperMapAsserter.MeasureAdder asserter = HyperMapAsserter.asserter()
       .processInstanceCount(numberOfInstances)
-      .processInstanceCountWithoutFilters(numberOfInstances);
+      .processInstanceCountWithoutFilters(numberOfInstances)
+      .measure(ViewProperty.FREQUENCY);
 
     dateVarValues
       .forEach(date -> {
@@ -260,20 +264,20 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(numberOfInstances);
-    assertThat(result.getData()).isNotNull().hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
 
     // the bucket span covers the earliest and the latest date variable value
     final DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
-    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(result.getData().get(0).getKey()));
+    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(result.getFirstMeasureData().get(0).getKey()));
     final OffsetDateTime startOfLastBucket = OffsetDateTime
-      .from(formatter.parse(result.getData().get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1).getKey()));
+      .from(formatter.parse(result.getFirstMeasureData().get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1).getKey()));
     final OffsetDateTime firstTruncatedDateVariableValue =
       dateVarValue.plusMinutes(numberOfInstances).truncatedTo(ChronoUnit.MILLIS);
     final OffsetDateTime lastTruncatedDateVariableValue = dateVarValue.truncatedTo(ChronoUnit.MILLIS);
 
     assertThat(startOfFirstBucket).isBeforeOrEqualTo(firstTruncatedDateVariableValue);
     assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
-    assertThat(result.getData()
+    assertThat(result.getFirstMeasureData()
                  .stream()
                  .flatMap(hyperEntry -> hyperEntry.getValue().stream())
                  .filter(mapEntry -> mapEntry.getValue() != null)
@@ -320,16 +324,17 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     HyperMapAsserter.asserter()
       .processInstanceCount(5L)
       .processInstanceCountWithoutFilters(5L)
-      .groupByContains("withValue")
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 1., START_EVENT)
-      .groupByContains("missing")
-        .distributedByContains(END_EVENT, 4., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 4., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 4., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 4., START_EVENT)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains("withValue")
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 1., START_EVENT)
+        .groupByContains("missing")
+          .distributedByContains(END_EVENT, 4., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 4., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 4., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 4., START_EVENT)
       .doAssert(result);
     //@formatter:on
   }
@@ -355,6 +360,7 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains("aStringValue")
         .distributedByContains(END_EVENT, null, END_EVENT)
         .distributedByContains(START_EVENT, 1., START_EVENT)
@@ -396,12 +402,13 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains("aStringValue")
-        .distributedByContains(CALL_ACTIVITY, 2., CALL_ACTIVITY)
-        .distributedByContains(END_EVENT, 1., END_EVENT)
-        .distributedByContains(MULTI_INSTANCE_END, 1., MULTI_INSTANCE_END)
-        .distributedByContains(MULTI_INSTANCE_START, 1., MULTI_INSTANCE_START)
-        .distributedByContains(PARALLEL_GATEWAY, 1., PARALLEL_GATEWAY)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains("aStringValue")
+          .distributedByContains(CALL_ACTIVITY, 2., CALL_ACTIVITY)
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(MULTI_INSTANCE_END, 1., MULTI_INSTANCE_END)
+          .distributedByContains(MULTI_INSTANCE_START, 1., MULTI_INSTANCE_START)
+          .distributedByContains(PARALLEL_GATEWAY, 1., PARALLEL_GATEWAY)
       .doAssert(result);
     //@formatter:on
   }
@@ -432,11 +439,12 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, 2., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 2., START_EVENT)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains("aStringValue")
+          .distributedByContains(END_EVENT, 2., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 2., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -467,9 +475,10 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, 2., END_EVENT)
-        .distributedByContains(START_EVENT, 2., START_EVENT)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains("aStringValue")
+          .distributedByContains(END_EVENT, 2., END_EVENT)
+          .distributedByContains(START_EVENT, 2., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -502,11 +511,12 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, 2., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 2., START_EVENT)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains("aStringValue")
+          .distributedByContains(END_EVENT, 2., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 2., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -539,9 +549,10 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, 2., END_EVENT)
-        .distributedByContains(START_EVENT, 2., START_EVENT)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains("aStringValue")
+          .distributedByContains(END_EVENT, 2., END_EVENT)
+          .distributedByContains(START_EVENT, 2., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }

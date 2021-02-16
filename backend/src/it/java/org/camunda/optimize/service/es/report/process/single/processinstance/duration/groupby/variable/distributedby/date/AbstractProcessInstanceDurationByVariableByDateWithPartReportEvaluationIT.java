@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.variable.distributedby.date;
 
 import org.assertj.core.util.Maps;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
@@ -50,8 +52,8 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateWithPartRep
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData().isEmpty()).isTrue();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData().isEmpty()).isTrue();
   }
 
   @Test
@@ -77,8 +79,8 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateWithPartRep
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData().isEmpty()).isTrue();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData().isEmpty()).isTrue();
   }
 
   @Test
@@ -115,8 +117,9 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateWithPartRep
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains("a string")
-        .distributedByContains(localDateTimeToString(startOfReferenceDate), 2000.0)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("a string")
+          .distributedByContains(localDateTimeToString(startOfReferenceDate), 2000.0)
       .doAssert(result);
     // @formatter:on
   }
