@@ -13,6 +13,7 @@ import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.Either;
+import java.util.Arrays;
 import org.slf4j.Logger;
 
 /**
@@ -59,6 +60,12 @@ public final class WorkflowInstanceStateTransitionGuard {
       case COMPLETE_ELEMENT:
         return hasElementInstanceWithState(context, WorkflowInstanceIntent.ELEMENT_ACTIVATED)
             .flatMap(ok -> hasActiveFlowScopeInstance(context));
+      case TERMINATE_ELEMENT:
+        return hasElementInstanceWithState(
+            context,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING);
 
       case ELEMENT_ACTIVATING:
       case ELEMENT_ACTIVATED:
@@ -115,17 +122,29 @@ public final class WorkflowInstanceStateTransitionGuard {
   }
 
   private Either<String, ElementInstance> hasElementInstanceInState(
-      final ElementInstance elementInstance, final WorkflowInstanceIntent expectedState) {
+      final ElementInstance elementInstance,
+      final WorkflowInstanceIntent expectedState,
+      final WorkflowInstanceIntent... otherExpected) {
     final var currentState = elementInstance.getState();
-    if (currentState != expectedState) {
+    if (expectedState != currentState || !Arrays.asList(otherExpected).contains(currentState)) {
       return Either.left(
           String.format(
-              "Expected element instance to be in state '%s' but was '%s'.",
-              expectedState, currentState));
-
+              "Expected element instance to be in state '%s' or one of '%s' but was '%s'.",
+              expectedState, Arrays.toString(otherExpected), currentState));
     } else {
       return Either.right(elementInstance);
     }
+  }
+
+  private Either<String, ?> hasElementInstanceWithState(
+      final BpmnElementContext context,
+      final WorkflowInstanceIntent expectedState,
+      final WorkflowInstanceIntent... otherExpected) {
+    // a shortcut to improve readability
+    return getElementInstance(context)
+        .flatMap(
+            elementInstance ->
+                hasElementInstanceInState(elementInstance, expectedState, otherExpected));
   }
 
   private Either<String, ElementInstance> hasFlowScopeInstanceInState(
@@ -154,13 +173,6 @@ public final class WorkflowInstanceStateTransitionGuard {
     } else {
       return Either.right(flowScopeInstance);
     }
-  }
-
-  private Either<String, ?> hasElementInstanceWithState(
-      final BpmnElementContext context, final WorkflowInstanceIntent expectedState) {
-    // a shortcut to improve readability
-    return getElementInstance(context)
-        .flatMap(elementInstance -> hasElementInstanceInState(elementInstance, expectedState));
   }
 
   private Either<String, ?> hasActiveFlowScopeInstance(final BpmnElementContext context) {

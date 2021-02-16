@@ -120,7 +120,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
         break;
       case TERMINATE_ELEMENT:
         if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-          // TODO (saig0): invoke the migrated processor to terminate the element
+          processor.onTerminate(element, context);
         } else {
           processor.onTerminating(element, context);
         }

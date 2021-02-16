@@ -151,6 +151,28 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
   void onCompleted(final T element, final BpmnElementContext context);
 
   /**
+   * The element is going to be terminated. Perform every action to terminate the element and
+   * continue with the element that caused the termination (e.g. the triggered boundary event).
+   *
+   * <p>Possible actions:
+   *
+   * <ul>
+   *   <li>close event subscriptions
+   *   <li>resolve incidents
+   *   <li>activate the triggered boundary event - if any
+   *   <li>activate the triggered event sub-process - if any
+   *   <li>continue with parent element
+   *   <li>clean up the state
+   * </ul>
+   *
+   * Next step: none.
+   *
+   * @param element the instance of the BPMN element that is executed
+   * @param context workflow instance-related data of the element that is executed
+   */
+  default void onTerminate(final T element, final BpmnElementContextImpl context) {}
+
+  /**
    * The element is going to be terminated. Perform every action to terminate the element.
    *
    * <p>Possible actions:
@@ -163,7 +185,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
+   * @deprecated will be replaced by onTerminate
    */
+  @Deprecated // todo (#6202): remove method
   void onTerminating(final T element, final BpmnElementContext context);
 
   /**
@@ -184,7 +208,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
+   * @deprecated will be replaced by onTerminate
    */
+  @Deprecated // todo (#6202): remove method
   void onTerminated(final T element, final BpmnElementContext context);
 
   /**
