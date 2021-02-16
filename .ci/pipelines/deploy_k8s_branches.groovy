@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 // general properties for CI execution
-def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
+def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 def static GCLOUD_DOCKER_IMAGE() { return "gcr.io/google.com/cloudsdktool/cloud-sdk:alpine" }
 
 static String kubectlAgent(env) {
