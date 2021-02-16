@@ -75,7 +75,7 @@
   },
   "devDependencies": {
     "@storybook/addons": "^6.1.15",
-    "@storybook/preset-create-react-app": "^3.1.5",
+    "@storybook/preset-create-react-app": "^3.1.6",
     "@storybook/react": "^6.1.18",
     "@types/history": "^4.7.8",
     "chromatic": "^5.6.2",
