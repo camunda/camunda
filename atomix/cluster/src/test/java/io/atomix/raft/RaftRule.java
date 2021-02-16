@@ -16,7 +16,6 @@
 package io.atomix.raft;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.ClusterMembershipService;
@@ -70,6 +69,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.awaitility.Awaitility;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
@@ -386,17 +386,10 @@ public final class RaftRule extends ExternalResource {
   }
 
   public void awaitSameLogSizeOnAllNodes(final long lastIndex) {
-    waitUntil(
-        () -> {
-          final var lastIndexes =
-              memberLog.values().stream().distinct().collect(Collectors.toList());
-          return lastIndexes.size() == 1 && lastIndexes.get(0) == lastIndex;
-        },
-        () -> memberLog.toString());
-  }
-
-  private void waitUntil(final BooleanSupplier condition, final Supplier<String> errorMessage) {
-    waitUntil(condition, 100, errorMessage);
+    Awaitility.await("awaitSameLogSizeOnAllNodes")
+        .until(
+            () -> memberLog.values().stream().distinct().collect(Collectors.toList()),
+            lastIndexes -> lastIndexes.size() == 1 && lastIndexes.get(0) == lastIndex);
   }
 
   private void waitUntil(final BooleanSupplier condition, final int retries) {
@@ -611,7 +604,7 @@ public final class RaftRule extends ExternalResource {
 
     @Override
     public void onWriteError(final Throwable error) {
-      fail("Unexpected write error: " + error.getMessage());
+      commitFuture.completeExceptionally(error);
     }
 
     @Override
@@ -621,7 +614,7 @@ public final class RaftRule extends ExternalResource {
 
     @Override
     public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {
-      fail("Unexpected write error: " + error.getMessage());
+      commitFuture.completeExceptionally(error);
     }
 
     public long awaitCommit() throws Exception {
