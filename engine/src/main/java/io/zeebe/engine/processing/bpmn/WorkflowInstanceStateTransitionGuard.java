@@ -56,6 +56,9 @@ public final class WorkflowInstanceStateTransitionGuard {
     switch (context.getIntent()) {
       case ACTIVATE_ELEMENT:
         return Either.right(null);
+      case COMPLETE_ELEMENT:
+        return hasElementInstanceWithState(context, WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .flatMap(ok -> hasActiveFlowScopeInstance(context));
 
       case ELEMENT_ACTIVATING:
       case ELEMENT_ACTIVATED:

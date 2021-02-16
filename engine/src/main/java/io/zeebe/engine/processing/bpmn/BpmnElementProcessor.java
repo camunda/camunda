@@ -91,6 +91,27 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
   void onActivated(final T element, final BpmnElementContext context);
 
   /**
+   * The element is going to be left. Perform every action to leave the element and continue with
+   * the next element.
+   *
+   * <p>Possible actions:
+   *
+   * <ul>
+   *   <li>apply output mappings
+   *   <li>close event subscriptions
+   *   <li>take outgoing sequence flows - if any
+   *   <li>continue with parent element - if no outgoing sequence flows
+   *   <li>clean up the state
+   * </ul>
+   *
+   * Next step: none.
+   *
+   * @param element the instance of the BPMN element that is executed
+   * @param context workflow instance-related data of the element that is executed
+   */
+  default void onComplete(final T element, final BpmnElementContextImpl context) {}
+
+  /**
    * The element is going to be left. Perform every action to leave the element.
    *
    * <p>Possible actions:
@@ -104,7 +125,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
+   * @deprecated will be replaced by onComplete
    */
+  @Deprecated // todo (#6202): remove method
   void onCompleting(final T element, final BpmnElementContext context);
 
   /**
@@ -122,7 +145,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
+   * @deprecated will be replaced by onComplete
    */
+  @Deprecated // todo (#6202): remove method
   void onCompleted(final T element, final BpmnElementContext context);
 
   /**
