@@ -15,6 +15,8 @@
  */
 package io.zeebe.protocol.record.intent;
 
+import java.util.EnumSet;
+
 public enum WorkflowInstanceIntent implements WorkflowInstanceRelatedIntent {
   CANCEL((short) 0, false),
 
@@ -32,6 +34,9 @@ public enum WorkflowInstanceIntent implements WorkflowInstanceRelatedIntent {
   ACTIVATE_ELEMENT((short) 9),
   COMPLETE_ELEMENT((short) 10),
   TERMINATE_ELEMENT((short) 11);
+
+  private static final EnumSet<WorkflowInstanceIntent> ELEMENT_COMMAND_INTENTS =
+      EnumSet.of(ACTIVATE_ELEMENT, COMPLETE_ELEMENT, TERMINATE_ELEMENT);
 
   private final short value;
   private final boolean shouldBlacklist;
@@ -88,5 +93,9 @@ public enum WorkflowInstanceIntent implements WorkflowInstanceRelatedIntent {
   @Override
   public boolean shouldBlacklistInstanceOnError() {
     return shouldBlacklist;
+  }
+
+  public static boolean isElementCommandIntent(final WorkflowInstanceIntent intent) {
+    return ELEMENT_COMMAND_INTENTS.contains(intent);
   }
 }
