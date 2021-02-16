@@ -74,6 +74,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
+    // todo (#6202): replace writer proxies by Writers
     // initialize
     streamWriterProxy.wrap(streamWriter);
     responseWriterProxy.wrap(responseWriter, writer -> sideEffectQueue.add(writer::flush));
@@ -105,7 +106,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
     switch (intent) {
       case ACTIVATE_ELEMENT:
         if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-          // TODO (saig0): invoke the migrated processor to activate the element
+          processor.onActivate(element, context);
         } else {
           processor.onActivating(element, context);
         }

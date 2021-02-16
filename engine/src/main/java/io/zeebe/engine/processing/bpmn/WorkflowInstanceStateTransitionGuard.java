@@ -54,6 +54,9 @@ public final class WorkflowInstanceStateTransitionGuard {
 
   private Either<String, ?> checkStateTransition(final BpmnElementContext context) {
     switch (context.getIntent()) {
+      case ACTIVATE_ELEMENT:
+        return Either.right(null);
+
       case ELEMENT_ACTIVATING:
       case ELEMENT_ACTIVATED:
       case ELEMENT_COMPLETING:

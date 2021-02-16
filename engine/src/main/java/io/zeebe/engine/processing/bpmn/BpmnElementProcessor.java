@@ -24,6 +24,34 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
   Class<T> getType();
 
   /**
+   * The element is about to be entered. Perform every action to initialize and activate the
+   * element.
+   *
+   * <p>If the element is a wait-state (i.e. it is waiting for an event or an external trigger) then
+   * it is waiting after this step to continue. Otherwise, it continues directly to the next step.
+   *
+   * <p>Possible actions:
+   *
+   * <ul>
+   *   <li>apply input mappings
+   *   <li>open event subscriptions
+   *   <li>initialize child elements - if the element is a container (e.g. a sub-process)
+   * </ul>
+   *
+   * Next step:
+   *
+   * <ul>
+   *   <li>activating - the element is initialized
+   *   <li>activated - if no incidents raised
+   *   <li>complete - if no incidents raised & not a wait-state.
+   * </ul>
+   *
+   * @param element the instance of the BPMN element that is executed
+   * @param context workflow instance-related data of the element that is executed
+   */
+  default void onActivate(final T element, final BpmnElementContextImpl context) {}
+
+  /**
    * The element is entered (initial step). Perform every action to initialize the element.
    *
    * <p>Possible actions:
@@ -37,7 +65,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
+   * @deprecated will be replaced by onActivate
    */
+  @Deprecated // todo (#6202): remove method
   void onActivating(final T element, final BpmnElementContext context);
 
   /**
@@ -55,7 +85,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
+   * @deprecated will be replaced by onActivate
    */
+  @Deprecated // todo (#6202): remove method
   void onActivated(final T element, final BpmnElementContext context);
 
   /**
