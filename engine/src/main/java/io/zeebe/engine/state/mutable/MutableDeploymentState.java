@@ -15,4 +15,6 @@ public interface MutableDeploymentState extends DeploymentState {
   void putPendingDeployment(long key, PendingDeploymentDistribution pendingDeploymentDistribution);
 
   PendingDeploymentDistribution removePendingDeployment(long key);
+
+  void addPendingDeploymentDistribution(long deploymentKey, int partition);
 }

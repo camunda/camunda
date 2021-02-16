@@ -20,6 +20,10 @@ import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
@@ -50,7 +54,11 @@ public final class TransformingDeploymentCreateProcessorTest {
   public void setUp() {
     MockitoAnnotations.initMocks(this);
     mockSubscriptionCommandSender = mock(SubscriptionCommandSender.class);
-
+    final var writersMock =
+        new Writers(
+            mock(TypedStreamWriter.class),
+            mock(StateWriter.class),
+            mock(CommandResponseWriter.class));
     when(mockSubscriptionCommandSender.openMessageSubscription(
             anyInt(), anyLong(), anyLong(), any(), any(), any(), anyBoolean()))
         .thenReturn(true);
@@ -77,7 +85,9 @@ public final class TransformingDeploymentCreateProcessorTest {
               zeebeState,
               new CatchEventBehavior(
                   zeebeState, expressionProcessor, mockSubscriptionCommandSender, 1),
-              expressionProcessor);
+              expressionProcessor,
+              1,
+              writersMock);
           return typedRecordProcessors;
         });
   }

@@ -8,6 +8,7 @@
 package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.WorkflowRecord;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -54,6 +55,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.ERROR, ErrorRecord.class);
     registry.put(ValueType.WORKFLOW_INSTANCE_RESULT, WorkflowInstanceResultRecord.class);
     registry.put(ValueType.WORKFLOW, WorkflowRecord.class);
+    registry.put(ValueType.DEPLOYMENT_DISTRIBUTION, DeploymentDistributionRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
   }

@@ -17,6 +17,7 @@ import io.zeebe.protocol.impl.record.CopiedRecord;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.VersionInfo;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -184,6 +185,19 @@ public final class JsonSerializableToJsonTest {
               return record;
             },
         "{'resources':[{'resourceType':'BPMN_XML','resourceName':'resource','resource':'Y29udGVudHM='}],'deployedWorkflows':[{'resource':'Y29udGVudHM=','checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'workflowKey':123,'resourceName':'resource'}]}"
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// DeploymentDistributionRecord /////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      new Object[] {
+        "DeploymentDistributionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final var record = new DeploymentDistributionRecord();
+              record.setPartition(2);
+              return record;
+            },
+        "{'partitionId':2}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// Empty DeploymentRecord /////////////////////////////////

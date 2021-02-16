@@ -24,6 +24,7 @@ import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
@@ -148,6 +149,11 @@ public final class RecordingExporter implements Exporter {
 
   public static WorkflowRecordStream workflowRecords() {
     return new WorkflowRecordStream(records(ValueType.WORKFLOW, DeployedWorkflow.class));
+  }
+
+  public static DeploymentDistributionRecordStream deploymentDistributionRecords() {
+    return new DeploymentDistributionRecordStream(
+        records(ValueType.DEPLOYMENT_DISTRIBUTION, DeploymentDistributionRecordValue.class));
   }
 
   public static JobRecordStream jobRecords() {

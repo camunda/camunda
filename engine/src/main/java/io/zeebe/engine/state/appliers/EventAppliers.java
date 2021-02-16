@@ -12,6 +12,7 @@ import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.RecordValue;
+import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowIntent;
@@ -44,6 +45,7 @@ public final class EventAppliers implements EventApplier {
         new WorkflowInstanceElementActivatedApplier(state));
 
     register(WorkflowIntent.CREATED, new WorkflowCreatedApplier(state));
+    register(DeploymentDistributionIntent.DISTRIBUTING, new DeploymentDistributionApplier(state));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

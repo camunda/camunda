@@ -12,6 +12,7 @@ import static io.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.protocol.record.ValueType;
@@ -33,10 +34,12 @@ public final class DeploymentEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
-      final ExpressionProcessor expressionProcessor) {
+      final ExpressionProcessor expressionProcessor,
+      final int partitionsCount,
+      final Writers writers) {
     final var processor =
         new TransformingDeploymentCreateProcessor(
-            zeebeState, catchEventBehavior, expressionProcessor);
+            zeebeState, catchEventBehavior, expressionProcessor, partitionsCount, writers);
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
   }
 }
