@@ -42,4 +42,10 @@ public final class Writers {
   public CommandResponseWriter response() {
     return response;
   }
+
+  // todo (#6202): remove after migrations finished
+  @Deprecated
+  public TypedEventWriter events() {
+    return stream;
+  }
 }

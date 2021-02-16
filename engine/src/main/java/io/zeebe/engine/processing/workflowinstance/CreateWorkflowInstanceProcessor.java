@@ -12,7 +12,7 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
@@ -52,7 +52,7 @@ public final class CreateWorkflowInstanceProcessor
   private final MutableElementInstanceState elementInstanceState;
   private final MutableVariableState variablesState;
   private final KeyGenerator keyGenerator;
-  private final StateWriter stateWriter;
+  private final TypedEventWriter eventWriter;
 
   public CreateWorkflowInstanceProcessor(
       final WorkflowState workflowState,
@@ -64,7 +64,7 @@ public final class CreateWorkflowInstanceProcessor
     this.elementInstanceState = elementInstanceState;
     this.variablesState = variablesState;
     this.keyGenerator = keyGenerator;
-    stateWriter = writers.state();
+    eventWriter = writers.events();
   }
 
   @Override
@@ -83,7 +83,7 @@ public final class CreateWorkflowInstanceProcessor
     }
 
     final ElementInstance workflowInstance = createElementInstance(workflow, workflowInstanceKey);
-    stateWriter.appendFollowUpEvent(
+    eventWriter.appendFollowUpEvent(
         workflowInstanceKey,
         WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         workflowInstance.getValue());
