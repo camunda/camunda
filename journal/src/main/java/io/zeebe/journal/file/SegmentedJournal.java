@@ -44,7 +44,6 @@ import org.slf4j.LoggerFactory;
 
 /** A file based journal. The journal is split into multiple segments files. */
 public class SegmentedJournal implements Journal {
-
   public static final long ASQN_IGNORE = -1;
   private static final int SEGMENT_BUFFER_FACTOR = 3;
   private static final int FIRST_SEGMENT_ID = 1;
@@ -116,16 +115,30 @@ public class SegmentedJournal implements Journal {
     if (segmentEntry != null) {
       final SortedMap<Long, JournalSegment> compactSegments =
           segments.headMap(segmentEntry.getValue().index());
-      if (!compactSegments.isEmpty()) {
-        log.debug("{} - Compacting {} segment(s)", name, compactSegments.size());
-        for (final JournalSegment segment : compactSegments.values()) {
-          log.trace("Deleting segment: {}", segment);
-          segment.close();
-          segment.delete();
-          journalMetrics.decSegmentCount();
-        }
-        compactSegments.clear();
+      if (compactSegments.isEmpty()) {
+        log.debug(
+            "No segments can be deleted with index < {} (first log index: {})",
+            index,
+            getFirstIndex());
+        return;
       }
+
+      log.debug(
+          "{} - Deleting log up from {} up to {} (removing {} segments)",
+          name,
+          getFirstIndex(),
+          compactSegments.get(compactSegments.lastKey()).index(),
+          compactSegments.size());
+      for (final JournalSegment segment : compactSegments.values()) {
+        log.trace("{} - Deleting segment: {}", name, segment);
+        segment.close();
+        segment.delete();
+        journalMetrics.decSegmentCount();
+      }
+
+      // removes them from the segment map
+      compactSegments.clear();
+
       journalIndex.deleteUntil(index);
       resetHead(getFirstSegment().index());
     }
@@ -144,7 +157,7 @@ public class SegmentedJournal implements Journal {
 
   @Override
   public long getFirstIndex() {
-    if (!isEmpty()) {
+    if (!segments.isEmpty()) {
       return segments.firstEntry().getValue().index();
     } else {
       return 0;

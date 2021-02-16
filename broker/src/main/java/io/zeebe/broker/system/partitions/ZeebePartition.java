@@ -192,8 +192,7 @@ public final class ZeebePartition extends Actor
 
   @Override
   public void onActorStarting() {
-    context.setAtomixLogStorage(
-        AtomixLogStorage.ofPartition(context.getZeebeIndexMapping(), context.getRaftPartition()));
+    context.setAtomixLogStorage(AtomixLogStorage.ofPartition(context.getRaftPartition()));
     context.getRaftPartition().addRoleChangeListener(this);
     context.getComponentHealthMonitor().addFailureListener(this);
     onRoleChange(context.getRaftPartition().getRole(), context.getRaftPartition().term());

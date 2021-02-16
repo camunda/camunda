@@ -183,6 +183,12 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-journal</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- ATOMIX -->
       <dependency>
         <artifactId>atomix-cluster</artifactId>

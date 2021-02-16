@@ -37,8 +37,7 @@ public class StateControllerPartitionStep implements PartitionStep {
                 .getReceivableSnapshotStore(context.getRaftPartition().name()),
             runtimeDirectory,
             context.getSnapshotReplication(),
-            new AtomixRecordEntrySupplierImpl(
-                context.getZeebeIndexMapping(), context.getRaftLogReader()),
+            new AtomixRecordEntrySupplierImpl(context.getRaftLogReader()),
             StatePositionSupplier::getHighestExportedPosition);
 
     context.setSnapshotController(stateController);

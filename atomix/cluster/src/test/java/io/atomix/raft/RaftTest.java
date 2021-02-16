@@ -41,6 +41,7 @@ import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.storage.log.entry.InitializeEntry;
@@ -192,7 +193,6 @@ public class RaftTest extends ConcurrentTestCase {
         RaftStorage.builder()
             .withStorageLevel(StorageLevel.DISK)
             .withDirectory(directory)
-            .withMaxEntriesPerSegment(10)
             .withSnapshotStore(new TestSnapshotStore(new AtomicReference<>()))
             .withMaxSegmentSize(1024 * 10)
             .withNamespace(RaftNamespaces.RAFT_STORAGE);
@@ -373,8 +373,9 @@ public class RaftTest extends ConcurrentTestCase {
       final RaftServer server,
       final CountDownLatch transitionCompleted) {
     if (role == Role.LEADER) {
-      final RaftLogReader raftLogReader = server.getContext().getLog().openReader(0, Mode.COMMITS);
-      raftLogReader.reset(raftLogReader.getLastIndex());
+      final RaftLog raftLog = server.getContext().getLog();
+      final RaftLogReader raftLogReader = raftLog.openReader(0, Mode.COMMITS);
+      raftLogReader.reset(raftLog.getLastIndex());
       final RaftLogEntry entry = raftLogReader.next().entry();
       assert (entry instanceof InitializeEntry);
       assertEquals(term, entry.term());

@@ -112,14 +112,14 @@ public abstract class ActiveRole extends PassiveRole {
 
   /** Returns a boolean value indicating whether the given candidate's log is up-to-date. */
   boolean isLogUpToDate(final long lastIndex, final long lastTerm, final RaftRequest request) {
-    // Read the last entry from the log.
-    final Indexed<RaftLogEntry> lastEntry = raft.getLog().getLastEntry();
-
     // If the log is empty then vote for the candidate.
-    if (lastEntry == null) {
+    if (raft.getLog().isEmpty()) {
       log.debug("Accepted {}: candidate's log is up-to-date", request);
       return true;
     }
+
+    // Read the last entry from the log.
+    final Indexed<RaftLogEntry> lastEntry = raft.getLog().getLastEntry();
 
     // If the candidate's last log term is lower than the local log's last entry term, reject the
     // request.

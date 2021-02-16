@@ -144,8 +144,8 @@ class SegmentedJournalReader implements JournalReader {
     }
 
     // if the journal was empty, the reader will be at the beginning of the log
-    // if the journal only contained entries with ASQN greater than the one requested, it will be at
-    // the second entry (as it has read the first one)
+    // if the journal only contained entries with ASQN greater than the one requested, then seek
+    // back to the beginning
     if (record == null) {
       return seekToFirst();
     }

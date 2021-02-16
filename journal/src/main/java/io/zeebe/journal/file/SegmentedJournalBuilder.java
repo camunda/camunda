@@ -28,14 +28,16 @@ public class SegmentedJournalBuilder {
   private static final String DEFAULT_DIRECTORY = System.getProperty("user.dir");
   private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
   private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024;
-  private static final long DEFAULT_MIN_FREE_DISK_SPACE = 1024L * 1024 * 1024 * 1;
+  private static final long DEFAULT_MIN_FREE_DISK_SPACE = 1024L * 1024 * 1024;
+  private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
+
   protected String name = DEFAULT_NAME;
   protected File directory = new File(DEFAULT_DIRECTORY);
   protected int maxSegmentSize = DEFAULT_MAX_SEGMENT_SIZE;
   protected int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
 
   private long freeDiskSpace = DEFAULT_MIN_FREE_DISK_SPACE;
-  private int journalIndexDensity = 100;
+  private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
 
   protected SegmentedJournalBuilder() {}
 
@@ -130,12 +132,8 @@ public class SegmentedJournalBuilder {
   }
 
   public SegmentedJournal build() {
+    final JournalIndex journalIndex = new SparseJournalIndex(journalIndexDensity);
     return new SegmentedJournal(
-        name,
-        directory,
-        maxSegmentSize,
-        maxEntrySize,
-        freeDiskSpace,
-        new SparseJournalIndex(journalIndexDensity));
+        name, directory, maxSegmentSize, maxEntrySize, freeDiskSpace, journalIndex);
   }
 }

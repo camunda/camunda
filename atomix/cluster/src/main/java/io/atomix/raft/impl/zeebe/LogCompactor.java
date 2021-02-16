@@ -9,7 +9,6 @@ package io.atomix.raft.impl.zeebe;
 
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftServiceMetrics;
-import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
@@ -20,7 +19,6 @@ public final class LogCompactor {
   private final RaftContext raft;
 
   // hard coupled state
-  private final RaftLogReader reader;
   private final Logger logger;
   private final RaftServiceMetrics metrics;
 
@@ -29,7 +27,6 @@ public final class LogCompactor {
 
   public LogCompactor(final RaftContext raft) {
     this.raft = raft;
-    reader = raft.getLog().openReader(1, RaftLogReader.Mode.COMMITS);
 
     logger =
         ContextualLoggerFactory.getLogger(
@@ -50,42 +47,26 @@ public final class LogCompactor {
   public CompletableFuture<Void> compact() {
     raft.checkThread();
 
-    final var log = raft.getLog();
-    if (log.isCompactable(compactableIndex)) {
-      final var index = log.getCompactableIndex(compactableIndex);
-      final var future = new CompletableFuture<Void>();
-      logger.debug("Compacting log up from {} up to {}", reader.getFirstIndex(), index);
-      compact(index, future);
-      return future;
-    } else {
-      logger.debug(
-          "Skipping compaction of non-compactable index {} (first log index: {})",
-          compactableIndex,
-          reader.getFirstIndex());
+    final CompletableFuture<Void> result = new CompletableFuture<>();
+    try {
+      final var startTime = System.currentTimeMillis();
+      raft.getLog().compact(compactableIndex);
+      metrics.compactionTime(System.currentTimeMillis() - startTime);
+      result.complete(null);
+    } catch (final Exception e) {
+      logger.error("Failed to compact up to index {}", compactableIndex, e);
+      result.completeExceptionally(e);
     }
 
-    return CompletableFuture.completedFuture(null);
+    return result;
   }
 
   public void close() {
     raft.checkThread();
     logger.debug("Closing the log compactor {}", raft.getName());
-    reader.close();
   }
 
   public void setCompactableIndex(final long index) {
     compactableIndex = index;
-  }
-
-  private void compact(final long index, final CompletableFuture<Void> future) {
-    try {
-      final var startTime = System.currentTimeMillis();
-      raft.getLog().compact(index);
-      metrics.compactionTime(System.currentTimeMillis() - startTime);
-      future.complete(null);
-    } catch (final Exception e) {
-      logger.error("Failed to compact up to index {}", index, e);
-      future.completeExceptionally(e);
-    }
   }
 }

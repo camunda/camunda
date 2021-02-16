@@ -31,7 +31,8 @@ public class RaftStorageConfig {
   private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
   private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024;
   private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
-  private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024 * 1; // 1GB
+  private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024;
+  private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
 
   private String directory;
   private StorageLevel level = DEFAULT_STORAGE_LEVEL;
@@ -39,6 +40,7 @@ public class RaftStorageConfig {
   private long segmentSize = DEFAULT_MAX_SEGMENT_SIZE;
   private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
   private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
+  private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
 
   @Optional("SnapshotStoreFactory")
   private ReceivableSnapshotStoreFactory persistedSnapshotStoreFactory;
@@ -186,6 +188,15 @@ public class RaftStorageConfig {
    */
   public RaftStorageConfig setFreeDiskSpace(final long freeDiskSpace) {
     this.freeDiskSpace = freeDiskSpace;
+    return this;
+  }
+
+  public int getJournalIndexDensity() {
+    return journalIndexDensity;
+  }
+
+  public RaftStorageConfig setJournalIndexDensity(final int journalIndexDensity) {
+    this.journalIndexDensity = journalIndexDensity;
     return this;
   }
 }

@@ -28,7 +28,6 @@ import io.atomix.storage.StorageLevel;
 import io.atomix.storage.buffer.FileBuffer;
 import io.atomix.storage.journal.JournalSegmentDescriptor;
 import io.atomix.storage.journal.JournalSegmentFile;
-import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.storage.statistics.StorageStatistics;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Serializer;
@@ -39,7 +38,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
+import org.agrona.IoUtil;
 
 /**
  * Immutable log configuration and {@link RaftLog} factory.
@@ -66,13 +65,12 @@ public final class RaftStorage {
   private final Namespace namespace;
   private final int maxSegmentSize;
   private final int maxEntrySize;
-  private final int maxEntriesPerSegment;
   private final long freeDiskSpace;
   private final boolean flushExplicitly;
   private final boolean retainStaleSnapshots;
   private final StorageStatistics statistics;
   private final ReceivableSnapshotStore persistedSnapshotStore;
-  private final Supplier<JournalIndex> journalIndexFactory;
+  private final int journalIndexDensity;
 
   private RaftStorage(
       final String prefix,
@@ -81,27 +79,26 @@ public final class RaftStorage {
       final Namespace namespace,
       final int maxSegmentSize,
       final int maxEntrySize,
-      final int maxEntriesPerSegment,
       final long freeDiskSpace,
       final boolean flushExplicitly,
       final boolean retainStaleSnapshots,
       final StorageStatistics storageStatistics,
       final ReceivableSnapshotStore persistedSnapshotStore,
-      final Supplier<JournalIndex> journalIndexFactory) {
+      final int journalIndexDensity) {
     this.prefix = prefix;
     this.storageLevel = storageLevel;
     this.directory = directory;
     this.namespace = namespace;
     this.maxSegmentSize = maxSegmentSize;
     this.maxEntrySize = maxEntrySize;
-    this.maxEntriesPerSegment = maxEntriesPerSegment;
     this.freeDiskSpace = freeDiskSpace;
     this.flushExplicitly = flushExplicitly;
     this.retainStaleSnapshots = retainStaleSnapshots;
     statistics = storageStatistics;
     this.persistedSnapshotStore = persistedSnapshotStore;
-    this.journalIndexFactory = journalIndexFactory;
-    directory.mkdirs();
+    this.journalIndexDensity = journalIndexDensity;
+
+    IoUtil.ensureDirectoryExists(directory, prefix + " raft partition storage");
   }
 
   /**
@@ -153,20 +150,6 @@ public final class RaftStorage {
    */
   public int maxLogSegmentSize() {
     return maxSegmentSize;
-  }
-
-  /**
-   * Returns the maximum number of entries per segment.
-   *
-   * <p>The maximum entries per segment dictates the maximum number of {@link RaftLogEntry entries}
-   * that are allowed to be stored in any segment in a {@link RaftLog}.
-   *
-   * @return The maximum number of entries per segment.
-   * @deprecated since 3.0.2
-   */
-  @Deprecated
-  public int maxLogEntriesPerSegment() {
-    return maxEntriesPerSegment;
   }
 
   /**
@@ -294,9 +277,8 @@ public final class RaftStorage {
         .withMaxSegmentSize(maxSegmentSize)
         .withMaxEntrySize(maxEntrySize)
         .withFreeDiskSpace(freeDiskSpace)
-        .withMaxEntriesPerSegment(maxEntriesPerSegment)
         .withFlushExplicitly(flushExplicitly)
-        .withJournalIndexFactory(journalIndexFactory)
+        .withJournalIndexDensity(journalIndexDensity)
         .build();
   }
 
@@ -373,11 +355,11 @@ public final class RaftStorage {
     private static final String DEFAULT_DIRECTORY =
         System.getProperty("atomix.data", System.getProperty("user.dir"));
     private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
-    private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024; // 1MB
-    private static final int DEFAULT_MAX_ENTRIES_PER_SEGMENT = 1024 * 1024;
-    private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024; // 1GB
+    private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024;
+    private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024;
     private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
     private static final boolean DEFAULT_RETAIN_STALE_SNAPSHOTS = false;
+    private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
 
     private String prefix = DEFAULT_PREFIX;
     private StorageLevel storageLevel = StorageLevel.DISK;
@@ -385,13 +367,12 @@ public final class RaftStorage {
     private Namespace namespace;
     private int maxSegmentSize = DEFAULT_MAX_SEGMENT_SIZE;
     private int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
-    private int maxEntriesPerSegment = DEFAULT_MAX_ENTRIES_PER_SEGMENT;
     private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
     private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
     private boolean retainStaleSnapshots = DEFAULT_RETAIN_STALE_SNAPSHOTS;
     private StorageStatistics storageStatistics;
     private ReceivableSnapshotStore persistedSnapshotStore;
-    private Supplier<JournalIndex> journalIndexFactory;
+    private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
 
     private Builder() {}
 
@@ -499,33 +480,6 @@ public final class RaftStorage {
     }
 
     /**
-     * Sets the maximum number of allows entries per segment, returning the builder for method
-     * chaining.
-     *
-     * <p>The maximum entry count dictates when logs should roll over to new segments. As entries
-     * are written to a segment of the log, if the entry count in that segment meets the configured
-     * maximum entry count, the log will create a new segment and append new entries to that
-     * segment.
-     *
-     * <p>By default, the maximum entries per segment is {@code 1024 * 1024}.
-     *
-     * @param maxEntriesPerSegment The maximum number of entries allowed per segment.
-     * @return The storage builder.
-     * @throws IllegalArgumentException If the {@code maxEntriesPerSegment} not greater than the
-     *     default max entries per segment
-     * @deprecated since 3.0.2
-     */
-    @Deprecated
-    public Builder withMaxEntriesPerSegment(final int maxEntriesPerSegment) {
-      checkArgument(maxEntriesPerSegment > 0, "max entries per segment must be positive");
-      checkArgument(
-          maxEntriesPerSegment <= DEFAULT_MAX_ENTRIES_PER_SEGMENT,
-          "max entries per segment cannot be greater than " + DEFAULT_MAX_ENTRIES_PER_SEGMENT);
-      this.maxEntriesPerSegment = maxEntriesPerSegment;
-      return this;
-    }
-
-    /**
      * Sets the percentage of free disk space that must be preserved before log compaction is
      * forced.
      *
@@ -605,6 +559,11 @@ public final class RaftStorage {
       return this;
     }
 
+    public Builder withJournalIndexDensity(final int journalIndexDensity) {
+      this.journalIndexDensity = journalIndexDensity;
+      return this;
+    }
+
     /**
      * Builds the {@link RaftStorage} object.
      *
@@ -619,18 +578,12 @@ public final class RaftStorage {
           namespace,
           maxSegmentSize,
           maxEntrySize,
-          maxEntriesPerSegment,
           freeDiskSpace,
           flushExplicitly,
           retainStaleSnapshots,
           Optional.ofNullable(storageStatistics).orElse(new StorageStatistics(directory)),
           persistedSnapshotStore,
-          journalIndexFactory);
-    }
-
-    public Builder withJournalIndexFactory(final Supplier<JournalIndex> journalIndexFactory) {
-      this.journalIndexFactory = journalIndexFactory;
-      return this;
+          journalIndexDensity);
     }
   }
 }

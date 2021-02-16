@@ -90,4 +90,7 @@ public interface JournalReader extends Iterator<JournalRecord>, AutoCloseable {
    * @return the index of the record that will be returned by {@link #next()}
    */
   long seekToAsqn(long asqn);
+
+  @Override
+  void close();
 }
