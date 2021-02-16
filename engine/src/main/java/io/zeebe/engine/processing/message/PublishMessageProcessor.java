@@ -107,7 +107,7 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
     sideEffect.accept(this::sendCorrelateCommand);
 
     if (messageRecord.getTimeToLive() > 0L) {
-      final Message message = newMessage(messageKey, messageRecord);
+      final Message message = newMessage(messageKey, messageRecord, command.getTimestamp());
       messageState.put(message);
 
       // avoid correlating this message to the workflow again
@@ -199,7 +199,8 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
     return success ? responseWriter.flush() : false;
   }
 
-  private Message newMessage(final long messageKey, final MessageRecord messageRecord) {
+  private Message newMessage(
+      final long messageKey, final MessageRecord messageRecord, final long publishedTimestamp) {
     return new Message(
         messageKey,
         messageRecord.getNameBuffer(),
@@ -207,6 +208,6 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
         messageRecord.getVariablesBuffer(),
         messageRecord.getMessageIdBuffer(),
         messageRecord.getTimeToLive(),
-        messageRecord.getTimeToLive() + ActorClock.currentTimeMillis());
+        publishedTimestamp + messageRecord.getTimeToLive());
   }
 }

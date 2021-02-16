@@ -49,7 +49,7 @@ public class TestDataGenerator {
   }
 
   public static TestDataRecord regenerateTestRecord(
-      final int workflowSeed, final int executionPathSeed) {
+      final long workflowSeed, final long executionPathSeed) {
     final RandomWorkflowGenerator generator =
         new RandomWorkflowGenerator(workflowSeed, null, null, null);
 
