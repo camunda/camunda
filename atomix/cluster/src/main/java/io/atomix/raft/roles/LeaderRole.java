@@ -700,27 +700,28 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     if (result.failed()) {
       appendListener.onWriteError(new IllegalStateException(result.getErrorMessage()));
       raft.transition(Role.FOLLOWER);
+    } else {
+      append(entry)
+          .whenComplete(
+              (indexed, error) -> {
+                if (error != null) {
+                  appendListener.onWriteError(Throwables.getRootCause(error));
+                  if (!(error instanceof StorageException)) {
+                    // step down. Otherwise the following event can get appended resulting in gaps
+                    log.info(
+                        "Unexpected error occurred while appending to local log, stepping down");
+                    raft.transition(Role.FOLLOWER);
+                  }
+                } else {
+                  if (indexed.type().equals(ZeebeEntry.class)) {
+                    lastZbEntry = indexed.entry();
+                  }
+
+                  appendListener.onWrite(indexed);
+                  replicate(indexed, appendListener);
+                }
+              });
     }
-
-    append(entry)
-        .whenComplete(
-            (indexed, error) -> {
-              if (error != null) {
-                appendListener.onWriteError(Throwables.getRootCause(error));
-                if (!(error instanceof StorageException)) {
-                  // step down. Otherwise the following event can get appended resulting in gaps
-                  log.info("Unexpected error occurred while appending to local log, stepping down");
-                  raft.transition(Role.FOLLOWER);
-                }
-              } else {
-                if (indexed.type().equals(ZeebeEntry.class)) {
-                  lastZbEntry = indexed.entry();
-                }
-
-                appendListener.onWrite(indexed);
-                replicate(indexed, appendListener);
-              }
-            });
   }
 
   private void replicate(final Indexed<ZeebeEntry> indexed, final AppendListener appendListener) {
