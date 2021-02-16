@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {makeAutoObservable, when} from 'mobx';
+import {makeAutoObservable, when, IReactionDisposer} from 'mobx';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {createNodeMetaDataMap, getSelectableFlowNodes} from './mappers';
@@ -36,13 +36,14 @@ class SingleInstanceDiagram {
   state: State = {
     ...DEFAULT_STATE,
   };
+  workflowXmlDisposer: null | IReactionDisposer = null;
 
   constructor() {
     makeAutoObservable(this);
   }
 
   init() {
-    when(
+    this.workflowXmlDisposer = when(
       () => currentInstanceStore.state.instance !== null,
       () => {
         const workflowId = currentInstanceStore.state.instance?.workflowId;
@@ -115,6 +116,7 @@ class SingleInstanceDiagram {
 
   reset = () => {
     this.state = {...DEFAULT_STATE};
+    this.workflowXmlDisposer?.();
   };
 }
 

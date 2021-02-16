@@ -38,6 +38,7 @@ class Variables {
   shouldCancelOngoingRequests: boolean = false;
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
+  variablesWithActiveOperationsDisposer: null | IReactionDisposer = null;
 
   constructor() {
     makeObservable(this, {
@@ -58,7 +59,7 @@ class Variables {
   }
 
   init = async (instanceId: WorkflowInstanceEntity['id']) => {
-    when(
+    this.variablesWithActiveOperationsDisposer = when(
       () => currentInstanceStore.state.instance?.state === STATE.CANCELED,
       this.removeVariablesWithActiveOperations
     );
@@ -81,6 +82,7 @@ class Variables {
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
     this.disposer?.();
+    this.variablesWithActiveOperationsDisposer?.();
   };
 
   clearItems = () => {

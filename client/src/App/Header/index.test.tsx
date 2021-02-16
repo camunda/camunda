@@ -75,7 +75,9 @@ describe('Header', () => {
         )
       )
     );
+  });
 
+  afterEach(() => {
     currentInstanceStore.reset();
     instancesStore.reset();
     statisticsStore.reset();
@@ -236,6 +238,15 @@ describe('Header', () => {
     ).toBeInTheDocument();
 
     mockServer.use(
+      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            running: 821,
+            active: 90,
+            withIncidents: 732,
+          })
+        )
+      ),
       rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
         res.once(
           ctx.json({
@@ -245,7 +256,10 @@ describe('Header', () => {
         )
       )
     );
-    jest.advanceTimersByTime(5000);
+
+    jest.runOnlyPendingTimers();
+
+    expect(await screen.findByTitle('View 732 Incidents')).toBeInTheDocument();
     expect(
       await screen.findByText(`Instance ${MOCK_SECOND_INSTANCE_ID}`)
     ).toBeInTheDocument();

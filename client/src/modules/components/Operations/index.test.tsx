@@ -158,8 +158,6 @@ describe('Operations', () => {
 
       expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-      instancesStore.init();
-
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
       expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
 

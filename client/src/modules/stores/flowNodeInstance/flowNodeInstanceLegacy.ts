@@ -60,6 +60,7 @@ class FlowNodeInstance {
   state: State = {...DEFAULT_STATE};
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
+  instanceExecutionHistoryDisposer: null | IReactionDisposer = null;
 
   constructor() {
     makeObservable(this, {
@@ -78,7 +79,7 @@ class FlowNodeInstance {
   }
 
   init() {
-    when(
+    this.instanceExecutionHistoryDisposer = when(
       () => currentInstanceStore.state.instance?.id !== undefined,
       () => {
         const instanceId = currentInstanceStore.state.instance?.id;
@@ -244,6 +245,7 @@ class FlowNodeInstance {
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
     this.disposer?.();
+    this.instanceExecutionHistoryDisposer?.();
   };
 
   get areMultipleNodesSelected() {

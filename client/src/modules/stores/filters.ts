@@ -52,6 +52,7 @@ const DEFAULT_STATE: State = {
 class Filters {
   state: State = {...DEFAULT_STATE};
   filterObserveDisposer: null | Lambda = null;
+  initialLocationReactionDisposer: null | IReactionDisposer = null;
   locationReactionDisposer: null | IReactionDisposer = null;
 
   constructor() {
@@ -68,7 +69,7 @@ class Filters {
       this.setGroupedWorkflows(formatGroupedWorkflows([]));
     }
 
-    when(
+    this.initialLocationReactionDisposer = when(
       () => this.state.location !== null,
       () => {
         this.setFilterFromUrl();
@@ -204,6 +205,7 @@ class Filters {
     this.state = {...DEFAULT_STATE};
 
     this.filterObserveDisposer?.();
+    this.initialLocationReactionDisposer?.();
     this.locationReactionDisposer?.();
   };
 }

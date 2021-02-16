@@ -52,6 +52,7 @@ class Events {
   };
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
+  workflowEventsDisposer: null | IReactionDisposer = null;
 
   constructor() {
     makeObservable(this, {
@@ -62,7 +63,7 @@ class Events {
   }
 
   init() {
-    when(
+    this.workflowEventsDisposer = when(
       () => currentInstanceStore.state.instance?.id !== undefined,
       () => {
         const instanceId = currentInstanceStore.state.instance?.id;
@@ -140,6 +141,7 @@ class Events {
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
     this.disposer?.();
+    this.workflowEventsDisposer?.();
   };
 }
 

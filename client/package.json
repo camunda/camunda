@@ -75,7 +75,7 @@
     "jest-junit": "^12.0.0",
     "jest-styled-components": "^7.0.3",
     "lint-staged": "^10.5.4",
-    "msw": "^0.26.1",
+    "msw": "^0.26.2",
     "node-fetch": "^2.6.1",
     "prettier": "^2.2.1",
     "react-scripts": "4.0.2",

@@ -30,6 +30,7 @@ class SequenceFlows {
   state: State = {...DEFAULT_STATE};
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
+  workflowSeqenceFlowsDisposer: null | IReactionDisposer = null;
 
   constructor() {
     makeObservable(this, {
@@ -40,7 +41,7 @@ class SequenceFlows {
   }
 
   init() {
-    when(
+    this.workflowSeqenceFlowsDisposer = when(
       () => currentInstanceStore.state.instance?.id !== undefined,
       () => {
         const instanceId = currentInstanceStore.state.instance?.id;
@@ -121,6 +122,7 @@ class SequenceFlows {
     this.state = {...DEFAULT_STATE};
 
     this.disposer?.();
+    this.workflowSeqenceFlowsDisposer?.();
   };
 }
 
