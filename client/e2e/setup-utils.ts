@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {ZBClient, WorkflowVariables} from 'zeebe-node';
+import {ZBClient, IWorkflowVariables} from 'zeebe-node';
 const zbc = new ZBClient({
   onReady: () => console.log('zeebe-node connected!'),
   onConnectionError: () => console.log('zeebe-node disconnected!'),
@@ -14,7 +14,7 @@ function deploy(processNames: string[]) {
   return zbc.deployWorkflow(processNames);
 }
 
-function createInstances<Variables = WorkflowVariables>(
+function createInstances<Variables = IWorkflowVariables>(
   bpmnProcessId: string,
   version: number,
   numberOfInstances: number,
@@ -31,7 +31,7 @@ function createInstances<Variables = WorkflowVariables>(
   );
 }
 
-function createSingleInstance<Variables = WorkflowVariables>(
+function createSingleInstance<Variables = IWorkflowVariables>(
   bpmnProcessId: string,
   version: number,
   variables?: Variables
@@ -46,7 +46,7 @@ function createSingleInstance<Variables = WorkflowVariables>(
 function completeTask(
   taskType: string,
   shouldFail: boolean,
-  variables?: WorkflowVariables
+  variables?: IWorkflowVariables
 ) {
   zbc.createWorker({
     taskType,
