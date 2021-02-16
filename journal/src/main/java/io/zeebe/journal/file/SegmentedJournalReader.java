@@ -36,7 +36,6 @@ class SegmentedJournalReader implements JournalReader {
   private void initialize() {
     currentSegment = journal.getFirstSegment();
     currentReader = currentSegment.createReader();
-    final long nextIndex = journal.getFirstIndex();
   }
 
   public long getCurrentIndex() {
