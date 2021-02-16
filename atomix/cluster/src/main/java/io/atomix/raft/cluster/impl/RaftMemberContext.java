@@ -212,7 +212,6 @@ public final class RaftMemberContext {
 
   @Override
   public String toString() {
-    final RaftLogReader reader = this.reader;
     return toStringHelper(this)
         .add("member", member.memberId())
         .add("term", term)
@@ -221,7 +220,6 @@ public final class RaftMemberContext {
         .add("nextSnapshotIndex", nextSnapshotIndex)
         .add("nextSnapshotChunk", nextSnapshotChunk)
         .add("matchIndex", matchIndex)
-        .add("nextIndex", reader != null ? reader.getNextIndex() : matchIndex + 1)
         .add("heartbeatTime", heartbeatTime)
         .add("appending", inFlightAppendCount)
         .add("appendSucceeded", appendSucceeded)

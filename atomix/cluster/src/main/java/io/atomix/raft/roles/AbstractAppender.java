@@ -327,10 +327,8 @@ abstract class AbstractAppender implements AutoCloseable {
   }
 
   private void resetNextIndex(final RaftMemberContext member, final long nextIndex) {
-    if (member.getLogReader().getNextIndex() != nextIndex) {
-      member.getLogReader().reset(nextIndex);
-      log.trace("Reset next index for {} to {}", member, nextIndex);
-    }
+    member.getLogReader().reset(nextIndex);
+    log.trace("Reset next index for {} to {}", member, nextIndex);
   }
 
   /** Resets the snapshot index of the member when a response fails. */
