@@ -75,14 +75,10 @@ public interface JournalReader extends Iterator<JournalRecord>, AutoCloseable {
   /**
    * Seek to a record with the highest ASQN less than or equal to the given {@code asqn}.
    *
-   * <p>If all records have an higher ASQN, but at least the first record has none, then the read
-   * will be positioned at the record right before the first record with a valid ASQN.
-   *
-   * <p>If no records have a valid ASQN, then the reader will be positioned at the end of the
-   * journal, which would be equivalent to calling {@link #seekToLast()}.
-   *
-   * <p>It's possible that the next record has an ASQN of {@code -1}, as not all records have an
-   * ASQN assigned.
+   * <p>If there are no records with a lower or equal ASQN, then the reader will be positioned at
+   * the beginning of the record. That is it behaves as if {@link JournalReader#seekToFirst()}. In
+   * this case it's possible that the next record has an ASQN of {@code -1}, as not all records have
+   * an ASQN assigned.
    *
    * <p>Callers are expected to call {@link #hasNext()} after a seek, regardless of the result
    * returned.

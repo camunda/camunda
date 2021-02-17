@@ -28,7 +28,6 @@ import java.nio.file.Path;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -194,8 +193,7 @@ class JournalReaderTest {
   }
 
   @Test
-  @Disabled("https://github.com/zeebe-io/zeebe/issues/6358")
-  void shouldSeekToHighestLowerAsqnEvenIfRecordHasNone() {
+  void shouldSeekToHighestLowerAsqnSkippingRecordsWithNoAsqn() {
     // given
     final var expectedRecord = journal.append(1, data);
     journal.append(data);
@@ -215,7 +213,7 @@ class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekToNonExistentAsqn() {
+  void shouldSeekToFirstWhenAllAsqnIsHigher() {
     // given
     final var expectedRecord = journal.append(data);
     journal.append(5, data);
@@ -333,7 +331,7 @@ class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekToEndWhenNoValidAsqnFound() {
+  void shouldSeekToFirstWhenNoRecordsWithValidAsqnExists() {
     // given
     for (int i = 0; i < ENTRIES; i++) {
       journal.append(data);
@@ -343,7 +341,7 @@ class JournalReaderTest {
     final long nextIndex = reader.seekToAsqn(32);
 
     // then
-    assertThat(nextIndex).isEqualTo(journal.getLastIndex());
+    assertThat(nextIndex).isEqualTo(journal.getFirstIndex());
     assertThat(reader.hasNext()).isTrue();
     assertThat(reader.next().asqn()).isEqualTo(ASQN_IGNORE);
   }
