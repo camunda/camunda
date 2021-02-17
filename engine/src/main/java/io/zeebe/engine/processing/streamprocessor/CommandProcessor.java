@@ -7,6 +7,8 @@
  */
 package io.zeebe.engine.processing.streamprocessor;
 
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
@@ -20,6 +22,15 @@ public interface CommandProcessor<T extends UnifiedRecordValue> {
   default boolean onCommand(final TypedRecord<T> command, final CommandControl<T> commandControl) {
     return true;
   }
+
+  // TODO clean up after refactoring; this is just a simple hook to be able to append additional
+  // commands/events
+  default void afterAccept(
+      final TypedCommandWriter commandWriter,
+      final StateWriter stateWriter,
+      final long key,
+      final Intent intent,
+      final T value) {}
 
   interface CommandControl<T> {
     /** @return the key of the entity */

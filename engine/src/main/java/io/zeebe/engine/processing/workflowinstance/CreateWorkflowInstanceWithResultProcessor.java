@@ -9,6 +9,8 @@ package io.zeebe.engine.processing.workflowinstance;
 
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.state.instance.AwaitWorkflowInstanceResultMetadata;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.msgpack.property.ArrayProperty;
@@ -44,6 +46,16 @@ public final class CreateWorkflowInstanceWithResultProcessor
     wrappedController.setCommand(command).setController(controller);
     createProcessor.onCommand(command, wrappedController);
     return shouldRespond;
+  }
+
+  @Override
+  public void afterAccept(
+      final TypedCommandWriter commandWriter,
+      final StateWriter stateWriter,
+      final long key,
+      final Intent intent,
+      final WorkflowInstanceCreationRecord value) {
+    createProcessor.afterAccept(commandWriter, stateWriter, key, intent, value);
   }
 
   private class CommandControlWithAwaitResult

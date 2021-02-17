@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.processing.job;
 
-import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.engine.state.immutable.JobState.State;
@@ -19,7 +19,7 @@ import java.util.function.BiConsumer;
  * Default implementation to process JobCommands to reduce duplication in CommandProcessor
  * implementations.
  */
-final class DefaultJobCommandProcessor<J extends JobRecord> implements CommandProcessor<J> {
+final class DefaultJobCommandPreconditionGuard<J extends JobRecord> {
 
   private static final String NO_JOB_FOUND_MESSAGE =
       "Expected to %s job with key '%d', but no such job was found";
@@ -30,7 +30,7 @@ final class DefaultJobCommandProcessor<J extends JobRecord> implements CommandPr
   private final JobState state;
   private final BiConsumer<TypedRecord<J>, CommandControl<J>> acceptCommand;
 
-  public DefaultJobCommandProcessor(
+  public DefaultJobCommandPreconditionGuard(
       final String intent,
       final JobState state,
       final BiConsumer<TypedRecord<J>, CommandControl<J>> acceptCommand) {
@@ -39,7 +39,6 @@ final class DefaultJobCommandProcessor<J extends JobRecord> implements CommandPr
     this.acceptCommand = acceptCommand;
   }
 
-  @Override
   public boolean onCommand(final TypedRecord<J> command, final CommandControl<J> commandControl) {
     final long jobKey = command.getKey();
     final State jobState = state.getState(jobKey);

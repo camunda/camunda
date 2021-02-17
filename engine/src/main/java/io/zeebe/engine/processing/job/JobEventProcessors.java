@@ -30,21 +30,9 @@ public final class JobEventProcessors {
     final var jobErrorThrownProcessor = new JobErrorThrownProcessor(zeebeState);
 
     typedRecordProcessors
-        .onEvent(
-            ValueType.JOB,
-            JobIntent.CREATED,
-            new JobCreatedProcessor(zeebeState.getElementInstanceState()))
-        .onEvent(
-            ValueType.JOB,
-            JobIntent.COMPLETED,
-            new JobCompletedEventProcessor(
-                zeebeState.getElementInstanceState(),
-                zeebeState.getEventScopeInstanceState(),
-                zeebeState.getVariableState()))
-        .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor(jobState))
-        .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteProcessor(jobState))
-        .onCommand(ValueType.JOB, JobIntent.FAIL, new FailProcessor(jobState))
-        .onEvent(ValueType.JOB, JobIntent.FAILED, new JobFailedProcessor())
+        .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor())
+        .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteProcessor(zeebeState))
+        .onCommand(ValueType.JOB, JobIntent.FAIL, new FailProcessor(zeebeState))
         .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, new JobThrowErrorProcessor(jobState))
         .onEvent(ValueType.JOB, JobIntent.ERROR_THROWN, jobErrorThrownProcessor)
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new TimeOutProcessor(jobState))

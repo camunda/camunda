@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.workflowinstance;
 
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.CANCEL;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -179,7 +180,8 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
             RecordingExporter.workflowInstanceRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .limitToWorkflowInstanceTerminated()
-                .filter(r -> r.getIntent() == ELEMENT_TERMINATED))
+                .filter(
+                    r -> r.getIntent() == ELEMENT_TERMINATED || r.getIntent() == ELEMENT_COMPLETED))
         .extracting(r -> r.getValue().getElementId())
         .containsSubsequence(expectedTerminatedElementIds)
         .contains(ELEMENT_ID);

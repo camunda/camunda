@@ -5,36 +5,36 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.processing.job;
+package io.zeebe.engine.state.appliers;
 
-import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.state.TypedEventApplier;
+import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.record.intent.JobIntent;
 
-public final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord> {
+final class JobCreatedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
+  private final MutableJobState jobState;
 
-  public JobCreatedProcessor(final MutableElementInstanceState elementInstanceState) {
-    this.elementInstanceState = elementInstanceState;
+  JobCreatedApplier(final ZeebeState state) {
+    jobState = state.getJobState();
+    elementInstanceState = state.getElementInstanceState();
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<JobRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+  public void applyState(final long key, final JobRecord value) {
+    jobState.create(key, value);
 
-    final long elementInstanceKey = record.getValue().getElementInstanceKey();
+    final long elementInstanceKey = value.getElementInstanceKey();
     if (elementInstanceKey > 0) {
       final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
       if (elementInstance != null) {
-        elementInstance.setJobKey(record.getKey());
+        elementInstance.setJobKey(key);
         elementInstanceState.updateInstance(elementInstance);
       }
     }
