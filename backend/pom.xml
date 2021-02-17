@@ -387,33 +387,6 @@
 
   <profiles>
     <profile>
-      <id>docs</id>
-      <properties>
-        <skip.unit.tests>true</skip.unit.tests>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.webcohesion.enunciate</groupId>
-            <artifactId>enunciate-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>docs</id>
-                <goals>
-                  <goal>docs</goal>
-                </goals>
-                <configuration>
-                  <!-- the directory where to put the docs -->
-                  <docsDir>${project.build.directory}/docs</docsDir>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
       <id>it</id>
 
       <properties>

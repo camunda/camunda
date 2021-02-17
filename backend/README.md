@@ -123,16 +123,6 @@ curl -XGET http://localhost:8080/api/import -H "Content-Type: application/json" 
 
 The response tells you, if the import was successfully triggered.
 
-### Enunciate REST-API documentation
-
-You can generate documentation for the REST-API using [enunciate](http://enunciate.webcohesion.com/).
-Just run the following command:
-
-```
-mvn clean package -DskipTests -Pdocs
-realpath es-java/es-java-rest/target/docs/apidocs/index.html | xargs firefox
-```
-
 [Here](https://hq2.camunda.com/jenkins/optimize/view/All/job/camunda-optimize/job/master/lastSuccessfulBuild/artifact/backend/target/docs/apidocs/index.html) you can also find the documentation of the last successful build.
 
 ## Testing

@@ -312,16 +312,11 @@ pipeline {
       }
       steps {
         container('maven') {
-          runMaven('install -Pdocs,engine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
+          runMaven('install -Pengine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
         }
         stash name: "optimize-stash-client", includes: "client/build/**,client/src/**/*.css"
         stash name: "optimize-stash-backend", includes: "backend/target/*.jar,backend/target/lib/*"
         stash name: "optimize-stash-distro", includes: "m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*-production.tar.gz,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.xml,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.pom"
-      }
-      post {
-        success {
-          archiveArtifacts artifacts: 'backend/target/docs/**/*.*'
-        }
       }
     }
     stage('Unit tests') {
