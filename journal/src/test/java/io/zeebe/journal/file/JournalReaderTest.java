@@ -22,6 +22,7 @@ import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
+import io.zeebe.journal.file.record.PersistedJournalRecord;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;

@@ -55,7 +55,7 @@ public final class ClientReconnectTest {
             () -> {
               try {
                 return createWorkflowInstance(workflowKey);
-              } catch (ClientException e) {
+              } catch (final ClientException e) {
                 // ignore failures until broker is up again
                 return -1L;
               }

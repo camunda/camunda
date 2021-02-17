@@ -25,6 +25,7 @@ import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
 import io.zeebe.journal.StorageException.InvalidChecksum;
 import io.zeebe.journal.StorageException.InvalidIndex;
+import io.zeebe.journal.file.record.PersistedJournalRecord;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -360,11 +361,29 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldReadReopenedJournal() throws Exception {
+  public void shouldReopenJournalWithExistingRecords() throws Exception {
+    // given
+    journal.append(data);
+    journal.append(data);
+    final long lastIndexBeforeClose = journal.getLastIndex();
+    assertThat(lastIndexBeforeClose).isEqualTo(2);
+    journal.close();
+
     // when
+    journal = openJournal(getSerializedSize(data), 2);
+
+    // then
+    assertThat(journal.isOpen()).isTrue();
+    assertThat(journal.getLastIndex()).isEqualTo(lastIndexBeforeClose);
+  }
+
+  @Test
+  public void shouldReadReopenedJournal() throws Exception {
+    // given
     final var appendedRecord = journal.append(data);
     journal.close();
-    assertThat(journal.isOpen()).isFalse();
+
+    // when
     journal = openJournal(getSerializedSize(data), 2);
     final JournalReader reader = journal.openReader();
 
@@ -372,6 +391,28 @@ public class JournalTest {
     assertThat(journal.isOpen()).isTrue();
     assertThat(reader.hasNext()).isTrue();
     assertThat(reader.next()).isEqualTo(appendedRecord);
+  }
+
+  @Test
+  public void shouldWriteToReopenedJournalAtNextIndex() throws Exception {
+    // given
+    final var firstRecord = journal.append(data);
+    journal.close();
+
+    // when
+    journal = openJournal(getSerializedSize(data), 2);
+    final var secondRecord = journal.append(data);
+
+    // then
+    assertThat(secondRecord.index()).isEqualTo(2);
+
+    final JournalReader reader = journal.openReader();
+
+    assertThat(reader.hasNext()).isTrue();
+    assertThat(reader.next()).isEqualTo(firstRecord);
+
+    assertThat(reader.hasNext()).isTrue();
+    assertThat(reader.next()).isEqualTo(secondRecord);
   }
 
   private int getSerializedSize(final DirectBuffer data) {
