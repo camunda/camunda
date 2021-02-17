@@ -17,7 +17,10 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableCallActivit
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
+import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.instance.ElementInstance;
@@ -39,6 +42,7 @@ public final class BpmnStateTransitionBehavior {
   private final WorkflowInstanceStateTransitionGuard stateTransitionGuard;
   private final WorkflowEngineMetrics metrics;
   private final WorkflowInstanceRecord childInstanceRecord = new WorkflowInstanceRecord();
+  private final StateWriter stateWriter;
 
   public BpmnStateTransitionBehavior(
       final TypedStreamWriter streamWriter,
@@ -47,13 +51,19 @@ public final class BpmnStateTransitionBehavior {
       final WorkflowEngineMetrics metrics,
       final WorkflowInstanceStateTransitionGuard stateTransitionGuard,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
-          processorLookUp) {
+          processorLookUp,
+      final Writers writers) {
     this.streamWriter = streamWriter;
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
     this.metrics = metrics;
     this.stateTransitionGuard = stateTransitionGuard;
     this.processorLookUp = processorLookUp;
+    stateWriter = writers.state();
+  }
+
+  public BpmnElementContext transitionToActivating(final BpmnElementContext context) {
+    return transitionTo(context, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
   }
 
   public void transitionToActivated(final BpmnElementContext context) {
@@ -64,12 +74,14 @@ public final class BpmnStateTransitionBehavior {
     metrics.elementInstanceActivated(context.getBpmnElementType());
   }
 
-  public void transitionToCompleting(final BpmnElementContext context) {
-
-    transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
-
-    stateTransitionGuard.registerStateTransition(
-        context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
+  public BpmnElementContext transitionToCompleting(final BpmnElementContext context) {
+    final var transitionedContext =
+        transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      stateTransitionGuard.registerStateTransition(
+          context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
+    }
+    return transitionedContext;
   }
 
   public void transitionToCompleted(final BpmnElementContext context) {
@@ -80,12 +92,14 @@ public final class BpmnStateTransitionBehavior {
     metrics.elementInstanceCompleted(context.getBpmnElementType());
   }
 
-  public void transitionToTerminating(final BpmnElementContext context) {
-
-    transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATING);
-
-    stateTransitionGuard.registerStateTransition(
-        context, WorkflowInstanceIntent.ELEMENT_TERMINATING);
+  public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
+    final var transitionedContext =
+        transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATING);
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      stateTransitionGuard.registerStateTransition(
+          context, WorkflowInstanceIntent.ELEMENT_TERMINATING);
+    }
+    return transitionedContext;
   }
 
   public void transitionToTerminated(final BpmnElementContext context) {
@@ -97,13 +111,17 @@ public final class BpmnStateTransitionBehavior {
     metrics.elementInstanceTerminated(context.getBpmnElementType());
   }
 
-  private void transitionTo(
+  private BpmnElementContext transitionTo(
       final BpmnElementContext context, final WorkflowInstanceIntent transition) {
-
-    verifyTransition(context, transition);
-
-    streamWriter.appendFollowUpEvent(
-        context.getElementInstanceKey(), transition, context.getRecordValue());
+    final var key = context.getElementInstanceKey();
+    final var value = context.getRecordValue();
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      verifyTransition(context, transition);
+      streamWriter.appendFollowUpEvent(key, transition, value);
+    } else {
+      stateWriter.appendFollowUpEvent(key, transition, value);
+    }
+    return context.copy(key, value, transition);
   }
 
   private void verifyTransition(

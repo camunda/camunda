@@ -68,7 +68,7 @@ public final class WorkflowEventProcessors {
         typedRecordProcessors, zeebeState.getElementInstanceState());
 
     final var bpmnStreamProcessor =
-        new BpmnStreamProcessor(expressionProcessor, catchEventBehavior, zeebeState);
+        new BpmnStreamProcessor(expressionProcessor, catchEventBehavior, zeebeState, writers);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
     addMessageStreamProcessors(

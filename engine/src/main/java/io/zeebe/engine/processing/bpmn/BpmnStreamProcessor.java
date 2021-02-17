@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.bpmn;
 
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
+import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.TypedResponseWriterProxy;
 import io.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
@@ -21,6 +22,7 @@ import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -41,11 +43,13 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
   private final WorkflowState workflowState;
   private final BpmnElementProcessors processors;
   private final WorkflowInstanceStateTransitionGuard stateTransitionGuard;
+  private final BpmnStateTransitionBehavior stateTransitionBehavior;
 
   public BpmnStreamProcessor(
       final ExpressionProcessor expressionProcessor,
       final CatchEventBehavior catchEventBehavior,
-      final ZeebeState zeebeState) {
+      final ZeebeState zeebeState,
+      final Writers writers) {
     workflowState = zeebeState.getWorkflowState();
 
     final var bpmnBehaviors =
@@ -56,10 +60,12 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
             sideEffectQueue,
             zeebeState,
             catchEventBehavior,
-            this::getContainerProcessor);
+            this::getContainerProcessor,
+            writers);
     processors = new BpmnElementProcessors(bpmnBehaviors);
 
     stateTransitionGuard = bpmnBehaviors.stateTransitionGuard();
+    stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -106,21 +112,24 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
     switch (intent) {
       case ACTIVATE_ELEMENT:
         if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-          processor.onActivate(element, context);
+          final var activatingContext = stateTransitionBehavior.transitionToActivating(context);
+          processor.onActivate(element, activatingContext);
         } else {
           processor.onActivating(element, context);
         }
         break;
       case COMPLETE_ELEMENT:
         if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-          processor.onComplete(element, context);
+          final var completingContext = stateTransitionBehavior.transitionToCompleting(context);
+          processor.onComplete(element, completingContext);
         } else {
           processor.onCompleting(element, context);
         }
         break;
       case TERMINATE_ELEMENT:
         if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-          processor.onTerminate(element, context);
+          final var terminatingContext = stateTransitionBehavior.transitionToTerminating(context);
+          processor.onTerminate(element, terminatingContext);
         } else {
           processor.onTerminating(element, context);
         }

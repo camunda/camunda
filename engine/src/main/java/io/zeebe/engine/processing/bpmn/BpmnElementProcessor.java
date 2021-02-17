@@ -49,7 +49,7 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
    */
-  default void onActivate(final T element, final BpmnElementContextImpl context) {}
+  default void onActivate(final T element, final BpmnElementContext context) {}
 
   /**
    * The element is entered (initial step). Perform every action to initialize the element.
@@ -109,7 +109,7 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
    */
-  default void onComplete(final T element, final BpmnElementContextImpl context) {}
+  default void onComplete(final T element, final BpmnElementContext context) {}
 
   /**
    * The element is going to be left. Perform every action to leave the element.
@@ -170,7 +170,7 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
    */
-  default void onTerminate(final T element, final BpmnElementContextImpl context) {}
+  default void onTerminate(final T element, final BpmnElementContext context) {}
 
   /**
    * The element is going to be terminated. Perform every action to terminate the element.
