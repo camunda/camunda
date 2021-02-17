@@ -16,6 +16,8 @@
  */
 package io.zeebe.journal.file;
 
+import static io.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
+
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
 import java.util.NoSuchElementException;
@@ -134,7 +136,7 @@ class SegmentedJournalReader implements JournalReader {
     JournalRecord record = null;
     while (hasNext()) {
       final var currentRecord = next();
-      if (currentRecord.asqn() <= asqn) {
+      if (currentRecord.asqn() <= asqn && currentRecord.asqn() != ASQN_IGNORE) {
         record = currentRecord;
       } else if (currentRecord.asqn() >= asqn) {
         break;
@@ -145,7 +147,7 @@ class SegmentedJournalReader implements JournalReader {
     // if the journal only contained entries with ASQN greater than the one requested, it will be at
     // the second entry (as it has read the first one)
     if (record == null) {
-      return getNextIndex();
+      return seekToFirst();
     }
 
     // This is needed so that the next() returns the correct record
