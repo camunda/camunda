@@ -8,7 +8,7 @@ import React from 'react';
 
 import {Table, Number, Chart, DecisionTable} from './visualizations';
 
-import {getFormatter} from './service';
+import {getFormatter, processResult} from './service';
 
 const getComponent = (groupBy, visualization) => {
   switch (visualization) {
@@ -35,7 +35,11 @@ export default function DecisionReportRenderer(props) {
 
   return (
     <div className="component">
-      <Component {...props} formatter={getFormatter(view.property)} />
+      <Component
+        {...props}
+        formatter={getFormatter(view.property)}
+        report={{...props.report, result: processResult(props.report)}}
+      />
     </div>
   );
 }

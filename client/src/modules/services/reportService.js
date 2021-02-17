@@ -24,6 +24,17 @@ export async function evaluateReport(payload, filter = [], query = {}) {
   return await response.json();
 }
 
+export function getReportResult(report, idx = 0) {
+  if (report?.result?.measures) {
+    return {
+      ...report.result,
+      data: report?.result?.measures?.[idx].data,
+    };
+  }
+
+  return report.result;
+}
+
 export async function loadRawData(config) {
   const response = await post('api/export/csv/process/rawData/data', config);
 

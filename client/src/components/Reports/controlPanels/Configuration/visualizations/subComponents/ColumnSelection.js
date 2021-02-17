@@ -7,10 +7,12 @@
 import React from 'react';
 
 import {Switch, LabeledInput} from 'components';
+import {t} from 'translation';
+import {getReportResult} from 'services';
+
 import AllColumnsButtons from './AllColumnsButtons';
 
 import './ColumnSelection.scss';
-import {t} from 'translation';
 
 const labels = {
   inputVariables: 'input',
@@ -20,7 +22,7 @@ const labels = {
 
 export default function ColumnSelection({report, onChange}) {
   const {data} = report;
-  const columns = report.result.data[0];
+  const columns = getReportResult(report).data[0];
 
   if (!columns) {
     return null;

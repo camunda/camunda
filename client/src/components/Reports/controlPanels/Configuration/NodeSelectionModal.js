@@ -8,6 +8,7 @@ import React from 'react';
 
 import {Modal, Button, BPMNDiagram, ClickBehavior} from 'components';
 import {t} from 'translation';
+import {getReportResult} from 'services';
 
 import './NodeSelectionModal.scss';
 
@@ -111,9 +112,10 @@ export default class NodeSelectionModal extends React.Component {
 
 function getFlowNodesKeys(report) {
   const distributionType = report.data.distributedBy.type;
+  const result = getReportResult(report);
   if (['flowNode', 'userTask'].includes(distributionType)) {
-    return report.result.data[0].value.map(({key}) => key);
+    return result.data[0].value.map(({key}) => key);
   }
 
-  return report.result.data.map(({key}) => key);
+  return result.data.map(({key}) => key);
 }

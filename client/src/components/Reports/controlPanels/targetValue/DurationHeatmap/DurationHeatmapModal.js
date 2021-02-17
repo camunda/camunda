@@ -7,7 +7,6 @@
 import React from 'react';
 import update from 'immutability-helper';
 import classnames from 'classnames';
-
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 
 import {
@@ -22,7 +21,7 @@ import {
   LoadingIndicator,
   ClickBehavior,
 } from 'components';
-import {formatters, numberParser} from 'services';
+import {formatters, numberParser, getReportResult} from 'services';
 
 import './DurationHeatmapModal.scss';
 import {t} from 'translation';
@@ -129,7 +128,7 @@ export default class DurationHeatmapModal extends React.Component {
   };
 
   constructTableBody = () => {
-    const resultObj = formatters.objectifyResult(this.props.report.result.data);
+    const resultObj = formatters.objectifyResult(getReportResult(this.props.report).data);
 
     return Object.keys(this.state.values).map((id) => {
       const settings = this.state.values[id] || {value: '', unit: 'hours'};
