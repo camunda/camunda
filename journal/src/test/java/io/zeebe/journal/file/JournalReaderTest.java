@@ -15,12 +15,14 @@
  */
 package io.zeebe.journal.file;
 
+import static io.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.agrona.DirectBuffer;
@@ -30,10 +32,9 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class JournalReaderTest {
+class JournalReaderTest {
 
   private static final int ENTRIES = 4;
-  @TempDir Path directory;
   private final Namespace namespace =
       new Namespace.Builder()
           .register(Namespaces.BASIC)
@@ -50,10 +51,12 @@ public class JournalReaderTest {
   private SegmentedJournal journal;
 
   @BeforeEach
-  public void setup() {
+  public void setup(final @TempDir Path tempDir) {
+    final File directory = tempDir.resolve("data").toFile();
+
     journal =
         SegmentedJournal.builder()
-            .withDirectory(directory.resolve("data").toFile())
+            .withDirectory(directory)
             .withMaxSegmentSize(entrySize * ENTRIES / 2 + JournalSegmentDescriptor.BYTES)
             .withMaxEntrySize(entrySize)
             .withJournalIndexDensity(5)
@@ -62,116 +65,126 @@ public class JournalReaderTest {
   }
 
   @Test
-  public void shouldSeek() {
-    // when
+  void shouldSeek() {
+    // given
     for (int i = 1; i <= ENTRIES; i++) {
       journal.append(i, data).index();
     }
-    reader.seek(2);
+
+    // when
+    final long nextIndex = reader.seek(2);
 
     // then
     for (int i = 0; i < 3; i++) {
       final JournalRecord record = reader.next();
-      assertThat(record.asqn()).isEqualTo(2 + i);
-      assertThat(record.index()).isEqualTo(2 + i);
+      assertThat(record.asqn()).isEqualTo(nextIndex + i);
+      assertThat(record.index()).isEqualTo(nextIndex + i);
       assertThat(record.data()).isEqualTo(data);
     }
     assertThat(reader.hasNext()).isFalse();
   }
 
   @Test
-  public void shouldSeekToFirst() {
-    // when
-    long firstIndex = -1;
+  void shouldSeekToFirst() {
+    // given
     for (int i = 1; i <= ENTRIES; i++) {
-      final long index = journal.append(i, data).index();
-      if (firstIndex == -1) {
-        firstIndex = index;
-      }
+      journal.append(i, data).index();
     }
     reader.next(); // move reader before seekToFirst
     reader.next();
-    reader.seekToFirst();
+
+    // when
+    final long nextIndex = reader.seekToFirst();
 
     // then
+    assertThat(nextIndex).isEqualTo(journal.getFirstIndex());
     final JournalRecord record = reader.next();
-    assertThat(record.index()).isEqualTo(firstIndex);
+    assertThat(record.index()).isEqualTo(nextIndex);
     assertThat(record.asqn()).isEqualTo(1);
   }
 
   @Test
-  public void shouldSeekToLast() {
-    // when
-    long lastIndex = -1;
+  void shouldSeekToLast() {
+    // given
     for (int i = 1; i <= ENTRIES; i++) {
-      lastIndex = journal.append(i, data).index();
+      journal.append(i, data).index();
     }
-    reader.seekToLast();
+
+    // when
+    final long nextIndex = reader.seekToLast();
 
     // then
+    assertThat(nextIndex).isEqualTo(journal.getLastIndex());
     final JournalRecord record = reader.next();
-    assertThat(record.index()).isEqualTo(lastIndex);
+    assertThat(record.index()).isEqualTo(nextIndex);
     assertThat(record.asqn()).isEqualTo(4);
     assertThat(reader.hasNext()).isFalse();
   }
 
   @Test
-  public void shouldNotReadIfSeekIsHigherThanLast() {
-    // when
+  void shouldNotReadIfSeekIsHigherThanLast() {
+    // given
     for (int i = 1; i <= ENTRIES; i++) {
       journal.append(i, data).index();
     }
-    reader.seek(99L);
+
+    // when
+    final long nextIndex = reader.seek(99L);
 
     // then
+    assertThat(nextIndex).isEqualTo(journal.getLastIndex() + 1);
     assertThat(reader.hasNext()).isFalse();
   }
 
   @Test
-  public void shouldReadAppendedDataAfterSeek() {
-    // when
+  void shouldReadAppendedDataAfterSeek() {
+    // given
     for (int i = 0; i < ENTRIES; i++) {
       journal.append(data).index();
     }
 
-    reader.seek(99L);
+    // when
+    final long nextIndex = reader.seek(99L);
     assertThat(reader.hasNext()).isFalse();
     journal.append(data);
 
     // then
+    assertThat(nextIndex).isEqualTo(journal.getLastIndex());
     assertThat(reader.hasNext()).isTrue();
   }
 
   @Test
-  public void shouldSeekToAsqn() {
-    // given
-    long asqn = 10;
-    JournalRecord lastRecordWritten = null;
-    for (int i = 1; i <= ENTRIES; i++) {
-      final JournalRecord record = journal.append(asqn++, data);
-      assertThat(record.index()).isEqualTo(i);
-      lastRecordWritten = record;
+  void shouldSeekToAsqn() {
+    // given that all records with index i will have an asqn of startAsqn + i
+    final long startAsqn = 10;
+    for (int i = 0; i < ENTRIES; i++) {
+      assertThat(journal.append(startAsqn + i, data)).isNotNull();
     }
     assertThat(reader.hasNext()).isTrue();
 
     // when
-    reader.seekToAsqn(lastRecordWritten.asqn() - 2);
+    final long nextIndex = reader.seekToAsqn(startAsqn + 2);
 
     // then
+    assertThat(nextIndex).isEqualTo(3);
     assertThat(reader.hasNext()).isTrue();
-    assertThat(reader.next().asqn()).isEqualTo(lastRecordWritten.asqn() - 2);
+
+    final JournalRecord next = reader.next();
+    assertThat(next.index()).isEqualTo(nextIndex);
+    assertThat(next.asqn()).isEqualTo(startAsqn + 2);
   }
 
   @Test
-  public void shouldSeekToHighestAsqnLowerThanProvidedAsqn() {
+  void shouldSeekToHighestAsqnLowerThanProvidedAsqn() {
     // given
     final var expectedRecord = journal.append(1, data);
     journal.append(5, data);
 
     // when
-    reader.seekToAsqn(4);
+    final long nextIndex = reader.seekToAsqn(4);
 
     // then
+    assertThat(nextIndex).isEqualTo(expectedRecord.index());
     assertThat(reader.hasNext()).isTrue();
     final var record = reader.next();
     assertThat(record.index()).isEqualTo(expectedRecord.index());
@@ -182,16 +195,17 @@ public class JournalReaderTest {
 
   @Test
   @Disabled("https://github.com/zeebe-io/zeebe/issues/6358")
-  public void shouldSeekToHighestLowerAsqnEvenIfRecordHasNone() {
+  void shouldSeekToHighestLowerAsqnEvenIfRecordHasNone() {
     // given
     final var expectedRecord = journal.append(1, data);
     journal.append(data);
     journal.append(5, data);
 
     // when
-    reader.seekToAsqn(3);
+    final long nextIndex = reader.seekToAsqn(3);
 
     // then
+    assertThat(nextIndex).isEqualTo(expectedRecord.index());
     assertThat(reader.hasNext()).isTrue();
     final var record = reader.next();
     assertThat(record.index()).isEqualTo(expectedRecord.index());
@@ -201,15 +215,16 @@ public class JournalReaderTest {
   }
 
   @Test
-  public void shouldSeekToNonExistentAsqn() {
+  void shouldSeekToNonExistentAsqn() {
     // given
     final var expectedRecord = journal.append(data);
     journal.append(5, data);
 
     // when
-    reader.seekToAsqn(1);
+    final long nextIndex = reader.seekToAsqn(1);
 
     // then
+    assertThat(nextIndex).isEqualTo(expectedRecord.index());
     assertThat(reader.hasNext()).isTrue();
     final var record = reader.next();
     assertThat(record.index()).isEqualTo(expectedRecord.index());
@@ -221,60 +236,64 @@ public class JournalReaderTest {
   }
 
   @Test
-  public void shouldSeekToFirstIfLowerThanFirst() {
-    // when
-    long firstIndex = -1;
+  void shouldSeekToFirstIfLowerThanFirst() {
+    // given
     for (int i = 1; i <= ENTRIES; i++) {
-      final long index = journal.append(i, data).index();
-
-      if (firstIndex == -1) {
-        firstIndex = index;
-      }
+      journal.append(i, data).index();
     }
-    reader.seek(-1);
+
+    // when
+    final long nextIndex = reader.seek(-1);
 
     // then
+    assertThat(nextIndex).isEqualTo(journal.getFirstIndex());
     assertThat(reader.hasNext()).isTrue();
     final JournalRecord record = reader.next();
     assertThat(record.asqn()).isEqualTo(1);
-    assertThat(record.index()).isEqualTo(firstIndex);
+    assertThat(record.index()).isEqualTo(nextIndex);
     assertThat(record.data()).isEqualTo(data);
   }
 
   @Test
-  public void shouldSeekAfterTruncate() {
-    // when
+  void shouldSeekAfterTruncate() {
+    // given
     long lastIndex = -1;
     for (int i = 1; i <= ENTRIES; i++) {
       lastIndex = journal.append(i, data).index();
     }
+
+    // when
     journal.deleteAfter(lastIndex - 2);
-    reader.seek(lastIndex - 2);
+    final long nextIndex = reader.seek(lastIndex - 2);
 
     // then
+    assertThat(nextIndex).isEqualTo(lastIndex - 2);
     assertThat(reader.hasNext()).isTrue();
-    assertThat(reader.next().index()).isEqualTo(lastIndex - 2);
+    assertThat(reader.next().index()).isEqualTo(nextIndex);
     assertThat(reader.hasNext()).isFalse();
   }
 
   @Test
-  public void shouldSeekAfterCompact() {
-    // when
+  void shouldSeekAfterCompact() {
+    // given
     journal.append(1, data).index();
     journal.append(2, data).index();
     journal.append(3, data).index();
+
+    // when
     journal.deleteUntil(3);
-    reader.seek(1);
+    final long nextIndex = reader.seek(1);
 
     // then
+    assertThat(nextIndex).isEqualTo(3);
     final JournalRecord next = reader.next();
-    assertThat(next.index()).isEqualTo(3);
+    assertThat(next.index()).isEqualTo(nextIndex);
     assertThat(next.asqn()).isEqualTo(3);
     assertThat(reader.hasNext()).isFalse();
   }
 
   @Test
-  public void shouldSeekToIndex() {
+  void shouldSeekToIndex() {
     // given
     long asqn = 1;
     JournalRecord lastRecordWritten = null;
@@ -286,10 +305,46 @@ public class JournalReaderTest {
     assertThat(reader.hasNext()).isTrue();
 
     // when - compact up to the first index of segment 3
-    reader.seek(lastRecordWritten.index() - 1);
+    final long nextIndex = reader.seek(lastRecordWritten.index() - 1);
 
     // then
     assertThat(reader.hasNext()).isTrue();
-    assertThat(reader.next().index()).isEqualTo(lastRecordWritten.index() - 1);
+    assertThat(reader.next().index()).isEqualTo(nextIndex);
+  }
+
+  @Test
+  void shouldSeekToFirstWithEmptyJournal() {
+    // when
+    final long nextIndex = reader.seekToFirst();
+
+    // then
+    assertThat(nextIndex).isEqualTo(journal.getFirstIndex());
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  void shouldSeekToLastWithEmptyJournal() {
+    // when
+    final long nextIndex = reader.seekToLast();
+
+    // then
+    assertThat(nextIndex).isEqualTo(journal.getLastIndex());
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  void shouldSeekToEndWhenNoValidAsqnFound() {
+    // given
+    for (int i = 0; i < ENTRIES; i++) {
+      journal.append(data);
+    }
+
+    // when
+    final long nextIndex = reader.seekToAsqn(32);
+
+    // then
+    assertThat(nextIndex).isEqualTo(journal.getLastIndex());
+    assertThat(reader.hasNext()).isTrue();
+    assertThat(reader.next().asqn()).isEqualTo(ASQN_IGNORE);
   }
 }

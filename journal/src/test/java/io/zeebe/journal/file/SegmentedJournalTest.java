@@ -245,7 +245,7 @@ public class SegmentedJournalTest {
     journal.deleteAfter(lastIndex - 1);
 
     // then
-    assertThat(reader.seek(lastIndex - 1)).isTrue();
+    assertThat(reader.seek(lastIndex - 1)).isEqualTo(lastIndex - 1);
     assertThat(reader.next().index()).isEqualTo(lastIndex - 1);
     assertThat(journal.getLastIndex()).isEqualTo(lastIndex - 1);
   }

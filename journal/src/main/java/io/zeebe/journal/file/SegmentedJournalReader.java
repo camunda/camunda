@@ -84,7 +84,7 @@ class SegmentedJournalReader implements JournalReader {
   }
 
   @Override
-  public boolean seek(final long index) {
+  public long seek(final long index) {
     // If the current segment is not open, it has been replaced. Reset the segments.
     if (!currentSegment.isOpen()) {
       seekToFirst();
@@ -97,32 +97,40 @@ class SegmentedJournalReader implements JournalReader {
     } else {
       currentReader.seek(index);
     }
-    return getNextIndex() == index;
+
+    return getNextIndex();
   }
 
   @Override
-  public void seekToFirst() {
+  public long seekToFirst() {
     replaceCurrentSegment(journal.getFirstSegment());
     previousEntry = null;
+    return journal.getFirstIndex();
   }
 
   @Override
-  public void seekToLast() {
+  public long seekToLast() {
     replaceCurrentSegment(journal.getLastSegment());
     seek(journal.getLastIndex());
+
+    return journal.getLastIndex();
   }
 
   @Override
-  public boolean seekToAsqn(final long asqn) {
+  public long seekToAsqn(final long asqn) {
     final var journalIndex = journal.getJournalIndex();
     final var index = journalIndex.lookupAsqn(asqn);
+
+    // depending on the type of index, it's possible there is no ASQN indexed, in which case start
+    // from the beginning
     if (index == null) {
-      // No index found - so seek to first
       seekToFirst();
     } else {
       seek(index);
     }
 
+    // potential beneficiary of a peek() call, which would avoid the duplicate seek or
+    // being at the second position if the first entry has a greater ASQN
     JournalRecord record = null;
     while (hasNext()) {
       final var currentRecord = next();
@@ -132,12 +140,17 @@ class SegmentedJournalReader implements JournalReader {
         break;
       }
     }
-    if (record != null && record.asqn() <= asqn) {
-      // This is needed so that the next() returns the correct record
-      // TODO: Remove the duplicate seek. https://github.com/zeebe-io/zeebe/issues/6223
-      return seek(record.index());
+
+    // if the journal was empty, the reader will be at the beginning of the log
+    // if the journal only contained entries with ASQN greater than the one requested, it will be at
+    // the second entry (as it has read the first one)
+    if (record == null) {
+      return getNextIndex();
     }
-    return false;
+
+    // This is needed so that the next() returns the correct record
+    // TODO: Remove the duplicate seek. https://github.com/zeebe-io/zeebe/issues/6223
+    return seek(record.index());
   }
 
   @Override
@@ -149,7 +162,8 @@ class SegmentedJournalReader implements JournalReader {
   /** Rewinds the journal to the given index. */
   private void rewind(final long index) {
     if (currentSegment.index() >= index) {
-      final JournalSegment segment = journal.getSegment(index - 1);
+      final long lookupIndex = index == Long.MIN_VALUE ? index : index - 1; // avoid underflow
+      final JournalSegment segment = journal.getSegment(lookupIndex);
       if (segment != null) {
         replaceCurrentSegment(segment);
       }
@@ -188,6 +202,11 @@ class SegmentedJournalReader implements JournalReader {
   }
 
   private void replaceCurrentSegment(final JournalSegment nextSegment) {
+    if (currentSegment.equals(nextSegment)) {
+      currentReader.reset();
+      return;
+    }
+
     currentReader.close();
     currentSegment = nextSegment;
     currentReader = currentSegment.createReader();
