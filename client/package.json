@@ -80,7 +80,7 @@
     "prettier": "^2.2.1",
     "react-scripts": "4.0.2",
     "react-test-renderer": "^17.0.1",
-    "testcafe": "^1.10.1",
+    "testcafe": "^1.11.0",
     "testcafe-browser-provider-browserstack": "^1.13.1",
     "zeebe-node": "^0.26.0"
   },
