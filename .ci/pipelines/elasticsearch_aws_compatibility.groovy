@@ -164,8 +164,7 @@ pipeline {
         }
       }
     }
-      }
-    }
+  }
 
   post {
     changed {
@@ -180,4 +179,4 @@ pipeline {
       }
     }
   }
-
+}
