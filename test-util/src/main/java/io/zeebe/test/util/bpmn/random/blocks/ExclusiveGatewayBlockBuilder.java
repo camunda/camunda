@@ -131,16 +131,22 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
 
       final StepPickConditionCase that = (StepPickConditionCase) o;
 
-      if (!forkingGatewayId.equals(that.forkingGatewayId)) {
+      if (forkingGatewayId != null
+          ? !forkingGatewayId.equals(that.forkingGatewayId)
+          : that.forkingGatewayId != null) {
         return false;
       }
-      return edgeId.equals(that.edgeId);
+      if (edgeId != null ? !edgeId.equals(that.edgeId) : that.edgeId != null) {
+        return false;
+      }
+      return variables.equals(that.variables);
     }
 
     @Override
     public int hashCode() {
-      int result = forkingGatewayId.hashCode();
-      result = 31 * result + edgeId.hashCode();
+      int result = forkingGatewayId != null ? forkingGatewayId.hashCode() : 0;
+      result = 31 * result + (edgeId != null ? edgeId.hashCode() : 0);
+      result = 31 * result + variables.hashCode();
       return result;
     }
   }
@@ -166,12 +172,19 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
 
       final StepPickDefaultCase that = (StepPickDefaultCase) o;
 
-      return forkingGatewayId.equals(that.forkingGatewayId);
+      if (forkingGatewayId != null
+          ? !forkingGatewayId.equals(that.forkingGatewayId)
+          : that.forkingGatewayId != null) {
+        return false;
+      }
+      return variables.equals(that.variables);
     }
 
     @Override
     public int hashCode() {
-      return forkingGatewayId.hashCode();
+      int result = forkingGatewayId != null ? forkingGatewayId.hashCode() : 0;
+      result = 31 * result + variables.hashCode();
+      return result;
     }
   }
 

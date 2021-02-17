@@ -7,7 +7,6 @@
  */
 package io.zeebe.test.util.bpmn.random;
 
-import io.zeebe.test.util.bpmn.random.blocks.StepStartProcessInstance;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -21,7 +20,6 @@ public final class ExecutionPath {
 
   public ExecutionPath(final String processId, final ExecutionPathSegment pathSegment) {
     this.processId = processId;
-    steps.add(new StepStartProcessInstance(processId, pathSegment));
     steps.addAll(pathSegment.getSteps());
   }
 

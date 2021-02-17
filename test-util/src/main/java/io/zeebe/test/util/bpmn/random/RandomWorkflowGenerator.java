@@ -9,8 +9,8 @@ package io.zeebe.test.util.bpmn.random;
 
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.zeebe.test.util.bpmn.random.blocks.BlockSequenceBuilder.BlockSequenceBuilderFactory;
+import io.zeebe.test.util.bpmn.random.blocks.WorkflowBuilder;
 import java.io.File;
 import java.util.Optional;
 import java.util.Random;
@@ -20,11 +20,7 @@ public final class RandomWorkflowGenerator {
 
   private static final BlockSequenceBuilderFactory FACTORY = new BlockSequenceBuilderFactory();
 
-  private final BlockBuilder blockBuilder;
-
-  private final String startEventId;
-  private final String endEventId;
-  private final String processId;
+  private final WorkflowBuilder workflowBuilder;
 
   /**
    * Creates the random workflow generator
@@ -41,11 +37,6 @@ public final class RandomWorkflowGenerator {
 
     final IDGenerator idGenerator = new IDGenerator(0);
 
-    processId = "process_" + idGenerator.nextId();
-
-    startEventId = idGenerator.nextId();
-    endEventId = idGenerator.nextId();
-
     final ConstructionContext context =
         new ConstructionContext(
             random,
@@ -55,28 +46,23 @@ public final class RandomWorkflowGenerator {
             Optional.ofNullable(maxDepth).orElse(3),
             Optional.ofNullable(maxBranches).orElse(3),
             0);
-    blockBuilder = FACTORY.createBlockSequenceBuilder(context);
+
+    workflowBuilder = new WorkflowBuilder(context);
   }
 
   public BpmnModelInstance buildWorkflow() {
-
-    AbstractFlowNodeBuilder<?, ?> workflowWorkInProgress =
-        Bpmn.createExecutableProcess(processId).startEvent(startEventId);
-
-    workflowWorkInProgress = blockBuilder.buildFlowNodes(workflowWorkInProgress);
-
-    return workflowWorkInProgress.endEvent(endEventId).done();
+    return workflowBuilder.buildWorkflow();
   }
 
   public ExecutionPath findRandomExecutionPath(final long seed) {
-    return new ExecutionPath(processId, blockBuilder.findRandomExecutionPath(new Random(seed)));
+    return workflowBuilder.findRandomExecutionPath(new Random(seed));
   }
 
   // main method to test and debug this class
   public static void main(final String[] args) {
     final Random random = new Random();
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 10; i++) {
       System.out.println("Generating process " + i);
 
       final String id = "process" + i;
@@ -86,7 +72,7 @@ public final class RandomWorkflowGenerator {
 
       Bpmn.writeModelToFile(new File(id + ".bpmn"), builder.buildWorkflow());
 
-      for (int p = 0; p < 10; p++) {
+      for (int p = 0; p < 5; p++) {
         final ExecutionPath path = builder.findRandomExecutionPath(random.nextLong());
 
         System.out.println("Execution path " + p + " :" + path);
