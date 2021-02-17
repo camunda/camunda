@@ -75,12 +75,17 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
 
       final StepActivateAndCompleteJob that = (StepActivateAndCompleteJob) o;
 
-      return jobType.equals(that.jobType);
+      if (jobType != null ? !jobType.equals(that.jobType) : that.jobType != null) {
+        return false;
+      }
+      return variables.equals(that.variables);
     }
 
     @Override
     public int hashCode() {
-      return jobType.hashCode();
+      int result = jobType != null ? jobType.hashCode() : 0;
+      result = 31 * result + variables.hashCode();
+      return result;
     }
   }
 
@@ -106,12 +111,17 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
 
       final StepActivateAndFailJob that = (StepActivateAndFailJob) o;
 
-      return jobType.equals(that.jobType);
+      if (jobType != null ? !jobType.equals(that.jobType) : that.jobType != null) {
+        return false;
+      }
+      return variables.equals(that.variables);
     }
 
     @Override
     public int hashCode() {
-      return jobType.hashCode();
+      int result = jobType != null ? jobType.hashCode() : 0;
+      result = 31 * result + variables.hashCode();
+      return result;
     }
   }
 

@@ -8,15 +8,17 @@
 package io.zeebe.engine.util;
 
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.test.util.bpmn.random.AbstractExecutionStep;
 import io.zeebe.test.util.bpmn.random.blocks.ExclusiveGatewayBlockBuilder.StepPickConditionCase;
 import io.zeebe.test.util.bpmn.random.blocks.ExclusiveGatewayBlockBuilder.StepPickDefaultCase;
 import io.zeebe.test.util.bpmn.random.blocks.IntermediateMessageCatchEventBlockBuilder;
 import io.zeebe.test.util.bpmn.random.blocks.IntermediateMessageCatchEventBlockBuilder.StepPublishMessage;
+import io.zeebe.test.util.bpmn.random.blocks.MessageStartEventBuilder.StepPublishStartMessage;
+import io.zeebe.test.util.bpmn.random.blocks.NoneStartEventBuilder.StepStartProcessInstance;
 import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateAndCompleteJob;
 import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateAndFailJob;
-import io.zeebe.test.util.bpmn.random.blocks.StepStartProcessInstance;
 import io.zeebe.test.util.record.RecordingExporter;
 
 /** This class executes individual {@link AbstractExecutionStep} for a given workflow */
@@ -33,9 +35,12 @@ public class WorkflowExecutor {
     if (step instanceof StepStartProcessInstance) {
       final StepStartProcessInstance startProcess = (StepStartProcessInstance) step;
       createWorkflowInstance(startProcess);
+    } else if (step instanceof StepPublishStartMessage) {
+      final StepPublishStartMessage publishMessage = (StepPublishStartMessage) step;
+      publishStartMessage(publishMessage);
     } else if (step instanceof StepPublishMessage) {
       final StepPublishMessage publishMessage = (StepPublishMessage) step;
-      publicMessage(publishMessage);
+      publishMessage(publishMessage);
     } else if (step instanceof StepActivateAndCompleteJob) {
       final StepActivateAndCompleteJob activateAndCompleteJob = (StepActivateAndCompleteJob) step;
       activateAndCompleteJob(activateAndCompleteJob);
@@ -83,7 +88,7 @@ public class WorkflowExecutor {
     RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).await();
   }
 
-  private void publicMessage(final StepPublishMessage publishMessage) {
+  private void publishMessage(final StepPublishMessage publishMessage) {
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
         .withMessageName(publishMessage.getMessageName())
         .withCorrelationKey(IntermediateMessageCatchEventBlockBuilder.CORRELATION_KEY_VALUE)
@@ -93,6 +98,7 @@ public class WorkflowExecutor {
         .message()
         .withName(publishMessage.getMessageName())
         .withCorrelationKey(IntermediateMessageCatchEventBlockBuilder.CORRELATION_KEY_VALUE)
+        .withVariables(publishMessage.getVariables())
         .publish();
 
     /*
@@ -103,6 +109,20 @@ public class WorkflowExecutor {
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
         .withMessageName(publishMessage.getMessageName())
         .await();
+  }
+
+  private void publishStartMessage(final StepPublishStartMessage publishMessage) {
+    RecordingExporter.messageStartEventSubscriptionRecords(
+            MessageStartEventSubscriptionIntent.OPENED)
+        .withMessageName(publishMessage.getMessageName())
+        .await();
+
+    engineRule
+        .message()
+        .withName(publishMessage.getMessageName())
+        .withCorrelationKey("")
+        .withVariables(publishMessage.getVariables())
+        .publish();
   }
 
   private void createWorkflowInstance(final StepStartProcessInstance startProcess) {

@@ -82,12 +82,17 @@ public class IntermediateMessageCatchEventBlockBuilder implements BlockBuilder {
 
       final StepPublishMessage that = (StepPublishMessage) o;
 
-      return messageName.equals(that.messageName);
+      if (messageName != null ? !messageName.equals(that.messageName) : that.messageName != null) {
+        return false;
+      }
+      return variables.equals(that.variables);
     }
 
     @Override
     public int hashCode() {
-      return messageName.hashCode();
+      int result = messageName != null ? messageName.hashCode() : 0;
+      result = 31 * result + variables.hashCode();
+      return result;
     }
   }
 
