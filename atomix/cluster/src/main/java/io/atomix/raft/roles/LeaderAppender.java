@@ -287,7 +287,7 @@ final class LeaderAppender extends AbstractAppender {
   @Override
   protected boolean hasMoreEntries(final RaftMemberContext member) {
     // If the member's nextIndex is an entry in the local log then more entries can be sent.
-    return member.getLogReader().hasNext();
+    return member.hasNextEntry();
   }
 
   /** Handles a {@link io.atomix.raft.protocol.RaftResponse.Status#ERROR} response. */
@@ -347,7 +347,7 @@ final class LeaderAppender extends AbstractAppender {
 
     if (persistedSnapshot != null
         && member.getSnapshotIndex() < persistedSnapshot.getIndex()
-        && persistedSnapshot.getIndex() >= member.getLogReader().getCurrentIndex()) {
+        && persistedSnapshot.getIndex() >= member.getCurrentIndex()) {
       if (!member.canInstall()) {
         return;
       }
