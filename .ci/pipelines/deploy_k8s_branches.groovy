@@ -1,5 +1,8 @@
 #!/usr/bin/env groovy
 
+// https://github.com/camunda/jenkins-global-shared-library
+@Library('camunda-ci') _
+
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 def static GCLOUD_DOCKER_IMAGE() { return "gcr.io/google.com/cloudsdktool/cloud-sdk:alpine" }
@@ -47,7 +50,7 @@ pipeline {
   }
 
   options {
-    buildDiscarder(logRotator(numToKeepStr: '10'))
+    buildDiscarder(logRotator(numToKeepStr: '100'))
     timestamps()
     timeout(time: 15, unit: 'MINUTES')
   }
@@ -92,6 +95,26 @@ pipeline {
       post {
         always {
           archiveArtifacts artifacts: 'infra-core/rendered-templates/**/*'
+        }
+      }
+    }
+    stage('Update URLs in GitHub Status') {
+      steps {
+        script {
+          dir('zeebe-tasklist') {
+            SHA = org.camunda.helper.GitUtilities.getGitSha(this)
+          }
+        }
+        script {
+          dir('infra-core') {
+            hosts = sh(script: 'cat hosts.txt', returnStdout: true).trim()
+            def arr = hosts.split()
+            arr.each { host -> 
+              withCredentials([usernamePassword(credentialsId: 'github-zeebe-tasklist-app', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
+                org.camunda.helper.GitHubAPI.postCommitStatus("${GITHUB_ACCESS_TOKEN}", 'zeebe-io', 'zeebe-tasklist', "${SHA}", "${host}", 'success', "https://${host}", 'deployment url')
+              }
+            }
+          }
         }
       }
     }
