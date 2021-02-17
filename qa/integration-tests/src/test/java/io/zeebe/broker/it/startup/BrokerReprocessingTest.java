@@ -15,20 +15,17 @@ import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCompleted;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCreated;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCompleted;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCreated;
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.Assert.fail;
 
 import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
-import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.engine.processing.job.JobTimeoutTrigger;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -40,16 +37,15 @@ import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
-import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.WorkflowInstances;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -172,12 +168,7 @@ public final class BrokerReprocessingTest {
 
     // when
     reprocessingTrigger.accept(this);
-    clientRule
-        .getClient()
-        .newCompleteCommand(jobFoo.getKey())
-        .variables(NULL_VARIABLES)
-        .send()
-        .join();
+    completeJobWithKey(jobFoo.getKey());
 
     // then
     assertJobCompleted();
@@ -197,19 +188,13 @@ public final class BrokerReprocessingTest {
         .send()
         .join();
 
-    final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
-    clientRule.getClient().newWorker().jobType("foo").handler(recordingJobHandler).open();
-
-    waitUntil(() -> !recordingJobHandler.getHandledJobs().isEmpty());
+    final var activatedJobFoo = activateJob("foo");
 
     // when
     reprocessingTrigger.accept(this);
 
     awaitGateway();
-
-    final ActivatedJob jobEvent = recordingJobHandler.getHandledJobs().get(0);
-
-    clientRule.getClient().newCompleteCommand(jobEvent.getKey()).send().join();
+    clientRule.getClient().newCompleteCommand(activatedJobFoo.getKey()).send().join();
 
     // then
     assertJobCompleted();
@@ -232,41 +217,19 @@ public final class BrokerReprocessingTest {
         .send()
         .join();
 
-    clientRule
-        .getClient()
-        .newWorker()
-        .jobType("foo")
-        .handler(
-            (client, job) ->
-                client.newCompleteCommand(job.getKey()).variables(NULL_VARIABLES).send())
-        .open();
+    final var jobFoo = RecordingExporter.jobRecords(JobIntent.CREATED).withType("foo").getFirst();
+    completeJobWithKey(jobFoo.getKey());
 
-    final CountDownLatch latch = new CountDownLatch(1);
-    final JobWorker latchWorker =
-        clientRule
-            .getClient()
-            .newWorker()
-            .jobType("bar")
-            .handler((client, job) -> latch.countDown())
-            .open();
-    latch.await();
-    // close sync worker, to prevent reassignment after restart
-    latchWorker.close();
+    RecordingExporter.jobRecords(JobIntent.CREATED).withType("bar").getFirst();
+    var activatedJobBar = activateJob("bar");
 
     // when
     restartAction = () -> brokerRule.getClock().addTime(defaultJobTimeout);
     reprocessingTrigger.accept(this);
 
     awaitJobTimeout();
-
-    clientRule
-        .getClient()
-        .newWorker()
-        .jobType("bar")
-        .handler(
-            (client, job) ->
-                client.newCompleteCommand(job.getKey()).variables(NULL_VARIABLES).send())
-        .open();
+    activatedJobBar = activateJob("bar");
+    completeJobWithKey(activatedJobBar.getKey());
 
     // then
     assertJobCompleted("foo");
@@ -320,19 +283,7 @@ public final class BrokerReprocessingTest {
   public void shouldNotReceiveLockedJobAfterRestart() {
     // given
     clientRule.createSingleJob("foo");
-    RecordingExporter.jobRecords(JobIntent.CREATED).withType("foo").await();
-
-    TestUtil.doRepeatedly(
-            () ->
-                clientRule
-                    .getClient()
-                    .newActivateJobsCommand()
-                    .jobType("foo")
-                    .maxJobsToActivate(1)
-                    .send()
-                    .join()
-                    .getJobs())
-        .until(jobs -> !jobs.isEmpty());
+    activateJob("foo");
 
     // when
     reprocessingTrigger.accept(this);
@@ -356,33 +307,18 @@ public final class BrokerReprocessingTest {
   public void shouldReceiveLockExpiredJobAfterRestart() {
     // given
     clientRule.createSingleJob("foo");
-
-    final RecordingJobHandler jobHandler = new RecordingJobHandler();
-    final JobWorker subscription =
-        clientRule.getClient().newWorker().jobType("foo").handler(jobHandler).open();
-
     final Duration defaultJobTimeout =
         clientRule.getClient().getConfiguration().getDefaultJobTimeout();
-
-    waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
-    subscription.close();
+    activateJob("foo");
 
     // when
     restartAction = () -> brokerRule.getClock().addTime(defaultJobTimeout);
     reprocessingTrigger.accept(this);
-
     awaitJobTimeout();
-
-    jobHandler.clear();
-
-    clientRule.getClient().newWorker().jobType("foo").handler(jobHandler).open();
+    final var activatedJob = activateJob("foo");
 
     // then
-    waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
-
-    final ActivatedJob jobEvent = jobHandler.getHandledJobs().get(0);
-    clientRule.getClient().newCompleteCommand(jobEvent.getKey()).send().join();
-
+    completeJobWithKey(activatedJob.getKey());
     assertJobCompleted();
   }
 
@@ -676,6 +612,29 @@ public final class BrokerReprocessingTest {
         .join();
   }
 
+  private void completeJobWithKey(final long key) {
+    clientRule.getClient().newCompleteCommand(key).variables(NULL_VARIABLES).send().join();
+  }
+
+  private ActivatedJob activateJob(final String jobType) {
+    RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).await();
+    return Awaitility.await("activateJob")
+        .until(
+            () ->
+                clientRule
+                    .getClient()
+                    .newActivateJobsCommand()
+                    .jobType(jobType)
+                    .maxJobsToActivate(1)
+                    .send()
+                    .join()
+                    .getJobs(),
+            jobs -> !jobs.isEmpty())
+        .stream()
+        .findFirst()
+        .orElseThrow();
+  }
+
   protected void deleteSnapshotsAndRestart() {
     brokerRule.stopBroker();
 
@@ -713,15 +672,16 @@ public final class BrokerReprocessingTest {
   }
 
   private void awaitGateway() {
-    TestUtil.waitUntil(
-        () -> {
-          try {
-            clientRule.getClient().newTopologyRequest().send().join();
-            return true;
-          } catch (final Exception e) {
-            return false;
-          }
-        });
+    Awaitility.await("awaitGateway")
+        .until(
+            () -> {
+              try {
+                clientRule.getClient().newTopologyRequest().send().join();
+                return true;
+              } catch (final Exception e) {
+                return false;
+              }
+            });
   }
 
   private void awaitJobTimeout() {
@@ -736,13 +696,14 @@ public final class BrokerReprocessingTest {
             // https://github.com/zeebe-io/zeebe/issues/1800
             .plus(defaultJobTimeout);
 
-    TestUtil.waitUntil(
-        () -> {
-          clock.addTime(pollingInterval);
-          // not using RecordingExporter.jobRecords cause it is blocking
-          return RecordingExporter.getRecords().stream()
-              .filter(r -> r.getValueType() == ValueType.JOB)
-              .anyMatch(r -> r.getIntent() == JobIntent.TIMED_OUT);
-        });
+    Awaitility.await("awaitJobTimeout")
+        .until(
+            () -> {
+              clock.addTime(pollingInterval);
+              // not using RecordingExporter.jobRecords cause it is blocking
+              return RecordingExporter.getRecords().stream()
+                  .filter(r -> r.getValueType() == ValueType.JOB)
+                  .anyMatch(r -> r.getIntent() == JobIntent.TIMED_OUT);
+            });
   }
 }
