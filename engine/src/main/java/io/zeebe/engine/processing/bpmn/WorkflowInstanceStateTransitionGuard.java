@@ -126,7 +126,7 @@ public final class WorkflowInstanceStateTransitionGuard {
       final WorkflowInstanceIntent expectedState,
       final WorkflowInstanceIntent... otherExpected) {
     final var currentState = elementInstance.getState();
-    if (expectedState != currentState || !Arrays.asList(otherExpected).contains(currentState)) {
+    if (expectedState != currentState && !Arrays.asList(otherExpected).contains(currentState)) {
       return Either.left(
           String.format(
               "Expected element instance to be in state '%s' or one of '%s' but was '%s'.",
