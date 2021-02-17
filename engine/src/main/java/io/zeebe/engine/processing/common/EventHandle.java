@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.common;
 
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.instance.ElementInstance;
@@ -32,7 +33,7 @@ public final class EventHandle {
   }
 
   public boolean triggerEvent(
-      final TypedStreamWriter streamWriter,
+      final TypedEventWriter eventWriter,
       final ElementInstance eventScopeInstance,
       final ExecutableFlowElement catchEvent,
       final DirectBuffer variables) {
@@ -65,7 +66,7 @@ public final class EventHandle {
         eventOccurredRecord.wrap(eventScopeInstance.getValue());
       }
 
-      streamWriter.appendFollowUpEvent(
+      eventWriter.appendFollowUpEvent(
           eventOccurredKey, WorkflowInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
     }
 

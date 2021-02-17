@@ -23,6 +23,7 @@ import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import org.agrona.DirectBuffer;
 
+@Deprecated // TODO (#6174) delete after refactoring incident processors
 public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> {
 
   private final IncidentRecord incidentEvent = new IncidentRecord();

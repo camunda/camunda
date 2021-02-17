@@ -10,7 +10,7 @@ package io.zeebe.engine.processing.common;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.immutable.WorkflowState;
@@ -47,24 +47,28 @@ public final class ErrorEventHandler {
    *
    * @param errorCode the error code of the error event
    * @param instance the instance there the event propagation starts
-   * @param streamWriter the writer to be used for writing the followup event
+   * @param eventWriter the writer to be used for writing the followup event
    * @return {@code true} if the error event is thrown and caught by an catch event
    */
   public boolean throwErrorEvent(
       final DirectBuffer errorCode,
       final ElementInstance instance,
-      final TypedStreamWriter streamWriter) {
+      final TypedEventWriter eventWriter) {
 
     final var foundCatchEvent = findCatchEvent(errorCode, instance);
     if (foundCatchEvent != null) {
 
       eventHandle.triggerEvent(
-          streamWriter, foundCatchEvent.instance, foundCatchEvent.catchEvent, NO_VARIABLES);
+          eventWriter, foundCatchEvent.instance, foundCatchEvent.catchEvent, NO_VARIABLES);
 
       return true;
     }
 
     return false;
+  }
+
+  public boolean hasCatchEvent(final DirectBuffer errorCode, final ElementInstance instance) {
+    return findCatchEvent(errorCode, instance) != null;
   }
 
   private CatchEventTuple findCatchEvent(final DirectBuffer errorCode, ElementInstance instance) {

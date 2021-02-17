@@ -7,7 +7,6 @@
  */
 package io.zeebe.engine.processing.incident;
 
-import io.zeebe.engine.processing.job.JobErrorThrownProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.state.ZeebeState;
@@ -20,14 +19,13 @@ public final class IncidentEventProcessors {
   public static void addProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final ZeebeState zeebeState,
-      final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor,
-      final JobErrorThrownProcessor jobErrorThrownProcessor) {
+      final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor) {
     typedRecordProcessors
         .onCommand(
             ValueType.INCIDENT, IncidentIntent.CREATE, new CreateIncidentProcessor(zeebeState))
         .onCommand(
             ValueType.INCIDENT,
             IncidentIntent.RESOLVE,
-            new ResolveIncidentProcessor(zeebeState, bpmnStreamProcessor, jobErrorThrownProcessor));
+            new ResolveIncidentProcessor(zeebeState, bpmnStreamProcessor));
   }
 }

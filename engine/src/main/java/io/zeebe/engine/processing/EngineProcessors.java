@@ -19,7 +19,6 @@ import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProc
 import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
 import io.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
 import io.zeebe.engine.processing.incident.IncidentEventProcessors;
-import io.zeebe.engine.processing.job.JobErrorThrownProcessor;
 import io.zeebe.engine.processing.job.JobEventProcessors;
 import io.zeebe.engine.processing.message.MessageEventProcessors;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -88,12 +87,10 @@ public final class EngineProcessors {
             catchEventBehavior,
             writers);
 
-    final JobErrorThrownProcessor jobErrorThrownProcessor =
-        addJobProcessors(
-            zeebeState, typedRecordProcessors, onJobsAvailableCallback, maxFragmentSize, writers);
+    addJobProcessors(
+        zeebeState, typedRecordProcessors, onJobsAvailableCallback, maxFragmentSize, writers);
 
-    addIncidentProcessors(
-        zeebeState, bpmnStreamProcessor, typedRecordProcessors, jobErrorThrownProcessor, writers);
+    addIncidentProcessors(zeebeState, bpmnStreamProcessor, typedRecordProcessors, writers);
 
     return typedRecordProcessors;
   }
@@ -167,19 +164,17 @@ public final class EngineProcessors {
       final ZeebeState zeebeState,
       final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
-      final JobErrorThrownProcessor jobErrorThrownProcessor,
       final Writers writers) {
-    IncidentEventProcessors.addProcessors(
-        typedRecordProcessors, zeebeState, bpmnStreamProcessor, jobErrorThrownProcessor);
+    IncidentEventProcessors.addProcessors(typedRecordProcessors, zeebeState, bpmnStreamProcessor);
   }
 
-  private static JobErrorThrownProcessor addJobProcessors(
+  private static void addJobProcessors(
       final ZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
       final Consumer<String> onJobsAvailableCallback,
       final int maxFragmentSize,
       final Writers writers) {
-    return JobEventProcessors.addJobProcessors(
+    JobEventProcessors.addJobProcessors(
         typedRecordProcessors, zeebeState, onJobsAvailableCallback, maxFragmentSize);
   }
 
