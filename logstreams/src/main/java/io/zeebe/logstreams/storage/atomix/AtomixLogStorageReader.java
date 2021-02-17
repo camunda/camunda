@@ -151,13 +151,6 @@ public final class AtomixLogStorageReader implements LogStorageReader {
    * @param index index to seek to
    */
   public Optional<Indexed<ZeebeEntry>> findEntry(final long index) {
-    if (reader.getCurrentIndex() == index) {
-      final var entry = reader.getCurrentEntry();
-      if (entry != null && entry.type().equals(ZeebeEntry.class)) {
-        return Optional.of(reader.getCurrentEntry().cast());
-      }
-    }
-
     // in the future, reset/seek to the same index will be a NOOP so we can just call it all the
     // time; right now it's a bit slow, but we will immediately implement the new journal so this
     // is fine
