@@ -81,7 +81,13 @@ public class WorkflowExecutor {
         .activate()
         .getValue()
         .getJobKeys()
-        .forEach(jobKey -> engineRule.job().withKey(jobKey).withRetries(2).fail());
+        .forEach(
+            jobKey -> {
+              if (activateAndFailJob.isUpdateRetries()) {
+                engineRule.job().withKey(jobKey).withRetries(5).updateRetries();
+              }
+              engineRule.job().withKey(jobKey).withRetries(1).fail();
+            });
   }
 
   private void waitForJobToBeCreated(final String jobType) {

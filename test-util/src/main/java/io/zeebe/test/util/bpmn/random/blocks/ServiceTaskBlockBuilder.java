@@ -45,7 +45,8 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
     if (random.nextBoolean()) {
-      result.append(new StepActivateAndFailJob(jobTypeId));
+      final boolean updateRetries = random.nextBoolean();
+      result.append(new StepActivateAndFailJob(jobTypeId, updateRetries));
     }
 
     result.append(new StepActivateAndCompleteJob(jobTypeId));
@@ -91,13 +92,19 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
 
   public static final class StepActivateAndFailJob extends AbstractExecutionStep {
     private final String jobType;
+    private final boolean updateRetries;
 
-    public StepActivateAndFailJob(final String jobType) {
+    public StepActivateAndFailJob(final String jobType, final boolean updateRetries) {
       this.jobType = jobType;
+      this.updateRetries = updateRetries;
     }
 
     public String getJobType() {
       return jobType;
+    }
+
+    public boolean isUpdateRetries() {
+      return updateRetries;
     }
 
     @Override
@@ -111,6 +118,9 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
 
       final StepActivateAndFailJob that = (StepActivateAndFailJob) o;
 
+      if (updateRetries != that.updateRetries) {
+        return false;
+      }
       if (jobType != null ? !jobType.equals(that.jobType) : that.jobType != null) {
         return false;
       }
@@ -120,6 +130,7 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
     @Override
     public int hashCode() {
       int result = jobType != null ? jobType.hashCode() : 0;
+      result = 31 * result + (updateRetries ? 1 : 0);
       result = 31 * result + variables.hashCode();
       return result;
     }
