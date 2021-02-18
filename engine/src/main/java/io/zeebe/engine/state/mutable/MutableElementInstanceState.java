@@ -13,6 +13,7 @@ import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import java.util.function.Consumer;
 
 public interface MutableElementInstanceState extends ElementInstanceState {
 
@@ -24,6 +25,8 @@ public interface MutableElementInstanceState extends ElementInstanceState {
   void removeInstance(long key);
 
   void updateInstance(ElementInstance scopeInstance);
+
+  void updateInstance(long key, Consumer<ElementInstance> modifier);
 
   void consumeToken(long scopeKey);
 

@@ -163,17 +163,19 @@ public final class ExclusiveGatewayTest {
 
     List<Record<WorkflowInstanceRecordValue>> gateWays =
         RecordingExporter.workflowInstanceRecords()
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withIntent(WorkflowInstanceIntent.ACTIVATE_ELEMENT)
             .withElementType(BpmnElementType.EXCLUSIVE_GATEWAY)
             .withWorkflowInstanceKey(workflowInstance1)
             .limit(2)
             .asList();
 
+    // assert that gateway activation originates from sequence flow taken and that the correct flow
+    // was taken
     assertThat(gateWays.get(0).getSourceRecordPosition())
         .isEqualTo(sequenceFlows.get(0).getPosition());
-    assertThat(sequenceFlows.get(1).getValue().getElementId()).isEqualTo("s1");
     assertThat(gateWays.get(1).getSourceRecordPosition())
         .isEqualTo(sequenceFlows.get(1).getPosition());
+    assertThat(sequenceFlows.get(1).getValue().getElementId()).isEqualTo("s1");
 
     // when
     final long workflowInstance2 =
@@ -188,7 +190,7 @@ public final class ExclusiveGatewayTest {
 
     gateWays =
         RecordingExporter.workflowInstanceRecords()
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withIntent(WorkflowInstanceIntent.ACTIVATE_ELEMENT)
             .withElementType(BpmnElementType.EXCLUSIVE_GATEWAY)
             .withWorkflowInstanceKey(workflowInstance2)
             .limit(2)
@@ -196,9 +198,9 @@ public final class ExclusiveGatewayTest {
 
     assertThat(gateWays.get(0).getSourceRecordPosition())
         .isEqualTo(sequenceFlows.get(0).getPosition());
-    assertThat(sequenceFlows.get(1).getValue().getElementId()).isEqualTo("s2");
     assertThat(gateWays.get(1).getSourceRecordPosition())
         .isEqualTo(sequenceFlows.get(1).getPosition());
+    assertThat(sequenceFlows.get(1).getValue().getElementId()).isEqualTo("s2");
   }
 
   @Test
@@ -235,6 +237,7 @@ public final class ExclusiveGatewayTest {
     assertThat(workflowEvents)
         .extracting(Record::getIntent)
         .containsExactly(
+            WorkflowInstanceIntent.ACTIVATE_ELEMENT,
             WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,

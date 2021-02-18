@@ -22,6 +22,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class DbElementInstanceState implements MutableElementInstanceState {
@@ -166,6 +167,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   @Override
   public void updateInstance(final ElementInstance scopeInstance) {
     writeElementInstance(scopeInstance);
+  }
+
+  @Override
+  public void updateInstance(final long key, final Consumer<ElementInstance> modifier) {
+    final var scopeInstance = getInstance(key);
+    modifier.accept(scopeInstance);
+    updateInstance(scopeInstance);
   }
 
   @Override

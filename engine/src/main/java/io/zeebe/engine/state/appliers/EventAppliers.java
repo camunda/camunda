@@ -48,6 +48,9 @@ public final class EventAppliers implements EventApplier {
 
   public EventAppliers(final ZeebeState state) {
     register(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+        new WorkflowInstanceElementActivatingApplier(state));
+    register(
         WorkflowInstanceIntent.ELEMENT_ACTIVATED,
         new WorkflowInstanceElementActivatedApplier(state));
 

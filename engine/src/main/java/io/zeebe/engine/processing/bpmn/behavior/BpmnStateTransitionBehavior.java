@@ -53,6 +53,7 @@ public final class BpmnStateTransitionBehavior {
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp,
       final Writers writers) {
+    // todo (@korthout): replace streamWriter by writers
     this.streamWriter = streamWriter;
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
@@ -62,18 +63,24 @@ public final class BpmnStateTransitionBehavior {
     stateWriter = writers.state();
   }
 
+  /** @return context with updated intent */
   public BpmnElementContext transitionToActivating(final BpmnElementContext context) {
     return transitionTo(context, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
   }
 
-  public void transitionToActivated(final BpmnElementContext context) {
-
-    transitionTo(context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    stateTransitionGuard.registerStateTransition(context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+  /** @return context with updated intent */
+  public BpmnElementContext transitionToActivated(final BpmnElementContext context) {
+    final BpmnElementContext transitionedContext =
+        transitionTo(context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      stateTransitionGuard.registerStateTransition(
+          context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    }
     metrics.elementInstanceActivated(context.getBpmnElementType());
+    return transitionedContext;
   }
 
+  /** @return context with updated intent */
   public BpmnElementContext transitionToCompleting(final BpmnElementContext context) {
     final var transitionedContext =
         transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
@@ -92,6 +99,7 @@ public final class BpmnStateTransitionBehavior {
     metrics.elementInstanceCompleted(context.getBpmnElementType());
   }
 
+  /** @return context with updated intent */
   public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
     final var transitionedContext =
         transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATING);
@@ -184,11 +192,16 @@ public final class BpmnStateTransitionBehavior {
 
     final var elementInstanceKey = keyGenerator.nextKey();
 
-    streamWriter.appendFollowUpEvent(
-        elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, elementInstanceRecord);
+    if (MigratedStreamProcessors.isMigrated(element.getElementType())) {
+      streamWriter.appendFollowUpCommand(
+          elementInstanceKey, WorkflowInstanceIntent.ACTIVATE_ELEMENT, elementInstanceRecord);
+    } else {
+      streamWriter.appendFollowUpEvent(
+          elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, elementInstanceRecord);
 
-    stateBehavior.createElementInstanceInFlowScope(
-        context, elementInstanceKey, elementInstanceRecord);
+      stateBehavior.createElementInstanceInFlowScope(
+          context, elementInstanceKey, elementInstanceRecord);
+    }
   }
 
   /**
