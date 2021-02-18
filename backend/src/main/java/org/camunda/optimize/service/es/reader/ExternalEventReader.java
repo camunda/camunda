@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
@@ -23,6 +24,8 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.query.AbstractQueryBuilder;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -41,19 +44,23 @@ import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.DESC;
+import static org.camunda.optimize.service.es.schema.index.events.EventIndex.GROUP;
 import static org.camunda.optimize.service.es.schema.index.events.EventIndex.N_GRAM_FIELD;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_NULLS_FIRST;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_NULLS_LAST;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.prefixQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.search.sort.SortOrder.ASC;
 
 @RequiredArgsConstructor
@@ -84,6 +91,16 @@ public class ExternalEventReader {
     return getPageOfEventsSortedByIngestionTimestamp(timestampQuery, limit);
   }
 
+  public List<EventDto> getEventsIngestedAfterForGroups(final Long ingestTimestamp, final int limit,
+                                                        final List<String> groups) {
+    log.debug("Fetching events that where ingested after {} for groups {}", ingestTimestamp, groups);
+
+    final BoolQueryBuilder query = buildGroupFilterQuery(groups)
+      .must(rangeQuery(EventIndex.INGESTION_TIMESTAMP).gt(ingestTimestamp));
+
+    return getPageOfEventsSortedByIngestionTimestamp(query, limit);
+  }
+
   public List<EventDto> getEventsIngestedAt(final Long ingestTimestamp) {
     log.debug("Fetching events that where ingested at {}", ingestTimestamp);
 
@@ -94,11 +111,50 @@ public class ExternalEventReader {
     return getPageOfEventsSortedByIngestionTimestamp(timestampQuery, MAX_RESPONSE_SIZE_LIMIT);
   }
 
+  public List<EventDto> getEventsIngestedAtForGroups(final Long ingestTimestamp, final List<String> groups) {
+    log.debug("Fetching events that where ingested at {} for groups {}", ingestTimestamp, groups);
+
+    final BoolQueryBuilder query = buildGroupFilterQuery(groups)
+      .must(rangeQuery(EventIndex.INGESTION_TIMESTAMP)
+              .lte(ingestTimestamp)
+              .gte(ingestTimestamp));
+
+    return getPageOfEventsSortedByIngestionTimestamp(query, MAX_RESPONSE_SIZE_LIMIT);
+  }
+
   public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestamps() {
     log.debug("Fetching min and max timestamp for ingested external events");
+    return getMinAndMaxIngestedTimestampsForQuery(matchAllQuery());
+  }
 
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForGroups(
+    final List<String> groups) {
+    log.debug("Fetching min and max timestamp for ingested external events in groups: {}", groups);
+    return getMinAndMaxIngestedTimestampsForQuery(buildGroupFilterQuery(groups));
+  }
+
+  private BoolQueryBuilder buildGroupFilterQuery(final List<String> groups) {
+    final BoolQueryBuilder groupsQuery = boolQuery();
+    final List<String> nonNullGroups = groups.stream()
+      .filter(Objects::nonNull)
+      .collect(Collectors.toList());
+    final boolean includeNull = groups.size() > nonNullGroups.size();
+    final BoolQueryBuilder groupFilterQuery = boolQuery().minimumShouldMatch(1);
+    if (!nonNullGroups.isEmpty()) {
+      groupFilterQuery.should(termsQuery(GROUP, nonNullGroups));
+    }
+    if (includeNull) {
+      groupFilterQuery.should(boolQuery().mustNot(existsQuery(GROUP)));
+    }
+    if (!CollectionUtils.isEmpty(groupFilterQuery.should())) {
+      groupsQuery.filter().add(groupFilterQuery);
+    }
+    return groupsQuery;
+  }
+
+  private Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForQuery(AbstractQueryBuilder<?> query) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(matchAllQuery())
+      .query(query)
       .fetchSource(false)
       .aggregation(AggregationBuilders.min(MIN_AGG).field(EventIndex.INGESTION_TIMESTAMP))
       .aggregation(AggregationBuilders.max(MAX_AGG).field(EventIndex.INGESTION_TIMESTAMP))
@@ -221,7 +277,8 @@ public class ExternalEventReader {
     }
   }
 
-  private List<EventDto> getPageOfEventsSortedByIngestionTimestamp(final QueryBuilder query, final int limit) {
+  private List<EventDto> getPageOfEventsSortedByIngestionTimestamp(final AbstractQueryBuilder<?> query,
+                                                                   final int limit) {
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .sort(SortBuilders.fieldSort(EventIndex.INGESTION_TIMESTAMP).order(ASC))

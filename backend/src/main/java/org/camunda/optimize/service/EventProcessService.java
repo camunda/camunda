@@ -32,6 +32,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEvent
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
@@ -49,7 +50,6 @@ import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.autogeneration.AutogenerationProcessModelService;
 import org.camunda.optimize.service.exceptions.InvalidEventProcessStateException;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.relations.ReportRelationService;
@@ -66,6 +66,7 @@ import javax.ws.rs.NotFoundException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -74,9 +75,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.rest.ConflictedItemType.COMBINED_REPORT;
@@ -234,7 +237,7 @@ public class EventProcessService {
     final Map<String, EventProcessPublishStateDto> allPublishedStates =
       eventProcessPublishStateReader.getAllEventProcessPublishStatesWithDeletedState(false)
         .stream()
-        .collect(Collectors.toMap(
+        .collect(toMap(
           EventProcessPublishStateDto::getProcessMappingId,
           Function.identity(),
           (mappingId1, mappingId2) -> mappingId2
@@ -277,9 +280,7 @@ public class EventProcessService {
       .publishProgress(0.0D)
       .deleted(false)
       .mappings(eventProcessMapping.getMappings())
-      .eventImportSources(eventProcessMapping.getEventSources().stream()
-                            .map(this::createEventImportSourceFromDataSource)
-                            .collect(toList()))
+      .eventImportSources(createImportSourcesForEventSources(eventProcessMapping.getEventSources()))
       .build();
 
     final IdResponseDto processPublishStateId =
@@ -290,24 +291,56 @@ public class EventProcessService {
     );
   }
 
-  private EventImportSourceDto createEventImportSourceFromDataSource(EventSourceEntryDto<?> eventSourceEntryDto) {
+  private List<EventImportSourceDto> createImportSourcesForEventSources(final List<EventSourceEntryDto<?>> eventSources) {
+    final Map<EventSourceType, List<EventSourceEntryDto<?>>> sourcesByType = eventSources.stream()
+      .collect(groupingBy(EventSourceEntryDto::getSourceType));
+    List<EventImportSourceDto> importSources = new ArrayList<>();
+    Optional.ofNullable(sourcesByType.get(EventSourceType.CAMUNDA))
+      .ifPresent(camundaSources -> camundaSources.forEach(
+        source -> importSources.add(createEventImportSourceFromCamundaSource((CamundaEventSourceEntryDto) source))));
+    Optional.ofNullable(sourcesByType.get(EventSourceType.EXTERNAL))
+      .ifPresent(externalSources -> {
+        final List<ExternalEventSourceEntryDto> externalSourceConfigs = externalSources.stream()
+          .map(ExternalEventSourceEntryDto.class::cast)
+          .collect(toList());
+        importSources.add(createEventImportSourceFromExternalSources(externalSourceConfigs));
+      });
+    return importSources;
+  }
+
+  private EventImportSourceDto createEventImportSourceFromCamundaSource(CamundaEventSourceEntryDto camundaSourceEntry) {
+    Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> minAndMaxEventTimestamps =
+      camundaEventService.getMinAndMaxIngestedTimestampsForDefinition(
+        (camundaSourceEntry.getConfiguration()).getProcessDefinitionKey());
+    return EventImportSourceDto.builder()
+      .firstEventForSourceAtTimeOfPublishTimestamp(minAndMaxEventTimestamps.getLeft().orElse(getEpochMilliTimestamp()))
+      .lastEventForSourceAtTimeOfPublishTimestamp(minAndMaxEventTimestamps.getRight().orElse(getEpochMilliTimestamp()))
+      .lastImportedEventTimestamp(getEpochMilliTimestamp())
+      .eventImportSourceType(EventSourceType.CAMUNDA)
+      .eventSourceConfigurations(Collections.singletonList(camundaSourceEntry.getConfiguration()))
+      .build();
+  }
+
+  private EventImportSourceDto createEventImportSourceFromExternalSources(List<ExternalEventSourceEntryDto> externalSources) {
+    boolean includeAllGroups = externalSources.stream()
+      .map(EventSourceEntryDto::getConfiguration)
+      .anyMatch(ExternalEventSourceConfigDto::isIncludeAllGroups);
     Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> minAndMaxEventTimestamps;
-    if (EventSourceType.EXTERNAL.equals(eventSourceEntryDto.getSourceType())) {
-      minAndMaxEventTimestamps = externalEventService.getMinAndMaxIngestedTimestamps();
-    } else if (EventSourceType.CAMUNDA.equals(eventSourceEntryDto.getSourceType())) {
-      minAndMaxEventTimestamps =
-        camundaEventService.getMinAndMaxIngestedTimestampsForDefinition(((CamundaEventSourceConfigDto) eventSourceEntryDto
-          .getConfiguration()).getProcessDefinitionKey());
+    if (includeAllGroups) {
+      minAndMaxEventTimestamps = externalEventService.getMinAndMaxIngestedTimestampsForAllEvents();
     } else {
-      throw new OptimizeRuntimeException(String.format(
-        "Cannot create import source from type: %s", eventSourceEntryDto.getSourceType()
-      ));
+      final List<String> groups = externalSources.stream()
+        .map(EventSourceEntryDto::getConfiguration)
+        .map(ExternalEventSourceConfigDto::getGroup)
+        .collect(toList());
+      minAndMaxEventTimestamps = externalEventService.getMinAndMaxIngestedTimestampsForGroups(groups);
     }
     return EventImportSourceDto.builder()
       .firstEventForSourceAtTimeOfPublishTimestamp(minAndMaxEventTimestamps.getLeft().orElse(getEpochMilliTimestamp()))
       .lastEventForSourceAtTimeOfPublishTimestamp(minAndMaxEventTimestamps.getRight().orElse(getEpochMilliTimestamp()))
       .lastImportedEventTimestamp(getEpochMilliTimestamp())
-      .eventSource(eventSourceEntryDto)
+      .eventImportSourceType(EventSourceType.EXTERNAL)
+      .eventSourceConfigurations(externalSources.stream().map(EventSourceEntryDto::getConfiguration).collect(toList()))
       .build();
   }
 
@@ -352,7 +385,7 @@ public class EventProcessService {
       throw new OptimizeValidationException("Sources for an event based process cannot be null");
     }
     final Map<EventSourceType, List<EventSourceEntryDto<?>>> sourceByType = eventSources.stream()
-      .collect(Collectors.groupingBy(EventSourceEntryDto::getSourceType));
+      .collect(groupingBy(EventSourceEntryDto::getSourceType));
     List<ExternalEventSourceEntryDto> externalSources =
       sourceByType.getOrDefault(EventSourceType.EXTERNAL, Collections.emptyList()).stream()
         .map(ExternalEventSourceEntryDto.class::cast)
@@ -385,7 +418,7 @@ public class EventProcessService {
     final Map<Boolean, List<ExternalEventSourceEntryDto>> externalSourcesByIncludeAll = eventSources.stream()
       .filter(ExternalEventSourceEntryDto.class::isInstance)
       .map(ExternalEventSourceEntryDto.class::cast)
-      .collect(Collectors.groupingBy(source -> source.getConfiguration().isIncludeAllGroups()));
+      .collect(groupingBy(source -> source.getConfiguration().isIncludeAllGroups()));
     if (externalSourcesByIncludeAll.containsKey(false)) {
       throw new OptimizeValidationException("External event sources specific to a group cannot be used for generation");
     }
@@ -460,7 +493,7 @@ public class EventProcessService {
     final Set<String> notAuthorizedProcesses = camundaSources.stream()
       .filter(eventSource -> !validateEventSourceAuthorisation(userId, eventSource))
       .map(source -> source.getConfiguration().getProcessDefinitionKey())
-      .collect(Collectors.toSet());
+      .collect(toSet());
     if (!notAuthorizedProcesses.isEmpty()) {
       final String errorMessage = String.format(
         "The user is not authorized to access the following process definitions in the event sources: %s",
@@ -488,7 +521,7 @@ public class EventProcessService {
 
   public static void validateCompatibleExternalEventSources(final List<ExternalEventSourceEntryDto> externalSources) {
     final Map<Boolean, List<ExternalEventSourceEntryDto>> externalSourcesByIncludeAllGroups =
-      externalSources.stream().collect(Collectors.groupingBy(source -> source.getConfiguration().isIncludeAllGroups()));
+      externalSources.stream().collect(groupingBy(source -> source.getConfiguration().isIncludeAllGroups()));
     final List<ExternalEventSourceEntryDto> sourcesForAllGroups =
       externalSourcesByIncludeAllGroups.getOrDefault(true, Collections.emptyList());
     if (sourcesForAllGroups.size() > 1) {
@@ -507,7 +540,7 @@ public class EventProcessService {
     }
     final List<String> duplicateGroups = sourcesForSpecificGroups.stream()
       .map(EventSourceEntryDto::getSourceIdentifier)
-      .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+      .collect(groupingBy(Function.identity(), counting()))
       .entrySet()
       .stream()
       .filter(countPerGroup -> countPerGroup.getValue() > 1)

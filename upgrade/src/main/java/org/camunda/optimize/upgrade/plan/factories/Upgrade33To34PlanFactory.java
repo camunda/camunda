@@ -94,26 +94,6 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
     //@formatter:off
     final String script =
       "ctx._source.eventSources.forEach(eventSource -> {\n" +
-      updateEventSourceScript() +
-      "})\n";
-    //@formatter:on
-    return new UpdateIndexStep(new EventProcessMappingIndex(), script);
-  }
-
-  private static UpgradeStep migrateEventPublishStateEventSources() {
-    //@formatter:off
-    final String script =
-      "ctx._source.eventImportSources.forEach(eventImportSource -> {\n" +
-      "  def eventSource = eventImportSource.eventSource;\n" +
-      updateEventSourceScript() +
-      "})\n";
-    //@formatter:on
-    return new UpdateIndexStep(new EventProcessPublishStateIndex(), script);
-  }
-
-  private static String updateEventSourceScript() {
-    //@formatter:off
-    return
       "  if (eventSource.type == 'external') {\n" +
       "    def sourceConfig = [\n" +
       "      'includeAllGroups': true,\n" +
@@ -138,8 +118,43 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
       "  eventSource.remove(\"tenants\");\n" +
       "  eventSource.remove(\"tracedByBusinessKey\");\n" +
       "  eventSource.remove(\"traceVariable\");\n" +
-      "  eventSource.remove(\"eventScope\");\n";
+      "  eventSource.remove(\"eventScope\");\n" +
+      "})\n";
     //@formatter:on
+    return new UpdateIndexStep(new EventProcessMappingIndex(), script);
+  }
+
+  private static UpgradeStep migrateEventPublishStateEventSources() {
+    //@formatter:off
+    final String script =
+      "ctx._source.eventImportSources.forEach(eventImportSource -> {\n" +
+      "  def existingEventSource = eventImportSource.eventSource;\n" +
+      "  def eventSourceConfigs = new ArrayList();\n" +
+      "  if (existingEventSource.type == 'external') {\n" +
+      "    def sourceConfig = [\n" +
+      "      'includeAllGroups': true,\n" +
+      "      'group': null,\n" +
+      "      'eventScope': existingEventSource.eventScope\n" +
+      "     ];\n" +
+      "     eventSourceConfigs.add(sourceConfig);\n" +
+      "  } else if (existingEventSource.type == 'camunda') {\n" +
+      "    def sourceConfig = [\n" +
+      "      'eventScope': existingEventSource.eventScope,\n" +
+      "      'processDefinitionKey': existingEventSource.processDefinitionKey,\n" +
+      "      'processDefinitionName': null,\n" +
+      "      'versions': existingEventSource.versions,\n" +
+      "      'tenants': existingEventSource.tenants,\n" +
+      "      'tracedByBusinessKey': existingEventSource.tracedByBusinessKey,\n" +
+      "      'traceVariable': existingEventSource.traceVariable\n" +
+      "     ];\n" +
+      "     eventSourceConfigs.add(sourceConfig);\n" +
+      "  }\n" +
+      "  eventImportSource.eventImportSourceType = existingEventSource.type;\n" +
+      "  eventImportSource.eventSourceConfigurations = eventSourceConfigs;\n" +
+      "  eventImportSource.remove(\"eventSource\");\n" +
+      "})\n";
+    //@formatter:on
+    return new UpdateIndexStep(new EventProcessPublishStateIndex(), script);
   }
 
 }

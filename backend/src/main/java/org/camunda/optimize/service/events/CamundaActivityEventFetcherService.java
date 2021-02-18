@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
-import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -32,7 +32,7 @@ import static org.camunda.optimize.service.importing.engine.handler.VariableUpda
 @Slf4j
 public class CamundaActivityEventFetcherService implements EventFetcherService<CamundaActivityEventDto> {
 
-  private final CamundaEventSourceEntryDto eventSource;
+  private final CamundaEventSourceConfigDto eventSourceConfig;
 
   private final CamundaActivityEventReader camundaActivityEventReader;
   private final TimestampBasedImportIndexReader timestampBasedImportIndexReader;
@@ -41,7 +41,7 @@ public class CamundaActivityEventFetcherService implements EventFetcherService<C
   public List<CamundaActivityEventDto> getEventsIngestedAfter(final Long eventTimestamp, final int limit) {
     return camundaActivityEventReader
       .getCamundaActivityEventsForDefinitionBetween(
-        eventSource.getConfiguration().getProcessDefinitionKey(),
+        eventSourceConfig.getProcessDefinitionKey(),
         eventTimestamp,
         getMaxTimestampForEventRetrieval(),
         limit
@@ -51,7 +51,7 @@ public class CamundaActivityEventFetcherService implements EventFetcherService<C
   @Override
   public List<CamundaActivityEventDto> getEventsIngestedAt(final Long eventTimestamp) {
     return camundaActivityEventReader.getCamundaActivityEventsForDefinitionAt(
-      eventSource.getConfiguration().getProcessDefinitionKey(), eventTimestamp);
+      eventSourceConfig.getProcessDefinitionKey(), eventTimestamp);
   }
 
   private long getMaxTimestampForEventRetrieval() {
@@ -71,7 +71,7 @@ public class CamundaActivityEventFetcherService implements EventFetcherService<C
   }
 
   private List<String> getImportIndicesToSearch() {
-    if (!eventSource.getConfiguration().isTracedByBusinessKey()) {
+    if (!eventSourceConfig.isTracedByBusinessKey()) {
       return Arrays.asList(
         COMPLETED_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID,
         RUNNING_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID,

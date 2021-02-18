@@ -6,6 +6,7 @@
 package org.camunda.optimize.upgrade.migrate33To34;
 
 import lombok.SneakyThrows;
+import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
@@ -29,9 +30,8 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex.EVENT_IMPORT_SOURCES;
-import static org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex.EVENT_SOURCE;
-import static org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex.EVENT_SOURCE_CONFIG;
-import static org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex.EVENT_SOURCE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex.EVENT_IMPORT_SOURCE_TYPE;
+import static org.camunda.optimize.upgrade.migrate33To34.indices.EventProcessPublishStateIndexV3Old.EVENT_SOURCE_TYPE;
 
 public class MigrateEventPublishStateEventSourcesIT extends AbstractUpgrade33IT {
 
@@ -58,7 +58,7 @@ public class MigrateEventPublishStateEventSourcesIT extends AbstractUpgrade33IT 
       .allSatisfy(publishState -> {
         final EsEventProcessPublishStateDtoV3Old beforeUpgrade = getPublishStateBeforeUpgrade(
           publishStatesBeforeUpgrade, publishState.getId());
-        assertEventSourceHasBeenUpgraded(beforeUpgrade, publishState);
+        assertImportSourcesHaveBeenUpgraded(beforeUpgrade, publishState);
         assertOtherPublishStatePropertiesAreUnaffected(beforeUpgrade);
       });
   }
@@ -81,47 +81,69 @@ public class MigrateEventPublishStateEventSourcesIT extends AbstractUpgrade33IT 
   }
 
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  private void assertEventSourceHasBeenUpgraded(final EsEventProcessPublishStateDtoV3Old publishStateBeforeUpgrade,
-                                                final SearchHit publishState) {
+  private void assertImportSourcesHaveBeenUpgraded(final EsEventProcessPublishStateDtoV3Old publishStateBeforeUpgrade,
+                                                   final SearchHit publishState) {
     final List<Map<String, Object>> importSources =
       (List<Map<String, Object>>) publishState.getSourceAsMap().get(EVENT_IMPORT_SOURCES);
+    assertThat(importSources).hasSameSizeAs(publishStateBeforeUpgrade.getEventImportSources());
     importSources.forEach(importSource -> {
-      Map<String, Object> eventSource =
-        (Map<String, Object>) importSource.get(EVENT_SOURCE);
-      final EventSourceEntryDtoOld sourceBeforeUpgrade = getEventSourceForPublishState(
+      List<Map<String, Object>> eventSourceConfigurations =
+        (List<Map<String, Object>>) importSource.get(EventImportSourceDto.Fields.eventSourceConfigurations);
+      assertThat(eventSourceConfigurations).hasSize(1);
+      final Map<String, Object> eventSourceConfig = eventSourceConfigurations.get(0);
+      EventImportSourceDtoOld sourceBeforeUpgrade = findEventImportSourceBeforeUpgrade(
         publishStateBeforeUpgrade,
-        (String) eventSource.get(EventProcessPublishStateIndex.EVENT_SOURCE_ID)
+        eventSourceConfig,
+        EventSourceType.valueOf(((String) importSource.get(EVENT_IMPORT_SOURCE_TYPE)).toUpperCase())
       );
-      assertThat(sourceBeforeUpgrade.getType().getId()).isEqualTo(eventSource.get(EVENT_SOURCE_TYPE));
-      assertThat(eventSource.get(EVENT_SOURCE_CONFIG)).isNotNull();
-      final Map<String, Object> sourceConfig =
-        (Map<String, Object>) eventSource.get(EVENT_SOURCE_CONFIG);
-      assertThat(sourceBeforeUpgrade.getEventScope().stream().map(EventScopeType::getId).collect(Collectors.toList()))
-        .containsExactlyInAnyOrderElementsOf(((List<String>) sourceConfig.get(EventSourceConfigDto.Fields.eventScope)));
-      if (EventSourceType.EXTERNAL.getId().equals(eventSource.get(EVENT_SOURCE_TYPE))) {
-        assertThat(sourceConfig).containsEntry(ExternalEventSourceConfigDto.Fields.includeAllGroups, true);
-        assertThat(sourceConfig.get(ExternalEventSourceConfigDto.Fields.group)).isNull();
+      final EventSourceEntryDtoOld oldEventSource = sourceBeforeUpgrade.getEventSource();
+      assertThat(oldEventSource.getType().getId()).isEqualTo(importSource.get(EVENT_IMPORT_SOURCE_TYPE));
+      assertThat(oldEventSource.getEventScope().stream()
+                   .map(EventScopeType::getId)
+                   .collect(Collectors.toList()))
+        .containsExactlyInAnyOrderElementsOf(
+          ((List<String>) eventSourceConfig.get(EventSourceConfigDto.Fields.eventScope)));
+      if (EventSourceType.EXTERNAL.getId().equals(eventSourceConfig.get(EVENT_SOURCE_TYPE))) {
+        assertThat(eventSourceConfig).containsEntry(ExternalEventSourceConfigDto.Fields.includeAllGroups, true);
+        assertThat(eventSourceConfig.get(ExternalEventSourceConfigDto.Fields.group)).isNull();
       } else if (EventSourceType.CAMUNDA.getId()
-        .equals(eventSource.get(EVENT_SOURCE_TYPE))) {
-        assertThat(sourceConfig).containsEntry(
-          CamundaEventSourceConfigDto.Fields.processDefinitionKey, sourceBeforeUpgrade.getProcessDefinitionKey());
-        assertThat(sourceConfig.get(CamundaEventSourceConfigDto.Fields.processDefinitionName)).isNull();
-        assertThat(sourceConfig).containsEntry(
-          CamundaEventSourceConfigDto.Fields.tracedByBusinessKey, sourceBeforeUpgrade.isTracedByBusinessKey());
-        assertThat(sourceConfig).containsEntry(
-          CamundaEventSourceConfigDto.Fields.traceVariable, sourceBeforeUpgrade.getTraceVariable());
-        assertThat(sourceConfig).containsEntry(
-          CamundaEventSourceConfigDto.Fields.tenants, sourceBeforeUpgrade.getTenants());
-        assertThat(sourceConfig).containsEntry(
-          CamundaEventSourceConfigDto.Fields.versions, sourceBeforeUpgrade.getVersions());
+        .equals(eventSourceConfig.get(EVENT_SOURCE_TYPE))) {
+        assertThat(eventSourceConfig).containsEntry(
+          CamundaEventSourceConfigDto.Fields.processDefinitionKey, oldEventSource.getProcessDefinitionKey());
+        assertThat(eventSourceConfig.get(CamundaEventSourceConfigDto.Fields.processDefinitionName)).isNull();
+        assertThat(eventSourceConfig).containsEntry(
+          CamundaEventSourceConfigDto.Fields.tracedByBusinessKey, oldEventSource.isTracedByBusinessKey());
+        assertThat(eventSourceConfig).containsEntry(
+          CamundaEventSourceConfigDto.Fields.traceVariable, oldEventSource.getTraceVariable());
+        assertThat(eventSourceConfig).containsEntry(
+          CamundaEventSourceConfigDto.Fields.tenants, oldEventSource.getTenants());
+        assertThat(eventSourceConfig).containsEntry(
+          CamundaEventSourceConfigDto.Fields.versions, oldEventSource.getVersions());
       }
-      assertThat(eventSource).doesNotContainKey(EventSourceEntryDtoOld.Fields.eventScope);
-      assertThat(eventSource).doesNotContainKey(EventSourceEntryDtoOld.Fields.processDefinitionKey);
-      assertThat(eventSource).doesNotContainKey(EventSourceEntryDtoOld.Fields.tracedByBusinessKey);
-      assertThat(eventSource).doesNotContainKey(EventSourceEntryDtoOld.Fields.traceVariable);
-      assertThat(eventSource).doesNotContainKey(EventSourceEntryDtoOld.Fields.tenants);
-      assertThat(eventSource).doesNotContainKey(EventSourceEntryDtoOld.Fields.versions);
+      assertThat(importSource.get(EventImportSourceDtoOld.Fields.eventSource)).isNull();
     });
+  }
+
+  private EventImportSourceDtoOld findEventImportSourceBeforeUpgrade(final EsEventProcessPublishStateDtoV3Old publishStateBeforeUpgrade,
+                                                                     final Map<String, Object> eventSourceConfig,
+                                                                     final EventSourceType sourceType) {
+    if (EventSourceType.EXTERNAL.equals(sourceType)) {
+      return publishStateBeforeUpgrade.getEventImportSources()
+        .stream()
+        .filter(importSource -> EventSourceType.EXTERNAL.equals(importSource.getEventSource().getType()))
+        .findFirst()
+        .get();
+    } else if (EventSourceType.CAMUNDA.equals(sourceType)) {
+      return publishStateBeforeUpgrade.getEventImportSources()
+        .stream()
+        .filter(importSource -> EventSourceType.CAMUNDA.equals(importSource.getEventSource().getType())
+          && importSource.getEventSource().getProcessDefinitionKey()
+          .equals(eventSourceConfig.get(CamundaEventSourceConfigDto.Fields.processDefinitionKey)))
+        .findFirst()
+        .get();
+    } else {
+      throw new OptimizeIntegrationTestException("Could not find event source before upgrade");
+    }
   }
 
   private EsEventProcessPublishStateDtoV3Old getPublishStateBeforeUpgrade(
@@ -132,16 +154,6 @@ public class MigrateEventPublishStateEventSourcesIT extends AbstractUpgrade33IT 
       .collect(Collectors.toList());
     assertThat(oldPublishStatesWithId).hasSize(1);
     return oldPublishStatesWithId.get(0);
-  }
-
-  private EventSourceEntryDtoOld getEventSourceForPublishState(final EsEventProcessPublishStateDtoV3Old oldPublishState,
-                                                               final String sourceId) {
-    final List<EventSourceEntryDtoOld> oldSourceWithId = oldPublishState.getEventImportSources().stream()
-      .map(EventImportSourceDtoOld::getEventSource)
-      .filter(source -> source.getId().equals(sourceId))
-      .collect(Collectors.toList());
-    assertThat(oldSourceWithId).hasSize(1);
-    return oldSourceWithId.get(0);
   }
 
 }

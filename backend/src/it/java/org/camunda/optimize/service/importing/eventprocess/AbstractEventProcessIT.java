@@ -309,15 +309,15 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
 
   @SneakyThrows
   protected List<EventProcessInstanceDto> getEventProcessInstancesFromElasticsearch() {
-    return getEventProcessInstancesFromElasticsearchForProcessMappingId("*");
+    return getEventProcessInstancesFromElasticsearchForProcessPublishStateId("*");
   }
 
   @SneakyThrows
-  protected List<EventProcessInstanceDto> getEventProcessInstancesFromElasticsearchForProcessMappingId(final String eventProcessMappingId) {
+  protected List<EventProcessInstanceDto> getEventProcessInstancesFromElasticsearchForProcessPublishStateId(final String publishStateId) {
     final List<EventProcessInstanceDto> results = new ArrayList<>();
     final SearchResponse searchResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .search(
-        new SearchRequest(new EventProcessInstanceIndex(eventProcessMappingId).getIndexName()),
+        new SearchRequest(new EventProcessInstanceIndex(publishStateId).getIndexName()),
         RequestOptions.DEFAULT
       );
     for (SearchHit hit : searchResponse.getHits().getHits()) {
@@ -353,6 +353,14 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
                                    final String eventName,
                                    final OffsetDateTime eventTimestamp,
                                    final String traceId) {
+    return ingestTestEvent(eventId, eventName, eventTimestamp, traceId, EXTERNAL_EVENT_GROUP);
+  }
+
+  protected String ingestTestEvent(final String eventId,
+                                   final String eventName,
+                                   final OffsetDateTime eventTimestamp,
+                                   final String traceId,
+                                   final String group) {
     embeddedOptimizeExtension.getEventService()
       .saveEventBatch(
         Collections.singletonList(
@@ -361,7 +369,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
             .eventName(eventName)
             .timestamp(eventTimestamp.toInstant().toEpochMilli())
             .traceId(traceId)
-            .group(EXTERNAL_EVENT_GROUP)
+            .group(group)
             .source(EXTERNAL_EVENT_SOURCE)
             .data(ImmutableMap.of(VARIABLE_ID, VARIABLE_VALUE))
             .build()

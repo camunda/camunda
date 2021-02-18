@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.process.source;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +22,11 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 @FieldNameConstants
+@JsonTypeInfo(use = JsonTypeInfo.Id.DEDUCTION)
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = CamundaEventSourceConfigDto.class),
+  @JsonSubTypes.Type(value = ExternalEventSourceConfigDto.class)
+})
 public abstract class EventSourceConfigDto {
 
   @Builder.Default

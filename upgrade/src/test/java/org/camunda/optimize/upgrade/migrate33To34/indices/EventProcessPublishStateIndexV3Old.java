@@ -48,7 +48,7 @@ public class EventProcessPublishStateIndexV3Old extends DefaultIndexMappingCreat
     EventImportSourceDto.Fields.lastEventForSourceAtTimeOfPublishTimestamp;
   public static final String LAST_IMPORT_EXECUTION_TIMESTAMP = EventImportSourceDto.Fields.lastImportExecutionTimestamp;
   public static final String LAST_IMPORTED_EVENT_TIMESTAMP = EventImportSourceDto.Fields.lastImportedEventTimestamp;
-  public static final String EVENT_SOURCE = EventImportSourceDto.Fields.eventSource;
+  public static final String EVENT_SOURCE = "eventSource";
 
   public static final String EVENT_SOURCE_ID = EventSourceEntryDtoOld.Fields.id;
   public static final String EVENT_SOURCE_TYPE = EventSourceEntryDtoOld.Fields.type;

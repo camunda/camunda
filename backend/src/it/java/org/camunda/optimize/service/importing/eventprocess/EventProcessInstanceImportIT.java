@@ -224,9 +224,9 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final String eventProcessPublishStateId2 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
 
     final List<EventProcessInstanceDto> eventProcess1ProcessInstances =
-      getEventProcessInstancesFromElasticsearchForProcessMappingId(eventProcessPublishStateId1);
+      getEventProcessInstancesFromElasticsearchForProcessPublishStateId(eventProcessPublishStateId1);
     final List<EventProcessInstanceDto> eventProcess2ProcessInstances =
-      getEventProcessInstancesFromElasticsearchForProcessMappingId(eventProcessPublishStateId2);
+      getEventProcessInstancesFromElasticsearchForProcessPublishStateId(eventProcessPublishStateId2);
 
     assertThat(eventProcess1ProcessInstances).hasSize(1);
     assertThat(eventProcess2ProcessInstances).hasSize(1);

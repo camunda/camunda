@@ -944,7 +944,9 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
                            Instant.ofEpochMilli(0L),
                            ZoneId.systemDefault()
                          ))
-                         .eventSource(storedEventProcessMapping.getEventSources().get(0))
+                         .eventImportSourceType(storedEventProcessMapping.getEventSources().get(0).getSourceType())
+                         .eventSourceConfigurations(Collections.singletonList(
+                           storedEventProcessMapping.getEventSources().get(0).getConfiguration()))
                          .build());
   }
 

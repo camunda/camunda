@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CancelableEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -41,7 +41,7 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
 
   private static final String EVENT_SOURCE_CAMUNDA = "camunda";
 
-  private final CamundaEventSourceEntryDto eventSource;
+  private final CamundaEventSourceConfigDto eventSourceConfig;
 
   private final DateFormat variableDateTimeFormatter;
   private final EventProcessInstanceImportService eventProcessInstanceImportService;
@@ -68,7 +68,7 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
 
   private List<CamundaActivityEventDto> filterForConfiguredTenantsAndVersions(final List<CamundaActivityEventDto> camundaActivities) {
     List<CamundaActivityEventDto> filteredActivities = camundaActivities.stream()
-      .filter(activity -> eventSource.getConfiguration().getTenants().contains(activity.getTenantId()))
+      .filter(activity -> eventSourceConfig.getTenants().contains(activity.getTenantId()))
       .collect(Collectors.toList());
     final List<String> versionsInSource = getVersionsToIncludeForFilter();
     if (!versionsInSource.contains(ALL_VERSIONS)) {
@@ -81,9 +81,8 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
 
   private List<EventDto> correlateCamundaEvents(final List<EventDto> eventDtosToImport) {
     log.trace("Correlating [{}] camunda activity events for process definition key {}.",
-              eventDtosToImport.size(), eventSource.getConfiguration().getProcessDefinitionKey()
+              eventDtosToImport.size(), eventSourceConfig.getProcessDefinitionKey()
     );
-
     Set<String> processInstanceIds = eventDtosToImport.stream()
       .map(EventDto::getTraceId)
       .collect(Collectors.toSet());
@@ -98,7 +97,7 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
       eventDto -> eventDto.setData(extractVariablesDataForEvent(processInstanceToVariableUpdates.get(eventDto.getTraceId()))));
 
     List<EventDto> correlatedEvents;
-    if (eventSource.getConfiguration().isTracedByBusinessKey()) {
+    if (eventSourceConfig.isTracedByBusinessKey()) {
       Map<String, String> instanceIdToBusinessKeys =
         businessKeyReader.getBusinessKeysForProcessInstanceIds(processInstanceIds)
           .stream()
@@ -117,14 +116,14 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
           final List<VariableUpdateInstanceDto> variablesForTraceId =
             processInstanceToVariableUpdates.get(eventDto.getTraceId());
           return variablesForTraceId != null && variablesForTraceId.stream()
-            .anyMatch(var -> var.getName().equalsIgnoreCase(eventSource.getConfiguration().getTraceVariable()));
+            .anyMatch(var -> var.getName().equalsIgnoreCase(eventSourceConfig.getTraceVariable()));
         })
         .peek(eventDto -> {
           // if the value of the correlation key changes during the running of the instance, we take the original value
           VariableUpdateInstanceDto firstUpdate = processInstanceToVariableUpdates.get(eventDto.getTraceId())
             .stream()
             .filter(variableUpdateInstanceDto -> variableUpdateInstanceDto.getName()
-              .equalsIgnoreCase(eventSource.getConfiguration().getTraceVariable()))
+              .equalsIgnoreCase(eventSourceConfig.getTraceVariable()))
             .distinct()
             .min(Comparator.comparing(VariableUpdateInstanceDto::getTimestamp)).get();
           eventDto.setTraceId(firstUpdate.getValue());
@@ -133,7 +132,10 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
     }
 
     if (eventDtosToImport.size() > correlatedEvents.size()) {
-      log.warn("could not find the correlation key for some events in batch for event source {}", eventSource);
+      log.warn(
+        "could not find the correlation key for some events in batch for event source config {}",
+        eventSourceConfig
+      );
     }
     return correlatedEvents;
   }
@@ -142,15 +144,13 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
     if (variableUpdateInstanceDtos == null || variableUpdateInstanceDtos.isEmpty()) {
       return null;
     }
-    Map<String, Object> latestVariableUpdatesById =
-      variableUpdateInstanceDtos.stream().collect(groupingBy(VariableUpdateInstanceDto::getName))
-        .entrySet().stream()
-        .peek(entry -> entry.getValue().sort(Comparator.comparing(VariableUpdateInstanceDto::getTimestamp).reversed()))
-        .collect(Collectors.toMap(
-          Map.Entry::getKey,
-          entry -> getTypedVariable(entry.getValue().get(0))
-        ));
-    return latestVariableUpdatesById;
+    return variableUpdateInstanceDtos.stream().collect(groupingBy(VariableUpdateInstanceDto::getName))
+      .entrySet().stream()
+      .peek(entry -> entry.getValue().sort(Comparator.comparing(VariableUpdateInstanceDto::getTimestamp).reversed()))
+      .collect(Collectors.toMap(
+        Map.Entry::getKey,
+        entry -> getTypedVariable(entry.getValue().get(0))
+      ));
   }
 
   private Object getTypedVariable(final VariableUpdateInstanceDto variableUpdateInstanceDto) {
@@ -182,11 +182,11 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
   }
 
   private List<String> getVersionsToIncludeForFilter() {
-    List<String> versionsForFilter = new ArrayList<>(eventSource.getConfiguration().getVersions());
+    List<String> versionsForFilter = new ArrayList<>(eventSourceConfig.getVersions());
     versionsForFilter.removeIf(Objects::isNull);
     if (DefinitionVersionHandlingUtil.isDefinitionVersionSetToLatest(versionsForFilter)) {
       return Collections.singletonList(
-        processDefinitionReader.getLatestVersionToKey(eventSource.getConfiguration().getProcessDefinitionKey()));
+        processDefinitionReader.getLatestVersionToKey(eventSourceConfig.getProcessDefinitionKey()));
     } else if (DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll(versionsForFilter)) {
       return Collections.singletonList(ALL_VERSIONS);
     }

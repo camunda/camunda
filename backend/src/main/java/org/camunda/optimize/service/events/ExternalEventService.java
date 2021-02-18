@@ -55,8 +55,13 @@ public class ExternalEventService implements EventFetcherService<EventDto> {
     return externalEventReader.getEventsIngestedAt(ingestTimestamp);
   }
 
-  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestamps() {
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForAllEvents() {
     return externalEventReader.getMinAndMaxIngestedTimestamps();
+  }
+
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForGroups(
+    final List<String> eventGroups) {
+    return externalEventReader.getMinAndMaxIngestedTimestampsForGroups(eventGroups);
   }
 
   public void deleteEvents(final List<String> eventIdsToDelete) {

@@ -6,10 +6,10 @@
 package org.camunda.optimize.service.importing.eventprocess.mediator;
 
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.reader.BusinessKeyReader;
@@ -54,8 +54,8 @@ public class EventProcessInstanceImportMediatorFactory {
         EventProcessInstanceImportMediator.class,
         publishedStateDto.getId(),
         new EventProcessInstanceImportSourceIndexHandler(configurationService, importSource),
-        eventFetcherFactory.createEventFetcherForEventSource(importSource.getEventSource()),
-        createImportService(publishedStateDto, importSource.getEventSource()),
+        eventFetcherFactory.createEventFetcherForEventImportSource(importSource),
+        createImportService(publishedStateDto, importSource),
         configurationService,
         new BackoffCalculator(configurationService)
       ))
@@ -63,14 +63,14 @@ public class EventProcessInstanceImportMediatorFactory {
   }
 
   private ImportService<? extends EventProcessEventDto> createImportService(EventProcessPublishStateDto eventProcessPublishStateDto,
-                                                                            EventSourceEntryDto<?> eventSourceEntryDto) {
-    final EventProcessInstanceImportService eventProcessInstanceImportService = createEventProcessInstanceImportService(
-      eventProcessPublishStateDto);
-    if (EventSourceType.EXTERNAL.equals(eventSourceEntryDto.getSourceType())) {
+                                                                            EventImportSourceDto eventSourceEntryDto) {
+    final EventProcessInstanceImportService eventProcessInstanceImportService =
+      createEventProcessInstanceImportService(eventProcessPublishStateDto);
+    if (EventSourceType.EXTERNAL.equals(eventSourceEntryDto.getEventImportSourceType())) {
       return eventProcessInstanceImportService;
-    } else if (EventSourceType.CAMUNDA.equals(eventSourceEntryDto.getSourceType())) {
+    } else if (EventSourceType.CAMUNDA.equals(eventSourceEntryDto.getEventImportSourceType())) {
       return new CustomTracedEventProcessInstanceImportService(
-        (CamundaEventSourceEntryDto) eventSourceEntryDto,
+        (CamundaEventSourceConfigDto) eventSourceEntryDto.getEventSourceConfigurations().get(0),
         new SimpleDateFormat(configurationService.getEngineDateFormat()),
         eventProcessInstanceImportService,
         processDefinitionReader,
@@ -79,7 +79,7 @@ public class EventProcessInstanceImportMediatorFactory {
       );
     } else {
       throw new OptimizeRuntimeException(String.format(
-        "Cannot create mediator for Event Source Type: %s", eventSourceEntryDto.getSourceType()
+        "Cannot create mediator for Event Source Type: %s", eventSourceEntryDto.getEventImportSourceType()
       ));
     }
   }

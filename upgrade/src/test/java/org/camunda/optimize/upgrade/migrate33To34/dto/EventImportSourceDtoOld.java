@@ -8,12 +8,14 @@ package org.camunda.optimize.upgrade.migrate33To34.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
 
 import java.time.OffsetDateTime;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@FieldNameConstants
 public class EventImportSourceDtoOld {
   private OffsetDateTime firstEventForSourceAtTimeOfPublishTimestamp;
   private OffsetDateTime lastEventForSourceAtTimeOfPublishTimestamp;

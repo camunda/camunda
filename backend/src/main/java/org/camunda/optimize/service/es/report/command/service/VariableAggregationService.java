@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.command.service;
 
-
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;

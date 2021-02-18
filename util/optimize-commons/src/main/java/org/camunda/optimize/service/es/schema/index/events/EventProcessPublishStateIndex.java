@@ -9,7 +9,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDt
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
@@ -48,11 +47,8 @@ public class EventProcessPublishStateIndex extends DefaultIndexMappingCreator {
     EventImportSourceDto.Fields.lastEventForSourceAtTimeOfPublishTimestamp;
   public static final String LAST_IMPORT_EXECUTION_TIMESTAMP = EventImportSourceDto.Fields.lastImportExecutionTimestamp;
   public static final String LAST_IMPORTED_EVENT_TIMESTAMP = EventImportSourceDto.Fields.lastImportedEventTimestamp;
-  public static final String EVENT_SOURCE = EventImportSourceDto.Fields.eventSource;
-
-  public static final String EVENT_SOURCE_ID = EventSourceEntryDto.Fields.id;
-  public static final String EVENT_SOURCE_TYPE = EventSourceEntryDto.TYPE;
-  public static final String EVENT_SOURCE_CONFIG = EventSourceEntryDto.Fields.configuration;
+  public static final String EVENT_IMPORT_SOURCE_TYPE = EventImportSourceDto.Fields.eventImportSourceType;
+  public static final String EVENT_IMPORT_SOURCE_CONFIGS = EventImportSourceDto.Fields.eventSourceConfigurations;
 
   @Override
   public String getIndexName() {
@@ -146,15 +142,14 @@ public class EventProcessPublishStateIndex extends DefaultIndexMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(EVENT_LABEL)
-      .field("type", "keyword")
+        .field("type", "keyword")
       .endObject();
     // @formatter:on
   }
 
   private XContentBuilder addEventImportSourcesField(final XContentBuilder xContentBuilder) throws IOException {
-    XContentBuilder newXContentBuilder =
-      // @formatter:off
-    xContentBuilder
+    // @formatter:off
+    return xContentBuilder
       .startObject(FIRST_EVENT_FOR_IMPORT_SOURCE_TIMESTAMP)
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
@@ -171,27 +166,10 @@ public class EventProcessPublishStateIndex extends DefaultIndexMappingCreator {
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
-      .startObject(EVENT_SOURCE)
-        .field("type", "object")
-        .field("dynamic", true)
-        .startObject("properties");
-          addEventSourcesField(newXContentBuilder)
-        .endObject()
-      .endObject();
-    // @formatter:on
-    return newXContentBuilder;
-  }
-
-  private XContentBuilder addEventSourcesField(final XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-      .startObject(EVENT_SOURCE_ID)
+      .startObject(EVENT_IMPORT_SOURCE_TYPE)
         .field("type", "keyword")
       .endObject()
-      .startObject(EVENT_SOURCE_TYPE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_SOURCE_CONFIG)
+      .startObject(EVENT_IMPORT_SOURCE_CONFIGS)
         .field("type", "object")
         .field("dynamic", true)
       .endObject();

@@ -185,28 +185,14 @@ public class MinMaxStatsService {
                                                  final String format,
                                                  final String pathForNestedStatsAgg,
                                                  final QueryBuilder filterQueryToWrapStatsWith) {
-    AggregationBuilder statsAggField1 = createStatsAggregation(
-      STATS_AGGREGATION_FIRST_FIELD,
-      firstField,
-      format
-    );
-    AggregationBuilder statsAggField2 = createStatsAggregation(
-      STATS_AGGREGATION_SECOND_FIELD,
-      secondField,
-      format
-    );
+    AggregationBuilder statsAggField1 = createStatsAggregation(STATS_AGGREGATION_FIRST_FIELD, firstField, format);
+    AggregationBuilder statsAggField2 = createStatsAggregation(STATS_AGGREGATION_SECOND_FIELD, secondField, format);
 
     if (filterQueryToWrapStatsWith != null) {
       statsAggField1 = wrapWithFilterLimitedParentAggregation(
-        FILTER_AGGREGATION_FIRST_FIELD,
-        filterQueryToWrapStatsWith,
-        statsAggField1
-      );
+        FILTER_AGGREGATION_FIRST_FIELD, filterQueryToWrapStatsWith, statsAggField1);
       statsAggField2 = wrapWithFilterLimitedParentAggregation(
-        FILTER_AGGREGATION_SECOND_FIELD,
-        filterQueryToWrapStatsWith,
-        statsAggField2
-      );
+        FILTER_AGGREGATION_SECOND_FIELD, filterQueryToWrapStatsWith, statsAggField2);
     }
 
     if (pathForNestedStatsAgg != null) {
