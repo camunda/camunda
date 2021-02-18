@@ -24,6 +24,34 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
   Class<T> getType();
 
   /**
+   * The element is about to be entered. Perform every action to initialize and activate the
+   * element.
+   *
+   * <p>If the element is a wait-state (i.e. it is waiting for an event or an external trigger) then
+   * it is waiting after this step to continue. Otherwise, it continues directly to the next step.
+   *
+   * <p>Possible actions:
+   *
+   * <ul>
+   *   <li>apply input mappings
+   *   <li>open event subscriptions
+   *   <li>initialize child elements - if the element is a container (e.g. a sub-process)
+   * </ul>
+   *
+   * Next step:
+   *
+   * <ul>
+   *   <li>activating - the element is initialized
+   *   <li>activated - if no incidents raised
+   *   <li>complete - if no incidents raised & not a wait-state.
+   * </ul>
+   *
+   * @param element the instance of the BPMN element that is executed
+   * @param context workflow instance-related data of the element that is executed
+   */
+  default void onActivate(final T element, final BpmnElementContext context) {}
+
+  /**
    * The element is entered (initial step). Perform every action to initialize the element.
    *
    * <p>Possible actions:
@@ -37,7 +65,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
+   * @deprecated will be replaced by onActivate
    */
+  @Deprecated // todo (#6202): remove method
   void onActivating(final T element, final BpmnElementContext context);
 
   /**
@@ -55,8 +85,31 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
+   * @deprecated will be replaced by onActivate
    */
+  @Deprecated // todo (#6202): remove method
   void onActivated(final T element, final BpmnElementContext context);
+
+  /**
+   * The element is going to be left. Perform every action to leave the element and continue with
+   * the next element.
+   *
+   * <p>Possible actions:
+   *
+   * <ul>
+   *   <li>apply output mappings
+   *   <li>close event subscriptions
+   *   <li>take outgoing sequence flows - if any
+   *   <li>continue with parent element - if no outgoing sequence flows
+   *   <li>clean up the state
+   * </ul>
+   *
+   * Next step: none.
+   *
+   * @param element the instance of the BPMN element that is executed
+   * @param context workflow instance-related data of the element that is executed
+   */
+  default void onComplete(final T element, final BpmnElementContext context) {}
 
   /**
    * The element is going to be left. Perform every action to leave the element.
@@ -72,7 +125,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
+   * @deprecated will be replaced by onComplete
    */
+  @Deprecated // todo (#6202): remove method
   void onCompleting(final T element, final BpmnElementContext context);
 
   /**
@@ -90,8 +145,32 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
+   * @deprecated will be replaced by onComplete
    */
+  @Deprecated // todo (#6202): remove method
   void onCompleted(final T element, final BpmnElementContext context);
+
+  /**
+   * The element is going to be terminated. Perform every action to terminate the element and
+   * continue with the element that caused the termination (e.g. the triggered boundary event).
+   *
+   * <p>Possible actions:
+   *
+   * <ul>
+   *   <li>close event subscriptions
+   *   <li>resolve incidents
+   *   <li>activate the triggered boundary event - if any
+   *   <li>activate the triggered event sub-process - if any
+   *   <li>continue with parent element
+   *   <li>clean up the state
+   * </ul>
+   *
+   * Next step: none.
+   *
+   * @param element the instance of the BPMN element that is executed
+   * @param context workflow instance-related data of the element that is executed
+   */
+  default void onTerminate(final T element, final BpmnElementContext context) {}
 
   /**
    * The element is going to be terminated. Perform every action to terminate the element.
@@ -106,7 +185,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
+   * @deprecated will be replaced by onTerminate
    */
+  @Deprecated // todo (#6202): remove method
   void onTerminating(final T element, final BpmnElementContext context);
 
   /**
@@ -127,7 +208,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context workflow instance-related data of the element that is executed
+   * @deprecated will be replaced by onTerminate
    */
+  @Deprecated // todo (#6202): remove method
   void onTerminated(final T element, final BpmnElementContext context);
 
   /**

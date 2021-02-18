@@ -17,6 +17,7 @@ import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.function.Function;
@@ -44,7 +45,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final ZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
-          processorLookup) {
+          processorLookup,
+      final Writers writers) {
 
     this.streamWriter = streamWriter;
     this.expressionBehavior = expressionBehavior;
@@ -59,7 +61,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             new WorkflowEngineMetrics(zeebeState.getPartitionId()),
             stateTransitionGuard,
-            processorLookup);
+            processorLookup,
+            writers);
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
             stateBehavior,
