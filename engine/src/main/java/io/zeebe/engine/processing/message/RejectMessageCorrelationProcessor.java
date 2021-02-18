@@ -13,8 +13,8 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.message.Message;
 import io.zeebe.engine.state.message.MessageSubscription;
+import io.zeebe.engine.state.message.StoredMessage;
 import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -76,8 +76,8 @@ public final class RejectMessageCorrelationProcessor
       final long messageKey) {
 
     // the message TTL may expire after the previous correlation attempt
-    final Message message = messageState.getMessage(messageKey);
-    if (message == null) {
+    final StoredMessage storedMessage = messageState.getMessage(messageKey);
+    if (storedMessage == null) {
       return;
     }
 
@@ -88,7 +88,7 @@ public final class RejectMessageCorrelationProcessor
           if (subscription.getBpmnProcessId().equals(subscriptionRecord.getBpmnProcessIdBuffer())
               && !subscription.isCorrelating()) {
             subscription.setMessageKey(messageKey);
-            subscription.setMessageVariables(message.getVariables());
+            subscription.setMessageVariables(storedMessage.getMessage().getVariablesBuffer());
 
             correlateMessage(subscription, sideEffect);
             return false;

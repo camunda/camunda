@@ -38,6 +38,15 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
         .declareProperty(deadlineProp);
   }
 
+  public void wrap(final MessageRecord record) {
+    setName(record.getNameBuffer());
+    setCorrelationKey(record.getCorrelationKeyBuffer());
+    setTimeToLive(record.getTimeToLive());
+    setDeadline(record.getDeadline());
+    setVariables(record.getVariablesBuffer());
+    setMessageId(record.getMessageIdBuffer());
+  }
+
   public boolean hasMessageId() {
     return messageIdProp.getValue().capacity() > 0;
   }

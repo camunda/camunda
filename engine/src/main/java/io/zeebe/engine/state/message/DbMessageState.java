@@ -19,6 +19,7 @@ import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.mutable.MutableMessageState;
+import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import org.agrona.DirectBuffer;
 
 public final class DbMessageState implements MutableMessageState {
@@ -26,10 +27,10 @@ public final class DbMessageState implements MutableMessageState {
   /**
    * <pre>message key -> message
    */
-  private final ColumnFamily<DbLong, Message> messageColumnFamily;
+  private final ColumnFamily<DbLong, StoredMessage> messageColumnFamily;
 
   private final DbLong messageKey;
-  private final Message message;
+  private final StoredMessage message;
 
   /**
    * <pre>name | correlation key | key -> []
@@ -99,7 +100,7 @@ public final class DbMessageState implements MutableMessageState {
   public DbMessageState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     messageKey = new DbLong();
-    message = new Message();
+    message = new StoredMessage();
     messageColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_KEY, transactionContext, messageKey, message);
@@ -160,18 +161,19 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
-  public void put(final Message message) {
-    messageKey.wrapLong(message.getKey());
+  public void put(final long key, final MessageRecord record) {
+    messageKey.wrapLong(key);
+    message.setMessageKey(key).setMessage(record);
     messageColumnFamily.put(messageKey, message);
 
-    messageName.wrapBuffer(message.getName());
-    correlationKey.wrapBuffer(message.getCorrelationKey());
+    messageName.wrapBuffer(record.getNameBuffer());
+    correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
     nameCorrelationMessageColumnFamily.put(nameCorrelationMessageKey, DbNil.INSTANCE);
 
-    deadline.wrapLong(message.getDeadline());
+    deadline.wrapLong(record.getDeadline());
     deadlineColumnFamily.put(deadlineMessageKey, DbNil.INSTANCE);
 
-    final DirectBuffer messageId = message.getId();
+    final DirectBuffer messageId = record.getMessageIdBuffer();
     if (messageId.capacity() > 0) {
       this.messageId.wrapBuffer(messageId);
       messageIdColumnFamily.put(nameCorrelationMessageIdKey, DbNil.INSTANCE);
@@ -285,13 +287,13 @@ public final class DbMessageState implements MutableMessageState {
         nameAndCorrelationKey,
         (compositeKey, nil) -> {
           final long messageKey = compositeKey.getSecond().getValue();
-          final Message message = getMessage(messageKey);
+          final StoredMessage message = getMessage(messageKey);
           return visitor.visit(message);
         });
   }
 
   @Override
-  public Message getMessage(final long messageKey) {
+  public StoredMessage getMessage(final long messageKey) {
     this.messageKey.wrapLong(messageKey);
     return messageColumnFamily.get(this.messageKey);
   }
@@ -303,7 +305,7 @@ public final class DbMessageState implements MutableMessageState {
           final long deadline = compositeKey.getFirst().getValue();
           if (deadline <= timestamp) {
             final long messageKey = compositeKey.getSecond().getValue();
-            final Message message = getMessage(messageKey);
+            final StoredMessage message = getMessage(messageKey);
             return visitor.visit(message);
           }
           return false;
@@ -322,26 +324,26 @@ public final class DbMessageState implements MutableMessageState {
 
   @Override
   public void remove(final long key) {
-    final Message message = getMessage(key);
-    if (message == null) {
+    final StoredMessage storedMessage = getMessage(key);
+    if (storedMessage == null) {
       return;
     }
 
-    messageKey.wrapLong(message.getKey());
+    messageKey.wrapLong(storedMessage.getMessageKey());
     messageColumnFamily.delete(messageKey);
 
-    messageName.wrapBuffer(message.getName());
-    correlationKey.wrapBuffer(message.getCorrelationKey());
+    messageName.wrapBuffer(storedMessage.getMessage().getNameBuffer());
+    correlationKey.wrapBuffer(storedMessage.getMessage().getCorrelationKeyBuffer());
 
     nameCorrelationMessageColumnFamily.delete(nameCorrelationMessageKey);
 
-    final DirectBuffer messageId = message.getId();
+    final DirectBuffer messageId = storedMessage.getMessage().getMessageIdBuffer();
     if (messageId.capacity() > 0) {
       this.messageId.wrapBuffer(messageId);
       messageIdColumnFamily.delete(nameCorrelationMessageIdKey);
     }
 
-    deadline.wrapLong(message.getDeadline());
+    deadline.wrapLong(storedMessage.getMessage().getDeadline());
     deadlineColumnFamily.delete(deadlineMessageKey);
 
     correlatedMessageColumnFamily.whileEqualPrefix(
