@@ -40,9 +40,17 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
     return result;
   }
 
+  /**
+   * This generates a sequence of one or more steps. The final step is always a successful
+   * activation and complete cycle. The steps before are randomly determined failed attempts.
+   */
   @Override
   public ExecutionPathSegment findRandomExecutionPath(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
+
+    if (random.nextBoolean()) {
+      result.append(new StepActivateAndTimeoutJob(jobTypeId));
+    }
 
     if (random.nextBoolean()) {
       final boolean updateRetries = random.nextBoolean();
@@ -131,6 +139,42 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
     public int hashCode() {
       int result = jobType != null ? jobType.hashCode() : 0;
       result = 31 * result + (updateRetries ? 1 : 0);
+      result = 31 * result + variables.hashCode();
+      return result;
+    }
+  }
+
+  public static final class StepActivateAndTimeoutJob extends AbstractExecutionStep {
+    private final String jobType;
+
+    public StepActivateAndTimeoutJob(final String jobType) {
+      this.jobType = jobType;
+    }
+
+    public String getJobType() {
+      return jobType;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      final StepActivateAndTimeoutJob that = (StepActivateAndTimeoutJob) o;
+
+      if (jobType != null ? !jobType.equals(that.jobType) : that.jobType != null) {
+        return false;
+      }
+      return variables.equals(that.variables);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = jobType != null ? jobType.hashCode() : 0;
       result = 31 * result + variables.hashCode();
       return result;
     }

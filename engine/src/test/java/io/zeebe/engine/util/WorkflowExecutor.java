@@ -19,7 +19,9 @@ import io.zeebe.test.util.bpmn.random.blocks.MessageStartEventBuilder.StepPublis
 import io.zeebe.test.util.bpmn.random.blocks.NoneStartEventBuilder.StepStartProcessInstance;
 import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateAndCompleteJob;
 import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateAndFailJob;
+import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateAndTimeoutJob;
 import io.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 
 /** This class executes individual {@link AbstractExecutionStep} for a given workflow */
 public class WorkflowExecutor {
@@ -47,6 +49,9 @@ public class WorkflowExecutor {
     } else if (step instanceof StepActivateAndFailJob) {
       final StepActivateAndFailJob activateAndFailJob = (StepActivateAndFailJob) step;
       activateAndFailJob(activateAndFailJob);
+    } else if (step instanceof StepActivateAndTimeoutJob) {
+      final StepActivateAndTimeoutJob activateAndTimeoutJob = (StepActivateAndTimeoutJob) step;
+      activateAndTimeoutJob(activateAndTimeoutJob);
     } else if ((step instanceof StepPickDefaultCase) || (step instanceof StepPickConditionCase)) {
       /*
        * Nothing to do here, as the choice is made by the engine. The default case is for debugging
@@ -88,6 +93,18 @@ public class WorkflowExecutor {
               }
               engineRule.job().withKey(jobKey).withRetries(1).fail();
             });
+  }
+
+  private void activateAndTimeoutJob(final StepActivateAndTimeoutJob activateAndTimeoutJob) {
+    waitForJobToBeCreated(activateAndTimeoutJob.getJobType());
+
+    engineRule.jobs().withType(activateAndTimeoutJob.getJobType()).withTimeout(100).activate();
+
+    engineRule.getClock().addTime(Duration.ofSeconds(150));
+
+    RecordingExporter.jobRecords(JobIntent.TIME_OUT)
+        .withType(activateAndTimeoutJob.getJobType())
+        .await();
   }
 
   private void waitForJobToBeCreated(final String jobType) {
