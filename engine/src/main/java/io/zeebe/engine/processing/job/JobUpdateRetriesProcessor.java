@@ -9,7 +9,8 @@ package io.zeebe.engine.processing.job;
 
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.state.mutable.MutableJobState;
+import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
@@ -22,10 +23,10 @@ public final class JobUpdateRetriesProcessor implements CommandProcessor<JobReco
       "Expected to update retries for job with key '%d' with a positive amount of retries, "
           + "but the amount given was '%d'";
 
-  private final MutableJobState state;
+  private final JobState jobState;
 
-  public JobUpdateRetriesProcessor(final MutableJobState state) {
-    this.state = state;
+  public JobUpdateRetriesProcessor(final ZeebeState state) {
+    jobState = state.getJobState();
   }
 
   @Override
@@ -35,9 +36,13 @@ public final class JobUpdateRetriesProcessor implements CommandProcessor<JobReco
     final int retries = command.getValue().getRetries();
 
     if (retries > 0) {
-      final JobRecord updatedJob = state.updateJobRetries(key, retries);
-      if (updatedJob != null) {
-        commandControl.accept(JobIntent.RETRIES_UPDATED, updatedJob);
+      final JobRecord job = jobState.getJob(key);
+
+      if (job != null) {
+        // update retries for response sent to client
+        job.setRetries(retries);
+
+        commandControl.accept(JobIntent.RETRIES_UPDATED, job);
       } else {
         commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, key));
       }

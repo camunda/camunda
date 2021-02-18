@@ -32,8 +32,9 @@ public final class JobEventProcessors {
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new JobCompleteProcessor(zeebeState))
         .onCommand(ValueType.JOB, JobIntent.FAIL, new JobFailProcessor(zeebeState))
         .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, new JobThrowErrorProcessor(zeebeState))
-        .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new JobTimeOutProcessor(jobState))
-        .onCommand(ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(jobState))
+        .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new JobTimeOutProcessor(zeebeState))
+        .onCommand(
+            ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(zeebeState))
         .onCommand(ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(jobState))
         .onCommand(
             ValueType.JOB_BATCH,
