@@ -15,13 +15,13 @@ import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
 
-public class ErrorThrownEventApplier implements TypedEventApplier<JobIntent, JobRecord> {
+public class JobErrorThrownApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableJobState jobState;
   private final MutableElementInstanceState elementInstanceState;
   private final ErrorEventHandler errorEventHandler;
 
-  ErrorThrownEventApplier(final ZeebeState state) {
+  JobErrorThrownApplier(final ZeebeState state) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
 

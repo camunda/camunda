@@ -23,7 +23,7 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import org.agrona.DirectBuffer;
 
-public final class FailProcessor implements CommandProcessor<JobRecord> {
+public final class JobFailProcessor implements CommandProcessor<JobRecord> {
 
   private static final DirectBuffer DEFAULT_ERROR_MESSAGE = wrapString("No more retries left.");
   private final IncidentRecord incidentEvent = new IncidentRecord();
@@ -31,7 +31,7 @@ public final class FailProcessor implements CommandProcessor<JobRecord> {
   private final JobState jobState;
   private final DefaultJobCommandPreconditionGuard<JobRecord> defaultProcessor;
 
-  public FailProcessor(final ZeebeState state) {
+  public JobFailProcessor(final ZeebeState state) {
     jobState = state.getJobState();
     defaultProcessor =
         new DefaultJobCommandPreconditionGuard<>("fail", jobState, this::acceptCommand);

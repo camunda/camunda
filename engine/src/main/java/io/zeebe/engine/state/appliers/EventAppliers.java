@@ -114,9 +114,9 @@ public final class EventAppliers implements EventApplier {
 
   private void registerJobIntentEventAppliers(final ZeebeState state) {
     register(JobIntent.CREATED, new JobCreatedApplier(state));
-    register(JobIntent.COMPLETED, new JobCompletedEventApplier(state));
+    register(JobIntent.COMPLETED, new JobCompletedApplier(state));
     register(JobIntent.FAILED, new JobFailedApplier(state));
-    register(JobIntent.ERROR_THROWN, new ErrorThrownEventApplier(state));
+    register(JobIntent.ERROR_THROWN, new JobErrorThrownApplier(state));
     register(JobIntent.TIMED_OUT, new JobTimedOutApplier(state));
   }
 

@@ -14,13 +14,13 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
 
-public final class CancelProcessor implements CommandProcessor<JobRecord> {
+public final class JobCancelProcessor implements CommandProcessor<JobRecord> {
 
   public static final String NO_JOB_FOUND_MESSAGE =
       "Expected to cancel job with key '%d', but no such job was found";
   private final MutableJobState state;
 
-  public CancelProcessor(final MutableJobState state) {
+  public JobCancelProcessor(final MutableJobState state) {
     this.state = state;
   }
 

@@ -16,12 +16,12 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
 
-public final class TimeOutProcessor implements CommandProcessor<JobRecord> {
+public final class JobTimeOutProcessor implements CommandProcessor<JobRecord> {
   public static final String NOT_ACTIVATED_JOB_MESSAGE =
       "Expected to time out activated job with key '%d', but %s";
   private final JobState state;
 
-  public TimeOutProcessor(final MutableJobState state) {
+  public JobTimeOutProcessor(final MutableJobState state) {
     this.state = state;
   }
 

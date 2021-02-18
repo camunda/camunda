@@ -29,12 +29,12 @@ public final class JobEventProcessors {
 
     typedRecordProcessors
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor())
-        .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteProcessor(zeebeState))
-        .onCommand(ValueType.JOB, JobIntent.FAIL, new FailProcessor(zeebeState))
+        .onCommand(ValueType.JOB, JobIntent.COMPLETE, new JobCompleteProcessor(zeebeState))
+        .onCommand(ValueType.JOB, JobIntent.FAIL, new JobFailProcessor(zeebeState))
         .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, new JobThrowErrorProcessor(zeebeState))
-        .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new TimeOutProcessor(jobState))
-        .onCommand(ValueType.JOB, JobIntent.UPDATE_RETRIES, new UpdateRetriesProcessor(jobState))
-        .onCommand(ValueType.JOB, JobIntent.CANCEL, new CancelProcessor(jobState))
+        .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new JobTimeOutProcessor(jobState))
+        .onCommand(ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(jobState))
+        .onCommand(ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(jobState))
         .onCommand(
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,

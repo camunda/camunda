@@ -21,13 +21,13 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public final class CompleteProcessor implements CommandProcessor<JobRecord> {
+public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
   private final DefaultJobCommandPreconditionGuard<JobRecord> defaultProcessor;
 
-  public CompleteProcessor(final ZeebeState state) {
+  public JobCompleteProcessor(final ZeebeState state) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     defaultProcessor =
