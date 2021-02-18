@@ -39,9 +39,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RunWith(Parameterized.class)
-public class ReplayStatePropertyTest {
+public class ReplayStateRandomizedPropertyTest {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ReplayStatePropertyTest.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ReplayStateRandomizedPropertyTest.class);
 
   private static final int WORKFLOW_COUNT = 5;
   private static final int EXECUTION_PATH_COUNT = 5;

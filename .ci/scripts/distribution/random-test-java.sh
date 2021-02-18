@@ -1,6 +1,6 @@
 #!/bin/bash -eux
 
-source "${BASH_SOURCE%/*}/../lib/flaky-tests.sh"
+# specialized script to run tests with random elements without flaky test detection
 
 # getconf is a POSIX way to get the number of processors available which works on both Linux and macOS
 LIMITS_CPU=${LIMITS_CPU:-$(getconf _NPROCESSORS_ONLN)}
@@ -10,7 +10,7 @@ JUNIT_THREAD_COUNT=${JUNIT_THREAD_COUNT:-}
 MAVEN_PROPERTIES=(
   -Dzeebe.it.skip
   -DtestMavenId=1
-  -Dsurefire.rerunFailingTestsCount=7
+  -Dsurefire.rerunFailingTestsCount=0
 )
 tmpfile=$(mktemp)
 
@@ -24,16 +24,4 @@ if [ ! -z "$JUNIT_THREAD_COUNT" ]; then
   MAVEN_PROPERTIES+=("-DjunitThreadCount=$JUNIT_THREAD_COUNT")
 fi
 
-mvn -o -B --fail-never -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} verify -P skip-unstable-ci,skip-random-tests,parallel-tests "${MAVEN_PROPERTIES[@]}" | tee ${tmpfile}
-status=${PIPESTATUS[0]}
-
-# delay checking the maven status after we've analysed flaky tests
-analyseFlakyTests "${tmpfile}" "./FlakyTests.txt" || exit $?
-
-if [[ $status != 0 ]]; then
-  exit $status;
-fi
-
-if grep -q "\[INFO\] Build failures were ignored\." ${tmpfile}; then
-  exit 1
-fi
+mvn -o -B --fail-never -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} verify -P skip-unstable-ci,parallel-tests,include-random-tests "${MAVEN_PROPERTIES[@]}" | tee ${tmpfile}
