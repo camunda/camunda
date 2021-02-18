@@ -71,7 +71,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private final AtomicReference<JobPoller> claimableJobPoller;
   private final AtomicBoolean isPollScheduled = new AtomicBoolean(false);
 
-  private long pollInterval;
+  private volatile long pollInterval;
 
   public JobWorkerImpl(
       final int maxJobsActive,
@@ -161,7 +161,9 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     // to avoid race conditions that would let us exceed the buffer size
     final int actualRemainingJobs = remainingJobs.get();
     if (!shouldPoll(actualRemainingJobs)) {
+      LOG.trace("Expected to activate for jobs, but still enough remain. Reschedule poll.");
       releaseJobPoller(jobPoller);
+      schedulePoll();
       return;
     }
     final int maxJobsToActivate = maxJobsActive - actualRemainingJobs;
@@ -174,10 +176,11 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void onPollSuccess(final JobPoller jobPoller, final int activatedJobs) {
-    remainingJobs.addAndGet(activatedJobs);
-    pollInterval = initialPollInterval;
+    // first release, then lookup remaining jobs, to allow handleJobFinished() to poll
     releaseJobPoller(jobPoller);
-    if (activatedJobs == 0) {
+    final int actualRemainingJobs = remainingJobs.addAndGet(activatedJobs);
+    pollInterval = initialPollInterval;
+    if (actualRemainingJobs <= 0) {
       schedulePoll();
     }
     // if jobs were activated, then successive polling happens due to handleJobFinished
@@ -189,11 +192,12 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   /** Apply the backoff strategy by scheduling the next poll at a new interval */
   private void backoff(final JobPoller jobPoller, final Throwable error) {
+    final long prevInterval = pollInterval;
     try {
-      pollInterval = backoffSupplier.supplyRetryDelay(pollInterval);
+      pollInterval = backoffSupplier.supplyRetryDelay(prevInterval);
     } catch (final Exception e) {
       LOG.warn(SUPPLY_RETRY_DELAY_FAILURE_MESSAGE, e);
-      pollInterval = DEFAULT_BACKOFF_SUPPLIER.supplyRetryDelay(pollInterval);
+      pollInterval = DEFAULT_BACKOFF_SUPPLIER.supplyRetryDelay(prevInterval);
     }
     LOG.debug(
         "Failed to activate jobs due to {}, delay retry for {} ms",
