@@ -117,6 +117,7 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.COMPLETED, new JobCompletedEventApplier(state));
     register(JobIntent.FAILED, new JobFailedApplier(state));
     register(JobIntent.ERROR_THROWN, new ErrorThrownEventApplier(state));
+    register(JobIntent.TIMED_OUT, new JobTimedOutApplier(state));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

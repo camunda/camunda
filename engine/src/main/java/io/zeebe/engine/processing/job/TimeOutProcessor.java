@@ -19,7 +19,7 @@ import io.zeebe.protocol.record.intent.JobIntent;
 public final class TimeOutProcessor implements CommandProcessor<JobRecord> {
   public static final String NOT_ACTIVATED_JOB_MESSAGE =
       "Expected to time out activated job with key '%d', but %s";
-  private final MutableJobState state;
+  private final JobState state;
 
   public TimeOutProcessor(final MutableJobState state) {
     this.state = state;
@@ -32,7 +32,6 @@ public final class TimeOutProcessor implements CommandProcessor<JobRecord> {
     final JobState.State jobState = state.getState(jobKey);
 
     if (jobState == State.ACTIVATED) {
-      state.timeout(command.getKey(), command.getValue());
       commandControl.accept(JobIntent.TIMED_OUT, command.getValue());
     } else {
       final String textState;
