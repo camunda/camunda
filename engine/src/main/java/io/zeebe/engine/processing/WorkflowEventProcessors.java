@@ -40,16 +40,8 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import java.util.Arrays;
-import java.util.List;
 
 public final class WorkflowEventProcessors {
-
-  private static final List<WorkflowInstanceIntent> WORKFLOW_INSTANCE_COMMANDS =
-      Arrays.asList(WorkflowInstanceIntent.CANCEL);
-
-  private static boolean isWorkflowInstanceEvent(final WorkflowInstanceIntent intent) {
-    return !WORKFLOW_INSTANCE_COMMANDS.contains(intent);
-  }
 
   public static TypedRecordProcessor<WorkflowInstanceRecord> addWorkflowProcessors(
       final ZeebeState zeebeState,
@@ -88,9 +80,12 @@ public final class WorkflowEventProcessors {
     final WorkflowInstanceCommandProcessor commandProcessor =
         new WorkflowInstanceCommandProcessor(elementInstanceState);
 
-    WORKFLOW_INSTANCE_COMMANDS.forEach(
-        intent ->
-            typedRecordProcessors.onCommand(ValueType.WORKFLOW_INSTANCE, intent, commandProcessor));
+    Arrays.stream(WorkflowInstanceIntent.values())
+        .filter(WorkflowInstanceIntent::isWorkflowInstanceCommand)
+        .forEach(
+            intent ->
+                typedRecordProcessors.onCommand(
+                    ValueType.WORKFLOW_INSTANCE, intent, commandProcessor));
   }
 
   private static void addBpmnStepProcessor(
@@ -98,14 +93,14 @@ public final class WorkflowEventProcessors {
       final BpmnStreamProcessor bpmnStepProcessor) {
 
     Arrays.stream(WorkflowInstanceIntent.values())
-        .filter(WorkflowInstanceIntent::isElementCommandIntent)
+        .filter(WorkflowInstanceIntent::isBpmnElementCommand)
         .forEach(
             intent ->
                 typedRecordProcessors.onCommand(
                     ValueType.WORKFLOW_INSTANCE, intent, bpmnStepProcessor));
 
     Arrays.stream(WorkflowInstanceIntent.values())
-        .filter(WorkflowEventProcessors::isWorkflowInstanceEvent)
+        .filter(WorkflowInstanceIntent::isBpmnElementEvent)
         .forEach(
             intent ->
                 typedRecordProcessors.onEvent(
