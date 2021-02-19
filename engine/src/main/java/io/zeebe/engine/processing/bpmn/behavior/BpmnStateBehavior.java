@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.bpmn.behavior;
 
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
+import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.immutable.JobState;
@@ -51,16 +52,12 @@ public final class BpmnStateBehavior {
 
   public void updateElementInstance(
       final BpmnElementContext context, final Consumer<ElementInstance> modifier) {
-    final var elementInstance = getElementInstance(context);
-    modifier.accept(elementInstance);
-    updateElementInstance(elementInstance);
+    elementInstanceState.updateInstance(context.getElementInstanceKey(), modifier);
   }
 
   public void updateFlowScopeInstance(
       final BpmnElementContext context, final Consumer<ElementInstance> modifier) {
-    final var elementInstance = getFlowScopeInstance(context);
-    modifier.accept(elementInstance);
-    updateElementInstance(elementInstance);
+    elementInstanceState.updateInstance(context.getFlowScopeKey(), modifier);
   }
 
   public JobState getJobState() {
@@ -83,7 +80,19 @@ public final class BpmnStateBehavior {
               activePaths, flowScopeInstance));
     }
 
-    return activePaths == 1;
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      return activePaths == 1;
+    } else {
+      // todo (#6202): change the name of this method to `wasLastActiveExecutionPathInScope`
+      // previously, the last active token was decreased after this method was called,
+      // this made sure the token does not drop to 0 before the flowscope is set to completing.
+      // However, the token must now be consumed when the ELEMENT_COMPLETED is written (by the event
+      // applier). So either the number of active paths in the flowscope have to be already
+      // decreased or the container scope must be completed before the child element is completed.
+      // The only reasonable choice is to decrease the active paths before the flowscope is
+      // completed. As a result, this method has changed it's semantics.
+      return activePaths == 0;
+    }
   }
 
   public void consumeToken(final BpmnElementContext context) {

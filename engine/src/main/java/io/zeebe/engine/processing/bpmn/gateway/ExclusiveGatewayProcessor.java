@@ -7,14 +7,11 @@
  */
 package io.zeebe.engine.processing.bpmn.gateway;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-
 import io.zeebe.el.Expression;
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
-import io.zeebe.engine.processing.bpmn.behavior.BpmnDeferredRecordsBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
@@ -22,12 +19,9 @@ import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableExclusiveGateway;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.zeebe.engine.state.instance.IndexedRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.util.Either;
+import io.zeebe.util.buffer.BufferUtil;
 
 public final class ExclusiveGatewayProcessor
     implements BpmnElementProcessor<ExecutableExclusiveGateway> {
@@ -35,19 +29,15 @@ public final class ExclusiveGatewayProcessor
   private static final String NO_OUTGOING_FLOW_CHOSEN_ERROR =
       "Expected at least one condition to evaluate to true, or to have a default flow";
 
-  private final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
-
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
-  private final BpmnDeferredRecordsBehavior deferredRecordsBehavior;
   private final ExpressionProcessor expressionBehavior;
 
   public ExclusiveGatewayProcessor(final BpmnBehaviors behaviors) {
     expressionBehavior = behaviors.expressionBehavior();
     incidentBehavior = behaviors.incidentBehavior();
     stateBehavior = behaviors.stateBehavior();
-    deferredRecordsBehavior = behaviors.deferredRecordsBehavior();
     stateTransitionBehavior = behaviors.stateTransitionBehavior();
   }
 
@@ -58,35 +48,25 @@ public final class ExclusiveGatewayProcessor
 
   @Override
   public void onActivate(
-      final ExecutableExclusiveGateway element, final BpmnElementContext context) {
+      final ExecutableExclusiveGateway element, final BpmnElementContext activating) {
     if (element.getOutgoing().isEmpty()) {
       // there are no flows to take: the gateway is an implicit end for the flow scope
-      final var activatedContext = stateTransitionBehavior.transitionToActivated(context);
-      // todo (@korthout): write COMPLETE_ELEMENT command
-      stateTransitionBehavior.transitionToCompleting(activatedContext);
+      final var activated = stateTransitionBehavior.transitionToActivated(activating);
+      final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+      final var completed = stateTransitionBehavior.transitionToCompleted(completing);
+      stateTransitionBehavior.onElementCompleted(element, completed);
+
     } else {
       // find outgoing sequence flow with fulfilled condition or the default
-      findSequenceFlowToTake(element, context)
+      findSequenceFlowToTake(element, activating)
           .ifRightOrLeft(
               sequenceFlow -> {
-                final var activatedContext = stateTransitionBehavior.transitionToActivated(context);
-
-                // todo (@korthout): this should be done differently... we can't change state
-                // without a record
-                // defer sequence flow taken, as it will only be taken when the gateway is completed
-                record.wrap(context.getRecordValue());
-                record.setElementId(sequenceFlow.getId());
-                record.setBpmnElementType(BpmnElementType.SEQUENCE_FLOW);
-                deferredRecordsBehavior.deferNewRecord(
-                    context,
-                    context.getElementInstanceKey(),
-                    record,
-                    WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
-
-                // todo (@korthout): write COMPLETE_ELEMENT command
-                stateTransitionBehavior.transitionToCompleting(activatedContext);
+                final var activated = stateTransitionBehavior.transitionToActivated(activating);
+                final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+                final var completed = stateTransitionBehavior.transitionToCompleted(completing);
+                stateTransitionBehavior.takeSequenceFlow(completed, sequenceFlow);
               },
-              failure -> incidentBehavior.createIncident(failure, context));
+              failure -> incidentBehavior.createIncident(failure, activating));
     }
   }
 
@@ -103,43 +83,44 @@ public final class ExclusiveGatewayProcessor
   }
 
   @Override
+  public void onComplete(
+      final ExecutableExclusiveGateway element, final BpmnElementContext context) {
+    throw new UnsupportedOperationException(
+        String.format(
+            "Expected to explicitly process complete, but gateway %s has no wait state",
+            BufferUtil.bufferAsString(context.getElementId())));
+  }
+
+  @Override
   public void onCompleting(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
-    stateTransitionBehavior.transitionToCompleted(context);
+    throw new UnsupportedOperationException("This method is replaced by onActivate");
   }
 
   @Override
   public void onCompleted(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
+    throw new UnsupportedOperationException("This method is replaced by onActivate");
+  }
 
-    deferredRecordsBehavior.getDeferredRecords(context).stream()
-        .filter(r -> r.hasState(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN))
-        .findFirst()
-        .map(r -> getOutgoingSequenceFlow(element, context, r))
-        .ifPresentOrElse(
-            sequenceFlow -> stateTransitionBehavior.takeSequenceFlow(context, sequenceFlow),
-            () -> stateTransitionBehavior.onElementCompleted(element, context));
-
-    stateBehavior.consumeToken(context);
-    stateBehavior.removeElementInstance(context);
+  @Override
+  public void onTerminate(
+      final ExecutableExclusiveGateway element, final BpmnElementContext context) {
+    incidentBehavior.resolveIncidents(context);
+    final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+    stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 
   @Override
   public void onTerminating(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
-    stateTransitionBehavior.transitionToTerminated(context);
+    throw new UnsupportedOperationException("This method is replaced by onTerminate");
   }
 
   @Override
   public void onTerminated(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
-
-    incidentBehavior.resolveIncidents(context);
-
-    stateTransitionBehavior.onElementTerminated(element, context);
-
-    stateBehavior.consumeToken(context);
-    stateBehavior.removeElementInstance(context);
+    throw new UnsupportedOperationException("This method is replaced by onTerminate");
   }
 
   @Override
@@ -148,24 +129,6 @@ public final class ExclusiveGatewayProcessor
     throw new BpmnProcessingException(
         context,
         "Expected to handle occurred event on exclusive gateway, but events should not occur on exclusive gateway.");
-  }
-
-  private ExecutableSequenceFlow getOutgoingSequenceFlow(
-      final ExecutableExclusiveGateway element,
-      final BpmnElementContext context,
-      final IndexedRecord record) {
-
-    final var sequenceFlowId = record.getValue().getElementIdBuffer();
-
-    return element.getOutgoing().stream()
-        .filter(sequenceFlow -> sequenceFlow.getId().equals(sequenceFlowId))
-        .findFirst()
-        .orElseThrow(
-            () ->
-                new IllegalStateException(
-                    String.format(
-                        "Expected sequence flow with id '%s' but not found. [context: %s]",
-                        bufferAsString(sequenceFlowId), context)));
   }
 
   private Either<Failure, ExecutableSequenceFlow> findSequenceFlowToTake(
