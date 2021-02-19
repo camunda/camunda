@@ -28,7 +28,6 @@ import io.atomix.storage.StorageLevel;
 import io.atomix.storage.buffer.FileBuffer;
 import io.atomix.storage.journal.JournalSegmentDescriptor;
 import io.atomix.storage.journal.JournalSegmentFile;
-import io.atomix.storage.statistics.StorageStatistics;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Serializer;
 import io.zeebe.snapshots.raft.PersistedSnapshotStore;
@@ -36,7 +35,6 @@ import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Optional;
 import java.util.function.Predicate;
 import org.agrona.IoUtil;
 
@@ -68,7 +66,6 @@ public final class RaftStorage {
   private final long freeDiskSpace;
   private final boolean flushExplicitly;
   private final boolean retainStaleSnapshots;
-  private final StorageStatistics statistics;
   private final ReceivableSnapshotStore persistedSnapshotStore;
   private final int journalIndexDensity;
 
@@ -82,7 +79,6 @@ public final class RaftStorage {
       final long freeDiskSpace,
       final boolean flushExplicitly,
       final boolean retainStaleSnapshots,
-      final StorageStatistics storageStatistics,
       final ReceivableSnapshotStore persistedSnapshotStore,
       final int journalIndexDensity) {
     this.prefix = prefix;
@@ -94,7 +90,6 @@ public final class RaftStorage {
     this.freeDiskSpace = freeDiskSpace;
     this.flushExplicitly = flushExplicitly;
     this.retainStaleSnapshots = retainStaleSnapshots;
-    statistics = storageStatistics;
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.journalIndexDensity = journalIndexDensity;
 
@@ -159,15 +154,6 @@ public final class RaftStorage {
    */
   public long freeDiskSpace() {
     return freeDiskSpace;
-  }
-
-  /**
-   * Returns the Raft storage statistics.
-   *
-   * @return the Raft storage statistics
-   */
-  public StorageStatistics statistics() {
-    return statistics;
   }
 
   /**
@@ -370,7 +356,6 @@ public final class RaftStorage {
     private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
     private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
     private boolean retainStaleSnapshots = DEFAULT_RETAIN_STALE_SNAPSHOTS;
-    private StorageStatistics storageStatistics;
     private ReceivableSnapshotStore persistedSnapshotStore;
     private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
 
@@ -537,18 +522,6 @@ public final class RaftStorage {
     }
 
     /**
-     * Sets the storage statistics, which are evaluated for deciding to force compaction or not.
-     * Depending on the free memory and/or free disk space ratio the compaction is forced.
-     *
-     * @param storageStatistics the statistics which are evaluated
-     * @return The storage builder.
-     */
-    public Builder withStorageStatistics(final StorageStatistics storageStatistics) {
-      this.storageStatistics = storageStatistics;
-      return this;
-    }
-
-    /**
      * Sets the snapshot store to use for remote snapshot installation.
      *
      * @param persistedSnapshotStore the snapshot store for this Raft
@@ -581,7 +554,6 @@ public final class RaftStorage {
           freeDiskSpace,
           flushExplicitly,
           retainStaleSnapshots,
-          Optional.ofNullable(storageStatistics).orElse(new StorageStatistics(directory)),
           persistedSnapshotStore,
           journalIndexDensity);
     }
