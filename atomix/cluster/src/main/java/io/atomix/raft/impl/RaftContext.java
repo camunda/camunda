@@ -642,21 +642,6 @@ public class RaftContext implements AutoCloseable {
     protocol.unregisterVoteHandler();
   }
 
-  /** Deletes the server context. */
-  public void delete() {
-    // Delete the log.
-    storage.deleteLog();
-
-    // Delete the snapshot store.
-    storage.deleteSnapshotStore();
-
-    // Delete the metadata store.
-    storage.deleteMetaStore();
-
-    // Unlock the store.
-    storage.unlock();
-  }
-
   @Override
   public String toString() {
     return getClass().getCanonicalName();

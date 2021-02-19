@@ -156,11 +156,6 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>atomix-storage</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
       <artifactId>atomix-utils</artifactId>
     </dependency>
 

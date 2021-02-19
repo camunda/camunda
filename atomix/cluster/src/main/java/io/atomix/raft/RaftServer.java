@@ -31,7 +31,6 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.NoopEntryValidator;
-import io.atomix.storage.journal.index.JournalIndex;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
@@ -419,7 +418,6 @@ public interface RaftServer {
     protected Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
     protected Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
     protected Supplier<Random> randomFactory;
-    protected Supplier<JournalIndex> journalIndexFactory;
     protected EntryValidator entryValidator = new NoopEntryValidator();
     protected int maxAppendsPerFollower = 2;
     protected int maxAppendBatchSize = 32 * 1024;
@@ -560,11 +558,6 @@ public interface RaftServer {
     public Builder withMaxAppendBatchSize(final int maxAppendBatchSize) {
       checkArgument(maxAppendBatchSize > 0, "maxAppendBatchSize must be positive");
       this.maxAppendBatchSize = maxAppendBatchSize;
-      return this;
-    }
-
-    public Builder withJournalIndexFactory(final Supplier<JournalIndex> journalIndexFactory) {
-      this.journalIndexFactory = journalIndexFactory;
       return this;
     }
 

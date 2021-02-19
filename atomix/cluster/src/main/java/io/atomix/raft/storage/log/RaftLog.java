@@ -20,7 +20,6 @@ import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeEntry;
-import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.serializer.Namespace;
 import io.zeebe.journal.Journal;
 import io.zeebe.journal.JournalRecord;
