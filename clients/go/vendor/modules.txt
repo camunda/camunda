@@ -136,7 +136,7 @@ golang.org/x/net/internal/socks
 golang.org/x/net/internal/timeseries
 golang.org/x/net/proxy
 golang.org/x/net/trace
-# golang.org/x/oauth2 v0.0.0-20210216194517-16ff1888fd2e
+# golang.org/x/oauth2 v0.0.0-20210218202405-ba52d332ba99
 ## explicit
 golang.org/x/oauth2
 golang.org/x/oauth2/clientcredentials
