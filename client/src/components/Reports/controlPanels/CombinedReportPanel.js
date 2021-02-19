@@ -94,7 +94,7 @@ export default withRouter(
         }, {});
       }
 
-      const colors = ColorPicker.getColors(newSelected.length).filter(
+      const colors = ColorPicker.getGeneratedColors(newSelected.length).filter(
         (color) => !Object.values(colorsHash).includes(color)
       );
 

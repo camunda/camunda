@@ -31,7 +31,7 @@ it('should create dataset option for pie reports', () => {
   ];
   const options = createDatasetOptions('pie', data, false, 'testColor', false, false);
   expect(options).toEqual({
-    backgroundColor: ['hsl(50, 65%, 50%)', 'hsl(180, 65%, 50%)'],
+    backgroundColor: ['#aec7e9', '#f68077'],
     borderColor: '#fff',
     borderWidth: undefined,
   });

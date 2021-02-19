@@ -33,7 +33,13 @@ it('should invoke onChange when a color is selected', () => {
 });
 
 it('should generate correct amount of colors', () => {
-  expect(ColorPicker.getColors(5)).toHaveLength(5);
-  const colors = ColorPicker.getColors(18);
-  expect(colors[17]).toEqual(ColorPicker.dark.steelBlue);
+  const colors = ColorPicker.getGeneratedColors(18);
+  expect(colors.length).toBe(18);
+  expect(colors[17]).toBe('#54e09c');
+});
+
+it('should should repeat generated colors if they are not enough', () => {
+  const colors = ColorPicker.getGeneratedColors(200);
+  expect(colors.length).toBe(200);
+  expect(colors[64]).toBe(colors[0]);
 });

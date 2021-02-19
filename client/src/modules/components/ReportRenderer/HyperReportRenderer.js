@@ -22,7 +22,7 @@ export default function HyperReportRenderer({report, ...rest}) {
 
   const firstEntryResult = result.data[0].value.filter(isVisible(report));
 
-  const colors = ColorPicker.getColors(firstEntryResult.length);
+  const colors = ColorPicker.getGeneratedColors(firstEntryResult.length);
 
   convertedReport.combined = true;
   convertedReport.data = {

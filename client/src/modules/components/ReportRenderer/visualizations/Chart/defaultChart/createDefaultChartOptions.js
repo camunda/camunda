@@ -4,10 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {ColorPicker} from 'components';
+import {isDurationReport, formatters} from 'services';
+
 import {getFormattedTargetValue} from './service';
 import {formatTooltip, getTooltipLabelColor, canBeInterpolated} from '../service';
-import {isDurationReport, formatters} from 'services';
-import {getColorFor, createColors, determineBarColor} from '../colorsUtils';
+import {getColorFor, determineBarColor} from '../colorsUtils';
 
 const {createDurationFormattingOptions, duration} = formatters;
 
@@ -203,7 +205,7 @@ export function createDatasetOptions(type, data, targetValue, datasetColor, isSt
     case 'pie':
       return {
         borderColor: getColorFor('border', isDark),
-        backgroundColor: createColors(data.length, isDark),
+        backgroundColor: ColorPicker.getGeneratedColors(data.length),
         borderWidth: undefined,
       };
     case 'line':

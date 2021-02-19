@@ -7,9 +7,9 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import './ColorPicker.scss';
+import {colors} from './colors.json';
 
-const colorsAmount = 16;
+import './ColorPicker.scss';
 
 export const ColorPicker = ({onChange, className, selectedColor = ColorPicker.dark.steelBlue}) => {
   const handleChange = ({target}) => onChange(target.getAttribute('color'));
@@ -54,16 +54,10 @@ ColorPicker.light = {
   steelBlue: '#b3d5e5',
 };
 
-ColorPicker.getColors = (amount) => {
-  const allColors = [
-    ...Object.values(ColorPicker.dark).reverse(),
-    ...Object.values(ColorPicker.light),
-  ];
-  if (amount > colorsAmount) {
-    return [...allColors, ...new Array(amount - colorsAmount).fill(ColorPicker.dark.steelBlue)];
-  }
+ColorPicker.getGeneratedColors = (amount) => {
+  const repeatCount = Math.ceil(amount / colors.length);
 
-  return allColors.slice(0, amount);
+  return Array(repeatCount).fill(colors).flat().slice(0, amount);
 };
 
 export default ColorPicker;
