@@ -9,33 +9,25 @@ package io.zeebe.broker.system.partitions.impl;
 
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
-import io.zeebe.logstreams.storage.atomix.ZeebeIndexMapping;
 import java.util.Optional;
 
 public final class AtomixRecordEntrySupplierImpl implements AtomixRecordEntrySupplier {
-  private final ZeebeIndexMapping indexMapping;
   private final RaftLogReader reader;
 
-  public AtomixRecordEntrySupplierImpl(
-      final ZeebeIndexMapping indexMapping, final RaftLogReader reader) {
-    this.indexMapping = indexMapping;
+  public AtomixRecordEntrySupplierImpl(final RaftLogReader reader) {
     this.reader = reader;
   }
 
   @Override
   public Optional<Indexed<RaftLogEntry>> getIndexedEntry(final long position) {
-    final var index = indexMapping.lookupPosition(position);
-    if (index == -1) {
-      return Optional.empty();
-    }
-
-    reader.reset(index - 1);
+    reader.seekToAsqn(position);
     if (reader.hasNext()) {
-      final var indexedEntry = reader.next();
-      if (indexedEntry.index() < index) {
-        return Optional.of(indexedEntry);
+      final Indexed<RaftLogEntry> entry = reader.next();
+      if (entry.type() == ZeebeEntry.class) {
+        return Optional.of(entry);
       }
     }
 

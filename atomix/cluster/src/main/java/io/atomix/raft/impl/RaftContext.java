@@ -182,14 +182,14 @@ public class RaftContext implements AutoCloseable {
 
   private void verifySnapshotLogConsistent() {
     final long currentSnapshotIndex = getCurrentSnapshotIndex();
-    if ((currentSnapshotIndex <= 0L && logReader.getFirstIndex() != 1)
+    if ((currentSnapshotIndex <= 0L && raftLog.getFirstIndex() != 1)
         || (currentSnapshotIndex > 0L
-            && currentSnapshot.getIndex() + 1 < logReader.getFirstIndex())) {
+            && currentSnapshot.getIndex() + 1 < raftLog.getFirstIndex())) {
       // There is no snapshot, but the log has been compacted!
       throw new IllegalStateException(
           String.format(
               "Expected to find a snapshot at index >= log's first index %d, but found snapshot %d",
-              logReader.getFirstIndex(), currentSnapshotIndex));
+              raftLog.getFirstIndex(), currentSnapshotIndex));
     }
   }
 
@@ -369,7 +369,7 @@ public class RaftContext implements AutoCloseable {
     final long previousCommitIndex = this.commitIndex;
     if (commitIndex > previousCommitIndex) {
       this.commitIndex = commitIndex;
-      raftLog.commit(Math.min(commitIndex, raftLog.getLastIndex()));
+      raftLog.setCommitIndex(Math.min(commitIndex, raftLog.getLastIndex()));
       if (raftLog.shouldFlushExplicitly() && isLeader()) {
         // leader counts itself in quorum, so in order to commit the leader must persist
         raftLog.flush();

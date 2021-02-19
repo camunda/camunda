@@ -481,7 +481,6 @@ public final class RaftRule extends ExternalResource {
         RaftStorage.builder()
             .withStorageLevel(StorageLevel.DISK)
             .withDirectory(memberDirectory)
-            .withMaxEntriesPerSegment(10)
             .withMaxSegmentSize(1024 * 10)
             .withFreeDiskSpace(100)
             .withSnapshotStore(

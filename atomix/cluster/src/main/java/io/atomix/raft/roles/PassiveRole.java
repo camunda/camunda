@@ -542,8 +542,7 @@ public class PassiveRole extends InactiveRole {
         // Get the last entry written to the log by the writer.
         final Indexed<RaftLogEntry> lastEntry = raft.getLog().getLastEntry();
 
-        final boolean failedToAppend =
-            tryToAppend(future, reader, entry, checksum, index, lastEntry);
+        final boolean failedToAppend = tryToAppend(future, reader, entry, index, lastEntry);
         if (failedToAppend) {
           return;
         }
@@ -579,7 +578,6 @@ public class PassiveRole extends InactiveRole {
       final CompletableFuture<AppendResponse> future,
       final RaftLogReader reader,
       final RaftLogEntry entry,
-      final Long checksum,
       final long index,
       final Indexed<RaftLogEntry> lastEntry) {
     boolean failedToAppend = false;
@@ -587,7 +585,7 @@ public class PassiveRole extends InactiveRole {
       // If the last written entry index is greater than the next append entry index,
       // we need to validate that the entry that's already in the log matches this entry.
       if (lastEntry.index() > index) {
-        failedToAppend = !replaceExistingEntry(future, reader, entry, checksum, index);
+        failedToAppend = !replaceExistingEntry(future, reader, entry, index);
       } else if (lastEntry.index() == index) {
         // If the last written entry is equal to the append entry index, we don't need
         // to read the entry from disk and can just compare the last entry in the writer.
@@ -596,13 +594,13 @@ public class PassiveRole extends InactiveRole {
         // the log and append the leader's entry.
         if (lastEntry.entry().term() != entry.term()) {
           raft.getLog().truncate(index - 1);
-          failedToAppend = !appendEntry(index, entry, checksum, future);
+          failedToAppend = !appendEntry(index, entry, future);
         }
       } else { // Otherwise, this entry is being appended at the end of the log.
-        failedToAppend = !appendEntry(future, entry, checksum, index, lastEntry);
+        failedToAppend = !appendEntry(future, entry, index, lastEntry);
       }
     } else { // Otherwise, if the last entry is null just append the entry and log a message.
-      failedToAppend = !appendEntry(index, entry, checksum, future);
+      failedToAppend = !appendEntry(index, entry, future);
     }
     return failedToAppend;
   }
@@ -610,7 +608,6 @@ public class PassiveRole extends InactiveRole {
   private boolean appendEntry(
       final CompletableFuture<AppendResponse> future,
       final RaftLogEntry entry,
-      final Long checksum,
       final long index,
       final Indexed<RaftLogEntry> lastEntry) {
     // If the last entry index isn't the previous index, throw an exception because
@@ -621,14 +618,13 @@ public class PassiveRole extends InactiveRole {
     }
 
     // Append the entry and log a message.
-    return appendEntry(index, entry, checksum, future);
+    return appendEntry(index, entry, future);
   }
 
   private boolean replaceExistingEntry(
       final CompletableFuture<AppendResponse> future,
       final RaftLogReader reader,
       final RaftLogEntry entry,
-      final Long checksum,
       final long index) {
     // Reset the reader to the current entry index.
     reader.reset(index);
@@ -647,7 +643,7 @@ public class PassiveRole extends InactiveRole {
     // the log and append the leader's entry.
     if (existingEntry.entry().term() != entry.term()) {
       raft.getLog().truncate(index - 1);
-      if (!appendEntry(index, entry, checksum, future)) {
+      if (!appendEntry(index, entry, future)) {
         return false;
       }
     }
@@ -659,17 +655,10 @@ public class PassiveRole extends InactiveRole {
    * StorageException.OutOfDiskSpace} exception.
    */
   private boolean appendEntry(
-      final long index,
-      final RaftLogEntry entry,
-      final Long checksum,
-      final CompletableFuture<AppendResponse> future) {
+      final long index, final RaftLogEntry entry, final CompletableFuture<AppendResponse> future) {
     try {
       final Indexed<RaftLogEntry> indexed;
-      if (checksum != null) {
-        indexed = raft.getLog().append(entry, checksum);
-      } else {
-        indexed = raft.getLog().append(entry);
-      }
+      indexed = raft.getLog().append(entry);
 
       log.trace("Appended {}", indexed);
       raft.getReplicationMetrics().setAppendIndex(indexed.index());

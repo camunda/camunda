@@ -18,50 +18,120 @@ package io.atomix.raft.storage.log;
 
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.storage.journal.Indexed;
-import io.atomix.storage.journal.JournalReader;
+import io.zeebe.journal.JournalReader;
+import io.zeebe.journal.JournalRecord;
+import java.nio.ByteBuffer;
+import java.util.NoSuchElementException;
+import org.agrona.DirectBuffer;
 
 /** Raft log reader. */
 public class RaftLogReader implements java.util.Iterator<Indexed<RaftLogEntry>>, AutoCloseable {
-  private final JournalReader<RaftLogEntry> delegate;
+  private final RaftLog log;
+  private final JournalReader journalReader;
+  private final RaftLogReader.Mode mode;
 
-  RaftLogReader(final JournalReader<RaftLogEntry> delegate) {
-    this.delegate = delegate;
-  }
+  // NOTE: nextIndex is only used if the reader is in commit mode, hence why it's not subject to
+  // inconsistencies when the log is truncated/compacted/etc.
+  private long nextIndex;
 
-  public long getFirstIndex() {
-    return delegate.getFirstIndex();
-  }
+  RaftLogReader(
+      final RaftLog log, final JournalReader journalReader, final RaftLogReader.Mode mode) {
+    this.log = log;
+    this.journalReader = journalReader;
+    this.mode = mode;
 
-  public long getLastIndex() {
-    return delegate.getLastIndex();
+    nextIndex = log.getFirstIndex();
   }
 
   @Override
   public boolean hasNext() {
-    return delegate.hasNext();
+    return (mode == Mode.ALL || nextIndex <= log.getCommitIndex()) && journalReader.hasNext();
   }
 
   @Override
   public Indexed<RaftLogEntry> next() {
-    return delegate.next();
+    if (!hasNext()) {
+      throw new NoSuchElementException();
+    }
+
+    final JournalRecord journalRecord = journalReader.next();
+    final RaftLogEntry entry = deserialize(journalRecord.data());
+
+    nextIndex = journalRecord.index() + 1;
+    return new Indexed<>(
+        journalRecord.index(), entry, journalRecord.data().capacity(), journalRecord.checksum());
   }
 
-  public void reset() {
-    delegate.reset();
+  public long reset() {
+    nextIndex = journalReader.seekToFirst();
+    return nextIndex;
   }
 
-  public void reset(final long index) {
-    delegate.reset(index);
+  public long reset(final long index) {
+    if (nextIndex == index) {
+      return nextIndex;
+    }
+
+    long boundedIndex = index;
+
+    if (mode == Mode.COMMITS) {
+      // allow seeking one past the commit index to simulate being at the end of the log
+      final long upperBoundIndex = log.getCommitIndex() + 1;
+      boundedIndex = Math.min(index, upperBoundIndex);
+    }
+
+    nextIndex = journalReader.seek(boundedIndex);
+    return nextIndex;
+  }
+
+  public long seekToLast() {
+    if (mode == Mode.ALL) {
+      nextIndex = journalReader.seekToLast();
+    } else {
+      reset(log.getCommitIndex());
+    }
+
+    return nextIndex;
+  }
+
+  public long seekToAsqn(final long asqn) {
+    nextIndex = journalReader.seekToAsqn(asqn);
+
+    if (nextIndex > log.getCommitIndex() && !log.isEmpty()) {
+      throw new UnsupportedOperationException("Cannot seek to an ASQN that is not yet committed");
+    }
+
+    return nextIndex;
   }
 
   @Override
   public void close() {
-    delegate.close();
+    journalReader.close();
   }
 
-  @Override
-  public String toString() {
-    return "RaftLogReader{" + "delegate=" + delegate + '}';
+  /**
+   * Deserializes given DirectBuffer to Object using Kryo instance in pool.
+   *
+   * @param buffer input with serialized bytes
+   * @param <T> deserialized Object type
+   * @return deserialized Object
+   */
+  private <T> T deserialize(final DirectBuffer buffer) {
+    final ByteBuffer byteBufferView;
+
+    if (buffer.byteArray() != null) {
+      byteBufferView =
+          ByteBuffer.wrap(buffer.byteArray(), buffer.wrapAdjustment(), buffer.capacity());
+    } else {
+      byteBufferView =
+          buffer
+              .byteBuffer()
+              .asReadOnlyBuffer()
+              .position(buffer.wrapAdjustment())
+              .limit(buffer.wrapAdjustment() + buffer.capacity());
+    }
+
+    return log.getSerializer().deserialize(byteBufferView);
   }
 
   /** Raft log reader mode. */

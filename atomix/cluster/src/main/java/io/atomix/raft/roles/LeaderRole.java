@@ -39,6 +39,7 @@ import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
+import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitializeEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
@@ -191,17 +192,21 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     return future;
   }
 
+  // TODO: good candidate to use a seekToLastASQN()
   private ZeebeEntry findLastZeebeEntry() {
     long index = raft.getLog().getLastIndex();
-    while (index > 0) {
-      raft.getLogReader().reset(index);
-      final Indexed<RaftLogEntry> lastEntry = raft.getLogReader().next();
+    final RaftLogReader reader = raft.getLogReader();
 
-      if (lastEntry != null && lastEntry.type() == ZeebeEntry.class) {
-        return ((ZeebeEntry) lastEntry.entry());
+    while (index > 0) {
+      reader.reset(index);
+      if (reader.hasNext()) {
+        final Indexed<RaftLogEntry> lastEntry = reader.next();
+        if (lastEntry != null && lastEntry.type() == ZeebeEntry.class) {
+          return ((ZeebeEntry) lastEntry.entry());
+        }
       }
 
-      --index;
+      index--;
     }
 
     return null;

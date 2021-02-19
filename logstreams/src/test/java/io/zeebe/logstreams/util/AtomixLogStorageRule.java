@@ -26,7 +26,6 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixAppenderSupplier;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixReaderFactory;
-import io.zeebe.logstreams.storage.atomix.ZeebeIndexAdapter;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -47,7 +46,6 @@ public final class AtomixLogStorageRule extends ExternalResource
   private final int partitionId;
   private final UnaryOperator<RaftStorage.Builder> builder;
 
-  private ZeebeIndexAdapter indexMapping;
   private RaftStorage raftStorage;
   private RaftLog raftLog;
   private MetaStore metaStore;
@@ -133,7 +131,7 @@ public final class AtomixLogStorageRule extends ExternalResource
     final Indexed<ZeebeEntry> entry = raftLog.append(zbEntry);
 
     listener.onWrite(entry);
-    raftLog.commit(entry.index());
+    raftLog.setCommitIndex(entry.index());
 
     listener.onCommit(entry);
     if (positionListener != null) {
@@ -191,17 +189,11 @@ public final class AtomixLogStorageRule extends ExternalResource
       throw new UncheckedIOException(e);
     }
 
-    indexMapping = ZeebeIndexAdapter.ofDensity(1);
-    raftStorage =
-        builder
-            .apply(buildDefaultStorage())
-            .withDirectory(directory)
-            .withJournalIndexFactory(() -> indexMapping)
-            .build();
+    raftStorage = builder.apply(buildDefaultStorage()).withDirectory(directory).build();
     raftLog = raftStorage.openLog();
     metaStore = raftStorage.openMetaStore();
 
-    storage = spy(new AtomixLogStorage(indexMapping, this, this));
+    storage = spy(new AtomixLogStorage(this, this));
   }
 
   public void close() {
@@ -237,15 +229,12 @@ public final class AtomixLogStorageRule extends ExternalResource
     return metaStore;
   }
 
-  public ZeebeIndexAdapter getIndexMapping() {
-    return indexMapping;
-  }
-
   private RaftStorage.Builder buildDefaultStorage() {
     return RaftStorage.builder()
         .withFlushExplicitly(true)
         .withStorageLevel(StorageLevel.DISK)
         .withNamespace(RaftNamespaces.RAFT_STORAGE)
+        .withJournalIndexDensity(1)
         .withRetainStaleSnapshots();
   }
 

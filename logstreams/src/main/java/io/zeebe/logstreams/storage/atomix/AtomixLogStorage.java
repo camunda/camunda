@@ -18,26 +18,21 @@ public class AtomixLogStorage implements LogStorage {
   private final AtomixAppenderSupplier appenderSupplier;
 
   private boolean opened;
-  private final ZeebeIndexMapping zeebeIndexMapping;
 
   public AtomixLogStorage(
-      final ZeebeIndexMapping zeebeIndexMapping,
-      final AtomixReaderFactory readerFactory,
-      final AtomixAppenderSupplier appenderSupplier) {
-    this.zeebeIndexMapping = zeebeIndexMapping;
+      final AtomixReaderFactory readerFactory, final AtomixAppenderSupplier appenderSupplier) {
     this.readerFactory = readerFactory;
     this.appenderSupplier = appenderSupplier;
   }
 
-  public static AtomixLogStorage ofPartition(
-      final ZeebeIndexMapping zeebeIndexMapping, final RaftPartition partition) {
+  public static AtomixLogStorage ofPartition(final RaftPartition partition) {
     final var server = new AtomixRaftServer(partition.getServer());
-    return new AtomixLogStorage(zeebeIndexMapping, server, server);
+    return new AtomixLogStorage(server, server);
   }
 
   @Override
   public LogStorageReader newReader() {
-    return new AtomixLogStorageReader(zeebeIndexMapping, readerFactory.create());
+    return new AtomixLogStorageReader(readerFactory.create());
   }
 
   @Override

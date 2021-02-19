@@ -22,7 +22,6 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
-import io.zeebe.logstreams.storage.atomix.ZeebeIndexMapping;
 import io.zeebe.snapshots.broker.SnapshotStoreSupplier;
 import io.zeebe.util.health.HealthMonitor;
 import io.zeebe.util.sched.ActorControl;
@@ -46,7 +45,6 @@ public class PartitionContext {
   private final CommandApiService commandApiService;
   private final Integer partitionId;
   private final int maxFragmentSize;
-  private final ZeebeIndexMapping zeebeIndexMapping;
   private final ExporterRepository exporterRepository;
   private final PartitionProcessingState partitionProcessingState;
 
@@ -73,7 +71,6 @@ public class PartitionContext {
       final ActorScheduler actorScheduler,
       final BrokerCfg brokerCfg,
       final CommandApiService commandApiService,
-      final ZeebeIndexMapping zeebeIndexMapping,
       final SnapshotStoreSupplier snapshotStoreSupplier,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
       final ExporterRepository exporterRepository,
@@ -89,7 +86,6 @@ public class PartitionContext {
     partitionId = raftPartition.id().id();
     scheduler = actorScheduler;
     maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
-    this.zeebeIndexMapping = zeebeIndexMapping;
     this.exporterRepository = exporterRepository;
     this.partitionProcessingState = partitionProcessingState;
   }
@@ -248,10 +244,6 @@ public class PartitionContext {
 
   public int getMaxFragmentSize() {
     return maxFragmentSize;
-  }
-
-  public ZeebeIndexMapping getZeebeIndexMapping() {
-    return zeebeIndexMapping;
   }
 
   public ExporterRepository getExporterRepository() {

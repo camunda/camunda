@@ -500,6 +500,11 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
       return this;
     }
 
+    public Builder withJournalIndexDensity(final int journalIndexDensity) {
+      config.getStorageConfig().setJournalIndexDensity(journalIndexDensity);
+      return this;
+    }
+
     @Override
     public RaftPartitionGroup build() {
       return new RaftPartitionGroup(config);

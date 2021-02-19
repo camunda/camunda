@@ -72,7 +72,7 @@ public class LeaderRoleTest {
     when(context.getThreadContext()).thenReturn(threadContext);
 
     log = mock(RaftLog.class);
-    when(log.getNextIndex()).thenReturn(1L);
+    when(log.getLastIndex()).thenReturn(1L);
     when(log.append(any(ZeebeEntry.class)))
         .then(
             i -> {
