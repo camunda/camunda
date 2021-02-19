@@ -21,10 +21,10 @@ public final class FileBasedSnapshotStoreFactoryTest {
   public void shouldCreateDirectoriesIfNotExist() {
     // given
     final var root = temporaryFolder.getRoot().toPath();
-    final var factory = new FileBasedSnapshotStoreFactory(createActorScheduler());
+    final var factory = new FileBasedSnapshotStoreFactory(createActorScheduler(), 1);
 
     // when
-    final var store = factory.createReceivableSnapshotStore(root, "ignored");
+    final var store = factory.createReceivableSnapshotStore(root, 1);
 
     // then
     assertThat(root.resolve(FileBasedSnapshotStoreFactory.SNAPSHOTS_DIRECTORY))

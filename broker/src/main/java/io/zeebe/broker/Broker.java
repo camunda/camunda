@@ -206,7 +206,8 @@ public final class Broker implements AutoCloseable {
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
     startContext.addStep("actor scheduler", this::actorSchedulerStep);
-    startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
+    startContext.addStep(
+        "membership and replication protocol", () -> atomixCreateStep(brokerCfg, localBroker));
     startContext.addStep(
         "command api transport",
         () ->
@@ -253,8 +254,9 @@ public final class Broker implements AutoCloseable {
         scheduler.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
   }
 
-  private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
-    final var snapshotStoreFactory = new FileBasedSnapshotStoreFactory(scheduler);
+  private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg, final BrokerInfo localBroker) {
+    final var snapshotStoreFactory =
+        new FileBasedSnapshotStoreFactory(scheduler, localBroker.getNodeId());
     snapshotStoreSupplier = snapshotStoreFactory;
     atomix = AtomixFactory.fromConfiguration(brokerCfg, snapshotStoreFactory);
 

@@ -56,7 +56,7 @@ public final class ZeebePartition extends Actor
     context.setActor(actor);
     context.setDiskSpaceAvailable(true);
 
-    actorName = buildActorName(context.getNodeId(), "ZeebePartition-" + context.getPartitionId());
+    actorName = buildActorName(context.getNodeId(), "ZeebePartition", context.getPartitionId());
     context.setComponentHealthMonitor(new CriticalComponentsHealthMonitor(actor, LOG));
     raftPartitionHealth =
         new RaftPartitionHealth(context.getRaftPartition(), actor, this::onRaftFailed);

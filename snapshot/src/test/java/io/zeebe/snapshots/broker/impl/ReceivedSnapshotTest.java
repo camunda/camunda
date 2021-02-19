@@ -36,16 +36,16 @@ public class ReceivedSnapshotTest {
 
   @Before
   public void before() throws Exception {
-    final String partitionName = "1";
+    final int partitionId = 1;
 
-    final var senderFactory = new FileBasedSnapshotStoreFactory(createActorScheduler());
+    final var senderFactory = new FileBasedSnapshotStoreFactory(createActorScheduler(), 1);
     senderFactory.createReceivableSnapshotStore(
-        temporaryFolder.newFolder("sender").toPath(), partitionName);
-    senderSnapshotStore = senderFactory.getConstructableSnapshotStore(partitionName);
+        temporaryFolder.newFolder("sender").toPath(), partitionId);
+    senderSnapshotStore = senderFactory.getConstructableSnapshotStore(partitionId);
     receiverSnapshotStore =
-        new FileBasedSnapshotStoreFactory(createActorScheduler())
+        new FileBasedSnapshotStoreFactory(createActorScheduler(), 2)
             .createReceivableSnapshotStore(
-                temporaryFolder.newFolder("received").toPath(), partitionName);
+                temporaryFolder.newFolder("received").toPath(), partitionId);
   }
 
   private ActorScheduler createActorScheduler() {

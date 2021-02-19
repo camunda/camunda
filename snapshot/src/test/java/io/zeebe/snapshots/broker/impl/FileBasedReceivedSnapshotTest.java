@@ -48,18 +48,18 @@ public class FileBasedReceivedSnapshotTest {
 
   @Before
   public void before() throws Exception {
-    final String partitionName = "1";
+    final int partitiondId = 1;
     final File senderRoot = temporaryFolder.newFolder("sender");
 
     final var senderSnapshotStoreFactory =
-        new FileBasedSnapshotStoreFactory(createActorScheduler());
-    senderSnapshotStoreFactory.createReceivableSnapshotStore(senderRoot.toPath(), partitionName);
-    senderSnapshotStore = senderSnapshotStoreFactory.getConstructableSnapshotStore(partitionName);
+        new FileBasedSnapshotStoreFactory(createActorScheduler(), 1);
+    senderSnapshotStoreFactory.createReceivableSnapshotStore(senderRoot.toPath(), partitiondId);
+    senderSnapshotStore = senderSnapshotStoreFactory.getConstructableSnapshotStore(partitiondId);
 
     final var receiverRoot = temporaryFolder.newFolder("received");
     receiverSnapshotStore =
-        new FileBasedSnapshotStoreFactory(createActorScheduler())
-            .createReceivableSnapshotStore(receiverRoot.toPath(), partitionName);
+        new FileBasedSnapshotStoreFactory(createActorScheduler(), 2)
+            .createReceivableSnapshotStore(receiverRoot.toPath(), partitiondId);
 
     receiverSnapshotsDir =
         receiverRoot.toPath().resolve(FileBasedSnapshotStoreFactory.SNAPSHOTS_DIRECTORY);
@@ -268,10 +268,10 @@ public class FileBasedReceivedSnapshotTest {
     final var term = 0L;
 
     final FileBasedSnapshotStoreFactory fileBasedSnapshotStoreFactory =
-        new FileBasedSnapshotStoreFactory(createActorScheduler());
+        new FileBasedSnapshotStoreFactory(createActorScheduler(), 1);
     fileBasedSnapshotStoreFactory.createReceivableSnapshotStore(
-        temporaryFolder.newFolder("other").toPath(), "1");
-    final var otherStore = fileBasedSnapshotStoreFactory.getConstructableSnapshotStore("1");
+        temporaryFolder.newFolder("other").toPath(), 1);
+    final var otherStore = fileBasedSnapshotStoreFactory.getConstructableSnapshotStore(1);
     final var olderTransient = otherStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     olderTransient.take(this::takeSnapshot).join();
     final var olderPersistedSnapshot = olderTransient.persist().join();
@@ -400,7 +400,7 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(committedSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly(persistedSnapshot.getPath().toFile().list());
+        .containsExactlyInAnyOrder(persistedSnapshot.getPath().toFile().list());
 
     assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
   }

@@ -50,16 +50,16 @@ public final class StateControllerImplTest {
   public void setup() throws IOException {
     final var rootDirectory = tempFolderRule.newFolder("state").toPath();
 
-    final var factory = new FileBasedSnapshotStoreFactory(actorSchedulerRule.get());
-    factory.createReceivableSnapshotStore(rootDirectory, "1");
-    store = factory.getConstructableSnapshotStore("1");
+    final var factory = new FileBasedSnapshotStoreFactory(actorSchedulerRule.get(), 1);
+    factory.createReceivableSnapshotStore(rootDirectory, 1);
+    store = factory.getConstructableSnapshotStore(1);
 
     snapshotController =
         new StateControllerImpl(
             1,
             ZeebeRocksDbFactory.newFactory(),
             store,
-            factory.getReceivableSnapshotStore("1"),
+            factory.getReceivableSnapshotStore(1),
             rootDirectory.resolve("runtime"),
             new NoneSnapshotReplication(),
             l ->

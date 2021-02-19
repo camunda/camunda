@@ -39,15 +39,15 @@ public class FileBasedSnapshotStoreTest {
   private Path pendingSnapshotsDir;
   private FileBasedSnapshotStoreFactory factory;
   private File root;
-  private String partitionName;
+  private int partitionId;
 
   @Before
   public void before() {
-    factory = new FileBasedSnapshotStoreFactory(createActorScheduler());
-    partitionName = "1";
+    factory = new FileBasedSnapshotStoreFactory(createActorScheduler(), 1);
+    partitionId = 1;
     root = temporaryFolder.getRoot();
 
-    factory.createReceivableSnapshotStore(root.toPath(), partitionName);
+    factory.createReceivableSnapshotStore(root.toPath(), partitionId);
 
     snapshotsDir =
         temporaryFolder
@@ -78,7 +78,7 @@ public class FileBasedSnapshotStoreTest {
     // given
 
     // when
-    factory.getPersistedSnapshotStore(partitionName).delete().join();
+    factory.getPersistedSnapshotStore(partitionId).delete().join();
 
     // then
     assertThat(pendingSnapshotsDir).doesNotExist();
@@ -92,7 +92,7 @@ public class FileBasedSnapshotStoreTest {
     final var term = 0L;
     final var transientSnapshot =
         factory
-            .getConstructableSnapshotStore(partitionName)
+            .getConstructableSnapshotStore(partitionId)
             .newTransientSnapshot(index, term, 1, 0)
             .orElseThrow();
     transientSnapshot.take(this::createSnapshotDir);
@@ -100,8 +100,8 @@ public class FileBasedSnapshotStoreTest {
 
     // when
     final var snapshotStore =
-        new FileBasedSnapshotStoreFactory(createActorScheduler())
-            .createReceivableSnapshotStore(root.toPath(), partitionName);
+        new FileBasedSnapshotStoreFactory(createActorScheduler(), 1)
+            .createReceivableSnapshotStore(root.toPath(), partitionId);
 
     // then
     final var currentSnapshotIndex = snapshotStore.getCurrentSnapshotIndex();
@@ -136,8 +136,8 @@ public class FileBasedSnapshotStoreTest {
 
     // when
     final var snapshotStore =
-        new FileBasedSnapshotStoreFactory(createActorScheduler())
-            .createReceivableSnapshotStore(root.toPath(), partitionName);
+        new FileBasedSnapshotStoreFactory(createActorScheduler(), 1)
+            .createReceivableSnapshotStore(root.toPath(), partitionId);
 
     // then
     final var currentSnapshotIndex = snapshotStore.getCurrentSnapshotIndex();
@@ -155,7 +155,7 @@ public class FileBasedSnapshotStoreTest {
     final var term = 0L;
     final var transientSnapshot =
         factory
-            .getConstructableSnapshotStore(partitionName)
+            .getConstructableSnapshotStore(partitionId)
             .newTransientSnapshot(index, term, 1, 0)
             .orElseThrow();
     transientSnapshot.take(this::createSnapshotDir);
@@ -165,8 +165,8 @@ public class FileBasedSnapshotStoreTest {
 
     // when
     final var snapshotStore =
-        new FileBasedSnapshotStoreFactory(createActorScheduler())
-            .createReceivableSnapshotStore(root.toPath(), partitionName);
+        new FileBasedSnapshotStoreFactory(createActorScheduler(), 1)
+            .createReceivableSnapshotStore(root.toPath(), partitionId);
 
     // then
     final var currentSnapshotIndex = snapshotStore.getCurrentSnapshotIndex();

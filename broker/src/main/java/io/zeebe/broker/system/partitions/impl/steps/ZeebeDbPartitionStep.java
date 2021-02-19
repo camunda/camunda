@@ -20,7 +20,7 @@ public class ZeebeDbPartitionStep implements PartitionStep {
   public ActorFuture<Void> open(final PartitionContext context) {
     context
         .getSnapshotStoreSupplier()
-        .getPersistedSnapshotStore(context.getRaftPartition().name())
+        .getPersistedSnapshotStore(context.getRaftPartition().id().id())
         .addSnapshotListener(context.getSnapshotController());
 
     final ZeebeDb zeebeDb;

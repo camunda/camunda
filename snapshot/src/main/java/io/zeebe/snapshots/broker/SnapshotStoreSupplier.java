@@ -15,24 +15,24 @@ public interface SnapshotStoreSupplier {
   /**
    * Returns a partition's {@link ConstructableSnapshotStore}
    *
-   * @param partitionName
+   * @param partitionId
    * @return a ConstructableSnapshotStore
    */
-  ConstructableSnapshotStore getConstructableSnapshotStore(String partitionName);
+  ConstructableSnapshotStore getConstructableSnapshotStore(int partitionId);
 
   /**
    * Returns a partition's {@link ReceivableSnapshotStore}
    *
-   * @param partitionName
+   * @param partitionId
    * @return a ReceivableSnapshotStore
    */
-  ReceivableSnapshotStore getReceivableSnapshotStore(final String partitionName);
+  ReceivableSnapshotStore getReceivableSnapshotStore(final int partitionId);
 
   /**
    * Returns a partition's {@link PersistedSnapshotStore}
    *
-   * @param partitionName
+   * @param partitionId
    * @return a PersistedSnapshotStore
    */
-  PersistedSnapshotStore getPersistedSnapshotStore(String partitionName);
+  PersistedSnapshotStore getPersistedSnapshotStore(int partitionId);
 }

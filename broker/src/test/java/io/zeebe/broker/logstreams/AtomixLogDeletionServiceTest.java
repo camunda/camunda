@@ -139,6 +139,8 @@ public final class AtomixLogDeletionServiceTest {
           .withMaxSegmentSize(JournalSegmentDescriptor.BYTES + 2 * Integer.BYTES + length)
           .withSnapshotStore(
               new FileBasedSnapshotStore(
+                  1,
+                  1,
                   new SnapshotMetrics("1"),
                   folder.newFolder("runtime").toPath(),
                   folder.newFolder("snapshots").toPath()));

@@ -26,7 +26,7 @@ class NoopSnapshotStoreFactory implements ReceivableSnapshotStoreFactory {
 
   @Override
   public ReceivableSnapshotStore createReceivableSnapshotStore(
-      final Path directory, final String partitionName) {
+      final Path directory, final int partitionId) {
     return new NoopSnapshotStore();
   }
 }

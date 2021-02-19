@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 public class RaftPartition implements Partition {
 
   private static final Logger LOG = LoggerFactory.getLogger(RaftPartition.class);
+  private static final String PARTITION_NAME_FORMAT = "%s-partition-%d";
   private final PartitionId partitionId;
   private final RaftPartitionGroupConfig config;
   private final File dataDirectory;
@@ -159,8 +160,7 @@ public class RaftPartition implements Partition {
    * @return the partition name
    */
   public String name() {
-
-    return String.format("%s-partition-%d", partitionId.group(), partitionId.id());
+    return String.format(PARTITION_NAME_FORMAT, partitionId.group(), partitionId.id());
   }
 
   /** Closes the partition. */
