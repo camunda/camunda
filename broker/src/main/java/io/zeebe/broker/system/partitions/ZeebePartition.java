@@ -13,7 +13,6 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.zeebe.broker.system.monitoring.HealthMetrics;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.snapshots.raft.PersistedSnapshotStore;
 import io.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.zeebe.util.health.FailureListener;
@@ -191,8 +190,6 @@ public final class ZeebePartition extends Actor
 
   @Override
   public void onActorStarting() {
-    context.setAtomixLogStorage(
-        AtomixLogStorage.ofPartition(context.getZeebeIndexMapping(), context.getRaftPartition()));
     context.getRaftPartition().addRoleChangeListener(this);
     context.getComponentHealthMonitor().addFailureListener(this);
     onRoleChange(context.getRaftPartition().getRole(), context.getRaftPartition().term());
