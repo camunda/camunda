@@ -185,11 +185,7 @@ class JournalReaderTest {
     // then
     assertThat(nextIndex).isEqualTo(expectedRecord.index());
     assertThat(reader.hasNext()).isTrue();
-    final var record = reader.next();
-    assertThat(record.index()).isEqualTo(expectedRecord.index());
-    assertThat(record.asqn()).isEqualTo(expectedRecord.asqn());
-    assertThat(record.data()).isEqualTo(expectedRecord.data());
-    assertThat(record.checksum()).isEqualTo(expectedRecord.checksum());
+    assertThat(reader.next()).isEqualTo(expectedRecord);
   }
 
   @Test
@@ -205,11 +201,7 @@ class JournalReaderTest {
     // then
     assertThat(nextIndex).isEqualTo(expectedRecord.index());
     assertThat(reader.hasNext()).isTrue();
-    final var record = reader.next();
-    assertThat(record.index()).isEqualTo(expectedRecord.index());
-    assertThat(record.asqn()).isEqualTo(expectedRecord.asqn());
-    assertThat(record.data()).isEqualTo(expectedRecord.data());
-    assertThat(record.checksum()).isEqualTo(expectedRecord.checksum());
+    assertThat(reader.next()).isEqualTo(expectedRecord);
   }
 
   @Test
@@ -224,12 +216,7 @@ class JournalReaderTest {
     // then
     assertThat(nextIndex).isEqualTo(expectedRecord.index());
     assertThat(reader.hasNext()).isTrue();
-    final var record = reader.next();
-    assertThat(record.index()).isEqualTo(expectedRecord.index());
-    assertThat(record.asqn()).isEqualTo(expectedRecord.asqn());
-    assertThat(record.data()).isEqualTo(expectedRecord.data());
-    assertThat(record.checksum()).isEqualTo(expectedRecord.checksum());
-
+    assertThat(reader.next()).isEqualTo(expectedRecord);
     assertThat(reader.next().asqn()).isEqualTo(5);
   }
 

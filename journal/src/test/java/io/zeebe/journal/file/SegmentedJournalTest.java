@@ -164,18 +164,15 @@ public class SegmentedJournalTest {
     final JournalReader reader = journal.openReader();
 
     // when
-    final long firstIndex = journal.append(asqn, data).index();
-    journal.append(asqn + 1, data);
-    journal.deleteUntil(firstIndex);
+    final var firstRecord = journal.append(asqn, data);
+    final var secondRecord = journal.append(asqn + 1, data);
+    journal.deleteUntil(firstRecord.index());
 
     // then
-    for (int i = 0; i < 2; i++) {
-      assertThat(reader.hasNext()).isTrue();
-      final JournalRecord entry = reader.next();
-      assertThat(entry.asqn()).isEqualTo(asqn + i);
-      assertThat(entry.data()).isEqualTo(data);
-      assertThat(entry.index()).isEqualTo(firstIndex + i);
-    }
+    assertThat(reader.hasNext()).isTrue();
+    assertThat(reader.next()).isEqualTo(firstRecord);
+    assertThat(reader.hasNext()).isTrue();
+    assertThat(reader.next()).isEqualTo(secondRecord);
   }
 
   @Test
@@ -185,12 +182,12 @@ public class SegmentedJournalTest {
     final JournalReader reader = journal.openReader();
 
     // when
-    final long first = journal.append(1, data).index();
+    final var firstRecord = journal.append(1, data);
     journal.append(2, data).index();
     journal.append(3, data).index();
 
-    assertThat(reader.next().index()).isEqualTo(first);
-    journal.deleteAfter(first);
+    assertThat(reader.next()).isEqualTo(firstRecord);
+    journal.deleteAfter(firstRecord.index());
 
     // then
     assertThat(reader.hasNext()).isFalse();
@@ -221,14 +218,14 @@ public class SegmentedJournalTest {
     final JournalReader reader = journal.openReader();
 
     // when
-    final long firstIndex = journal.append(1, data).index();
+    final var firstRecord = journal.append(1, data);
     journal.append(2, data);
-    journal.deleteAfter(firstIndex);
+    journal.deleteAfter(firstRecord.index());
 
     // then
-    assertThat(reader.next().index()).isEqualTo(firstIndex);
+    assertThat(reader.next()).isEqualTo(firstRecord);
     assertThat(reader.hasNext()).isFalse();
-    assertThat(journal.getLastIndex()).isEqualTo(firstIndex);
+    assertThat(journal.getLastIndex()).isEqualTo(firstRecord.index());
   }
 
   @Test
@@ -295,16 +292,12 @@ public class SegmentedJournalTest {
     journal.append(2, data);
     journal.deleteAfter(first - 1);
     data.wrap("new".getBytes());
-    final long last = journal.append(3, data).index();
+    final var lastRecord = journal.append(3, data);
 
     // then
-    assertThat(first).isEqualTo(last);
-
+    assertThat(first).isEqualTo(lastRecord.index());
     assertThat(reader.hasNext()).isTrue();
-    final JournalRecord record = reader.next();
-    assertThat(record.index()).isEqualTo(last);
-    assertThat(record.asqn()).isEqualTo(3);
-    assertThat(record.data()).isEqualTo(data);
+    assertThat(reader.next()).isEqualTo(lastRecord);
   }
 
   @Test
@@ -318,20 +311,14 @@ public class SegmentedJournalTest {
     final JournalReader reader = journal.openReader();
 
     // when
-    data.wrap("12345".getBytes(StandardCharsets.UTF_8));
-    journal.append(data);
-    data.wrap("1234567".getBytes(StandardCharsets.UTF_8));
-    journal.append(data);
-    data.wrap("1234567890".getBytes(StandardCharsets.UTF_8));
-    journal.append(data);
+    final var firstRecord = journal.append(new UnsafeBuffer("12345".getBytes()));
+    final var secondRecord = journal.append(new UnsafeBuffer("1234567".getBytes()));
+    final var thirdRecord = journal.append(new UnsafeBuffer("1234567890".getBytes()));
 
     // then
-    data.wrap("12345".getBytes(StandardCharsets.UTF_8));
-    assertThat(reader.next().data()).isEqualTo(data);
-    data.wrap("1234567".getBytes(StandardCharsets.UTF_8));
-    assertThat(reader.next().data()).isEqualTo(data);
-    data.wrap("1234567890".getBytes(StandardCharsets.UTF_8));
-    assertThat(reader.next().data()).isEqualTo(data);
+    assertThat(reader.next()).isEqualTo(firstRecord);
+    assertThat(reader.next()).isEqualTo(secondRecord);
+    assertThat(reader.next()).isEqualTo(thirdRecord);
     assertThat(reader.hasNext()).isFalse();
   }
 

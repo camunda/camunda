@@ -83,9 +83,7 @@ public class JournalTest {
 
     // then
     final var recordRead = journal.openReader().next();
-    assertThat(recordAppended.index()).isEqualTo(recordRead.index());
-    assertThat(recordAppended.asqn()).isEqualTo(recordRead.asqn());
-    assertThat(recordAppended.checksum()).isEqualTo(recordRead.checksum());
+    assertThat(recordAppended).isEqualTo(recordRead);
   }
 
   @Test
@@ -198,9 +196,7 @@ public class JournalTest {
     assertThat(reader.hasNext()).isTrue();
 
     final var newRecord = reader.next();
-    assertThat(newRecord.index()).isEqualTo(record.index());
-    assertThat(newRecord.asqn()).isEqualTo(record.asqn());
-    assertThat(newRecord.data()).isEqualTo(record.data());
+    assertThat(newRecord).isEqualTo(record);
   }
 
   @Test
@@ -243,8 +239,7 @@ public class JournalTest {
     for (readerIndex = 1; readerIndex <= truncateIndex; readerIndex++) {
       assertThat(reader.hasNext()).isTrue();
       final var record = reader.next();
-      assertThat(record.index()).isEqualTo(readerIndex);
-      assertThat(record.asqn()).isEqualTo(written.get(readerIndex).asqn());
+      assertThat(record).isEqualTo(written.get(readerIndex));
     }
 
     // when
@@ -260,8 +255,7 @@ public class JournalTest {
     for (; readerIndex <= totalWrites; readerIndex++) {
       assertThat(reader.hasNext()).isTrue();
       final var record = reader.next();
-      assertThat(record.index()).isEqualTo(readerIndex);
-      assertThat(record.asqn()).isEqualTo(written.get(readerIndex).asqn());
+      assertThat(record).isEqualTo(written.get(readerIndex));
     }
   }
 
@@ -368,7 +362,7 @@ public class JournalTest {
   @Test
   public void shouldReadReopenedJournal() throws Exception {
     // when
-    final long index = journal.append(data).index();
+    final var appendedRecord = journal.append(data);
     journal.close();
     assertThat(journal.isOpen()).isFalse();
     journal = openJournal(getSerializedSize(data), 2);
@@ -377,10 +371,7 @@ public class JournalTest {
     // then
     assertThat(journal.isOpen()).isTrue();
     assertThat(reader.hasNext()).isTrue();
-
-    final JournalRecord record = reader.next();
-    assertThat(record.index()).isEqualTo(index);
-    assertThat(record.data()).isEqualTo(data);
+    assertThat(reader.next()).isEqualTo(appendedRecord);
   }
 
   private int getSerializedSize(final DirectBuffer data) {

@@ -15,6 +15,7 @@
  */
 package io.zeebe.journal.file;
 
+import com.google.common.base.Objects;
 import io.zeebe.journal.JournalRecord;
 import org.agrona.DirectBuffer;
 
@@ -52,5 +53,25 @@ class PersistedJournalRecord implements JournalRecord {
   @Override
   public DirectBuffer data() {
     return data;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    } else if (o == null || !o.getClass().equals(this.getClass())) {
+      return false;
+    }
+
+    final PersistedJournalRecord other = (PersistedJournalRecord) o;
+    return this.asqn == other.asqn
+        && this.checksum == other.checksum
+        && this.index == other.index
+        && this.data.equals(other.data);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(asqn, checksum, index, data);
   }
 }
