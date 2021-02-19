@@ -1,16 +1,26 @@
 .TargetValueComparison {
-  display: flex;
+  width: 180px;
+  display: inline-flex;
 
   .toggleButton {
     flex-grow: 1;
     border-right: 0;
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
+    text-align: left;
+    padding-right: 4px;
+
+    .Icon {
+      margin-right: 0;
+      margin-top: 1px;
+      float: right;
+    }
   }
 
   .editButton {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
+    padding: 6px 7px;
 
     .Icon {
       margin-right: 0;

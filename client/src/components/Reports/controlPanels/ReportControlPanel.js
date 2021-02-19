@@ -281,7 +281,8 @@ export default withErrorHandling(
               <UserTaskDurationTime report={this.props.report} onChange={this.props.updateReport} />
               <DistributedBy report={this.props.report} onChange={this.props.updateReport} />
               {isDurationHeatmap(data) && (
-                <li>
+                <li className="select">
+                  <span className="label">{t('report.heatTarget.label')}</span>
                   <TargetValueComparison
                     report={this.props.report}
                     onChange={this.props.updateReport}
