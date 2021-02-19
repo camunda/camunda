@@ -10,6 +10,7 @@ import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_BY_FLOW
 import static java.util.Comparator.comparing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -99,6 +100,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
       assertEquals("0", response.get(taskJsonPath + ".variables.length()"));
     }
     assertSorting(response);
+    assertIsFirst(response, true);
   }
 
   @Test
@@ -122,7 +124,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     GraphQLResponse response = tester.getTasksByQueryAsVariable(queryPage1);
 
     // then
-    assertTasksPage(response, 3, null, null);
+    assertTasksPage(response, 3, null, null, true);
     List<String> sortValues = response.getList("$.data.tasks[2].sortValues", String.class);
 
     // when querying page 2
@@ -136,7 +138,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     response = tester.getTasksByQueryAsVariable(queryPage2);
 
     // then
-    assertTasksPage(response, 4, sortValues, null);
+    assertTasksPage(response, 4, sortValues, null, false);
     sortValues = response.getList("$.data.tasks[3].sortValues", String.class);
 
     // when querying page 3
@@ -150,7 +152,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     response = tester.getTasksByQueryAsVariable(queryPage3);
 
     // then
-    assertTasksPage(response, 3, sortValues, null);
+    assertTasksPage(response, 3, sortValues, null, false);
     sortValues = response.getList("$.data.tasks[0].sortValues", String.class);
 
     // when querying with searchBefore
@@ -164,7 +166,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     response = tester.getTasksByQueryAsVariable(queryPage4);
 
     // then
-    assertTasksPage(response, 5, null, sortValues);
+    assertTasksPage(response, 5, null, sortValues, false);
   }
 
   @Test
@@ -189,7 +191,22 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
     // then
     assertEquals("3", responsePage1.get("$.data.tasks.length()"));
-    List<String> sortValues = responsePage1.getList("$.data.tasks[2].sortValues", String.class);
+    List<String> sortValues = responsePage1.getList("$.data.tasks[0].sortValues", String.class);
+
+    // when querying page 1 once again with searchAfterOrEqual
+    final ObjectNode query2Page1 = objectMapper.createObjectNode();
+    query2Page1
+        .putObject("query")
+        .put("pageSize", 3)
+        .putArray("searchAfterOrEqual")
+        .add(sortValues.get(0))
+        .add(sortValues.get(1));
+    final GraphQLResponse response2Page1 = tester.getTasksByQueryAsVariable(query2Page1);
+
+    // then
+    assertEquals("3", response2Page1.get("$.data.tasks.length()"));
+    assertIsFirst(response2Page1, true);
+    sortValues = response2Page1.getList("$.data.tasks[2].sortValues", String.class);
 
     // when querying page 2
     final ObjectNode query1Page2 = objectMapper.createObjectNode();
@@ -222,6 +239,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
       assertEquals(
           response1Page2.get(taskJsonPath + ".id"), response2Page2.get(taskJsonPath + ".id"));
     }
+    assertIsFirst(response2Page2, false);
     sortValues = response1Page2.getList("$.data.tasks[3].sortValues", String.class);
 
     // when querying page 2 once again with searchBeforeOrEqual
@@ -241,13 +259,36 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
       assertEquals(
           response1Page2.get(taskJsonPath + ".id"), response3Page2.get(taskJsonPath + ".id"));
     }
+    assertIsFirst(response3Page2, false);
+  }
+
+  private void assertIsFirst(final GraphQLResponse response, final boolean hasFirst) {
+    for (int i = 0; i < Integer.valueOf(response.get("$.data.length()")); i++) {
+      final String taskJsonPath = String.format("$.data.tasks[%d]", i);
+      if (i == 0 && hasFirst) {
+        assertThat(response.get(taskJsonPath + ".isFirst")).isEqualTo("true");
+      } else {
+        assertThat(response.get(taskJsonPath + ".isFirst")).isEqualTo("false");
+      }
+    }
+  }
+
+  private void assertIsFirst(final List<TaskDTO> tasks, final boolean hasFirst) {
+    for (int i = 0; i < tasks.size(); i++) {
+      if (i == 0 && hasFirst) {
+        assertTrue(tasks.get(i).getIsFirst());
+      } else {
+        assertFalse(tasks.get(i).getIsFirst());
+      }
+    }
   }
 
   private void assertTasksPage(
       final GraphQLResponse response,
       int pageSize,
       List<String> searchAfter,
-      List<String> searchBefore) {
+      List<String> searchBefore,
+      boolean hasFirst) {
     assertTrue(response.isOk());
     assertEquals(String.valueOf(pageSize), response.get("$.data.tasks.length()"));
     for (int i = 0; i < pageSize; i++) {
@@ -269,6 +310,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
         assertThat(sortValue1).isGreaterThanOrEqualTo(Long.valueOf(searchBefore.get(0)));
       }
     }
+    assertIsFirst(response, hasFirst);
     assertSorting(response);
   }
 
@@ -396,6 +438,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertEquals(TaskState.COMPLETED.name(), response.get("$.data.tasks[0].taskState"));
     assertNotNull(response.get("$.data.tasks[0].assignee.username"));
     assertEquals("0", response.get("$.data.tasks[0].variables.length()"));
+    assertIsFirst(response, true);
   }
 
   @Test
@@ -442,6 +485,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     // then
     assertEquals(2, createdTasks.size());
     createdTasks.forEach(t -> assertEquals(TaskState.CREATED, t.getTaskState()));
+    assertIsFirst(createdTasks, true);
   }
 
   @Test
@@ -458,6 +502,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertThat(completedTasks.stream()).allMatch(t -> TaskState.COMPLETED.equals(t.getTaskState()));
     assertThat(completedTasks)
         .isSortedAccordingTo(comparing(TaskDTO::getCompletionTime).reversed());
+    assertIsFirst(completedTasks, true);
   }
 
   @Test

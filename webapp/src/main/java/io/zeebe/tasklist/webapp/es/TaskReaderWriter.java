@@ -123,6 +123,12 @@ public class TaskReaderWriter {
       adjustResponse(response, query, fieldNames);
     }
 
+    if (response.size() > 0
+        && (query.getSearchAfter() != null || query.getSearchAfterOrEqual() != null)) {
+      final TaskDTO firstTask = response.get(0);
+      firstTask.setIsFirst(checkTaskIsFirst(query, firstTask.getId()));
+    }
+
     return response;
   }
 
@@ -153,6 +159,7 @@ public class TaskReaderWriter {
     final List<TaskDTO> tasks = queryTasks(newRequest, fieldNames, taskId);
     if (tasks.size() > 0) {
       final TaskDTO entity = tasks.get(0);
+      entity.setIsFirst(false); // this was not the original query
       if (request.getSearchAfterOrEqual() != null) {
         // insert at the beginning of the list and remove the last element
         if (response.size() == request.getPageSize()) {
@@ -204,14 +211,42 @@ public class TaskReaderWriter {
                         objectMapper);
                 return entity;
               });
-      if (query.getSearchBefore() != null || query.getSearchBeforeOrEqual() != null) {
-        Collections.reverse(tasks);
+      if (tasks.size() > 0) {
+        if (query.getSearchBefore() != null || query.getSearchBeforeOrEqual() != null) {
+          if (tasks.size() <= query.getPageSize()) {
+            // last task will be the first in the whole list
+            tasks.get(tasks.size() - 1).setIsFirst(true);
+          } else {
+            // remove last task
+            tasks.remove(tasks.size() - 1);
+          }
+          Collections.reverse(tasks);
+        } else if (query.getSearchAfter() == null && query.getSearchAfterOrEqual() == null) {
+          tasks.get(0).setIsFirst(true);
+        }
       }
       return tasks;
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining tasks: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  private boolean checkTaskIsFirst(final TaskQueryDTO query, final String id) {
+    final TaskQueryDTO newRequest =
+        query
+            .createCopy()
+            .setSearchAfter(null)
+            .setSearchAfterOrEqual(null)
+            .setSearchBefore(null)
+            .setSearchBeforeOrEqual(null)
+            .setPageSize(1);
+    final List<TaskDTO> tasks = queryTasks(newRequest, null, null);
+    if (tasks.size() > 0) {
+      return tasks.get(0).getId().equals(id);
+    } else {
+      return false;
     }
   }
 
@@ -285,7 +320,13 @@ public class TaskReaderWriter {
       }
     }
 
-    searchSourceBuilder.sort(sort1).sort(sort2).size(query.getPageSize());
+    searchSourceBuilder.sort(sort1).sort(sort2);
+    // for searchBefore[orEqual] we will increase size by 1 to fill ou isFirst flag
+    if (query.getSearchBefore() != null || query.getSearchBeforeOrEqual() != null) {
+      searchSourceBuilder.size(query.getPageSize() + 1);
+    } else {
+      searchSourceBuilder.size(query.getPageSize());
+    }
     if (querySearchAfter != null) {
       searchSourceBuilder.searchAfter(querySearchAfter);
     }

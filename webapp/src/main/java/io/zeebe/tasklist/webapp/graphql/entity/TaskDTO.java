@@ -10,6 +10,7 @@ import static io.zeebe.tasklist.util.CollectionUtil.toArrayOfStrings;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.entities.TaskState;
+import java.util.Arrays;
 import java.util.Objects;
 
 public final class TaskDTO {
@@ -33,8 +34,8 @@ public final class TaskDTO {
   private TaskState taskState;
 
   private String[] sortValues;
-  private boolean hasNext;
-  private boolean hasPrevious;
+
+  private boolean isFirst = false;
 
   public String getId() {
     return id;
@@ -135,21 +136,12 @@ public final class TaskDTO {
     return this;
   }
 
-  public boolean isHasNext() {
-    return hasNext;
+  public boolean getIsFirst() {
+    return isFirst;
   }
 
-  public TaskDTO setHasNext(final boolean hasNext) {
-    this.hasNext = hasNext;
-    return this;
-  }
-
-  public boolean isHasPrevious() {
-    return hasPrevious;
-  }
-
-  public TaskDTO setHasPrevious(final boolean hasPrevious) {
-    this.hasPrevious = hasPrevious;
+  public TaskDTO setIsFirst(final boolean first) {
+    isFirst = first;
     return this;
   }
 
@@ -187,7 +179,8 @@ public final class TaskDTO {
       return false;
     }
     final TaskDTO taskDTO = (TaskDTO) o;
-    return Objects.equals(id, taskDTO.id)
+    return isFirst == taskDTO.isFirst
+        && Objects.equals(id, taskDTO.id)
         && Objects.equals(workflowInstanceId, taskDTO.workflowInstanceId)
         && Objects.equals(flowNodeBpmnId, taskDTO.flowNodeBpmnId)
         && Objects.equals(flowNodeInstanceId, taskDTO.flowNodeInstanceId)
@@ -196,22 +189,27 @@ public final class TaskDTO {
         && Objects.equals(creationTime, taskDTO.creationTime)
         && Objects.equals(completionTime, taskDTO.completionTime)
         && Objects.equals(assigneeUsername, taskDTO.assigneeUsername)
-        && taskState == taskDTO.taskState;
+        && taskState == taskDTO.taskState
+        && Arrays.equals(sortValues, taskDTO.sortValues);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        id,
-        workflowInstanceId,
-        flowNodeBpmnId,
-        flowNodeInstanceId,
-        workflowId,
-        bpmnProcessId,
-        creationTime,
-        completionTime,
-        assigneeUsername,
-        taskState);
+    int result =
+        Objects.hash(
+            id,
+            workflowInstanceId,
+            flowNodeBpmnId,
+            flowNodeInstanceId,
+            workflowId,
+            bpmnProcessId,
+            creationTime,
+            completionTime,
+            assigneeUsername,
+            taskState,
+            isFirst);
+    result = 31 * result + Arrays.hashCode(sortValues);
+    return result;
   }
 
   @Override
@@ -226,21 +224,30 @@ public final class TaskDTO {
         + ", flowNodeBpmnId='"
         + flowNodeBpmnId
         + '\''
+        + ", flowNodeInstanceId='"
+        + flowNodeInstanceId
+        + '\''
         + ", workflowId='"
         + workflowId
         + '\''
         + ", bpmnProcessId='"
         + bpmnProcessId
         + '\''
-        + ", creationTime="
+        + ", creationTime='"
         + creationTime
-        + ", completionTime="
+        + '\''
+        + ", completionTime='"
         + completionTime
+        + '\''
         + ", assigneeUsername='"
         + assigneeUsername
         + '\''
         + ", taskState="
         + taskState
+        + ", sortValues="
+        + Arrays.toString(sortValues)
+        + ", isFirst="
+        + isFirst
         + '}';
   }
 }

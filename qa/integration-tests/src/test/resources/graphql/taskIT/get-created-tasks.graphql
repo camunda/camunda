@@ -1,5 +1,6 @@
 {tasks(query: {state: CREATED}) {
     id
     taskState
+    isFirst
 }
 }

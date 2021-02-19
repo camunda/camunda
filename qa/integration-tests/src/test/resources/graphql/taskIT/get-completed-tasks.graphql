@@ -3,5 +3,6 @@
     taskState
     creationTime
     completionTime
+    isFirst
   }
 }

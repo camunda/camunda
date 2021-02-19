@@ -16,5 +16,6 @@ query getTasks($query: TaskQuery!){
         }
         taskState
         sortValues
+        isFirst
     }
 }

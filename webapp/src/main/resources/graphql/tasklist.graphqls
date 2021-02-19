@@ -16,8 +16,10 @@ type Task {
     variables: [Variable!]
     # State of the task
     taskState: TaskState!
-    #Array of values to be copied into `TaskQuery` to request for next or previous page of tasks.
+    # Array of values to be copied into `TaskQuery` to request for next or previous page of tasks.
     sortValues: [String!]
+    # Flag to show that the task is first in current filter
+    isFirst: Boolean
 }
 
 #Task query - query to get one page of tasks.
