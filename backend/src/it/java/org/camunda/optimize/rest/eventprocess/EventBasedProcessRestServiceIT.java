@@ -221,10 +221,10 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
                                                                                                    final String path,
                                                                                                    final Object payload) {
     // given
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEventBasedProcessConfiguration()
-      .getAuthorizedUserIds()
-      .clear();
+    final EventBasedProcessConfiguration eventProcessConfiguration =
+      embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration();
+    eventProcessConfiguration.getAuthorizedUserIds().clear();
+    eventProcessConfiguration.getAuthorizedGroupIds().clear();
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()

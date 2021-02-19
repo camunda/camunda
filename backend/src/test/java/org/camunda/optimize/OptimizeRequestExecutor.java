@@ -26,6 +26,7 @@ import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroup
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
@@ -105,12 +106,12 @@ import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_DEFINITION_SEARCH_SUB_PATH;
 import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_REPORTS_SEARCH_SUB_PATH;
 import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_RESOURCE_PATH;
-import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_DEFINITION_SEARCH_SUB_PATH;
+import static org.camunda.optimize.rest.CandidateGroupRestService.CANDIDATE_GROUP_DEFINITION_SEARCH_SUB_PATH;
 import static org.camunda.optimize.rest.CandidateGroupRestService.CANDIDATE_GROUP_REPORTS_SEARCH_SUB_PATH;
 import static org.camunda.optimize.rest.CandidateGroupRestService.CANDIDATE_GROUP_RESOURCE_PATH;
-import static org.camunda.optimize.rest.CandidateGroupRestService.CANDIDATE_GROUP_DEFINITION_SEARCH_SUB_PATH;
 import static org.camunda.optimize.rest.IdentityRestService.CURRENT_USER_IDENTITY_SUB_PATH;
 import static org.camunda.optimize.rest.IdentityRestService.IDENTITY_RESOURCE_PATH;
 import static org.camunda.optimize.rest.IdentityRestService.IDENTITY_SEARCH_SUB_PATH;
@@ -1461,6 +1462,14 @@ public class OptimizeRequestExecutor {
         sorter.getSortOrder().ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
       });
     this.body = Optional.ofNullable(eventCountRequestDto).map(this::getBody).orElse(null);
+    return this;
+  }
+
+  public OptimizeRequestExecutor getEventGroupsRequest(final EventGroupRequestDto groupRequestDto) {
+    this.path = "event/groups";
+    this.method = GET;
+    Optional.ofNullable(groupRequestDto.getSearchTerm()).ifPresent(term -> addSingleQueryParam("searchTerm", term));
+    addSingleQueryParam("limit", groupRequestDto.getLimit());
     return this;
   }
 
