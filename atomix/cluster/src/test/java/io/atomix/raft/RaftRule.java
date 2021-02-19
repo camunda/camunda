@@ -38,7 +38,6 @@ import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.AbstractIdentifier;
 import io.atomix.utils.concurrent.SingleThreadContext;
@@ -479,7 +478,6 @@ public final class RaftRule extends ExternalResource {
     final var memberDirectory = getMemberDirectory(directory, memberId.toString());
     final RaftStorage.Builder defaults =
         RaftStorage.builder()
-            .withStorageLevel(StorageLevel.DISK)
             .withDirectory(memberDirectory)
             .withMaxSegmentSize(1024 * 10)
             .withFreeDiskSpace(100)

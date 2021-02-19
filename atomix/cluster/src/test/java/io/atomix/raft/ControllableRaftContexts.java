@@ -30,7 +30,6 @@ import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.zeebe.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
-import io.atomix.storage.StorageLevel;
 import io.zeebe.util.collection.Tuple;
 import java.io.File;
 import java.io.IOException;
@@ -185,7 +184,6 @@ public final class ControllableRaftContexts {
     final var memberDirectory = getMemberDirectory(directory, memberId.toString());
     final RaftStorage.Builder defaults =
         RaftStorage.builder()
-            .withStorageLevel(StorageLevel.DISK)
             .withDirectory(memberDirectory)
             .withMaxSegmentSize(1024 * 10)
             .withFreeDiskSpace(100)

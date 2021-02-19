@@ -45,7 +45,6 @@ public class RaftStorageTest {
     assertEquals(1024 * 1024 * 32, storage.maxLogSegmentSize());
     assertEquals(1024L * 1024 * 1024, storage.freeDiskSpace());
     assertTrue(storage.isFlushExplicitly());
-    assertFalse(storage.isRetainStaleSnapshots());
   }
 
   @Test
@@ -57,14 +56,12 @@ public class RaftStorageTest {
             .withMaxSegmentSize(1024 * 1024)
             .withFreeDiskSpace(100)
             .withFlushExplicitly(false)
-            .withRetainStaleSnapshots()
             .build();
     assertEquals("foo", storage.prefix());
     assertEquals(new File(PATH.toFile(), "foo"), storage.directory());
     assertEquals(1024 * 1024, storage.maxLogSegmentSize());
     assertEquals(100, storage.freeDiskSpace());
     assertFalse(storage.isFlushExplicitly());
-    assertTrue(storage.isRetainStaleSnapshots());
   }
 
   @Test

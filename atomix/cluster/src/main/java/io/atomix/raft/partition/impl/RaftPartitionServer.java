@@ -282,7 +282,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
     return RaftStorage.builder()
         .withPrefix(partition.name())
         .withDirectory(partition.dataDirectory())
-        .withStorageLevel(storageConfig.getLevel())
         .withMaxSegmentSize((int) storageConfig.getSegmentSize().bytes())
         .withMaxEntrySize((int) storageConfig.getMaxEntrySize().bytes())
         .withFlushExplicitly(storageConfig.shouldFlushExplicitly())

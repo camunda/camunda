@@ -13,7 +13,6 @@ import static org.mockito.Mockito.mock;
 import io.atomix.core.Atomix;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
-import io.atomix.storage.StorageLevel;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStoreFactory;
 import io.zeebe.util.Environment;
@@ -29,36 +28,6 @@ public final class AtomixFactoryTest {
   @Before
   public void setUp() {
     environment = new Environment();
-  }
-
-  @Test
-  public void shouldUseMappedStorageLevel() {
-    // given
-    final var brokerConfig = newConfig();
-    brokerConfig.getData().setUseMmap(true);
-
-    // when
-    final var atomix =
-        AtomixFactory.fromConfiguration(brokerConfig, mock(FileBasedSnapshotStoreFactory.class));
-
-    // then
-    final var config = getPartitionGroupConfig(atomix);
-    assertThat(config.getStorageConfig().getLevel()).isEqualTo(StorageLevel.MAPPED);
-  }
-
-  @Test
-  public void shouldUseDiskStorageLevel() {
-    // given
-    final var brokerConfig = newConfig();
-    brokerConfig.getData().setUseMmap(false);
-
-    // when
-    final var atomix =
-        AtomixFactory.fromConfiguration(brokerConfig, mock(FileBasedSnapshotStoreFactory.class));
-
-    // then
-    final var config = getPartitionGroupConfig(atomix);
-    assertThat(config.getStorageConfig().getLevel()).isEqualTo(StorageLevel.DISK);
   }
 
   @Test

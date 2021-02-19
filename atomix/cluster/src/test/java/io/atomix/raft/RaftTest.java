@@ -48,7 +48,6 @@ import io.atomix.raft.storage.log.entry.InitializeEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
@@ -191,7 +190,6 @@ public class RaftTest extends ConcurrentTestCase {
     final var directory = new File(this.directory.toFile(), memberId.toString());
     final RaftStorage.Builder defaults =
         RaftStorage.builder()
-            .withStorageLevel(StorageLevel.DISK)
             .withDirectory(directory)
             .withSnapshotStore(new TestSnapshotStore(new AtomicReference<>()))
             .withMaxSegmentSize(1024 * 10)

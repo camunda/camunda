@@ -20,7 +20,6 @@ import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixAppenderSupplier;
@@ -232,10 +231,8 @@ public final class AtomixLogStorageRule extends ExternalResource
   private RaftStorage.Builder buildDefaultStorage() {
     return RaftStorage.builder()
         .withFlushExplicitly(true)
-        .withStorageLevel(StorageLevel.DISK)
         .withNamespace(RaftNamespaces.RAFT_STORAGE)
-        .withJournalIndexDensity(1)
-        .withRetainStaleSnapshots();
+        .withJournalIndexDensity(1);
   }
 
   private final class NoopListener implements AppendListener {

@@ -82,8 +82,6 @@ env:
     value: "0.8"
   - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
     value: "0.9"
-  - name: ZEEBE_BROKER_DATA_USEMMAP
-    value: "true"
 
 # RESOURCES
 resources:

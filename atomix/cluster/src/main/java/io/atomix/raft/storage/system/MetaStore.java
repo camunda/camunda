@@ -21,10 +21,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.storage.RaftStorage;
-import io.atomix.storage.StorageLevel;
 import io.atomix.storage.buffer.Buffer;
 import io.atomix.storage.buffer.FileBuffer;
-import io.atomix.storage.buffer.HeapBuffer;
 import io.atomix.utils.serializer.Serializer;
 import java.io.File;
 import org.slf4j.Logger;
@@ -59,13 +57,8 @@ public class MetaStore implements AutoCloseable {
     final File metaFile = new File(storage.directory(), String.format("%s.meta", storage.prefix()));
     metadataBuffer = FileBuffer.allocate(metaFile, 12);
 
-    if (storage.storageLevel() == StorageLevel.MEMORY) {
-      configurationBuffer = HeapBuffer.allocate(32);
-    } else {
-      final File confFile =
-          new File(storage.directory(), String.format("%s.conf", storage.prefix()));
-      configurationBuffer = FileBuffer.allocate(confFile, 32);
-    }
+    final File confFile = new File(storage.directory(), String.format("%s.conf", storage.prefix()));
+    configurationBuffer = FileBuffer.allocate(confFile, 32);
   }
 
   /**
