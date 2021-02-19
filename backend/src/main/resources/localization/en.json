@@ -828,8 +828,8 @@
     "filter": {
       "label": "Filters",
       "tooltip": {
-        "instance": "Adding a Process Instance filter will reduce the number of process instances that are considered when evaluating the report.",
-        "view": "Adding a Flow Node Data filter will filter instances and additionally reduce the content of instances, e.g. flow nodes."
+        "instance": "Process instance Filters return data from process instances matching the filter requirement. If the filter is based on a Flow Node, the returned data will show all instances where this Flow Node was triggered.",
+        "view": "Flow Node filters return data from Flow Nodes only, where the Flow Node or its property matches the filter requirement. Most useful in Flow Node and User Task views."
       },
       "types": {
         "instanceState": "Instance state",

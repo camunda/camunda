@@ -828,8 +828,8 @@
     "filter": {
       "label": "Filter",
       "tooltip": {
-        "instance": "Durch Hinzufügen eines Prozessinstanzfilters wird die Anzahl der Prozessinstanzen verringert, die bei der Auswertung des Berichts berücksichtigt werden.",
-        "view": "Durch Hinzufügen eines Prozessknotendaten-Filters werden Instanzen gefiltert und der Inhalt von Instanzen, z.B. Prozessknoten."
+        "instance": "Prozessinstanzfilter geben Daten von Prozessinstanzen zurück, die der Filteranforderung entsprechen. Wenn der Filter auf einem Prozessknoten basiert, zeigen die zurückgegebenen Daten alle Fälle an, in denen dieser Prozessknoten ausgelöst wurde.",
+        "view": "Prozessknoten-Filter geben nur Daten von Prozessknoten zurück, bei denen der Prozessknoten oder seine Eigenschaft den Filteranforderungen entsprechen. Am nützlichsten in Prozessknoten- und Benutzeraufgaben-Ansichten."
       },
       "types": {
         "instanceState": "Instanzstatus",
