@@ -66,7 +66,7 @@ github.com/go-ozzo/ozzo-validation/v4/is
 # github.com/gogo/protobuf v1.3.1
 ## explicit
 github.com/gogo/protobuf/proto
-# github.com/golang/mock v1.4.4
+# github.com/golang/mock v1.5.0
 ## explicit
 github.com/golang/mock/gomock
 # github.com/golang/protobuf v1.4.3
