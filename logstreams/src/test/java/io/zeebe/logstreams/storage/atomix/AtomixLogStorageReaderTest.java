@@ -8,227 +8,175 @@
 package io.zeebe.logstreams.storage.atomix;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 
 import io.atomix.raft.storage.log.Indexed;
-import io.atomix.raft.storage.log.entry.ConfigurationEntry;
+import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.zeebe.ZeebeEntry;
-import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
-import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.spi.LogStorageReader;
-import io.zeebe.logstreams.util.AtomixLogStorageRule;
+import io.atomix.raft.zeebe.ZeebeLogAppender;
+import io.zeebe.logstreams.storage.LogStorage.AppendListener;
+import java.io.File;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.IntStream;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.assertj.core.groups.Tuple;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-public final class AtomixLogStorageReaderTest {
-  private static final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
+final class AtomixLogStorageReaderTest {
 
-  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private final AtomixLogStorageRule storageRule = new AtomixLogStorageRule(temporaryFolder);
-  @Rule public final RuleChain chain = RuleChain.outerRule(temporaryFolder).around(storageRule);
-  private final DirectBuffer buffer = new UnsafeBuffer();
+  private RaftLog log;
+  private AtomixLogStorage logStorage;
+  private AtomixLogStorageReader reader;
 
-  @Test
-  public void shouldLookUpAddress() {
-    // given
-    final var reader = storageRule.get().newReader();
-    final var firstEntry = append(1, 4, allocateData(1));
-    final var secondEntry = append(5, 8, allocateData(2));
+  @BeforeEach
+  void beforeEach(final @TempDir File tempDir) {
+    log = RaftLog.builder().withDirectory(tempDir).build();
+    final Appender appender = new Appender();
+    logStorage = new AtomixLogStorage(log::openReader, appender);
+    reader = logStorage.newReader();
+  }
 
-    // when
-    final var firstEntryAddresses =
-        IntStream.range(1, 4).mapToLong(reader::lookUpApproximateAddress);
-    final var secondEntryAddresses =
-        IntStream.range(5, 8).mapToLong(reader::lookUpApproximateAddress);
-
-    // then
-    assertThat(firstEntryAddresses).allMatch(address -> address == firstEntry.index());
-    assertThat(secondEntryAddresses).allMatch(address -> address == secondEntry.index());
+  @AfterEach
+  void afterEach() {
+    CloseHelper.quietCloseAll(log, reader);
   }
 
   @Test
-  public void shouldReturnInvalidOnEmptyLookUp() {
+  void shouldBeInitializedAtFirstBlock() {
     // given
-    final var reader = storageRule.get().newReader();
+    appendIntegerBlock(1);
+    appendIntegerBlock(2);
 
     // when
-    final var address = reader.lookUpApproximateAddress(1);
-
     // then
-    assertThat(address).isEqualTo(LogStorage.OP_RESULT_INVALID_ADDR);
+    assertThat(reader).hasNext();
+    assertThat(reader.next()).isEqualTo(mapIntegerToBuffer(1));
   }
 
   @Test
-  public void shouldReturnNoDataOnEmptyRead() {
+  void shouldSeekToFirstBlock() {
     // given
-    final var reader = storageRule.get().newReader();
+    appendIntegerBlock(1);
+    appendIntegerBlock(2);
 
     // when
-    final var result = reader.read(buffer, 1);
+    reader.seek(Long.MIN_VALUE);
 
     // then
-    assertThat(result).isEqualTo(LogStorage.OP_RESULT_NO_DATA);
+    assertThat(reader).hasNext();
+    assertThat(reader.next()).isEqualTo(mapIntegerToBuffer(1));
   }
 
   @Test
-  public void shouldReadEntry() {
+  void shouldSeekToLastBlock() {
     // given
-    final var reader = storageRule.get().newReader();
-    final var firstEntry = append(1, 4, allocateData(1));
-    final var secondEntry = append(5, 8, allocateData(2));
+    appendIntegerBlock(1);
+    appendIntegerBlock(2);
 
     // when
-    final var firstEntryResults = read(reader, firstEntry.index());
-    final var secondEntryResults = read(reader, secondEntry.index());
+    reader.seek(Long.MAX_VALUE);
 
     // then
-    assertThat(firstEntryResults).isEqualTo(tuple(1, secondEntry.index()));
-    assertThat(secondEntryResults).isEqualTo(tuple(2, secondEntry.index() + 1));
+    assertThat(reader).hasNext();
+    assertThat(reader.next()).isEqualTo(mapIntegerToBuffer(2));
   }
 
   @Test
-  public void shouldLookUpEntryWithGaps() {
+  void shouldSeekToHighestPositionThatIsLessThanTheGivenOne() {
     // given
-    final var reader = storageRule.get().newReader();
+    appendIntegerBlock(1);
+    appendIntegerBlock(3);
 
     // when
-    final var first = append(1, 4, allocateData(1));
-    final var second =
-        storageRule
-            .getRaftLog()
-            .append(new ConfigurationEntry(1, System.currentTimeMillis(), Collections.emptyList()));
-    final var third = append(5, 8, allocateData(2));
+    reader.seek(2);
 
     // then
-    assertThat(reader.lookUpApproximateAddress(3)).isEqualTo(first.index());
-    assertThat(reader.lookUpApproximateAddress(6)).isEqualTo(third.index());
-
-    // this does not point to the next real ZeebeEntry, but is just an approximate
-    assertThat(read(reader, first.index())).isEqualTo(tuple(1, second.index()));
-
-    // reading the second entry (a non ZeebeEntry) should find the next correct Zeebe entry
-    assertThat(read(reader, second.index())).isEqualTo(tuple(2, third.index() + 1));
-    assertThat(read(reader, third.index())).isEqualTo(tuple(2, third.index() + 1));
+    assertThat(reader).hasNext();
+    assertThat(reader.next()).isEqualTo(mapIntegerToBuffer(1));
   }
 
   @Test
-  public void shouldReadLastZeebeEntry() {
+  void shouldSeekToBlockContainingPosition() {
     // given
-    final var reader = storageRule.get().newReader();
-    final var expected = append(1, 4, allocateData(1));
-    storageRule
-        .getRaftLog()
-        .append(new ConfigurationEntry(1, System.currentTimeMillis(), Collections.emptyList()));
+    appendIntegerBlock(1);
+    appendIntegerBlock(2, 4, 2);
+    appendIntegerBlock(5);
 
     // when
-    final var address = reader.readLastBlock(buffer);
+    reader.seek(3);
 
     // then
-    assertThat(address).isEqualTo(expected.index() + 1);
-    assertThat(buffer.getInt(0, BYTE_ORDER)).isEqualTo(1);
+    assertThat(reader).hasNext();
+    assertThat(reader.next()).isEqualTo(mapIntegerToBuffer(2));
   }
 
   @Test
-  public void shouldReturnEmptyIfLogIsEmpty() {
+  void shouldNotHaveNextIfEndIsReached() {
     // given
-    final var reader = storageRule.get().newReader();
+    appendIntegerBlock(1);
+    appendIntegerBlock(2);
 
     // when
-    final var isEmpty = reader.isEmpty();
+    reader.seek(2);
+    reader.next();
 
     // then
-    assertThat(isEmpty).isTrue();
+    assertThat(reader.hasNext()).isFalse();
   }
 
   @Test
-  public void shouldReturnEmptyIfLogContainsNonZeebeEntries() {
-    // given
-    final var reader = storageRule.get().newReader();
-
+  void shouldNotHaveNextIfEmpty() {
+    // given an empty log
     // when
-    final var entry =
-        storageRule
-            .getRaftLog()
-            .append(new ConfigurationEntry(1, System.currentTimeMillis(), Collections.emptyList()));
-    final var isEmpty = reader.isEmpty();
-
     // then
-    assertThat(entry).isNotNull();
-    assertThat(isEmpty).isTrue();
+    assertThat(reader.hasNext()).isFalse();
   }
 
   @Test
-  public void shouldNotReturnEmptyIfAtLeastOneZeebeEntryPresent() {
-    // given
-    final var reader = storageRule.get().newReader();
-
+  void shouldHaveNextAfterNewBlockAppended() {
+    // given an empty log
     // when
-    final var entry =
-        storageRule
-            .getRaftLog()
-            .append(new ConfigurationEntry(1, System.currentTimeMillis(), Collections.emptyList()));
-    final var expected = append(1, 4, allocateData(1));
-
-    final var isEmpty = reader.isEmpty();
+    appendIntegerBlock(1);
 
     // then
-    assertThat(entry).isNotNull();
-    assertThat(expected).isNotNull();
-    assertThat(isEmpty).isFalse();
+    assertThat(reader).hasNext();
+    assertThat(reader.next()).isEqualTo(mapIntegerToBuffer(1));
   }
 
-  private Indexed<ZeebeEntry> append(
-      final long lowestPosition, final long highestPosition, final ByteBuffer data) {
-    final var future = new CompletableFuture<Indexed<ZeebeEntry>>();
-    final var listener = new Listener(future);
-    storageRule.appendEntry(lowestPosition, highestPosition, data, listener);
-    return future.join();
+  private void appendIntegerBlock(final int positionAndValue) {
+    appendIntegerBlock(positionAndValue, positionAndValue, positionAndValue);
   }
 
-  private Tuple read(final LogStorageReader reader, final long address) {
-    final var result = reader.read(buffer, address);
-    return tuple(buffer.getInt(0, BYTE_ORDER), result);
+  private void appendIntegerBlock(
+      final long lowestPosition, final long highestPosition, final int value) {
+    logStorage.append(
+        lowestPosition,
+        highestPosition,
+        mapIntegerToBuffer(value).byteBuffer(),
+        new AppendListener() {});
   }
 
-  private ByteBuffer allocateData(final int value) {
-    return ByteBuffer.allocate(4).order(BYTE_ORDER).putInt(0, value);
+  private DirectBuffer mapIntegerToBuffer(final int value) {
+    return new UnsafeBuffer(ByteBuffer.allocateDirect(Integer.BYTES).putInt(0, value));
   }
 
-  private static final class Listener implements AppendListener {
-    private final CompletableFuture<Indexed<ZeebeEntry>> future;
-
-    private Listener(final CompletableFuture<Indexed<ZeebeEntry>> future) {
-      this.future = future;
-    }
+  private final class Appender implements ZeebeLogAppender {
 
     @Override
-    public void onWrite(final Indexed<ZeebeEntry> indexed) {
-      future.complete(indexed);
-    }
+    public void appendEntry(
+        final long lowestPosition,
+        final long highestPosition,
+        final ByteBuffer data,
+        final AppendListener appendListener) {
+      final ZeebeEntry entry =
+          new ZeebeEntry(1, System.currentTimeMillis(), lowestPosition, highestPosition, data);
+      final Indexed<ZeebeEntry> indexedEntry = log.append(entry);
 
-    @Override
-    public void onWriteError(final Throwable throwable) {
-      future.completeExceptionally(throwable);
-    }
-
-    @Override
-    public void onCommit(final Indexed<ZeebeEntry> indexed) {
-      // do nothing
-    }
-
-    @Override
-    public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable throwable) {
-      // do nothing
+      appendListener.onWrite(indexedEntry);
+      log.setCommitIndex(indexedEntry.index());
+      appendListener.onCommit(indexedEntry);
     }
   }
 }

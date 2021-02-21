@@ -7,17 +7,19 @@
  */
 package io.zeebe.logstreams.util;
 
-import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.test.util.TestUtil;
+import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
+import java.time.Duration;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
+import org.awaitility.Awaitility;
 import org.junit.rules.ExternalResource;
 
 public final class LogStreamWriterRule extends ExternalResource {
   private final LogStreamRule logStreamRule;
 
   private SynchronousLogStream logStream;
-  private LogStreamRecordWriter logStreamWriter;
+  private LogStreamBatchWriter logStreamWriter;
 
   public LogStreamWriterRule(final LogStreamRule logStreamRule) {
     this.logStreamRule = logStreamRule;
@@ -26,7 +28,7 @@ public final class LogStreamWriterRule extends ExternalResource {
   @Override
   protected void before() {
     logStream = logStreamRule.getLogStream();
-    logStreamWriter = logStream.newLogStreamRecordWriter();
+    logStreamWriter = logStream.newLogStreamBatchWriter();
   }
 
   @Override
@@ -39,15 +41,32 @@ public final class LogStreamWriterRule extends ExternalResource {
     logStreamWriter = null;
   }
 
-  public long writeEvents(final int count, final DirectBuffer event) {
+  public long writeEvents(final int eventCount, final DirectBuffer event) {
+    final int defaultBatchSize = 2;
+    final int batchCount = (int) Math.ceil(eventCount / (double) defaultBatchSize);
+    return writeEvents(batchCount, defaultBatchSize, event);
+  }
+
+  public long writeEvents(final int batchCount, final int batchSize, final DirectBuffer event) {
     long lastPosition = -1;
-    for (int i = 1; i <= count; i++) {
-      final long key = i;
-      lastPosition = writeEventInternal(w -> w.key(key).value(event));
+
+    for (int batch = 0; batch < batchCount; batch++) {
+      for (int i = 1; i <= batchSize; i++) {
+        final LogEntryBuilder eventWriter = logStreamWriter.event();
+        eventWriter.key(i + batch * batchSize).value(event).done();
+      }
+
+      // when writing too fast, it can happen that the dispatcher is full too quickly, so we may
+      // need to retry
+      lastPosition =
+          Awaitility.await("until batch is written")
+              .atMost(Duration.ofSeconds(5))
+              .pollDelay(Duration.ofNanos(0))
+              .pollInSameThread()
+              .until(logStreamWriter::tryWrite, position -> position >= 0);
     }
 
-    waitForPositionToBeAppended(lastPosition);
-
+    waitForPositionToBeCommitted(lastPosition);
     return lastPosition;
   }
 
@@ -55,15 +74,15 @@ public final class LogStreamWriterRule extends ExternalResource {
     return writeEvent(w -> w.value(event));
   }
 
-  public long writeEvent(final Consumer<LogStreamRecordWriter> writer) {
+  public long writeEvent(final Consumer<LogEntryBuilder> writer) {
     final long position = writeEventInternal(writer);
 
-    waitForPositionToBeAppended(position);
+    waitForPositionToBeCommitted(position);
 
     return position;
   }
 
-  private long writeEventInternal(final Consumer<LogStreamRecordWriter> writer) {
+  private long writeEventInternal(final Consumer<LogEntryBuilder> writer) {
     long position;
     do {
       position = tryWrite(writer);
@@ -72,16 +91,19 @@ public final class LogStreamWriterRule extends ExternalResource {
     return position;
   }
 
-  public long tryWrite(final Consumer<LogStreamRecordWriter> writer) {
-    writer.accept(logStreamWriter);
+  public long tryWrite(final Consumer<LogEntryBuilder> writer) {
+    final LogEntryBuilder eventWriter = logStreamWriter.event();
+    writer.accept(eventWriter);
+    eventWriter.done();
 
     return logStreamWriter.tryWrite();
   }
 
-  public void waitForPositionToBeAppended(final long position) {
-    TestUtil.waitUntil(
-        () -> logStream.getCommitPosition() >= position, // Now only committed events are appended.
-        "Failed to wait for position %d to be appended",
-        position);
+  public void waitForPositionToBeCommitted(final long position) {
+    Awaitility.await("until position " + position + " is committed")
+        .atMost(Duration.ofSeconds(5))
+        .pollDelay(Duration.ofNanos(0))
+        .pollInSameThread()
+        .until(() -> logStream.getCommitPosition() >= position);
   }
 }

@@ -62,16 +62,4 @@ public interface LogStreamReader extends Iterator<LoggedEvent>, CloseableSilentl
    * @return the current log position, or negative value if the log is empty or not initialized
    */
   long getPosition();
-
-  /**
-   * Look up the nearest log storage address, where the entry with the given position can be found.
-   * The implementation do not need to provide the exact log event address, it is more about an
-   * approximation, which can then be used to find the entry.
-   *
-   * <p>*Note:* The returned address is not the exact log event address.
-   *
-   * @param position the position, for which the look up should made
-   * @return the approximated address in the log storage
-   */
-  long lookupAddress(long position);
 }

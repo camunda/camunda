@@ -29,7 +29,7 @@ import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.storage.LogStorage;
 import io.zeebe.logstreams.util.SyncLogStream;
 import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.msgpack.UnpackedObject;
@@ -394,13 +394,11 @@ public final class TestStreams {
 
   private static final class LogContext implements AutoCloseable {
     private final SynchronousLogStream logStream;
-    private final LogStorage logStorage;
     private final LogStreamRecordWriter logStreamWriter;
 
     private LogContext(final SynchronousLogStream logStream, final LogStorage logStorage) {
       this.logStream = logStream;
       logStreamWriter = logStream.newLogStreamRecordWriter();
-      this.logStorage = logStorage;
     }
 
     public static LogContext createLogContext(
@@ -411,7 +409,6 @@ public final class TestStreams {
     @Override
     public void close() {
       logStream.close();
-      logStorage.close();
     }
 
     public LogStreamRecordWriter getLogStreamWriter() {

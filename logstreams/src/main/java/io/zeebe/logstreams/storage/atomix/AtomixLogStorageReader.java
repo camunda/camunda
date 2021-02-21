@@ -11,168 +11,99 @@ import io.atomix.raft.storage.log.Indexed;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeEntry;
-import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.spi.LogStorageReader;
-import java.util.Optional;
+import io.zeebe.logstreams.storage.LogStorageReader;
+import java.util.NoSuchElementException;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
+/**
+ * Implements {@link LogStorageReader} over a {@link RaftLogReader}. Each {@link ZeebeEntry} is
+ * considered a block (as per the log storage definition).
+ *
+ * <p>The implementation does look-ahead by one entry. This is necessary because we usually want to
+ * seek to the entry which contains the given position, and in order to know that it does we need to
+ * read it, and only then return it via the next {@link #next()} call. It is also safe as we read
+ * only committed entries, which may be compacted but remain valid.
+ *
+ * <p>Note that due to the look-ahead, calling {@link #hasNext()} may result in doing some I/O and
+ * mutating the state of the reader.
+ *
+ * <p>The reader currently simply returns the block as is without copying it - this is safe at the
+ * moment because the serialization in the underlying {@link io.atomix.raft.storage.log.RaftLog}
+ * already copies the data from disk. When switching to zero-copy, however, because of the
+ * look-ahead, this reader will have to copy the block. At that point, we may want to look into
+ * doing more than a single-step look-ahead (either here or in the {@link
+ * io.zeebe.logstreams.log.LogStreamReader}).
+ */
 public final class AtomixLogStorageReader implements LogStorageReader {
+
   private final RaftLogReader reader;
+  private final DirectBuffer currentBlockBuffer;
+  private final DirectBuffer nextBlockBuffer;
 
   public AtomixLogStorageReader(final RaftLogReader reader) {
     this.reader = reader;
-  }
 
-  /**
-   * Naive implementation that reads the whole log to check for a {@link ZeebeEntry}. Most of the
-   * log should be made of these, so in practice this should be fast enough, however callers should
-   * take care when calling this method.
-   *
-   * <p>The reader will be positioned either at the end of the log, or at the position of the first
-   * {@link ZeebeEntry} encountered, such that reading the next entry will return the entry after
-   * it.
-   *
-   * @return true if there are no {@link ZeebeEntry}, false otherwise
-   */
-  @Override
-  public boolean isEmpty() {
-    // although seemingly inefficient, the log will contain mostly ZeebeEntry entries and a few
-    // InitialEntry, so this should be rather fast in practice
-    reader.reset();
-    while (reader.hasNext()) {
-      if (reader.next().type() == ZeebeEntry.class) {
-        return false;
-      }
-    }
-    return true;
+    currentBlockBuffer = new UnsafeBuffer();
+    nextBlockBuffer = new UnsafeBuffer();
+
+    reset();
   }
 
   @Override
-  public long read(final DirectBuffer readBuffer, final long address) {
-    final Optional<Indexed<ZeebeEntry>> maybeEntry = findEntry(address);
-    if (maybeEntry.isEmpty()) {
-      return LogStorage.OP_RESULT_NO_DATA;
-    }
+  public void seek(final long position) {
+    // bounding the position to 0 means we will always seek to the first valid ASQN on the log if
+    // any
+    final long boundedPosition = Math.max(0, position);
 
-    final Indexed<ZeebeEntry> entry = maybeEntry.get();
-    final long serializedRecordsLength = wrapEntryData(entry, readBuffer);
-
-    if (serializedRecordsLength < 0) {
-      return serializedRecordsLength;
-    }
-
-    // for now assume how indexes increase - in the future we should rewrite how we read the
-    // logstream to completely ignore addresses entirely
-    return entry.index() + 1;
-  }
-
-  @Override
-  public long readLastBlock(final DirectBuffer readBuffer) {
-    try {
-      reader.seekToAsqn(Long.MAX_VALUE);
-    } catch (final UnsupportedOperationException e) {
-      // tried to seek to an uncommitted ASQN, which should almost never happen
-      return findLastZeebeEntry(readBuffer);
-    }
-
-    if (reader.hasNext()) {
-      final Indexed<RaftLogEntry> entry = reader.next();
-      if (entry.type() == ZeebeEntry.class) {
-        wrapEntryData(entry.cast(), readBuffer);
-        return entry.index() + 1;
-      }
-    }
-
-    return LogStorage.OP_RESULT_NO_DATA;
-  }
-
-  /**
-   * Performs binary search over all known Atomix entries to find the entry containing our position.
-   *
-   * <p>{@inheritDoc}
-   */
-  @Override
-  public long lookUpApproximateAddress(final long position) {
-    if (position == Long.MIN_VALUE) {
-      return seekToFirst();
-    }
-
-    final long address;
-    try {
-      address = reader.seekToAsqn(position);
-    } catch (final UnsupportedOperationException e) {
-      // in case we seek to an unknown position
-      return LogStorage.OP_RESULT_INVALID_ADDR;
-    }
-
-    if (!reader.hasNext()) {
-      return LogStorage.OP_RESULT_INVALID_ADDR;
-    }
-
-    return address;
+    reader.seekToAsqn(boundedPosition);
+    reset();
+    readNextBlock();
   }
 
   @Override
   public void close() {
+    reset();
     reader.close();
   }
 
-  /**
-   * Looks up the entry whose index is either the given index, or the closest lower index.
-   *
-   * @param index index to seek to
-   */
-  public Optional<Indexed<ZeebeEntry>> findEntry(final long index) {
-    final long nextIndex = reader.reset(index);
+  @Override
+  public boolean hasNext() {
+    return hasNextBlock() || readNextBlock();
+  }
 
-    if (nextIndex < index) {
-      return Optional.empty();
+  @Override
+  public DirectBuffer next() {
+    if (!hasNext()) {
+      throw new NoSuchElementException();
     }
 
+    currentBlockBuffer.wrap(nextBlockBuffer);
+    nextBlockBuffer.wrap(0, 0);
+
+    return currentBlockBuffer;
+  }
+
+  private boolean hasNextBlock() {
+    return nextBlockBuffer.addressOffset() != 0;
+  }
+
+  private boolean readNextBlock() {
     while (reader.hasNext()) {
-      final var entry = reader.next();
-      if (entry.type().equals(ZeebeEntry.class)) {
-        return Optional.of(entry.cast());
+      final Indexed<RaftLogEntry> entry = reader.next();
+      if (entry.type() == ZeebeEntry.class) {
+        final Indexed<ZeebeEntry> nextIndexedEntry = entry.cast();
+
+        nextBlockBuffer.wrap(nextIndexedEntry.entry().data());
+        return true;
       }
     }
 
-    return Optional.empty();
+    return false;
   }
 
-  private long seekToFirst() {
-    // looking for ASQN 0 is a trick which will skip any initial records with ASQN_IGNORE
-    // but stop as soon as we find an ASQN with 0 or greater (and we typically start at 1)
-    return findEntry(0).map(Indexed::index).orElse(LogStorage.OP_RESULT_INVALID_ADDR);
-  }
-
-  /** @deprecated should be dropped and handled properly by the RaftLogReader or the journal */
-  @Deprecated(since = "1.0.0")
-  private long findLastZeebeEntry(final DirectBuffer readBuffer) {
-    long index = reader.seekToLast();
-    long lastReadIndex = -1;
-
-    // to detect we seeked back to the beginning, check if we're reading the same
-    // index again
-    while (index != lastReadIndex) {
-      if (reader.hasNext()) {
-        final Indexed<RaftLogEntry> indexed = reader.next();
-        if (indexed.type() == ZeebeEntry.class) {
-          wrapEntryData(indexed.cast(), readBuffer);
-          return indexed.index() + 1;
-        }
-      }
-
-      lastReadIndex = index;
-      index = reader.reset(index - 1);
-    }
-
-    return LogStorage.OP_RESULT_NO_DATA;
-  }
-
-  private long wrapEntryData(final Indexed<ZeebeEntry> entry, final DirectBuffer dest) {
-    final var data = entry.entry().data();
-    final var length = data.remaining();
-    dest.wrap(data, data.position(), data.remaining());
-    return length;
+  private void reset() {
+    currentBlockBuffer.wrap(0, 0);
+    nextBlockBuffer.wrap(0, 0);
   }
 }

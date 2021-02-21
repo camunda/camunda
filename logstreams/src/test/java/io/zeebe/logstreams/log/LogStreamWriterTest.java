@@ -68,7 +68,7 @@ public final class LogStreamWriterTest {
   private LoggedEvent getWrittenEvent(final long position) {
     assertThat(position).isGreaterThan(0);
 
-    writerRule.waitForPositionToBeAppended(position);
+    writerRule.waitForPositionToBeCommitted(position);
 
     final LoggedEvent event = readerRule.readEventAtPosition(position);
 
@@ -208,7 +208,7 @@ public final class LogStreamWriterTest {
   public void shouldCloseAllWritersAndWriteAgain() {
     // given
     final long firstPosition = writer.key(123L).value(EVENT_VALUE).tryWrite();
-    writerRule.waitForPositionToBeAppended(firstPosition);
+    writerRule.waitForPositionToBeCommitted(firstPosition);
 
     // when
     writerRule.closeWriter();

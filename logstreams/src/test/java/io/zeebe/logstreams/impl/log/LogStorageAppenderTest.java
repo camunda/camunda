@@ -22,8 +22,9 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.spi.LogStorage.AppendListener;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.storage.LogStorage;
+import io.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.util.ByteValue;
@@ -62,7 +63,7 @@ public final class LogStorageAppenderTest {
   private LogStorage logStorage;
   private LogStorageAppender appender;
   private LogStreamWriterImpl writer;
-  private LogStreamReaderImpl reader;
+  private LogStreamReader reader;
   private Subscription subscription;
 
   @Before
@@ -84,7 +85,7 @@ public final class LogStorageAppenderTest {
         new LogStorageAppender(
             "appender", PARTITION_ID, logStorage, subscription, MAX_FRAGMENT_SIZE, l -> {});
     writer = new LogStreamWriterImpl(PARTITION_ID, dispatcher);
-    reader = new LogStreamReaderImpl(logStorage);
+    reader = new LogStreamReaderImpl(logStorage.newReader());
   }
 
   @After

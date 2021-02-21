@@ -71,7 +71,7 @@ public final class LogStreamBatchWriterTest {
 
     assertThat(position).isGreaterThan(0);
 
-    writerRule.waitForPositionToBeAppended(position);
+    writerRule.waitForPositionToBeCommitted(position);
 
     long eventPosition = -1L;
 

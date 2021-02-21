@@ -13,13 +13,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.spi.LogStorageReader;
+import io.zeebe.logstreams.storage.LogStorage;
+import io.zeebe.logstreams.storage.LogStorageReader;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
@@ -108,7 +107,7 @@ public final class LogStorageAppenderHealthTest {
 
     // then
     latch.await();
-    assertThat(latch.getCount()).isEqualTo(0);
+    assertThat(latch.getCount()).isZero();
     assertThat(appender.getHealthStatus()).isEqualTo(HealthStatus.HEALTHY);
   }
 
@@ -137,22 +136,6 @@ public final class LogStorageAppenderHealthTest {
         final AppendListener listener) {
       actor.run(() -> onAppend.accept(highestPosition, listener));
     }
-
-    @Override
-    public void open() throws IOException {}
-
-    @Override
-    public boolean isOpen() {
-      return false;
-    }
-
-    @Override
-    public boolean isClosed() {
-      return false;
-    }
-
-    @Override
-    public void flush() throws Exception {}
 
     @Override
     public void close() {
