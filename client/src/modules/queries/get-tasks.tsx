@@ -36,6 +36,7 @@ interface GetClaimedByMeVariables {
 
 interface GetUnclaimedVariables {
   assigned: false;
+  state: typeof TaskStates.Created;
 }
 
 interface GetCompletedVariables {
@@ -128,6 +129,7 @@ const mockGetUnclaimed = {
     query: GET_TASKS,
     variables: {
       assigned: false,
+      state: TaskStates.Created,
     },
   },
   result: {
