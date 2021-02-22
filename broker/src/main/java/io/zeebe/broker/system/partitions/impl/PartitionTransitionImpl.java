@@ -22,6 +22,7 @@ public class PartitionTransitionImpl implements PartitionTransition {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final List<PartitionStep> EMPTY_LIST = Collections.emptyList();
+  private static final int INACTIVE_TERM = -1;
 
   private final PartitionContext context;
   private final List<PartitionStep> leaderSteps;
@@ -39,18 +40,18 @@ public class PartitionTransitionImpl implements PartitionTransition {
   }
 
   @Override
-  public ActorFuture<Void> toFollower() {
-    return enqueueTransition(followerSteps);
+  public ActorFuture<Void> toFollower(final long currentTerm) {
+    return enqueueTransition(currentTerm, followerSteps);
   }
 
   @Override
-  public ActorFuture<Void> toLeader() {
-    return enqueueTransition(leaderSteps);
+  public ActorFuture<Void> toLeader(final long currentTerm) {
+    return enqueueTransition(currentTerm, leaderSteps);
   }
 
   @Override
   public ActorFuture<Void> toInactive() {
-    return enqueueTransition(EMPTY_LIST);
+    return enqueueTransition(INACTIVE_TERM, EMPTY_LIST);
   }
 
   /**
@@ -58,24 +59,32 @@ public class PartitionTransitionImpl implements PartitionTransition {
    * order. Previous we had the issue that all transitions have subscribe to the current transition,
    * which lead to undefined behavior.
    *
+   * @param currentTerm
    * @param partitionStepList the steps which should be installed on the transition
    */
-  private ActorFuture<Void> enqueueTransition(final List<PartitionStep> partitionStepList) {
+  private ActorFuture<Void> enqueueTransition(
+      final long currentTerm, final List<PartitionStep> partitionStepList) {
     final var nextTransitionFuture = new CompletableActorFuture<Void>();
     final var nextCurrentTransition = currentTransition;
     currentTransition = nextTransitionFuture;
     nextCurrentTransition.onComplete(
-        (nothing, err) -> transition(nextTransitionFuture, partitionStepList));
+        (nothing, err) -> transition(currentTerm, nextTransitionFuture, partitionStepList));
     return nextTransitionFuture;
   }
 
   private void transition(
-      final CompletableActorFuture<Void> future, final List<PartitionStep> steps) {
-    closePartition().onComplete((nothing, err) -> installPartition(future, new ArrayList<>(steps)));
+      final long currentTerm,
+      final CompletableActorFuture<Void> future,
+      final List<PartitionStep> steps) {
+    closePartition()
+        .onComplete(
+            (nothing, err) -> installPartition(currentTerm, future, new ArrayList<>(steps)));
   }
 
   private void installPartition(
-      final CompletableActorFuture<Void> future, final List<PartitionStep> steps) {
+      final long currentTerm,
+      final CompletableActorFuture<Void> future,
+      final List<PartitionStep> steps) {
     if (steps.isEmpty()) {
       LOG.debug(
           "Partition {} transition complete, installed {} resources!",
@@ -86,7 +95,7 @@ public class PartitionTransitionImpl implements PartitionTransition {
     }
 
     final PartitionStep step = steps.remove(0);
-    step.open(context)
+    step.open(currentTerm, context)
         .onComplete(
             (value, err) -> {
               if (err != null) {
@@ -95,7 +104,7 @@ public class PartitionTransitionImpl implements PartitionTransition {
                 future.completeExceptionally(err);
               } else {
                 openedSteps.add(step);
-                installPartition(future, steps);
+                installPartition(currentTerm, future, steps);
               }
             });
   }

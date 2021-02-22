@@ -8,6 +8,7 @@
 package io.zeebe.broker.system.partitions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -64,7 +65,7 @@ public class ZeebePartitionTest {
     schedulerRule.workUntilDone();
 
     // then
-    verify(transition).toLeader();
+    verify(transition).toLeader(1);
   }
 
   @Test()
@@ -74,9 +75,9 @@ public class ZeebePartitionTest {
     schedulerRule.submitActor(partition);
     final CountDownLatch latch = new CountDownLatch(1);
 
-    when(transition.toLeader())
+    when(transition.toLeader(anyLong()))
         .thenReturn(CompletableActorFuture.completedExceptionally(new Exception("expected")));
-    when(transition.toFollower())
+    when(transition.toFollower(anyLong()))
         .then(
             invocation -> {
               latch.countDown();
@@ -97,9 +98,9 @@ public class ZeebePartitionTest {
 
     // then
     final InOrder order = inOrder(transition, raft);
-    order.verify(transition).toLeader();
+    order.verify(transition).toLeader(1);
     order.verify(raft).stepDown();
-    order.verify(transition).toFollower();
+    order.verify(transition).toFollower(2);
   }
 
   @Test
@@ -109,7 +110,7 @@ public class ZeebePartitionTest {
     schedulerRule.submitActor(partition);
     final CountDownLatch latch = new CountDownLatch(1);
 
-    when(transition.toFollower())
+    when(transition.toFollower(anyLong()))
         .thenReturn(CompletableActorFuture.completedExceptionally(new Exception("expected")));
     when(transition.toInactive())
         .then(
@@ -126,13 +127,12 @@ public class ZeebePartitionTest {
             });
 
     // when
-    partition.onNewRole(Role.FOLLOWER, 1);
     schedulerRule.workUntilDone();
     assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 
     // then
     final InOrder order = inOrder(transition, raft);
-    order.verify(transition).toFollower();
+    order.verify(transition).toFollower(0L);
     order.verify(raft).goInactive();
     order.verify(transition).toInactive();
   }
@@ -140,12 +140,12 @@ public class ZeebePartitionTest {
   private static class NoopTransition implements PartitionTransition {
 
     @Override
-    public ActorFuture<Void> toFollower() {
+    public ActorFuture<Void> toFollower(final long currentTerm) {
       return CompletableActorFuture.completed(null);
     }
 
     @Override
-    public ActorFuture<Void> toLeader() {
+    public ActorFuture<Void> toLeader(final long currentTerm) {
       return CompletableActorFuture.completed(null);
     }
 
