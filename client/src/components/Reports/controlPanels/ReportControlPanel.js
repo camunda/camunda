@@ -47,14 +47,14 @@ export default withErrorHandling(
       this.loadFlowNodeNames(data);
     }
 
-    loadFlowNodeNames = async ({processDefinitionKey, processDefinitionVersions, tenantIds}) => {
+    loadFlowNodeNames = ({processDefinitionKey, processDefinitionVersions, tenantIds}) => {
       if (processDefinitionKey && processDefinitionVersions && tenantIds) {
-        this.setState({
-          flowNodeNames: await getFlowNodeNames(
-            processDefinitionKey,
-            processDefinitionVersions[0],
-            tenantIds[0]
-          ),
+        return new Promise((resolve, reject) => {
+          this.props.mightFail(
+            getFlowNodeNames(processDefinitionKey, processDefinitionVersions[0], tenantIds[0]),
+            (flowNodeNames) => this.setState({flowNodeNames}, resolve),
+            (error) => reject(showError(error))
+          );
         });
       }
     };
@@ -69,6 +69,24 @@ export default withErrorHandling(
           );
         });
       }
+    };
+
+    loadXml = ({processDefinitionKey, processDefinitionVersions, tenantIds}) => {
+      if (processDefinitionKey && processDefinitionVersions?.[0] && tenantIds) {
+        return new Promise((resolve, reject) => {
+          this.props.mightFail(
+            loadProcessDefinitionXml(
+              processDefinitionKey,
+              processDefinitionVersions[0],
+              tenantIds[0]
+            ),
+            resolve,
+            (error) => reject(showError(error))
+          );
+        });
+      }
+
+      return null;
     };
 
     variableExists = (varName) =>
@@ -110,27 +128,12 @@ export default withErrorHandling(
     };
 
     changeDefinition = async ({key, versions, tenantIds, name}) => {
-      const change = {
-        processDefinitionKey: {$set: key},
-        processDefinitionName: {$set: name},
-        processDefinitionVersions: {$set: versions},
-        tenantIds: {$set: tenantIds},
-        configuration: {
-          heatmapTargetValue: {
-            $set: {
-              active: false,
-              values: {},
-            },
-          },
-          xml: {
-            $set:
-              key && versions && versions[0]
-                ? await loadProcessDefinitionXml(key, versions[0], tenantIds[0])
-                : null,
-          },
-          processPart: {$set: null},
-        },
-      };
+      const {
+        tableColumns: {columnOrder},
+        processPart,
+        heatmapTargetValue: {values},
+      } = this.props.report.data.configuration;
+      const targetFlowNodes = Object.keys(values);
 
       const definitionData = {
         processDefinitionKey: key,
@@ -138,27 +141,48 @@ export default withErrorHandling(
         tenantIds,
       };
 
-      const variableConfig = this.getVariableConfig();
-      const columnOrder = this.props.report.data.configuration.tableColumns.columnOrder;
-      if (variableConfig || columnOrder.length) {
-        this.props.setLoading(true);
-        await this.loadVariables(definitionData);
-        this.props.setLoading(false);
-        if (variableConfig && !this.variableExists(variableConfig.name)) {
-          variableConfig.reset(change);
-        }
+      this.props.setLoading(true);
+      const [xml] = await Promise.all([
+        this.loadXml(definitionData),
+        this.loadVariables(definitionData),
+        this.loadFlowNodeNames(definitionData),
+      ]);
 
-        if (columnOrder.length) {
-          change.configuration.tableColumns = {
-            columnOrder: {$set: this.filterNonExistingVariables(columnOrder)},
-          };
-        }
-      } else {
-        this.loadVariables(definitionData);
+      const change = {
+        processDefinitionKey: {$set: key},
+        processDefinitionName: {$set: name},
+        processDefinitionVersions: {$set: versions},
+        tenantIds: {$set: tenantIds},
+        configuration: {xml: {$set: xml}},
+      };
+
+      const variableConfig = this.getVariableConfig();
+      if (variableConfig && !this.variableExists(variableConfig.name)) {
+        variableConfig.reset(change);
       }
 
-      this.loadFlowNodeNames(definitionData);
+      if (columnOrder.length) {
+        change.configuration.tableColumns = {
+          columnOrder: {$set: this.filterNonExistingVariables(columnOrder)},
+        };
+      }
+
+      if (
+        processPart &&
+        !checkAllFlowNodesExist(this.state.flowNodeNames, Object.values(processPart))
+      ) {
+        change.configuration.processPart = {$set: null};
+      }
+
+      if (
+        targetFlowNodes.length &&
+        !checkAllFlowNodesExist(this.state.flowNodeNames, targetFlowNodes)
+      ) {
+        change.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
+      }
+
       this.props.updateReport(change, true);
+      this.props.setLoading(false);
     };
 
     updateReport = (type, newValue) => {
@@ -330,3 +354,11 @@ export default withErrorHandling(
     }
   }
 );
+
+function checkAllFlowNodesExist(availableFlowNodeNames, flowNodeIds) {
+  if (!availableFlowNodeNames) {
+    return true;
+  }
+  const availableFlowNodesIds = Object.keys(availableFlowNodeNames);
+  return flowNodeIds.every((id) => availableFlowNodesIds.includes(id));
+}
