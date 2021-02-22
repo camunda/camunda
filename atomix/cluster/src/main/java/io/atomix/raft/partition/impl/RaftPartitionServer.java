@@ -155,11 +155,12 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
   }
 
   private RaftServer buildServer() {
+    final var partitionId = partition.id().id();
     persistedSnapshotStore =
         config
             .getStorageConfig()
             .getPersistedSnapshotStoreFactory()
-            .createReceivableSnapshotStore(partition.dataDirectory().toPath(), partition.name());
+            .createReceivableSnapshotStore(partition.dataDirectory().toPath(), partitionId);
 
     return RaftServer.builder(localMemberId)
         .withName(partition.name())

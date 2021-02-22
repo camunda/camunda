@@ -20,8 +20,8 @@ public interface ReceivableSnapshotStoreFactory {
    * Creates a snapshot store operating in the given {@code directory}.
    *
    * @param directory the root directory where snapshots should be stored
-   * @param partitionName the partition name for this store
+   * @param partitionId the id of the partition for this store
    * @return a new {@link PersistedSnapshotStore}
    */
-  ReceivableSnapshotStore createReceivableSnapshotStore(Path directory, String partitionName);
+  ReceivableSnapshotStore createReceivableSnapshotStore(Path directory, int partitionId);
 }

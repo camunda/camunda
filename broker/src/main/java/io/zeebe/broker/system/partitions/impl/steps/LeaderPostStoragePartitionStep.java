@@ -18,7 +18,7 @@ public class LeaderPostStoragePartitionStep implements PartitionStep {
   public ActorFuture<Void> open(final PartitionContext context) {
     context
         .getSnapshotStoreSupplier()
-        .getPersistedSnapshotStore(context.getRaftPartition().name())
+        .getPersistedSnapshotStore(context.getRaftPartition().id().id())
         .addSnapshotListener(context.getSnapshotController());
 
     return CompletableActorFuture.completed(null);
@@ -28,7 +28,7 @@ public class LeaderPostStoragePartitionStep implements PartitionStep {
   public ActorFuture<Void> close(final PartitionContext context) {
     context
         .getSnapshotStoreSupplier()
-        .getPersistedSnapshotStore(context.getRaftPartition().name())
+        .getPersistedSnapshotStore(context.getRaftPartition().id().id())
         .removeSnapshotListener(context.getSnapshotController());
     return CompletableActorFuture.completed(null);
   }

@@ -58,7 +58,7 @@ public final class AsyncSnapshotDirector extends Actor {
     this.logStream = logStream;
     processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
-    actorName = buildActorName(nodeId, "SnapshotDirector-" + logStream.getPartitionId());
+    actorName = buildActorName(nodeId, "SnapshotDirector", logStream.getPartitionId());
   }
 
   @Override

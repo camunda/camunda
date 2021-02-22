@@ -45,20 +45,20 @@ public final class FailingSnapshotChunkReplicationTest {
   public void setup(final SnapshotReplication replicator) throws IOException {
     final var senderRoot = tempFolderRule.newFolder("sender").toPath();
 
-    final var senderFactory = new FileBasedSnapshotStoreFactory(actorSchedulerRule.get());
-    senderFactory.createReceivableSnapshotStore(senderRoot, "1");
-    senderStore = senderFactory.getConstructableSnapshotStore("1");
+    final var senderFactory = new FileBasedSnapshotStoreFactory(actorSchedulerRule.get(), 1);
+    senderFactory.createReceivableSnapshotStore(senderRoot, 1);
+    senderStore = senderFactory.getConstructableSnapshotStore(1);
 
     final var receiverRoot = tempFolderRule.newFolder("receiver").toPath();
-    final var receiverFactory = new FileBasedSnapshotStoreFactory(actorSchedulerRule.get());
-    receiverStore = receiverFactory.createReceivableSnapshotStore(receiverRoot, "1");
+    final var receiverFactory = new FileBasedSnapshotStoreFactory(actorSchedulerRule.get(), 2);
+    receiverStore = receiverFactory.createReceivableSnapshotStore(receiverRoot, 1);
 
     replicatorSnapshotController =
         new StateControllerImpl(
             1,
             ZeebeRocksDbFactory.newFactory(),
             senderStore,
-            senderFactory.getReceivableSnapshotStore("1"),
+            senderFactory.getReceivableSnapshotStore(1),
             senderRoot.resolve("runtime"),
             replicator,
             l ->
@@ -72,8 +72,8 @@ public final class FailingSnapshotChunkReplicationTest {
         new StateControllerImpl(
             1,
             ZeebeRocksDbFactory.newFactory(),
-            receiverFactory.getConstructableSnapshotStore("1"),
-            receiverFactory.getReceivableSnapshotStore("1"),
+            receiverFactory.getConstructableSnapshotStore(1),
+            receiverFactory.getReceivableSnapshotStore(1),
             receiverRoot.resolve("runtime"),
             replicator,
             l ->

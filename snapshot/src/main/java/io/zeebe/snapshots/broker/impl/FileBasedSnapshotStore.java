@@ -61,8 +61,11 @@ public final class FileBasedSnapshotStore extends Actor
   // used to write concurrently received snapshots in different pending directories
   private final AtomicLong receivingSnapshotStartCount;
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
+  private final String actorName;
 
   public FileBasedSnapshotStore(
+      final int nodeId,
+      final int partitionId,
       final SnapshotMetrics snapshotMetrics,
       final Path snapshotsDirectory,
       final Path pendingDirectory) {
@@ -72,10 +75,16 @@ public final class FileBasedSnapshotStore extends Actor
     receivingSnapshotStartCount = new AtomicLong();
 
     listeners = new CopyOnWriteArraySet<>();
+    actorName = buildActorName(nodeId, "SnapshotStore", partitionId);
 
     // load previous snapshots
     currentPersistedSnapshotRef = new AtomicReference<>(loadLatestSnapshot(snapshotsDirectory));
     purgePendingSnapshotsDirectory();
+  }
+
+  @Override
+  public String getName() {
+    return actorName;
   }
 
   private FileBasedSnapshot loadLatestSnapshot(final Path snapshotDirectory) {

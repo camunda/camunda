@@ -86,7 +86,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
             .abortCondition(this::isClosed);
     logStream = processingContext.getLogStream();
     partitionId = logStream.getPartitionId();
-    actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor-" + partitionId);
+    actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor", partitionId);
   }
 
   public static StreamProcessorBuilder builder() {

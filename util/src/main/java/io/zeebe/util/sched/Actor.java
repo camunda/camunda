@@ -74,6 +74,10 @@ public abstract class Actor implements CloseableSilently, AsyncClosable {
     return String.format("Broker-%d-%s", nodeId, name);
   }
 
+  public static String buildActorName(final int nodeId, final String name, final int partitionId) {
+    return String.format("Broker-%d-%s-%d", nodeId, name, partitionId);
+  }
+
   /**
    * Invoked when a task throws an exception when the actor phase is not 'STARTING' and 'CLOSING'.
    *

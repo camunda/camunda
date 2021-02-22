@@ -69,7 +69,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
 
     this.partitionId = partitionId;
     this.nodeId = nodeId;
-    actorName = buildActorName(nodeId, "LogStream-" + partitionId);
+    actorName = buildActorName(nodeId, "LogStream", partitionId);
 
     this.maxFrameLength = maxFrameLength;
     this.logStorage = logStorage;
@@ -270,7 +270,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     }
 
     writeBuffer =
-        Dispatchers.create(buildActorName(nodeId, "dispatcher-" + partitionId))
+        Dispatchers.create(buildActorName(nodeId, "dispatcher", partitionId))
             .maxFragmentLength(maxFrameLength)
             .initialPosition(initialPosition)
             .name(logName + "-write-buffer")
@@ -284,7 +284,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
               if (throwable == null) {
                 appender =
                     new LogStorageAppender(
-                        buildActorName(nodeId, "LogAppender-" + partitionId),
+                        buildActorName(nodeId, "LogAppender", partitionId),
                         partitionId,
                         logStorage,
                         subscription,

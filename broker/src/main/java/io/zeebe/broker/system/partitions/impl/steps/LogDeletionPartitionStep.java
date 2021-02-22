@@ -27,7 +27,7 @@ public class LogDeletionPartitionStep implements PartitionStep {
             logCompactor,
             context
                 .getSnapshotStoreSupplier()
-                .getPersistedSnapshotStore(context.getRaftPartition().name()));
+                .getPersistedSnapshotStore(context.getRaftPartition().id().id()));
 
     context.setLogDeletionService(deletionService);
     return context.getScheduler().submitActor(deletionService);

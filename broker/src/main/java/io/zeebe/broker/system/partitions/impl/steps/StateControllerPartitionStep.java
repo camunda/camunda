@@ -31,10 +31,8 @@ public class StateControllerPartitionStep implements PartitionStep {
             DefaultZeebeDbFactory.defaultFactory(databaseCfg.createRocksDbConfiguration()),
             context
                 .getSnapshotStoreSupplier()
-                .getConstructableSnapshotStore(context.getRaftPartition().name()),
-            context
-                .getSnapshotStoreSupplier()
-                .getReceivableSnapshotStore(context.getRaftPartition().name()),
+                .getConstructableSnapshotStore(context.getPartitionId()),
+            context.getSnapshotStoreSupplier().getReceivableSnapshotStore(context.getPartitionId()),
             runtimeDirectory,
             context.getSnapshotReplication(),
             new AtomixRecordEntrySupplierImpl(context.getRaftLogReader()),

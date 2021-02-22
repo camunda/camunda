@@ -16,7 +16,6 @@ import io.zeebe.util.sched.future.ActorFuture;
 
 public class ExporterDirectorPartitionStep implements PartitionStep {
   private static final int EXPORTER_PROCESSOR_ID = 1003;
-  private static final String EXPORTER_NAME = "Exporter-%d";
 
   @Override
   public ActorFuture<Void> open(final PartitionContext context) {
@@ -25,9 +24,7 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
     final ExporterDirectorContext exporterCtx =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
-            .name(
-                Actor.buildActorName(
-                    context.getNodeId(), String.format(EXPORTER_NAME, context.getPartitionId())))
+            .name(Actor.buildActorName(context.getNodeId(), "Exporter", context.getPartitionId()))
             .logStream(context.getLogStream())
             .zeebeDb(context.getZeebeDb())
             .descriptors(exporterDescriptors);

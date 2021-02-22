@@ -40,12 +40,12 @@ public class FileBasedTransientSnapshotTest {
   @Before
   public void before() {
     final FileBasedSnapshotStoreFactory factory =
-        new FileBasedSnapshotStoreFactory(createActorScheduler());
-    final String partitionName = "1";
+        new FileBasedSnapshotStoreFactory(createActorScheduler(), 1);
+    final int partitionId = 1;
     final File root = temporaryFolder.getRoot();
 
-    factory.createReceivableSnapshotStore(root.toPath(), partitionName);
-    persistedSnapshotStore = factory.getConstructableSnapshotStore(partitionName);
+    factory.createReceivableSnapshotStore(root.toPath(), partitionId);
+    persistedSnapshotStore = factory.getConstructableSnapshotStore(partitionId);
 
     snapshotsDir =
         temporaryFolder

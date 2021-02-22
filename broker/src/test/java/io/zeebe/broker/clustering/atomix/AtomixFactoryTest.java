@@ -8,6 +8,7 @@
 package io.zeebe.broker.clustering.atomix;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.atomix.core.Atomix;
 import io.atomix.raft.partition.RaftPartitionGroup;
@@ -38,7 +39,7 @@ public final class AtomixFactoryTest {
 
     // when
     final var atomix =
-        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory(null));
+        AtomixFactory.fromConfiguration(brokerConfig, mock(FileBasedSnapshotStoreFactory.class));
 
     // then
     final var config = getPartitionGroupConfig(atomix);
@@ -53,7 +54,7 @@ public final class AtomixFactoryTest {
 
     // when
     final var atomix =
-        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory(null));
+        AtomixFactory.fromConfiguration(brokerConfig, mock(FileBasedSnapshotStoreFactory.class));
 
     // then
     final var config = getPartitionGroupConfig(atomix);
@@ -68,7 +69,7 @@ public final class AtomixFactoryTest {
 
     // when
     final var atomix =
-        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory(null));
+        AtomixFactory.fromConfiguration(brokerConfig, mock(FileBasedSnapshotStoreFactory.class));
 
     // then
     final var config = getPartitionGroupConfig(atomix);
@@ -83,7 +84,7 @@ public final class AtomixFactoryTest {
 
     // when
     final var atomix =
-        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory(null));
+        AtomixFactory.fromConfiguration(brokerConfig, mock(FileBasedSnapshotStoreFactory.class));
 
     // then
     final var config = getPartitionGroupConfig(atomix);

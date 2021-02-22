@@ -40,7 +40,7 @@ public final class StateReplication implements SnapshotReplication {
       final PartitionMessagingService messagingService, final int partitionId, final int nodeId) {
     this.messagingService = messagingService;
     replicationTopic = String.format(REPLICATION_TOPIC_FORMAT, partitionId);
-    threadName = buildActorName(nodeId, "StateReplication-" + partitionId);
+    threadName = buildActorName(nodeId, "StateReplication", partitionId);
   }
 
   @Override
