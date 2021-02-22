@@ -14,7 +14,7 @@
     "@types/react": "^17.0.2",
     "@types/react-dom": "^17.0.1",
     "@types/react-router-dom": "^5.1.7",
-    "@types/react-transition-group": "^4.4.0",
+    "@types/react-transition-group": "^4.4.1",
     "@types/styled-components": "^5.1.7",
     "bpmn-js": "^8.2.0",
     "bpmn-moddle": "^7.0.4",
