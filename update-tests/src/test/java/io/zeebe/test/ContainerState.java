@@ -94,7 +94,6 @@ final class ContainerState implements CloseableResource {
         new ZeebeContainer("camunda/zeebe:" + brokerVersion)
             .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
             .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "128KB")
-            .withEnv("ZEEBE_BROKER_DATA_USEMMAP", "true")
             .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "64MB")
             .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
             .withEnv("ZEEBE_BROKER_DATA_LOGINDEXDENSITY", "1")

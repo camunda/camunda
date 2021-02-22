@@ -31,7 +31,6 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.NoopEntryValidator;
-import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.index.JournalIndex;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -75,16 +74,13 @@ import java.util.function.Supplier;
  * <h2>Storage</h2>
  *
  * By default, the log is stored on disk, but users can override the default {@link RaftStorage}
- * configuration via {@link RaftServer.Builder#withStorage(RaftStorage)}. Most notably, to configure
- * the storage module to store entries in memory instead of disk, configure the {@link
- * StorageLevel}.
+ * configuration via {@link RaftServer.Builder#withStorage(RaftStorage)}.
  *
  * <pre>{@code
  * RaftServer server = RaftServer.builder(address)
  *   .withStateMachine(MyStateMachine::new)
  *   .withStorage(Storage.builder()
  *     .withDirectory(new File("logs"))
- *     .withStorageLevel(StorageLevel.DISK)
  *     .build())
  *   .build();
  * }</pre>
@@ -160,7 +156,7 @@ public interface RaftServer {
    *
    * <p>The server name is provided to the server via the {@link Builder#withName(String) builder
    * configuration}. The name is used internally to manage the server's on-disk state. {@link
-   * RaftLog Log}, {@link snapshot}, and {@link io.atomix.raft.storage.system.MetaStore
+   * RaftLog Log}, {@code snapshot}, and {@link io.atomix.raft.storage.system.MetaStore
    * configuration} files stored on disk use the server name as the prefix.
    *
    * @return The server name.
@@ -173,8 +169,7 @@ public interface RaftServer {
    * <p>The {@link RaftCluster} is representative of the server's current view of the cluster
    * configuration. The first time the server is {@link #bootstrap() started}, the cluster
    * configuration will be initialized using the {@link MemberId} list provided to the server {@link
-   * #builder(MemberId) builder}. For {@link StorageLevel#DISK persistent} servers, subsequent
-   * starts will result in the last known cluster configuration being loaded from disk.
+   * #builder(MemberId) builder}
    *
    * @return The server's cluster configuration.
    */

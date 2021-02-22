@@ -16,10 +16,7 @@
  */
 package io.atomix.raft.partition;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
-import io.atomix.storage.StorageLevel;
 import io.atomix.utils.memory.MemorySize;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStoreFactory;
 
@@ -27,7 +24,6 @@ import io.zeebe.snapshots.raft.ReceivableSnapshotStoreFactory;
 public class RaftStorageConfig {
 
   private static final String DATA_PREFIX = ".data";
-  private static final StorageLevel DEFAULT_STORAGE_LEVEL = StorageLevel.DISK;
   private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
   private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024;
   private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
@@ -35,7 +31,6 @@ public class RaftStorageConfig {
   private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
 
   private String directory;
-  private StorageLevel level = DEFAULT_STORAGE_LEVEL;
   private int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
   private long segmentSize = DEFAULT_MAX_SEGMENT_SIZE;
   private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
@@ -55,26 +50,6 @@ public class RaftStorageConfig {
     return directory != null
         ? directory
         : System.getProperty("atomix.data", DATA_PREFIX) + "/" + groupName;
-  }
-
-  /**
-   * Returns the partition storage level.
-   *
-   * @return the partition storage level
-   */
-  public StorageLevel getLevel() {
-    return level;
-  }
-
-  /**
-   * Sets the partition storage level.
-   *
-   * @param storageLevel the partition storage level
-   * @return the Raft partition group configuration
-   */
-  public RaftStorageConfig setLevel(final StorageLevel storageLevel) {
-    level = checkNotNull(storageLevel);
-    return this;
   }
 
   /**

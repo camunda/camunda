@@ -21,10 +21,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.raft.storage.log.RaftLog;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.storage.StorageException;
-import io.atomix.storage.StorageLevel;
 import io.atomix.storage.buffer.FileBuffer;
 import io.atomix.storage.journal.JournalSegmentDescriptor;
 import io.atomix.storage.journal.JournalSegmentFile;
@@ -58,38 +56,32 @@ import org.agrona.IoUtil;
 public final class RaftStorage {
 
   private final String prefix;
-  private final StorageLevel storageLevel;
   private final File directory;
   private final Namespace namespace;
   private final int maxSegmentSize;
   private final int maxEntrySize;
   private final long freeDiskSpace;
   private final boolean flushExplicitly;
-  private final boolean retainStaleSnapshots;
   private final ReceivableSnapshotStore persistedSnapshotStore;
   private final int journalIndexDensity;
 
   private RaftStorage(
       final String prefix,
-      final StorageLevel storageLevel,
       final File directory,
       final Namespace namespace,
       final int maxSegmentSize,
       final int maxEntrySize,
       final long freeDiskSpace,
       final boolean flushExplicitly,
-      final boolean retainStaleSnapshots,
       final ReceivableSnapshotStore persistedSnapshotStore,
       final int journalIndexDensity) {
     this.prefix = prefix;
-    this.storageLevel = storageLevel;
     this.directory = directory;
     this.namespace = namespace;
     this.maxSegmentSize = maxSegmentSize;
     this.maxEntrySize = maxEntrySize;
     this.freeDiskSpace = freeDiskSpace;
     this.flushExplicitly = flushExplicitly;
-    this.retainStaleSnapshots = retainStaleSnapshots;
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.journalIndexDensity = journalIndexDensity;
 
@@ -121,18 +113,6 @@ public final class RaftStorage {
    */
   public Namespace namespace() {
     return namespace;
-  }
-
-  /**
-   * Returns the storage level.
-   *
-   * <p>The storage level dictates how entries within individual log {@link RaftLog}s should be
-   * stored.
-   *
-   * @return The storage level.
-   */
-  public StorageLevel storageLevel() {
-    return storageLevel;
   }
 
   /**
@@ -203,9 +183,7 @@ public final class RaftStorage {
   /**
    * Opens a new {@link MetaStore}, recovering metadata from disk if it exists.
    *
-   * <p>The meta store will be loaded using based on the configured {@link StorageLevel}. If the
-   * storage level is persistent then the meta store will be loaded from disk, otherwise a new meta
-   * store will be created.
+   * <p>The meta store will be loaded from disk, or if missing, a new meta store will be created.
    *
    * @return The metastore.
    */
@@ -258,7 +236,6 @@ public final class RaftStorage {
     return RaftLog.builder()
         .withName(prefix)
         .withDirectory(directory)
-        .withStorageLevel(storageLevel)
         .withNamespace(namespace)
         .withMaxSegmentSize(maxSegmentSize)
         .withMaxEntrySize(maxEntrySize)
@@ -307,19 +284,6 @@ public final class RaftStorage {
   }
 
   /**
-   * Returns a boolean value indicating whether to retain stale snapshots on disk.
-   *
-   * <p>If this option is enabled, snapshots will be retained on disk even after they no longer
-   * contribute to the state of the system (there's a more recent snapshot). Users may want to
-   * disable this option for backup purposes.
-   *
-   * @return Indicates whether to retain stale snapshots on disk.
-   */
-  public boolean isRetainStaleSnapshots() {
-    return retainStaleSnapshots;
-  }
-
-  /**
    * Builds a {@link RaftStorage} configuration.
    *
    * <p>The storage builder provides simplifies building more complex {@link RaftStorage}
@@ -344,18 +308,15 @@ public final class RaftStorage {
     private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024;
     private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024;
     private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
-    private static final boolean DEFAULT_RETAIN_STALE_SNAPSHOTS = false;
     private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
 
     private String prefix = DEFAULT_PREFIX;
-    private StorageLevel storageLevel = StorageLevel.DISK;
     private File directory = new File(DEFAULT_DIRECTORY);
     private Namespace namespace;
     private int maxSegmentSize = DEFAULT_MAX_SEGMENT_SIZE;
     private int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
     private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
     private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
-    private boolean retainStaleSnapshots = DEFAULT_RETAIN_STALE_SNAPSHOTS;
     private ReceivableSnapshotStore persistedSnapshotStore;
     private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
 
@@ -369,20 +330,6 @@ public final class RaftStorage {
      */
     public Builder withPrefix(final String prefix) {
       this.prefix = checkNotNull(prefix, "prefix cannot be null");
-      return this;
-    }
-
-    /**
-     * Sets the log storage level, returning the builder for method chaining.
-     *
-     * <p>The storage level indicates how individual {@link RaftLogEntry entries} should be
-     * persisted in the log.
-     *
-     * @param storageLevel The log storage level.
-     * @return The storage builder.
-     */
-    public Builder withStorageLevel(final StorageLevel storageLevel) {
-      this.storageLevel = checkNotNull(storageLevel, "storageLevel");
       return this;
     }
 
@@ -490,38 +437,6 @@ public final class RaftStorage {
     }
 
     /**
-     * Enables retaining stale snapshots on disk, returning the builder for method chaining.
-     *
-     * <p>As the system state progresses, periodic snapshots of the state machine's state are taken.
-     * Once a new snapshot of the state machine is taken, all preceding snapshots no longer
-     * contribute to the state of the system and can therefore be removed from disk. By default,
-     * snapshots will not be retained once a new snapshot is stored on disk. Enabling snapshot
-     * retention will ensure that all snapshots will be saved, e.g. for backup purposes.
-     *
-     * @return The storage builder.
-     */
-    public Builder withRetainStaleSnapshots() {
-      return withRetainStaleSnapshots(true);
-    }
-
-    /**
-     * Sets whether to retain stale snapshots on disk, returning the builder for method chaining.
-     *
-     * <p>As the system state progresses, periodic snapshots of the state machine's state are taken.
-     * Once a new snapshot of the state machine is taken, all preceding snapshots no longer
-     * contribute to the state of the system and can therefore be removed from disk. By default,
-     * snapshots will not be retained once a new snapshot is stored on disk. Enabling snapshot
-     * retention will ensure that all snapshots will be saved, e.g. for backup purposes.
-     *
-     * @param retainStaleSnapshots Whether to retain stale snapshots on disk.
-     * @return The storage builder.
-     */
-    public Builder withRetainStaleSnapshots(final boolean retainStaleSnapshots) {
-      this.retainStaleSnapshots = retainStaleSnapshots;
-      return this;
-    }
-
-    /**
      * Sets the snapshot store to use for remote snapshot installation.
      *
      * @param persistedSnapshotStore the snapshot store for this Raft
@@ -546,14 +461,12 @@ public final class RaftStorage {
     public RaftStorage build() {
       return new RaftStorage(
           prefix,
-          storageLevel,
           directory,
           namespace,
           maxSegmentSize,
           maxEntrySize,
           freeDiskSpace,
           flushExplicitly,
-          retainStaleSnapshots,
           persistedSnapshotStore,
           journalIndexDensity);
     }

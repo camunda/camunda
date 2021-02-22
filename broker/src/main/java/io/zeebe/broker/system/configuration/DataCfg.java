@@ -9,7 +9,6 @@ package io.zeebe.broker.system.configuration;
 
 import static io.zeebe.util.StringUtil.LIST_SANITIZER;
 
-import io.atomix.storage.StorageLevel;
 import io.zeebe.broker.Loggers;
 import java.io.File;
 import java.time.Duration;
@@ -46,7 +45,6 @@ public final class DataCfg implements ConfigurationEntry {
 
   private int logIndexDensity = 100;
 
-  private boolean useMmap = true;
   private boolean diskUsageMonitoringEnabled = DEFAULT_DISK_USAGE_MONITORING_ENABLED;
   private double diskUsageReplicationWatermark = DEFAULT_DISK_USAGE_REPLICATION_WATERMARK;
   private double diskUsageCommandWatermark = DEFAULT_DISK_USAGE_COMMAND_WATERMARK;
@@ -131,18 +129,6 @@ public final class DataCfg implements ConfigurationEntry {
     this.logIndexDensity = logIndexDensity;
   }
 
-  public boolean useMmap() {
-    return useMmap;
-  }
-
-  public void setUseMmap(final boolean useMmap) {
-    this.useMmap = useMmap;
-  }
-
-  public StorageLevel getAtomixStorageLevel() {
-    return useMmap() ? StorageLevel.MAPPED : StorageLevel.DISK;
-  }
-
   public boolean isDiskUsageMonitoringEnabled() {
     return diskUsageMonitoringEnabled;
   }
@@ -196,8 +182,6 @@ public final class DataCfg implements ConfigurationEntry {
         + snapshotPeriod
         + ", logIndexDensity="
         + logIndexDensity
-        + ", useMmap="
-        + useMmap
         + ", diskUsageMonitoringEnabled="
         + diskUsageMonitoringEnabled
         + ", diskUsageReplicationWatermark="

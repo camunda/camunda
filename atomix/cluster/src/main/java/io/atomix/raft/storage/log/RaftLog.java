@@ -20,7 +20,6 @@ import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeEntry;
-import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.serializer.Namespace;
 import io.zeebe.journal.Journal;
@@ -211,18 +210,6 @@ public class RaftLog implements Closeable {
      */
     public Builder withName(final String name) {
       journalBuilder.withName(name);
-      return this;
-    }
-
-    /**
-     * Sets the log storage level, returning the builder for method chaining.
-     *
-     * <p>The storage level indicates how individual entries should be persisted in the journal.
-     *
-     * @param storageLevel The log storage level.
-     * @return The storage builder.
-     */
-    public Builder withStorageLevel(final StorageLevel storageLevel) {
       return this;
     }
 

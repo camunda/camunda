@@ -676,15 +676,6 @@ public final class BrokerCfgTest {
   }
 
   @Test
-  public void shouldUseMmap() {
-    // given
-    environment.put("zeebe.broker.data.useMmap", "true");
-
-    // then
-    assertUseMmap(true);
-  }
-
-  @Test
   public void shouldNotPrintConfidentialInformation() throws Exception {
     // given
     final var brokerCfg = TestConfigReader.readConfig("elasticexporter", environment);
@@ -771,17 +762,6 @@ public final class BrokerCfgTest {
   private void assertDefaultHost(final String host) {
     assertHost("default", host);
     assertHost("empty", host);
-  }
-
-  private void assertUseMmap(final boolean useMmap) {
-    assertUseMmap("default", useMmap);
-    assertUseMmap("empty", useMmap);
-  }
-
-  private void assertUseMmap(final String configFileName, final boolean useMmap) {
-    final var config = TestConfigReader.readConfig(configFileName, environment);
-    final var data = config.getData();
-    assertThat(data.useMmap()).isEqualTo(useMmap);
   }
 
   private void assertHost(final String configFileName, final String host) {

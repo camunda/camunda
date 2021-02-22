@@ -30,7 +30,6 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.snapshot.TestSnapshotStore;
-import io.atomix.storage.StorageLevel;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
@@ -119,7 +118,6 @@ public class ZeebeTestNode {
         .withNumPartitions(1)
         .withPartitionSize(members.size())
         .withFlushExplicitly(true)
-        .withStorageLevel(StorageLevel.DISK)
         .withSegmentSize(1024L)
         .withMaxEntrySize(512)
         .withSnapshotStoreFactory(
