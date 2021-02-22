@@ -14,18 +14,29 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 
 public class AtomixLogStoragePartitionStep implements PartitionStep {
+  private static final String WRONG_TERM_ERROR_MSG =
+      "Expected that current term '%d' is same as raft term '%d', but was not. Failing installation of 'AtomixLogStoragePartitionStep' on partition %d.";
 
   @Override
-  public ActorFuture<Void> open(final PartitionContext context) {
+  public ActorFuture<Void> open(final long currentTerm, final PartitionContext context) {
     final var openFuture = new CompletableActorFuture<Void>();
     final var server = context.getRaftPartition().getServer();
 
     final var appenderOptional = server.getAppender();
     appenderOptional.ifPresentOrElse(
         logAppender -> {
-          context.setAtomixLogStorage(
-              AtomixLogStorage.ofPartition(server::openReader, logAppender));
-          openFuture.complete(null);
+          final var raftTerm = server.getTerm();
+
+          if (raftTerm != currentTerm) {
+            openFuture.completeExceptionally(
+                new IllegalStateException(
+                    String.format(
+                        WRONG_TERM_ERROR_MSG, currentTerm, raftTerm, context.getPartitionId())));
+          } else {
+            context.setAtomixLogStorage(
+                AtomixLogStorage.ofPartition(server::openReader, logAppender));
+            openFuture.complete(null);
+          }
         },
         () ->
             openFuture.completeExceptionally(
