@@ -13,20 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.journal.file;
+package io.zeebe.journal.file.record;
 
-import java.nio.ByteBuffer;
-import java.util.zip.CRC32;
+import org.agrona.DirectBuffer;
 
-public final class ChecksumGenerator {
+public class RecordData {
 
-  private final CRC32 crc32 = new CRC32();
+  private final long index;
+  private final long asqn;
+  private final DirectBuffer data;
 
-  /** Compute checksum of given ByteBuffer */
-  public long compute(final ByteBuffer buffer, final int offset, final int length) {
-    final var slice = buffer.asReadOnlyBuffer().position(offset).slice();
-    crc32.reset();
-    crc32.update(slice.limit(length));
-    return crc32.getValue();
+  public RecordData(final long index, final long asqn, final DirectBuffer data) {
+    this.index = index;
+    this.asqn = asqn;
+    this.data = data;
+  }
+
+  public long index() {
+    return index;
+  }
+
+  public long asqn() {
+    return asqn;
+  }
+
+  public DirectBuffer data() {
+    return data;
+  }
+
+  @Override
+  public String toString() {
+    return "RecordData{" + "index=" + index + ", asqn=" + asqn + '}';
   }
 }

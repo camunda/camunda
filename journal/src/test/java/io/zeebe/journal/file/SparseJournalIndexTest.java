@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.zeebe.journal.JournalRecord;
-import io.zeebe.journal.file.record.PersistedJournalRecord;
 import org.junit.jupiter.api.Test;
 
 /** Sparse journal index test. */
@@ -39,7 +38,7 @@ public class SparseJournalIndexTest {
   }
 
   public static JournalRecord asJournalRecord(final long index, final long asqn) {
-    return new PersistedJournalRecord(index, asqn, 0, null);
+    return new TestJournalRecord(index, asqn, 0, null);
   }
 
   @Test

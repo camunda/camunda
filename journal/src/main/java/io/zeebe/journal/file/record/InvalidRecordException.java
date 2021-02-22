@@ -15,17 +15,9 @@
  */
 package io.zeebe.journal.file.record;
 
-import io.zeebe.journal.JournalRecord;
-import java.nio.ByteBuffer;
+public class InvalidRecordException extends RuntimeException {
 
-public interface JournalRecordBufferReader {
-
-  /**
-   * Reads the {@link JournalRecord} from the buffer at it's current position ({@code *
-   * buffer.position()}). A valid record must exist in the buffer at this position.
-   *
-   * @param buffer to read
-   * @return a journal record that is read.
-   */
-  JournalRecord read(ByteBuffer buffer);
+  public InvalidRecordException(final String message) {
+    super(message);
+  }
 }

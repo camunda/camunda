@@ -18,14 +18,11 @@ package io.zeebe.journal.file;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.atomix.utils.serializer.Namespace;
-import io.atomix.utils.serializer.Namespaces;
 import io.zeebe.journal.Journal;
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
 import io.zeebe.journal.StorageException.InvalidChecksum;
 import io.zeebe.journal.StorageException.InvalidIndex;
-import io.zeebe.journal.file.record.PersistedJournalRecord;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,16 +35,10 @@ import org.junit.jupiter.api.io.TempDir;
 class JournalTest {
 
   @TempDir Path directory;
-  private final Namespace namespace =
-      new Namespace.Builder()
-          .register(Namespaces.BASIC)
-          .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-          .register(PersistedJournalRecord.class)
-          .register(UnsafeBuffer.class)
-          .name("Journal")
-          .build();
+
   private byte[] entry;
   private final DirectBuffer data = new UnsafeBuffer();
+  private final DirectBuffer dataOther = new UnsafeBuffer();
   private Journal journal;
 
   @BeforeEach
@@ -55,9 +46,10 @@ class JournalTest {
     entry = "TestData".getBytes();
     data.wrap(entry);
 
-    final int entrySize = getSerializedSize(data);
-    final int entriesPerSegment = 10;
-    journal = openJournal(entrySize, entriesPerSegment);
+    final var entryOther = "TestData".getBytes();
+    dataOther.wrap(entryOther);
+
+    journal = openJournal();
   }
 
   @Test
@@ -79,16 +71,57 @@ class JournalTest {
   void shouldAppendData() {
     // when
     final var recordAppended = journal.append(1, data);
-    assertThat(recordAppended.index()).isEqualTo(1);
-    assertThat(recordAppended.asqn()).isEqualTo(1);
 
     // then
-    final var recordRead = journal.openReader().next();
-    assertThat(recordAppended).isEqualTo(recordRead);
+    assertThat(recordAppended.index()).isEqualTo(1);
+    assertThat(recordAppended.asqn()).isEqualTo(1);
   }
 
   @Test
-  void shouldAppendMultipleRecords() {
+  void shouldReadRecord() {
+    // given
+    final var recordAppended = journal.append(1, data);
+
+    // when
+    final var reader = journal.openReader();
+    final var recordRead = reader.next();
+
+    // then
+    assertThat(recordRead).isEqualTo(recordAppended);
+  }
+
+  @Test
+  void shouldAppendMultipleData() {
+    // when
+    final var firstRecord = journal.append(10, data);
+    final var secondRecord = journal.append(20, dataOther);
+
+    // then
+    assertThat(firstRecord.index()).isEqualTo(1);
+    assertThat(firstRecord.asqn()).isEqualTo(10);
+
+    assertThat(secondRecord.index()).isEqualTo(2);
+    assertThat(secondRecord.asqn()).isEqualTo(20);
+  }
+
+  @Test
+  public void shouldReadMultipleRecord() {
+    // given
+    final var firstRecord = journal.append(1, data);
+    final var secondRecord = journal.append(20, dataOther);
+
+    // when
+    final var reader = journal.openReader();
+    final var firstRecordRead = reader.next();
+    final var secondRecordRead = reader.next();
+
+    // then
+    assertThat(firstRecordRead).isEqualTo(firstRecord);
+    assertThat(secondRecordRead).isEqualTo(secondRecord);
+  }
+
+  @Test
+  public void shouldAppendAndReadMultipleRecordsInOrder() {
     // when
     for (int i = 0; i < 10; i++) {
       final var recordAppended = journal.append(i + 10, data);
@@ -268,15 +301,16 @@ class JournalTest {
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .build();
-    final var record = journal.append(10, data);
+    final var expected = journal.append(10, data);
 
     // when
-    receiverJournal.append(record);
+    receiverJournal.append(expected);
 
     // then
     final var reader = receiverJournal.openReader();
     assertThat(reader.hasNext()).isTrue();
-    assertThat(reader.next().asqn()).isEqualTo(10);
+    final var actual = reader.next();
+    assertThat(expected).isEqualTo(actual);
   }
 
   @Test
@@ -325,7 +359,7 @@ class JournalTest {
 
     // when
     final var invalidChecksumRecord =
-        new PersistedJournalRecord(record.index(), record.asqn(), -1, record.data());
+        new TestJournalRecord(record.index(), record.asqn(), -1, record.data());
 
     // then
     assertThatThrownBy(() -> receiverJournal.append(invalidChecksumRecord))
@@ -370,7 +404,7 @@ class JournalTest {
     journal.close();
 
     // when
-    journal = openJournal(getSerializedSize(data), 2);
+    journal = openJournal();
 
     // then
     assertThat(journal.isOpen()).isTrue();
@@ -384,7 +418,7 @@ class JournalTest {
     journal.close();
 
     // when
-    journal = openJournal(getSerializedSize(data), 2);
+    journal = openJournal();
     final JournalReader reader = journal.openReader();
 
     // then
@@ -400,7 +434,7 @@ class JournalTest {
     journal.close();
 
     // when
-    journal = openJournal(getSerializedSize(data), 2);
+    journal = openJournal();
     final var secondRecord = journal.append(data);
 
     // then
@@ -439,15 +473,9 @@ class JournalTest {
     assertThat(reader.hasNext()).isFalse();
   }
 
-  private int getSerializedSize(final DirectBuffer data) {
-    return namespace.serialize(new PersistedJournalRecord(1, 1, Integer.MAX_VALUE, data)).length
-        + Integer.BYTES;
-  }
-
-  private SegmentedJournal openJournal(final int entrySize, final int entriesPerSegment) {
+  private SegmentedJournal openJournal() {
     return SegmentedJournal.builder()
         .withDirectory(directory.resolve("data").toFile())
-        .withMaxSegmentSize(entriesPerSegment * entrySize + JournalSegmentDescriptor.BYTES)
         .withJournalIndexDensity(5)
         .build();
   }
