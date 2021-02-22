@@ -21,9 +21,12 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.Sets;
 import io.zeebe.journal.StorageException;
+import io.zeebe.journal.file.record.JournalRecordBufferReader;
+import io.zeebe.journal.file.record.JournalRecordBufferWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Log segment.
@@ -34,22 +37,25 @@ class JournalSegment implements AutoCloseable {
 
   private final JournalSegmentFile file;
   private final JournalSegmentDescriptor descriptor;
-  private final int maxEntrySize;
   private final JournalIndex index;
   private final MappedJournalSegmentWriter writer;
   private final Set<MappedJournalSegmentReader> readers = Sets.newConcurrentHashSet();
   private boolean open = true;
+  private final Supplier<JournalRecordBufferWriter> bufferWriterFactory;
+  private final Supplier<JournalRecordBufferReader> bufferReaderFactory;
 
   public JournalSegment(
       final JournalSegmentFile file,
       final JournalSegmentDescriptor descriptor,
-      final int maxEntrySize,
-      final JournalIndex journalIndex) {
+      final JournalIndex journalIndex,
+      final Supplier<JournalRecordBufferWriter> bufferWriterFactory,
+      final Supplier<JournalRecordBufferReader> bufferReaderFactory) {
     this.file = file;
     this.descriptor = descriptor;
-    this.maxEntrySize = maxEntrySize;
     index = journalIndex;
-    writer = createWriter(file, maxEntrySize);
+    this.bufferWriterFactory = bufferWriterFactory;
+    this.bufferReaderFactory = bufferReaderFactory;
+    writer = createWriter(file);
   }
 
   /**
@@ -141,12 +147,12 @@ class JournalSegment implements AutoCloseable {
    */
   MappedJournalSegmentReader createReader() {
     checkOpen();
-    return new MappedJournalSegmentReader(file, this, maxEntrySize, index);
+    return new MappedJournalSegmentReader(file, this, index, bufferReaderFactory.get());
   }
 
-  private MappedJournalSegmentWriter createWriter(
-      final JournalSegmentFile file, final int maxEntrySize) {
-    return new MappedJournalSegmentWriter(file, this, maxEntrySize, index);
+  private MappedJournalSegmentWriter createWriter(final JournalSegmentFile file) {
+    return new MappedJournalSegmentWriter(
+        file, this, index, bufferWriterFactory.get(), bufferReaderFactory.get());
   }
 
   /**

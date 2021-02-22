@@ -17,10 +17,8 @@ package io.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.utils.serializer.Namespace;
-import io.atomix.utils.serializer.Namespaces;
 import io.zeebe.journal.JournalReader;
-import io.zeebe.journal.file.record.PersistedJournalRecord;
+import io.zeebe.journal.file.record.PersistableJournalRecord;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.agrona.DirectBuffer;
@@ -35,14 +33,6 @@ class SegmentedJournalReaderTest {
 
   @TempDir Path directory;
 
-  private final Namespace namespace =
-      new Namespace.Builder()
-          .register(Namespaces.BASIC)
-          .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-          .register(PersistedJournalRecord.class)
-          .register(UnsafeBuffer.class)
-          .name("Journal")
-          .build();
   private final DirectBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
 
   private JournalReader reader;
@@ -50,9 +40,7 @@ class SegmentedJournalReaderTest {
 
   @BeforeEach
   void setup() {
-    final int entrySize =
-        namespace.serialize(new PersistedJournalRecord(1, 1, Integer.MAX_VALUE, data)).length
-            + Integer.BYTES;
+    final int entrySize = getSerializedSize(data);
 
     journal =
         SegmentedJournal.builder()
@@ -116,5 +104,9 @@ class SegmentedJournalReaderTest {
       assertThat(reader.hasNext()).isTrue();
       assertThat(reader.next().asqn()).isEqualTo(i);
     }
+  }
+
+  private int getSerializedSize(final DirectBuffer data) {
+    return new PersistableJournalRecord(1, 1, data).getLength();
   }
 }

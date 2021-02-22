@@ -15,19 +15,17 @@
  */
 package io.zeebe.journal.file;
 
+import java.nio.ByteBuffer;
 import java.util.zip.CRC32;
-import org.agrona.DirectBuffer;
 
 public final class ChecksumGenerator {
 
   private final CRC32 crc32 = new CRC32();
 
-  /** Compute checksum of given DirectBuffer */
-  public int compute(final DirectBuffer data) {
-    final byte[] slice = new byte[data.capacity()];
-    data.getBytes(0, slice);
+  /** Compute checksum of given ByteBuffer */
+  public int compute(final ByteBuffer buffer) {
     crc32.reset();
-    crc32.update(slice);
+    crc32.update(buffer);
     return (int) crc32.getValue();
   }
 }

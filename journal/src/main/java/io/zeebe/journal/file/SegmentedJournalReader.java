@@ -133,11 +133,11 @@ class SegmentedJournalReader implements JournalReader {
 
     // potential beneficiary of a peek() call, which would avoid the duplicate seek or
     // being at the second position if the first entry has a greater ASQN
-    JournalRecord record = null;
+    long recordIndex = -1;
     while (hasNext()) {
       final var currentRecord = next();
       if (currentRecord.asqn() <= asqn && currentRecord.asqn() != ASQN_IGNORE) {
-        record = currentRecord;
+        recordIndex = currentRecord.index();
       } else if (currentRecord.asqn() >= asqn) {
         break;
       }
@@ -146,13 +146,13 @@ class SegmentedJournalReader implements JournalReader {
     // if the journal was empty, the reader will be at the beginning of the log
     // if the journal only contained entries with ASQN greater than the one requested, then seek
     // back to the beginning
-    if (record == null) {
+    if (recordIndex == -1) {
       return seekToFirst();
     }
 
     // This is needed so that the next() returns the correct record
     // TODO: Remove the duplicate seek. https://github.com/zeebe-io/zeebe/issues/6223
-    return seek(record.index());
+    return seek(recordIndex);
   }
 
   @Override

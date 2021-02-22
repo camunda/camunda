@@ -16,22 +16,16 @@
 package io.zeebe.journal.file.record;
 
 import io.zeebe.journal.JournalRecord;
-import io.zeebe.journal.file.ChecksumGenerator;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
-/**
- * Common methods used by SegmentWriter and MappedJournalSegmentReader to read records from a
- * buffer.
- */
+/** Common methods used by SegmentWriter and SegmentReader to read records from a buffer. */
 public final class JournalRecordReaderUtil {
-  private final JournalRecordBufferReader serializer = new KryoSerializer();
 
-  private final int maxEntrySize;
-  private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
+  private final JournalRecordBufferReader serializer;
 
-  public JournalRecordReaderUtil(final int maxEntrySize) {
-    this.maxEntrySize = maxEntrySize;
+  public JournalRecordReaderUtil(final JournalRecordBufferReader serializer) {
+    this.serializer = serializer;
   }
 
   /**
@@ -44,30 +38,12 @@ public final class JournalRecordReaderUtil {
 
     try {
       // Read the length of the record.
-      final int length = buffer.getInt();
 
-      // If the buffer length is zero then return.
-      if (length <= 0 || length > maxEntrySize) {
+      final JournalRecord record = serializer.read(buffer);
+      if (record != null && expectedIndex != record.index()) {
         buffer.reset();
         return null;
       }
-
-      final ByteBuffer slice = buffer.slice();
-      slice.limit(length);
-
-      // If the stored checksum equals the computed checksum, return the record.
-      slice.rewind();
-      final JournalRecord record = serializer.read(slice);
-      final var checksum = record.checksum();
-      // TODO: checksum should also include asqn.
-      // TODO: It is now copying the data to calculate the checksum. This should be fixed.
-      final var expectedChecksum = checksumGenerator.compute(record.data());
-      if (checksum != expectedChecksum || expectedIndex != record.index()) {
-        buffer.reset();
-        return null;
-      }
-      buffer.position(buffer.position() + length);
-      buffer.mark();
       return record;
 
     } catch (final BufferUnderflowException e) {

@@ -38,7 +38,7 @@ public interface JournalRecord {
    *
    * @return checksum
    */
-  int checksum();
+  long checksum();
 
   /**
    * Application provided data of the record

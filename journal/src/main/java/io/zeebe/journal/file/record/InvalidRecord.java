@@ -15,25 +15,9 @@
  */
 package io.zeebe.journal.file.record;
 
-import io.zeebe.journal.JournalRecord;
-import java.nio.ByteBuffer;
+public class InvalidRecord extends RuntimeException {
 
-public interface JournalRecordBufferWriter {
-
-  /**
-   * Writes a {@link JournalRecord} to the buffer at it's current position ({@code
-   * buffer.position()})
-   *
-   * @param record to write
-   * @param buffer to which the record will be written
-   */
-  JournalRecord write(JournalRecord record, ByteBuffer buffer);
-
-  /**
-   * Write an invalid record so that a reader does not read a record at buffer.position(). The
-   * position of the buffer does not advance.
-   *
-   * @param buffer
-   */
-  void invalidate(ByteBuffer buffer);
+  public InvalidRecord(final String message) {
+    super(message);
+  }
 }

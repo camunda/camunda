@@ -17,11 +17,9 @@ package io.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.utils.serializer.Namespace;
-import io.atomix.utils.serializer.Namespaces;
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
-import io.zeebe.journal.file.record.PersistedJournalRecord;
+import io.zeebe.journal.file.record.PersistableJournalRecord;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.agrona.DirectBuffer;
@@ -32,19 +30,9 @@ import org.junit.jupiter.api.io.TempDir;
 public class SegmentedJournalTest {
 
   @TempDir Path directory;
-  private final Namespace namespace =
-      new Namespace.Builder()
-          .register(Namespaces.BASIC)
-          .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-          .register(PersistedJournalRecord.class)
-          .register(UnsafeBuffer.class)
-          .name("Journal")
-          .build();
   private final int journalIndexDensity = 5;
   private final DirectBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
-  private final int entrySize =
-      namespace.serialize(new PersistedJournalRecord(1, 1, Integer.MAX_VALUE, data)).length
-          + Integer.BYTES;
+  private final int entrySize = getSerializedSize(data);
 
   @Test
   public void shouldDeleteIndexMappingsOnReset() {
@@ -305,9 +293,7 @@ public class SegmentedJournalTest {
   public void shouldAppendEntriesOfDifferentSizesOverSegmentSize() {
     // given
     data.wrap("1234567890".getBytes(StandardCharsets.UTF_8));
-    final int entrySize =
-        namespace.serialize(new PersistedJournalRecord(1, 1, Integer.MAX_VALUE, data)).length
-            + Integer.BYTES;
+    final int entrySize = getSerializedSize(data);
     final SegmentedJournal journal = openJournal(1, entrySize);
     final JournalReader reader = journal.openReader();
 
@@ -334,5 +320,9 @@ public class SegmentedJournalTest {
         .withMaxEntrySize(entrySize)
         .withJournalIndexDensity(journalIndexDensity)
         .build();
+  }
+
+  private int getSerializedSize(final DirectBuffer data) {
+    return new PersistableJournalRecord(1, 1, data).getLength();
   }
 }

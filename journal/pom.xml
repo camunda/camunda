@@ -34,11 +34,6 @@
     </dependency>
 
     <dependency>
-      <groupId>com.esotericsoftware</groupId>
-      <artifactId>kryo</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
@@ -49,9 +44,10 @@
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>atomix-utils</artifactId>
+      <groupId>uk.co.real-logic</groupId>
+      <artifactId>sbe-tool</artifactId>
     </dependency>
   </dependencies>
 
@@ -71,6 +67,69 @@
         </configuration>
         <groupId>com.mycila</groupId>
       </plugin>
+
+      <!-- FOR SBE -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources combine.children="append"><!-- merging with parent
+                  config for benchmarks -->
+                <source>${project.build.directory}/generated-sources/sbe</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>java</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <executableDependency>
+            <groupId>uk.co.real-logic</groupId>
+            <artifactId>sbe</artifactId>
+          </executableDependency>
+          <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
+          <arguments>
+            <argument>${project.build.resources[0].directory}/journal-record-schema.xml</argument>
+          </arguments>
+          <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
+          <!-- system properties defined in zeebe-parent -->
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>uk.co.real-logic</groupId>
+            <artifactId>sbe-all</artifactId>
+            <version>${version.sbe}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <usedDependencies>
+            <!-- dependency used but plugin seems to report a false positive here -->
+            <dependency>uk.co.real-logic:sbe-tool</dependency>
+          </usedDependencies>
+        </configuration>
+      </plugin>
+
     </plugins>
   </build>
 
