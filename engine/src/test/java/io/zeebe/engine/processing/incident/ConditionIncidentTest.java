@@ -146,6 +146,7 @@ public final class ConditionIncidentTest {
     // then
     assertThat(
             RecordingExporter.workflowInstanceRecords()
+                .onlyEvents()
                 .withRecordKey(incidentEvent.getValue().getElementInstanceKey())
                 .limit(2))
         .extracting(Record::getIntent)
@@ -184,6 +185,7 @@ public final class ConditionIncidentTest {
     // then
     assertThat(
             RecordingExporter.workflowInstanceRecords()
+                .onlyEvents()
                 .withRecordKey(incidentEvent.getValue().getElementInstanceKey())
                 .limit(2))
         .extracting(Record::getIntent)

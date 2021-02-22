@@ -68,6 +68,17 @@ public final class BpmnStateTransitionBehavior {
 
   /** @return context with updated intent */
   public BpmnElementContext transitionToActivating(final BpmnElementContext context) {
+    if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      final var elementInstance = stateBehavior.getElementInstance(context);
+      if (elementInstance != null) {
+        // if the element already exists, then the Activate_Element command is processed as a result
+        // of resolving an incident. We don't have to transition again. Just update the context
+        return context.copy(
+            context.getElementInstanceKey(),
+            context.getRecordValue(),
+            WorkflowInstanceIntent.ELEMENT_COMPLETING);
+      }
+    }
     return transitionTo(context, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
   }
 
@@ -85,6 +96,18 @@ public final class BpmnStateTransitionBehavior {
 
   /** @return context with updated intent */
   public BpmnElementContext transitionToCompleting(final BpmnElementContext context) {
+    if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      final var elementInstance = stateBehavior.getElementInstance(context);
+      if (elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_COMPLETING) {
+        // if the element is already completing, then the Complete_Element command is processed as a
+        // result of resolving an incident. We don't have to transition again. Just update the
+        // context
+        return context.copy(
+            context.getElementInstanceKey(),
+            context.getRecordValue(),
+            WorkflowInstanceIntent.ELEMENT_COMPLETING);
+      }
+    }
     final var transitionedContext =
         transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
     if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
