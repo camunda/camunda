@@ -46,7 +46,6 @@ public class RaftStorageTest {
     assertEquals(1024L * 1024 * 1024, storage.freeDiskSpace());
     assertTrue(storage.isFlushExplicitly());
     assertFalse(storage.isRetainStaleSnapshots());
-    assertTrue(storage.statistics().getFreeMemory() > 0);
   }
 
   @Test
@@ -103,7 +102,7 @@ public class RaftStorageTest {
     if (Files.exists(PATH)) {
       Files.walkFileTree(
           PATH,
-          new SimpleFileVisitor<Path>() {
+          new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
                 throws IOException {
