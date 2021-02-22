@@ -18,6 +18,7 @@ import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistrib
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.mutable.MutableDeploymentState;
 import java.util.function.ObjLongConsumer;
+import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class DbDeploymentState implements MutableDeploymentState {
@@ -94,5 +95,27 @@ public final class DbDeploymentState implements MutableDeploymentState {
     this.deploymentKey.wrapLong(deploymentKey);
     partitionKey.wrapInt(partition);
     newPendingDeploymentColumnFamily.put(deploymentPartitionKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void removePendingDeploymentDistribution(final long deploymentKey, final int partition) {
+    this.deploymentKey.wrapLong(deploymentKey);
+    partitionKey.wrapInt(partition);
+    newPendingDeploymentColumnFamily.delete(deploymentPartitionKey);
+  }
+
+  @Override
+  public boolean hasPendingDeploymentDistribution(final long deploymentKey) {
+    this.deploymentKey.wrapLong(deploymentKey);
+
+    final var hasPending = new MutableBoolean();
+    newPendingDeploymentColumnFamily.whileEqualPrefix(
+        this.deploymentKey,
+        (dbLongDbIntDbCompositeKey, dbNil) -> {
+          hasPending.set(true);
+          return false;
+        });
+
+    return hasPending.get();
   }
 }
