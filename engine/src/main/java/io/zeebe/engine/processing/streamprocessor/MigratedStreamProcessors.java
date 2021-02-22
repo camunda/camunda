@@ -55,6 +55,7 @@ public final class MigratedStreamProcessors {
 
     MIGRATED_VALUE_TYPES.put(ValueType.ERROR, MIGRATED);
     MIGRATED_VALUE_TYPES.put(ValueType.WORKFLOW, MIGRATED);
+    MIGRATED_VALUE_TYPES.put(ValueType.DEPLOYMENT_DISTRIBUTION, MIGRATED);
     MIGRATED_VALUE_TYPES.put(
         ValueType.MESSAGE,
         record ->

@@ -50,6 +50,9 @@ public final class EventAppliers implements EventApplier {
         new WorkflowInstanceElementActivatedApplier(state));
     register(WorkflowIntent.CREATED, new WorkflowCreatedApplier(state));
     register(DeploymentDistributionIntent.DISTRIBUTING, new DeploymentDistributionApplier(state));
+    register(
+        DeploymentDistributionIntent.COMPLETED,
+        new DeploymentDistributionCompletedApplier(state.getDeploymentState()));
 
     register(MessageIntent.EXPIRED, new MessageExpiredApplier(state.getMessageState()));
     registerJobIntentEventAppliers(state);

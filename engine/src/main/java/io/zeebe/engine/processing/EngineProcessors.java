@@ -13,6 +13,7 @@ import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.deployment.DeploymentCreatedProcessor;
 import io.zeebe.engine.processing.deployment.DeploymentEventProcessors;
 import io.zeebe.engine.processing.deployment.DeploymentResponder;
+import io.zeebe.engine.processing.deployment.distribute.CompleteDeploymentDistributionProcessor;
 import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
 import io.zeebe.engine.processing.incident.IncidentEventProcessors;
@@ -31,6 +32,7 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.util.sched.ActorControl;
 import java.util.function.Consumer;
@@ -110,6 +112,13 @@ public final class EngineProcessors {
 
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
+
+    final var completeDeploymentDistributionProcessor =
+        new CompleteDeploymentDistributionProcessor(writers);
+    typedRecordProcessors.onCommand(
+        ValueType.DEPLOYMENT_DISTRIBUTION,
+        DeploymentDistributionIntent.COMPLETE,
+        completeDeploymentDistributionProcessor);
   }
 
   private static TypedRecordProcessor<WorkflowInstanceRecord> addWorkflowProcessors(

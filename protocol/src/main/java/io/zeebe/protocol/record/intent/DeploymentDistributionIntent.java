@@ -16,7 +16,9 @@
 package io.zeebe.protocol.record.intent;
 
 public enum DeploymentDistributionIntent implements Intent {
-  DISTRIBUTING((short) 0);
+  DISTRIBUTING((short) 0),
+  COMPLETE((short) 1),
+  COMPLETED((short) 2);
 
   private final short value;
 
@@ -32,6 +34,10 @@ public enum DeploymentDistributionIntent implements Intent {
     switch (value) {
       case 0:
         return DISTRIBUTING;
+      case 1:
+        return COMPLETE;
+      case 2:
+        return COMPLETED;
       default:
         return UNKNOWN;
     }

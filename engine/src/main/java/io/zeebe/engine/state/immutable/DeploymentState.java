@@ -15,4 +15,6 @@ public interface DeploymentState {
   PendingDeploymentDistribution getPendingDeployment(long key);
 
   void foreachPending(ObjLongConsumer<PendingDeploymentDistribution> consumer);
+
+  boolean hasPendingDeploymentDistribution(long deploymentKey);
 }
