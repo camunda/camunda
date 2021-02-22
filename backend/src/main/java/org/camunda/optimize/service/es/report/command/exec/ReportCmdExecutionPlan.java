@@ -16,6 +16,7 @@ import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPa
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -29,6 +30,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isDecisionInstanceIndexNotFoundException;
 
 @Slf4j
 public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Data extends SingleReportDataDto> {
@@ -57,7 +60,7 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
 
   protected abstract BoolQueryBuilder setupUnfilteredBaseQuery(final Data reportData);
 
-  protected abstract String getIndexName();
+  protected abstract String getIndexName(final ExecutionContext<Data> context);
 
   public <T extends ReportDefinitionDto<Data>> R evaluate(final CommandContext<T> commandContext) {
     return evaluate(new ExecutionContext<>(commandContext));
@@ -68,7 +71,7 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
 
     SearchRequest searchRequest = createBaseQuerySearchRequest(executionContext);
     CountRequest unfilteredInstanceCountRequest =
-      new CountRequest(getIndexName()).query(setupUnfilteredBaseQuery(reportData));
+      new CountRequest(getIndexName(executionContext)).query(setupUnfilteredBaseQuery(reportData));
 
     SearchResponse response;
     CountResponse unfilteredInstanceCountResponse;
@@ -79,8 +82,7 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
     } catch (IOException e) {
       String reason =
         String.format(
-          "Could not evaluate %s %s %s report " +
-            "for definition with key [%s] and versions [%s]",
+          "Could not evaluate %s %s %s report for definition with key [%s] and versions [%s]",
           viewPart.getClass().getSimpleName(),
           groupByPart.getClass().getSimpleName(),
           distributedByPart.getClass().getSimpleName(),
@@ -89,6 +91,17 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
         );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
+    } catch (ElasticsearchStatusException e) {
+      if (isDecisionInstanceIndexNotFoundException(e)) {
+        log.warn(
+          "Could not evaluate report. Required instance index does not exist, no instances have been imported yet" +
+            " for the specified definition. Returning empty result instead",
+          e
+        );
+        return mapToReportResult.apply(new CompositeCommandResult(executionContext.getReportData()));
+      } else {
+        throw e;
+      }
     }
 
     return retrieveQueryResult(response, executionContext);
@@ -103,8 +116,7 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
       .size(0);
     addAggregation(searchSourceBuilder, executionContext);
 
-    SearchRequest searchRequest = new SearchRequest(getIndexName())
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(getIndexName(executionContext)).source(searchSourceBuilder);
     groupByPart.adjustSearchRequest(searchRequest, baseQuery, executionContext);
     return searchRequest;
   }

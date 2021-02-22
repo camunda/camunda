@@ -610,7 +610,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(null, 1., 1.);
 
-    ReportMapResultDto resultCompletedInstance = result.getResult().getData().get(completedInstanceReportId).getResult();
+    ReportMapResultDto resultCompletedInstance = result.getResult()
+      .getData()
+      .get(completedInstanceReportId)
+      .getResult();
     assertThat(resultCompletedInstance.getInstanceCount()).isEqualTo(1);
     assertThat(resultCompletedInstance.getInstanceCountWithoutFilters()).isEqualTo(1);
     assertThat(result.getResult().getData().get(completedInstanceReportId).getResult().getFirstMeasureData())
@@ -1093,9 +1096,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Set<String> resultSet = reports.stream()
       .map(ReportDefinitionDto::getId)
       .collect(Collectors.toSet());
-    assertThat(resultSet).hasSize(2);
-    assertThat(resultSet).contains(remainingSingleReportId);
-    assertThat(resultSet).contains(combinedReportId);
+    assertThat(resultSet)
+      .hasSize(2)
+      .containsExactlyInAnyOrder(remainingSingleReportId, combinedReportId);
     Optional<CombinedReportDefinitionRequestDto> combinedReport = reports.stream()
       .filter(report -> report instanceof CombinedReportDefinitionRequestDto)
       .map(report -> (CombinedReportDefinitionRequestDto) report)

@@ -14,6 +14,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -42,7 +43,8 @@ import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariab
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isDecisionInstanceIndexNotFoundException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -136,7 +138,7 @@ public class DecisionVariableReader {
         requestDto.getDecisionDefinitionKey(),
         requestDto.getDecisionDefinitionVersions(),
         requestDto.getTenantIds(),
-        new DecisionInstanceIndex(),
+        new DecisionInstanceIndex(requestDto.getDecisionDefinitionKey()),
         decisionDefinitionReader::getLatestVersionToKey
       );
 
@@ -145,8 +147,9 @@ public class DecisionVariableReader {
       .aggregation(getVariableValueAggregation(requestDto, variablesPath))
       .size(0);
 
-    final SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder);
+    final SearchRequest searchRequest =
+      new SearchRequest(getDecisionInstanceIndexAliasName(requestDto.getDecisionDefinitionKey()))
+        .source(searchSourceBuilder);
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -161,6 +164,11 @@ public class DecisionVariableReader {
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
+    } catch (ElasticsearchStatusException e) {
+      if (isDecisionInstanceIndexNotFoundException(e)) {
+        return Collections.emptyList();
+      }
+      throw e;
     }
   }
 

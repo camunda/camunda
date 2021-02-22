@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -51,5 +52,9 @@ public class DecisionGroupByNone extends GroupByPart<DecisionReportDataDto> {
   @Override
   protected void addGroupByAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto reportData) {
     reportData.setGroupBy(new DecisionGroupByNoneDto());
+  }
+
+  protected String getIndexName(final ExecutionContext<DecisionReportDataDto> context) {
+    return getDecisionInstanceIndexAliasName(context.getReportData().getDecisionDefinitionKey());
   }
 }

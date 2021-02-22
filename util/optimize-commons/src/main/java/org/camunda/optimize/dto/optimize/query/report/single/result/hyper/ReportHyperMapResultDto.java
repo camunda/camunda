@@ -6,16 +6,21 @@
 package org.camunda.optimize.dto.optimize.query.report.single.result.hyper;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class ReportHyperMapResultDto implements ProcessReportResultDto {
 
   private long instanceCount;
@@ -37,6 +42,6 @@ public class ReportHyperMapResultDto implements ProcessReportResultDto {
 
   @JsonIgnore
   public List<HyperMapResultEntryDto> getFirstMeasureData() {
-    return  measures.stream().findFirst().map(MeasureDto::getData).orElse(null);
+    return  measures.stream().findFirst().map(MeasureDto::getData).orElse(Collections.emptyList());
   }
 }

@@ -6,7 +6,9 @@
 package org.camunda.optimize.dto.optimize.query.report.single.result;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 
@@ -14,6 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class NumberResultDto implements DecisionReportResultDto, ProcessReportResultDto {
 
   private long instanceCount;
@@ -31,7 +35,7 @@ public class NumberResultDto implements DecisionReportResultDto, ProcessReportRe
 
   @JsonIgnore
   public Double getFirstMeasureData() {
-    return measures.stream().findFirst().map(MeasureDto::getData).orElse(null);
+    return measures.stream().findFirst().orElseGet(() -> MeasureDto.of(0.)).getData();
   }
 
 }

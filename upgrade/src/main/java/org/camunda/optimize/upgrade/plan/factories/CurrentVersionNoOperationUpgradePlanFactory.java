@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -12,7 +13,6 @@ import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 
 public class CurrentVersionNoOperationUpgradePlanFactory implements UpgradePlanFactory {
 
-  @Override
   public UpgradePlan createUpgradePlan() {
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion(PreviousVersion.PREVIOUS_VERSION)
@@ -20,4 +20,8 @@ public class CurrentVersionNoOperationUpgradePlanFactory implements UpgradePlanF
       .build();
   }
 
+  @Override
+  public UpgradePlan createUpgradePlan(final OptimizeElasticsearchClient esClient) {
+    return createUpgradePlan();
+  }
 }

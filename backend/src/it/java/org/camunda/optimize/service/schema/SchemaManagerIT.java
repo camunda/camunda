@@ -13,8 +13,8 @@ import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
@@ -94,7 +94,7 @@ public class SchemaManagerIT extends AbstractIT {
   public void doNotFailIfSomeIndexesAlreadyExist() {
     // given
     initializeSchema();
-    embeddedOptimizeExtension.getOptimizeElasticClient().deleteIndex(new DecisionInstanceIndex());
+    embeddedOptimizeExtension.getOptimizeElasticClient().deleteIndex(new SingleDecisionReportIndex());
 
     // when
     initializeSchema();
@@ -110,7 +110,7 @@ public class SchemaManagerIT extends AbstractIT {
 
     // then
     final List<IndexMappingCreator> mappings = getSchemaManager().getMappings();
-    assertThat(mappings).hasSize(26);
+    assertThat(mappings).hasSize(25);
     for (IndexMappingCreator mapping : mappings) {
       assertIndexExists(mapping.getIndexName());
     }
@@ -216,7 +216,7 @@ public class SchemaManagerIT extends AbstractIT {
     modifyDynamicIndexSetting(mappings);
 
     // one index is missing so recreating of indexes is triggered
-    embeddedOptimizeExtension.getOptimizeElasticClient().deleteIndex(new DecisionInstanceIndex());
+    embeddedOptimizeExtension.getOptimizeElasticClient().deleteIndex(new SingleDecisionReportIndex());
 
     // when
     initializeSchema();

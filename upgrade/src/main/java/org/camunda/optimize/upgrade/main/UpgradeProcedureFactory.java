@@ -10,16 +10,11 @@ import lombok.NoArgsConstructor;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import org.camunda.optimize.upgrade.service.UpgradeValidationService;
-import org.camunda.optimize.upgrade.util.UpgradeUtil;
 
 import static org.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UpgradeProcedureFactory {
-  public static UpgradeProcedure create() {
-    return create(UpgradeUtil.createUpgradeDependencies());
-  }
-
   public static UpgradeProcedure create(final UpgradeExecutionDependencies upgradeDependencies) {
     return new UpgradeProcedure(
       upgradeDependencies.getEsClient(),

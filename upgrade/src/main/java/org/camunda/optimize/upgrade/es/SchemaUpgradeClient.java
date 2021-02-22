@@ -50,6 +50,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
 
 @Slf4j
 public class SchemaUpgradeClient {
@@ -76,6 +77,32 @@ public class SchemaUpgradeClient {
   public void reindex(final String sourceIndex,
                       final String targetIndex) {
     this.reindex(sourceIndex, targetIndex, null, Collections.emptyMap());
+  }
+
+  public void reindex(final IndexMappingCreator sourceIndex,
+                      final IndexMappingCreator targetIndex,
+                      final QueryBuilder sourceDocumentFilterQuery) {
+    final ReindexRequest reindexRequest = new ReindexRequest()
+      .setSourceIndices(getIndexNameService().getOptimizeIndexNameWithVersion(sourceIndex))
+      .setDestIndex(getIndexNameService().getOptimizeIndexNameWithVersion(targetIndex))
+      .setSourceQuery(sourceDocumentFilterQuery)
+      .setRefresh(true);
+    String reindexTaskId;
+
+    try {
+      reindexTaskId = submitReindexTask(reindexRequest);
+    } catch (IOException e) {
+      throw new UpgradeRuntimeException(
+        String.format(
+          "Error while trying to reindex data from index [%s] to [%s] with filterQuery.",
+          sourceIndex,
+          targetIndex
+        ),
+        e
+      );
+    }
+
+    waitUntilTaskIsFinished(reindexTaskId, targetIndex.getIndexName());
   }
 
   public void reindex(final String sourceIndex,
@@ -163,6 +190,11 @@ public class SchemaUpgradeClient {
     schemaManager.createOrUpdateOptimizeIndex(elasticsearchClient, indexMapping);
   }
 
+  public void createOrUpdateIndex(final IndexMappingCreator indexMapping,
+                                  final Set<String> readOnlyAliases) {
+    schemaManager.createOrUpdateOptimizeIndex(elasticsearchClient, indexMapping, readOnlyAliases);
+  }
+
   public void initializeSchema() {
     schemaManager.initializeSchema(elasticsearchClient);
   }
@@ -177,7 +209,7 @@ public class SchemaUpgradeClient {
     try {
       getHighLevelRestClient().indices().create(createIndexRequest, RequestOptions.DEFAULT);
     } catch (ElasticsearchStatusException e) {
-      if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains("resource_already_exists_exception")) {
+      if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains(INDEX_ALREADY_EXISTS_EXCEPTION_TYPE)) {
         log.debug("Index {} from template already exists.", indexNameWithSuffix);
       } else {
         throw e;
@@ -383,7 +415,7 @@ public class SchemaUpgradeClient {
 
     String taskId;
     try {
-      taskId = getHighLevelRestClient().submitReindexTask(reindexRequest, RequestOptions.DEFAULT).getTask();
+      taskId = submitReindexTask(reindexRequest);
     } catch (Exception e) {
       throw new UpgradeRuntimeException(
         String.format(
@@ -393,6 +425,10 @@ public class SchemaUpgradeClient {
       );
     }
     return taskId;
+  }
+
+  private String submitReindexTask(final ReindexRequest reindexRequest) throws IOException {
+    return getHighLevelRestClient().submitReindexTask(reindexRequest, RequestOptions.DEFAULT).getTask();
   }
 
   private void waitUntilTaskIsFinished(final String taskId,

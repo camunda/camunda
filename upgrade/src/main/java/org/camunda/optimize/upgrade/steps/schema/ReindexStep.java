@@ -5,35 +5,32 @@
  */
 package org.camunda.optimize.upgrade.steps.schema;
 
+import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.UpgradeStepType;
+import org.elasticsearch.index.query.QueryBuilder;
 
-import java.util.HashSet;
-import java.util.Set;
-
+@AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class CreateIndexStep extends UpgradeStep {
-  private Set<String> readOnlyAliases = new HashSet<>();
-
-  public CreateIndexStep(final IndexMappingCreator index) {
-    super(index);
-  }
-
-  public CreateIndexStep(final IndexMappingCreator index, final Set<String> readOnlyAliases) {
-    super(index);
-    this.readOnlyAliases = readOnlyAliases;
-  }
+public class ReindexStep extends UpgradeStep {
+  @Getter
+  private final IndexMappingCreator sourceIndex;
+  @Getter
+  private final IndexMappingCreator targetIndex;
+  private final QueryBuilder sourceIndexFilterQuery;
 
   @Override
   public UpgradeStepType getType() {
-    return UpgradeStepType.SCHEMA_CREATE_INDEX;
+    return UpgradeStepType.REINDEX;
   }
 
   @Override
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
-    schemaUpgradeClient.createOrUpdateIndex(index, readOnlyAliases);
+    schemaUpgradeClient.reindex(sourceIndex, targetIndex, sourceIndexFilterQuery);
   }
+
 }

@@ -22,7 +22,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 
 @Slf4j
 public class DecisionReportCmdExecutionPlan<R extends DecisionReportResultDto>
@@ -56,14 +56,14 @@ public class DecisionReportCmdExecutionPlan<R extends DecisionReportResultDto>
       reportData.getDefinitionKey(),
       reportData.getDefinitionVersions(),
       reportData.getTenantIds(),
-      new DecisionInstanceIndex(),
+      new DecisionInstanceIndex(reportData.getDefinitionKey()),
       decisionDefinitionReader::getLatestVersionToKey
     );
   }
 
   @Override
-  protected String getIndexName() {
-    return DECISION_INSTANCE_INDEX_NAME;
+  protected String getIndexName(final ExecutionContext<DecisionReportDataDto> context) {
+    return getDecisionInstanceIndexAliasName(context.getReportData().getDecisionDefinitionKey());
   }
 
   @Override

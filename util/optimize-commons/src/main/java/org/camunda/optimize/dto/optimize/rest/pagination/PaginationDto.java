@@ -5,11 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.rest.pagination;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class PaginationDto {
   protected Integer limit;
   protected Integer offset;

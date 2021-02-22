@@ -8,6 +8,7 @@ package org.camunda.optimize.upgrade.main;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
 import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
@@ -17,6 +18,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Scanner;
 import java.util.Set;
+
+import static org.camunda.optimize.upgrade.util.UpgradeUtil.createUpgradeDependencies;
 
 @Slf4j
 public class UpgradeMain {
@@ -29,7 +32,9 @@ public class UpgradeMain {
     new HashSet<>(Arrays.asList("n", "no"))
   );
 
-  private static final UpgradeProcedure UPGRADE_PROCEDURE = UpgradeProcedureFactory.create();
+  private static final UpgradeExecutionDependencies UPGRADE_DEPENDENCIES = createUpgradeDependencies();
+
+  private static final UpgradeProcedure UPGRADE_PROCEDURE = UpgradeProcedureFactory.create(UPGRADE_DEPENDENCIES);
 
   static {
     new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
@@ -42,7 +47,9 @@ public class UpgradeMain {
         .findFirst()
         .orElse(Version.VERSION);
 
-      final UpgradePlan upgradePlan = new UpgradePlanRegistry().getUpgradePlanForTargetVersion(targetVersion);
+      final UpgradePlan upgradePlan =
+        new UpgradePlanRegistry(UPGRADE_DEPENDENCIES.getEsClient())
+          .getUpgradePlanForTargetVersion(targetVersion);
 
       if (upgradePlan == null) {
         String errorMessage =

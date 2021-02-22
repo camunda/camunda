@@ -32,4 +32,8 @@ public class MeasureDto<T> {
   public static <T> MeasureDto<T> of(ViewProperty property, T data) {
     return new MeasureDto<>(property, null, null, data);
   }
+
+  public static <T> MeasureDto<T> of(T data) {
+    return new MeasureDto<>(null, null, null, data);
+  }
 }

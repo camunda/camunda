@@ -29,6 +29,7 @@ import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.MATCHED_RULES;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 
 @RequiredArgsConstructor
 @Component
@@ -70,5 +71,9 @@ public class DecisionGroupByMatchedRule extends GroupByPart<DecisionReportDataDt
   @Override
   protected void addGroupByAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto reportData) {
     reportData.setGroupBy(new DecisionGroupByMatchedRuleDto());
+  }
+
+  protected String getIndexName(final ExecutionContext<DecisionReportDataDto> context) {
+    return getDecisionInstanceIndexAliasName(context.getReportData().getDecisionDefinitionKey());
   }
 }

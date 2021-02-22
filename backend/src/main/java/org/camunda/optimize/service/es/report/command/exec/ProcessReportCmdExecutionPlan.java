@@ -71,7 +71,7 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
   }
 
   @Override
-  protected String getIndexName() {
+  protected String getIndexName(final ExecutionContext<ProcessReportDataDto> context) {
     return PROCESS_INSTANCE_INDEX_NAME;
   }
 

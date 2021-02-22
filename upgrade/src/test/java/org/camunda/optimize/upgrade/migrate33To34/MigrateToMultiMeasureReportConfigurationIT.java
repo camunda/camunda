@@ -41,7 +41,7 @@ public class MigrateToMultiMeasureReportConfigurationIT extends AbstractUpgrade3
   public void multiMeasureFieldsAreInitializedAndDeprecatedOnesRemoved() {
     // given
     executeBulk("steps/3.3/reports/33-process-reports-for-multi-measure-migration.json");
-    final UpgradePlan upgradePlan = new Upgrade33To34PlanFactory().createUpgradePlan();
+    final UpgradePlan upgradePlan = new Upgrade33To34PlanFactory().createUpgradePlan(prefixAwareClient);
 
     // then
     final List<SingleProcessReportDefinitionRequestDto> reportDtosBeforeUpgrade = getAllDocumentsOfIndexAs(

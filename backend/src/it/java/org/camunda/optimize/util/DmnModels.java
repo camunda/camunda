@@ -60,11 +60,15 @@ public class DmnModels {
 
   // @formatter:off
   public static DmnModelInstance createDefaultDmnModel() {
+    return createDefaultDmnModel("invoiceClassification");
+  }
+
+  public static DmnModelInstance createDefaultDmnModel(final String key) {
     return DmnModelGenerator
       .create()
         .decision()
           .decisionDefinitionVersionTag("aVersionTag")
-          .decisionDefinitionKey("invoiceClassification")
+          .decisionDefinitionKey(key)
           .decisionDefinitionName("Invoice Classification")
           .addInput("Invoice Amount", INPUT_AMOUNT_ID, INPUT_VARIABLE_AMOUNT, DecisionTypeRef.DOUBLE)
           .addInput("Invoice Category", INPUT_CATEGORY_ID, INPUT_VARIABLE_INVOICE_CATEGORY, DecisionTypeRef.STRING)

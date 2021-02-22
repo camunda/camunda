@@ -22,7 +22,7 @@ import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableTypeField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -67,8 +67,8 @@ public class DecisionGroupByInputVariable extends AbstractGroupByVariable<Decisi
   }
 
   @Override
-  protected String getIndexName() {
-    return DECISION_INSTANCE_INDEX_NAME;
+  protected String getIndexName(final ExecutionContext<DecisionReportDataDto> context) {
+    return getDecisionInstanceIndexAliasName(context.getReportData().getDecisionDefinitionKey());
   }
 
   @Override

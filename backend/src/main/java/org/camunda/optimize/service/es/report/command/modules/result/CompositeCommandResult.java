@@ -92,7 +92,9 @@ public class CompositeCommandResult {
 
   public NumberResultDto transformToNumber() {
     NumberResultDto numberResultDto = new NumberResultDto();
-    if (groups.size() == 1) {
+    if (groups.isEmpty()) {
+      return numberResultDto;
+    } else if (groups.size() == 1) {
       final List<DistributedByResult> distributions = groups.get(0).distributions;
       if (distributions.size() == 1) {
         final Double value = distributions.get(0).getViewResult().getNumber();
@@ -107,7 +109,9 @@ public class CompositeCommandResult {
   }
 
   public RawDataProcessReportResultDto transformToProcessRawData() {
-    if (groups.size() == 1) {
+    if (groups.isEmpty()) {
+      return new RawDataProcessReportResultDto();
+    } else if (groups.size() == 1) {
       final List<DistributedByResult> distributions = groups.get(0).distributions;
       if (distributions.size() == 1) {
         return distributions.get(0).getViewResult().getProcessRawData();
@@ -123,7 +127,9 @@ public class CompositeCommandResult {
   }
 
   public RawDataDecisionReportResultDto transformToDecisionRawData() {
-    if (groups.size() == 1) {
+    if (groups.isEmpty()) {
+      return new RawDataDecisionReportResultDto();
+    } else if (groups.size() == 1) {
       final List<DistributedByResult> distributions = groups.get(0).distributions;
       if (distributions.size() == 1) {
         return distributions.get(0).getViewResult().getDecisionRawData();
@@ -205,6 +211,10 @@ public class CompositeCommandResult {
   private void sortHypermapResultData(final ReportSortingDto sortingDto, final boolean keyIsOfNumericType,
                                       final ReportHyperMapResultDto resultDto) {
     List<HyperMapResultEntryDto> data = resultDto.getFirstMeasureData();
+    if (data.isEmpty()) {
+      return;
+    }
+
     Optional.of(sortingDto).ifPresent(
       sorting -> {
         final String sortBy = sorting.getBy().orElse(ReportSortingDto.SORT_BY_KEY);

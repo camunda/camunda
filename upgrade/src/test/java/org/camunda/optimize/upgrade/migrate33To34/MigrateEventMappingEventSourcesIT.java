@@ -39,7 +39,7 @@ public class MigrateEventMappingEventSourcesIT extends AbstractUpgrade33IT {
   public void eventMappingEventSourcesAreMigratedToNewDataStructure() {
     // given
     executeBulk("steps/3.3/eventmappings/33-event-process-mappings-with-event-sources.json");
-    final UpgradePlan upgradePlan = new Upgrade33To34PlanFactory().createUpgradePlan();
+    final UpgradePlan upgradePlan = new Upgrade33To34PlanFactory().createUpgradePlan(prefixAwareClient);
 
     // then
     final List<EsEventProcessMappingDtoV3Old> eventMappingsBeforeUpgrade = getAllDocumentsOfIndexAs(

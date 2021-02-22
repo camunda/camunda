@@ -14,10 +14,13 @@ import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
 import org.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.schema.ReindexStep;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+
+import static org.camunda.optimize.upgrade.steps.UpgradeStepType.REINDEX;
 
 @Slf4j
 public class UpgradeProcedure {
@@ -67,7 +70,7 @@ public class UpgradeProcedure {
     final List<UpgradeStep> upgradeSteps = upgradePlan.getUpgradeSteps();
     for (UpgradeStep step : upgradeSteps) {
       final UpgradeStepLogEntryDto logEntryDto = UpgradeStepLogEntryDto.builder()
-        .indexName(step.getIndex().getIndexName())
+        .indexName(getIndexNameForStep(step))
         .optimizeVersion(upgradePlan.getToVersion())
         .stepType(step.getType())
         .stepNumber(currentStepCount)
@@ -78,7 +81,7 @@ public class UpgradeProcedure {
       if (!stepAppliedDate.isPresent()) {
         log.info(
           "Starting step {}/{}: {} on index: {}",
-          currentStepCount, upgradeSteps.size(), step.getClass().getSimpleName(), step.getIndex().getIndexName()
+          currentStepCount, upgradeSteps.size(), step.getClass().getSimpleName(), getIndexNameForStep(step)
         );
         try {
           step.execute(schemaUpgradeClient);
@@ -89,7 +92,7 @@ public class UpgradeProcedure {
         }
         log.info(
           "Successfully finished step {}/{}: {} on index: {}",
-          currentStepCount, upgradeSteps.size(), step.getClass().getSimpleName(), step.getIndex().getIndexName()
+          currentStepCount, upgradeSteps.size(), step.getClass().getSimpleName(), getIndexNameForStep(step)
         );
       } else {
         log.info(
@@ -97,7 +100,7 @@ public class UpgradeProcedure {
           currentStepCount,
           upgradeSteps.size(),
           step.getClass().getSimpleName(),
-          step.getIndex().getIndexName(),
+          getIndexNameForStep(step),
           stepAppliedDate.get()
         );
       }
@@ -112,6 +115,12 @@ public class UpgradeProcedure {
     upgradeValidationService.validateSchemaVersions(
       schemaVersion, upgradePlan.getFromVersion(), upgradePlan.getToVersion()
     );
+  }
+
+  private String getIndexNameForStep(final UpgradeStep step) {
+    return REINDEX.equals(step.getType())
+      ? String.format("%s and %s", ((ReindexStep) step).getSourceIndex(), ((ReindexStep) step).getTargetIndex())
+      : step.getIndex().getIndexName();
   }
 
 }

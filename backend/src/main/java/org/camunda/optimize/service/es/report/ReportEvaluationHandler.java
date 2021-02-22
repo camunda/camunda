@@ -48,6 +48,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.mapping;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TOO_MANY_BUCKETS_EXCEPTION_TYPE;
 
 @RequiredArgsConstructor
 @Component
@@ -179,7 +180,7 @@ public abstract class ReportEvaluationHandler {
         new AuthorizedReportDefinitionResponseDto(evaluationInfo.getReport(), currentUserRole);
       if (Arrays.stream(e.getSuppressed())
         .map(Throwable::getMessage)
-        .anyMatch(msg -> msg.contains("too_many_buckets_exception"))) {
+        .anyMatch(msg -> msg.contains(TOO_MANY_BUCKETS_EXCEPTION_TYPE))) {
         throw new TooManyBucketsException(authorizedReportDefinitionDto, e);
       }
       throw e;

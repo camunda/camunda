@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.BUSINESS_KEY_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
@@ -77,7 +77,8 @@ public class ForceReimportIT extends AbstractEventProcessIT {
 
     importAllEngineEntitiesFromScratch();
 
-    final List<AuthorizedReportDefinitionResponseDto> allReports = collectionClient.getReportsForCollection(collectionId);
+    final List<AuthorizedReportDefinitionResponseDto> allReports =
+      collectionClient.getReportsForCollection(collectionId);
     final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
     final List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts();
     assertThat(allReports).hasSize(2);
@@ -284,7 +285,8 @@ public class ForceReimportIT extends AbstractEventProcessIT {
   }
 
   private boolean hasNoEngineDecisionData() {
-    return noIndexGroupHasData(getEngineDecisionDataIndices());
+    return noIndexGroupHasData(getEngineDecisionDataIndices())
+      && !indexExists(DECISION_INSTANCE_MULTI_ALIAS);
   }
 
   private boolean hasNoEngineProcessData() {
@@ -333,7 +335,6 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     indexGroups.add(Collections.singletonList(TIMESTAMP_BASED_IMPORT_INDEX_NAME));
     indexGroups.add(Collections.singletonList(IMPORT_INDEX_INDEX_NAME));
     indexGroups.add(Collections.singletonList(DECISION_DEFINITION_INDEX_NAME));
-    indexGroups.add(Collections.singletonList(DECISION_INSTANCE_INDEX_NAME));
     return indexGroups;
   }
 
@@ -343,6 +344,11 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     indexGroups.add(Collections.singletonList(EVENT_TRACE_STATE_INDEX_PREFIX + "external*"));
     indexGroups.add(Collections.singletonList(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "external*"));
     return indexGroups;
+  }
+
+  private boolean indexExists(final String indexAlias) {
+    return embeddedOptimizeExtension.getElasticSearchSchemaManager()
+      .indexExists(embeddedOptimizeExtension.getOptimizeElasticClient(), indexAlias);
   }
 
   private void runEventProcessing() {

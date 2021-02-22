@@ -32,6 +32,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -97,7 +98,7 @@ import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedV
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
@@ -500,6 +501,9 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       .setQuery(matchAllQuery())
       .setRefresh(true);
 
+    // Delete all dedicated decision instance indices
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(new DecisionInstanceIndex("*").getIndexName());
+
     try {
       getOptimizeElasticClient().getHighLevelClient().deleteByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -623,7 +627,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public List<DecisionInstanceDto> getAllDecisionInstances() {
-    return getAllDocumentsOfIndexAs(DECISION_INSTANCE_INDEX_NAME, DecisionInstanceDto.class);
+    return getAllDocumentsOfIndexAs(DECISION_INSTANCE_MULTI_ALIAS, DecisionInstanceDto.class);
   }
 
   public List<ProcessInstanceDto> getAllProcessInstances() {

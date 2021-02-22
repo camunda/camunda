@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 
 public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
@@ -39,13 +39,13 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
     addDMNInputImportPluginBasePackagesToConfiguration(
       "org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericInputValues"
     );
-    deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
+    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
       put("amount", 200);
       put("invoiceCategory", "Misc");
     }});
     importAllEngineEntitiesFromScratch();
 
-    List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
+    List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos(decision.getKey());
 
     List<InputInstanceDto> list = decisionInstanceDtos.get(0).getInputs()
       .stream()
@@ -60,10 +60,10 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
     addDMNInputImportPluginBasePackagesToConfiguration(
       "org.camunda.optimize.testplugin.adapter.variable.dmn2.ReturnInvalidInputs"
     );
-    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    final DecisionDefinitionEngineDto decision = engineIntegrationExtension.deployAndStartDecisionDefinition();
     importAllEngineEntitiesFromScratch();
 
-    List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
+    List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos(decision.getKey());
 
     List<InputInstanceDto> list = decisionInstanceDtos.get(0).getInputs();
 
@@ -75,10 +75,10 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
     addDMNInputImportPluginBasePackagesToConfiguration(
       "org.camunda.optimize.testplugin.adapter.variable.dmn3.ReturnMoreInputVariables"
     );
-    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    final DecisionDefinitionEngineDto decision = engineIntegrationExtension.deployAndStartDecisionDefinition();
     importAllEngineEntitiesFromScratch();
 
-    List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
+    List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos(decision.getKey());
 
     List<InputInstanceDto> list = decisionInstanceDtos.get(0).getInputs();
 
@@ -89,14 +89,14 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
   public void importIsNotAffectedWithWrongPackagePath() {
     addDMNInputImportPluginBasePackagesToConfiguration("ding.dong.package.is.wrong");
     addDMNOutputImportPluginBasePackagesToConfiguration("not.a.valid.package.AwesomeOutputAdapter");
-    deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
+    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
       put("amount", 300);
       put("invoiceCategory", "Misc");
     }});
 
     importAllEngineEntitiesFromScratch();
 
-    List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
+    List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos(decision.getKey());
 
     List<InputInstanceDto> inputs = decisionInstanceDtos.get(0).getInputs();
 
@@ -126,14 +126,14 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
       "org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericValues",
       "org.camunda.optimize.testplugin.adapter.variable.dmn5.SetAllStringInputsToFoo"
     );
-    deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
+    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
       put("amount", 300);
       put("invoiceCategory", "notFoo");
     }});
 
     importAllEngineEntitiesFromScratch();
 
-    List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
+    List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos(decision.getKey());
 
     List<InputInstanceDto> strings = decisionInstanceDtos.get(0).getInputs()
       .stream()
@@ -154,13 +154,13 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
     addDMNOutputImportPluginBasePackagesToConfiguration(
       "org.camunda.optimize.testplugin.adapter.variable.dmn4.AddNewOutput"
     );
-    deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
+    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
       put("amount", 200);
       put("invoiceCategory", "Misc");
     }});
     importAllEngineEntitiesFromScratch();
 
-    List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
+    List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos(decision.getKey());
 
     List<OutputInstanceDto> list = decisionInstanceDtos.get(0).getOutputs();
     assertThat(list).hasSize(3);
@@ -174,13 +174,13 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
     addDMNInputImportPluginBasePackagesToConfiguration(
       "org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericInputValues"
     );
-    deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
+    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
       put("amount", 200);
       put("invoiceCategory", "Misc");
     }});
     importAllEngineEntitiesFromScratch();
 
-    List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
+    List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos(decision.getKey());
 
     List<OutputInstanceDto> outputs = decisionInstanceDtos.get(0).getOutputs();
     assertThat(outputs).hasSize(3);
@@ -193,9 +193,11 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
     assertThat(doubles.get(0).getValue()).isEqualTo("400.0");
   }
 
-  private List<DecisionInstanceDto> getDecisionInstanceDtos() {
+  private List<DecisionInstanceDto> getDecisionInstanceDtos(final String decisionDefinitionKey) {
     return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      DECISION_INSTANCE_INDEX_NAME, DecisionInstanceDto.class);
+      getDecisionInstanceIndexAliasName(decisionDefinitionKey),
+      DecisionInstanceDto.class
+    );
   }
 
   public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(HashMap<String, Object> variables) {

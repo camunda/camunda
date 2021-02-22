@@ -536,8 +536,8 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     final AuthorizedEntityDto evaluationResultDto = response.readEntity(AuthorizedEntityDto.class);
-    assertThat(evaluationResultDto.getCurrentUserRole()).isEqualTo(getExpectedResourceRoleForCollectionRole(
-      identityAndRole));
+    assertThat(evaluationResultDto.getCurrentUserRole())
+      .isEqualTo(getExpectedResourceRoleForCollectionRole(identityAndRole));
   }
 
   @ParameterizedTest

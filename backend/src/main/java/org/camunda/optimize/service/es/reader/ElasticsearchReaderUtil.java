@@ -214,8 +214,8 @@ public class ElasticsearchReaderUtil {
       }
 
       try {
-        final T report = mappingFunction.apply(hit);
-        results.add(report);
+        final T mappedHit = mappingFunction.apply(hit);
+        results.add(mappedHit);
       } catch (Exception e) {
         final String reason = "While mapping search results to class {} "
           + "it was not possible to deserialize a hit from Elasticsearch!";

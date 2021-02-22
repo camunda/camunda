@@ -40,7 +40,7 @@ public class MigrateEventPublishStateEventSourcesIT extends AbstractUpgrade33IT 
   public void eventProcessPublishStateEventSourcesAreMigratedToNewDataStructure() {
     // given
     executeBulk("steps/3.3/publishstates/33-event-publish-states-with-event-sources.json");
-    final UpgradePlan upgradePlan = new Upgrade33To34PlanFactory().createUpgradePlan();
+    final UpgradePlan upgradePlan = new Upgrade33To34PlanFactory().createUpgradePlan(prefixAwareClient);
 
     // then
     final List<EsEventProcessPublishStateDtoV3Old> publishStatesBeforeUpgrade = getAllDocumentsOfIndexAs(

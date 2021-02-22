@@ -89,19 +89,28 @@ public class DecisionExecutionPlanBuilder {
 
     public ExecuteBuildBuilder<RawDataDecisionReportResultDto> resultAsRawData() {
       return new ExecuteBuildBuilder<>(
-        viewPartClass, groupByPartClass, distributedByPartClass, CompositeCommandResult::transformToDecisionRawData
+        viewPartClass,
+        groupByPartClass,
+        distributedByPartClass,
+        CompositeCommandResult::transformToDecisionRawData
       );
     }
 
     public ExecuteBuildBuilder<NumberResultDto> resultAsNumber() {
       return new ExecuteBuildBuilder<>(
-        viewPartClass, groupByPartClass, distributedByPartClass, CompositeCommandResult::transformToNumber
+        viewPartClass,
+        groupByPartClass,
+        distributedByPartClass,
+        CompositeCommandResult::transformToNumber
       );
     }
 
     public ExecuteBuildBuilder<ReportMapResultDto> resultAsMap() {
       return new ExecuteBuildBuilder<>(
-        viewPartClass, groupByPartClass, distributedByPartClass, CompositeCommandResult::transformToMap
+        viewPartClass,
+        groupByPartClass,
+        distributedByPartClass,
+        CompositeCommandResult::transformToMap
       );
     }
   }

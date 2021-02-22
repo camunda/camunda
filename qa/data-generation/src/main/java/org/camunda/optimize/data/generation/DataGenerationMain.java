@@ -44,7 +44,7 @@ public class DataGenerationMain {
     DataGenerationMain main = new DataGenerationMain(dataGenerationInformation);
     String startDate = arguments.get("startDate");
     String endDate = arguments.get("endDate");
-    checkDateSprectrum(startDate, endDate);
+    checkDateSpectrum(startDate, endDate);
     main.generateData();
     String dbUser = "dbUser";
     String dbUrl = arguments.get("dbUrl");
@@ -103,7 +103,7 @@ public class DataGenerationMain {
     return arguments;
   }
 
-  public static void checkDateSprectrum(String startDate, String endDate) throws ParseException {
+  public static void checkDateSpectrum(String startDate, String endDate) throws ParseException {
     SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
     try {
       Date startDateObject = format.parse(startDate);

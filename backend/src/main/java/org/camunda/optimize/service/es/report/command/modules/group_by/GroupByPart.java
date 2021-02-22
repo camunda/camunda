@@ -51,12 +51,6 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
     return compositeCommandResult;
   }
 
-  protected abstract void addQueryResult(final CompositeCommandResult compositeCommandResult,
-                                         final SearchResponse response,
-                                         final ExecutionContext<Data> executionContext);
-
-  protected abstract void addGroupByAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey);
-
   /**
    * This method returns the min and maximum values for range value types (e.g. number or date).
    * It defaults to an empty result and needs to get overridden when applicable.
@@ -69,5 +63,11 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
                                                 final BoolQueryBuilder baseQuery) {
     return Optional.empty();
   }
+
+  protected abstract void addQueryResult(final CompositeCommandResult compositeCommandResult,
+                                         final SearchResponse response,
+                                         final ExecutionContext<Data> executionContext);
+
+  protected abstract void addGroupByAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey);
 
 }

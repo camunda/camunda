@@ -34,7 +34,7 @@ public class MigrateFlowNodeStatusConfigToFiltersIT extends AbstractUpgrade33IT 
   public void flowNodeStatusConfigIsFullyMigratedToViewLevelFiltersWhereRequired() {
     // given
     executeBulk("steps/3.3/reports/33-process-report-with-flow-node-status-config.json");
-    final UpgradePlan upgradePlan = new Upgrade33To34PlanFactory().createUpgradePlan();
+    final UpgradePlan upgradePlan = new Upgrade33To34PlanFactory().createUpgradePlan(prefixAwareClient);
 
     // then
     final List<SingleProcessReportDefinitionRequestDto> reportDtosBeforeUpgrade = getAllDocumentsOfIndexAs(
