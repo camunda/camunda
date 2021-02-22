@@ -156,6 +156,7 @@ public class RaftLog implements Closeable {
 
   public void reset(final long index) {
     journal.reset(index);
+    lastAppendedEntry = null;
   }
 
   public void truncate(final long index) {
