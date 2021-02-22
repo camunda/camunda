@@ -22,11 +22,14 @@ public class MeasureDto<T> {
   private UserTaskDurationTime userTaskDurationTime;
   private T data;
 
-  public static <D> MeasureDto<D> of(ViewProperty property, AggregationType aggregationType, UserTaskDurationTime userTaskDurationTime, D data) {
+  public static <T> MeasureDto<T> of(ViewProperty property,
+                                     AggregationType aggregationType,
+                                     UserTaskDurationTime userTaskDurationTime,
+                                     T data) {
     return new MeasureDto<>(property, aggregationType, userTaskDurationTime, data);
   }
 
-  public static <D> MeasureDto<D> of(ViewProperty property, D data) {
+  public static <T> MeasureDto<T> of(ViewProperty property, T data) {
     return new MeasureDto<>(property, null, null, data);
   }
 }

@@ -21,14 +21,13 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_RAW_DATA_PR
 
 @EqualsAndHashCode
 public class ViewProperty implements Combinable {
-  public static final ViewProperty FREQUENCY =
-    new ViewProperty(VIEW_FREQUENCY_PROPERTY);
-  public static final ViewProperty DURATION =
-    new ViewProperty(VIEW_DURATION_PROPERTY);
-  public static final ViewProperty RAW_DATA =
-    new ViewProperty(VIEW_RAW_DATA_PROPERTY);
+  public static final ViewProperty FREQUENCY = new ViewProperty(VIEW_FREQUENCY_PROPERTY);
+  public static final ViewProperty DURATION = new ViewProperty(VIEW_DURATION_PROPERTY);
+  public static final ViewProperty RAW_DATA = new ViewProperty(VIEW_RAW_DATA_PROPERTY);
 
-  public static ViewProperty ofVariable(final String variableName, final VariableType variableType) {
+  // uppercase is intended here to align it with other static fields
+  @SuppressWarnings("java:S100")
+  public static ViewProperty VARIABLE(final String variableName, final VariableType variableType) {
     return new ViewProperty(variableName, variableType);
   }
 

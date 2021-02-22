@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
@@ -287,7 +288,7 @@ public class CompositeCommandResult {
     }
 
     public String getLabel() {
-      return label != null && !label.isEmpty() ? label : key;
+      return !StringUtils.isEmpty(label) ? label : key;
     }
   }
 

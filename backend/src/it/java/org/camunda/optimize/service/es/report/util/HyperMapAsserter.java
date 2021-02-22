@@ -72,6 +72,13 @@ public class HyperMapAsserter {
         actualResult.getInstanceCountWithoutFilters()
       ))
       .isEqualTo(expectedResult.getInstanceCountWithoutFilters());
+    assertThat(actualResult.getMeasures().size())
+      .as(String.format(
+        "Number of Measure entries should be [%s] but is [%s].",
+        expectedResult.getMeasures().size(),
+        actualResult.getMeasures().size()
+      ))
+      .isEqualTo(expectedResult.getMeasures().size());
     assertThat(actualResult.getFirstMeasureData())
       .as("Data should not be null.")
       .isNotNull();

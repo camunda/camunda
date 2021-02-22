@@ -909,7 +909,7 @@ public class TemplatedProcessReportDataBuilder {
       case VARIABLE_AGGREGATION_GROUP_BY_NONE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.VARIABLE)
-          .viewProperty(ViewProperty.ofVariable(variableName, variableType))
+          .viewProperty(ViewProperty.VARIABLE(variableName, variableType))
           .groupByType(ProcessGroupByType.NONE)
           .distributedByType(DistributedByType.NONE)
           .visualization(ProcessVisualization.NUMBER)

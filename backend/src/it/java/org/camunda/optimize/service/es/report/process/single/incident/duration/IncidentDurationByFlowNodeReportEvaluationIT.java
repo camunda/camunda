@@ -683,12 +683,14 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    // formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
-      .groupedByContains(END_EVENT, null)
-      .groupedByContains(START_EVENT, null)
+        .groupedByContains(END_EVENT, null)
+        .groupedByContains(START_EVENT, null)
       .doAssert(resultDto);
+    // formatter:on
   }
 
   @Test
@@ -711,13 +713,15 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    // formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
-      .groupedByContains(END_EVENT, null, END_EVENT_NAME)
-      .groupedByContains(SERVICE_TASK_ID_1, 3000., SERVICE_TASK_NAME_1)
-      .groupedByContains(START_EVENT, null, START_EVENT_NAME)
+        .groupedByContains(END_EVENT, null, END_EVENT_NAME)
+        .groupedByContains(SERVICE_TASK_ID_1, 3000., SERVICE_TASK_NAME_1)
+        .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
+    // formatter:on
   }
 
   private Stream<Arguments> aggregationTypes() {
@@ -757,13 +761,15 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    // formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(3L)
       .measure(ViewProperty.DURATION, aggregationType)
-      .groupedByContains(END_EVENT, null, END_EVENT_NAME)
-      .groupedByContains(SERVICE_TASK_ID_1, expectedResult, SERVICE_TASK_NAME_1)
-      .groupedByContains(START_EVENT, null, START_EVENT_NAME)
+        .groupedByContains(END_EVENT, null, END_EVENT_NAME)
+        .groupedByContains(SERVICE_TASK_ID_1, expectedResult, SERVICE_TASK_NAME_1)
+        .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
+    // formatter:oon
   }
 
   @Test
@@ -788,16 +794,18 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    // formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
-      .groupedByContains(START_EVENT, null)
-      .groupedByContains(SPLITTING_GATEWAY_ID, null)
-      .groupedByContains(SERVICE_TASK_ID_2, 2000.)
-      .groupedByContains(SERVICE_TASK_ID_1, 2000.)
-      .groupedByContains(END_EVENT_2, null)
-      .groupedByContains(END_EVENT_1, null)
+        .groupedByContains(START_EVENT, null)
+        .groupedByContains(SPLITTING_GATEWAY_ID, null)
+        .groupedByContains(SERVICE_TASK_ID_2, 2000.)
+        .groupedByContains(SERVICE_TASK_ID_1, 2000.)
+        .groupedByContains(END_EVENT_2, null)
+        .groupedByContains(END_EVENT_1, null)
       .doAssert(resultDto);
+    // formatter:on
   }
 
   @Test
@@ -822,14 +830,16 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    // formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
-      .groupedByContains(SERVICE_TASK_ID_2, 3000., SERVICE_TASK_NAME_2)
-      .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
-      .groupedByContains(END_EVENT, null, END_EVENT_NAME)
-      .groupedByContains(START_EVENT, null, START_EVENT_NAME)
+        .groupedByContains(SERVICE_TASK_ID_2, 3000., SERVICE_TASK_NAME_2)
+        .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
+        .groupedByContains(END_EVENT, null, END_EVENT_NAME)
+        .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
+    // formatter:on
   }
 
   private ProcessReportDataDto createReport(String processDefinitionKey, String... processDefinitionVersions) {

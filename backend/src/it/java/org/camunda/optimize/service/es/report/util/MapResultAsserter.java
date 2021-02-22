@@ -37,28 +37,18 @@ public class MapResultAsserter {
     return this;
   }
 
-  @Deprecated
-  public MapResultAsserter groupedByContains(String distributedByKey, Double result) {
-    return this;
-  }
-
-  @Deprecated
-  public MapResultAsserter groupedByContains(String distributedByKey, Double result, String label) {
-    return this;
-  }
-
   public MeasureAdder measure(final ViewProperty viewProperty) {
     return measure(viewProperty, null);
   }
 
   public MeasureAdder measure(final ViewProperty viewProperty,
-                                               final AggregationType aggregationType) {
+                              final AggregationType aggregationType) {
     return measure(viewProperty, aggregationType, null);
   }
 
   public MeasureAdder measure(final ViewProperty viewProperty,
-                                               final AggregationType aggregationType,
-                                               final UserTaskDurationTime userTaskDurationTime) {
+                              final AggregationType aggregationType,
+                              final UserTaskDurationTime userTaskDurationTime) {
     return new MeasureAdder(this, viewProperty, aggregationType, userTaskDurationTime);
   }
 
@@ -83,6 +73,13 @@ public class MapResultAsserter {
         actualResult.getInstanceCountWithoutFilters()
       ))
       .isEqualTo(expectedResult.getInstanceCountWithoutFilters());
+    assertThat(actualResult.getMeasures().size())
+      .as(String.format(
+        "Number of Measure entries should be [%s] but is [%s].",
+        expectedResult.getMeasures().size(),
+        actualResult.getMeasures().size()
+      ))
+      .isEqualTo(expectedResult.getMeasures().size());
     assertThat(actualResult.getFirstMeasureData())
       .as("Data should not be null.")
       .isNotNull();
