@@ -6,15 +6,15 @@
 package org.camunda.optimize.rest.mapper;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.CombinedReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
-import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedReportEvaluationResponseDto;
@@ -22,13 +22,14 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvalu
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
-import org.camunda.optimize.service.es.report.result.process.CombinedProcessReportResult;
 import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -37,71 +38,77 @@ public class ReportRestMapper {
 
   private final IdentityService identityService;
 
-  public AuthorizedReportEvaluationResponseDto<?> mapToEvaluationResultDto(final AuthorizedReportEvaluationResult reportEvaluationResult) {
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public <T> AuthorizedReportEvaluationResponseDto<?> mapToEvaluationResultDto(final AuthorizedReportEvaluationResult reportEvaluationResult) {
     resolveOwnerAndModifierNames(reportEvaluationResult.getEvaluationResult().getReportDefinition());
-    if (reportEvaluationResult.getEvaluationResult() instanceof CombinedProcessReportResult) {
-      final CombinedProcessReportResult combinedReportResult =
-        (CombinedProcessReportResult) reportEvaluationResult.getEvaluationResult();
-      final CombinedProcessReportResultDto<?> resultAsDto = combinedReportResult.getResultAsDto();
+    if (reportEvaluationResult.getEvaluationResult() instanceof CombinedReportEvaluationResult) {
+      final CombinedReportEvaluationResult combinedReportEvaluationResult =
+        (CombinedReportEvaluationResult) reportEvaluationResult.getEvaluationResult();
+      final Map<String, AuthorizedProcessReportEvaluationResponseDto<T>> reportResults =
+        combinedReportEvaluationResult
+          .getReportEvaluationResults()
+          .stream()
+          .map(this::mapToAuthorizedProcessReportEvaluationResponseDto)
+          .map(response -> (AuthorizedProcessReportEvaluationResponseDto<T>) response)
+          .collect(Collectors.toMap(
+            singleReportEvaluationResponse -> singleReportEvaluationResponse.getReportDefinition().getId(),
+            Function.identity(),
+            (x, y) -> y,
+            LinkedHashMap::new
+          ));
 
-      final Map<String, AuthorizedSingleReportEvaluationResponseDto<?, ?>> results = resultAsDto.getData()
-        .entrySet().stream()
-        .collect(Collectors.toMap(
-          Map.Entry::getKey,
-          entry -> new AuthorizedProcessReportEvaluationResponseDto<>(
-            null,
-            mapToReportResultResponseDto(entry.getValue()),
-            entry.getValue().getReportDefinition()
-          ),
-          (x, y) -> y,
-          LinkedHashMap::new
-        ));
       return new AuthorizedCombinedReportEvaluationResponseDto<>(
         reportEvaluationResult.getCurrentUserRole(),
-        combinedReportResult.getReportDefinition(),
-        new CombinedProcessReportResultDataDto(results, resultAsDto.getInstanceCount())
+        (CombinedReportDefinitionRequestDto) reportEvaluationResult.getEvaluationResult().getReportDefinition(),
+        new CombinedProcessReportResultDataDto<>(reportResults, combinedReportEvaluationResult.getInstanceCount())
       );
     } else {
-      return mapToAuthorizedEvaluationResponseDto(reportEvaluationResult);
+      SingleReportEvaluationResult<?> singleReportEvaluationResult =
+        (SingleReportEvaluationResult<?>) reportEvaluationResult.getEvaluationResult();
+      return mapToAuthorizedEvaluationResponseDto(
+        reportEvaluationResult.getCurrentUserRole(), singleReportEvaluationResult
+      );
     }
   }
 
-  private AuthorizedSingleReportEvaluationResponseDto<?, ?> mapToAuthorizedEvaluationResponseDto(
-    final AuthorizedReportEvaluationResult reportEvaluationResult) {
+  private <T> AuthorizedProcessReportEvaluationResponseDto<T> mapToAuthorizedProcessReportEvaluationResponseDto(
+    final SingleReportEvaluationResult<T> singleReportEvaluationResult) {
+    return new AuthorizedProcessReportEvaluationResponseDto<>(
+      null,
+      mapToReportResultResponseDto(singleReportEvaluationResult),
+      (SingleProcessReportDefinitionRequestDto) singleReportEvaluationResult.getReportDefinition()
+    );
+  }
+
+  private <T, R extends ReportDefinitionDto<?>> AuthorizedSingleReportEvaluationResponseDto<T, R> mapToAuthorizedEvaluationResponseDto(
+    final RoleType currentUserRole,
+    final SingleReportEvaluationResult<?> evaluationResult) {
     return new AuthorizedSingleReportEvaluationResponseDto<>(
-      reportEvaluationResult.getCurrentUserRole(),
-      mapToReportResultResponseDto(reportEvaluationResult.getEvaluationResult()),
-      reportEvaluationResult.getEvaluationResult().getReportDefinition()
+      currentUserRole,
+      (ReportResultResponseDto<T>) mapToReportResultResponseDto(evaluationResult),
+      (R) evaluationResult.getReportDefinition()
     );
   }
 
-  private ReportResultResponseDto<?> mapToReportResultResponseDto(final ReportEvaluationResult<?, ?> evaluationResult) {
-    final SingleReportResultDto resultAsDto = (SingleReportResultDto) evaluationResult.getResultAsDto();
+  private <T> ReportResultResponseDto<T> mapToReportResultResponseDto(final SingleReportEvaluationResult<T> evaluationResult) {
+    final CommandEvaluationResult<?> firstCommandResult = evaluationResult.getFirstCommandResult();
     return new ReportResultResponseDto<>(
-      resultAsDto.getInstanceCount(),
-      resultAsDto.getInstanceCountWithoutFilters(),
-      resultAsDto.getMeasures().stream()
-        .map(measureDto ->
-               new MeasureResponseDto<>(
-                 measureDto.getProperty(),
-                 measureDto.getAggregationType(),
-                 measureDto.getUserTaskDurationTime(),
-                 measureDto.getData(),
-                 resultAsDto.getType()
-               )
-        ).collect(Collectors.toList()),
-      extractPagination(resultAsDto)
+      firstCommandResult.getInstanceCount(),
+      firstCommandResult.getInstanceCountWithoutFilters(),
+      evaluationResult.getCommandEvaluationResults().stream()
+        .flatMap(commandResult -> commandResult.getMeasures().stream()
+          .map(measureDto ->
+                 new MeasureResponseDto<>(
+                   measureDto.getProperty(),
+                   measureDto.getAggregationType(),
+                   measureDto.getUserTaskDurationTime(),
+                   measureDto.getData(),
+                   commandResult.getType()
+                 )
+          ))
+        .collect(Collectors.toList()),
+      firstCommandResult.getPagination().isValid() ? firstCommandResult.getPagination() : null
     );
-  }
-
-  private PaginationDto extractPagination(final SingleReportResultDto resultDto) {
-    if (resultDto instanceof RawDataProcessReportResultDto) {
-      return ((RawDataProcessReportResultDto) resultDto).getPagination();
-    } else if (resultDto instanceof RawDataDecisionReportResultDto) {
-      return ((RawDataDecisionReportResultDto) resultDto).getPagination();
-    } else {
-      return null;
-    }
   }
 
   public void prepareRestResponse(final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto) {

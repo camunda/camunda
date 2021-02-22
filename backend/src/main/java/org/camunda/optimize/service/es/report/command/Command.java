@@ -5,16 +5,17 @@
  */
 package org.camunda.optimize.service.es.report.command;
 
+import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
+import org.camunda.optimize.service.es.report.ReportEvaluationContext;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 
 import java.util.Optional;
 
-public interface Command<RD extends ReportDefinitionDto<?>> {
+public interface Command<T, R extends ReportDefinitionDto<?>> {
 
-  ReportEvaluationResult<?, RD> evaluate(CommandContext<RD> commandContext) throws OptimizeException;
+  CommandEvaluationResult<T> evaluate(ReportEvaluationContext<R> reportEvaluationContext) throws OptimizeException;
 
   String createCommandKey();
 
@@ -24,10 +25,10 @@ public interface Command<RD extends ReportDefinitionDto<?>> {
    * By default it's assumed that there is no range to be calculated, this needs to be implemented
    * in corresponding commands.
    *
-   * @param commandContext the command context to perform the min max retrieval with
+   * @param reportEvaluationContext the command context to perform the min max retrieval with
    * @return the min max stats for the commands groupBy, empty if not available or not implemented
    */
-  default Optional<MinMaxStatDto> getGroupByMinMaxStats(final CommandContext<RD> commandContext) {
+  default Optional<MinMaxStatDto> getGroupByMinMaxStats(final ReportEvaluationContext<R> reportEvaluationContext) {
     return Optional.empty();
   }
 

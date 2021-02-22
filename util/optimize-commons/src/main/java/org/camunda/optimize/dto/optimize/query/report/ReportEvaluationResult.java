@@ -7,26 +7,22 @@ package org.camunda.optimize.dto.optimize.query.report;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
 import java.time.ZoneId;
 import java.util.List;
 
 @AllArgsConstructor
+@NoArgsConstructor
 @Data
-public abstract class ReportEvaluationResult<R extends ReportResultDto, D extends ReportDefinitionDto> {
+public abstract class ReportEvaluationResult {
 
   @NonNull
-  protected final List<R> results;
-  @NonNull
-  protected final D reportDefinition;
+  protected ReportDefinitionDto<?> reportDefinition;
 
   public String getId() {
     return reportDefinition.getId();
-  }
-
-  public R getResultAsDto() {
-    return results.stream().findFirst().orElse(null);
   }
 
   public abstract List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone);

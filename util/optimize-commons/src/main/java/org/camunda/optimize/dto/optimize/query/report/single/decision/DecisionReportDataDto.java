@@ -66,6 +66,11 @@ public class DecisionReportDataDto extends SingleReportDataDto {
     return getView().getProperties();
   }
 
+  @Override
+  public List<String> createCommandKeys() {
+    return Collections.singletonList(createCommandKey());
+  }
+
   @JsonIgnore
   @Override
   public String createCommandKey() {

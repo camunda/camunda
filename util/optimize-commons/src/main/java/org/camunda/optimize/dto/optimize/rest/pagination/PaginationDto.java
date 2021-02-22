@@ -22,4 +22,8 @@ public class PaginationDto {
     paginationDto.setOffset(paginationRequestDto.getOffset());
     return paginationDto;
   }
+
+  public boolean isValid() {
+    return limit != null;
+  }
 }

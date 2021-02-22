@@ -7,14 +7,12 @@ package org.camunda.optimize.service.export;
 
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
-import org.camunda.optimize.service.es.report.result.decision.SingleDecisionRawDataReportResult;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDataReportResult;
+import org.camunda.optimize.service.es.report.result.RawDataCommandResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,15 +48,13 @@ public class CsvExportServiceTest {
   @Test
   public void rawProcessReportCsvExport() {
     // given
-    final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
-    rawDataProcessReportResultDto.addMeasureData(RawDataHelper.getRawDataProcessInstanceDtos());
-    SingleProcessRawDataReportResult rawDataReportResult =
-      new SingleProcessRawDataReportResult(
-        rawDataProcessReportResultDto,
-        new SingleProcessReportDefinitionRequestDto()
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(
+        RawDataHelper.getRawDataProcessInstanceDtos(),
+        new ProcessReportDataDto()
       );
     when(reportService.evaluateReport(any())).thenReturn(new AuthorizedReportEvaluationResult(
-      rawDataReportResult,
+      new SingleReportEvaluationResult(new SingleProcessReportDefinitionRequestDto(), rawDataReportResult),
       RoleType.VIEWER
     ));
 
@@ -75,15 +71,13 @@ public class CsvExportServiceTest {
   @Test
   public void rawDecisionReportCsvExport() {
     // given
-    final RawDataDecisionReportResultDto rawDataDecisionReportResultDto = new RawDataDecisionReportResultDto();
-    rawDataDecisionReportResultDto.addMeasureData(RawDataHelper.getRawDataDecisionInstanceDtos());
-    SingleDecisionRawDataReportResult rawDataReportResult =
-      new SingleDecisionRawDataReportResult(
-        rawDataDecisionReportResultDto,
-        new SingleDecisionReportDefinitionRequestDto()
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(
+        RawDataHelper.getRawDataDecisionInstanceDtos(),
+        new ProcessReportDataDto()
       );
     when(reportService.evaluateReport(any())).thenReturn(new AuthorizedReportEvaluationResult(
-      rawDataReportResult,
+      new SingleReportEvaluationResult(new SingleProcessReportDefinitionRequestDto(), rawDataReportResult),
       RoleType.VIEWER
     ));
 

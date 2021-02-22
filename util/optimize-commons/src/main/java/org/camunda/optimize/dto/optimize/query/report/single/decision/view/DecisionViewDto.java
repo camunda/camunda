@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.view;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -47,6 +48,11 @@ public class DecisionViewDto  {
     } else {
       this.properties.set(0, property);
     }
+  }
+
+  @JsonSetter
+  public void setProperties(final List<ViewProperty> properties) {
+    this.properties = new ArrayList<>(properties);
   }
 
   public void setProperties(final ViewProperty... properties) {

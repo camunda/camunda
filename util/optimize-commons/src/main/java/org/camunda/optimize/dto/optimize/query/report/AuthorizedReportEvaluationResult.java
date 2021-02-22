@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.RoleType;
 @Data
 @EqualsAndHashCode(callSuper=true)
 public class AuthorizedReportEvaluationResult extends AuthorizedEntityDto {
-  private ReportEvaluationResult<?, ?> evaluationResult;
+  private ReportEvaluationResult evaluationResult;
 
   public AuthorizedReportEvaluationResult(final ReportEvaluationResult evaluationResult, final RoleType currentUserRole) {
     super(currentUserRole);

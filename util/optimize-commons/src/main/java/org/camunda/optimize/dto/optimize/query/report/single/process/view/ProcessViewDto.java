@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.view;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.google.common.collect.ImmutableSet;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @NoArgsConstructor
 @Data
@@ -26,6 +28,7 @@ public class ProcessViewDto implements Combinable {
   private static final Set<ProcessViewEntity> FLOW_NODE_ENTITIES = ImmutableSet.of(
     ProcessViewEntity.FLOW_NODE, ProcessViewEntity.USER_TASK
   );
+  private static final String COMMAND_KEY_SEPARATOR = "-";
 
   protected ProcessViewEntity entity;
   protected List<ViewProperty> properties = new ArrayList<>();
@@ -52,10 +55,16 @@ public class ProcessViewDto implements Combinable {
     return isEntityCombinable(viewDto) && isPropertyCombinable(viewDto);
   }
 
+  public List<String> createCommandKeys() {
+    return properties.stream()
+      .distinct()
+      .map(property -> entity + COMMAND_KEY_SEPARATOR + property)
+      .collect(Collectors.toList());
+  }
+
   @JsonIgnore
   public String createCommandKey() {
-    String separator = "-";
-    return entity + separator + getProperty();
+    return createCommandKeys().get(0);
   }
 
   // to be removed with OPT-4871 when the result evaluation needs to read all properties
@@ -72,6 +81,11 @@ public class ProcessViewDto implements Combinable {
     } else {
       this.properties.set(0, property);
     }
+  }
+
+  @JsonSetter
+  public void setProperties(final List<ViewProperty> properties) {
+    this.properties = new ArrayList<>(properties);
   }
 
   public void setProperties(final ViewProperty... properties) {

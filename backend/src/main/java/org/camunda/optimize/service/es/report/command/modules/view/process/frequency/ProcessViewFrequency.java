@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.view.process.frequency;
 
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
@@ -19,6 +20,11 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 
 public abstract class ProcessViewFrequency extends ProcessViewPart {
   private static final String FREQUENCY_AGGREGATION = "_frequency";
+
+  @Override
+  public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {
+    return ViewProperty.FREQUENCY;
+  }
 
   @Override
   public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {

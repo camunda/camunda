@@ -6,12 +6,11 @@
 package org.camunda.optimize.service.es.report.command.exec.builder;
 
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
@@ -23,6 +22,7 @@ import org.camunda.optimize.service.es.report.command.modules.view.process.Proce
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.function.Function;
 
 @RequiredArgsConstructor
@@ -47,7 +47,7 @@ public class ProcessExecutionPlanBuilder {
 
   public class AddGroupByBuilder {
 
-    private Class<? extends ProcessViewPart> viewPartClass;
+    private final Class<? extends ProcessViewPart> viewPartClass;
 
     private AddGroupByBuilder(final Class<? extends ProcessViewPart> viewPartClass) {
       this.viewPartClass = viewPartClass;
@@ -60,8 +60,8 @@ public class ProcessExecutionPlanBuilder {
 
   public class AddDistributedByBuilder {
 
-    private Class<? extends ProcessViewPart> viewPartClass;
-    private Class<? extends GroupByPart<ProcessReportDataDto>> groupByPartClass;
+    private final Class<? extends ProcessViewPart> viewPartClass;
+    private final Class<? extends GroupByPart<ProcessReportDataDto>> groupByPartClass;
 
     public AddDistributedByBuilder(final Class<? extends ProcessViewPart> viewPartClass,
                                    final Class<? extends GroupByPart<ProcessReportDataDto>> groupByPartClass) {
@@ -76,61 +76,62 @@ public class ProcessExecutionPlanBuilder {
 
   public class ReportResultTypeBuilder {
 
-    private Class<? extends ProcessViewPart> viewPartClass;
-    private Class<? extends GroupByPart<ProcessReportDataDto>> groupByPartClass;
-    private Class<? extends ProcessDistributedByPart> distributedByPartClass;
+    private final Class<? extends ProcessViewPart> viewPartClass;
+    private final Class<? extends GroupByPart<ProcessReportDataDto>> groupByPartClass;
+    private final Class<? extends ProcessDistributedByPart> distributedByPartClass;
 
     public ReportResultTypeBuilder(final Class<? extends ProcessViewPart> viewPartClass,
-                                   final Class<? extends GroupByPart<ProcessReportDataDto>> groupByPartClass, final Class<?
+                                   final Class<? extends GroupByPart<ProcessReportDataDto>> groupByPartClass,
+                                   final Class<?
       extends ProcessDistributedByPart> distributedByPartClass) {
       this.viewPartClass = viewPartClass;
       this.groupByPartClass = groupByPartClass;
       this.distributedByPartClass = distributedByPartClass;
     }
 
-    public ExecuteBuildBuilder<RawDataProcessReportResultDto> resultAsRawData() {
+    public <T extends RawDataInstanceDto> ExecuteBuildBuilder<List<T>> resultAsRawData() {
       return new ExecuteBuildBuilder<>(
-        viewPartClass, groupByPartClass, distributedByPartClass, CompositeCommandResult::transformToProcessRawData
+        viewPartClass, groupByPartClass, distributedByPartClass, CompositeCommandResult::transformToRawData
       );
     }
 
-    public ExecuteBuildBuilder<NumberResultDto> resultAsNumber() {
+    public ExecuteBuildBuilder<Double> resultAsNumber() {
       return new ExecuteBuildBuilder<>(
         viewPartClass, groupByPartClass, distributedByPartClass, CompositeCommandResult::transformToNumber
       );
     }
 
-    public ExecuteBuildBuilder<ReportMapResultDto> resultAsMap() {
+    public ExecuteBuildBuilder<List<MapResultEntryDto>> resultAsMap() {
       return new ExecuteBuildBuilder<>(
         viewPartClass, groupByPartClass, distributedByPartClass, CompositeCommandResult::transformToMap
       );
     }
 
-    public ExecuteBuildBuilder<ReportHyperMapResultDto> resultAsHyperMap() {
+    public ExecuteBuildBuilder<List<HyperMapResultEntryDto>> resultAsHyperMap() {
       return new ExecuteBuildBuilder<>(
         viewPartClass, groupByPartClass, distributedByPartClass, CompositeCommandResult::transformToHyperMap
       );
     }
   }
 
-  public class ExecuteBuildBuilder<R extends ProcessReportResultDto> {
+  public class ExecuteBuildBuilder<T> {
 
-    private Class<? extends ProcessViewPart> viewPartClass;
-    private Class<? extends GroupByPart<ProcessReportDataDto>> groupByPartClass;
-    private Class<? extends ProcessDistributedByPart> distributedByPartClass;
-    private Function<CompositeCommandResult, R> mapToReportResult;
+    private final Class<? extends ProcessViewPart> viewPartClass;
+    private final Class<? extends GroupByPart<ProcessReportDataDto>> groupByPartClass;
+    private final Class<? extends ProcessDistributedByPart> distributedByPartClass;
+    private final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult;
 
     public ExecuteBuildBuilder(final Class<? extends ProcessViewPart> viewPartClass,
                                final Class<? extends GroupByPart<ProcessReportDataDto>> groupByPartClass,
                                final Class<? extends ProcessDistributedByPart> distributedByPartClass,
-                               final Function<CompositeCommandResult, R> mapToReportResult) {
+                               final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult) {
       this.viewPartClass = viewPartClass;
       this.groupByPartClass = groupByPartClass;
       this.distributedByPartClass = distributedByPartClass;
       this.mapToReportResult = mapToReportResult;
     }
 
-    public ProcessReportCmdExecutionPlan<R> build() {
+    public ProcessReportCmdExecutionPlan<T> build() {
       final ProcessViewPart viewPart = context.getBean(this.viewPartClass);
       final GroupByPart<ProcessReportDataDto> groupByPart = context.getBean(this.groupByPartClass);
       final ProcessDistributedByPart distributedByPart = context.getBean(this.distributedByPartClass);

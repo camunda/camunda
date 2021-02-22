@@ -5,28 +5,27 @@
  */
 package org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.date.distributed_by.candidate_group;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
-import org.camunda.optimize.service.es.report.command.CommandContext;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByCandidateGroup;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.date.ProcessGroupByUserTaskEndDate;
 import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessViewUserTaskDuration;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessHyperMapReportResult;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
-public class UserTaskDurationGroupByUserTaskEndDateByCandidateGroupCmd extends ProcessCmd<ReportHyperMapResultDto> {
+public class UserTaskDurationGroupByUserTaskEndDateByCandidateGroupCmd
+  extends ProcessCmd<List<HyperMapResultEntryDto>> {
 
   public UserTaskDurationGroupByUserTaskEndDateByCandidateGroupCmd(final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
   @Override
-  protected ProcessReportCmdExecutionPlan<ReportHyperMapResultDto> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
+  protected ProcessReportCmdExecutionPlan<List<HyperMapResultEntryDto>> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
     return builder.createExecutionPlan()
       .processCommand()
       .view(ProcessViewUserTaskDuration.class)
@@ -36,9 +35,4 @@ public class UserTaskDurationGroupByUserTaskEndDateByCandidateGroupCmd extends P
       .build();
   }
 
-  @Override
-  public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext) {
-    final ReportHyperMapResultDto evaluate = executionPlan.evaluate(commandContext);
-    return new SingleProcessHyperMapReportResult(evaluate, commandContext.getReportDefinition());
-  }
 }

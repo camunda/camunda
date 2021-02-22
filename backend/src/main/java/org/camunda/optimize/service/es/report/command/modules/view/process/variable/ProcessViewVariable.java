@@ -66,6 +66,11 @@ public class ProcessViewVariable extends ProcessViewPart {
       .build();
 
   @Override
+  public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {
+    return ViewProperty.VARIABLE(getVariableName(context), getVariableType(context));
+  }
+
+  @Override
   public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
     if (!VariableType.getNumericTypes().contains(getVariableType(context))) {
       throw new BadRequestException(

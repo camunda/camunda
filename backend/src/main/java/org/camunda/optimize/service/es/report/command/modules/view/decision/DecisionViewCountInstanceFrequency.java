@@ -27,6 +27,11 @@ public class DecisionViewCountInstanceFrequency extends DecisionViewPart {
   private static final String COUNT_AGGREGATION = "_count";
 
   @Override
+  public ViewProperty getViewProperty(final ExecutionContext<DecisionReportDataDto> context) {
+    return ViewProperty.FREQUENCY;
+  }
+
+  @Override
   public AggregationBuilder createAggregation(final ExecutionContext<DecisionReportDataDto> context) {
     return filter(COUNT_AGGREGATION, QueryBuilders.matchAllQuery());
   }

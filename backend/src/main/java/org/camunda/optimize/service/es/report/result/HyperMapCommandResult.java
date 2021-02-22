@@ -3,50 +3,48 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.result.process;
+package org.camunda.optimize.service.es.report.result;
 
 import com.google.common.collect.Streams;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.service.export.CSVUtils;
 
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Slf4j
-public class SingleProcessHyperMapReportResult
-  extends ReportEvaluationResult<ReportHyperMapResultDto, SingleProcessReportDefinitionRequestDto> {
+public class HyperMapCommandResult extends CommandEvaluationResult<List<HyperMapResultEntryDto>> {
 
-  public SingleProcessHyperMapReportResult(@NonNull final ReportHyperMapResultDto reportResult,
-                                           @NonNull final SingleProcessReportDefinitionRequestDto reportDefinition) {
-    super(Collections.singletonList(reportResult), reportDefinition);
+  public HyperMapCommandResult(@NonNull final List<MeasureDto<List<HyperMapResultEntryDto>>> measures,
+                               @NonNull final ProcessReportDataDto reportDataDto) {
+    super(measures, reportDataDto);
   }
 
   @Override
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
-    return mapHyperMapReportResultsToCsvList(limit, offset, getResultAsDto());
+    return mapHyperMapReportResultsToCsvList(limit, getFirstMeasureData());
   }
 
-  private List<String[]> mapHyperMapReportResultsToCsvList(
-    final Integer limit,
-    final Integer offset,
-    final ReportHyperMapResultDto hyperMapResult) {
+  @Override
+  public ResultType getType() {
+    return ResultType.HYPER_MAP;
+  }
 
-    final List<List<String[]>> allSingleReportsAsCsvList = mapHyperMapReportResultsToCsvLists(
-      limit,
-      hyperMapResult
-    );
+  private List<String[]> mapHyperMapReportResultsToCsvList(final Integer limit,
+                                                           final List<HyperMapResultEntryDto> hyperMapResult) {
+
+    final List<List<String[]>> allSingleReportsAsCsvList = mapHyperMapReportResultsToCsvLists(limit, hyperMapResult);
 
     final List<String[]> mergedCsvReports = mergeSingleReportsToOneCsv(allSingleReportsAsCsvList);
     addHeaderLine(mergedCsvReports);
@@ -55,7 +53,7 @@ public class SingleProcessHyperMapReportResult
   }
 
   private void addHeaderLine(List<String[]> mergedCsvReports) {
-    ProcessReportDataDto data = reportDefinition.getData();
+    ProcessReportDataDto data = (ProcessReportDataDto) reportData;
     final String[] reportNameHeader =
       new String[]{data.getDistributedBy().createCommandKey(), data.getGroupBy().createCommandKey(),
         data.getGroupBy().createCommandKey()};
@@ -64,10 +62,10 @@ public class SingleProcessHyperMapReportResult
 
   private List<List<String[]>> mapHyperMapReportResultsToCsvLists(
     final Integer limit,
-    final ReportHyperMapResultDto hyperMapResult) {
+    final List<HyperMapResultEntryDto> hyperMapResult) {
 
     return Streams.mapWithIndex(
-      hyperMapResult.getFirstMeasureData().stream(),
+      hyperMapResult.stream(),
       (hyperMapResultEntry, index) -> mapSingleHyperMapResultEntry(limit, hyperMapResultEntry, index > 0)
     )
       .collect(Collectors.toList());

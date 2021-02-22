@@ -15,8 +15,8 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto
 import org.camunda.optimize.dto.optimize.query.entity.EntityType
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState
+import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto
@@ -213,7 +213,7 @@ class PostMigrationTest {
       .allSatisfy(eventProcessState -> assertThat(eventProcessState).isEqualTo(EventProcessState.PUBLISHED));
   }
 
-  private static AuthorizedProcessReportEvaluationResponseDto<RawDataProcessReportResultDto> evaluateRawDataReportForProcessKey(
+  private static AuthorizedProcessReportEvaluationResponseDto<List<RawDataInstanceDto>> evaluateRawDataReportForProcessKey(
     final String eventProcessKey) {
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()

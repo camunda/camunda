@@ -6,11 +6,11 @@
 package org.camunda.optimize.service.es.report;
 
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.es.report.command.Command;
-import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
 import org.camunda.optimize.service.es.report.command.decision.raw.RawDecisionInstanceDataGroupByNoneCmd;
 import org.camunda.optimize.service.es.report.command.process.processinstance.raw.RawProcessInstanceDataGroupByNoneCmd;
@@ -22,12 +22,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.export.CsvExportService.DEFAULT_RECORD_LIMIT;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @RequiredArgsConstructor
 @Component
@@ -40,42 +43,64 @@ public class SingleReportEvaluator {
 
   protected final NotSupportedCommand notSupportedCommand;
   protected final ApplicationContext applicationContext;
-  protected final Map<String, Command> commandSuppliers;
+  protected final Map<String, Command<?, ReportDefinitionDto<?>>> commandSuppliers;
 
   @Autowired
+  @SuppressWarnings(UNCHECKED_CAST)
   public SingleReportEvaluator(final ConfigurationService configurationService,
                                final NotSupportedCommand notSupportedCommand,
                                final ApplicationContext applicationContext,
-                               final Collection<Command> commands) {
+                               final Collection<Command<?, ?>> commands) {
     this(
       configurationService,
       notSupportedCommand,
       applicationContext,
       commands.stream()
-        .collect(Collectors.toMap(Command::createCommandKey, c -> applicationContext.getBean(c.getClass())))
+        .collect(Collectors.toMap(
+          Command::createCommandKey,
+          c -> applicationContext.getBean(c.getClass())
+        ))
     );
   }
 
-  <T extends ReportDefinitionDto<?>> ReportEvaluationResult<?, T> evaluate(CommandContext<T> commandContext)
+  @SuppressWarnings(UNCHECKED_CAST)
+  public <T> SingleReportEvaluationResult<T> evaluate(
+    final ReportEvaluationContext<ReportDefinitionDto<?>> reportEvaluationContext)
     throws OptimizeException {
-    Command<T> evaluationCommand = extractCommandWithValidation(commandContext);
-    return evaluationCommand.evaluate(commandContext);
+    List<Command<T, ReportDefinitionDto<?>>> commands = extractCommandsWithValidation(reportEvaluationContext);
+    final List<CommandEvaluationResult<T>> commandEvaluationResults = new ArrayList<>();
+    for (Command<?, ReportDefinitionDto<?>> command : commands) {
+      commandEvaluationResults.add((CommandEvaluationResult<T>) command.evaluate(reportEvaluationContext));
+    }
+    return new SingleReportEvaluationResult<>(reportEvaluationContext.getReportDefinition(), commandEvaluationResults);
   }
 
-  private <T extends ReportDefinitionDto<?>> Command<T> extractCommandWithValidation(CommandContext<T> commandContext) {
-    final T reportDefinition = commandContext.getReportDefinition();
+  @SuppressWarnings(UNCHECKED_CAST)
+  public <T, R extends ReportDefinitionDto<?>> List<Command<T, R>> extractCommands(R reportDefinition) {
+    return reportDefinition
+      .getData()
+      .createCommandKeys()
+      .stream()
+      .map(commandKey -> (Command<T, R>) commandSuppliers.getOrDefault(commandKey, notSupportedCommand))
+      .collect(Collectors.toList());
+  }
+
+  private <T, R extends ReportDefinitionDto<?>> List<Command<T, R>> extractCommandsWithValidation(
+    final ReportEvaluationContext<R> reportEvaluationContext) {
+    final R reportDefinition = reportEvaluationContext.getReportDefinition();
     ValidationHelper.validate(reportDefinition.getData());
-    final Command<T> command = extractCommand(reportDefinition);
-    validatePaginationValues(commandContext, command);
-    return command;
+    final List<Command<T, R>> commands = extractCommands(reportDefinition);
+    commands.forEach(command -> validatePaginationValues(reportEvaluationContext, command));
+    return commands;
   }
 
-  private <T extends ReportDefinitionDto<?>> void validatePaginationValues(final CommandContext<T> commandContext,
-                                                                           final Command<T> command) {
+  private <T extends ReportDefinitionDto<?>> void validatePaginationValues(
+    final ReportEvaluationContext<T> reportEvaluationContext,
+    final Command<?, T> command) {
     if (isRawDataReport(command)) {
-      addDefaultMissingPaginationValues(commandContext);
+      addDefaultMissingPaginationValues(reportEvaluationContext);
     } else {
-      Optional.ofNullable(commandContext.getPagination())
+      Optional.ofNullable(reportEvaluationContext.getPagination())
         .ifPresent(pagination -> {
           if (pagination.getLimit() != null || pagination.getOffset() != null) {
             throw new OptimizeValidationException("Pagination can only be applied to raw data reports");
@@ -84,18 +109,19 @@ public class SingleReportEvaluator {
     }
   }
 
-  private <T extends ReportDefinitionDto<?>> void addDefaultMissingPaginationValues(final CommandContext<T> commandContext) {
+  private <T extends ReportDefinitionDto<?>> void addDefaultMissingPaginationValues(
+    final ReportEvaluationContext<T> reportEvaluationContext) {
     final int offset;
     final int limit;
-    if (commandContext.isExport()) {
+    if (reportEvaluationContext.isExport()) {
       offset = 0;
       limit = Optional.ofNullable(configurationService.getExportCsvLimit()).orElse(DEFAULT_RECORD_LIMIT);
     } else {
-      offset = Optional.ofNullable(commandContext.getPagination())
+      offset = Optional.ofNullable(reportEvaluationContext.getPagination())
         .filter(pag -> pag.getOffset() != null)
         .map(PaginationDto::getOffset)
         .orElse(DEFAULT_OFFSET);
-      limit = Optional.ofNullable(commandContext.getPagination())
+      limit = Optional.ofNullable(reportEvaluationContext.getPagination())
         .filter(pag -> pag.getLimit() != null)
         .map(PaginationDto::getLimit)
         .orElse(DEFAULT_LIMIT);
@@ -103,16 +129,11 @@ public class SingleReportEvaluator {
     final PaginationDto completePagination = new PaginationDto();
     completePagination.setOffset(offset);
     completePagination.setLimit(limit);
-    commandContext.setPagination(completePagination);
+    reportEvaluationContext.setPagination(completePagination);
   }
 
-  private <T extends ReportDefinitionDto<?>> boolean isRawDataReport(final Command<T> command) {
+  private <R extends ReportDefinitionDto<?>> boolean isRawDataReport(final Command<?, R> command) {
     return command instanceof RawDecisionInstanceDataGroupByNoneCmd
       || command instanceof RawProcessInstanceDataGroupByNoneCmd;
-  }
-
-  @SuppressWarnings(value = "unchecked")
-  <T extends ReportDefinitionDto<?>> Command<T> extractCommand(T reportDefinition) {
-    return commandSuppliers.getOrDefault(reportDefinition.getData().createCommandKey(), notSupportedCommand);
   }
 }

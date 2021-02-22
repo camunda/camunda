@@ -3,20 +3,20 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command;
+package org.camunda.optimize.service.es.report;
 
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
-import org.camunda.optimize.service.es.report.MinMaxStatDto;
-import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 
 import java.time.ZoneId;
 
-@Data
-public class CommandContext<T extends ReportDefinitionDto> {
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
-  private T reportDefinition;
+@Data
+public class ReportEvaluationContext<R extends ReportDefinitionDto<?>> {
+
+  private R reportDefinition;
   private PaginationDto pagination;
   private boolean isExport;
 
@@ -26,9 +26,10 @@ public class CommandContext<T extends ReportDefinitionDto> {
   // users can define which timezone the date data should be based on
   private ZoneId timezone = ZoneId.systemDefault();
 
-  public static CommandContext<ReportDefinitionDto<?>> fromReportEvaluation(final ReportEvaluationInfo evaluationInfo) {
-    CommandContext<ReportDefinitionDto<?>> context = new CommandContext<>();
-    context.setReportDefinition(evaluationInfo.getReport());
+  @SuppressWarnings(UNCHECKED_CAST)
+  public static <R extends ReportDefinitionDto<?>> ReportEvaluationContext<R> fromReportEvaluation(final ReportEvaluationInfo evaluationInfo) {
+    ReportEvaluationContext<R> context = new ReportEvaluationContext<>();
+    context.setReportDefinition((R) evaluationInfo.getReport());
     context.setTimezone(evaluationInfo.getTimezone());
     context.setPagination(evaluationInfo.getPagination());
     context.setExport(evaluationInfo.isExport());

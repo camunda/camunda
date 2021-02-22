@@ -9,11 +9,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
-import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -25,10 +22,8 @@ import java.util.TreeMap;
 @Slf4j
 public class RawProcessDataResultDtoMapper {
 
-  public RawDataProcessReportResultDto mapFrom(final List<ProcessInstanceDto> processInstanceDtos,
-                                               final long totalHits,
-                                               final ExecutionContext<ProcessReportDataDto> context,
-                                               final ObjectMapper objectMapper) {
+  public List<RawDataProcessInstanceDto> mapFrom(final List<ProcessInstanceDto> processInstanceDtos,
+                                                 final ObjectMapper objectMapper) {
     final List<RawDataProcessInstanceDto> rawData = new ArrayList<>();
     final Set<String> allVariableNames = new HashSet<>();
     processInstanceDtos
@@ -41,7 +36,7 @@ public class RawProcessDataResultDtoMapper {
 
     ensureEveryRawDataInstanceContainsAllVariableNames(rawData, allVariableNames);
 
-    return createResult(rawData, totalHits, context);
+    return rawData;
   }
 
   private void ensureEveryRawDataInstanceContainsAllVariableNames(final List<RawDataProcessInstanceDto> rawData,
@@ -84,17 +79,6 @@ public class RawProcessDataResultDtoMapper {
       }
 
     }
-    return result;
-  }
-
-  private RawDataProcessReportResultDto createResult(final List<RawDataProcessInstanceDto> limitedRawDataResult,
-                                                     final Long totalHits,
-                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final RawDataProcessReportResultDto result = new RawDataProcessReportResultDto();
-    result.addMeasureData(limitedRawDataResult);
-    result.setInstanceCount(totalHits);
-    result.setInstanceCountWithoutFilters(context.getUnfilteredInstanceCount());
-    result.setPagination(context.getPagination());
     return result;
   }
 

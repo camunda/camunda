@@ -12,27 +12,29 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
+import org.camunda.optimize.service.es.report.result.HyperMapCommandResult;
+import org.camunda.optimize.service.es.report.result.MapCommandResult;
+import org.camunda.optimize.service.es.report.result.NumberCommandResult;
+import org.camunda.optimize.service.es.report.result.RawDataCommandResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +43,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Data
 @Accessors(chain = true)
@@ -51,6 +54,7 @@ public class CompositeCommandResult {
   private ReportSortingDto distributedBySorting = new ReportSortingDto();
   private boolean isGroupByKeyOfNumericType = false;
   private boolean isDistributedByKeyOfNumericType = false;
+  private ViewProperty viewProperty;
 
   private List<GroupByResult> groups = new ArrayList<>();
 
@@ -58,23 +62,23 @@ public class CompositeCommandResult {
     this.groups = singletonList(groupByResult);
   }
 
-  public ReportHyperMapResultDto transformToHyperMap() {
-    ReportHyperMapResultDto resultDto = new ReportHyperMapResultDto();
-    List<HyperMapResultEntryDto> measureData = new ArrayList<>();
+  public CommandEvaluationResult<List<HyperMapResultEntryDto>> transformToHyperMap() {
+    List<HyperMapResultEntryDto> hyperMapData = new ArrayList<>();
     for (GroupByResult group : groups) {
       List<MapResultEntryDto> distribution = group.distributions.stream()
         .map(DistributedByResult::getValueAsMapResultEntry)
         .sorted(getSortingComparator(distributedBySorting, isDistributedByKeyOfNumericType))
         .collect(Collectors.toList());
-      measureData.add(new HyperMapResultEntryDto(group.getKey(), distribution, group.getLabel()));
+      hyperMapData.add(new HyperMapResultEntryDto(group.getKey(), distribution, group.getLabel()));
     }
-    resultDto.addMeasure(createMeasureDto(measureData));
-    sortHypermapResultData(groupBySorting, isGroupByKeyOfNumericType, resultDto);
-    return resultDto;
+    sortHypermapResultData(groupBySorting, isGroupByKeyOfNumericType, hyperMapData);
+    return new HyperMapCommandResult(
+      Collections.singletonList(createMeasureDto(hyperMapData)),
+      (ProcessReportDataDto) reportDataDto
+    );
   }
 
-  public ReportMapResultDto transformToMap() {
-    ReportMapResultDto resultDto = new ReportMapResultDto();
+  public CommandEvaluationResult<List<MapResultEntryDto>> transformToMap() {
     List<MapResultEntryDto> mapData = new ArrayList<>();
     for (GroupByResult group : groups) {
       final List<DistributedByResult> distributions = group.getDistributions();
@@ -82,17 +86,17 @@ public class CompositeCommandResult {
         final Double value = distributions.get(0).getValueAsDouble();
         mapData.add(new MapResultEntryDto(group.getKey(), value, group.getLabel()));
       } else {
-        throw new OptimizeRuntimeException(createErrorMessage(ReportMapResultDto.class, DistributedByType.class));
+        throw new OptimizeRuntimeException(createErrorMessage(MapCommandResult.class, DistributedByType.class));
       }
     }
     mapData.sort(getSortingComparator(groupBySorting, isGroupByKeyOfNumericType));
-    resultDto.addMeasure(createMeasureDto(mapData));
-    return resultDto;
+    return new MapCommandResult(Collections.singletonList(createMeasureDto(mapData)), reportDataDto);
   }
 
-  public NumberResultDto transformToNumber() {
-    NumberResultDto numberResultDto = new NumberResultDto();
+  public CommandEvaluationResult<Double> transformToNumber() {
+    final NumberCommandResult numberResultDto = new NumberCommandResult(reportDataDto);
     if (groups.isEmpty()) {
+      numberResultDto.addMeasure(createMeasureDto(0.));
       return numberResultDto;
     } else if (groups.size() == 1) {
       final List<DistributedByResult> distributions = groups.get(0).distributions;
@@ -101,57 +105,40 @@ public class CompositeCommandResult {
         numberResultDto.addMeasure(createMeasureDto(value));
         return numberResultDto;
       } else {
-        throw new OptimizeRuntimeException(createErrorMessage(NumberResultDto.class, DistributedByType.class));
+        throw new OptimizeRuntimeException(createErrorMessage(NumberCommandResult.class, DistributedByType.class));
       }
     } else {
-      throw new OptimizeRuntimeException(createErrorMessage(NumberResultDto.class, GroupByResult.class));
+      throw new OptimizeRuntimeException(createErrorMessage(NumberCommandResult.class, GroupByResult.class));
     }
   }
 
-  public RawDataProcessReportResultDto transformToProcessRawData() {
+  @SuppressWarnings(UNCHECKED_CAST)
+  public <T extends RawDataInstanceDto> CommandEvaluationResult<List<T>> transformToRawData() {
+    final RawDataCommandResult<T> rawDataCommandResult = new RawDataCommandResult<>(reportDataDto);
     if (groups.isEmpty()) {
-      return new RawDataProcessReportResultDto();
+      rawDataCommandResult.addMeasure(createMeasureDto(Collections.emptyList()));
+      return rawDataCommandResult;
     } else if (groups.size() == 1) {
       final List<DistributedByResult> distributions = groups.get(0).distributions;
       if (distributions.size() == 1) {
-        return distributions.get(0).getViewResult().getProcessRawData();
+        rawDataCommandResult.addMeasure(
+          createMeasureDto((List<T>) distributions.get(0).getViewResult().getRawData())
+        );
+        return rawDataCommandResult;
       } else {
-        throw new OptimizeRuntimeException(createErrorMessage(
-          RawDataProcessReportResultDto.class,
-          DistributedByType.class
-        ));
+        throw new OptimizeRuntimeException(createErrorMessage(RawDataCommandResult.class, DistributedByType.class));
       }
     } else {
-      throw new OptimizeRuntimeException(createErrorMessage(RawDataProcessReportResultDto.class, GroupByResult.class));
-    }
-  }
-
-  public RawDataDecisionReportResultDto transformToDecisionRawData() {
-    if (groups.isEmpty()) {
-      return new RawDataDecisionReportResultDto();
-    } else if (groups.size() == 1) {
-      final List<DistributedByResult> distributions = groups.get(0).distributions;
-      if (distributions.size() == 1) {
-        return distributions.get(0).getViewResult().getDecisionRawData();
-      } else {
-        throw new OptimizeRuntimeException(createErrorMessage(
-          RawDataDecisionReportResultDto.class,
-          DistributedByType.class
-        ));
-      }
-    } else {
-      throw new OptimizeRuntimeException(createErrorMessage(RawDataDecisionReportResultDto.class, GroupByResult.class));
+      throw new OptimizeRuntimeException(createErrorMessage(RawDataCommandResult.class, GroupByResult.class));
     }
   }
 
   private <T> MeasureDto<T> createMeasureDto(final T value) {
-    return new MeasureDto<>(
-      reportDataDto.getViewProperties().get(0), getAggregationType(), getUserTaskDurationTime(), value
-    );
+    return new MeasureDto<>(viewProperty, getAggregationType(), getUserTaskDurationTime(), value);
   }
 
   private AggregationType getAggregationType() {
-    return ViewProperty.DURATION.equals(reportDataDto.getViewProperties().get(0))
+    return ViewProperty.DURATION.equals(viewProperty)
       ? reportDataDto.getConfiguration().getAggregationTypes().get(0)
       : null;
   }
@@ -159,7 +146,7 @@ public class CompositeCommandResult {
   private UserTaskDurationTime getUserTaskDurationTime() {
     if (reportDataDto instanceof ProcessReportDataDto) {
       return ProcessViewEntity.USER_TASK.equals(((ProcessReportDataDto) reportDataDto).getView().getEntity())
-        && ViewProperty.DURATION.equals(reportDataDto.getViewProperties().get(0))
+        && ViewProperty.DURATION.equals(viewProperty)
         ? reportDataDto.getConfiguration().getUserTaskDurationTimes().get(0)
         : null;
     } else {
@@ -208,9 +195,9 @@ public class CompositeCommandResult {
     return comparator;
   }
 
-  private void sortHypermapResultData(final ReportSortingDto sortingDto, final boolean keyIsOfNumericType,
-                                      final ReportHyperMapResultDto resultDto) {
-    List<HyperMapResultEntryDto> data = resultDto.getFirstMeasureData();
+  private void sortHypermapResultData(final ReportSortingDto sortingDto,
+                                      final boolean keyIsOfNumericType,
+                                      final List<HyperMapResultEntryDto> data) {
     if (data.isEmpty()) {
       return;
     }
@@ -363,9 +350,7 @@ public class CompositeCommandResult {
   @Accessors(chain = true)
   @Data
   public static class ViewResult {
-
     private Double number;
-    private RawDataProcessReportResultDto processRawData;
-    private RawDataDecisionReportResultDto decisionRawData;
+    private List<? extends RawDataInstanceDto> rawData;
   }
 }

@@ -9,12 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.InputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.OutputInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
-import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,9 +25,7 @@ import static java.util.stream.Collectors.toMap;
 @Slf4j
 public class RawDecisionDataResultDtoMapper {
 
-  public RawDataDecisionReportResultDto mapFrom(final List<DecisionInstanceDto> decisionInstanceDtos,
-                                                final long totalHits,
-                                                final ExecutionContext<DecisionReportDataDto> context) {
+  public List<RawDataDecisionInstanceDto> mapFrom(final List<DecisionInstanceDto> decisionInstanceDtos) {
     final List<RawDataDecisionInstanceDto> rawData = new ArrayList<>();
     final Set<InputVariableEntry> allInputVariablesWithBlankValue = new LinkedHashSet<>();
     final Set<OutputVariableEntry> allOutputVariablesWithNoValues = new LinkedHashSet<>();
@@ -48,7 +43,7 @@ public class RawDecisionDataResultDtoMapper {
       rawData, allInputVariablesWithBlankValue, allOutputVariablesWithNoValues
     );
 
-    return createResult(rawData, totalHits, context);
+    return rawData;
   }
 
   private void ensureEveryRawDataInstanceContainsAllVariables(final List<RawDataDecisionInstanceDto> rawData,
@@ -127,17 +122,6 @@ public class RawDecisionDataResultDtoMapper {
       outputInstanceDto.getType(),
       outputInstanceDto.getValue()
     );
-  }
-
-  private RawDataDecisionReportResultDto createResult(final List<RawDataDecisionInstanceDto> limitedRawDataResult,
-                                                      final Long totalHits,
-                                                      final ExecutionContext<DecisionReportDataDto> context) {
-    final RawDataDecisionReportResultDto result = new RawDataDecisionReportResultDto();
-    result.addMeasureData(limitedRawDataResult);
-    result.setInstanceCount(totalHits);
-    result.setInstanceCountWithoutFilters(context.getUnfilteredInstanceCount());
-    result.setPagination(context.getPagination());
-    return result;
   }
 
 }

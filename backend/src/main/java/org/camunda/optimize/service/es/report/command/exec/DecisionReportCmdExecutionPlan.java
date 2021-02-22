@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.es.report.command.exec;
 
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
@@ -25,8 +25,7 @@ import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefini
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 
 @Slf4j
-public class DecisionReportCmdExecutionPlan<R extends DecisionReportResultDto>
-  extends ReportCmdExecutionPlan<R, DecisionReportDataDto> {
+public class DecisionReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, DecisionReportDataDto> {
 
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final DecisionQueryFilterEnhancer queryFilterEnhancer;
@@ -34,7 +33,7 @@ public class DecisionReportCmdExecutionPlan<R extends DecisionReportResultDto>
   public DecisionReportCmdExecutionPlan(final ViewPart<DecisionReportDataDto> viewPart,
                                         final GroupByPart<DecisionReportDataDto> groupByPart,
                                         final DistributedByPart<DecisionReportDataDto> distributedByPart,
-                                        final Function<CompositeCommandResult, R> mapToReportResult,
+                                        final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult,
                                         final OptimizeElasticsearchClient esClient,
                                         final DecisionDefinitionReader decisionDefinitionReader,
                                         final DecisionQueryFilterEnhancer queryFilterEnhancer) {

@@ -9,12 +9,9 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.service.es.report.result.decision.SingleDecisionRawDataReportResult;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDataReportResult;
+import org.camunda.optimize.service.es.report.result.RawDataCommandResult;
 import org.junit.jupiter.api.Test;
 
 import java.time.ZoneId;
@@ -81,8 +78,6 @@ public class CSVUtilsTest {
   public void testRawProcessResultMapping_withIncludingAndExcludingFields() {
     // given
     List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
-    final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
-    rawDataProcessReportResultDto.addMeasureData(toMap);
 
     List<String> excludedColumns = Lists.newArrayList(RawDataProcessInstanceDto.class.getDeclaredFields()[0].getName());
 
@@ -92,8 +87,8 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().setIncludeNewVariables(false);
 
     // when
-    SingleProcessRawDataReportResult rawDataReportResult =
-      new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(toMap, reportDefinition.getData());
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
@@ -107,8 +102,6 @@ public class CSVUtilsTest {
   public void testRawProcessResultMapping_withIncludingAndExcludingSameFieldExcludeWins() {
     // given
     List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
-    final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
-    rawDataProcessReportResultDto.addMeasureData(toMap);
 
     List<String> includedColumns = extractAllProcessInstanceDtoFieldKeys();
     List<String> excludedColumns = Lists.newArrayList(
@@ -124,8 +117,8 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().setIncludeNewVariables(false);
 
     // when
-    SingleProcessRawDataReportResult rawDataReportResult =
-      new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(toMap, reportDefinition.getData());
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
@@ -139,8 +132,6 @@ public class CSVUtilsTest {
   public void testRawProcessResultMapping_withExcludingVariables() {
     // given
     List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
-    final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
-    rawDataProcessReportResultDto.addMeasureData(toMap);
 
     List<String> firstRowVariableColumnNames = Lists.newArrayList(toMap.get(0).getVariables().keySet());
     List<String> excludedColumns = Lists.newArrayList(VARIABLE_PREFIX + firstRowVariableColumnNames.get(0));
@@ -148,8 +139,8 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
     // when
-    SingleProcessRawDataReportResult rawDataReportResult =
-      new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(toMap, reportDefinition.getData());
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
@@ -163,8 +154,6 @@ public class CSVUtilsTest {
   public void testRawProcessResultMapping_withIncludingVariables() {
     // given
     List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
-    final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
-    rawDataProcessReportResultDto.addMeasureData(toMap);
 
     List<String> firstRowVariableColumnNames = Lists.newArrayList(toMap.get(0).getVariables().keySet());
     List<String> includedColumns = Lists.newArrayList(VARIABLE_PREFIX + firstRowVariableColumnNames.get(0));
@@ -174,8 +163,8 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().setIncludeNewVariables(false);
 
     // when
-    SingleProcessRawDataReportResult rawDataReportResult =
-      new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(toMap, reportDefinition.getData());
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
@@ -188,8 +177,6 @@ public class CSVUtilsTest {
   public void testRawProcessResultMapping_withIncludingVariableAndExcludingSameVariableExcludeWins() {
     // given
     List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
-    final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
-    rawDataProcessReportResultDto.addMeasureData(toMap);
 
     List<String> firstRowVariableColumnNames = Lists.newArrayList(toMap.get(0).getVariables().keySet());
     List<String> includedColumns = Lists.newArrayList(
@@ -206,8 +193,8 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
     // when
-    SingleProcessRawDataReportResult rawDataReportResult =
-      new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(toMap, reportDefinition.getData());
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
@@ -247,8 +234,6 @@ public class CSVUtilsTest {
   public void testRawDecisionResultMapping_withExcludingFields() {
     // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
-    final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
-    rawDatadecisionReportResultDto.addMeasureData(toMap);
     List<String> excludedColumns = Lists.newArrayList(
       RawDataDecisionInstanceDto.class.getDeclaredFields()[0].getName(),
       RawDataDecisionInstanceDto.class.getDeclaredFields()[1].getName()
@@ -260,8 +245,8 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().setIncludeNewVariables(false);
 
     // when
-    SingleDecisionRawDataReportResult rawDataReportResult =
-      new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(toMap, reportDefinition.getData());
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
@@ -275,8 +260,6 @@ public class CSVUtilsTest {
   public void testRawDecisionResultMapping_withIncludingFieldAndExcludingSameFieldExcludeWins() {
     // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
-    final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
-    rawDatadecisionReportResultDto.addMeasureData(toMap);
 
     List<String> includedColumns = Lists.newArrayList(
       RawDataDecisionInstanceDto.class.getDeclaredFields()[1].getName()
@@ -292,8 +275,8 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
     // when
-    SingleDecisionRawDataReportResult rawDataReportResult =
-      new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(toMap, reportDefinition.getData());
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
@@ -307,8 +290,6 @@ public class CSVUtilsTest {
   public void testRawDecisionResultMapping_withExcludingInputVariables() {
     // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
-    final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
-    rawDatadecisionReportResultDto.addMeasureData(toMap);
     List<String> firstRowInputVariableColumnNames = Lists.newArrayList(toMap.get(0).getInputVariables().keySet());
     List<String> excludedColumns = Lists.newArrayList(INPUT_PREFIX + firstRowInputVariableColumnNames.get(1));
 
@@ -316,8 +297,8 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
     // when
-    SingleDecisionRawDataReportResult rawDataReportResult =
-      new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(toMap, reportDefinition.getData());
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
@@ -331,8 +312,6 @@ public class CSVUtilsTest {
   public void testRawDecisionResultMapping_withIncludingInputVariables() {
     // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
-    final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
-    rawDatadecisionReportResultDto.addMeasureData(toMap);
     List<String> firstRowInputVariableColumnNames = Lists.newArrayList(toMap.get(0).getInputVariables().keySet());
     List<String> includedColumns = Lists.newArrayList(INPUT_PREFIX + firstRowInputVariableColumnNames.get(1));
 
@@ -341,8 +320,8 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().setIncludeNewVariables(false);
 
     // when
-    SingleDecisionRawDataReportResult rawDataReportResult =
-      new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(toMap, reportDefinition.getData());
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
@@ -356,8 +335,6 @@ public class CSVUtilsTest {
   public void testRawDecisionResultMapping_withIncludingInputVariableAndExcludingSameVariableExcludeWins() {
     // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
-    final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
-    rawDatadecisionReportResultDto.addMeasureData(toMap);
     List<String> firstRowInputVariableColumnNames = Lists.newArrayList(toMap.get(0).getInputVariables().keySet());
     List<String> includedColumns = Lists.newArrayList(
       INPUT_PREFIX + firstRowInputVariableColumnNames.get(1)
@@ -371,8 +348,8 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
     // when
-    SingleDecisionRawDataReportResult rawDataReportResult =
-      new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(toMap, reportDefinition.getData());
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
@@ -386,8 +363,6 @@ public class CSVUtilsTest {
   public void testRawDecisionResultMapping_withExcludingOutputVariable() {
     // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
-    final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
-    rawDatadecisionReportResultDto.addMeasureData(toMap);
     List<String> firstRowOutputVariableColumnNames = Lists.newArrayList(toMap.get(0).getOutputVariables().keySet());
     List<String> excludedColumns =
       Lists.newArrayList(OUTPUT_PREFIX + firstRowOutputVariableColumnNames.get(0));
@@ -396,8 +371,8 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
     // when
-    SingleDecisionRawDataReportResult rawDataReportResult =
-      new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(toMap, reportDefinition.getData());
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
@@ -411,8 +386,6 @@ public class CSVUtilsTest {
   public void testRawDecisionResultMapping_withIncludingOutputVariable() {
     // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
-    final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
-    rawDatadecisionReportResultDto.addMeasureData(toMap);
     List<String> firstRowOutputVariableColumnNames = Lists.newArrayList(toMap.get(0).getOutputVariables().keySet());
     List<String> includedColumns =
       Lists.newArrayList(OUTPUT_PREFIX + firstRowOutputVariableColumnNames.get(0));
@@ -422,8 +395,8 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().setIncludeNewVariables(false);
 
     // when
-    SingleDecisionRawDataReportResult rawDataReportResult =
-      new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(toMap, reportDefinition.getData());
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
@@ -437,8 +410,6 @@ public class CSVUtilsTest {
   public void testRawDecisionResultMapping_withIncludingOutputVariableAndExcludingSameVariableExcludeWins() {
     // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
-    final RawDataDecisionReportResultDto rawDatadecisionReportResultDto = new RawDataDecisionReportResultDto();
-    rawDatadecisionReportResultDto.addMeasureData(toMap);
     List<String> firstRowOutputVariableColumnNames = Lists.newArrayList(toMap.get(0).getOutputVariables().keySet());
     List<String> includedColumns = Collections.singletonList(
       OUTPUT_PREFIX + firstRowOutputVariableColumnNames.get(1)
@@ -452,8 +423,8 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
     // when
-    SingleDecisionRawDataReportResult rawDataReportResult =
-      new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
+    RawDataCommandResult rawDataReportResult =
+      new RawDataCommandResult(toMap, reportDefinition.getData());
     List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then

@@ -5,28 +5,27 @@
  */
 package org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby.date.distributed_by.candidate_group.assignee;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
-import org.camunda.optimize.service.es.report.command.CommandContext;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByCandidateGroup;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.date.ProcessGroupByUserTaskEndDate;
 import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountUserTaskFrequency;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessHyperMapReportResult;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
-public class UserTaskFrequencyGroupByUserTaskEndDateByCandidateGroupCmd extends ProcessCmd<ReportHyperMapResultDto> {
+public class UserTaskFrequencyGroupByUserTaskEndDateByCandidateGroupCmd
+  extends ProcessCmd<List<HyperMapResultEntryDto>> {
 
   public UserTaskFrequencyGroupByUserTaskEndDateByCandidateGroupCmd(final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
   @Override
-  protected ProcessReportCmdExecutionPlan<ReportHyperMapResultDto> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
+  protected ProcessReportCmdExecutionPlan<List<HyperMapResultEntryDto>> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
     return builder.createExecutionPlan()
       .processCommand()
       .view(ProcessViewCountUserTaskFrequency.class)
@@ -36,9 +35,4 @@ public class UserTaskFrequencyGroupByUserTaskEndDateByCandidateGroupCmd extends 
       .build();
   }
 
-  @Override
-  public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext) {
-    final ReportHyperMapResultDto evaluate = executionPlan.evaluate(commandContext);
-    return new SingleProcessHyperMapReportResult(evaluate, commandContext.getReportDefinition());
-  }
 }

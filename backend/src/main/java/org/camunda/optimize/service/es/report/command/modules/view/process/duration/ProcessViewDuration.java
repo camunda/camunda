@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.command.modules.view.process.duration;
 
 import org.apache.commons.math3.util.Precision;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
@@ -35,6 +36,11 @@ public abstract class ProcessViewDuration extends ProcessViewPart {
     aggregationStrategyMap.put(AggregationType.MAX, new MaxAggregation());
     aggregationStrategyMap.put(AggregationType.AVERAGE, new AvgAggregation());
     aggregationStrategyMap.put(AggregationType.MEDIAN, new MedianAggregation());
+  }
+
+  @Override
+  public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {
+    return ViewProperty.DURATION;
   }
 
   @Override

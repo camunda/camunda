@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
-import org.camunda.optimize.service.es.report.command.CommandContext;
+import org.camunda.optimize.service.es.report.ReportEvaluationContext;
 import org.elasticsearch.index.query.QueryBuilder;
 
 import java.time.ZoneId;
@@ -45,12 +45,12 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
   // in all groupByResults (with 0 if they have not been assigned to said task)
   private Map<String, String> allDistributedByKeysAndLabels = new HashMap<>();
 
-  public <RD extends ReportDefinitionDto<ReportData>> ExecutionContext(final CommandContext<RD> commandContext) {
-    this.reportData = commandContext.getReportDefinition().getData();
-    this.timezone = commandContext.getTimezone();
-    this.combinedRangeMinMaxStats = commandContext.getCombinedRangeMinMaxStats();
-    this.pagination = commandContext.getPagination();
-    this.isExport = commandContext.isExport();
+  public <RD extends ReportDefinitionDto<ReportData>> ExecutionContext(final ReportEvaluationContext<RD> reportEvaluationContext) {
+    this.reportData = reportEvaluationContext.getReportDefinition().getData();
+    this.timezone = reportEvaluationContext.getTimezone();
+    this.combinedRangeMinMaxStats = reportEvaluationContext.getCombinedRangeMinMaxStats();
+    this.pagination = reportEvaluationContext.getPagination();
+    this.isExport = reportEvaluationContext.isExport();
   }
 
   public SingleReportConfigurationDto getReportConfiguration() {

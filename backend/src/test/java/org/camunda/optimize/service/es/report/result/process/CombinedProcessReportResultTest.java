@@ -6,19 +6,20 @@
 package org.camunda.optimize.service.es.report.result.process;
 
 import com.google.common.collect.Lists;
+import org.camunda.optimize.dto.optimize.query.report.CombinedReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.es.report.result.MapCommandResult;
+import org.camunda.optimize.service.es.report.result.NumberCommandResult;
 import org.camunda.optimize.service.export.CSVUtils;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -28,7 +29,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Stream;
@@ -40,25 +41,31 @@ public class CombinedProcessReportResultTest {
   @Test
   public void testGetResultAsCsvForMapResult() {
     // given
-    final ReportMapResultDto mapResultDto = new ReportMapResultDto();
+    final ProcessReportDataDto processReportDataDto = createProcessReportDataForType(
+      ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE
+    );
     final List<MapResultEntryDto> resultDtoMap = new ArrayList<>();
     resultDtoMap.add(new MapResultEntryDto("900.0", 1.));
     resultDtoMap.add(new MapResultEntryDto("10.99", 1.));
-    mapResultDto.addMeasure(MeasureDto.of(ViewProperty.RAW_DATA, resultDtoMap));
-    final List<SingleReportResultDto> mapResultDtos = Lists.newArrayList(
-      mapResultDto,
-      mapResultDto
-    );
-
-    CombinedProcessReportResult underTest = createTestCombinedProcessReportResult(
-      ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE,
-      mapResultDtos,
-      AggregationType.AVERAGE
+    final List<MapCommandResult> mapResults = Lists.newArrayList(
+      new MapCommandResult(
+        Collections.singletonList(
+          MeasureDto.of(processReportDataDto.getViewProperties().get(0), resultDtoMap)
+        ),
+        processReportDataDto
+      ),
+      new MapCommandResult(
+        Collections.singletonList(
+          MeasureDto.of(processReportDataDto.getViewProperties().get(0), resultDtoMap)
+        ),
+        processReportDataDto
+      )
     );
 
     // when
+    CombinedReportEvaluationResult underTest =
+      createTestCombinedProcessReportResult(mapResults);
     List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
-
 
     // then
     assertThat(resultAsCsv.get(0)).isEqualTo(new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""});
@@ -92,26 +99,27 @@ public class CombinedProcessReportResultTest {
 
   @Test
   public void testGetResultAsCsvForNumberResult() {
-
     // given
-    final NumberResultDto numberResultDto1 = new NumberResultDto();
-    numberResultDto1.addMeasure(MeasureDto.of(ViewProperty.FREQUENCY, 5.));
-
-    final NumberResultDto numberResultDto2 = new NumberResultDto();
-    numberResultDto2.addMeasure(MeasureDto.of(ViewProperty.FREQUENCY, 2.));
-
-    final ArrayList<SingleReportResultDto> resultDtos = Lists.newArrayList(
-      numberResultDto1,
-      numberResultDto2
+    final ProcessReportDataDto processReportDataDto = createProcessReportDataForType(
+      ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE
     );
-
-    CombinedProcessReportResult underTest = createTestCombinedProcessReportResult(
-      ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE,
-      resultDtos,
-      AggregationType.AVERAGE
+    final List<NumberCommandResult> numberResults = Lists.newArrayList(
+      new NumberCommandResult(
+        Collections.singletonList(
+          MeasureDto.of(processReportDataDto.getViewProperties().get(0), 5.)
+        ),
+        processReportDataDto
+      ),
+      new NumberCommandResult(
+        Collections.singletonList(
+          MeasureDto.of(processReportDataDto.getViewProperties().get(0), 2.)
+        ),
+        processReportDataDto
+      )
     );
 
     // when
+    CombinedReportEvaluationResult underTest = createTestCombinedProcessReportResult(numberResults);
     final List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
     // then
@@ -125,22 +133,27 @@ public class CombinedProcessReportResultTest {
   @MethodSource("allAggregationTypesWithoutSum")
   public void testGetResultAsCsvForDurationNumberResult(final AggregationType aggregationType) {
     // given
-
-    final NumberResultDto durReportDto = new NumberResultDto();
-    durReportDto.addMeasure(MeasureDto.of(ViewProperty.DURATION, 6.));
-
-    final ArrayList<SingleReportResultDto> resultDtos = Lists.newArrayList(
-      durReportDto,
-      durReportDto
+    final ProcessReportDataDto processReportDataDto = createProcessReportDataForType(
+      ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE
     );
-
-    CombinedProcessReportResult underTest = createTestCombinedProcessReportResult(
-      ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE,
-      resultDtos,
-      aggregationType
+    processReportDataDto.getConfiguration().setAggregationTypes(aggregationType);
+    final List<NumberCommandResult> numberResults = Lists.newArrayList(
+      new NumberCommandResult(
+        Collections.singletonList(
+          MeasureDto.of(processReportDataDto.getViewProperties().get(0), 6.)
+        ),
+        processReportDataDto
+      ),
+      new NumberCommandResult(
+        Collections.singletonList(
+          MeasureDto.of(processReportDataDto.getViewProperties().get(0), 6.)
+        ),
+        processReportDataDto
+      )
     );
 
     // when
+    CombinedReportEvaluationResult underTest = createTestCombinedProcessReportResult(numberResults);
     final List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
     // then
@@ -160,26 +173,31 @@ public class CombinedProcessReportResultTest {
   @MethodSource("allAggregationTypesWithoutSum")
   public void testGetResultAsCsvForDurationMapResult(final AggregationType aggregationType) {
     // given
-
-    final ReportMapResultDto durMapReportDto = new ReportMapResultDto();
-
-    List<MapResultEntryDto> data = new ArrayList<>();
-    data.add(new MapResultEntryDto("test1", 3.));
-    data.add(new MapResultEntryDto("test2", 6.));
-    durMapReportDto.addMeasure(MeasureDto.of(ViewProperty.DURATION, data));
-
-    final ArrayList<SingleReportResultDto> resultDtos = Lists.newArrayList(
-      durMapReportDto,
-      durMapReportDto
+    final ProcessReportDataDto processReportDataDto = createProcessReportDataForType(
+      ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE
     );
-
-    CombinedProcessReportResult underTest = createTestCombinedProcessReportResult(
-      ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE,
-      resultDtos,
-      aggregationType
+    processReportDataDto.getConfiguration().setAggregationTypes(aggregationType);
+    final List<MapResultEntryDto> resultDtoMap = new ArrayList<>();
+    resultDtoMap.add(new MapResultEntryDto("test1", 3.));
+    resultDtoMap.add(new MapResultEntryDto("test2", 6.));
+    final List<MapCommandResult> mapResults = Lists.newArrayList(
+      new MapCommandResult(
+        Collections.singletonList(
+          MeasureDto.of(processReportDataDto.getViewProperties().get(0), resultDtoMap)
+        ),
+        processReportDataDto
+      ),
+      new MapCommandResult(
+        Collections.singletonList(
+          MeasureDto.of(processReportDataDto.getViewProperties().get(0), resultDtoMap)
+        ),
+        processReportDataDto
+      )
     );
 
     // when
+    CombinedReportEvaluationResult underTest =
+      createTestCombinedProcessReportResult(mapResults);
     List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
     // then
@@ -228,9 +246,9 @@ public class CombinedProcessReportResultTest {
   @Test
   public void testGetResultAsCsvForEmptyReport() {
     // given
-    CombinedProcessReportResult underTest = new CombinedProcessReportResult(
-      new CombinedProcessReportResultDto(new HashMap<String, ReportEvaluationResult<SingleReportResultDto,
-        SingleProcessReportDefinitionRequestDto>>(), 0L),
+    CombinedReportEvaluationResult underTest = new CombinedReportEvaluationResult(
+      Collections.emptyList(),
+      0L,
       new CombinedReportDefinitionRequestDto()
     );
 
@@ -242,66 +260,41 @@ public class CombinedProcessReportResultTest {
   }
 
 
-  private CombinedProcessReportResult createTestCombinedProcessReportResult(ProcessReportDataType reportDataType,
-                                                                            List<SingleReportResultDto> reportResultDtos,
-                                                                            AggregationType aggregationType) {
+  private <T> CombinedReportEvaluationResult createTestCombinedProcessReportResult(final List<?
+    extends CommandEvaluationResult<T>> reportCommandResults) {
 
-    final ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder.createReportData()
-      .setVariableName("test")
-      .setReportDataType(reportDataType)
-      .setVariableType(VariableType.DOUBLE)
-      .build();
-    processReportDataDto.getConfiguration().setAggregationTypes(aggregationType);
-
-    List<ReportEvaluationResult> reportEvaluationResults = new ArrayList<>();
-
-    for (int i = 0; i < reportResultDtos.size(); i++) {
-      final SingleProcessReportDefinitionRequestDto singleDefDto = new SingleProcessReportDefinitionRequestDto();
-      singleDefDto.setName("SingleTestReport" + i);
-      singleDefDto.setData(processReportDataDto);
-
-      reportEvaluationResults.add(createReportEvaluationResult(reportResultDtos.get(i), singleDefDto));
+    List<SingleReportEvaluationResult<?>> reportEvaluationResults = new ArrayList<>();
+    for (int i = 0; i < reportCommandResults.size(); i++) {
+      final CommandEvaluationResult<T> commandEvaluationResult = reportCommandResults.get(i);
+      final ReportDefinitionDto<ProcessReportDataDto> reportDefinition = new SingleProcessReportDefinitionRequestDto();
+      reportDefinition.setName("SingleTestReport" + i);
+      reportDefinition.setData(commandEvaluationResult.getReportDataAs(ProcessReportDataDto.class));
+      reportEvaluationResults.add(
+        new SingleReportEvaluationResult<>(reportDefinition, Collections.singletonList(commandEvaluationResult))
+      );
     }
 
     return createCombinedProcessReportResult(reportEvaluationResults);
   }
 
-  private ReportEvaluationResult createReportEvaluationResult(final SingleReportResultDto reportResultDto,
-                                                              final SingleProcessReportDefinitionRequestDto singleDefDto) {
-    ReportEvaluationResult reportResult = null;
-
-    final boolean isFrequencyReport = singleDefDto.getData().isFrequencyReport();
-    if (reportResultDto instanceof ReportMapResultDto && isFrequencyReport) {
-      reportResult = new SingleProcessMapReportResult((ReportMapResultDto) reportResultDto, singleDefDto);
-
-    } else if (reportResultDto instanceof NumberResultDto && isFrequencyReport) {
-      reportResult = new SingleProcessNumberReportResult((NumberResultDto) reportResultDto, singleDefDto);
-
-    } else if (reportResultDto instanceof NumberResultDto) {
-      reportResult = new SingleProcessNumberReportResult(
-        (NumberResultDto) reportResultDto,
-        singleDefDto
-      );
-    } else if (reportResultDto instanceof ReportMapResultDto) {
-      reportResult = new SingleProcessMapReportResult(
-        (ReportMapResultDto) reportResultDto,
-        singleDefDto
-      );
-    }
-    return reportResult;
+  private ProcessReportDataDto createProcessReportDataForType(final ProcessReportDataType reportDataType) {
+    return TemplatedProcessReportDataBuilder.createReportData()
+      .setVariableName("test")
+      .setReportDataType(reportDataType)
+      .setVariableType(VariableType.DOUBLE)
+      .build();
   }
 
-  private CombinedProcessReportResult createCombinedProcessReportResult(final List<ReportEvaluationResult> singleReportResults) {
+
+  private CombinedReportEvaluationResult createCombinedProcessReportResult(
+    final List<SingleReportEvaluationResult<?>> singleReportResults) {
     final LinkedHashMap<String, ReportEvaluationResult> mapIMap = new LinkedHashMap<>();
 
     for (int i = 0; i < singleReportResults.size(); i++) {
       mapIMap.put("test-id-" + i, singleReportResults.get(i));
     }
 
-    return new CombinedProcessReportResult(
-      new CombinedProcessReportResultDto(mapIMap, 0L),
-      new CombinedReportDefinitionRequestDto()
-    );
+    return new CombinedReportEvaluationResult(singleReportResults, 0L, new CombinedReportDefinitionRequestDto());
   }
 
   private static Stream<AggregationType> allAggregationTypesWithoutSum() {

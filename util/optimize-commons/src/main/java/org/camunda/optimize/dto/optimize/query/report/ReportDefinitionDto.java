@@ -21,7 +21,7 @@ import java.time.OffsetDateTime;
 @Data
 @AllArgsConstructor
 @SuperBuilder(toBuilder = true)
-public class ReportDefinitionDto<RD extends ReportDataDto> implements CollectionEntity {
+public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionEntity {
 
   protected String id;
   protected String name;
@@ -31,13 +31,13 @@ public class ReportDefinitionDto<RD extends ReportDataDto> implements Collection
   protected String lastModifier;
   protected String collectionId;
 
-  protected RD data;
+  protected D data;
 
   private final boolean combined;
 
   private final ReportType reportType;
 
-  protected ReportDefinitionDto(RD data, Boolean combined, ReportType reportType) {
+  protected ReportDefinitionDto(D data, Boolean combined, ReportType reportType) {
     this.data = data;
     this.combined = combined;
     this.reportType = reportType;
