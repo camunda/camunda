@@ -17,7 +17,7 @@ package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.storage.journal.Indexed;
+import io.atomix.raft.storage.log.Indexed;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;

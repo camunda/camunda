@@ -26,26 +26,15 @@
       <artifactId>atomix-utils</artifactId>
       <groupId>io.zeebe</groupId>
     </dependency>
-    <dependency>
-      <artifactId>simpleclient</artifactId>
-      <groupId>io.prometheus</groupId>
-    </dependency>
 
     <dependency>
       <artifactId>slf4j-api</artifactId>
       <groupId>org.slf4j</groupId>
     </dependency>
+
     <dependency>
       <artifactId>guava</artifactId>
       <groupId>com.google.guava</groupId>
-    </dependency>
-    <dependency>
-      <artifactId>kryo</artifactId>
-      <groupId>com.esotericsoftware</groupId>
-    </dependency>
-    <dependency>
-      <artifactId>agrona</artifactId>
-      <groupId>org.agrona</groupId>
     </dependency>
 
     <dependency>
@@ -57,12 +46,6 @@
     <dependency>
       <artifactId>junit</artifactId>
       <groupId>junit</groupId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

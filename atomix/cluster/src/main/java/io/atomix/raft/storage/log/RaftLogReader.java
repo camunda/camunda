@@ -17,7 +17,6 @@
 package io.atomix.raft.storage.log;
 
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.storage.journal.Indexed;
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
 import java.nio.ByteBuffer;

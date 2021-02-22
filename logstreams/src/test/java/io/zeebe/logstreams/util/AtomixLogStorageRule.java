@@ -11,6 +11,7 @@ import static org.mockito.Mockito.spy;
 
 import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.log.Indexed;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
@@ -20,11 +21,11 @@ import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.atomix.storage.journal.Indexed;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixAppenderSupplier;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixReaderFactory;
+import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -202,8 +203,17 @@ public final class AtomixLogStorageRule extends ExternalResource
     metaStore = null;
     Optional.ofNullable(storage).ifPresent(AtomixLogStorage::close);
     storage = null;
-    Optional.ofNullable(raftStorage).ifPresent(RaftStorage::deleteLog);
-    raftStorage = null;
+
+    if (raftStorage != null) {
+      try {
+        FileUtil.deleteFolder(raftStorage.directory().toPath());
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
+      }
+
+      raftStorage = null;
+    }
+
     positionListener = null;
     writeErrorListener = null;
   }

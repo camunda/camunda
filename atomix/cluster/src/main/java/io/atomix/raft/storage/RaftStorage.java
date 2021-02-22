@@ -24,8 +24,6 @@ import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.buffer.FileBuffer;
-import io.atomix.storage.journal.JournalSegmentDescriptor;
-import io.atomix.storage.journal.JournalSegmentFile;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Serializer;
 import io.zeebe.snapshots.raft.PersistedSnapshotStore;
@@ -245,17 +243,6 @@ public final class RaftStorage {
         .build();
   }
 
-  /**
-   * Deletes a {@link RaftLog} from disk.
-   *
-   * <p>The log will be deleted by simply reading {@code log} file names from disk and deleting log
-   * files directly. Deleting log files does not involve rebuilding indexes or reading any logs into
-   * memory.
-   */
-  public void deleteLog() {
-    deleteFiles(f -> JournalSegmentFile.isSegmentFile(prefix, f));
-  }
-
   @Override
   public String toString() {
     return toStringHelper(this).add("directory", directory()).toString();
@@ -391,9 +378,6 @@ public final class RaftStorage {
      * @throws IllegalArgumentException If the {@code maxSegmentSize} is not positive
      */
     public Builder withMaxSegmentSize(final int maxSegmentSize) {
-      checkArgument(
-          maxSegmentSize > JournalSegmentDescriptor.BYTES,
-          "maxSegmentSize must be greater than " + JournalSegmentDescriptor.BYTES);
       this.maxSegmentSize = maxSegmentSize;
       return this;
     }
