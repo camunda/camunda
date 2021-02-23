@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {EXPAND_STATE} from 'modules/constants';
 import SplitPane from 'modules/components/SplitPane';
 import {filtersStore} from 'modules/stores/filters';

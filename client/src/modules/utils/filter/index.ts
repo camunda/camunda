@@ -4,19 +4,39 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {isValid, addDays, startOfDay, addMinutes, format} from 'date-fns';
+import {
+  isValid,
+  addDays,
+  startOfDay,
+  addMinutes,
+  format,
+  parse,
+} from 'date-fns';
 
 import {compactObject} from '../index';
 import {isValidJSON, trimValue, tryDecodeURI} from 'modules/utils';
 import {trimVariable} from 'modules/utils/variable';
+import {workflowsStore} from 'modules/stores/workflows';
 
-/**
- * Reduce a filter object down to the state properties
- */
-export function reduceToStates(filter: any) {
-  const {active, incidents, completed, canceled} = filter;
-  return {active, incidents, completed, canceled};
-}
+type FilterFieldsType =
+  | 'workflow'
+  | 'workflowVersion'
+  | 'ids'
+  | 'errorMessage'
+  | 'startDate'
+  | 'endDate'
+  | 'flowNodeId'
+  | 'variableName'
+  | 'variableValue'
+  | 'operationId'
+  | 'active'
+  | 'incidents'
+  | 'completed'
+  | 'canceled';
+
+type FiltersType = {
+  [key in FilterFieldsType]?: string;
+};
 
 /**
  * Returns a query string for the filter objects
@@ -240,4 +260,293 @@ function isVariableEmpty(variable: any) {
   );
 }
 
-export {decodeFields, isVariableEmpty};
+const FILTER_FIELDS: FilterFieldsType[] = [
+  'workflow',
+  'workflowVersion',
+  'ids',
+  'errorMessage',
+  'startDate',
+  'endDate',
+  'flowNodeId',
+  'variableName',
+  'variableValue',
+  'operationId',
+  'active',
+  'incidents',
+  'completed',
+  'canceled',
+];
+
+const BOOLEAN_FILTER_FIELDS = ['active', 'incidents', 'completed', 'canceled'];
+
+function getFilters(
+  searchParams: string,
+  fields: FilterFieldsType[] = FILTER_FIELDS
+): ParsedFilters {
+  return parseFilters(
+    Array.from(new URLSearchParams(searchParams)).reduce(
+      (accumulator, [param, value]) => {
+        if (fields.includes(param as FilterFieldsType)) {
+          return {
+            ...accumulator,
+            [param]: value,
+          };
+        }
+
+        return accumulator;
+      },
+      {}
+    )
+  );
+}
+
+type ParsedFilters = FiltersType & {
+  active?: boolean;
+  incidents?: boolean;
+  completed?: boolean;
+  canceled?: boolean;
+};
+
+function parseFilters(filters: FiltersType): ParsedFilters {
+  return Object.fromEntries(
+    Object.entries(filters).map(([field, value]) => {
+      if (BOOLEAN_FILTER_FIELDS.includes(field)) {
+        return [field, value === 'true'];
+      }
+
+      return [field, value];
+    })
+  );
+}
+
+function getSearchString() {
+  const HASH_PATHNAME_PATTERN = /^#(\/\w{1,}\/*)+\?/;
+  const hash = window.location.hash;
+
+  if (HASH_PATHNAME_PATTERN.test(hash)) {
+    return hash.replace(HASH_PATHNAME_PATTERN, '');
+  }
+
+  return '';
+}
+
+type GetRequestDatePairReturn =
+  | {
+      startDateBefore: string;
+      startDateAfter: string;
+    }
+  | {
+      endDateBefore: string;
+      endDateAfter: string;
+    };
+
+function getRequestDatePair(
+  date: Date,
+  type: 'startDate' | 'endDate'
+): GetRequestDatePairReturn {
+  const DATE_REQUEST_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSxx";
+  const hasTime = date.getHours() + date.getMinutes() + date.getSeconds() !== 0;
+  const dateAfter = format(
+    hasTime ? date : startOfDay(date),
+    DATE_REQUEST_FORMAT
+  );
+  const dateBefore = format(
+    hasTime ? addMinutes(date, 1) : addDays(startOfDay(date), 1),
+    DATE_REQUEST_FORMAT
+  );
+
+  if (type === 'startDate') {
+    return {
+      startDateBefore: dateBefore,
+      startDateAfter: dateAfter,
+    };
+  }
+
+  return {
+    endDateBefore: dateBefore,
+    endDateAfter: dateAfter,
+  };
+}
+
+type RequestFilters = {
+  running?: boolean;
+  active?: boolean;
+  incidents?: boolean;
+  finished?: boolean;
+  canceled?: boolean;
+  completed?: boolean;
+  activityId?: string;
+  batchOperationId?: string;
+  endDateAfter?: string;
+  endDateBefore?: string;
+  errorMessage?: string;
+  ids?: string[];
+  startDateAfter?: string;
+  startDateBefore?: string;
+  variable?: {
+    name: string;
+    value: string;
+  };
+  workflowIds?: string[];
+};
+
+function parseIds(value: string) {
+  return value
+    .trim()
+    .replace(/,\s/g, '|')
+    .replace(/\s{1,}/g, '|')
+    .replace(/,{1,}/g, '|')
+    .split('|');
+}
+
+function parseFilterDate(value: string) {
+  const DATE_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+  const DATE_HOUR_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}\s[0-9]{2}$/;
+  const DATE_HOUR_MINUTES_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}\s[0-9]{2}:[0-9]{2}$/;
+  const DATE_TIME_PATTERN_WITH = /^[0-9]{4}-[0-9]{2}-[0-9]{2}\s[0-9]{2}:[0-9]{2}:[0-9]{2}$/;
+  const trimmedValue = value.trim();
+
+  if (DATE_PATTERN.test(trimmedValue)) {
+    return parse(trimmedValue, 'yyyy-MM-dd', new Date());
+  }
+
+  if (DATE_HOUR_PATTERN.test(trimmedValue)) {
+    return parse(trimmedValue, 'yyyy-MM-dd kk', new Date());
+  }
+
+  if (DATE_HOUR_MINUTES_PATTERN.test(trimmedValue)) {
+    return parse(trimmedValue, 'yyyy-MM-dd kk:mm', new Date());
+  }
+
+  if (DATE_TIME_PATTERN_WITH.test(trimmedValue)) {
+    return parse(trimmedValue, 'yyyy-MM-dd kk:mm:ss', new Date());
+  }
+}
+
+function getWorkflowIds(workflow: string, workflowVersion: string) {
+  if (workflowVersion === 'all') {
+    return (
+      workflowsStore.versionsByWorkflow?.[workflow]?.map(({id}) => id) ?? []
+    );
+  }
+
+  return (
+    workflowsStore.versionsByWorkflow?.[workflow]
+      ?.filter(({version}) => version === parseInt(workflowVersion))
+      ?.map(({id}) => id) ?? []
+  );
+}
+
+function getRequestFilters(): RequestFilters {
+  const filters = getFilters(getSearchString());
+
+  return Object.entries(filters).reduce<RequestFilters>(
+    (accumulator, [key, value]) => {
+      if (value === undefined) {
+        return accumulator;
+      }
+
+      if (['active', 'incidents'].includes(key) && typeof value === 'boolean') {
+        return {
+          ...accumulator,
+          [key]: value,
+          ...(value === true ? {running: true} : {}),
+        };
+      }
+
+      if (
+        ['canceled', 'completed'].includes(key) &&
+        typeof value === 'boolean'
+      ) {
+        return {
+          ...accumulator,
+          [key]: value,
+          ...(value === true ? {finished: true} : {}),
+        };
+      }
+
+      if (key === 'errorMessage') {
+        return {
+          ...accumulator,
+          [key]: value,
+        };
+      }
+
+      if (key === 'flowNodeId') {
+        return {
+          ...accumulator,
+          activityId: value,
+        };
+      }
+
+      if (key === 'operationId') {
+        return {
+          ...accumulator,
+          batchOperationId: value,
+        };
+      }
+
+      if (key === 'ids') {
+        return {
+          ...accumulator,
+          ids: parseIds(value),
+        };
+      }
+
+      if (
+        key === 'workflowVersion' &&
+        filters.workflow !== undefined &&
+        value !== undefined
+      ) {
+        const workflowIds = getWorkflowIds(filters.workflow, value);
+
+        if (workflowIds.length > 0) {
+          return {
+            ...accumulator,
+            workflowIds,
+          };
+        }
+      }
+
+      if (key === 'variableName' || key === 'variableValue') {
+        return {
+          ...accumulator,
+          variables: {
+            ...(accumulator?.variable ?? {}),
+            [key === 'variableName' ? 'name' : 'value']: value,
+          },
+        };
+      }
+
+      const parsedDate = parseFilterDate(value);
+      if (
+        (key === 'startDate' || key === 'endDate') &&
+        parsedDate !== undefined
+      ) {
+        return {
+          ...accumulator,
+          ...getRequestDatePair(parsedDate, key),
+        };
+      }
+
+      return accumulator;
+    },
+    {}
+  );
+}
+
+const IS_FILTERS_V2 = false;
+
+export {
+  decodeFields,
+  isVariableEmpty,
+  getFilters,
+  parseIds,
+  parseFilterDate,
+  getRequestFilters,
+  IS_FILTERS_V2,
+  FILTER_FIELDS,
+  BOOLEAN_FILTER_FIELDS,
+  parseFilters,
+};
+export type {FilterFieldsType, FiltersType, ParsedFilters, RequestFilters};

@@ -4,21 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-type FieldsType =
-  | 'workflow'
-  | 'workflowVersion'
-  | 'ids'
-  | 'errorMessage'
-  | 'startDate'
-  | 'endDate'
-  | 'flowNodeId'
-  | 'variableName'
-  | 'variableValue'
-  | 'operationId'
-  | 'active'
-  | 'incidents'
-  | 'completed'
-  | 'canceled';
+import {FiltersType} from 'modules/utils/filter';
 
 type ValidatedFields =
   | 'ids'
@@ -28,14 +14,10 @@ type ValidatedFields =
   | 'variableValue'
   | 'operationId';
 
-type FiltersType = {
-  [key in FieldsType]?: string;
-};
-
 type Errors = {
   [key in ValidatedFields]?: string;
 };
 
 type VariablePair = Pick<FiltersType, 'variableName' | 'variableValue'>;
 
-export type {FieldsType, FiltersType, Errors, VariablePair};
+export type {FiltersType, Errors, VariablePair};

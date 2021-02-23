@@ -76,7 +76,9 @@ class Workflows {
       });
   }
 
-  get versionsByWorkflow() {
+  get versionsByWorkflow(): {
+    [bpmnProcessId: string]: WorkflowVersion[];
+  } {
     return this.state.workflows.reduce<{
       [bpmnProcessId: string]: WorkflowVersion[];
     }>(

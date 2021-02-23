@@ -5,7 +5,7 @@
  */
 
 import {post, get} from 'modules/request';
-import {parseFilterForRequest} from 'modules/utils/filter';
+import {parseFilterForRequest, RequestFilters} from 'modules/utils/filter';
 import {FILTER_SELECTION} from 'modules/constants';
 
 const URL = '/api/workflow-instances';
@@ -22,27 +22,7 @@ type BatchOperationQuery = {
 };
 
 type WorkflowInstancesQuery = {
-  query: {
-    active?: boolean;
-    batchOperationId?: string;
-    canceled?: boolean;
-    completed?: boolean;
-    endDateAfter?: string;
-    endDateBefore?: string;
-    errorMessage?: string;
-    excludeIds?: string[];
-    finished?: boolean;
-    ids?: string[];
-    incidents?: boolean;
-    running?: boolean;
-    startDateAfter?: string;
-    startDateBefore?: string;
-    variable?: {
-      name: string;
-      value: string;
-    };
-    workflowIds?: string[];
-  };
+  query: RequestFilters;
   sorting?: {
     sortBy: string;
     sortOrder: 'desc' | 'asc';

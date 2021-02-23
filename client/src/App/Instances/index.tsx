@@ -21,13 +21,20 @@ import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {workflowsStore} from 'modules/stores/workflows';
 import {Filters as FiltersV2} from './FiltersV2';
+import {getFilters, IS_FILTERS_V2} from 'modules/utils/filter';
 
 import {observer} from 'mobx-react';
 import * as Styled from './styled';
 
-const IS_FILTERS_V2 = false;
-
 const Instances = observer((props: any) => {
+  const {workflow, workflowVersion} = getFilters(props.location.search);
+  const workflowId =
+    workflow !== undefined && workflowVersion !== undefined
+      ? workflowsStore.versionsByWorkflow?.[workflow]?.[
+          parseInt(workflowVersion) - 1
+        ]?.id
+      : undefined;
+
   useEffect(() => {
     filtersStore.init();
     instanceSelectionStore.init();
@@ -53,9 +60,27 @@ const Instances = observer((props: any) => {
   }, []);
 
   useEffect(() => {
-    const {history, location} = props;
-    filtersStore.setUrlParameters(history, location);
+    if (!IS_FILTERS_V2) {
+      const {history, location} = props;
+      filtersStore.setUrlParameters(history, location);
+    }
   }, [props]);
+
+  useEffect(() => {
+    if (IS_FILTERS_V2) {
+      instancesStore.fetchInstancesFromFilters();
+    }
+  }, [props.location.search]);
+
+  useEffect(() => {
+    if (IS_FILTERS_V2) {
+      if (typeof workflowId === 'string') {
+        instancesDiagramStore.fetchWorkflowXml(workflowId);
+      } else {
+        instancesDiagramStore.resetDiagramModel();
+      }
+    }
+  }, [workflowId]);
 
   return (
     <Styled.Instances>

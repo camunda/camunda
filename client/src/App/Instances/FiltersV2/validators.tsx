@@ -6,8 +6,9 @@
 
 import {FieldValidator} from 'final-form';
 import {isValidJSON} from 'modules/utils';
-
 import {FiltersType, Errors, VariablePair} from './types';
+import {parseIds, parseFilterDate} from 'modules/utils/filter';
+import {isValid} from 'date-fns';
 
 const ERRORS = {
   ids: 'Id has to be 16 to 19 digit numbers, separated by space or comma',
@@ -53,14 +54,7 @@ function submissionValidator(filters: FiltersType): Errors | null {
 function validateIds(value: FiltersType['ids'] = '') {
   const ID_PATTERN = /^[0-9]{16,19}$/;
   const isValid =
-    value === '' ||
-    value
-      .trim()
-      .replace(/,\s/g, '|')
-      .replace(/\s{1,}/g, '|')
-      .replace(/,{1,}/g, '|')
-      .split('|')
-      .every((id) => ID_PATTERN.test(id));
+    value === '' || parseIds(value).every((id) => ID_PATTERN.test(id));
 
   return isValid ? undefined : ERRORS.ids;
 }
@@ -78,10 +72,7 @@ function validateEndDate(value: FiltersType['endDate'] = '') {
 }
 
 function isDateComplete(date: string) {
-  // Possible patterns: yyyy-mm-dd, yyyy-mm-dd hh, yyyy-mm-dd hh:mm or yyyy-mm-dd hh:mm:ss
-  const DATE_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}(\s[0-9]{2}(:[0-9]{2}(:[0-9]{2})?)?)?$/;
-
-  return DATE_PATTERN.test(date);
+  return isValid(parseFilterDate(date));
 }
 
 function validateOperation(value: FiltersType['operationId'] = '') {

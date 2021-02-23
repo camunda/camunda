@@ -19,6 +19,7 @@ import {
 } from 'modules/api/instances';
 import {filtersStore} from 'modules/stores/filters';
 import {logger} from 'modules/logger';
+import {getRequestFilters, IS_FILTERS_V2} from 'modules/utils/filter';
 
 type Payload = Parameters<typeof fetchWorkflowInstances>['0'];
 
@@ -87,15 +88,17 @@ class Instances {
   }
 
   init() {
-    this.fetchInstancesDisposer = autorun(() => {
-      // we should wait for initial load to complete so we are sure both groupedWorkflows and filters are initially loaded and this fetch won't run a couple of times on first page landing
-      if (filtersStore.state.isInitialLoadComplete) {
-        this.fetchInitialInstances({
-          query: filtersStore.getFiltersPayload(),
-          sorting: filtersStore.state.sorting,
-        });
-      }
-    });
+    if (!IS_FILTERS_V2) {
+      this.fetchInstancesDisposer = autorun(() => {
+        // we should wait for initial load to complete so we are sure both groupedWorkflows and filters are initially loaded and this fetch won't run a couple of times on first page landing
+        if (filtersStore.state.isInitialLoadComplete) {
+          this.fetchInitialInstances({
+            query: filtersStore.getFiltersPayload(),
+            sorting: filtersStore.state.sorting,
+          });
+        }
+      });
+    }
 
     this.instancesPollingDisposer = autorun(() => {
       if (this.instanceIdsWithActiveOperations.length > 0) {
@@ -184,7 +187,9 @@ class Instances {
     return this.fetchInstances({
       fetchType: 'prev',
       payload: {
-        query: filtersStore.getFiltersPayload(),
+        query: IS_FILTERS_V2
+          ? getRequestFilters()
+          : filtersStore.getFiltersPayload(),
         sorting: filtersStore.state.sorting,
         searchBefore: instancesStore.state.workflowInstances[0]?.sortValues,
         pageSize: MAX_INSTANCES_PER_REQUEST,
@@ -198,7 +203,9 @@ class Instances {
     return this.fetchInstances({
       fetchType: 'next',
       payload: {
-        query: filtersStore.getFiltersPayload(),
+        query: IS_FILTERS_V2
+          ? getRequestFilters()
+          : filtersStore.getFiltersPayload(),
         sorting: filtersStore.state.sorting,
         searchAfter: this.state.workflowInstances[
           this.state.workflowInstances.length - 1
@@ -214,6 +221,20 @@ class Instances {
       fetchType: 'initial',
       payload: {
         ...payload,
+        pageSize: MAX_INSTANCES_PER_REQUEST,
+        searchBefore: undefined,
+        searchAfter: undefined,
+      },
+    });
+  };
+
+  fetchInstancesFromFilters = async () => {
+    this.startFetching();
+    this.fetchInstances({
+      fetchType: 'initial',
+      payload: {
+        query: getRequestFilters(),
+        sorting: filtersStore.state.sorting,
         pageSize: MAX_INSTANCES_PER_REQUEST,
         searchBefore: undefined,
         searchAfter: undefined,
@@ -368,7 +389,9 @@ class Instances {
             });
 
             this.refreshAllInstances({
-              query: filtersStore.getFiltersPayload(),
+              query: IS_FILTERS_V2
+                ? getRequestFilters()
+                : filtersStore.getFiltersPayload(),
               sorting: filtersStore.state.sorting,
               pageSize:
                 this.state.workflowInstances.length > 0
@@ -395,7 +418,9 @@ class Instances {
   }) => {
     if (shouldPollAllVisibleIds) {
       this.refreshAllInstances({
-        query: filtersStore.getFiltersPayload(),
+        query: IS_FILTERS_V2
+          ? getRequestFilters()
+          : filtersStore.getFiltersPayload(),
         sorting: filtersStore.state.sorting,
         pageSize:
           this.state.workflowInstances.length > 0

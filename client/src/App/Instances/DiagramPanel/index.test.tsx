@@ -10,6 +10,7 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
+import {MemoryRouter} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {createMemoryHistory} from 'history';
@@ -34,9 +35,11 @@ type Props = {
 
 const Wrapper = ({children}: Props) => {
   return (
-    <ThemeProvider>
-      <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
-    </ThemeProvider>
+    <MemoryRouter>
+      <ThemeProvider>
+        <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
+      </ThemeProvider>
+    </MemoryRouter>
   );
 };
 

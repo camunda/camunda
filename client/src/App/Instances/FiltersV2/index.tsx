@@ -4,10 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useRef} from 'react';
 import {Form, Field} from 'react-final-form';
 import {useHistory} from 'react-router-dom';
-
+import {isEqual} from 'lodash';
 import {FiltersForm, Row, VariableRow} from './styled';
 import {WorkflowField} from './WorkflowField';
 import {WorkflowVersionField} from './WorkflowVersionField';
@@ -19,7 +18,7 @@ import Button from 'modules/components/Button';
 import {AutoSubmit} from './AutoSubmit';
 import {isFieldValid} from './isFieldValid';
 import {Error, VariableError} from './Error';
-import {FieldsType, FiltersType} from './types';
+import {FiltersType} from './types';
 import {
   submissionValidator,
   handleIdsFieldValidation,
@@ -28,83 +27,54 @@ import {
   handleVariableValueFieldValidation,
   handleOperationIdFieldValidation,
 } from './validators';
+import {
+  getFilters,
+  FILTER_FIELDS,
+  BOOLEAN_FILTER_FIELDS,
+  parseFilters,
+} from 'modules/utils/filter';
 
-const FIELDS: FieldsType[] = [
-  'workflow',
-  'workflowVersion',
-  'ids',
-  'errorMessage',
-  'startDate',
-  'endDate',
-  'flowNodeId',
-  'variableName',
-  'variableValue',
-  'operationId',
-  'active',
-  'incidents',
-  'completed',
-  'canceled',
-];
-
-const BOOLEAN_FIELDS = ['active', 'incidents', 'completed', 'canceled'];
-
-function getFilters(searchParams: string, fields: FieldsType[]): FiltersType {
-  return Array.from(new URLSearchParams(searchParams)).reduce(
-    (accumulator, [param, value]) => {
-      if (fields.includes(param as FieldsType)) {
-        return {
-          ...accumulator,
-          [param]: value,
-        };
-      }
-
-      return accumulator;
-    },
-    {}
+function updateFiltersSearchString(
+  currentSearch: string,
+  newFilters: FiltersType
+) {
+  const oldParams = Object.fromEntries(new URLSearchParams(currentSearch));
+  const fieldsToDelete = FILTER_FIELDS.filter(
+    (field) => newFilters[field] === undefined
   );
-}
-
-function parseFilters(filters: FiltersType) {
-  return Object.fromEntries(
-    Object.entries(filters).map(([field, value]) => {
-      if (BOOLEAN_FIELDS.includes(field)) {
-        return [field, value === 'true' ? true : false];
-      }
-
-      return [field, value];
-    })
+  const newParams = new URLSearchParams(
+    Object.entries({
+      ...oldParams,
+      ...newFilters,
+    }) as [string, string][]
   );
+
+  fieldsToDelete.forEach((field) => {
+    if (newParams.has(field)) {
+      newParams.delete(field);
+    }
+  });
+
+  BOOLEAN_FILTER_FIELDS.forEach((field) => {
+    if (newParams.get(field) === 'false') {
+      newParams.delete(field);
+    }
+  });
+
+  return newParams.toString();
 }
 
 const Filters: React.FC = () => {
   const history = useHistory();
-  const initialValues = useRef(
-    parseFilters(getFilters(history.location.search, FIELDS))
-  );
+  const initialValues: FiltersType = {
+    active: 'true',
+    incidents: 'true',
+  };
 
-  function setFiltersToURL(filters: FiltersType = {}) {
-    const oldParams = Object.fromEntries(
-      new URLSearchParams(history.location.search)
-    );
-    const fieldsToDelete = FIELDS.filter(
-      (field) => filters[field] === undefined
-    );
-    const newParams = new URLSearchParams(
-      Object.entries({
-        ...oldParams,
-        ...filters,
-      }) as [string, string][]
-    );
-
-    fieldsToDelete.forEach((field) => {
-      if (newParams.has(field)) {
-        newParams.delete(field);
-      }
-    });
-
+  function setFiltersToURL(filters: FiltersType) {
     history.push({
       ...history.location,
-      search: newParams.toString(),
+      search: updateFiltersSearchString(history.location.search, filters),
     });
   }
 
@@ -119,9 +89,9 @@ const Filters: React.FC = () => {
 
         setFiltersToURL(values);
       }}
-      initialValues={initialValues.current}
+      initialValues={getFilters(history.location.search)}
     >
-      {({handleSubmit, pristine, form}) => (
+      {({handleSubmit, form, values}) => (
         <FiltersForm onSubmit={handleSubmit}>
           <AutoSubmit
             fieldsToSkipTimeout={[
@@ -257,11 +227,11 @@ const Filters: React.FC = () => {
             <Button
               title="Reset filters"
               size="small"
-              disabled={pristine}
+              disabled={isEqual(parseFilters(initialValues), values)}
               type="reset"
               onClick={() => {
                 form.reset();
-                setFiltersToURL();
+                setFiltersToURL(initialValues);
               }}
             >
               Reset Filters

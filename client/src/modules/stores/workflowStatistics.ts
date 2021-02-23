@@ -16,6 +16,7 @@ import {filtersStore} from 'modules/stores/filters';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {instancesStore} from 'modules/stores/instances';
 import {isEmpty, isEqual} from 'lodash';
+import {getRequestFilters, IS_FILTERS_V2} from 'modules/utils/filter';
 
 type NodeStatistics = {
   active: number;
@@ -48,7 +49,11 @@ class WorkflowStatistics {
       () => instancesDiagramStore.state.diagramModel,
       () => {
         if (instancesDiagramStore.state.diagramModel !== null) {
-          this.fetchWorkflowStatistics(filtersStore.getFiltersPayload());
+          this.fetchWorkflowStatistics(
+            IS_FILTERS_V2
+              ? getRequestFilters()
+              : filtersStore.getFiltersPayload()
+          );
         }
       }
     );

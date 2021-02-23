@@ -15,16 +15,11 @@ const WorkflowVersionField: React.FC = observer(() => {
   const {versionsByWorkflow} = workflowsStore;
   const selectedWorkflow = useField('workflow').input.value;
   const versions = versionsByWorkflow[selectedWorkflow];
-  const options = [
-    ...(versions?.map(({version}) => ({
+  const options =
+    versions?.map(({version}) => ({
       value: version,
       label: `Version ${version}`,
-    })) ?? []),
-    {
-      value: 'all',
-      label: 'All version',
-    },
-  ];
+    })) ?? [];
 
   return (
     <Field
@@ -34,9 +29,24 @@ const WorkflowVersionField: React.FC = observer(() => {
       {({input}) => (
         <Select
           {...input}
+          onChange={(event) => {
+            if (event.target.value !== '') {
+              input.onChange(event);
+            }
+          }}
           placeholder="Workflow Version"
           disabled={versions === undefined || versions.length === 0}
-          options={options}
+          options={
+            options.length === 1
+              ? options
+              : [
+                  ...options,
+                  {
+                    value: 'all',
+                    label: 'All versions',
+                  },
+                ]
+          }
         />
       )}
     </Field>
