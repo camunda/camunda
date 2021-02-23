@@ -7,27 +7,26 @@
  */
 package io.zeebe.logstreams.storage.atomix;
 
-import io.atomix.raft.partition.RaftPartition;
+import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import java.nio.ByteBuffer;
-import java.util.NoSuchElementException;
 
 public class AtomixLogStorage implements LogStorage {
   private final AtomixReaderFactory readerFactory;
-  private final AtomixAppenderSupplier appenderSupplier;
 
   private boolean opened;
+  private final ZeebeLogAppender logAppender;
 
   public AtomixLogStorage(
-      final AtomixReaderFactory readerFactory, final AtomixAppenderSupplier appenderSupplier) {
+      final AtomixReaderFactory readerFactory, final ZeebeLogAppender logAppender) {
     this.readerFactory = readerFactory;
-    this.appenderSupplier = appenderSupplier;
+    this.logAppender = logAppender;
   }
 
-  public static AtomixLogStorage ofPartition(final RaftPartition partition) {
-    final var server = new AtomixRaftServer(partition.getServer());
-    return new AtomixLogStorage(server, server);
+  public static AtomixLogStorage ofPartition(
+      final AtomixReaderFactory readerFactory, final ZeebeLogAppender appender) {
+    return new AtomixLogStorage(readerFactory, appender);
   }
 
   @Override
@@ -41,18 +40,8 @@ public class AtomixLogStorage implements LogStorage {
       final long highestPosition,
       final ByteBuffer buffer,
       final AppendListener listener) {
-    final var optionalAppender = appenderSupplier.getAppender();
-
-    if (optionalAppender.isPresent()) {
-      final var appender = optionalAppender.get();
-      final var adapter = new AtomixAppendListenerAdapter(listener);
-      appender.appendEntry(lowestPosition, highestPosition, buffer, adapter);
-    } else {
-      // todo: better error message
-      listener.onWriteError(
-          new NoSuchElementException(
-              "Expected an appender, but none found, most likely we are not the leader"));
-    }
+    final var adapter = new AtomixAppendListenerAdapter(listener);
+    logAppender.appendEntry(lowestPosition, highestPosition, buffer, adapter);
   }
 
   @Override

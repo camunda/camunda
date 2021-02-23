@@ -53,7 +53,7 @@ public class PartitionTransitionTest {
     final Actor actor =
         Actor.wrap(
             actorCtrl -> {
-              transition.toLeader().onComplete((none, err) -> assertThat(err).isNull());
+              transition.toLeader(1).onComplete((none, err) -> assertThat(err).isNull());
               transition.toInactive().onComplete((none, err) -> assertThat(err).isNull());
             });
 
@@ -80,8 +80,8 @@ public class PartitionTransitionTest {
     final Actor actor =
         Actor.wrap(
             actorCtrl -> {
-              partitionTransition.toLeader();
-              partitionTransition.toFollower();
+              partitionTransition.toLeader(1);
+              partitionTransition.toFollower(1);
             });
 
     schedulerRule.submitActor(actor);
@@ -107,7 +107,7 @@ public class PartitionTransitionTest {
     final Actor actor =
         Actor.wrap(
             actorCtrl -> {
-              transition.toLeader().onComplete((none, err) -> assertThat(err).isNull());
+              transition.toLeader(1).onComplete((none, err) -> assertThat(err).isNull());
               transition.toInactive().onComplete((none, err) -> assertThat(err).isNull());
             });
 
@@ -133,7 +133,7 @@ public class PartitionTransitionTest {
         Actor.wrap(
             actorCtrl -> {
               transition
-                  .toLeader()
+                  .toLeader(1)
                   .onComplete((none, err) -> assertThat(err).hasMessage("expected"));
               transition.toInactive().onComplete((none, err) -> assertThat(err).isNull());
             });
@@ -161,8 +161,8 @@ public class PartitionTransitionTest {
     final Actor actor =
         Actor.wrap(
             actorCtrl -> {
-              transition.toLeader().onComplete((none, err) -> assertThat(err).isNull());
-              transition.toFollower().onComplete((none, err) -> assertThat(err).isNull());
+              transition.toLeader(1).onComplete((none, err) -> assertThat(err).isNull());
+              transition.toFollower(1).onComplete((none, err) -> assertThat(err).isNull());
             });
 
     schedulerRule.submitActor(actor);
