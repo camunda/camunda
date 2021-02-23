@@ -41,6 +41,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.WriteBufferWaterMark;
+import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.epoll.EpollSocketChannel;
@@ -263,7 +264,7 @@ public class NettyMessagingService implements ManagedMessagingService {
       return CompletableFuture.completedFuture(this);
     }
 
-    initEventLoopGroup();
+    initTransport();
     return bootstrapServer()
         .thenRun(
             () -> {
@@ -332,22 +333,24 @@ public class NettyMessagingService implements ManagedMessagingService {
     return CompletableFuture.completedFuture(null);
   }
 
-  private void initEventLoopGroup() {
-    // try Epoll first and if that does work, use nio.
-    try {
-      clientGroup =
-          new EpollEventLoopGroup(0, namedThreads("netty-messaging-event-epoll-client-%d", log));
-      serverGroup =
-          new EpollEventLoopGroup(0, namedThreads("netty-messaging-event-epoll-server-%d", log));
-      serverChannelClass = EpollServerSocketChannel.class;
-      clientChannelClass = EpollSocketChannel.class;
-      return;
-    } catch (final Exception e) {
-      log.debug(
-          "Failed to initialize native (epoll) transport. " + "Reason: {}. Proceeding with nio.",
-          e.getMessage(),
-          e);
+  private void initTransport() {
+    if (Epoll.isAvailable()) {
+      initEpollTransport();
+    } else {
+      initNioTransport();
     }
+  }
+
+  private void initEpollTransport() {
+    clientGroup =
+        new EpollEventLoopGroup(0, namedThreads("netty-messaging-event-epoll-client-%d", log));
+    serverGroup =
+        new EpollEventLoopGroup(0, namedThreads("netty-messaging-event-epoll-server-%d", log));
+    serverChannelClass = EpollServerSocketChannel.class;
+    clientChannelClass = EpollSocketChannel.class;
+  }
+
+  private void initNioTransport() {
     clientGroup =
         new NioEventLoopGroup(0, namedThreads("netty-messaging-event-nio-client-%d", log));
     serverGroup =
