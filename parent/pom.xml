@@ -49,7 +49,7 @@
     <version.docker-java-api>3.2.7</version.docker-java-api>
     <version.elasticsearch>6.8.14</version.elasticsearch>
     <version.error-prone>2.5.1</version.error-prone>
-    <version.grpc>1.35.0</version.grpc>
+    <version.grpc>1.36.0</version.grpc>
     <version.gson>2.8.6</version.gson>
     <version.guava>30.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -65,7 +65,7 @@
     <version.opentest4j>1.2.0</version.opentest4j>
     <version.log4j>2.14.0</version.log4j>
     <version.minlog>1.3.1</version.minlog>
-    <version.mockito>3.7.7</version.mockito>
+    <version.mockito>3.8.0</version.mockito>
     <version.mockito-jupiter>3.7.7</version.mockito-jupiter>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.22</version.msgpack>
@@ -78,7 +78,7 @@
     <version.rocksdbjni>6.15.2</version.rocksdbjni>
     <version.sbe>1.21.0</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
-    <version.scala>2.13.4</version.scala>
+    <version.scala>2.13.5</version.scala>
     <version.slf4j>1.7.30</version.slf4j>
     <version.snakeyaml>1.28</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
