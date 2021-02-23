@@ -43,6 +43,7 @@ import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
@@ -93,6 +94,7 @@ import java.util.stream.StreamSupport;
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isDecisionInstanceIndexNotFoundException;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -344,10 +346,17 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> type) {
-    return getAllDocumentsOfIndicesAs(new String[]{indexName}, type);
+    try {
+      return getAllDocumentsOfIndicesAs(new String[]{indexName}, type);
+    } catch (ElasticsearchStatusException e) {
+      if (isDecisionInstanceIndexNotFoundException(e)) {
+        return Collections.emptyList();
+      }
+      throw e;
+    }
   }
 
-  public <T> List<T> getAllDocumentsOfIndicesAs(final String[] indexNames, final Class<T> type) {
+  private <T> List<T> getAllDocumentsOfIndicesAs(final String[] indexNames, final Class<T> type) {
     final SearchResponse response = getSearchResponseForAllDocumentsOfIndices(indexNames);
     return mapHits(response.getHits(), type, getObjectMapper());
   }
@@ -381,6 +390,11 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       return Long.valueOf(countResponse.getCount()).intValue();
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not query the import count!", e);
+    } catch (ElasticsearchStatusException e) {
+      if (isDecisionInstanceIndexNotFoundException(e)) {
+        return 0;
+      }
+      throw e;
     }
   }
 

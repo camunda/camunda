@@ -65,6 +65,13 @@ public class DecisionInstanceWriter implements ConfigurationReloadable {
 
   public void deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(final String decisionDefinitionKey,
                                                                                final OffsetDateTime evaluationDate) {
+    if (!indexExists(decisionDefinitionKey)) {
+      log.info(
+        "Aborting deletion of instances of definition with key {} because no instances exist for this definition.",
+        decisionDefinitionKey
+      );
+      return;
+    }
     final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
       getClass().getName(), esClient, DeleteByQueryAction.NAME
     );

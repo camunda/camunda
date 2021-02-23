@@ -7,8 +7,7 @@ package org.camunda.optimize.service.cleanup;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
+import org.camunda.optimize.service.es.reader.DecisionInstanceReader;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
@@ -17,7 +16,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.cleanup.CleanupService.enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown;
 
@@ -27,7 +25,7 @@ import static org.camunda.optimize.service.cleanup.CleanupService.enforceAllSpec
 public class EngineDataDecisionCleanupService implements CleanupService {
 
   private final ConfigurationService configurationService;
-  private final DecisionDefinitionReader decisionDefinitionReader;
+  private final DecisionInstanceReader decisionInstanceReader;
   private final DecisionInstanceWriter decisionInstanceWriter;
 
   @Override
@@ -74,10 +72,7 @@ public class EngineDataDecisionCleanupService implements CleanupService {
   }
 
   private Set<String> getAllOptimizeDecisionDefinitionKeys() {
-    return decisionDefinitionReader.getAllDecisionDefinitions()
-      .stream()
-      .map(DecisionDefinitionOptimizeDto::getKey)
-      .collect(Collectors.toSet());
+    return decisionInstanceReader.getExistingDecisionDefinitionKeysFromInstances();
   }
 
   private CleanupConfiguration getCleanupConfiguration() {
