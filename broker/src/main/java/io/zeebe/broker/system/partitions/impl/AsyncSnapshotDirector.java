@@ -46,6 +46,7 @@ public final class AsyncSnapshotDirector extends Actor {
   private TransientSnapshot pendingSnapshot;
   private long lowerBoundSnapshotPosition;
   private boolean takingSnapshot;
+  private boolean persistingSnapshot;
 
   public AsyncSnapshotDirector(
       final int nodeId,
@@ -179,6 +180,7 @@ public final class AsyncSnapshotDirector extends Actor {
                               LOG.info(
                                   LOG_MSG_WAIT_UNTIL_COMMITTED, endPosition, initialCommitPosition);
                               lastWrittenEventPosition = endPosition;
+                              persistingSnapshot = false;
                               persistSnapshotIfLastWrittenPositionCommitted();
                             } else {
                               lastWrittenEventPosition = null;
@@ -198,7 +200,9 @@ public final class AsyncSnapshotDirector extends Actor {
             (currentCommitPosition, error) -> {
               if (pendingSnapshot != null
                   && lastWrittenEventPosition != null
-                  && currentCommitPosition >= lastWrittenEventPosition) {
+                  && currentCommitPosition >= lastWrittenEventPosition
+                  && !persistingSnapshot) {
+                persistingSnapshot = true;
 
                 final var snapshotPersistFuture = pendingSnapshot.persist();
 
@@ -216,6 +220,7 @@ public final class AsyncSnapshotDirector extends Actor {
                       lastWrittenEventPosition = null;
                       takingSnapshot = false;
                       pendingSnapshot = null;
+                      persistingSnapshot = false;
                     });
               }
             });
