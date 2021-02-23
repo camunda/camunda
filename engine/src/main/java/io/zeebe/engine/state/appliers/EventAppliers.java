@@ -16,6 +16,8 @@ import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
+import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowIntent;
 import java.util.HashMap;
@@ -48,13 +50,26 @@ public final class EventAppliers implements EventApplier {
     register(
         WorkflowInstanceIntent.ELEMENT_ACTIVATED,
         new WorkflowInstanceElementActivatedApplier(state));
+
     register(WorkflowIntent.CREATED, new WorkflowCreatedApplier(state));
     register(DeploymentDistributionIntent.DISTRIBUTING, new DeploymentDistributionApplier(state));
     register(
         DeploymentDistributionIntent.COMPLETED,
         new DeploymentDistributionCompletedApplier(state.getDeploymentState()));
 
+    register(MessageIntent.PUBLISHED, new MessagePublishedApplier(state.getMessageState()));
     register(MessageIntent.EXPIRED, new MessageExpiredApplier(state.getMessageState()));
+
+    register(
+        MessageSubscriptionIntent.CORRELATING,
+        new MessageSubscriptionCorrelatingApplier(
+            state.getMessageSubscriptionState(), state.getMessageState()));
+
+    register(
+        MessageStartEventSubscriptionIntent.CORRELATED,
+        new MessageStartEventSubscriptionCorrelatedApplier(
+            state.getMessageState(), state.getEventScopeInstanceState()));
+
     registerJobIntentEventAppliers(state);
   }
 

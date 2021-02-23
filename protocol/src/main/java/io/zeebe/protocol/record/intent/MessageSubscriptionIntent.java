@@ -19,6 +19,7 @@ public enum MessageSubscriptionIntent implements WorkflowInstanceRelatedIntent {
   OPEN((short) 0),
   OPENED((short) 1),
 
+  CORRELATING((short) 8),
   CORRELATE((short) 2),
   CORRELATED((short) 3),
 
@@ -63,6 +64,8 @@ public enum MessageSubscriptionIntent implements WorkflowInstanceRelatedIntent {
         return CLOSE;
       case 7:
         return CLOSED;
+      case 8:
+        return CORRELATING;
       default:
         return Intent.UNKNOWN;
     }

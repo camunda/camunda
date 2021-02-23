@@ -11,10 +11,13 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.BooleanProperty;
+import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public final class MessageSubscriptionRecord extends UnifiedRecordValue
@@ -29,6 +32,8 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final BooleanProperty closeOnCorrelateProp =
       new BooleanProperty("closeOnCorrelate", true);
 
+  private final DocumentProperty variablesProp = new DocumentProperty("variables");
+
   public MessageSubscriptionRecord() {
     declareProperty(workflowInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -36,7 +41,8 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(closeOnCorrelateProp)
-        .declareProperty(bpmnProcessIdProp);
+        .declareProperty(bpmnProcessIdProp)
+        .declareProperty(variablesProp);
   }
 
   public boolean shouldCloseOnCorrelate() {
@@ -121,5 +127,20 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
     return bpmnProcessIdProp.getValue();
+  }
+
+  @Override
+  public Map<String, Object> getVariables() {
+    return MsgPackConverter.convertToMap(variablesProp.getValue());
+  }
+
+  public MessageSubscriptionRecord setVariables(final DirectBuffer variables) {
+    variablesProp.setValue(variables);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variablesProp.getValue();
   }
 }

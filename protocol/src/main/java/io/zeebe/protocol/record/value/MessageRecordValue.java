@@ -40,4 +40,11 @@ public interface MessageRecordValue extends RecordValueWithVariables {
 
   /** @return the time to live of the message */
   long getTimeToLive();
+
+  /**
+   * @return the unix timestamp in milliseconds until when the message can be correlated. If the
+   *     deadline is exceeded then the message expires and will be removed. If this property is not
+   *     set, it returns -1 instead.
+   */
+  long getDeadline();
 }

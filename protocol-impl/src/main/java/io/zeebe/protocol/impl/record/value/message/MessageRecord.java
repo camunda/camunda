@@ -24,6 +24,8 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey");
   // TTL in milliseconds
   private final LongProperty timeToLiveProp = new LongProperty("timeToLive");
+  private final LongProperty deadlineProp = new LongProperty("deadline", -1);
+
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
   private final StringProperty messageIdProp = new StringProperty("messageId", "");
 
@@ -32,7 +34,8 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
         .declareProperty(correlationKeyProp)
         .declareProperty(timeToLiveProp)
         .declareProperty(variablesProp)
-        .declareProperty(messageIdProp);
+        .declareProperty(messageIdProp)
+        .declareProperty(deadlineProp);
   }
 
   public boolean hasMessageId() {
@@ -64,6 +67,7 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
     return BufferUtil.bufferAsString(messageIdProp.getValue());
   }
 
+  @Override
   public long getTimeToLive() {
     return timeToLiveProp.getValue();
   }
@@ -121,5 +125,15 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
     return variablesProp.getValue();
+  }
+
+  @Override
+  public long getDeadline() {
+    return deadlineProp.getValue();
+  }
+
+  public MessageRecord setDeadline(final long deadline) {
+    deadlineProp.setValue(deadline);
+    return this;
   }
 }

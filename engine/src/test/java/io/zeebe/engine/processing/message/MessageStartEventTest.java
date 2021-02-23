@@ -17,6 +17,7 @@ import io.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
@@ -52,7 +53,7 @@ public final class MessageStartEventTest {
   }
 
   private static BpmnModelInstance singleStartEvent(
-      final Consumer<StartEventBuilder> customizer, String messageName) {
+      final Consumer<StartEventBuilder> customizer, final String messageName) {
     final var startEventBuilder =
         Bpmn.createExecutableProcess("wf").startEvent().message(messageName);
 
@@ -94,6 +95,36 @@ public final class MessageStartEventTest {
         .hasVersion(workflowInstance.getValue().getVersion())
         .hasWorkflowInstanceKey(workflowInstance.getKey())
         .hasFlowScopeKey(workflowInstance.getKey());
+  }
+
+  @Test
+  public void shouldCorrelateMessageSubscription() {
+    // given
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();
+
+    // when
+    final var messagePublished =
+        engine.message().withCorrelationKey(CORRELATION_KEY_1).withName(MESSAGE_NAME_1).publish();
+
+    // then
+    final var startEventActivated =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.START_EVENT)
+            .getFirst();
+
+    final var subscriptionCorrelated =
+        RecordingExporter.messageStartEventSubscriptionRecords(
+                MessageStartEventSubscriptionIntent.CORRELATED)
+            .getFirst();
+
+    Assertions.assertThat(subscriptionCorrelated.getValue())
+        .hasWorkflowKey(startEventActivated.getValue().getWorkflowKey())
+        .hasBpmnProcessId(startEventActivated.getValue().getBpmnProcessId())
+        .hasWorkflowInstanceKey(startEventActivated.getValue().getWorkflowInstanceKey())
+        .hasStartEventId(startEventActivated.getValue().getElementId())
+        .hasMessageKey(messagePublished.getKey())
+        .hasMessageName(MESSAGE_NAME_1)
+        .hasCorrelationKey(CORRELATION_KEY_1);
   }
 
   @Test

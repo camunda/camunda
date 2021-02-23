@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.record.value;
 
-import io.zeebe.protocol.record.RecordValue;
+import io.zeebe.protocol.record.RecordValueWithVariables;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 
 /**
@@ -23,7 +23,7 @@ import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
  *
  * <p>See {@link MessageStartEventSubscriptionIntent} for intents.
  */
-public interface MessageStartEventSubscriptionRecordValue extends RecordValue {
+public interface MessageStartEventSubscriptionRecordValue extends RecordValueWithVariables {
 
   /** @return the workflow key tied to the subscription */
   long getWorkflowKey();
@@ -36,4 +36,22 @@ public interface MessageStartEventSubscriptionRecordValue extends RecordValue {
 
   /** @return the name of the message */
   String getMessageName();
+
+  /**
+   * @return the key of the workflow instance that was created by this message. It is only set when
+   *     a message is correlated to this subscription. Otherwise, it returns -1.
+   */
+  long getWorkflowInstanceKey();
+
+  /**
+   * @return the correlation key of the message. It is only set when a message is correlated to this
+   *     subscription. Otherwise, it returns an empty string.
+   */
+  String getCorrelationKey();
+
+  /**
+   * @return the key of the message. It is only set when a message is correlated to this
+   *     subscription. Otherwise, it returns -1.
+   */
+  long getMessageKey();
 }

@@ -14,52 +14,61 @@ import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
-import io.zeebe.engine.state.message.Message;
+import io.zeebe.engine.state.immutable.MessageState;
+import io.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageIntent;
-import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import java.util.function.Consumer;
 
-public final class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
+public final class MessagePublishProcessor implements TypedRecordProcessor<MessageRecord> {
 
   private static final String ALREADY_PUBLISHED_MESSAGE =
       "Expected to publish a new message with id '%s', but a message with that id was already published";
 
-  private final MutableMessageState messageState;
-  private final MutableMessageSubscriptionState subscriptionState;
+  private final MessageState messageState;
+  private final MessageSubscriptionState subscriptionState;
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
   private final SubscriptionCommandSender commandSender;
   private final KeyGenerator keyGenerator;
-  private final EventHandle eventHandle;
+  private final StateWriter stateWriter;
 
+  private final EventHandle eventHandle;
   private final Subscriptions correlatingSubscriptions = new Subscriptions();
 
   private TypedResponseWriter responseWriter;
   private MessageRecord messageRecord;
   private long messageKey;
 
-  public PublishMessageProcessor(
+  public MessagePublishProcessor(
       final MutableMessageState messageState,
       final MutableMessageSubscriptionState subscriptionState,
       final MessageStartEventSubscriptionState startEventSubscriptionState,
-      final MutableEventScopeInstanceState scopeEventInstanceState,
+      final MutableEventScopeInstanceState eventScopeInstanceState,
       final SubscriptionCommandSender commandSender,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final Writers writers) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.startEventSubscriptionState = startEventSubscriptionState;
     this.commandSender = commandSender;
     this.keyGenerator = keyGenerator;
+    stateWriter = writers.state();
 
-    eventHandle = new EventHandle(keyGenerator, scopeEventInstanceState);
+    eventHandle = new EventHandle(keyGenerator, eventScopeInstanceState);
   }
 
   @Override
@@ -97,7 +106,10 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
       final Consumer<SideEffectProducer> sideEffect) {
     messageKey = keyGenerator.nextKey();
 
-    streamWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, command.getValue());
+    // calculate the deadline based on the command's timestamp
+    messageRecord.setDeadline(command.getTimestamp() + messageRecord.getTimeToLive());
+
+    stateWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, command.getValue());
     responseWriter.writeEventOnCommand(
         messageKey, MessageIntent.PUBLISHED, command.getValue(), command);
 
@@ -106,17 +118,9 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
 
     sideEffect.accept(this::sendCorrelateCommand);
 
-    if (messageRecord.getTimeToLive() > 0L) {
-      final Message message = newMessage(messageKey, messageRecord, command.getTimestamp());
-      messageState.put(message);
-
-      // avoid correlating this message to the workflow again
-      correlatingSubscriptions.visitBpmnProcessIds(
-          bpmnProcessId -> messageState.putMessageCorrelation(messageKey, bpmnProcessId));
-
-    } else {
-      // don't need to add the message to the store - it can not be correlated afterwards
-      streamWriter.appendFollowUpEvent(messageKey, MessageIntent.EXPIRED, messageRecord);
+    if (messageRecord.getTimeToLive() <= 0L) {
+      // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up
+      stateWriter.appendFollowUpEvent(messageKey, MessageIntent.EXPIRED, messageRecord);
     }
   }
 
@@ -132,11 +136,21 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
 
             correlatingSubscriptions.add(subscription);
 
-            subscriptionState.updateToCorrelatingState(
-                subscription,
-                message.getVariablesBuffer(),
-                ActorClock.currentTimeMillis(),
-                messageKey);
+            // TODO (saig0): reuse the subscription record in the state (#6180)
+            final var messageSubscriptionRecord =
+                new MessageSubscriptionRecord()
+                    .setBpmnProcessId(subscription.getBpmnProcessId())
+                    .setWorkflowInstanceKey(subscription.getWorkflowInstanceKey())
+                    .setElementInstanceKey(subscription.getElementInstanceKey())
+                    .setMessageName(subscription.getMessageName())
+                    .setMessageKey(messageKey)
+                    .setCorrelationKey(subscription.getCorrelationKey())
+                    .setVariables(message.getVariablesBuffer())
+                    .setCloseOnCorrelate(subscription.shouldCloseOnCorrelate());
+
+            // TODO (saig0): the subscription should have a key (#2805)
+            stateWriter.appendFollowUpEvent(
+                -1L, MessageSubscriptionIntent.CORRELATING, messageSubscriptionRecord);
           }
 
           return true;
@@ -159,25 +173,31 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
                   || !messageState.existActiveWorkflowInstance(
                       bpmnProcessIdBuffer, correlationKeyBuffer))) {
 
-            final var workflowInstanceKey =
-                eventHandle.triggerStartEvent(
-                    streamWriter,
-                    subscription.getWorkflowKey(),
-                    subscription.getStartEventIdBuffer(),
-                    messageRecord.getVariablesBuffer());
+            correlatingSubscriptions.add(subscription);
 
-            if (workflowInstanceKey > 0) {
-              correlatingSubscriptions.add(subscription);
+            final var workflowInstanceKey = keyGenerator.nextKey();
 
-              if (correlationKeyBuffer.capacity() > 0) {
-                // lock the workflow for this correlation key
-                // - other messages with same correlation key are not correlated to this workflow
-                // until the created instance is ended
-                messageState.putActiveWorkflowInstance(bpmnProcessIdBuffer, correlationKeyBuffer);
-                messageState.putWorkflowInstanceCorrelationKey(
-                    workflowInstanceKey, correlationKeyBuffer);
-              }
-            }
+            // TODO (saig0): reuse the subscription record in the state (#6183)
+            final var subscriptionRecord =
+                new MessageStartEventSubscriptionRecord()
+                    .setWorkflowKey(subscription.getWorkflowKey())
+                    .setBpmnProcessId(subscription.getBpmnProcessIdBuffer())
+                    .setStartEventId(subscription.getStartEventIdBuffer())
+                    .setWorkflowInstanceKey(workflowInstanceKey)
+                    .setMessageName(subscription.getMessageNameBuffer())
+                    .setMessageKey(messageKey)
+                    .setCorrelationKey(correlationKeyBuffer)
+                    .setVariables(messageRecord.getVariablesBuffer());
+
+            // TODO (saig0): the subscription should have a key (#2805)
+            stateWriter.appendFollowUpEvent(
+                -1L, MessageStartEventSubscriptionIntent.CORRELATED, subscriptionRecord);
+
+            eventHandle.activateStartEvent(
+                streamWriter,
+                subscription.getWorkflowKey(),
+                workflowInstanceKey,
+                subscription.getStartEventIdBuffer());
           }
         });
   }
@@ -196,18 +216,6 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
                     messageRecord.getVariablesBuffer(),
                     messageRecord.getCorrelationKeyBuffer()));
 
-    return success ? responseWriter.flush() : false;
-  }
-
-  private Message newMessage(
-      final long messageKey, final MessageRecord messageRecord, final long publishedTimestamp) {
-    return new Message(
-        messageKey,
-        messageRecord.getNameBuffer(),
-        messageRecord.getCorrelationKeyBuffer(),
-        messageRecord.getVariablesBuffer(),
-        messageRecord.getMessageIdBuffer(),
-        messageRecord.getTimeToLive(),
-        publishedTimestamp + messageRecord.getTimeToLive());
+    return success && responseWriter.flush();
   }
 }

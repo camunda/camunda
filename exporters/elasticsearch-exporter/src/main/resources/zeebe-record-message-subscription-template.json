@@ -32,6 +32,9 @@
             },
             "messageKey": {
               "type": "long"
+            },
+            "variables": {
+              "enabled": false
             }
           }
         }

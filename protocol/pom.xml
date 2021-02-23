@@ -128,7 +128,7 @@
             <ignored>
               <!-- ignore new methods in the interface -->
               <className>
-                io/zeebe/protocol/record/value/deployment/DeployedWorkflow
+                io/zeebe/protocol/record/value/**/**
               </className>
               <method>*</method>
               <differenceType>7012</differenceType>

@@ -10,10 +10,13 @@ package io.zeebe.protocol.impl.record.value.message;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValue
@@ -24,11 +27,20 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final StringProperty startEventIdProp = new StringProperty("startEventId", "");
 
+  private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
+  private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
+  private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
+  private final DocumentProperty variablesProp = new DocumentProperty("variables");
+
   public MessageStartEventSubscriptionRecord() {
     declareProperty(workflowKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(startEventIdProp)
-        .declareProperty(bpmnProcessIdProp);
+        .declareProperty(bpmnProcessIdProp)
+        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(messageKeyProp)
+        .declareProperty(correlationKeyProp)
+        .declareProperty(variablesProp);
   }
 
   public void wrap(final MessageStartEventSubscriptionRecord record) {
@@ -91,5 +103,55 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
     return bpmnProcessIdProp.getValue();
+  }
+
+  @Override
+  public String getCorrelationKey() {
+    return bufferAsString(correlationKeyProp.getValue());
+  }
+
+  public MessageStartEventSubscriptionRecord setCorrelationKey(final DirectBuffer correlationKey) {
+    correlationKeyProp.setValue(correlationKey);
+    return this;
+  }
+
+  @Override
+  public long getMessageKey() {
+    return messageKeyProp.getValue();
+  }
+
+  public MessageStartEventSubscriptionRecord setMessageKey(final long messageKey) {
+    messageKeyProp.setValue(messageKey);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getCorrelationKeyBuffer() {
+    return correlationKeyProp.getValue();
+  }
+
+  @Override
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKeyProp.getValue();
+  }
+
+  public MessageStartEventSubscriptionRecord setWorkflowInstanceKey(final long key) {
+    workflowInstanceKeyProp.setValue(key);
+    return this;
+  }
+
+  @Override
+  public Map<String, Object> getVariables() {
+    return MsgPackConverter.convertToMap(variablesProp.getValue());
+  }
+
+  public MessageStartEventSubscriptionRecord setVariables(final DirectBuffer variables) {
+    variablesProp.setValue(variables);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variablesProp.getValue();
   }
 }

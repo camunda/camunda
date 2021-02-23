@@ -113,7 +113,12 @@ public final class ReProcessingStateMachine {
   private final RecordProcessorMap recordProcessorMap;
 
   private final EventFilter eventFilter =
-      new MetadataEventFilter(new RecordProtocolVersionFilter().and(REPLAY_FILTER));
+      new MetadataEventFilter(
+          new RecordProtocolVersionFilter()
+          // TODO (saig0): enable the replay filter after all stream processors are migrated (#6202)
+          // until then, we need to restore the key generator for already migrated processors
+          //          .and(REPLAY_FILTER)
+          );
 
   private final LogStreamReader logStreamReader;
   private final ReprocessingStreamWriter reprocessingStreamWriter = new ReprocessingStreamWriter();

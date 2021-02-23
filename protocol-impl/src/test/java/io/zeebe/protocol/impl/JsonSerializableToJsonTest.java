@@ -402,9 +402,10 @@ public final class JsonSerializableToJsonTest {
                   .setName(wrapString(messageName))
                   .setVariables(VARIABLES_MSGPACK)
                   .setTimeToLive(timeToLive)
+                  .setDeadline(22L)
                   .setMessageId(wrapString(messageId));
             },
-        "{'timeToLive':12,'correlationKey':'test-key','variables':{'foo':'bar'},'messageId':'test-id','name':'test-message'}"
+        "{'timeToLive':12,'correlationKey':'test-key','variables':{'foo':'bar'},'messageId':'test-id','name':'test-message','deadline':22}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// Empty MessageRecord ///////////////////////////////////////
@@ -422,7 +423,7 @@ public final class JsonSerializableToJsonTest {
                   .setCorrelationKey(correlationKey)
                   .setName(messageName);
             },
-        "{'timeToLive':12,'correlationKey':'test-key','variables':{},'messageId':'','name':'test-message'}"
+        "{'timeToLive':12,'correlationKey':'test-key','variables':{},'messageId':'','name':'test-message','deadline':-1}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -441,9 +442,13 @@ public final class JsonSerializableToJsonTest {
                   .setMessageName(wrapString(messageName))
                   .setStartEventId(wrapString(startEventId))
                   .setWorkflowKey(workflowKey)
-                  .setBpmnProcessId(wrapString(bpmnProcessId));
+                  .setBpmnProcessId(wrapString(bpmnProcessId))
+                  .setWorkflowInstanceKey(2L)
+                  .setMessageKey(3L)
+                  .setCorrelationKey(wrapString("test-key"))
+                  .setVariables(VARIABLES_MSGPACK);
             },
-        "{'workflowKey':22334,'messageName':'name','startEventId':'startEvent','bpmnProcessId':'workflow'}"
+        "{'workflowKey':22334,'messageName':'name','startEventId':'startEvent','bpmnProcessId':'workflow','workflowInstanceKey':2,'messageKey':3,'correlationKey':'test-key','variables':{'foo':'bar'}}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -457,7 +462,7 @@ public final class JsonSerializableToJsonTest {
 
               return new MessageStartEventSubscriptionRecord().setWorkflowKey(workflowKey);
             },
-        "{'workflowKey':22334,'messageName':'','startEventId':'','bpmnProcessId':''}"
+        "{'workflowKey':22334,'messageName':'','startEventId':'','bpmnProcessId':'','workflowInstanceKey':-1,'messageKey':-1,'correlationKey':'','variables':{}}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -480,9 +485,10 @@ public final class JsonSerializableToJsonTest {
                   .setMessageKey(messageKey)
                   .setMessageName(wrapString(messageName))
                   .setWorkflowInstanceKey(workflowInstanceKey)
-                  .setCorrelationKey(wrapString(correlationKey));
+                  .setCorrelationKey(wrapString(correlationKey))
+                  .setVariables(VARIABLES_MSGPACK);
             },
-        "{'workflowInstanceKey':2,'elementInstanceKey':1,'messageName':'name','correlationKey':'key','bpmnProcessId':'workflow','messageKey':3}"
+        "{'workflowInstanceKey':2,'elementInstanceKey':1,'messageName':'name','correlationKey':'key','bpmnProcessId':'workflow','messageKey':3,'variables':{'foo':'bar'}}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// Empty MessageSubscriptionRecord
@@ -499,7 +505,7 @@ public final class JsonSerializableToJsonTest {
                   .setWorkflowInstanceKey(workflowInstanceKey)
                   .setElementInstanceKey(elementInstanceKey);
             },
-        "{'workflowInstanceKey':1,'elementInstanceKey':13,'messageName':'','correlationKey':'','bpmnProcessId':'','messageKey':-1}"
+        "{'workflowInstanceKey':1,'elementInstanceKey':13,'messageName':'','correlationKey':'','bpmnProcessId':'','messageKey':-1,'variables':{}}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////

@@ -19,6 +19,8 @@ public enum MessageStartEventSubscriptionIntent implements Intent {
   OPEN((short) 0),
   OPENED((short) 1),
 
+  CORRELATED((short) 4),
+
   CLOSE((short) 2),
   CLOSED((short) 3);
 
@@ -43,6 +45,8 @@ public enum MessageStartEventSubscriptionIntent implements Intent {
         return CLOSE;
       case 3:
         return CLOSED;
+      case 4:
+        return CORRELATED;
       default:
         return UNKNOWN;
     }

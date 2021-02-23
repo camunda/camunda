@@ -172,7 +172,7 @@ public final class PublishMessageTest {
   }
 
   @Test
-  public void shouldDeleteMessageAfterTTL() {
+  public void shouldExpireMessageAfterTTL() {
     // given
     final long timeToLive = 100;
 
@@ -197,7 +197,7 @@ public final class PublishMessageTest {
   }
 
   @Test
-  public void shouldDeleteMessageImmediatelyWithZeroTTL() {
+  public void shouldExpireMessageImmediatelyWithZeroTTL() {
     // given
     final long timeToLive = 0L;
 

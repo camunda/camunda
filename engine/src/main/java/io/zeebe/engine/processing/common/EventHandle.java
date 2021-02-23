@@ -84,24 +84,32 @@ public final class EventHandle {
             workflowKey, newElementInstanceKey, elementId, variables);
 
     if (triggered) {
-
       final var workflowInstanceKey = keyGenerator.nextKey();
-      final var eventOccurredKey = keyGenerator.nextKey();
-
-      eventOccurredRecord
-          .setBpmnElementType(BpmnElementType.START_EVENT)
-          .setWorkflowKey(workflowKey)
-          .setWorkflowInstanceKey(workflowInstanceKey)
-          .setElementId(elementId);
-
-      streamWriter.appendFollowUpEvent(
-          eventOccurredKey, WorkflowInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
-
+      activateStartEvent(streamWriter, workflowKey, workflowInstanceKey, elementId);
       return workflowInstanceKey;
 
     } else {
       return -1L;
     }
+  }
+
+  public void activateStartEvent(
+      final TypedStreamWriter streamWriter,
+      final long workflowKey,
+      final long workflowInstanceKey,
+      final DirectBuffer elementId) {
+
+    final var eventOccurredKey = keyGenerator.nextKey();
+
+    eventOccurredRecord
+        .setBpmnElementType(BpmnElementType.START_EVENT)
+        .setWorkflowKey(workflowKey)
+        .setWorkflowInstanceKey(workflowInstanceKey)
+        .setElementId(elementId);
+
+    // TODO (saig0): create the workflow instance by writing an ACTIVATE command (#6184)
+    streamWriter.appendFollowUpEvent(
+        eventOccurredKey, WorkflowInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
   }
 
   private boolean isEventSubprocess(final ExecutableFlowElement catchEvent) {

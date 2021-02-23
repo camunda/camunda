@@ -123,6 +123,11 @@ public class WorkflowExecutor {
         .withCorrelationKey("")
         .withVariables(publishMessage.getVariables())
         .publish();
+
+    RecordingExporter.messageStartEventSubscriptionRecords(
+            MessageStartEventSubscriptionIntent.CORRELATED)
+        .withMessageName(publishMessage.getMessageName())
+        .await();
   }
 
   private void createWorkflowInstance(final StepStartProcessInstance startProcess) {
