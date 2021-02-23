@@ -587,9 +587,6 @@ public class RaftTest extends ConcurrentTestCase {
     private final CompletableFuture<Long> commitFuture = new CompletableFuture<>();
 
     @Override
-    public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
-    @Override
     public void onWriteError(final Throwable error) {
       fail("Unexpected write error: " + error.getMessage());
     }

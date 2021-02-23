@@ -606,9 +606,6 @@ public final class RaftRule extends ExternalResource {
     private final CompletableFuture<Long> commitFuture = new CompletableFuture<>();
 
     @Override
-    public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
-    @Override
     public void onWriteError(final Throwable error) {
       commitFuture.completeExceptionally(error);
     }

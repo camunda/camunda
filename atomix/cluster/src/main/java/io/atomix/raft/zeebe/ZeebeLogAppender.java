@@ -47,21 +47,21 @@ public interface ZeebeLogAppender {
      *
      * @param indexed the entry that was written to the log
      */
-    void onWrite(Indexed<ZeebeEntry> indexed);
+    default void onWrite(final Indexed<ZeebeEntry> indexed) {}
 
     /**
      * Called when an error occurred while writing the entry to the log.
      *
      * @param error the error that occurred
      */
-    void onWriteError(Throwable error);
+    default void onWriteError(final Throwable error) {}
 
     /**
      * Called when the entry has been committed.
      *
      * @param indexed the entry that was committed
      */
-    void onCommit(Indexed<ZeebeEntry> indexed);
+    default void onCommit(final Indexed<ZeebeEntry> indexed) {}
 
     /**
      * Called when an error occurred while replicating or committing an entry, typically when if an
@@ -70,6 +70,6 @@ public interface ZeebeLogAppender {
      * @param indexed the entry that should have been committed
      * @param error the error that occurred
      */
-    void onCommitError(Indexed<ZeebeEntry> indexed, Throwable error);
+    default void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
   }
 }

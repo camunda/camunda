@@ -102,20 +102,10 @@ public class LeaderRoleTest {
     final CountDownLatch latch = new CountDownLatch(1);
     final AppendListener listener =
         new AppendListener() {
-
           @Override
           public void onWrite(final Indexed<ZeebeEntry> indexed) {
             latch.countDown();
           }
-
-          @Override
-          public void onWriteError(final Throwable error) {}
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
@@ -142,20 +132,10 @@ public class LeaderRoleTest {
     final CountDownLatch latch = new CountDownLatch(1);
     final AppendListener listener =
         new AppendListener() {
-
           @Override
           public void onWrite(final Indexed<ZeebeEntry> indexed) {
             latch.countDown();
           }
-
-          @Override
-          public void onWriteError(final Throwable error) {}
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
@@ -176,21 +156,11 @@ public class LeaderRoleTest {
     final CountDownLatch latch = new CountDownLatch(1);
     final AppendListener listener =
         new AppendListener() {
-
-          @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
           @Override
           public void onWriteError(final Throwable error) {
             caughtError.set(error);
             latch.countDown();
           }
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
@@ -214,21 +184,11 @@ public class LeaderRoleTest {
     final CountDownLatch latch = new CountDownLatch(1);
     final AppendListener listener =
         new AppendListener() {
-
-          @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
           @Override
           public void onWriteError(final Throwable error) {
             caughtError.set(error);
             latch.countDown();
           }
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
@@ -253,21 +213,11 @@ public class LeaderRoleTest {
     final CountDownLatch latch = new CountDownLatch(1);
     final AppendListener listener =
         new AppendListener() {
-
-          @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
           @Override
           public void onWriteError(final Throwable error) {
             caughtError.set(error);
             latch.countDown();
           }
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
@@ -290,21 +240,11 @@ public class LeaderRoleTest {
     final CountDownLatch latch = new CountDownLatch(1);
     final AppendListener listener =
         new AppendListener() {
-
-          @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
           @Override
           public void onWriteError(final Throwable error) {
             caughtError.set(error);
             latch.countDown();
           }
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
@@ -328,43 +268,17 @@ public class LeaderRoleTest {
     final CountDownLatch latch = new CountDownLatch(1);
 
     // when
-    leaderRole.appendEntry(
-        0,
-        1,
-        data,
-        new AppendListener() {
-          @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onWriteError(final Throwable error) {}
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
-        });
+    leaderRole.appendEntry(0, 1, data, new AppendListener() {});
     leaderRole.appendEntry(
         2,
         3,
         data,
         new AppendListener() {
-
-          @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
           @Override
           public void onWriteError(final Throwable error) {
             caughtError.set(error);
             latch.countDown();
           }
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         });
 
     // then
@@ -394,21 +308,11 @@ public class LeaderRoleTest {
     final CountDownLatch latch = new CountDownLatch(2);
     final AppendListener listener =
         new AppendListener() {
-
           @Override
           public void onWrite(final Indexed<ZeebeEntry> indexed) {
             entries.add(indexed.entry());
             latch.countDown();
           }
-
-          @Override
-          public void onWriteError(final Throwable error) {}
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
@@ -456,18 +360,9 @@ public class LeaderRoleTest {
     final AppendListener listener =
         new AppendListener() {
           @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
           public void onWriteError(final Throwable error) {
             latch.countDown();
           }
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
