@@ -34,6 +34,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private final FileBasedSnapshotMetadata metadata;
   private final ActorFuture<Boolean> takenFuture = new CompletableActorFuture<>();
   private boolean isValid = false;
+  private PersistedSnapshot snapshot;
 
   FileBasedTransientSnapshot(
       final FileBasedSnapshotMetadata metadata,
@@ -66,6 +67,8 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
         if (!isValid) {
           abortInternal();
         }
+
+        snapshot = null;
         takenFuture.complete(isValid);
       } catch (final Exception exception) {
         LOGGER.warn("Unexpected exception on taking snapshot ({})", metadata, exception);
@@ -91,6 +94,10 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     final CompletableActorFuture<PersistedSnapshot> future = new CompletableActorFuture<>();
     actor.call(
         () -> {
+          if (snapshot != null) {
+            future.complete(snapshot);
+            return;
+          }
           if (!takenFuture.isDone()) {
             future.completeExceptionally(new IllegalStateException("Snapshot is not taken"));
             return;
@@ -101,7 +108,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
             return;
           }
           try {
-            final var snapshot = snapshotStore.newSnapshot(metadata, directory);
+            snapshot = snapshotStore.newSnapshot(metadata, directory);
             future.complete(snapshot);
           } catch (final Exception e) {
             future.completeExceptionally(e);
@@ -118,6 +125,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private void abortInternal() {
     try {
       isValid = false;
+      snapshot = null;
       LOGGER.debug("DELETE dir {}", directory);
       FileUtil.deleteFolder(directory);
     } catch (final IOException e) {
