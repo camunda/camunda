@@ -5306,10 +5306,10 @@ chownr@^2.0.0:
   resolved "https://registry.yarnpkg.com/chownr/-/chownr-2.0.0.tgz#15bfbe53d2eab4cf70f18a8cd68ebe5b3cb1dece"
   integrity sha512-bIomtDF5KGpdogkLd9VspvFzk9KfpyyGlS8YFVZl7TGPBHL5snIOnxeshwVgPteQ9b4Eydl+pVbIyE1DcvCWgQ==
 
-chromatic@^5.6.2:
-  version "5.6.2"
-  resolved "https://registry.yarnpkg.com/chromatic/-/chromatic-5.6.2.tgz#21ed613c498572b34cb7d27145b807699f1450f7"
-  integrity sha512-MJJcMugIjHXZ0Khm/xD3lQJ/clbIL6EGoX/TsVL7Q6WyVd+kvnD1YAABH0CwCSRlSAYj+JTjAIGFFodkBKAlIw==
+chromatic@^5.6.3:
+  version "5.6.3"
+  resolved "https://registry.yarnpkg.com/chromatic/-/chromatic-5.6.3.tgz#5b1ef3a9ff60b617f9ee1397921951e6e2f08a8c"
+  integrity sha512-GjTWCxXD8bbOAIH8rPxIB0O96temNLis2fyCFHNwaSX762xx7mdZr8R6aEkBVjYVP5gY/l6tszPpMeCav6bNiQ==
   dependencies:
     "@actions/core" "^1.2.4"
     "@actions/github" "^4.0.0"
@@ -5328,7 +5328,7 @@ chromatic@^5.6.2:
     jsonfile "^6.0.1"
     junit-report-builder "2.1.0"
     listr "0.14.3"
-    meow "^9.0.0"
+    meow "^8.0.0"
     node-ask "^1.0.1"
     node-fetch "^2.6.0"
     node-loggly-bulk "^2.2.4"
@@ -11389,14 +11389,13 @@ meow@^3.3.0:
     redent "^1.0.0"
     trim-newlines "^1.0.0"
 
-meow@^9.0.0:
-  version "9.0.0"
-  resolved "https://registry.yarnpkg.com/meow/-/meow-9.0.0.tgz#cd9510bc5cac9dee7d03c73ee1f9ad959f4ea364"
-  integrity sha512-+obSblOQmRhcyBt62furQqRAQpNyWXo8BuQ5bN7dG8wmwQ+vwHKp/rCFD4CrTP8CsDQD1sjoZ94K417XEUk8IQ==
+meow@^8.0.0:
+  version "8.1.2"
+  resolved "https://registry.yarnpkg.com/meow/-/meow-8.1.2.tgz#bcbe45bda0ee1729d350c03cffc8395a36c4e897"
+  integrity sha512-r85E3NdZ+mpYk1C6RjPFEMSE+s1iZMuHtsHAqY0DT3jZczl0diWUZ8g6oU7h0M9cD2EL+PzaYghhCLzR0ZNn5Q==
   dependencies:
     "@types/minimist" "^1.2.0"
     camelcase-keys "^6.2.2"
-    decamelize "^1.2.0"
     decamelize-keys "^1.1.0"
     hard-rejection "^2.1.0"
     minimist-options "4.1.0"
