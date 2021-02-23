@@ -10,9 +10,10 @@ import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -25,6 +26,7 @@ import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,7 +56,9 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       null
     )));
 
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
+      reportClient.evaluateDecisionRawReport(reportData)
+        .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(0L);
@@ -89,7 +93,9 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       OffsetDateTime.now().plusDays(1)
     )));
 
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
+      reportClient.evaluateDecisionRawReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(5L);
@@ -127,7 +133,9 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       OffsetDateTime.now().plusDays(1)
     )));
 
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
+      reportClient.evaluateDecisionRawReport(reportData)
+        .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(5L);
@@ -149,7 +157,9 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, dateFilterUnit)));
 
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
+      reportClient.evaluateDecisionRawReport(reportData)
+        .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -183,7 +193,8 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusDays(2L));
 
-    RawDataDecisionReportResultDto result = evaluateReportWithNewAuthToken(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
+      evaluateReportWithNewAuthToken(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(0L);
@@ -205,7 +216,9 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(0L, dateFilterUnit)));
 
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
+      reportClient.evaluateDecisionRawReport(reportData)
+        .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -227,7 +240,9 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(1L, dateFilterUnit)));
 
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
+      reportClient.evaluateDecisionRawReport(reportData)
+        .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(0L);
@@ -262,13 +277,13 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
   }
 
 
-  private AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateReportWithNewAuthToken(final DecisionReportDataDto reportData) {
+  private AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluateReportWithNewAuthToken(final DecisionReportDataDto reportData) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .withGivenAuthToken(embeddedOptimizeExtension.getNewAuthenticationToken())
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>>>() {});
       // @formatter:on
   }
 

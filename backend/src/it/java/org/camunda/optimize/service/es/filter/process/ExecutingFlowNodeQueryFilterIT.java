@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +40,7 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executingFlowNodes);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, executingFlowNodes);
     // then
     assertThat(result.getData())
       .singleElement()
@@ -71,7 +71,7 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
       .id(USER_TASK_2)
       .add()
       .buildList();
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2);
@@ -109,7 +109,7 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executingFlowNodes);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, executingFlowNodes);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3);

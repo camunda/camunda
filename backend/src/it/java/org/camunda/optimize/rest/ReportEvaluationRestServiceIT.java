@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
@@ -28,12 +29,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
@@ -242,7 +242,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     importAllEngineEntitiesFromScratch();
 
     // when filtering for usertasks with the assignee
-    ReportMapResultDto result = reportClient.evaluateMapReport(
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(
       reportId,
       new AdditionalProcessReportEvaluationFilterDto(createAssigneeFilter(IN, DEFAULT_USERNAME))
     ).getResult();
@@ -277,7 +277,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     importAllEngineEntitiesFromScratch();
 
     // when filtering for usertasks with the candidate group
-    ReportMapResultDto result = reportClient.evaluateMapReport(
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(
       reportId,
       new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(IN, candidateGroupId))
     ).getResult();
@@ -312,7 +312,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    ReportMapResultDto result = reportClient.evaluateMapReport(
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(
       reportId,
       new AdditionalProcessReportEvaluationFilterDto(createAssigneeFilter(IN, DEFAULT_USERNAME))
     ).getResult();
@@ -338,7 +338,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    ReportMapResultDto result = reportClient.evaluateMapReport(
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(
       reportId,
       new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(IN, candidateGroupId))
     ).getResult();
@@ -628,7 +628,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // given
     final SingleReportDataDto reportDataDto = createSingleReportDataForType(reportType);
     final SingleReportDefinitionDto<?> reportDefinitionDto;
-    final AuthorizedEvaluationResultDto<?, ?> result;
+    final AuthorizedSingleReportEvaluationResponseDto<?, ?> result;
     switch (reportType) {
       case PROCESS:
         reportDefinitionDto = new SingleProcessReportDefinitionRequestDto((ProcessReportDataDto) reportDataDto);
@@ -859,14 +859,14 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     assertThat(extractReportResponse(response).getResult().getInstanceCount()).isEqualTo(expectedCount);
   }
 
-  private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> extractReportResponse(Response response) {
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataInstanceDto>> extractReportResponse(Response response) {
     String jsonString = response.readEntity(String.class);
     try {
       return embeddedOptimizeExtension
         .getObjectMapper()
         .readValue(
           jsonString,
-          new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {
+          new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataInstanceDto>>>() {
           }
         );
     } catch (IOException e) {

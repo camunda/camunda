@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -55,8 +54,8 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      reportClient.<ReportMapResultDto>evaluateCombinedReportById(response.getId()).getResult();
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
+      reportClient.<List<MapResultEntryDto>>evaluateCombinedReportById(response.getId()).getResult();
     assertThat(result.getData().values())
       .hasSize(2)
       .allSatisfy(singleReportResult -> {
@@ -93,8 +92,8 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      reportClient.<ReportMapResultDto>evaluateCombinedReportById(response.getId()).getResult();
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
+      reportClient.<List<MapResultEntryDto>>evaluateCombinedReportById(response.getId()).getResult();
     assertThat(result.getData().values())
       .hasSize(2)
       .allSatisfy(singleReportResult -> {
@@ -132,8 +131,8 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      reportClient.<ReportMapResultDto>evaluateCombinedReportById(response.getId()).getResult();
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
+      reportClient.<List<MapResultEntryDto>>evaluateCombinedReportById(response.getId()).getResult();
     assertThat(result.getData().values())
       .hasSize(2)
       .allSatisfy(singleReportResult -> {

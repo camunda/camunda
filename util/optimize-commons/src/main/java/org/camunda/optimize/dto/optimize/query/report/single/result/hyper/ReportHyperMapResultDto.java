@@ -16,7 +16,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 @Data
 @AllArgsConstructor
@@ -34,10 +33,6 @@ public class ReportHyperMapResultDto implements ProcessReportResultDto {
 
   public void addMeasure(MeasureDto<List<HyperMapResultEntryDto>> measure) {
     this.measures.add(measure);
-  }
-
-  public Optional<HyperMapResultEntryDto> getDataEntryForKey(final String key) {
-    return getFirstMeasureData().stream().filter(entry -> key.equals(entry.getKey())).findFirst();
   }
 
   @JsonIgnore

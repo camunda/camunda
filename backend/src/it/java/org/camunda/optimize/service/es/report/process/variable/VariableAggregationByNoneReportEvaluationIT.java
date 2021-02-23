@@ -14,9 +14,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -54,7 +54,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
-    AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
       reportClient.evaluateNumberReport(reportData);
 
     // then
@@ -67,7 +67,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
       .isEqualTo(ViewProperty.VARIABLE(TEST_VARIABLE, VariableType.INTEGER));
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
 
-    final NumberResultDto resultDto = evaluationResponse.getResult();
+    final ReportResultResponseDto<Double> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
     assertThat(resultDto.getFirstMeasureData()).isNotNull();
     assertThat(resultDto.getFirstMeasureData()).isEqualTo(12.);
@@ -84,7 +84,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
       // when
       final VariableType variableType = varNameToTypeMap.get(variable);
       ProcessReportDataDto reportData = createReport(variable, variableType);
-      NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
+      ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
       // then
       assertThat(evaluationResponse.getInstanceCount()).isEqualTo(1L);
@@ -106,7 +106,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
     reportData.getConfiguration().setAggregationTypes(AVERAGE);
-    NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(2L);
@@ -126,7 +126,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
     reportData.getConfiguration().setAggregationTypes(AVERAGE);
-    NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(2L);
@@ -147,7 +147,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
     reportData.setProcessDefinitionVersion(ALL_VERSIONS);
     reportData.getConfiguration().setAggregationTypes(AVERAGE);
-    NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(2L);
@@ -167,7 +167,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
     reportData.getConfiguration().setAggregationTypes(AVERAGE);
-    NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(2L);
@@ -190,7 +190,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
     reportData.getConfiguration().setAggregationTypes(aggregationType);
-    NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(3L);
@@ -211,7 +211,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
   public void noResultForNonExistingVariable() {
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
-    NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(0L);
@@ -246,7 +246,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
     reportData.setFilter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList());
-    NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(1L);
@@ -265,7 +265,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     // when
     ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
     reportData.setFilter(filtersToApply);
-    NumberResultDto evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(evaluationResponse.getInstanceCount()).isZero();

@@ -7,16 +7,15 @@ package org.camunda.optimize.dto.optimize.rest.report;
 
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 
 @NoArgsConstructor
-public class AuthorizedDecisionReportEvaluationResultDto<T extends SingleReportResultDto>
-  extends AuthorizedEvaluationResultDto<T, SingleDecisionReportDefinitionRequestDto> {
+public class AuthorizedDecisionReportEvaluationResponseDto<T>
+  extends AuthorizedSingleReportEvaluationResponseDto<T, SingleDecisionReportDefinitionRequestDto> {
 
-  public AuthorizedDecisionReportEvaluationResultDto(final RoleType currentUserRole,
-                                                     final T reportResult,
-                                                     final SingleDecisionReportDefinitionRequestDto reportDefinition) {
+  public AuthorizedDecisionReportEvaluationResponseDto(final RoleType currentUserRole,
+                                                       final ReportResultResponseDto<T> reportResult,
+                                                       final SingleDecisionReportDefinitionRequestDto reportDefinition) {
     super(currentUserRole, reportResult, reportDefinition);
   }
 }

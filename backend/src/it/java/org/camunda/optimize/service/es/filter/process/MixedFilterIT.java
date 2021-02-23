@@ -17,11 +17,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
@@ -126,7 +124,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    final RawDataProcessReportResultDto rawDataReportResultDto = createAndEvaluateReportWithFilter(
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> rawDataReportResultDto = createAndEvaluateReportWithFilter(
       processDefinition, filterList
     );
 
@@ -183,9 +181,8 @@ public class MixedFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto rawDataReportResultDto = createAndEvaluateReportWithFilter(
-      processDefinition,
-      filterList
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> rawDataReportResultDto = createAndEvaluateReportWithFilter(
+      processDefinition, filterList
     );
 
     // then
@@ -213,7 +210,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
       .buildList();
-    final ProcessReportResultDto result = evaluateReport(reportType, processDefinition, filterList);
+    final ReportResultResponseDto<?> result = evaluateReport(reportType, processDefinition, filterList);
 
     // then
     assertReportWithIncompatibleFilters(reportType, result);
@@ -249,7 +246,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
       .buildList();
-    final ProcessReportResultDto result = evaluateReport(
+    final ReportResultResponseDto<?> result = evaluateReport(
       reportType, instance.getProcessDefinitionKey(), instance.getProcessDefinitionVersion(), filterList);
 
     // then
@@ -290,7 +287,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
       .buildList();
-    final ProcessReportResultDto result = evaluateReport(reportType, processDefinition, filterList);
+    final ReportResultResponseDto<?> result = evaluateReport(reportType, processDefinition, filterList);
 
     // then
     assertReportWithIncompatibleFilters(reportType, result);
@@ -327,7 +324,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
       .buildList();
-    final ProcessReportResultDto result = evaluateReport(reportType, processDefinition, filterList);
+    final ReportResultResponseDto<?> result = evaluateReport(reportType, processDefinition, filterList);
 
     // then
     assertReportWithIncompatibleFilters(reportType, result);
@@ -355,7 +352,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
       .buildList();
-    final ProcessReportResultDto result = evaluateReport(reportType, def.getKey(), def.getVersion(), filterList);
+    final ReportResultResponseDto<?> result = evaluateReport(reportType, def.getKey(), def.getVersion(), filterList);
 
     // then
     assertReportWithIncompatibleFilters(reportType, result);
@@ -384,7 +381,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .setProcessDefinitionVersion("1")
       .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
       .build();
-    NumberResultDto numberResult = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> numberResult = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(numberResult.getInstanceCount()).isEqualTo(3L);
@@ -475,7 +472,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  protected RawDataProcessReportResultDto createAndEvaluateReportWithFilter(
+  protected ReportResultResponseDto<List<RawDataProcessInstanceDto>> createAndEvaluateReportWithFilter(
     final ProcessDefinitionEngineDto processDefinition,
     final List<ProcessFilterDto<?>> filter) {
     ProcessReportDataDto reportData =
@@ -567,7 +564,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     );
   }
 
-  private ProcessReportResultDto evaluateReport(final ProcessReportDataType reportType,
+  private ReportResultResponseDto<? extends Object> evaluateReport(final ProcessReportDataType reportType,
                                                 final String definitionKey,
                                                 final String definitionVersion,
                                                 final List<ProcessFilterDto<?>> filter) {
@@ -595,7 +592,7 @@ public class MixedFilterIT extends AbstractFilterIT {
   }
 
   private void assertReportWithIncompatibleFilters(final ProcessReportDataType reportType,
-                                                   final ProcessReportResultDto reportResult) {
+                                                   final ReportResultResponseDto<?> reportResult) {
     // then the instance count is zero despite instance matching filters inclusively
     assertThat(reportResult.getInstanceCount()).isZero();
     assertThat(reportResult.getInstanceCountWithoutFilters()).isEqualTo(1L);
@@ -604,16 +601,14 @@ public class MixedFilterIT extends AbstractFilterIT {
       case COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE:
       case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK:
       case INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE:
-        assertThat(((ReportMapResultDto) reportResult).getFirstMeasureData()).isEmpty();
-        break;
       case RAW_DATA:
-        assertThat(((RawDataProcessReportResultDto) reportResult).getData()).isEmpty();
+        assertThat(((ReportResultResponseDto<List<?>>) reportResult).getFirstMeasureData()).isEmpty();
         break;
       case COUNT_PROC_INST_FREQ_GROUP_BY_NONE:
-        assertThat(((NumberResultDto) reportResult).getFirstMeasureData()).isZero();
+        assertThat(((ReportResultResponseDto<Double>) reportResult).getFirstMeasureData()).isZero();
         break;
       case VARIABLE_AGGREGATION_GROUP_BY_NONE:
-        assertThat(((NumberResultDto) reportResult).getFirstMeasureData()).isNull();
+        assertThat(((ReportResultResponseDto<Double>) reportResult).getFirstMeasureData()).isNull();
         break;
       default:
         throw new OptimizeIntegrationTestException(
@@ -621,9 +616,9 @@ public class MixedFilterIT extends AbstractFilterIT {
     }
   }
 
-  private ProcessReportResultDto evaluateReport(final ProcessReportDataType reportType,
-                                                final ProcessDefinitionEngineDto definitionEngineDto,
-                                                final List<ProcessFilterDto<?>> filter) {
+  private ReportResultResponseDto<?> evaluateReport(final ProcessReportDataType reportType,
+                                                    final ProcessDefinitionEngineDto definitionEngineDto,
+                                                    final List<ProcessFilterDto<?>> filter) {
     return evaluateReport(reportType, definitionEngineDto.getKey(), definitionEngineDto.getVersionAsString(), filter);
   }
 

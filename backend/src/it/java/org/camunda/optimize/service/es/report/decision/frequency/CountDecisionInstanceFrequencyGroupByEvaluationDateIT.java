@@ -15,11 +15,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -59,7 +59,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, AggregateByDateUnit.DAY
     ).getResult();
 
@@ -87,7 +87,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, AggregateByDateUnit.DAY
     ).getResult();
 
@@ -131,7 +131,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, AggregateByDateUnit.DAY
     ).getResult();
 
@@ -187,11 +187,11 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDateInterval(AggregateByDateUnit.DAY)
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResult =
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final ReportMapResultDto result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResult.getResult();
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     assertThat(resultData.get(0).getKey())
@@ -240,11 +240,11 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDateInterval(AggregateByDateUnit.DAY)
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResult =
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final ReportMapResultDto result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResult.getResult();
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
@@ -283,7 +283,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setFilter(dateFilterDto)
       .build();
 
-    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResult =
       reportClient.evaluateMapReport(reportData);
 
     // then
@@ -341,7 +341,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, groupByDateUnit
     ).getResult();
 
@@ -384,7 +384,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, AggregateByDateUnit.AUTOMATIC
     ).getResult();
 
@@ -410,7 +410,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, AggregateByDateUnit.YEAR
     ).getResult();
 
@@ -438,7 +438,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, AggregateByDateUnit.YEAR
     ).getResult();
 
@@ -469,7 +469,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
       .setDateInterval(AggregateByDateUnit.HOUR)
       .build();
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -505,11 +505,11 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
         INPUT_AMOUNT_ID, FilterOperator.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
-    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResult =
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final ReportMapResultDto result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData)
@@ -558,7 +558,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByEvaluationDate(
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByEvaluationDate(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final AggregateByDateUnit groupByDateUnit) {

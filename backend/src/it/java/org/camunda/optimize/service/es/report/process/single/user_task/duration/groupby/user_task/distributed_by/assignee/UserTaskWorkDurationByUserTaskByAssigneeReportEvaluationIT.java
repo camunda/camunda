@@ -13,7 +13,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Comp
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -60,7 +61,7 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportHyperMapResultDto result,
+  protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportResultResponseDto<List<HyperMapResultEntryDto>> result,
                                                               final List<ProcessFilterDto<?>> filter) {
     if (isSingleFilterOfType(filter, RunningFlowNodesOnlyFilterDto.class)) {
       // @formatter:off
@@ -101,7 +102,7 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void assertHyperMap_ForOneProcessWithUnassignedTasks(final ReportHyperMapResultDto result) {
+  protected void assertHyperMap_ForOneProcessWithUnassignedTasks(final ReportResultResponseDto<List<HyperMapResultEntryDto>>result) {
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -125,7 +126,7 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
 
   @Override
   protected void assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(
-    final Map<AggregationType, ReportHyperMapResultDto> results, final AggregationType aggType) {
+    final Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> results, final AggregationType aggType) {
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
@@ -153,8 +154,8 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
 
   protected void assertHyperMap_otherProcessDefinitionsDoNotInfluenceResult(final Double[] setDurations1,
                                                                             final Double[] setDurations2,
-                                                                            final ReportHyperMapResultDto result1,
-                                                                            final ReportHyperMapResultDto result2) {
+                                                                            final ReportResultResponseDto<List<HyperMapResultEntryDto>>result1,
+                                                                            final ReportResultResponseDto<List<HyperMapResultEntryDto>>result2) {
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)

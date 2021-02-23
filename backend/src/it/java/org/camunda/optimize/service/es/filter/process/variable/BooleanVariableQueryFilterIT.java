@@ -10,8 +10,9 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.es.filter.process.AbstractFilterIT;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ public class BooleanVariableQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(2);
@@ -80,7 +81,7 @@ public class BooleanVariableQueryFilterIT extends AbstractFilterIT {
       .booleanTrue()
       .add()
       .buildList();
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(2);
@@ -131,7 +132,7 @@ public class BooleanVariableQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(expectedInstanceCount);

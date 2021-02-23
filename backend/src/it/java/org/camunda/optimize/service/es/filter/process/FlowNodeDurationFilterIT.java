@@ -14,9 +14,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -53,7 +54,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto greaterThanTen =
+    final ReportResultResponseDto<List<MapResultEntryDto>> greaterThanTen =
       reportClient.evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -63,7 +64,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .add()
           .buildList()
       )).getResult();
-    final ReportMapResultDto lessThanEqualsTen =
+    final ReportResultResponseDto<List<MapResultEntryDto>> lessThanEqualsTen =
       reportClient.evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -98,7 +99,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto greaterThanFilter = reportClient.evaluateMapReport(createUserTaskReportWithFilters(
+    final ReportResultResponseDto<List<MapResultEntryDto>> greaterThanFilter = reportClient.evaluateMapReport(createUserTaskReportWithFilters(
       definition,
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
@@ -108,7 +109,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
         .buildList()
     )).getResult();
 
-    final ReportMapResultDto lessThanFilter = reportClient.evaluateMapReport(createUserTaskReportWithFilters(
+    final ReportResultResponseDto<List<MapResultEntryDto>> lessThanFilter = reportClient.evaluateMapReport(createUserTaskReportWithFilters(
       definition,
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
@@ -121,12 +122,12 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     // then
     assertThat(greaterThanFilter.getInstanceCount()).isEqualTo(1L);
     assertThat(greaterThanFilter.getFirstMeasureData()).hasSize(1);
-    assertThat(greaterThanFilter.getEntryForKey(USER_TASK_1)).isPresent().get()
+    assertThat(MapResultUtil.getEntryForKey(greaterThanFilter.getFirstMeasureData(), USER_TASK_1)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
 
     assertThat(lessThanFilter.getInstanceCount()).isEqualTo(1L);
     assertThat(lessThanFilter.getFirstMeasureData()).hasSize(1);
-    assertThat(lessThanFilter.getEntryForKey(USER_TASK_2)).isPresent().get()
+    assertThat(MapResultUtil.getEntryForKey(lessThanFilter.getFirstMeasureData(), USER_TASK_2)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
@@ -144,7 +145,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
 
     // when
     LocalDateUtil.setCurrentTime(now.plusSeconds(10));
-    final ReportMapResultDto result = reportClient.evaluateMapReport(createUserTaskReportWithFilters(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(createUserTaskReportWithFilters(
       processDefinitionEngineDto,
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
@@ -175,7 +176,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
 
     // when
     LocalDateUtil.setCurrentTime(now.plusSeconds(10));
-    final ReportMapResultDto result = reportClient.evaluateMapReport(createUserTaskReportWithFilters(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(createUserTaskReportWithFilters(
       processDefinitionEngineDto,
       ProcessFilterBuilder.filter()
         .flowNodeDuration()
@@ -189,7 +190,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getFirstMeasureData()).hasSize(1);
-    assertThat(result.getEntryForKey(USER_TASK_2)).isPresent().get()
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_2)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
@@ -208,7 +209,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto resultBothTasksDurationGreaterTen =
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultBothTasksDurationGreaterTen =
       reportClient.evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -219,7 +220,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .add()
           .buildList()
       )).getResult();
-    final ReportMapResultDto resultOneTaskWithLowerTen =
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultOneTaskWithLowerTen =
       reportClient.evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -261,7 +262,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto resultBothTasksDurationGreaterTen =
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultBothTasksDurationGreaterTen =
       reportClient.evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -272,7 +273,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .add()
           .buildList()
       )).getResult();
-    final ReportMapResultDto resultOneTaskWithLowerTen =
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultOneTaskWithLowerTen =
       reportClient.evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -313,7 +314,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto resultBothTasksDurationGreaterTen =
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultBothTasksDurationGreaterTen =
       reportClient.evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -325,7 +326,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .buildList()
       )).getResult();
 
-    final ReportMapResultDto resultOneTaskWithLowerTen =
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultOneTaskWithLowerTen =
       reportClient.evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -339,7 +340,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .buildList()
       )).getResult();
 
-    final ReportMapResultDto resultBothTasksWithLowerTen =
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultBothTasksWithLowerTen =
       reportClient.evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -378,7 +379,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto resultBothTasksDurationGreaterTen =
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultBothTasksDurationGreaterTen =
       reportClient.evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -390,7 +391,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .buildList()
       )).getResult();
 
-    final ReportMapResultDto resultOneTaskWithLowerTen =
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultOneTaskWithLowerTen =
       reportClient.evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -404,7 +405,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .buildList()
       )).getResult();
 
-    final ReportMapResultDto resultBothTasksWithLowerTen =
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultBothTasksWithLowerTen =
       reportClient.evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -449,7 +450,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto resultGreaterActualDuration =
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultGreaterActualDuration =
       reportClient.evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -459,7 +460,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .add()
           .buildList()
       )).getResult();
-    final ReportMapResultDto resultLowerActualDuration = reportClient
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultLowerActualDuration = reportClient
       .evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -495,7 +496,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto resultGreaterActualDuration =
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultGreaterActualDuration =
       reportClient.evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -505,7 +506,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .add()
           .buildList()
       )).getResult();
-    final ReportMapResultDto resultLowerActualDuration = reportClient
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultLowerActualDuration = reportClient
       .evaluateMapReport(createUserTaskReportWithFilters(
         processDefinitionEngineDto,
         ProcessFilterBuilder.filter()
@@ -533,7 +534,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto greaterViewAndInstanceFilters = reportClient.evaluateMapReport(
+    final ReportResultResponseDto<List<MapResultEntryDto>> greaterViewAndInstanceFilters = reportClient.evaluateMapReport(
       createUserTaskReportWithFilters(
         definition,
         ProcessFilterBuilder.filter()
@@ -548,7 +549,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .buildList()
       )).getResult();
 
-    final ReportMapResultDto lessThanViewAndInstanceFilters = reportClient.evaluateMapReport(
+    final ReportResultResponseDto<List<MapResultEntryDto>> lessThanViewAndInstanceFilters = reportClient.evaluateMapReport(
       createUserTaskReportWithFilters(
         definition,
         ProcessFilterBuilder.filter()
@@ -563,7 +564,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .buildList()
       )).getResult();
 
-    final ReportMapResultDto greaterViewAndLessInstanceFilters = reportClient.evaluateMapReport(
+    final ReportResultResponseDto<List<MapResultEntryDto>> greaterViewAndLessInstanceFilters = reportClient.evaluateMapReport(
       createUserTaskReportWithFilters(
         definition,
         ProcessFilterBuilder.filter()
@@ -581,12 +582,12 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
     // then
     assertThat(greaterViewAndInstanceFilters.getInstanceCount()).isEqualTo(1L);
     assertThat(greaterViewAndInstanceFilters.getFirstMeasureData()).hasSize(1);
-    assertThat(greaterViewAndInstanceFilters.getEntryForKey(USER_TASK_1)).isPresent().get()
+    assertThat(MapResultUtil.getEntryForKey(greaterViewAndInstanceFilters.getFirstMeasureData(), USER_TASK_1)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
 
     assertThat(lessThanViewAndInstanceFilters.getInstanceCount()).isEqualTo(1L);
     assertThat(lessThanViewAndInstanceFilters.getFirstMeasureData()).hasSize(1);
-    assertThat(lessThanViewAndInstanceFilters.getEntryForKey(USER_TASK_2)).isPresent().get()
+    assertThat(MapResultUtil.getEntryForKey(lessThanViewAndInstanceFilters.getFirstMeasureData(), USER_TASK_2)).isPresent().get()
       .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
 
     assertThat(greaterViewAndLessInstanceFilters.getInstanceCount()).isZero();

@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.process.combined;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
@@ -17,6 +16,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,8 +36,8 @@ public class CombinedFlowNodeByVariableReportIT extends AbstractProcessDefinitio
       createFrequencyStringVariableReport(processInstanceDto1),
       createFrequencyStringVariableReport(processInstanceDto2)
     );
-    final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      reportClient.<ReportMapResultDto>evaluateCombinedReportById(combinedReportId).getResult();
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
+      reportClient.<List<MapResultEntryDto>>evaluateCombinedReportById(combinedReportId).getResult();
 
     // then
     assertThat(result.getData()).hasSize(2);
@@ -70,8 +70,8 @@ public class CombinedFlowNodeByVariableReportIT extends AbstractProcessDefinitio
       createDurationStringVariableReport(processInstanceDto1),
       createDurationStringVariableReport(processInstanceDto2)
     );
-    final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      reportClient.<ReportMapResultDto>evaluateCombinedReportById(combinedReportId).getResult();
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
+      reportClient.<List<MapResultEntryDto>>evaluateCombinedReportById(combinedReportId).getResult();
 
     // then
     assertThat(result.getData()).hasSize(2);

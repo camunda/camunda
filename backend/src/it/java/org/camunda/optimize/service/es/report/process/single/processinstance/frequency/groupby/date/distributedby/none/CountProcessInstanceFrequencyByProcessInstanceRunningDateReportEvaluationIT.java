@@ -12,8 +12,8 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -80,7 +80,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
       instance.getProcessDefinitionVersion(),
       unit
     );
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final int expectedNumberOfBuckets = 3;
@@ -131,7 +131,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
       processDefinition.getVersionAsString(),
       unit
     );
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the bucket range is based on earliest and latest start date
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -170,7 +170,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
       processDefinition.getVersionAsString(),
       unit
     );
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the bucket range is earliest to latest start date
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();

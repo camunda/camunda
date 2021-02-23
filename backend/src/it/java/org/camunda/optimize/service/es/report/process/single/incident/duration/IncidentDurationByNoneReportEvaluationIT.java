@@ -13,8 +13,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.DateCreationFreezer;
@@ -77,7 +77,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
       reportClient.evaluateNumberReport(reportData);
 
     // then
@@ -89,7 +89,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
 
-    final NumberResultDto resultDto = evaluationResponse.getResult();
+    final ReportResultResponseDto<Double> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
     assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
@@ -114,7 +114,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // when
     ProcessReportDataDto reportData = createReport(IncidentDataDeployer.PROCESS_DEFINITION_KEY, "1");
-    final NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
@@ -140,7 +140,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    final NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
@@ -167,7 +167,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    final NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
@@ -197,7 +197,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    final NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(3L);
@@ -228,7 +228,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    final NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
@@ -259,7 +259,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, ReportConstants.ALL_VERSIONS);
-    final NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
@@ -305,7 +305,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
       ReportConstants.ALL_VERSIONS
     );
     reportData.setTenantIds(selectedTenants);
-    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -333,7 +333,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // when I create a report without filters
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, ReportConstants.ALL_VERSIONS);
-    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then the result has two process instances
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -386,7 +386,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, ReportConstants.ALL_VERSIONS);
     reportData.setFilter(filter);
-    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -406,7 +406,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
       processInstanceEngineDto.getProcessDefinitionKey(),
       processInstanceEngineDto.getProcessDefinitionVersion()
     );
-    final NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
@@ -430,7 +430,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    final NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
@@ -473,7 +473,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
     reportData.getConfiguration().setAggregationTypes(aggregationType);
-    final NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(3L);

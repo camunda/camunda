@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
@@ -486,7 +486,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
       .setDistributeByDateInterval(AggregateByDateUnit.AUTOMATIC)
       .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
       .build();
-    final ProcessReportResultDto result = reportClient.evaluateReport(reportData).getResult();
+    final ReportResultResponseDto<Object> result = reportClient.evaluateReport(reportData).getResult();
 
     // then the report can be evaluated even though user task only contains cancellation data
     assertThat(result.getInstanceCount()).isEqualTo(1);

@@ -17,14 +17,14 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -42,8 +42,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
@@ -125,7 +125,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // when no filters are applied
-    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
+    AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
       evaluateDashboardReport(reportId, dashboardShareId);
 
     // then all instances are included in response
@@ -169,11 +169,11 @@ public class SharingServiceIT extends AbstractSharingIT {
     String reportId = createReportWithInstance(DEFAULT_DEFINITION_KEY, collectionId);
     String reportShareId = addShareForReport(reportId);
 
-    final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
       embeddedOptimizeExtension.getRequestExecutor()
         .buildEvaluateSharedReportRequest(reportShareId)
         .withoutAuthentication()
-        .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {
+        .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>>() {
         });
 
     assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(1L);
@@ -194,7 +194,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // when no filters are applied
-    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
+    AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
       evaluateDashboardReport(reportId, dashboardShareId);
 
     // then all instances are included in response
@@ -301,7 +301,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     PaginationRequestDto paginationRequestDto = new PaginationRequestDto();
     paginationRequestDto.setLimit(1);
     paginationRequestDto.setOffset(0);
-    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
+    AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
       evaluateDashboardReport(rawDataReportId, dashboardShareId, paginationRequestDto);
 
     // then we get just the second instance
@@ -378,7 +378,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     PaginationRequestDto paginationRequestDto = new PaginationRequestDto();
     paginationRequestDto.setLimit(1);
     paginationRequestDto.setOffset(0);
-    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
+    AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
       evaluateReportWithPagination(reportShareId, paginationRequestDto);
 
     // then we get just the second instance
@@ -1046,40 +1046,40 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
-  private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateDashboardReport(final String rawDataReportId,
-                                                                                                            final String dashboardShareId) {
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateDashboardReport(final String rawDataReportId,
+                                                                                                                final String dashboardShareId) {
     return evaluateDashboardReport(rawDataReportId, dashboardShareId, null, null);
   }
 
-  private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateDashboardReport(
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateDashboardReport(
     final String rawDataReportId,
     final String dashboardShareId,
     final AdditionalProcessReportEvaluationFilterDto filters) {
     return evaluateDashboardReport(rawDataReportId, dashboardShareId, null, filters);
   }
 
-  private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateDashboardReport(
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateDashboardReport(
     final String rawDataReportId,
     final String dashboardShareId,
     final PaginationRequestDto paginationRequestDto) {
     return evaluateDashboardReport(rawDataReportId, dashboardShareId, paginationRequestDto, null);
   }
 
-  private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateDashboardReport(
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateDashboardReport(
     final String rawDataReportId, final String dashboardShareId, final PaginationRequestDto paginationRequestDto,
     final AdditionalProcessReportEvaluationFilterDto filters) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildEvaluateSharedDashboardReportRequest(dashboardShareId, rawDataReportId, paginationRequestDto, filters)
       .withoutAuthentication()
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>>() {
       });
   }
 
-  private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReportWithPagination(
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateReportWithPagination(
     final String reportShareId, final PaginationRequestDto paginationRequestDto) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildEvaluateSharedReportRequest(reportShareId, paginationRequestDto)
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>>() {
       });
   }
 

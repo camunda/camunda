@@ -9,10 +9,11 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.HyperMapMeasureResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RequiredArgsConstructor
 public class HyperMapAsserter {
 
-  private ReportHyperMapResultDto expectedResult = new ReportHyperMapResultDto();
+  private final ReportResultResponseDto<List<HyperMapResultEntryDto>> expectedResult = new ReportResultResponseDto<>();
 
   public static HyperMapAsserter asserter() {
     return new HyperMapAsserter();
@@ -55,7 +56,7 @@ public class HyperMapAsserter {
     return new MeasureAdder(this, viewProperty, aggregationType, userTaskDurationTime);
   }
 
-  public void doAssert(ReportHyperMapResultDto actualResult) {
+  public void doAssert(ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult) {
     // this is done by hand since it's otherwise really hard to see where the
     // assert failed.
     assertThat(actualResult.getInstanceCount())
@@ -88,7 +89,7 @@ public class HyperMapAsserter {
 
     actualResult.getFirstMeasureData().forEach(actualGroupByEntry -> {
       Optional<HyperMapResultEntryDto> expectedGroupBy =
-        expectedResult.getDataEntryForKey(actualGroupByEntry.getKey());
+        MapResultUtil.getDataEntryForKey(expectedResult.getFirstMeasureData(), actualGroupByEntry.getKey());
       doAssertsOnGroupByEntries(actualGroupByEntry, expectedGroupBy);
 
       actualGroupByEntry.getValue().forEach(actualDistributedBy -> {
@@ -128,8 +129,9 @@ public class HyperMapAsserter {
                                             final Optional<HyperMapResultEntryDto> expectedGroupByEntry,
                                             final HyperMapResultEntryDto actualGroupByEntry) {
     assertThat(expectedGroupByEntry).isPresent();
-    Optional<MapResultEntryDto> expectedDistributedBy = expectedGroupByEntry.get()
-      .getDataEntryForKey(actualDistributedBy.getKey());
+    Optional<MapResultEntryDto> expectedDistributedBy = MapResultUtil.getDataEntryForKey(
+      expectedGroupByEntry.get(), actualDistributedBy.getKey()
+    );
     assertThat(expectedDistributedBy)
       .as(String.format(
         "DistributedBy key [%s] should be present under GroupByEntry with key [%s].",
@@ -156,21 +158,26 @@ public class HyperMapAsserter {
       .isEqualTo(expectedDistributedBy.get().getLabel());
   }
 
-  private void addMeasure(MeasureDto<List<HyperMapResultEntryDto>> measure) {
+  private void addMeasure(MeasureResponseDto<List<HyperMapResultEntryDto>> measure) {
     expectedResult.addMeasure(measure);
   }
 
   public class MeasureAdder {
 
     private HyperMapAsserter asserter;
-    private MeasureDto<List<HyperMapResultEntryDto>> measure;
+    private MeasureResponseDto<List<HyperMapResultEntryDto>> measure;
 
     public MeasureAdder(final HyperMapAsserter hyperMapAsserter,
                         final ViewProperty viewProperty,
                         final AggregationType aggregationType,
                         final UserTaskDurationTime userTaskDurationTime) {
       this.asserter = hyperMapAsserter;
-      this.measure = MeasureDto.of(viewProperty, aggregationType, userTaskDurationTime, new ArrayList<>());
+      this.measure = HyperMapMeasureResponseDto.builder()
+        .property(viewProperty)
+        .aggregationType(aggregationType)
+        .userTaskDurationTime(userTaskDurationTime)
+        .data(new ArrayList<>())
+        .build();
 
     }
 
@@ -191,7 +198,7 @@ public class HyperMapAsserter {
       measure.getData().add(entry);
     }
 
-    public void doAssert(ReportHyperMapResultDto actualResult) {
+    public void doAssert(ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult) {
       add();
       asserter.doAssert(actualResult);
     }
@@ -247,7 +254,7 @@ public class HyperMapAsserter {
       return measureAdder;
     }
 
-    public void doAssert(ReportHyperMapResultDto actualResult) {
+    public void doAssert(ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult) {
       add();
       measureAdder.doAssert(actualResult);
     }

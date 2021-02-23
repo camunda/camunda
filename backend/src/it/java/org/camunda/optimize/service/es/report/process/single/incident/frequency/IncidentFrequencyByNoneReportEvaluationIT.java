@@ -14,8 +14,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Reso
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
@@ -63,7 +63,7 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion()
     );
-    AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
       reportClient.evaluateNumberReport(reportData);
 
     // then
@@ -76,7 +76,7 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
 
-    final NumberResultDto resultDto = evaluationResponse.getResult();
+    final ReportResultResponseDto<Double> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
     assertThat(resultDto.getFirstMeasureData()).isNotNull();
     assertThat(resultDto.getFirstMeasureData()).isEqualTo(2.);
@@ -98,7 +98,7 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
 
     // when
     ProcessReportDataDto reportData = createReport(IncidentDataDeployer.PROCESS_DEFINITION_KEY, "1");
-    final NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
@@ -118,7 +118,7 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion()
     );
-    final NumberResultDto resultDto =
+    final ReportResultResponseDto<Double> resultDto =
       reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -140,7 +140,7 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion()
     );
-    final NumberResultDto resultDto =
+    final ReportResultResponseDto<Double> resultDto =
       reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -161,7 +161,7 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion()
     );
-    final NumberResultDto resultDto =
+    final ReportResultResponseDto<Double> resultDto =
       reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -182,7 +182,7 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
       processInstance.getProcessDefinitionKey(),
       ReportConstants.ALL_VERSIONS
     );
-    final NumberResultDto resultDto =
+    final ReportResultResponseDto<Double> resultDto =
       reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -213,7 +213,7 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
       ReportConstants.ALL_VERSIONS
     );
     reportData.setTenantIds(selectedTenants);
-    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isEqualTo((double) selectedTenants.size());
@@ -242,7 +242,7 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
         processInstanceEngineDto.getProcessDefinitionKey(),
         processInstanceEngineDto.getProcessDefinitionVersion()
       );
-    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then the result has two process instances
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -293,7 +293,7 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
     ProcessReportDataDto reportData =
       createReport(firstInstance.getProcessDefinitionKey(), firstInstance.getProcessDefinitionVersion());
     reportData.setFilter(filter);
-    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -330,7 +330,7 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
         processInstanceEngineDto.getProcessDefinitionVersion()
       );
     reportData.getFilter().addAll(filtersToApply);
-    final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isZero();

@@ -10,8 +10,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -69,7 +69,7 @@ public abstract class AbstractDecisionStringContainsVariableQueryFilterIT extend
 
     // when
     final List<DecisionFilterDto<?>> containsFilter = createContainsFilterForValues("ketchup");
-    RawDataDecisionReportResultDto result = evaluateReportWithFilter(decisionDefinitionDto, containsFilter);
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateReportWithFilter(decisionDefinitionDto, containsFilter);
 
     // then
     assertThatResultContainsVariables(
@@ -100,7 +100,7 @@ public abstract class AbstractDecisionStringContainsVariableQueryFilterIT extend
 
     // when
     final List<DecisionFilterDto<?>> filter = createContainsFilterForValues("ketchup");
-    RawDataDecisionReportResultDto result = evaluateReportWithFilter(decisionDefinitionDto, filter);
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateReportWithFilter(decisionDefinitionDto, filter);
 
     // then
     assertThat(result.getData()).isEmpty();
@@ -126,7 +126,7 @@ public abstract class AbstractDecisionStringContainsVariableQueryFilterIT extend
 
     // when
     final List<DecisionFilterDto<?>> filter = createContainsFilterForValues("ketchup");
-    RawDataDecisionReportResultDto result = evaluateReportWithFilter(decisionDefinitionDto, filter);
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateReportWithFilter(decisionDefinitionDto, filter);
 
     // then
     assertThatResultContainsVariables(result, "ketchup");
@@ -151,7 +151,7 @@ public abstract class AbstractDecisionStringContainsVariableQueryFilterIT extend
     final List<DecisionFilterDto<?>> filter = createContainsFilterForValues((String) null);
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto1);
     reportData.setFilter(filter);
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getData())
@@ -187,7 +187,7 @@ public abstract class AbstractDecisionStringContainsVariableQueryFilterIT extend
 
     // when
     final List<DecisionFilterDto<?>> filter = createContainsFilterForValues("ketchup", null, "must");
-    RawDataDecisionReportResultDto result = evaluateReportWithFilter(decisionDefinitionDto, filter);
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateReportWithFilter(decisionDefinitionDto, filter);
 
     // then
     assertThatResultContainsVariables(result, "", ketchupMatch, mustMatch);
@@ -211,7 +211,7 @@ public abstract class AbstractDecisionStringContainsVariableQueryFilterIT extend
 
     // when
     final List<DecisionFilterDto<?>> filter = createContainsFilterForValues("1234567891011");
-    RawDataDecisionReportResultDto result = evaluateReportWithFilter(decisionDefinitionDto, filter);
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateReportWithFilter(decisionDefinitionDto, filter);
 
     // then
     assertThatResultContainsVariables(result, longMatchWhichUsesWildcardQuery);
@@ -266,13 +266,13 @@ public abstract class AbstractDecisionStringContainsVariableQueryFilterIT extend
 
     // when
     final List<DecisionFilterDto<?>> filter = createContainsFilterForValues("100");
-    RawDataDecisionReportResultDto result = evaluateReportWithFilter(decisionDefinitionDto, filter);
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateReportWithFilter(decisionDefinitionDto, filter);
 
     // then
     assertThatResultContainsVariables(result, shouldMatch);
   }
 
-  protected abstract void assertThatResultContainsVariables(final RawDataDecisionReportResultDto result,
+  protected abstract void assertThatResultContainsVariables(final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result,
                                                             final String... shouldMatch);
   protected abstract List<DecisionFilterDto<?>> createContainsFilterForValues(final String... variableValues);
 

@@ -14,10 +14,11 @@ import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.test.engine.OutlierDistributionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
@@ -74,7 +75,7 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
     importAllEngineEntitiesFromScratch();
 
     // then the report evaluation should be fine even if it would include a definition from a non existing engine alias
-    final RawDataProcessReportResultDto result = reportClient
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = reportClient
       .evaluateRawReport(createRawDataReport(PROCESS_KEY_1)).getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
   }
@@ -92,7 +93,7 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
     importAllEngineEntitiesFromScratch();
 
     // then the report evaluation should be fine even if it would include a definition from a non existing engine alias
-    final RawDataDecisionReportResultDto result = reportClient
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = reportClient
       .evaluateDecisionRawReport(createRawDecisionDataReport(DECISION_KEY_1)).getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
   }

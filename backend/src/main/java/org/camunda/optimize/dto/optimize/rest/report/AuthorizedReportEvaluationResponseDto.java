@@ -3,25 +3,26 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.rest;
+package org.camunda.optimize.dto.optimize.rest.report;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.camunda.optimize.dto.optimize.AuthorizedEntityDto;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
-@EqualsAndHashCode(callSuper=true)
-public class AuthorizedReportEvaluationResult extends AuthorizedEntityDto {
+@EqualsAndHashCode(callSuper = true)
+public class AuthorizedReportEvaluationResponseDto<D extends ReportDefinitionDto<?>> extends AuthorizedEntityDto {
   @JsonUnwrapped
-  private ReportEvaluationResult<?, ?> evaluationResult;
+  protected D reportDefinition;
 
-  public AuthorizedReportEvaluationResult(final ReportEvaluationResult evaluationResult, final RoleType currentUserRole) {
+  public AuthorizedReportEvaluationResponseDto(final RoleType currentUserRole, final D reportDefinition) {
     super(currentUserRole);
-    this.evaluationResult = evaluationResult;
+    this.reportDefinition = reportDefinition;
   }
 }

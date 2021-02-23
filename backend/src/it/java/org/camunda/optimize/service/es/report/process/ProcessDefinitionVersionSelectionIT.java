@@ -15,7 +15,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
@@ -49,7 +50,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
+      AuthorizedSingleReportEvaluationResponseDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
         reportClient.evaluateReport(
           report);
 
@@ -73,7 +74,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
+      AuthorizedSingleReportEvaluationResponseDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
         reportClient.evaluateReport(
           report);
 
@@ -96,7 +97,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
+      AuthorizedSingleReportEvaluationResponseDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
         reportClient.evaluateReport(
           report);
 
@@ -111,7 +112,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
 
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
+      AuthorizedSingleReportEvaluationResponseDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
         reportClient.evaluateReport(
           report);
 
@@ -133,7 +134,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      ProcessReportResultDto result = reportClient.evaluateReport(report).getResult();
+      ReportResultResponseDto<?> result = reportClient.evaluateReport(report).getResult();
 
       // then
       assertThat(result.getInstanceCount()).isZero();

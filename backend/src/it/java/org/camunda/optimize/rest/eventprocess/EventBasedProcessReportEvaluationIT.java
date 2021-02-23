@@ -14,9 +14,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Comp
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -74,7 +74,7 @@ public class EventBasedProcessReportEvaluationIT extends AbstractEventProcessIT 
       .setProcessDefinitionVersion(savedInstance.getProcessDefinitionVersion())
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
-    final RawDataProcessReportResultDto result = reportClient.evaluateRawReport(processReportDataDto).getResult();
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = reportClient.evaluateRawReport(processReportDataDto).getResult();
 
     // then the event process instance appears in the results
     assertThat(result.getInstanceCount()).isEqualTo(1);
@@ -121,7 +121,7 @@ public class EventBasedProcessReportEvaluationIT extends AbstractEventProcessIT 
       .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     processReportDataDto.setFilter(filters);
-    ReportMapResultDto result = reportClient.evaluateMapReport(processReportDataDto).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(processReportDataDto).getResult();
 
     // then the event process instance appears in the results
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);

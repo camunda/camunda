@@ -8,18 +8,17 @@ package org.camunda.optimize.service.es.report.process.combined;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -37,6 +36,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -66,18 +66,18 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     final List<String> reportIds = combinableReportsWithUnit.getValue().stream()
       .map(reportClient::createSingleProcessReport)
       .collect(toList());
-    final ReportMapResultDto[] singleReportResults = reportIds
+    final List<ReportResultResponseDto<List<MapResultEntryDto>>> singleReportResults = reportIds
       .stream()
       .map(reportId -> reportClient.evaluateMapReportById(reportId).getResult())
-      .toArray(ReportMapResultDto[]::new);
-    final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
+      .collect(Collectors.toList());
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> combinedResult =
       reportClient.saveAndEvaluateCombinedReport(reportIds);
 
     // then the combined combinedResult evaluation yields the same results as the single report evaluations
     assertThat(combinedResult.getData()).isNotNull();
     assertThat(combinedResult.getData().values())
-      .extracting(AuthorizedEvaluationResultDto::getResult)
-      .containsExactlyInAnyOrder(singleReportResults);
+      .extracting(AuthorizedSingleReportEvaluationResponseDto::getResult)
+      .containsExactlyInAnyOrderElementsOf(singleReportResults);
   }
 
   @SneakyThrows
@@ -95,7 +95,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
+    final CombinedProcessReportResultDataDto<?> combinedResult =
       getCombinedReportResult(singleReports);
 
     // then both reports have the same buckets
@@ -142,18 +142,18 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     final List<String> reportIds = reportDefs.stream()
       .map(reportClient::createSingleProcessReport)
       .collect(toList());
-    final ReportMapResultDto[] singleReportResults = reportIds
+    final List<ReportResultResponseDto<List<MapResultEntryDto>>> singleReportResults = reportIds
       .stream()
       .map(reportId -> reportClient.evaluateMapReportById(reportId).getResult())
-      .toArray(ReportMapResultDto[]::new);
-    final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
+      .collect(Collectors.toList());
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> combinedResult =
       reportClient.saveAndEvaluateCombinedReport(reportIds);
 
     // then the combined combinedResult evaluation yields the same results as the single report evaluations
     assertThat(combinedResult.getData()).isNotNull();
     assertThat(combinedResult.getData().values())
-      .extracting(AuthorizedEvaluationResultDto::getResult)
-      .containsExactlyInAnyOrder(singleReportResults);
+      .extracting(AuthorizedSingleReportEvaluationResponseDto::getResult)
+      .containsExactlyInAnyOrderElementsOf(singleReportResults);
   }
 
   @Test
@@ -191,7 +191,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     );
 
     // when
-    final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
+    final CombinedProcessReportResultDataDto<?> combinedResult =
       getCombinedReportResult(reportDefs);
 
     // then both reports have the same buckets
@@ -239,7 +239,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
       .stream()
       .map(reportClient::createSingleProcessReport)
       .collect(toList());
-    final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
+    final CombinedProcessReportResultDataDto<?> combinedResult =
       reportClient.saveAndEvaluateCombinedReport(reportIds);
 
     // then
@@ -276,7 +276,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
       .stream()
       .map(reportClient::createSingleProcessReport)
       .collect(toList());
-    final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
+    final CombinedProcessReportResultDataDto<?> combinedResult =
       reportClient.saveAndEvaluateCombinedReport(reportIds);
 
     // then
@@ -313,7 +313,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
       .map(reportClient::createSingleProcessReport)
       .collect(toList());
 
-    final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
+    final CombinedProcessReportResultDataDto<?> combinedResult =
       reportClient.saveAndEvaluateCombinedReport(reportIds);
 
     // then
@@ -346,22 +346,20 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
       .stream()
       .map(reportClient::createSingleProcessReport)
       .collect(toList());
-    final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
+    final CombinedProcessReportResultDataDto<?> combinedResult =
       reportClient.saveAndEvaluateCombinedReport(reportIds);
 
     // then
     assertThat(combinedResult.getInstanceCount()).isEqualTo(0);
   }
 
-  private void assertSameBucketKeys(final CombinedProcessReportResultDataDto<SingleReportResultDto> result) {
-    List<AuthorizedProcessReportEvaluationResultDto<SingleReportResultDto>> singleReportResults =
+  private void assertSameBucketKeys(final CombinedProcessReportResultDataDto<?> result) {
+    List<AuthorizedProcessReportEvaluationResponseDto<?>> singleReportResults =
       new ArrayList<>(result.getData().values());
-    List<String> bucketKeys1 = ((ReportMapResultDto) singleReportResults.get(0).getResult())
-      .getFirstMeasureData()
+    List<String> bucketKeys1 = ((List<MapResultEntryDto>) singleReportResults.get(0).getResult().getFirstMeasureData())
       .stream()
       .map(MapResultEntryDto::getKey).collect(toList());
-    List<String> bucketKeys2 = ((ReportMapResultDto) singleReportResults.get(1).getResult())
-      .getFirstMeasureData()
+    List<String> bucketKeys2 = ((List<MapResultEntryDto>) singleReportResults.get(1).getResult().getFirstMeasureData())
       .stream()
       .map(MapResultEntryDto::getKey).collect(toList());
     assertThat(bucketKeys1).isEqualTo(bucketKeys2);
@@ -429,7 +427,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     );
   }
 
-  private CombinedProcessReportResultDataDto<SingleReportResultDto> getCombinedReportResult(
+  private CombinedProcessReportResultDataDto<?> getCombinedReportResult(
     final List<SingleProcessReportDefinitionRequestDto> reports) {
     return reportClient.saveAndEvaluateCombinedReport(
       reports.stream()

@@ -9,12 +9,11 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,7 +27,7 @@ public class DecisionStringNotContainsOutputVariableQueryFilterIT
   private static final String OUTPUT_VARIABLE_ID_TO_FILTER_ON = STRING_OUTPUT_ID;
 
   @Override
-  protected void assertThatResultDoesNotContainVariables(final RawDataDecisionReportResultDto result,
+  protected void assertThatResultDoesNotContainVariables(final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result,
                                                          final String... shouldMatch) {
     // for outputs where the value is null the result has just an empty list so we need to filter them out
     final List<String> shouldMatchWithoutNullResults = Arrays.stream(shouldMatch)

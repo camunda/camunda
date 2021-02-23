@@ -5,32 +5,17 @@
  */
 package org.camunda.optimize.dto.optimize.rest.report;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
-@Getter
-@Setter
-public class CombinedProcessReportResultDataDto<RESULT extends SingleReportResultDto> implements ReportResultDto {
-  protected Map<String, AuthorizedProcessReportEvaluationResultDto<RESULT>> data;
+@Data
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class CombinedProcessReportResultDataDto<T> {
+  protected Map<String, AuthorizedProcessReportEvaluationResponseDto<T>> data;
   private long instanceCount;
-
-  protected CombinedProcessReportResultDataDto() {
-  }
-
-  public CombinedProcessReportResultDataDto(final Map<String, AuthorizedProcessReportEvaluationResultDto<RESULT>> data,
-                                            final long instanceCount) {
-    this.data = data;
-    this.instanceCount = instanceCount;
-  }
-
-  @Override
-  public ResultType getType() {
-    // type is in single results
-    return null;
-  }
 }

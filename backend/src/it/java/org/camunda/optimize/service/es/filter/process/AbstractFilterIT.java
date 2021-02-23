@@ -10,7 +10,8 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -68,8 +69,8 @@ public abstract class AbstractFilterIT extends AbstractIT {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
   }
 
-  protected RawDataProcessReportResultDto evaluateReportWithFilter(final ProcessDefinitionEngineDto processDefinition,
-                                                                   final List<ProcessFilterDto<?>> filterList) {
+  protected ReportResultResponseDto<List<RawDataProcessInstanceDto>> evaluateReportWithFilter(final ProcessDefinitionEngineDto processDefinition,
+                                                                                              final List<ProcessFilterDto<?>> filterList) {
     return this.evaluateReportWithFilter(
       processDefinition.getKey(),
       String.valueOf(processDefinition.getVersion()),
@@ -77,9 +78,9 @@ public abstract class AbstractFilterIT extends AbstractIT {
     );
   }
 
-  protected RawDataProcessReportResultDto evaluateReportWithFilter(final String processDefinitionKey,
-                                                                   final String processDefinitionVersion,
-                                                                   final List<ProcessFilterDto<?>> filter) {
+  protected ReportResultResponseDto<List<RawDataProcessInstanceDto>> evaluateReportWithFilter(final String processDefinitionKey,
+                                                                                              final String processDefinitionVersion,
+                                                                                              final List<ProcessFilterDto<?>> filter) {
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)

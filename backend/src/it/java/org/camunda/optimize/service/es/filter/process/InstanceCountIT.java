@@ -9,15 +9,15 @@ import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -73,8 +73,8 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
     );
     reportWithFilter.setFilter(ProcessFilterBuilder.filter().suspendedInstancesOnly().add().buildList());
 
-    RawDataProcessReportResultDto resultWithFilter = reportClient.evaluateRawReport(reportWithFilter).getResult();
-    RawDataProcessReportResultDto resultWithoutFilter = reportClient.evaluateRawReport(reportWithoutFilter).getResult();
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> resultWithFilter = reportClient.evaluateRawReport(reportWithFilter).getResult();
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> resultWithoutFilter = reportClient.evaluateRawReport(reportWithoutFilter).getResult();
 
     // then
     assertThat(resultWithFilter.getInstanceCount()).isEqualTo(2L);
@@ -110,8 +110,8 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
       null
     )));
 
-    RawDataDecisionReportResultDto resultWithFilter = reportClient.evaluateDecisionRawReport(reportWithFilter).getResult();
-    RawDataDecisionReportResultDto resultWithoutFilter =
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> resultWithFilter = reportClient.evaluateDecisionRawReport(reportWithFilter).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> resultWithoutFilter =
       reportClient.evaluateDecisionRawReport(reportWithoutFilter).getResult();
 
     // then
@@ -145,7 +145,7 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
     final List<String> reportIds = Stream.of(singleReport1, singleReport2)
       .map(reportClient::createSingleProcessReport)
       .collect(toList());
-    final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
+    final CombinedProcessReportResultDataDto<?> combinedResult =
       reportClient.saveAndEvaluateCombinedReport(reportIds);
 
     // then
@@ -163,7 +163,7 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
+    final CombinedProcessReportResultDataDto<?> combinedResult =
       reportClient.saveAndEvaluateCombinedReport(Collections.emptyList());
 
     // then

@@ -15,13 +15,15 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
+import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -70,9 +72,9 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
 
     // then
@@ -116,7 +118,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "doubleVar",
       VariableType.DOUBLE
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     //@formatter:off
@@ -169,7 +171,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
     reportData.getConfiguration().getCustomBucket().setActive(true);
     reportData.getConfiguration().getCustomBucket().setBaseline(10.0);
     reportData.getConfiguration().getCustomBucket().setBucketSize(100.0);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     //@formatter:off
@@ -229,7 +231,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       VariableType.DATE
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(unit);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     HyperMapAsserter.MeasureAdder asserter = HyperMapAsserter.asserter()
@@ -278,7 +280,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       VariableType.DATE
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(AggregateByDateUnit.AUTOMATIC);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(numberOfInstances);
@@ -341,7 +343,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "testVar",
       VariableType.STRING
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     //@formatter:off
@@ -379,10 +381,10 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result includes the not executed node (endEvent)
-    assertThat(result.getDataEntryForKey("aStringValue"))
+    assertThat(MapResultUtil.getDataEntryForKey(result.getFirstMeasureData(), "aStringValue"))
       .isPresent()
       .get()
       .satisfies(
@@ -421,7 +423,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result takes the multi instance process durations into account correctly
     //@formatter:off
@@ -460,7 +462,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result includes all flownodes of the latest version with instance durations from all versions
     // @formatter:off
@@ -498,7 +500,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result includes all flownodes of the latest version with instance durations from all versions
     // @formatter:off
@@ -536,7 +538,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result includes all flownodes of the latest version specified in the report (2)
     // with instance durations from all specified versions (1 and 2)
@@ -577,7 +579,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result includes all flownodes of the latest version specified in the report (2)
     // with instance durations from all specified versions (1 and 2)

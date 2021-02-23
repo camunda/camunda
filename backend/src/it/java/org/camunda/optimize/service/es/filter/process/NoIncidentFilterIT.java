@@ -10,8 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -53,7 +52,7 @@ public class NoIncidentFilterIT extends AbstractFilterIT {
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
     reportData.setFilter(ProcessFilterBuilder.filter().noIncidents().add().buildList());
-    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -68,7 +67,7 @@ public class NoIncidentFilterIT extends AbstractFilterIT {
       .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
       .build();
     reportData.setFilter(ProcessFilterBuilder.filter().noIncidents().add().buildList());
-    NumberResultDto numberResult = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> numberResult = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(numberResult.getInstanceCount()).isEqualTo(1L);
@@ -94,7 +93,7 @@ public class NoIncidentFilterIT extends AbstractFilterIT {
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
     reportData.setFilter(ProcessFilterBuilder.filter().noIncidents().add().buildList());
-    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);

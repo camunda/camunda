@@ -12,10 +12,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
@@ -87,7 +88,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then
@@ -99,7 +100,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.FLOW_NODES);
 
-    final ReportMapResultDto resultDto = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
     // formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
@@ -130,7 +131,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // when
     ProcessReportDataDto reportData = createReport(IncidentDataDeployer.PROCESS_DEFINITION_KEY, "1");
-    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     // formatter:off
@@ -160,7 +161,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     MapResultAsserter.asserter()
@@ -192,7 +193,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     // formatter:off
@@ -218,7 +219,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion()
     );
-    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     // formatter:off
@@ -244,7 +245,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       processInstance.getProcessDefinitionKey(),
       ReportConstants.ALL_VERSIONS
     );
-    final ReportMapResultDto resultDto =
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto =
       reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -278,7 +279,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, ALL_VERSIONS);
-    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     // formatter:off
@@ -312,7 +313,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1", "2");
-    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     // formatter:off
@@ -346,7 +347,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, ALL_VERSIONS);
-    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     // formatter:off
@@ -379,7 +380,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1", "2");
-    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     // formatter:off
@@ -415,7 +416,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       ReportConstants.ALL_VERSIONS
     );
     reportData.setTenantIds(selectedTenants);
-    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     // formatter:off
@@ -447,7 +448,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // when I create a report without filters
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the result has two process instances
     MapResultAsserter.asserter()
@@ -509,7 +510,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
     reportData.setFilter(filter);
-    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     // formatter:off
@@ -556,7 +557,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
     reportData.setFilter(filter);
-    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final MapResultAsserter asserter = MapResultAsserter.asserter()
@@ -586,7 +587,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     // formatter:off
@@ -620,7 +621,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     // formatter:off

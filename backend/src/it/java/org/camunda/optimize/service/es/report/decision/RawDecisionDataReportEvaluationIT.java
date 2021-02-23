@@ -13,14 +13,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.report.command.modules.view.decision.DecisionViewRawData;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
@@ -72,11 +72,11 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), decisionDefinitionVersion);
-    final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       evaluateRawReportWithDefaultPagination(reportData);
 
     // then
-    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getData()).isNotNull().hasSize(1);
 
@@ -115,11 +115,11 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
-    final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       evaluateRawReportWithDefaultPagination(reportData);
 
     // then
-    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getData()).isNotNull().hasSize(1);
 
@@ -150,7 +150,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionKey, ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    RawDataDecisionReportResultDto result = evaluateRawReportWithDefaultPagination(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateRawReportWithDefaultPagination(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -179,11 +179,11 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
-    final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       evaluateRawReportWithDefaultPagination(reportData);
 
     // then
-    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getData()).isNotNull().hasSize(1);
 
@@ -207,11 +207,11 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
-    final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       evaluateRawReportWithDefaultPagination(reportData);
 
     // then
-    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(5L);
     assertThat(result.getData()).isNotNull().hasSize(5);
 
@@ -238,11 +238,11 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData.getConfiguration()
       .setSorting(new ReportSortingDto(DecisionInstanceIndex.DECISION_INSTANCE_ID, SortOrder.ASC));
-    final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       evaluateRawReportWithDefaultPagination(reportData);
 
     // then
-    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(5L);
     assertThat(result.getData()).isNotNull().hasSize(5);
 
@@ -269,11 +269,11 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData.getConfiguration()
       .setSorting(new ReportSortingDto(DecisionInstanceIndex.EVALUATION_DATE_TIME, SortOrder.ASC));
-    final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       evaluateRawReportWithDefaultPagination(reportData);
 
     // then
-    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(5L);
     assertThat(result.getData()).isNotNull().hasSize(5);
 
@@ -302,11 +302,11 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     reportData.getConfiguration().setSorting(
       new ReportSortingDto(DecisionViewRawData.INPUT_VARIABLE_PREFIX + INPUT_AMOUNT_ID, SortOrder.ASC)
     );
-    final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       evaluateRawReportWithDefaultPagination(reportData);
 
     // then
-    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(5L);
     assertThat(result.getData()).isNotNull().hasSize(5);
 
@@ -340,11 +340,11 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     reportData.getConfiguration().setSorting(
       new ReportSortingDto(DecisionViewRawData.OUTPUT_VARIABLE_PREFIX + OUTPUT_AUDIT_ID, SortOrder.ASC)
     );
-    final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       evaluateRawReportWithDefaultPagination(reportData);
 
     // then
-    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(5L);
     assertThat(result.getData()).isNotNull().hasSize(5);
 
@@ -368,7 +368,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     reportData.getConfiguration().getTableColumns().getExcludedColumns().add(INPUT_PREFIX + INPUT_AMOUNT_ID);
     reportData.getConfiguration().getTableColumns().getIncludedColumns().add(OUTPUT_PREFIX + OUTPUT_AUDIT_ID);
     reportData.getConfiguration().getTableColumns().setIncludeNewVariables(true);
-    final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       evaluateRawReportWithDefaultPagination(reportData);
 
     // then the new input and output vars are added in alphabetical order to the included columns
@@ -403,7 +403,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     reportData.getConfiguration().getTableColumns().getExcludedColumns().add(INPUT_PREFIX + INPUT_AMOUNT_ID);
     reportData.getConfiguration().getTableColumns().getIncludedColumns().add(OUTPUT_PREFIX + OUTPUT_AUDIT_ID);
     reportData.getConfiguration().getTableColumns().setIncludeNewVariables(false);
-    final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       evaluateRawReportWithDefaultPagination(reportData);
 
     // then the new input and output vars are added in alphabetical order to the excluded columns
@@ -439,7 +439,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData.getConfiguration().getTableColumns().getExcludedColumns().add(nonExistentInputVariable);
     reportData.getConfiguration().getTableColumns().getIncludedColumns().add(nonExistentOutputVariable);
-    final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       evaluateRawReportWithDefaultPagination(reportData);
 
     // then the nonexistent variable columns are removed from the column configurations
@@ -480,11 +480,11 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     final PaginationRequestDto paginationDto = new PaginationRequestDto();
     paginationDto.setOffset(0);
     paginationDto.setLimit(2);
-    AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then we get the first page of results
-    RawDataDecisionReportResultDto result = evaluationResult.getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(5L);
     assertThat(result.getData()).isNotNull().hasSize(2)
       .extracting(RawDataDecisionInstanceDto::getDecisionInstanceId)
@@ -570,11 +570,11 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     paginationDto.setOffset(0);
     paginationDto.setLimit(0);
 
-    AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then
-    RawDataDecisionReportResultDto result = evaluationResult.getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getData()).isNotNull().isEmpty();
     assertThat(result.getPagination()).isEqualTo(PaginationDto.fromPaginationRequest(paginationDto));
@@ -595,11 +595,11 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     paginationDto.setLimit(20);
     paginationDto.setOffset(10);
 
-    AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then
-    RawDataDecisionReportResultDto result = evaluationResult.getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getData()).isNotNull().isEmpty();
     assertThat(result.getPagination()).isEqualTo(PaginationDto.fromPaginationRequest(paginationDto));
@@ -623,11 +623,11 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     final PaginationRequestDto paginationDto = new PaginationRequestDto();
     paginationDto.setLimit(1);
 
-    AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then
-    RawDataDecisionReportResultDto result = evaluationResult.getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getData()).hasSize(1)
       .extracting(RawDataDecisionInstanceDto::getDecisionInstanceId)
@@ -650,11 +650,11 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     final PaginationRequestDto paginationDto = new PaginationRequestDto();
     paginationDto.setOffset(0);
 
-    AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then
-    RawDataDecisionReportResultDto result = evaluationResult.getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(30L);
     assertThat(result.getData()).hasSize(20);
     assertThat(result.getPagination().getLimit()).isEqualTo(DEFAULT_LIMIT);
@@ -687,11 +687,11 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     final PaginationRequestDto paginationDto = new PaginationRequestDto();
     paginationDto.setOffset(0);
     paginationDto.setLimit(2);
-    AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+    AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
       evaluateSavedRawDataDecisionReport(reportId, paginationDto);
 
     // then we get the first page of results
-    RawDataDecisionReportResultDto result = evaluationResult.getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(5L);
     assertThat(result.getData()).isNotNull().hasSize(2)
       .extracting(RawDataDecisionInstanceDto::getDecisionInstanceId)
@@ -725,15 +725,15 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     assertThat(result.getPagination()).isEqualTo(PaginationDto.fromPaginationRequest(paginationDto));
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateSavedRawDataDecisionReport(
+  private AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluateSavedRawDataDecisionReport(
     final String reportId, final PaginationRequestDto paginationDto) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId, paginationDto)
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>>>() {
       });
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateRawReportWithDefaultPagination(
+  private AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluateRawReportWithDefaultPagination(
     DecisionReportDataDto reportData) {
     PaginationRequestDto paginationDto = new PaginationRequestDto();
     paginationDto.setOffset(0);

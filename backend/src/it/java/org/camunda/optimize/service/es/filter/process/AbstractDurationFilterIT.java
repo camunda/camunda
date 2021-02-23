@@ -7,8 +7,7 @@ package org.camunda.optimize.service.es.filter.process;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
 import java.time.OffsetDateTime;
@@ -54,12 +53,12 @@ public class AbstractDurationFilterIT extends AbstractFilterIT {
   }
 
   protected void assertResult(ProcessInstanceEngineDto processInstance,
-                              AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult) {
+                              AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult) {
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    final List<RawDataProcessInstanceDto> resultData = evaluationResult.getResult().getData();
+    final List<RawDataProcessInstanceDto> resultData = evaluationResult.getResult().getFirstMeasureData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     final RawDataProcessInstanceDto rawDataProcessInstanceDto = resultData.get(0);

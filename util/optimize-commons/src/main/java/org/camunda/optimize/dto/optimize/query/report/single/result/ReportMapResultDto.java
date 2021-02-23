@@ -16,7 +16,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 @Data
 @AllArgsConstructor
@@ -30,10 +29,6 @@ public class ReportMapResultDto implements DecisionReportResultDto, ProcessRepor
   @Override
   public ResultType getType() {
     return ResultType.MAP;
-  }
-
-  public Optional<MapResultEntryDto> getEntryForKey(final String key) {
-    return getFirstMeasureData().stream().filter(entry -> key.equals(entry.getKey())).findFirst();
   }
 
   public void addMeasure(MeasureDto<List<MapResultEntryDto>> measure) {

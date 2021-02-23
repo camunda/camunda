@@ -9,8 +9,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ public class DateFilterUnitsIT extends AbstractDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
+    AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> result =
       createAndEvaluateReportWithStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
@@ -82,7 +82,7 @@ public class DateFilterUnitsIT extends AbstractDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
+    AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> result =
       createAndEvaluateReportWithStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
@@ -107,7 +107,7 @@ public class DateFilterUnitsIT extends AbstractDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
+    AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> result =
       createAndEvaluateReportWithStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),

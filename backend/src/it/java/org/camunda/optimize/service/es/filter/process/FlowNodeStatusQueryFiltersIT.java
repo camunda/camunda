@@ -12,9 +12,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
@@ -48,15 +49,22 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
     // when
     List<ProcessFilterDto<?>> canceledFlowNodes = ProcessFilterBuilder
       .filter().canceledFlowNodesOnly().filterLevel(VIEW).add().buildList();
-    final ReportMapResultDto result = evaluateReport(processDefinition, canceledFlowNodes);
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateReport(
+      processDefinition,
+      canceledFlowNodes
+    );
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
     assertThat(result.getFirstMeasureData()).hasSize(2);
-    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_1)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
-    assertThat(result.getEntryForKey(USER_TASK_2)).isPresent().get().extracting(MapResultEntryDto::getValue)
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_2)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
   }
 
@@ -77,17 +85,26 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
     // when
     List<ProcessFilterDto<?>> completedOrCanceledFlowNodes = ProcessFilterBuilder
       .filter().completedOrCanceledFlowNodesOnly().filterLevel(VIEW).add().buildList();
-    final ReportMapResultDto result = evaluateReport(processDefinition, completedOrCanceledFlowNodes);
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateReport(
+      processDefinition,
+      completedOrCanceledFlowNodes
+    );
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
     assertThat(result.getFirstMeasureData()).hasSize(3);
-    assertThat(result.getEntryForKey(START_EVENT)).isPresent().get().extracting(MapResultEntryDto::getValue)
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), START_EVENT)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
       .isEqualTo(3.);
-    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_1)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
       .isEqualTo(2.);
-    assertThat(result.getEntryForKey(USER_TASK_2)).isPresent().get().extracting(MapResultEntryDto::getValue)
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_2)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
   }
 
@@ -108,19 +125,30 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
     // when
     List<ProcessFilterDto<?>> completedFlowNodes = ProcessFilterBuilder
       .filter().completedFlowNodesOnly().filterLevel(VIEW).add().buildList();
-    final ReportMapResultDto result = evaluateReport(processDefinition, completedFlowNodes);
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateReport(
+      processDefinition,
+      completedFlowNodes
+    );
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
     assertThat(result.getFirstMeasureData()).hasSize(4);
-    assertThat(result.getEntryForKey(START_EVENT)).isPresent().get().extracting(MapResultEntryDto::getValue)
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), START_EVENT)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
       .isEqualTo(3.);
-    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_1)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
       .isEqualTo(2.);
-    assertThat(result.getEntryForKey(USER_TASK_2)).isPresent().get().extracting(MapResultEntryDto::getValue)
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_2)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
-    assertThat(result.getEntryForKey(END_EVENT)).isPresent().get().extracting(MapResultEntryDto::getValue)
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), END_EVENT)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
   }
 
@@ -141,15 +169,19 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
     // when
     List<ProcessFilterDto<?>> runningFlowNodes = ProcessFilterBuilder
       .filter().runningFlowNodesOnly().filterLevel(VIEW).add().buildList();
-    final ReportMapResultDto result = evaluateReport(processDefinition, runningFlowNodes);
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateReport(processDefinition, runningFlowNodes);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
     assertThat(result.getFirstMeasureData()).hasSize(2);
-    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_1)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
-    assertThat(result.getEntryForKey(USER_TASK_2)).isPresent().get().extracting(MapResultEntryDto::getValue)
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_2)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
   }
 
@@ -172,7 +204,7 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
       .runningFlowNodesOnly().filterLevel(VIEW).add()
       .completedOrCanceledFlowNodesOnly().filterLevel(VIEW).add()
       .buildList();
-    final ReportMapResultDto result = evaluateReport(processDefinition, flowNodeFilter);
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateReport(processDefinition, flowNodeFilter);
 
     // then
     assertThat(result.getInstanceCount()).isZero();
@@ -200,15 +232,22 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
       .canceledFlowNodesOnly().filterLevel(VIEW).add()
       .canceledFlowNodesOnly().filterLevel(VIEW).add()
       .buildList();
-    final ReportMapResultDto result = evaluateReport(processDefinition, canceledFlowNodes);
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateReport(
+      processDefinition,
+      canceledFlowNodes
+    );
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
     assertThat(result.getFirstMeasureData()).hasSize(2);
-    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_1)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
-    assertThat(result.getEntryForKey(USER_TASK_2)).isPresent().get().extracting(MapResultEntryDto::getValue)
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_2)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
   }
 
@@ -242,18 +281,23 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
       .buildList();
-    final ReportMapResultDto result = evaluateReport(processDefinition, canceledFlowNodes);
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateReport(
+      processDefinition,
+      canceledFlowNodes
+    );
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
     assertThat(result.getFirstMeasureData()).hasSize(1);
-    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_1)).isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
   }
 
-  private ReportMapResultDto evaluateReport(final ProcessDefinitionEngineDto definitionEngineDto,
-                                            List<ProcessFilterDto<?>> filter) {
+  private ReportResultResponseDto<List<MapResultEntryDto>> evaluateReport(final ProcessDefinitionEngineDto definitionEngineDto,
+                                                                          List<ProcessFilterDto<?>> filter) {
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(definitionEngineDto.getKey())

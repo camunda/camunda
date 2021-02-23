@@ -8,9 +8,10 @@ package org.camunda.optimize.service.es.report.util;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.MapMeasureResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class MapResultAsserter {
 
-  private final ReportMapResultDto expectedResult = new ReportMapResultDto();
+  private final ReportResultResponseDto<List<MapResultEntryDto>> expectedResult = new ReportResultResponseDto<>();
 
   public static MapResultAsserter asserter() {
     return new MapResultAsserter();
@@ -52,11 +53,11 @@ public class MapResultAsserter {
     return new MeasureAdder(this, viewProperty, aggregationType, userTaskDurationTime);
   }
 
-  private void addMeasure(MeasureDto<List<MapResultEntryDto>> measure) {
+  private void addMeasure(MeasureResponseDto<List<MapResultEntryDto>> measure) {
     expectedResult.addMeasure(measure);
   }
 
-  public void doAssert(ReportMapResultDto actualResult) {
+  public void doAssert(ReportResultResponseDto<List<MapResultEntryDto>> actualResult) {
     // this is done by hand since it's otherwise really hard to see where the
     // assert failed.
     assertThat(actualResult.getInstanceCount())
@@ -89,7 +90,7 @@ public class MapResultAsserter {
 
     actualResult.getFirstMeasureData().forEach(actualGroupByEntry -> {
       Optional<MapResultEntryDto> expectedGroupBy =
-        expectedResult.getEntryForKey(actualGroupByEntry.getKey());
+        MapResultUtil.getEntryForKey(expectedResult.getFirstMeasureData(), actualGroupByEntry.getKey());
       doAssertsOnGroupByEntry(actualGroupByEntry, expectedGroupBy);
     });
 
@@ -101,14 +102,19 @@ public class MapResultAsserter {
   public class MeasureAdder {
 
     private MapResultAsserter asserter;
-    private MeasureDto<List<MapResultEntryDto>> measure;
+    private MapMeasureResponseDto measure;
 
     public MeasureAdder(final MapResultAsserter mapAsserter,
                         final ViewProperty viewProperty,
                         final AggregationType aggregationType,
                         final UserTaskDurationTime userTaskDurationTime) {
       this.asserter = mapAsserter;
-      this.measure = MeasureDto.of(viewProperty, aggregationType, userTaskDurationTime, new ArrayList<>());
+      this.measure = MapMeasureResponseDto.builder()
+        .property(viewProperty)
+        .aggregationType(aggregationType)
+        .userTaskDurationTime(userTaskDurationTime)
+        .data(new ArrayList<>())
+        .build();
 
     }
 
@@ -127,7 +133,7 @@ public class MapResultAsserter {
       return asserter;
     }
 
-    public void doAssert(ReportMapResultDto actualResult) {
+    public void doAssert(ReportResultResponseDto<List<MapResultEntryDto>> actualResult) {
       add();
       asserter.doAssert(actualResult);
     }

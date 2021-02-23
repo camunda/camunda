@@ -11,9 +11,8 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -41,11 +40,11 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
+    CombinedProcessReportResultDataDto<Double> result = reportClient.evaluateUnsavedCombined(
       createCombinedReportData(singleReportId1, singleReportId2));
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
+    Map<String, AuthorizedProcessReportEvaluationResponseDto<Double>> resultMap =
       result.getData();
     assertThat(resultMap).hasSize(2);
     assertThat(resultMap.keySet()).contains(singleReportId1, singleReportId2);
@@ -85,7 +84,7 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
+    CombinedProcessReportResultDataDto<Double> result = reportClient.evaluateUnsavedCombined(
       createCombinedReportData(singleReportId1, singleReportId2));
 
     // then

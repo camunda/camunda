@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,7 +62,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
 
     // then
     assertThat(result.getData())
@@ -98,7 +98,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
 
     // then
     assertThat(result.getData())
@@ -128,7 +128,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
     // then
     assertThat(result.getData())
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
@@ -161,7 +161,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
 
     // then
     assertThat(result.getData())
@@ -193,7 +193,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
 
     // then
     assertThat(result.getData())
@@ -230,7 +230,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
 
     // then
     assertThat(result.getData())
@@ -267,7 +267,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
 
     // then
     assertThat(result.getData())
@@ -308,7 +308,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
 
     // then
     assertThat(result.getData())
@@ -348,7 +348,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
 
     // then
     assertThat(result.getData())

@@ -12,14 +12,11 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
@@ -72,24 +69,22 @@ public class SingleDecisionReportHandlingIT extends AbstractIT {
     final String reportId = deployDefinitionAndCreateReport(reportType);
 
     // when
-    final DecisionReportResultDto result = embeddedOptimizeExtension.getRequestExecutor()
+    final ReportResultResponseDto<?> result = embeddedOptimizeExtension.getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId)
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<DecisionReportResultDto>>() {
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<?>>() {
       }).getResult();
 
     // then
     assertEmptyResult(result);
   }
 
-  private void assertEmptyResult(final DecisionReportResultDto result) {
-    if (result instanceof ReportMapResultDto) {
-      assertThat(((ReportMapResultDto) result).getFirstMeasureData()).isEmpty();
-    } else if (result instanceof ReportHyperMapResultDto) {
-      assertThat(((ReportHyperMapResultDto) result).getFirstMeasureData()).isEmpty();
-    } else if (result instanceof NumberResultDto) {
-      assertThat(((NumberResultDto) result).getFirstMeasureData()).isZero();
-    } else if (result instanceof RawDataDecisionReportResultDto) {
-      assertThat(((RawDataDecisionReportResultDto) result).getData()).isEmpty();
+  private void assertEmptyResult(final ReportResultResponseDto<?> result) {
+    if (result.getFirstMeasureData() instanceof List) {
+      assertThat((List<?>) result.getFirstMeasureData()).isEmpty();
+    } else if (result.getFirstMeasureData() instanceof Double) {
+      assertThat((Double) result.getFirstMeasureData()).isZero();
+    } else {
+      throw new OptimizeIntegrationTestException("Unexpected result type: " + result.getFirstMeasureData().getClass());
     }
   }
 

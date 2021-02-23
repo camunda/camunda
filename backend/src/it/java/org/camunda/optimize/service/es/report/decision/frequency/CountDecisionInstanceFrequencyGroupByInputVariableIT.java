@@ -14,13 +14,14 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
+import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -77,7 +78,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_AMOUNT_ID, VariableType.DOUBLE
     ).getResult();
 
@@ -110,7 +111,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_INVOICE_DATE_ID, VariableType.DATE
     ).getResult();
 
@@ -152,7 +153,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, decisionDefinitionDto1.getVersionAsString(), INPUT_AMOUNT_ID, VariableType.DOUBLE
     ).getResult();
 
@@ -189,7 +190,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1,
       decisionDefinitionDto1.getVersionAsString(),
       INPUT_AMOUNT_ID,
@@ -356,7 +357,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       .setVariableType(VariableType.DOUBLE)
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the result covers all instances and is sorted
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -400,7 +401,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       .setVariableType(VariableType.DOUBLE)
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the result includes all instance data and is sorted
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -451,7 +452,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       )))
       .build();
 
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -485,7 +486,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, INPUT_AMOUNT_ID, VariableType.DOUBLE
     ).getResult();
 
@@ -521,7 +522,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, INPUT_CATEGORY_ID, VariableType.STRING
     ).getResult();
 
@@ -559,7 +560,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, INPUT_AMOUNT_ID, VariableType.DOUBLE
     ).getResult();
 
@@ -592,7 +593,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       .setVariableId(INPUT_AMOUNT_ID)
       .setVariableType(VariableType.DOUBLE)
       .build();
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(selectedTenants.size());
@@ -612,7 +613,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> result =
+    final AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> result =
       evaluateDecisionInstanceFrequencyByInputVariable(
         decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_AMOUNT_ID, "amount", VariableType.DOUBLE
       );
@@ -641,7 +642,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE
     ).getResult();
 
@@ -722,7 +723,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE, AggregateByDateUnit.AUTOMATIC
     ).getResult();
 
@@ -757,7 +758,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE, AggregateByDateUnit.AUTOMATIC
     ).getResult();
 
@@ -792,7 +793,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE
     ).getResult();
 
@@ -829,7 +830,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE
     ).getResult();
 
@@ -871,7 +872,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto, decisionDefinitionDto.getVersionAsString(), inputClauseId, null, VariableType.STRING
     ).getResult();
 
@@ -879,9 +880,9 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // then
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getFirstMeasureData()).hasSize(3);
-    assertThat(result.getEntryForKey("testValidMatch").get().getValue()).isEqualTo(1.);
-    assertThat(result.getEntryForKey("whateverElse").get().getValue()).isEqualTo(1.);
-    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(2.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "testValidMatch").get().getValue()).isEqualTo(1.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "whateverElse").get().getValue()).isEqualTo(1.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "missing").get().getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -912,15 +913,15 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto, decisionDefinitionDto.getVersionAsString(), inputVariableName, null, VariableType.DOUBLE
     ).getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getFirstMeasureData()).hasSize(2);
-    assertThat(result.getEntryForKey("1.00").get().getValue()).isEqualTo(1.);
-    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(2.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "1.00").get().getValue()).isEqualTo(1.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "missing").get().getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -965,7 +966,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     return engineIntegrationExtension.deployDecisionDefinition(dmnModelInstance);
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByInputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId,
@@ -979,7 +980,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByInputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId,
@@ -998,7 +999,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByInputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId,
@@ -1016,7 +1017,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByInputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId,
@@ -1035,7 +1036,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByInputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId,

@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.filter.process.AbstractFilterIT;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -61,7 +61,7 @@ public class StringContainsVariableQueryFilterIT extends AbstractFilterIT {
 
     // when
     List<ProcessFilterDto<?>> filter = createContainsFilterForValues("ketchup");
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData())
@@ -89,7 +89,7 @@ public class StringContainsVariableQueryFilterIT extends AbstractFilterIT {
 
     // when
     List<ProcessFilterDto<?>> filter = createContainsFilterForValues("ketchup");
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).isEmpty();
@@ -111,7 +111,7 @@ public class StringContainsVariableQueryFilterIT extends AbstractFilterIT {
 
     // when
     List<ProcessFilterDto<?>> filter = createContainsFilterForValues("ketchup");
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData())
@@ -137,7 +137,7 @@ public class StringContainsVariableQueryFilterIT extends AbstractFilterIT {
 
     // when
     List<ProcessFilterDto<?>> filter = createContainsFilterForValues((String) null);
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData())
@@ -166,7 +166,7 @@ public class StringContainsVariableQueryFilterIT extends AbstractFilterIT {
 
     // when
     List<ProcessFilterDto<?>> filter = createContainsFilterForValues("ketchup", null, "must");
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData())
@@ -189,7 +189,7 @@ public class StringContainsVariableQueryFilterIT extends AbstractFilterIT {
 
     // when
     List<ProcessFilterDto<?>> filter = createContainsFilterForValues("1234567891011");
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData())
@@ -238,7 +238,7 @@ public class StringContainsVariableQueryFilterIT extends AbstractFilterIT {
 
     // when
     List<ProcessFilterDto<?>> filter = createContainsFilterForValues("12");
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData())
@@ -262,7 +262,7 @@ public class StringContainsVariableQueryFilterIT extends AbstractFilterIT {
 
     // when
     List<ProcessFilterDto<?>> filter = createContainsFilterForValues("12");
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData())
