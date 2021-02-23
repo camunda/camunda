@@ -44,6 +44,7 @@ function CollapsablePanel({
   verticalLabelOffset,
   hasBackgroundColor,
   scrollable,
+  onScroll,
   ...props
 }: Props) {
   const buttonDirection =
@@ -116,7 +117,9 @@ function CollapsablePanel({
           {header}
         </Styled.Header>
         {/* @ts-expect-error ts-migrate(2322) FIXME: Property 'scrollable' does not exist on type 'Intr... Remove this comment to see the full error message */}
-        <Panel.Body scrollable={scrollable}>{children}</Panel.Body>
+        <Panel.Body scrollable={scrollable} onScroll={onScroll}>
+          {children}
+        </Panel.Body>
         {renderFooter ? <Panel.Footer>{renderFooter()}</Panel.Footer> : ''}
       </Styled.ExpandedPanel>
     </Styled.Collapsable>

@@ -8,16 +8,12 @@ import fetch from 'node-fetch';
 import {ENDPOINTS} from './endpoints';
 import {getCredentials} from './getCredentials';
 
-const OPERATION_TYPES = Object.freeze({
-  CANCEL_WORKFLOW_INSTANCE: 'CANCEL_WORKFLOW_INSTANCE',
-});
-
 async function createOperation({
   id,
   operationType,
 }: {
   id: string;
-  operationType: string;
+  operationType: 'RESOLVE_INCIDENT' | 'CANCEL_WORKFLOW_INSTANCE';
 }) {
   const credentials = await getCredentials();
 
@@ -31,4 +27,4 @@ async function createOperation({
   }).then((response) => response.json());
 }
 
-export {createOperation, OPERATION_TYPES};
+export {createOperation};

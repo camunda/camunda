@@ -5,6 +5,7 @@
  */
 
 import {deploy, createInstances, createSingleInstance} from '../setup-utils';
+import {createOperation} from './api';
 
 async function setup() {
   await deploy([
@@ -16,6 +17,13 @@ async function setup() {
     createSingleInstance('operationsProcessA', 1),
     createInstances('operationsProcessB', 1, 10),
   ]);
+
+  [...new Array(40)].forEach(() => {
+    createOperation({
+      id: singleOperationInstance.workflowInstanceKey,
+      operationType: 'RESOLVE_INCIDENT',
+    });
+  });
 
   return {singleOperationInstance, batchOperationInstances};
 }

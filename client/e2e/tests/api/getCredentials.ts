@@ -5,7 +5,7 @@
  */
 
 import fetch from 'node-fetch';
-import memoize from 'lodash.memoize';
+import {memoize} from 'lodash';
 import {ENDPOINTS} from './endpoints';
 import {config} from '../../config';
 

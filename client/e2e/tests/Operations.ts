@@ -25,6 +25,16 @@ fixture('Operations')
     await t.click(screen.getByTestId('header-link-instances'));
   });
 
+test('infinite scrolling', async (t) => {
+  await t.click(screen.getByTitle('Expand Operations'));
+
+  await t.expect(screen.getAllByTestId('operations-entry').count).eql(20);
+
+  await t.hover(screen.getAllByTestId('operations-entry').nth(19));
+
+  await t.expect(screen.getAllByTestId('operations-entry').count).eql(40);
+});
+
 // This test was skipped, because of OPE-1098, please unskip, when the bug is fixed
 test.skip('Retry and Cancel single instance ', async (t) => {
   const {initialData} = t.fixtureCtx;
