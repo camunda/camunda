@@ -36,7 +36,7 @@ public final class EventAppliers implements EventApplier {
   private static final Function<Intent, TypedEventApplier<?, ?>> UNIMPLEMENTED_EVENT_APPLIER =
       intent ->
           (key, value) ->
-              LOG.debug(
+              LOG.trace(
                   "No state changed: tried to use unimplemented event applier {}.{}",
                   intent.getClass().getSimpleName(),
                   intent);
