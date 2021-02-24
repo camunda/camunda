@@ -18,7 +18,6 @@ import io.zeebe.engine.state.instance.DbEventScopeInstanceState;
 import io.zeebe.engine.state.instance.DbIncidentState;
 import io.zeebe.engine.state.instance.DbJobState;
 import io.zeebe.engine.state.instance.DbTimerInstanceState;
-import io.zeebe.engine.state.instance.DbVariableState;
 import io.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.zeebe.engine.state.message.DbMessageState;
 import io.zeebe.engine.state.message.DbMessageSubscriptionState;
@@ -40,6 +39,7 @@ import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.engine.state.processing.DbBlackListState;
 import io.zeebe.engine.state.processing.DbKeyGenerator;
 import io.zeebe.engine.state.processing.DbLastProcessedPositionState;
+import io.zeebe.engine.state.variable.DbVariableState;
 import io.zeebe.protocol.Protocol;
 import java.util.function.BiConsumer;
 

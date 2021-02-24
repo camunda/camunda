@@ -10,7 +10,7 @@ package io.zeebe.engine.processing.variable;
 import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.instance.DbVariableState.VariableListener;
+import io.zeebe.engine.state.variable.DbVariableState.VariableListener;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.record.intent.VariableIntent;
 import org.agrona.DirectBuffer;
