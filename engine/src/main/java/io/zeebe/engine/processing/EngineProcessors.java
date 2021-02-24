@@ -114,7 +114,7 @@ public final class EngineProcessors {
         ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
 
     final var completeDeploymentDistributionProcessor =
-        new CompleteDeploymentDistributionProcessor(writers);
+        new CompleteDeploymentDistributionProcessor(zeebeState.getDeploymentState(), writers);
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT_DISTRIBUTION,
         DeploymentDistributionIntent.COMPLETE,

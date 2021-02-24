@@ -9,6 +9,7 @@ package io.zeebe.engine.state.mutable;
 
 import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistribution;
 import io.zeebe.engine.state.immutable.DeploymentState;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 
 public interface MutableDeploymentState extends DeploymentState {
 
@@ -19,4 +20,8 @@ public interface MutableDeploymentState extends DeploymentState {
   void addPendingDeploymentDistribution(long deploymentKey, int partition);
 
   void removePendingDeploymentDistribution(long key, int partitionId);
+
+  void storeDeploymentRecord(long key, DeploymentRecord value);
+
+  void removeDeploymentRecord(long key);
 }

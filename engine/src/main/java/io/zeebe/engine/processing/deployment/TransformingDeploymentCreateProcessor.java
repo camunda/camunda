@@ -109,7 +109,7 @@ public final class TransformingDeploymentCreateProcessor
       }
 
       responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
-      streamWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
+      stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
       partitions.forEach(
           partitionId -> {
