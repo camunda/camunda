@@ -49,6 +49,7 @@ import io.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.zeebe.broker.system.partitions.ZeebePartition;
 import io.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
 import io.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
+import io.zeebe.broker.system.partitions.impl.steps.AtomixLogStoragePartitionStep;
 import io.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionStep;
 import io.zeebe.broker.system.partitions.impl.steps.FollowerPostStoragePartitionStep;
 import io.zeebe.broker.system.partitions.impl.steps.LeaderPostStoragePartitionStep;
@@ -96,6 +97,7 @@ public final class Broker implements AutoCloseable {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final List<PartitionStep> LEADER_STEPS =
       List.of(
+          new AtomixLogStoragePartitionStep(),
           new LogStreamPartitionStep(),
           new RaftLogReaderPartitionStep(),
           new SnapshotReplicationPartitionStep(),
