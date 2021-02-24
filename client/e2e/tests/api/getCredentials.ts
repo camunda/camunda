@@ -24,7 +24,7 @@ const getCredentials = memoize(
       }
     | {
         Cookie: string;
-        'X-CSRF-TOKEN'?: string;
+        'X-CSRF-TOKEN': string;
       }
   > => {
     const {username, password} = config.agentUser;
