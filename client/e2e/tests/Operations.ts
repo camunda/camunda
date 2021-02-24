@@ -6,7 +6,6 @@
 
 import {screen, within} from '@testing-library/testcafe';
 import {demoUser} from './utils/Roles';
-import {wait} from './utils/wait';
 import {config} from '../config';
 import {setup} from './Operations.setup';
 import {DATE_REGEX} from './constants';
@@ -15,7 +14,6 @@ fixture('Operations')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
-    await wait();
   })
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
