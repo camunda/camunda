@@ -83,7 +83,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
     final long exportedPosition = exporterPositionSupplier.applyAsLong(openDb());
     final long snapshotPosition =
         determineSnapshotPosition(lowerBoundSnapshotPosition, exportedPosition);
-    final var optionalIndexed = entrySupplier.getIndexedEntry(snapshotPosition);
+    final var optionalIndexed = entrySupplier.getPreviousIndexedEntry(snapshotPosition);
     if (optionalIndexed.isEmpty()) {
       LOG.warn(
           "Failed to take snapshot. Expected to find an indexed entry for determined snapshot position {}, but found no matching indexed entry which contains this position.",

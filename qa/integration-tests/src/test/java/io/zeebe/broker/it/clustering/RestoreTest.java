@@ -18,7 +18,9 @@ import io.zeebe.util.SocketUtil;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -124,19 +126,71 @@ public final class RestoreTest {
     }
   }
 
+  // Regression test added for https://github.com/zeebe-io/zeebe/issues/6438
+  @Test
+  public void shouldBecomeLeaderAfterRestoreFromSnapshot() {
+    // given
+    clusteringRule.stopBrokerAndAwaitNewLeader(2);
+    writeManyEventsUntilAtomixLogIsCompactable();
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+    clusteringRule.waitForSnapshotAtBroker(getLeader());
+
+    // when
+
+    // Bring the stopped broker back - So that it has receives the snapshot from the leader
+    clusteringRule.restartBroker(2);
+    clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(2));
+
+    // writing more events after stopping 0 ensures that 2 will become leader since once we stop 1,
+    // 2 will have the longest log between it and 0
+    clusteringRule.stopBrokerAndAwaitNewLeader(0);
+    publishMessage();
+
+    clusteringRule.stopBroker(1);
+    // restart broker without waiting for the topology
+    clusteringRule.getBroker(0).start().join();
+
+    // then
+    Awaitility.await("New leader must be 2")
+        .pollInterval(10, TimeUnit.SECONDS)
+        .timeout(60, TimeUnit.SECONDS)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> assertThat(clusteringRule.getLeaderForPartition(1).getNodeId()).isEqualTo(2));
+
+    publishMessage();
+  }
+
   private Broker getLeader() {
     return clusteringRule.getBroker(
         clusteringRule.getLeaderForPartition(START_PARTITION_ID).getNodeId());
   }
 
   private void writeManyEventsUntilAtomixLogIsCompactable() {
-    final BpmnModelInstance workflow =
-        Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
-    final long workflowKey = clientRule.deployWorkflow(workflow);
     final int requiredInstances =
         (int) Math.floorDiv(ATOMIX_SEGMENT_SIZE.toBytes(), LARGE_PAYLOAD_BYTESIZE.toBytes()) + 1;
     IntStream.range(0, requiredInstances)
-        .forEach(i -> clientRule.createWorkflowInstance(workflowKey, LARGE_PAYLOAD));
+        .forEach(
+            i ->
+                clientRule
+                    .getClient()
+                    .newPublishMessageCommand()
+                    .messageName(String.valueOf(i))
+                    .correlationKey(String.valueOf(i))
+                    .variables(LARGE_PAYLOAD)
+                    .send()
+                    .join());
+  }
+
+  private void publishMessage() {
+    clientRule
+        .getClient()
+        .newPublishMessageCommand()
+        .messageName("test")
+        .correlationKey("test")
+        .variables(LARGE_PAYLOAD)
+        .send()
+        .join();
   }
 
   private static String getRandomBase64Bytes(final long size) {
