@@ -76,7 +76,7 @@ public final class BpmnStateTransitionBehavior {
         return context.copy(
             context.getElementInstanceKey(),
             context.getRecordValue(),
-            WorkflowInstanceIntent.ELEMENT_COMPLETING);
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING);
       }
     }
     return transitionTo(context, WorkflowInstanceIntent.ELEMENT_ACTIVATING);

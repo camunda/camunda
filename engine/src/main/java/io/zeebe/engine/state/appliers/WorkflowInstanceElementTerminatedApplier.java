@@ -8,7 +8,6 @@
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -21,9 +20,11 @@ final class WorkflowInstanceElementTerminatedApplier
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
-  public WorkflowInstanceElementTerminatedApplier(final ZeebeState state) {
-    elementInstanceState = state.getElementInstanceState();
-    eventScopeInstanceState = state.getEventScopeInstanceState();
+  public WorkflowInstanceElementTerminatedApplier(
+      final MutableElementInstanceState elementInstanceState,
+      final MutableEventScopeInstanceState eventScopeInstanceState) {
+    this.elementInstanceState = elementInstanceState;
+    this.eventScopeInstanceState = eventScopeInstanceState;
   }
 
   @Override

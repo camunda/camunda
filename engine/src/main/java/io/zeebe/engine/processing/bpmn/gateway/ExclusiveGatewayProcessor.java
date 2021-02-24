@@ -13,12 +13,12 @@ import io.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
-import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableExclusiveGateway;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.util.Either;
 import io.zeebe.util.buffer.BufferUtil;
@@ -28,8 +28,9 @@ public final class ExclusiveGatewayProcessor
 
   private static final String NO_OUTGOING_FLOW_CHOSEN_ERROR =
       "Expected at least one condition to evaluate to true, or to have a default flow";
+  private static final String TRANSITION_TO_COMPLETED_PRECONDITION_ERROR =
+      "Expected to transition element to completed, but state is not ELEMENT_ACTIVATING";
 
-  private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final ExpressionProcessor expressionBehavior;
@@ -37,7 +38,6 @@ public final class ExclusiveGatewayProcessor
   public ExclusiveGatewayProcessor(final BpmnBehaviors behaviors) {
     expressionBehavior = behaviors.expressionBehavior();
     incidentBehavior = behaviors.incidentBehavior();
-    stateBehavior = behaviors.stateBehavior();
     stateTransitionBehavior = behaviors.stateTransitionBehavior();
   }
 
@@ -51,9 +51,7 @@ public final class ExclusiveGatewayProcessor
       final ExecutableExclusiveGateway element, final BpmnElementContext activating) {
     if (element.getOutgoing().isEmpty()) {
       // there are no flows to take: the gateway is an implicit end for the flow scope
-      final var activated = stateTransitionBehavior.transitionToActivated(activating);
-      final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-      final var completed = stateTransitionBehavior.transitionToCompleted(completing);
+      final BpmnElementContext completed = transitionToCompleted(activating);
       stateTransitionBehavior.onElementCompleted(element, completed);
 
     } else {
@@ -61,9 +59,7 @@ public final class ExclusiveGatewayProcessor
       findSequenceFlowToTake(element, activating)
           .ifRightOrLeft(
               sequenceFlow -> {
-                final var activated = stateTransitionBehavior.transitionToActivated(activating);
-                final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-                final var completed = stateTransitionBehavior.transitionToCompleted(completing);
+                final BpmnElementContext completed = transitionToCompleted(activating);
                 stateTransitionBehavior.takeSequenceFlow(completed, sequenceFlow);
               },
               failure -> incidentBehavior.createIncident(failure, activating));
@@ -129,6 +125,15 @@ public final class ExclusiveGatewayProcessor
     throw new BpmnProcessingException(
         context,
         "Expected to handle occurred event on exclusive gateway, but events should not occur on exclusive gateway.");
+  }
+
+  private BpmnElementContext transitionToCompleted(final BpmnElementContext activating) {
+    if (activating.getIntent() != WorkflowInstanceIntent.ELEMENT_ACTIVATING) {
+      throw new BpmnProcessingException(activating, TRANSITION_TO_COMPLETED_PRECONDITION_ERROR);
+    }
+    final var activated = stateTransitionBehavior.transitionToActivated(activating);
+    final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+    return stateTransitionBehavior.transitionToCompleted(completing);
   }
 
   private Either<Failure, ExecutableSequenceFlow> findSequenceFlowToTake(
