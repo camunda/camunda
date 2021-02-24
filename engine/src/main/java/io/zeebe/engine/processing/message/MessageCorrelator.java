@@ -9,8 +9,8 @@ package io.zeebe.engine.processing.message;
 
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.zeebe.engine.state.message.Message;
 import io.zeebe.engine.state.message.MessageSubscription;
+import io.zeebe.engine.state.message.StoredMessage;
 import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -51,9 +51,10 @@ public final class MessageCorrelator {
         subscription.getMessageName(), subscription.getCorrelationKey(), this::correlateMessage);
   }
 
-  private boolean correlateMessage(final Message message) {
+  private boolean correlateMessage(final StoredMessage storedMessage) {
     // correlate the first message which is not correlated to the workflow instance yet
-    messageKey = message.getKey();
+    messageKey = storedMessage.getMessageKey();
+    final var message = storedMessage.getMessage();
 
     final boolean correlateMessage =
         message.getDeadline() > ActorClock.currentTimeMillis()
@@ -62,10 +63,10 @@ public final class MessageCorrelator {
 
     if (correlateMessage) {
       subscriptionState.updateToCorrelatingState(
-          subscription, message.getVariables(), ActorClock.currentTimeMillis(), messageKey);
+          subscription, message.getVariablesBuffer(), ActorClock.currentTimeMillis(), messageKey);
 
       // send the correlate instead of acknowledge command
-      messageVariables.wrap(message.getVariables());
+      messageVariables.wrap(message.getVariablesBuffer());
       sideEffect.accept(this::sendCorrelateCommand);
 
       messageState.putMessageCorrelation(messageKey, subscriptionRecord.getBpmnProcessIdBuffer());

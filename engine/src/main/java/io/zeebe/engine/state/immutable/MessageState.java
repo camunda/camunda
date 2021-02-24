@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.state.immutable;
 
-import io.zeebe.engine.state.message.Message;
+import io.zeebe.engine.state.message.StoredMessage;
 import org.agrona.DirectBuffer;
 
 public interface MessageState {
@@ -20,7 +20,7 @@ public interface MessageState {
 
   void visitMessages(DirectBuffer name, DirectBuffer correlationKey, MessageVisitor visitor);
 
-  Message getMessage(long messageKey);
+  StoredMessage getMessage(long messageKey);
 
   void visitMessagesWithDeadlineBefore(long timestamp, MessageVisitor visitor);
 
@@ -28,6 +28,6 @@ public interface MessageState {
 
   @FunctionalInterface
   interface MessageVisitor {
-    boolean visit(Message message);
+    boolean visit(StoredMessage message);
   }
 }

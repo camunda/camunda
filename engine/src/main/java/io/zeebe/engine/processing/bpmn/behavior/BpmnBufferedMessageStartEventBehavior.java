@@ -14,7 +14,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.immutable.WorkflowState;
-import io.zeebe.engine.state.message.Message;
+import io.zeebe.engine.state.message.StoredMessage;
 import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -64,8 +64,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
     findNextMessageToCorrelate(workflow, correlationKey)
         .ifPresentOrElse(
             messageCorrelation -> {
-              final var message = messageState.getMessage(messageCorrelation.messageKey);
-              correlateMessage(workflow, messageCorrelation.elementId, message);
+              final var storedMessage = messageState.getMessage(messageCorrelation.messageKey);
+              correlateMessage(workflow, messageCorrelation.elementId, storedMessage);
             },
             () -> {
               // no buffered message to correlate
@@ -88,16 +88,16 @@ public final class BpmnBufferedMessageStartEventBehavior {
         messageState.visitMessages(
             messageNameBuffer,
             correlationKey,
-            message -> {
+            storedMessage -> {
               // correlate the first message with same correlation key that was not correlated yet
-              if (message.getDeadline() > ActorClock.currentTimeMillis()
+              if (storedMessage.getMessage().getDeadline() > ActorClock.currentTimeMillis()
                   && !messageState.existMessageCorrelation(
-                      message.getKey(), workflow.getBpmnProcessId())) {
+                      storedMessage.getMessageKey(), workflow.getBpmnProcessId())) {
 
                 // correlate the first published message across all message start events
                 // - using the message key to decide which message was published before
-                if (message.getKey() < messageCorrelation.messageKey) {
-                  messageCorrelation.messageKey = message.getKey();
+                if (storedMessage.getMessageKey() < messageCorrelation.messageKey) {
+                  messageCorrelation.messageKey = storedMessage.getMessageKey();
                   messageCorrelation.elementId = startEvent.getId();
                 }
 
@@ -117,17 +117,23 @@ public final class BpmnBufferedMessageStartEventBehavior {
   }
 
   private void correlateMessage(
-      final DeployedWorkflow workflow, final DirectBuffer elementId, final Message message) {
+      final DeployedWorkflow workflow,
+      final DirectBuffer elementId,
+      final StoredMessage storedMessage) {
 
     final var workflowInstanceKey =
         eventHandle.triggerStartEvent(
-            streamWriter, workflow.getKey(), elementId, message.getVariables());
+            streamWriter,
+            workflow.getKey(),
+            elementId,
+            storedMessage.getMessage().getVariablesBuffer());
 
     if (workflowInstanceKey > 0) {
       // mark the message as correlated
-      messageState.putMessageCorrelation(message.getKey(), workflow.getBpmnProcessId());
+      messageState.putMessageCorrelation(
+          storedMessage.getMessageKey(), workflow.getBpmnProcessId());
       messageState.putWorkflowInstanceCorrelationKey(
-          workflowInstanceKey, message.getCorrelationKey());
+          workflowInstanceKey, storedMessage.getMessage().getCorrelationKeyBuffer());
     }
   }
 

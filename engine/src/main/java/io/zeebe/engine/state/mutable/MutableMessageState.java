@@ -8,12 +8,12 @@
 package io.zeebe.engine.state.mutable;
 
 import io.zeebe.engine.state.immutable.MessageState;
-import io.zeebe.engine.state.message.Message;
+import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import org.agrona.DirectBuffer;
 
 public interface MutableMessageState extends MessageState {
 
-  void put(Message message);
+  void put(long messageKey, MessageRecord message);
 
   void putMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId);
 
@@ -27,5 +27,5 @@ public interface MutableMessageState extends MessageState {
 
   void removeWorkflowInstanceCorrelationKey(long workflowInstanceKey);
 
-  void remove(long key);
+  void remove(long messageKey);
 }

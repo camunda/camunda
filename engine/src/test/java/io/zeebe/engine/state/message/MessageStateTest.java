@@ -13,10 +13,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.util.ZeebeStateRule;
+import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.ArrayList;
 import java.util.List;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,8 +38,8 @@ public final class MessageStateTest {
   @Test
   public void shouldNotExistIfNameDoesntMatch() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey", "{}", "id");
-    messageState.put(message);
+    final var message = createMessage("name", "correlationKey", "{}", "id");
+    messageState.put(1L, message);
 
     // when
     final boolean exist =
@@ -51,8 +52,8 @@ public final class MessageStateTest {
   @Test
   public void shouldNotExistIfCorrelationKeyDoesntMatch() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey", "{}", "id");
-    messageState.put(message);
+    final var message = createMessage("name", "correlationKey", "{}", "id");
+    messageState.put(1L, message);
 
     // when
     final boolean exist =
@@ -65,8 +66,8 @@ public final class MessageStateTest {
   @Test
   public void shouldNotExistIfMessageIdDoesntMatch() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey", "{}", "id");
-    messageState.put(message);
+    final var message = createMessage("name", "correlationKey", "{}", "id");
+    messageState.put(1L, message);
 
     // when
     final boolean exist =
@@ -80,8 +81,8 @@ public final class MessageStateTest {
   @Test
   public void shouldExist() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey", "{}", "id");
-    messageState.put(message);
+    final var message = createMessage("name", "correlationKey", "{}", "id");
+    messageState.put(1L, message);
 
     // when
     final boolean exist =
@@ -94,33 +95,34 @@ public final class MessageStateTest {
   @Test
   public void shouldVisitMessages() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey");
-    messageState.put(message);
+    final var message = createMessage("name", "correlationKey");
+    messageState.put(1L, message);
 
     // when
-    final List<Message> messages = new ArrayList<>();
+    final List<StoredMessage> messages = new ArrayList<>();
     messageState.visitMessages(wrapString("name"), wrapString("correlationKey"), messages::add);
 
     // then
     assertThat(messages).hasSize(1);
-    assertThat(messages.get(0).getKey()).isEqualTo(message.getKey());
-    assertThat(messages.get(0).getName()).isEqualTo(message.getName());
-    assertThat(messages.get(0).getCorrelationKey()).isEqualTo(message.getCorrelationKey());
+    assertThat(messages.get(0).getMessageKey()).isEqualTo(1L);
+    assertThat(messages.get(0).getMessage().getName()).isEqualTo(message.getName());
+    assertThat(messages.get(0).getMessage().getCorrelationKey())
+        .isEqualTo(message.getCorrelationKey());
   }
 
   @Test
   public void shouldVisitMessagesInOrder() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey");
-    messageState.put(message);
+    final var message = createMessage("name", "correlationKey");
+    messageState.put(1L, message);
 
-    final Message message2 = createMessage(2L, "name", "correlationKey");
-    messageState.put(message2);
+    final var message2 = createMessage("name", "correlationKey");
+    messageState.put(2L, message2);
 
     // when
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
-        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getKey()));
+        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getMessageKey()));
 
     // then
     assertThat(keys).hasSize(2).containsExactly(1L, 2L);
@@ -129,11 +131,11 @@ public final class MessageStateTest {
   @Test
   public void shouldVisitMessagesUntilStop() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey");
-    messageState.put(message);
+    final var message = createMessage("name", "correlationKey");
+    messageState.put(1L, message);
 
-    final Message message2 = createMessage(2L, "name", "correlationKey");
-    messageState.put(message2);
+    final var message2 = createMessage("name", "correlationKey");
+    messageState.put(2L, message2);
 
     // when
     final List<Long> keys = new ArrayList<>();
@@ -141,7 +143,7 @@ public final class MessageStateTest {
         wrapString("name"),
         wrapString("correlationKey"),
         m -> {
-          keys.add(m.getKey());
+          keys.add(m.getMessageKey());
           return false;
         });
 
@@ -152,13 +154,13 @@ public final class MessageStateTest {
   @Test
   public void shouldNotVisitMessagesIfNameDoesntMatch() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey");
-    messageState.put(message);
+    final var message = createMessage("name", "correlationKey");
+    messageState.put(1L, message);
 
     // when
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
-        wrapString("otherName"), wrapString("correlationKey"), m -> keys.add(m.getKey()));
+        wrapString("otherName"), wrapString("correlationKey"), m -> keys.add(m.getMessageKey()));
 
     // then
     assertThat(keys).isEmpty();
@@ -167,13 +169,13 @@ public final class MessageStateTest {
   @Test
   public void shouldNotVisitMessageIfCorrelationKeyDoesntMatch() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey");
-    messageState.put(message);
+    final var message = createMessage("name", "correlationKey");
+    messageState.put(1L, message);
 
     // when
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
-        wrapString("name"), wrapString("otherCorrelationKey"), m -> keys.add(m.getKey()));
+        wrapString("name"), wrapString("otherCorrelationKey"), m -> keys.add(m.getMessageKey()));
 
     // then
     assertThat(keys).isEmpty();
@@ -182,14 +184,14 @@ public final class MessageStateTest {
   @Test
   public void shouldNotVisitMessagesBeforeTime() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
-    final Message message2 = createMessage(2L, "name", "correlationKey", "{}", "nr2", 4567);
+    final var message = createMessage("name", "correlationKey", "{}", "nr1", 1234);
+    final var message2 = createMessage("name", "correlationKey", "{}", "nr2", 4567);
 
-    messageState.put(message);
-    messageState.put(message2);
+    messageState.put(1L, message);
+    messageState.put(2L, message2);
 
     // then
-    final List<Message> readMessage = new ArrayList<>();
+    final List<StoredMessage> readMessage = new ArrayList<>();
     messageState.visitMessagesWithDeadlineBefore(1_000, readMessage::add);
 
     assertThat(readMessage).isEmpty();
@@ -198,18 +200,18 @@ public final class MessageStateTest {
   @Test
   public void shouldVisitMessagesBeforeTime() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
-    final Message message2 = createMessage(2L, "otherName", "correlationKey", "{}", "nr2", 2000);
+    final var message = createMessage("name", "correlationKey", "{}", "nr1", 1234);
+    final var message2 = createMessage("otherName", "correlationKey", "{}", "nr2", 2000);
 
-    messageState.put(message);
-    messageState.put(message2);
+    messageState.put(1L, message);
+    messageState.put(2L, message2);
 
     // then
-    final List<Message> readMessage = new ArrayList<>();
+    final List<StoredMessage> readMessage = new ArrayList<>();
     messageState.visitMessagesWithDeadlineBefore(1_999, readMessage::add);
 
     assertThat(readMessage.size()).isEqualTo(1);
-    assertThat(readMessage.get(0).getKey()).isEqualTo(1L);
+    assertThat(readMessage.get(0).getMessageKey()).isEqualTo(1L);
   }
 
   @Test
@@ -217,18 +219,18 @@ public final class MessageStateTest {
     // given
     final long now = ActorClock.currentTimeMillis();
 
-    final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
-    final Message message2 = createMessage(2L, "name", "correlationKey", "{}", "nr1", 2000);
+    final var message = createMessage("name", "correlationKey", "{}", "nr1", 1234);
+    final var message2 = createMessage("name", "correlationKey", "{}", "nr1", 2000);
 
-    messageState.put(message);
-    messageState.put(message2);
+    messageState.put(1L, message);
+    messageState.put(2L, message2);
 
     // when
     final long deadline = now + 3_000L;
 
     // then
     final List<Long> readMessage = new ArrayList<>();
-    messageState.visitMessagesWithDeadlineBefore(deadline, m -> readMessage.add(m.getKey()));
+    messageState.visitMessagesWithDeadlineBefore(deadline, m -> readMessage.add(m.getMessageKey()));
 
     assertThat(readMessage.size()).isEqualTo(2);
     assertThat(readMessage).containsExactly(1L, 2L);
@@ -237,17 +239,17 @@ public final class MessageStateTest {
   @Test
   public void shouldRemoveMessage() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey", "{}", "id", 1234);
-    messageState.put(message);
+    final var message = createMessage("name", "correlationKey", "{}", "id", 1234);
+    messageState.put(1L, message);
 
     messageState.putMessageCorrelation(1L, wrapString("a"));
     messageState.putMessageCorrelation(1L, wrapString("b"));
 
     // when
-    messageState.remove(message.getKey());
+    messageState.remove(1L);
 
     // then
-    final List<Message> readMessages = new ArrayList<>();
+    final List<StoredMessage> readMessages = new ArrayList<>();
     messageState.visitMessagesWithDeadlineBefore(2000, readMessages::add);
 
     assertThat(readMessages.size()).isEqualTo(0);
@@ -255,7 +257,7 @@ public final class MessageStateTest {
     // and
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
-        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getKey()));
+        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getMessageKey()));
 
     assertThat(keys).isEmpty();
 
@@ -273,15 +275,15 @@ public final class MessageStateTest {
   @Test
   public void shouldRemoveMessageWithoutId() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey");
+    final var message = createMessage("name", "correlationKey");
 
-    messageState.put(message);
+    messageState.put(1L, message);
 
     // when
-    messageState.remove(message.getKey());
+    messageState.remove(1L);
 
     // then
-    final List<Message> readMessages = new ArrayList<>();
+    final List<StoredMessage> readMessages = new ArrayList<>();
     messageState.visitMessagesWithDeadlineBefore(2000, readMessages::add);
 
     assertThat(readMessages.size()).isEqualTo(0);
@@ -289,7 +291,7 @@ public final class MessageStateTest {
     // and
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
-        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getKey()));
+        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getMessageKey()));
 
     assertThat(keys).isEmpty();
   }
@@ -297,16 +299,16 @@ public final class MessageStateTest {
   @Test
   public void shouldNotFailOnRemoveMessageTwice() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey", "{}", "id", 1234);
+    final var message = createMessage("name", "correlationKey", "{}", "id", 1234);
 
-    messageState.put(message);
+    messageState.put(1L, message);
 
     // when
-    messageState.remove(message.getKey());
-    messageState.remove(message.getKey());
+    messageState.remove(1L);
+    messageState.remove(1L);
 
     // then
-    final List<Message> readMessages = new ArrayList<>();
+    final List<StoredMessage> readMessages = new ArrayList<>();
     messageState.visitMessagesWithDeadlineBefore(2000, readMessages::add);
 
     assertThat(readMessages.size()).isEqualTo(0);
@@ -314,7 +316,7 @@ public final class MessageStateTest {
     // and
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
-        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getKey()));
+        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getMessageKey()));
 
     assertThat(keys).isEmpty();
 
@@ -328,20 +330,21 @@ public final class MessageStateTest {
   @Test
   public void shouldNotRemoveDifferentMessage() {
     // given
-    final Message message = createMessage(1L, "name", "correlationKey", "{}", "id1", 1234);
-    final Message message2 = createMessage(2L, "name", "correlationKey", "{}", "id2", 4567);
+    final var message = createMessage("name", "correlationKey", "{}", "id1", 1234);
+    final var message2 = createMessage("name", "correlationKey", "{}", "id2", 4567);
 
-    messageState.put(message);
+    messageState.put(1L, message);
+    messageState.put(2L, message2);
 
     messageState.putMessageCorrelation(1L, wrapString("a"));
     messageState.putMessageCorrelation(2L, wrapString("b"));
 
     // when
-    messageState.remove(message2.getKey());
+    messageState.remove(2L);
 
     // then
     final long deadline = ActorClock.currentTimeMillis() + 2_000L;
-    final List<Message> readMessages = new ArrayList<>();
+    final List<StoredMessage> readMessages = new ArrayList<>();
     messageState.visitMessagesWithDeadlineBefore(deadline, readMessages::add);
 
     assertThat(readMessages.size()).isEqualTo(1);
@@ -349,7 +352,7 @@ public final class MessageStateTest {
     // and
     final List<Long> keys = new ArrayList<>();
     messageState.visitMessages(
-        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getKey()));
+        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getMessageKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
 
@@ -447,47 +450,36 @@ public final class MessageStateTest {
     assertThat(messageState.getWorkflowInstanceCorrelationKey(2L)).isEqualTo(wrapString("key-2"));
   }
 
-  private Message createMessage(final long key, final String name, final String correlationKey) {
-    return new Message(
-        key,
-        wrapString(name),
-        wrapString(correlationKey),
-        wrapString(""),
-        new UnsafeBuffer(0, 0),
-        10_000,
-        0L);
+  private MessageRecord createMessage(final String name, final String correlationKey) {
+    return new MessageRecord()
+        .setName(name)
+        .setCorrelationKey(correlationKey)
+        .setTimeToLive(10_000L)
+        .setDeadline(0L);
   }
 
-  private Message createMessage(
-      final long key,
-      final String name,
-      final String correlationKey,
-      final String variables,
-      final String id) {
-    return new Message(
-        key,
-        wrapString(name),
-        wrapString(correlationKey),
-        wrapString(variables),
-        wrapString(id),
-        10_000,
-        0L);
+  private MessageRecord createMessage(
+      final String name, final String correlationKey, final String variables, final String id) {
+    return new MessageRecord()
+        .setName(name)
+        .setCorrelationKey(correlationKey)
+        .setTimeToLive(10_000L)
+        .setVariables(MsgPackUtil.asMsgPack(variables))
+        .setMessageId(id);
   }
 
-  private Message createMessage(
-      final long key,
+  private MessageRecord createMessage(
       final String name,
       final String correlationKey,
       final String variables,
       final String id,
       final long deadline) {
-    return new Message(
-        key,
-        wrapString(name),
-        wrapString(correlationKey),
-        wrapString(variables),
-        wrapString(id),
-        10_000L,
-        deadline);
+    return new MessageRecord()
+        .setName(name)
+        .setCorrelationKey(correlationKey)
+        .setVariables(MsgPackUtil.asMsgPack(variables))
+        .setMessageId(id)
+        .setDeadline(deadline)
+        .setTimeToLive(10_000L);
   }
 }

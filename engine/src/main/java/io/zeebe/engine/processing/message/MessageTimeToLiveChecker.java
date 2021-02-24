@@ -9,7 +9,7 @@ package io.zeebe.engine.processing.message;
 
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.state.immutable.MessageState;
-import io.zeebe.engine.state.message.Message;
+import io.zeebe.engine.state.message.StoredMessage;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -33,20 +33,23 @@ public final class MessageTimeToLiveChecker implements Runnable {
         ActorClock.currentTimeMillis(), this::writeDeleteMessageCommand);
   }
 
-  private boolean writeDeleteMessageCommand(final Message message) {
+  private boolean writeDeleteMessageCommand(final StoredMessage storedMessage) {
+    final var message = storedMessage.getMessage();
+
     deleteMessageCommand.reset();
     deleteMessageCommand
         .setName(message.getName())
         .setCorrelationKey(message.getCorrelationKey())
         .setTimeToLive(message.getTimeToLive())
-        .setVariables(message.getVariables());
+        .setVariables(message.getVariablesBuffer());
 
-    if (message.getId() != null) {
-      deleteMessageCommand.setMessageId(message.getId());
+    if (message.hasMessageId()) {
+      deleteMessageCommand.setMessageId(message.getMessageIdBuffer());
     }
 
     writer.reset();
-    writer.appendFollowUpCommand(message.getKey(), MessageIntent.EXPIRE, deleteMessageCommand);
+    writer.appendFollowUpCommand(
+        storedMessage.getMessageKey(), MessageIntent.EXPIRE, deleteMessageCommand);
 
     final long position = writer.flush();
     return position > 0;
