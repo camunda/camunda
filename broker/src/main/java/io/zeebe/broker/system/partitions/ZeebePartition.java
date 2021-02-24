@@ -14,7 +14,6 @@ import io.zeebe.broker.exporter.stream.ExporterDirector;
 import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.zeebe.broker.system.monitoring.HealthMetrics;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.snapshots.raft.PersistedSnapshotStore;
 import io.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.zeebe.util.health.FailureListener;
@@ -102,12 +101,12 @@ public final class ZeebePartition extends Actor
     if (nextTransitionFuture != null) {
       currentTransitionFuture = nextTransitionFuture;
     }
-    LOG.debug("Partition role transitioning from {} to {}", raftRole, newRole);
+    LOG.debug("Partition role transitioning from {} to {} in term {}", raftRole, newRole, term);
     raftRole = newRole;
   }
 
   private ActorFuture<Void> leaderTransition(final long newTerm) {
-    final var leaderTransitionFuture = transition.toLeader();
+    final var leaderTransitionFuture = transition.toLeader(newTerm);
     leaderTransitionFuture.onComplete(
         (success, error) -> {
           if (error == null) {
@@ -136,7 +135,7 @@ public final class ZeebePartition extends Actor
   }
 
   private ActorFuture<Void> followerTransition(final long newTerm) {
-    final var followerTransitionFuture = transition.toFollower();
+    final var followerTransitionFuture = transition.toFollower(newTerm);
     followerTransitionFuture.onComplete(
         (success, error) -> {
           if (error == null) {
@@ -192,8 +191,6 @@ public final class ZeebePartition extends Actor
 
   @Override
   public void onActorStarting() {
-    context.setAtomixLogStorage(
-        AtomixLogStorage.ofPartition(context.getZeebeIndexMapping(), context.getRaftPartition()));
     context.getRaftPartition().addRoleChangeListener(this);
     context.getComponentHealthMonitor().addFailureListener(this);
     onRoleChange(context.getRaftPartition().getRole(), context.getRaftPartition().term());

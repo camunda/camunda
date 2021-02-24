@@ -8,6 +8,7 @@
 package io.zeebe.broker.system.partitions;
 
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 
 /**
  * A PartitionStep is an action to be taken while opening or closing a partition (e.g.,
@@ -21,10 +22,25 @@ public interface PartitionStep {
    * components (e.g., logstream), setting their values in {@link PartitionContext}, etc. The
    * subsequent partition steps will only be opened after the returned future is completed.
    *
+   * @param currentTerm the current term of the transition
    * @param context the partition context
    * @return future
    */
-  ActorFuture<Void> open(final PartitionContext context);
+  default ActorFuture<Void> open(final long currentTerm, final PartitionContext context) {
+    return open(context);
+  }
+
+  /**
+   * Performs some action required for the partition to function. This may include opening
+   * components (e.g., logstream), setting their values in {@link PartitionContext}, etc. The
+   * subsequent partition steps will only be opened after the returned future is completed.
+   *
+   * @param context the partition context
+   * @return future
+   */
+  default ActorFuture<Void> open(final PartitionContext context) {
+    return CompletableActorFuture.completed(null);
+  }
 
   /**
    * Perform tear-down actions to clear the partition and prepare for another one to be installed.
