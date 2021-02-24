@@ -15,7 +15,8 @@ import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.storage.LogStorage;
+import io.zeebe.logstreams.storage.LogStorageReader;
 import io.zeebe.util.health.FailureListener;
 import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
@@ -24,8 +25,6 @@ import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -43,7 +42,6 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   private final int maxFrameLength;
   private final ActorScheduler actorScheduler;
   private final List<LogStreamReader> readers;
-  private final LogStreamReaderImpl reader;
   private final LogStorage logStorage;
   private final CompletableActorFuture<Void> closeFuture;
   private final int nodeId;
@@ -75,18 +73,13 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     this.logStorage = logStorage;
     closeFuture = new CompletableActorFuture<>();
 
-    try {
-      logStorage.open();
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-
     commitPosition = INVALID_ADDRESS;
     readers = new ArrayList<>();
-    reader = new LogStreamReaderImpl(logStorage);
-    readers.add(reader);
 
-    internalSetCommitPosition(reader.seekToEnd());
+    try (final LogStorageReader storageReader = logStorage.newReader();
+        final LogStreamReader reader = new LogStreamReaderImpl(storageReader)) {
+      internalSetCommitPosition(reader.seekToEnd());
+    }
   }
 
   @Override
@@ -111,12 +104,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
 
   @Override
   public ActorFuture<LogStreamReader> newLogStreamReader() {
-    return actor.call(
-        () -> {
-          final LogStreamReaderImpl newReader = new LogStreamReaderImpl(logStorage);
-          readers.add(newReader);
-          return newReader;
-        });
+    return actor.call(this::createLogStreamReader);
   }
 
   @Override
@@ -162,8 +150,6 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   protected void onActorClosing() {
     LOG.info("On closing logstream {} close {} readers", logName, readers.size());
     readers.forEach(LogStreamReader::close);
-    LOG.info("Close log storage with name {}", logName);
-    logStorage.close();
   }
 
   @Override
@@ -195,6 +181,12 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
                       actor.close();
                     }));
     return closeFuture;
+  }
+
+  private LogStreamReader createLogStreamReader() {
+    final LogStreamReader newReader = new LogStreamReaderImpl(logStorage.newReader());
+    readers.add(newReader);
+    return newReader;
   }
 
   private void internalSetCommitPosition(final long commitPosition) {
@@ -317,7 +309,8 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   }
 
   private long getLastPosition() {
-    try (final LogStreamReaderImpl logReader = new LogStreamReaderImpl(logStorage)) {
+    try (final LogStorageReader storageReader = logStorage.newReader();
+        final LogStreamReader logReader = new LogStreamReaderImpl(storageReader)) {
       return logReader.seekToEnd();
     }
   }

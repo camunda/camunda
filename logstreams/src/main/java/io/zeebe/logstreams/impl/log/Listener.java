@@ -8,7 +8,7 @@
 package io.zeebe.logstreams.impl.log;
 
 import io.atomix.raft.RaftException.NoLeader;
-import io.zeebe.logstreams.spi.LogStorage.AppendListener;
+import io.zeebe.logstreams.storage.LogStorage.AppendListener;
 import java.util.NoSuchElementException;
 
 public final class Listener implements AppendListener {

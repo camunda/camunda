@@ -10,7 +10,7 @@ package io.zeebe.logstreams.storage.atomix;
 import io.atomix.raft.storage.log.Indexed;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
-import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.storage.LogStorage;
 
 public final class AtomixAppendListenerAdapter implements AppendListener {
   private final LogStorage.AppendListener delegate;

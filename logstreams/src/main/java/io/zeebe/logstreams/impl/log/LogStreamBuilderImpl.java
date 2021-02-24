@@ -9,7 +9,7 @@ package io.zeebe.logstreams.impl.log;
 
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBuilder;
-import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.storage.LogStorage;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -50,7 +50,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   @Override
-  public LogStreamBuilder withNodeId(int nodeId) {
+  public LogStreamBuilder withNodeId(final int nodeId) {
     this.nodeId = nodeId;
     return this;
   }

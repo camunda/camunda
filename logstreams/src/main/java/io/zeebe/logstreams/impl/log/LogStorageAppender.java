@@ -20,7 +20,7 @@ import io.zeebe.logstreams.impl.backpressure.AppenderGradient2Cfg;
 import io.zeebe.logstreams.impl.backpressure.AppenderVegasCfg;
 import io.zeebe.logstreams.impl.backpressure.BackpressureConstants;
 import io.zeebe.logstreams.impl.backpressure.NoopAppendLimiter;
-import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.storage.LogStorage;
 import io.zeebe.util.Environment;
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.health.FailureListener;

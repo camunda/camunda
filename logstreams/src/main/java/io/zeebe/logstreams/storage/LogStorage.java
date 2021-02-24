@@ -5,37 +5,23 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.logstreams.spi;
+package io.zeebe.logstreams.storage;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
-/** Log structured storage abstraction */
+/**
+ * Storage abstraction for the log stream API. The storage is expected to store the given blocks of
+ * data atomically (i.e. a block is fully written or not at all), in the order in which they were
+ * appended.
+ *
+ * <p>The main access pattern is via the {@link LogStorageReader}, and is expected to be sequential.
+ * The reader should support seek as efficiently as possible, but random access is not the common
+ * case.
+ *
+ * <p>The lifecycle of the storage is expected to be independent of the log stream, and the storage
+ * is simply passed along to the stream.
+ */
 public interface LogStorage {
-  /**
-   * Status code returned by the {@link LogStorageReader#read(ByteBuffer, long)} operation in case
-   * the provided address is invalid and does not exist.
-   */
-  long OP_RESULT_INVALID_ADDR = -1L;
-
-  /**
-   * Status code returned by the {@link LogStorageReader#read(ByteBuffer, long)} operation in case
-   * the provided address does exist but data is not available yet. This indicates that retrying the
-   * operation with the same parameters will eventually return data assuming that more data will be
-   * written to the log.
-   */
-  long OP_RESULT_NO_DATA = -2L;
-
-  /**
-   * Status code returned by the {@link LogStorageReader#read(ByteBuffer, long)} operation only if
-   * underlying storage is block-addressable (in contrast to byte addressable). If the storage is
-   * block addressable, consumers of this API can only read complete addressable blocks of data at a
-   * time. In order to read a block, the provided read buffer must provide sufficient capacity to
-   * read at least one complete block. If sufficient capacity is not available in the read buffer to
-   * fit at least a complete block, this status code is returned.
-   */
-  long OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY = -3L;
-
   /**
    * Creates a new reader initialized at the given address.
    *
@@ -61,30 +47,6 @@ public interface LogStorage {
       long lowestPosition, long highestPosition, ByteBuffer blockBuffer, AppendListener listener);
 
   /**
-   * Open the storage. Called in the log conductor thread.
-   *
-   * @throws IOException on I/O errors during allocating the first segments
-   */
-  void open() throws IOException;
-
-  /** Close the storage. Called in the log conductor thread. */
-  void close();
-
-  /** @return <code>true</code>, if the storage is open. */
-  boolean isOpen();
-
-  boolean isClosed();
-
-  /**
-   * Flushes all appended blocks to ensure that all blocks are written completely. Note that a
-   * storage implementation may do nothing if {@link #append(long, long, ByteBuffer,
-   * AppendListener)} guarantees that all blocks are written immediately.
-   *
-   * @throws Exception if fails to flush all blocks
-   */
-  void flush() throws Exception;
-
-  /**
    * An append listener can be added to an append call to be notified of different events that can
    * occur during the append operation.
    */
@@ -95,21 +57,21 @@ public interface LogStorage {
      *
      * @param address the address of the written entry
      */
-    void onWrite(long address);
+    default void onWrite(final long address) {}
 
     /**
      * Called when an error occurred while writing to the entry.
      *
      * @param error the error that occurred
      */
-    void onWriteError(Throwable error);
+    default void onWriteError(final Throwable error) {}
 
     /**
      * Called when the entry has been successfully committed.
      *
      * @param address the address of the committed entry
      */
-    void onCommit(long address);
+    default void onCommit(final long address) {}
 
     /**
      * Called when an error occurs while committing an entry.
@@ -117,6 +79,6 @@ public interface LogStorage {
      * @param address the address of the entry to be committed
      * @param error the error that occurred
      */
-    void onCommitError(long address, Throwable error);
+    default void onCommitError(final long address, final Throwable error) {}
   }
 }

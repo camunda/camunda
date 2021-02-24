@@ -21,7 +21,7 @@ import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.storage.LogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixAppenderSupplier;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixReaderFactory;
@@ -201,7 +201,6 @@ public final class AtomixLogStorageRule extends ExternalResource
     raftLog = null;
     Optional.ofNullable(metaStore).ifPresent(MetaStore::close);
     metaStore = null;
-    Optional.ofNullable(storage).ifPresent(AtomixLogStorage::close);
     storage = null;
 
     if (raftStorage != null) {
@@ -245,7 +244,8 @@ public final class AtomixLogStorageRule extends ExternalResource
         .withJournalIndexDensity(1);
   }
 
-  private final class NoopListener implements AppendListener {
+  private static final class NoopListener implements AppendListener {
+
     private Indexed<ZeebeEntry> lastWrittenEntry;
 
     @Override

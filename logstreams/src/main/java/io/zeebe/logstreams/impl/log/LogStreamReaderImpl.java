@@ -7,260 +7,194 @@
  */
 package io.zeebe.logstreams.impl.log;
 
-import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.spi.LogStorageReader;
+import io.zeebe.logstreams.storage.LogStorageReader;
 import java.util.NoSuchElementException;
-import java.util.function.LongUnaryOperator;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+/**
+ * A {@link LogStreamReader} implementation which can read single events from the blocks given by
+ * the {@link LogStorageReader}.
+ *
+ * <p>This implementation assumes that blocks have no padding - they contain a contiguous series of
+ * {@link LoggedEvent} which fits exactly within the block.
+ */
 public final class LogStreamReaderImpl implements LogStreamReader {
+  private final LogStorageReader reader;
 
-  static final String ERROR_CLOSED = "Iterator is closed";
-  private static final long FIRST_POSITION = Long.MIN_VALUE;
-  private static final int UNINITIALIZED = -1;
+  private final LoggedEventImpl currentEvent;
+  private final DirectBuffer currentEventBuffer;
 
-  private LogStorageReader storageReader;
+  private final LoggedEventImpl nextEvent;
+  private final DirectBuffer nextEventBuffer;
 
-  // event returned to caller (important: has to be preserved even after compact/buffer resize)
-  private final LoggedEventImpl returnedEvent = new LoggedEventImpl();
-  private final DirectBuffer returnedEventBuffer = new UnsafeBuffer(0, 0);
+  private int nextEventOffset;
 
-  private final LoggedEventImpl nextEvent = new LoggedEventImpl();
-  private final DirectBuffer nextEventBuffer = new UnsafeBuffer(0, 0);
+  public LogStreamReaderImpl(final LogStorageReader reader) {
+    this.reader = reader;
 
-  // state
-  private IteratorState state;
-  private long nextLogStorageReadAddress;
-  private int bufferOffset;
+    currentEvent = new LoggedEventImpl();
+    currentEventBuffer = new UnsafeBuffer();
 
-  public LogStreamReaderImpl(final LogStorage logStorage) {
-    storageReader = logStorage.newReader();
-    invalidateBufferAndOffsets();
-    seek(FIRST_POSITION);
-  }
+    nextEvent = new LoggedEventImpl();
+    nextEventBuffer = new UnsafeBuffer();
 
-  @Override
-  public boolean seekToNextEvent(final long position) {
-
-    if (position <= -1) {
-      seekToFirstEvent();
-      return true;
-    }
-
-    final boolean found = seek(position);
-    if (found && hasNext()) {
-      next();
-      return true;
-    }
-
-    return false;
-  }
-
-  @Override
-  public boolean seek(final long position) {
-    if (state == IteratorState.CLOSED) {
-      throw new IllegalStateException(ERROR_CLOSED);
-    }
-
-    final long seekAddress = storageReader.lookUpApproximateAddress(position);
-    invalidateBufferAndOffsets();
-    return seekFrom(seekAddress, position);
-  }
-
-  @Override
-  public void seekToFirstEvent() {
-    seek(FIRST_POSITION);
-  }
-
-  @Override
-  public long seekToEnd() {
-    // invalidate events first as the buffer content may change
-    invalidateBufferAndOffsets();
-
-    if (storageReader.isEmpty()) {
-      state = IteratorState.EMPTY_LOG_STREAM;
-    } else {
-      if (readLastBlockIntoBuffer()) {
-        do {
-          nextEvent.wrap(nextEventBuffer, bufferOffset);
-          bufferOffset += nextEvent.getLength();
-        } while (bufferOffset < nextEventBuffer.capacity());
-
-        return nextEvent.getPosition();
-      }
-
-      // if the log is not empty this should not happen however
-      Loggers.LOGSTREAMS_LOGGER.warn("Unexpected non-empty log failed to read the last block");
-    }
-
-    return UNINITIALIZED;
-  }
-
-  @Override
-  public long getPosition() {
-    // if an event was already returned use it's position otherwise use position of next event if
-    // available, kind of strange but seemed to be the old API
-    if (isReturnedEventInitialized()) {
-      return returnedEvent.getPosition();
-    }
-
-    if (state == IteratorState.EVENT_AVAILABLE) {
-      return nextEvent.getPosition();
-    }
-
-    return UNINITIALIZED;
-  }
-
-  @Override
-  public long lookupAddress(long position) {
-    return storageReader.lookUpApproximateAddress(position);
-  }
-
-  private boolean seekFrom(final long blockAddress, final long position) {
-    if (blockAddress < 0) {
-      // no block found => empty log
-      state = IteratorState.EMPTY_LOG_STREAM;
-      return false;
-    } else {
-      readBlockIntoBuffer(blockAddress);
-      readNextEvent();
-      return searchPositionInBuffer(position);
-    }
-  }
-
-  @Override
-  public void close() {
-    nextEventBuffer.wrap(0, 0);
-    bufferOffset = 0;
-    state = IteratorState.CLOSED;
-
-    if (storageReader != null) {
-      storageReader.close();
-      storageReader = null;
-    }
+    reset();
+    seekToFirstEvent();
   }
 
   @Override
   public boolean hasNext() {
-    switch (state) {
-      case EVENT_AVAILABLE:
-        return true;
-      case EMPTY_LOG_STREAM:
-        seekToFirstEvent();
-        break;
-      case NOT_ENOUGH_DATA:
-        readNextAddress();
-        break;
-      case CLOSED:
-        throw new IllegalStateException(ERROR_CLOSED);
-      default:
-        throw new IllegalStateException("Unknown reader state " + state.name());
-    }
-
-    return state == IteratorState.EVENT_AVAILABLE;
+    return hasBufferedEvents() || readNextBlock();
   }
 
   @Override
   public LoggedEvent next() {
-    switch (state) {
-      case EVENT_AVAILABLE:
-        // wrap event for returning
-        returnedEventBuffer.wrap(
-            nextEventBuffer, nextEvent.getFragmentOffset(), nextEvent.getFragmentLength());
-
-        // find next event in log
-        readNextEvent();
-        return returnedEvent;
-      case CLOSED:
-        throw new IllegalStateException(ERROR_CLOSED);
-      default:
-        throw new NoSuchElementException(
-            "Api protocol violation: No next log entry available; You need to probe with hasNext() first.");
+    if (!hasNext()) {
+      throw new NoSuchElementException();
     }
+
+    currentEventBuffer.wrap(
+        nextEventBuffer, nextEvent.getFragmentOffset(), nextEvent.getFragmentLength());
+
+    nextEventOffset += nextEvent.getLength();
+    nextEvent.wrap(nextEventBuffer, nextEventOffset);
+
+    return currentEvent;
   }
 
-  private boolean readLastBlockIntoBuffer() {
-    return executeReadMethod(
-        Long.MAX_VALUE, readAddress -> storageReader.readLastBlock(nextEventBuffer));
-  }
-
-  private boolean readBlockIntoBuffer(final long blockAddress) {
-    return executeReadMethod(
-        blockAddress, readAddress -> storageReader.read(nextEventBuffer, readAddress));
-  }
-
-  private boolean executeReadMethod(final long blockAddress, final LongUnaryOperator readMethod) {
-    final long result = readMethod.applyAsLong(blockAddress);
-    bufferOffset = 0;
-
-    if (result == LogStorage.OP_RESULT_INVALID_ADDR) {
-      throw new IllegalStateException("Invalid address to read from " + blockAddress);
-    } else if (result == LogStorage.OP_RESULT_NO_DATA) {
-      state = IteratorState.NOT_ENOUGH_DATA;
-      return false;
-    } else {
-      nextLogStorageReadAddress = result;
+  /**
+   * Seeks to the event after the given position.
+   *
+   * <p>On negative position it seeks to the first event.
+   *
+   * @param position the position which should be used
+   * @return <code>true</code>, if the position is negative or exists
+   */
+  @Override
+  public boolean seekToNextEvent(final long position) {
+    if (position < 0) {
+      seekToFirstEvent();
       return true;
     }
+
+    // seek(position + 1) may return false, as there may not be an event with position + 1 yet, but
+    // we still seeked to the right position
+    final long nextPosition = position + 1;
+    seek(nextPosition);
+
+    return getNextEventPosition() == nextPosition || getCurrentPosition() == position;
   }
 
-  private boolean searchPositionInBuffer(final long position) {
-    while (state == IteratorState.EVENT_AVAILABLE && nextEvent.getPosition() < position) {
-      readNextEvent();
+  /**
+   * Seek to the given log position if exists, or the lowest position that is greater than the given
+   * one.
+   *
+   * @param position the position in the log to seek to
+   * @return <code>true</code>, if the given position exists.
+   */
+  @Override
+  public boolean seek(final long position) {
+    reader.seek(position);
+    reset();
+    readNextBlock();
+
+    while (hasNext() && getNextEventPosition() < position) {
+      next();
     }
 
-    if (nextEvent.getPosition() < position) {
-      // not in buffered block, read next block and continue the search
-      return readNextAddress() && searchPositionInBuffer(position);
+    return getNextEventPosition() == position;
+  }
+
+  /** Seek to the log position of the first event. */
+  @Override
+  public void seekToFirstEvent() {
+    seek(Long.MIN_VALUE);
+  }
+
+  /**
+   * Seek to the end of the log, which means after the last event.
+   *
+   * @return the position of the last entry
+   */
+  @Override
+  public long seekToEnd() {
+    seek(Long.MAX_VALUE);
+
+    // has to iterate for now as there's no way to know what's the last entry's offset
+    while (hasNext()) {
+      next();
     }
 
-    return nextEvent.getPosition() == position;
+    return getPosition();
   }
 
-  private boolean readNextAddress() {
-    final boolean blockFound = readBlockIntoBuffer(nextLogStorageReadAddress);
-
-    if (blockFound) {
-      readNextEvent();
+  /**
+   * Returns the current log position of the reader.
+   *
+   * @return the current log position, or negative value if the log is empty or not initialized
+   */
+  @Override
+  public long getPosition() {
+    final long currentPosition = getCurrentPosition();
+    if (currentPosition > -1) {
+      return currentPosition;
     }
 
-    return blockFound;
+    return getNextEventPosition();
   }
 
-  private void readNextEvent() {
-    // initially we assume there is not enough data
-    state = IteratorState.NOT_ENOUGH_DATA;
+  @Override
+  public void close() {
+    reset();
+    reader.close();
+  }
 
-    if (bufferOffset < nextEventBuffer.capacity()) {
-      state = IteratorState.EVENT_AVAILABLE;
-      nextEvent.wrap(nextEventBuffer, bufferOffset);
-      bufferOffset += nextEvent.getLength();
-    } else {
-      readNextAddress();
+  private long getCurrentPosition() {
+    if (isEventBufferValid(currentEventBuffer)) {
+      return currentEvent.getPosition();
     }
+
+    return -1;
   }
 
-  private boolean isReturnedEventInitialized() {
-    return returnedEventBuffer.addressOffset() != 0;
+  private long getNextEventPosition() {
+    if (hasBufferedEvents()) {
+      return nextEvent.getPosition();
+    }
+
+    return -1;
   }
 
-  private void invalidateBufferAndOffsets() {
-    state = IteratorState.NOT_ENOUGH_DATA;
-    bufferOffset = 0;
+  private void reset() {
+    currentEventBuffer.wrap(0, 0);
+    currentEvent.wrap(currentEventBuffer, 0);
+
     nextEventBuffer.wrap(0, 0);
     nextEvent.wrap(nextEventBuffer, 0);
-    returnedEventBuffer.wrap(0, 0);
-    returnedEvent.wrap(returnedEventBuffer, 0);
+    nextEventOffset = 0;
   }
 
-  enum IteratorState {
-    CLOSED,
-    EMPTY_LOG_STREAM,
-    EVENT_AVAILABLE,
-    NOT_ENOUGH_DATA,
+  private boolean hasBufferedEvents() {
+    return isEventBufferValid(nextEventBuffer) && nextEventOffset < nextEventBuffer.capacity();
+  }
+
+  private boolean readNextBlock() {
+    if (!reader.hasNext()) {
+      return false;
+    }
+
+    final DirectBuffer nextBlock = reader.next();
+    nextEventBuffer.wrap(nextBlock);
+    nextEventOffset = 0;
+    nextEvent.wrap(nextEventBuffer, nextEventOffset);
+
+    return true;
+  }
+
+  private boolean isEventBufferValid(final DirectBuffer eventBuffer) {
+    return eventBuffer.addressOffset() != 0;
   }
 }
