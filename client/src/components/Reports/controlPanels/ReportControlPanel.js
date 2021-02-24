@@ -211,11 +211,7 @@ export default withErrorHandling(
       const {showSource, showSetup, showFilter, scrolled, flowNodeNames, variables} = this.state;
 
       const shouldDisplayMeasure = ['frequency', 'duration'].includes(data.view?.properties[0]);
-      const isSupportedMultiMeasureView = ['processInstance', 'incident'].includes(
-        data.view?.entity
-      );
-      const shouldAllowAddingMeasure =
-        data.view?.properties.length === 1 && shouldDisplayMeasure && isSupportedMultiMeasureView;
+      const shouldAllowAddingMeasure = data.view?.properties.length === 1 && shouldDisplayMeasure;
 
       return (
         <div className="ReportControlPanel">

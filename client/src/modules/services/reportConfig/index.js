@@ -52,6 +52,7 @@ config.process.update = (type, data, props) => {
   // automatically distribute by flownode/usertasks when view is flownode/usertask
   if (
     newReport.data.distributedBy?.type === 'none' &&
+    newReport.data.view?.properties.length <= 1 &&
     isFlowNodeViewNonFlowNodeGroupBy(newReport) &&
     // do not automatically set the distributed by if it was explicitely set to none
     !(
@@ -154,6 +155,11 @@ function shouldResetDistributedBy(type, data, report) {
     if (type === 'view' && data.entity !== 'processInstance') {
       return true;
     }
+  }
+
+  if (type === 'view' && data.properties.length > 1) {
+    // multi-measure reports do not support distribute by yet
+    return true;
   }
 
   return false;

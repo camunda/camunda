@@ -17,6 +17,8 @@ jest.mock('./processRawData', () => ({
   decision: jest.fn().mockReturnValue({}),
 }));
 
+jest.mock('./processDefaultData', () => jest.fn().mockReturnValue({}));
+
 jest.mock('config', () => ({getWebappEndpoints: jest.fn()}));
 
 const report = {

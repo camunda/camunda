@@ -59,6 +59,11 @@ export const view = [
         group: 'fn_duration',
         data: {properties: ['duration'], entity: 'flowNode'},
       },
+      {
+        key: 'fn_multi',
+        group: 'fn_multi',
+        data: {properties: ['frequency', 'duration'], entity: 'flowNode'},
+      },
     ],
   },
   {
@@ -73,6 +78,11 @@ export const view = [
         key: 'userTask_duration',
         group: 'userTask_duration',
         data: {properties: ['duration'], entity: 'userTask'},
+      },
+      {
+        key: 'userTask_multi',
+        group: 'userTask_multi',
+        data: {properties: ['frequency', 'duration'], entity: 'userTask'},
       },
     ],
   },
@@ -167,6 +177,8 @@ export const combinations = {
   },
   pi_multi: {
     none: ['number'],
+    date: ['table'],
+    variable: ['table'],
   },
   in_resolutionDuration: {
     none: ['number'],
@@ -178,6 +190,7 @@ export const combinations = {
   },
   in_multi: {
     none: ['number'],
+    fn: ['table'],
   },
   fn_duration: {
     fn: ['table', 'chart', 'heat'],
@@ -190,6 +203,11 @@ export const combinations = {
     duration: ['table', 'chart'],
     variable: ['table', 'chart'],
   },
+  fn_multi: {
+    fn: ['table'],
+    date: ['table'],
+    variable: ['table'],
+  },
   userTask_duration: {
     task: ['table', 'chart', 'heat'],
     date: ['table', 'chart'],
@@ -200,6 +218,11 @@ export const combinations = {
     date: ['table', 'chart'],
     user: ['table', 'chart'],
     duration: ['table', 'chart'],
+  },
+  userTask_multi: {
+    task: ['table'],
+    date: ['table'],
+    user: ['table'],
   },
   variable: {
     none: ['number'],

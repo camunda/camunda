@@ -126,7 +126,7 @@ describe('process update', () => {
       {
         report: {
           data: {
-            view: {entity: 'processInstance'},
+            view: {entity: 'processInstance', properties: ['frequency']},
             distributedBy: {type: 'variable', value: {}},
           },
         },
@@ -141,7 +141,7 @@ describe('process update', () => {
       {
         report: {
           data: {
-            view: {entity: 'processInstance'},
+            view: {entity: 'processInstance', properties: ['frequency']},
             distributedBy: {type: 'startDate', value: {}},
           },
         },
@@ -192,7 +192,7 @@ describe('process update', () => {
       {
         report: {
           data: {
-            view: {entity: 'userTask'},
+            view: {entity: 'userTask', properties: ['frequency']},
             distributedBy: {type: 'assignee', value: null},
           },
         },
@@ -209,7 +209,7 @@ describe('process update', () => {
       {
         report: {
           data: {
-            view: {entity: 'duration'},
+            view: {entity: 'userTask', properties: ['frequency']},
             distributedBy: {type: 'none'},
           },
         },

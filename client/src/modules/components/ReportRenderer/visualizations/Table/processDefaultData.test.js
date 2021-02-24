@@ -22,6 +22,7 @@ jest.mock('services', () => ({
       {key: 'c', value: 3, label: 'c'},
     ]),
     duration: (a) => 'Duration: ' + a,
+    frequency: (a) => a,
   },
 }));
 
@@ -29,11 +30,8 @@ const report = {
   reportType: 'process',
   combined: false,
   data: {
-    groupBy: {
-      value: {},
-      type: '',
-    },
-    view: {properties: ['frequency']},
+    groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+    view: {entity: 'processInstance', properties: ['frequency']},
     configuration: {
       tableColumns: {
         includeNewVariables: true,
@@ -46,15 +44,12 @@ const report = {
     visualization: 'table',
   },
   result: {
-    data: [],
+    measures: [{property: 'frequency', data: []}],
     instanceCount: 5,
   },
 };
 
 const props = {
-  mightFail: jest.fn().mockImplementation((a, b) => b(a)),
-  error: '',
-  formatter: (v) => v,
   report,
 };
 
@@ -63,18 +58,6 @@ it('should display data for key-value pairs', async () => {
     ['a name', 1],
     ['b', 2],
     ['c', 3],
-  ]);
-});
-
-it('should format data according to the provided formatter', async () => {
-  const newProps = {
-    ...props,
-    formatter: (v) => 2 * v,
-  };
-  expect(processDefaultData(newProps).body).toEqual([
-    ['a name', 2],
-    ['b', 4],
-    ['c', 6],
   ]);
 });
 
@@ -150,4 +133,22 @@ it('should display the relative percentage for frequency views for DMN', () => {
   expect(getRelativeValue).toHaveBeenCalledWith(3, 18);
 
   expect(dmnTableData.body[0][1]).toBe('12.3%');
+});
+
+it('should display multi-measure reports', () => {
+  const table = processDefaultData({
+    report: update(report, {
+      data: {view: {properties: {$set: ['frequency', 'duration']}}},
+      result: {
+        measures: {
+          $set: [
+            {property: 'frequency', data: []},
+            {property: 'duration', data: []},
+          ],
+        },
+      },
+    }),
+  });
+
+  expect(table).toMatchSnapshot();
 });

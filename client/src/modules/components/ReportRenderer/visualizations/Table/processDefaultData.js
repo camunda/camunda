@@ -4,12 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {reportConfig, formatters, isDurationReport} from 'services';
+import {reportConfig, formatters} from 'services';
 import {t} from 'translation';
 
-const {formatReportResult, getRelativeValue, duration} = formatters;
+import {processResult} from '../../service';
 
-export default function processDefaultData({formatter = (v) => v, report}) {
+const {formatReportResult, getRelativeValue, frequency, duration} = formatters;
+
+export default function processDefaultData({report}) {
   const {data, result, reportType} = report;
   const {
     configuration: {hideAbsoluteValue, hideRelativeValue},
@@ -17,34 +19,58 @@ export default function processDefaultData({formatter = (v) => v, report}) {
     groupBy,
   } = data;
 
-  const formattedResult = formatReportResult(data, result.data);
+  const groupedByDuration = groupBy.type === 'duration';
   const instanceCount = result.instanceCount || 0;
   const config = reportConfig[reportType];
-  const labels = [
-    config.getLabelFor('groupBy', config.options.groupBy, groupBy),
-    config.getLabelFor('view', config.options.view, view),
-  ];
 
-  if (view.entity === 'userTask' && groupBy.type === 'userTasks') {
-    labels[0] = t('report.view.userTask');
-  }
+  const isMultiMeasure = result.measures.length > 1;
 
-  const displayRelativeValue = view.properties[0] === 'frequency' && !hideRelativeValue;
-  const displayAbsoluteValue = isDurationReport(report) || !hideAbsoluteValue;
+  const selectedView = config.findSelectedOption(config.options.view, 'data', view);
+  const viewString = t('report.view.' + selectedView.key.split('_')[0]);
 
-  if (!displayAbsoluteValue) {
-    labels.length = 1;
-  }
+  const head = [config.getLabelFor('groupBy', config.options.groupBy, groupBy)];
+  const body = [];
 
-  const groupedByDuration = groupBy.type === 'duration';
+  result.measures.forEach((measure) => {
+    const result = processResult({...report, result: measure});
+    const formattedResult = formatReportResult(data, result.data);
+    if (body.length === 0) {
+      formattedResult.forEach(({label, key}) => {
+        body.push([groupedByDuration ? duration(label) : label || key]);
+      });
+    }
 
-  // normal two-dimensional data
+    if (measure.property === 'frequency') {
+      if (!hideAbsoluteValue) {
+        const title = viewString + ': ' + t('report.view.count');
+        head.push({label: title, id: title, sortable: !isMultiMeasure});
+        formattedResult.forEach(({value}, idx) => {
+          body[idx].push(frequency(value));
+        });
+      }
+      if (!hideRelativeValue) {
+        const title = t('report.table.relativeFrequency');
+        head.push({label: title, id: title, sortable: !isMultiMeasure});
+        formattedResult.forEach(({value}, idx) => {
+          body[idx].push(getRelativeValue(value, instanceCount));
+        });
+      }
+    } else if (measure.property === 'duration') {
+      const title =
+        viewString +
+        ': ' +
+        (view.entity === 'incident'
+          ? t('report.view.resolutionDuration')
+          : t('report.view.duration'));
+      head.push({label: title, id: title, sortable: !isMultiMeasure});
+      formattedResult.forEach(({value}, idx) => {
+        body[idx].push(duration(value));
+      });
+    }
+  });
+
   return {
-    head: [...labels, ...(displayRelativeValue ? [t('report.table.relativeFrequency')] : [])],
-    body: formattedResult.map(({label, key, value}) => [
-      groupedByDuration ? duration(label) : label || key,
-      ...(displayAbsoluteValue ? [formatter(value)] : []),
-      ...(displayRelativeValue ? [getRelativeValue(value, instanceCount)] : []),
-    ]),
+    head,
+    body,
   };
 }

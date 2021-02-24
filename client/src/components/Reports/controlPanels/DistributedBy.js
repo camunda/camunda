@@ -102,6 +102,10 @@ function canDistributeData(view, groupBy) {
     return false;
   }
 
+  if (view.properties.length > 1) {
+    return false;
+  }
+
   if (view.entity === 'userTask') {
     return true;
   }
