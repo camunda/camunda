@@ -32,7 +32,9 @@ import org.junit.jupiter.api.io.TempDir;
 class SegmentedJournalReaderTest {
 
   private static final int ENTRIES_PER_SEGMENT = 2;
+
   @TempDir Path directory;
+
   private final Namespace namespace =
       new Namespace.Builder()
           .register(Namespaces.BASIC)
@@ -42,14 +44,16 @@ class SegmentedJournalReaderTest {
           .name("Journal")
           .build();
   private final DirectBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
-  private final int entrySize =
-      namespace.serialize(new PersistedJournalRecord(1, 1, Integer.MAX_VALUE, data)).length
-          + Integer.BYTES;
+
   private JournalReader reader;
   private SegmentedJournal journal;
 
   @BeforeEach
   void setup() {
+    final int entrySize =
+        namespace.serialize(new PersistedJournalRecord(1, 1, Integer.MAX_VALUE, data)).length
+            + Integer.BYTES;
+
     journal =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data").toFile())
@@ -63,20 +67,54 @@ class SegmentedJournalReaderTest {
   @Test
   void shouldReadAfterCompact() {
     // given
-    final int entriesPerSegment = 10;
-    long asqn = 1;
-
-    for (int i = 1; i <= entriesPerSegment * 5; i++) {
-      assertThat(journal.append(asqn++, data).index()).isEqualTo(i);
+    for (int i = 1; i <= ENTRIES_PER_SEGMENT * 5; i++) {
+      assertThat(journal.append(i, data).index()).isEqualTo(i);
     }
     assertThat(reader.hasNext()).isTrue();
 
     // when - compact up to the first index of segment 3
-    final int indexToCompact = entriesPerSegment * 2 + 1;
+    final int indexToCompact = ENTRIES_PER_SEGMENT * 2 + 1;
     journal.deleteUntil(indexToCompact);
 
     // then
     assertThat(reader.hasNext()).isTrue();
     assertThat(reader.next().index()).isEqualTo(indexToCompact);
+  }
+
+  @Test
+  void shouldSeekToAnyIndexInMultipleSegments() {
+    // given
+    long asqn = 1;
+
+    for (int i = 1; i <= ENTRIES_PER_SEGMENT * 2; i++) {
+      journal.append(asqn++, data).index();
+    }
+
+    for (int i = 1; i < ENTRIES_PER_SEGMENT * 2; i++) {
+      // when
+      reader.seek(i);
+
+      // then
+      assertThat(reader.hasNext()).isTrue();
+      assertThat(reader.next().index()).isEqualTo(i);
+    }
+  }
+
+  @Test
+  void shouldSeekToAnyAsqnInMultipleSegments() {
+    // given
+
+    for (int i = 1; i <= ENTRIES_PER_SEGMENT * 2; i++) {
+      journal.append(i, data).index();
+    }
+
+    for (int i = 1; i <= ENTRIES_PER_SEGMENT * 2; i++) {
+      // when
+      reader.seekToAsqn(i);
+
+      // then
+      assertThat(reader.hasNext()).isTrue();
+      assertThat(reader.next().asqn()).isEqualTo(i);
+    }
   }
 }
