@@ -14,7 +14,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.immutable.VariablesState;
+import io.zeebe.engine.state.immutable.VariableState;
 import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.msgpack.value.LongValue;
@@ -40,7 +40,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
 
   private final MutableJobState jobState;
-  private final VariablesState variablesState;
+  private final VariableState variableState;
   private final KeyGenerator keyGenerator;
   private final long maxRecordLength;
   private final long maxJobBatchLength;
@@ -49,12 +49,12 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
   public JobBatchActivateProcessor(
       final MutableJobState jobState,
-      final VariablesState variablesState,
+      final VariableState variableState,
       final KeyGenerator keyGenerator,
       final long maxRecordLength) {
 
     this.jobState = jobState;
-    this.variablesState = variablesState;
+    this.variableState = variableState;
     this.keyGenerator = keyGenerator;
 
     this.maxRecordLength = maxRecordLength;
@@ -180,9 +180,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final Collection<DirectBuffer> variableNames, final long elementInstanceKey) {
     final DirectBuffer variables;
     if (variableNames.isEmpty()) {
-      variables = variablesState.getVariablesAsDocument(elementInstanceKey);
+      variables = variableState.getVariablesAsDocument(elementInstanceKey);
     } else {
-      variables = variablesState.getVariablesAsDocument(elementInstanceKey, variableNames);
+      variables = variableState.getVariablesAsDocument(elementInstanceKey, variableNames);
     }
     return variables;
   }

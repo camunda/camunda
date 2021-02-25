@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.immutable.VariableState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
@@ -483,6 +484,31 @@ public final class VariableStateTest {
 
     final DirectBuffer varChild = variablesState.getVariableLocal(child, wrapString("a"));
     assertEquality(varChild, "1");
+  }
+
+  @Test
+  public void shouldReturnParentScopeKey() {
+    // given
+    declareScope(parent);
+    declareScope(parent, child);
+
+    // when
+    final long parentScopeKey = variablesState.getParentScopeKey(child);
+
+    // then
+    assertThat(parentScopeKey).isEqualTo(parent);
+  }
+
+  @Test
+  public void shouldReturnNoParentForRootScopeKey() {
+    // given
+    declareScope(parent);
+
+    // when
+    final long parentScopeKey = variablesState.getParentScopeKey(parent);
+
+    // then
+    assertThat(parentScopeKey).isEqualTo(VariableState.NO_PARENT);
   }
 
   /** Making sure the method is reusable and does not leave data structures dirty */

@@ -7,10 +7,10 @@
  */
 package io.zeebe.engine.state.mutable;
 
-import io.zeebe.engine.state.immutable.VariablesState;
+import io.zeebe.engine.state.immutable.VariableState;
 import org.agrona.DirectBuffer;
 
-public interface MutableVariableState extends VariablesState {
+public interface MutableVariableState extends VariableState {
 
   void setVariablesLocalFromDocument(long scopeKey, long workflowKey, DirectBuffer document);
 

@@ -34,8 +34,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class DbVariableState implements MutableVariableState {
 
-  public static final int NO_PARENT = -1;
-
   private final MsgPackReader reader = new MsgPackReader();
   private final MsgPackWriter writer = new MsgPackWriter();
   private final ExpandableArrayBuffer documentResultBuffer = new ExpandableArrayBuffer();
@@ -200,7 +198,7 @@ public class DbVariableState implements MutableVariableState {
     long currentScope = scopeKey;
     long parentScope;
 
-    while ((parentScope = getParent(currentScope)) > 0) {
+    while ((parentScope = getParentScopeKey(currentScope)) > 0) {
       final Iterator<DocumentEntry> entryIterator = indexedDocument.iterator();
 
       while (entryIterator.hasNext()) {
@@ -315,7 +313,7 @@ public class DbVariableState implements MutableVariableState {
         return variable.getValue();
       }
 
-      currentScopeKey = getParent(currentScopeKey);
+      currentScopeKey = getParentScopeKey(currentScopeKey);
     } while (currentScopeKey >= 0);
 
     return null;
@@ -428,6 +426,14 @@ public class DbVariableState implements MutableVariableState {
     this.listener = listener;
   }
 
+  @Override
+  public long getParentScopeKey(final long childScopeKey) {
+    childKey.wrapLong(childScopeKey);
+
+    final ParentScopeKey parentScopeKey = childParentColumnFamily.get(childKey);
+    return parentScopeKey != null ? parentScopeKey.get() : NO_PARENT;
+  }
+
   private VariableInstance getVariableLocal(
       final long scopeKey, final DirectBuffer name, final int nameOffset, final int nameLength) {
     this.scopeKey.wrapLong(scopeKey);
@@ -435,13 +441,6 @@ public class DbVariableState implements MutableVariableState {
     variableName.wrapBuffer(variableNameView);
 
     return variablesColumnFamily.get(scopeKeyVariableNameKey);
-  }
-
-  private long getParent(final long childKey) {
-    this.childKey.wrapLong(childKey);
-
-    final ParentScopeKey parentKey = childParentColumnFamily.get(this.childKey);
-    return parentKey != null ? parentKey.get() : NO_PARENT;
   }
 
   /**
@@ -459,7 +458,7 @@ public class DbVariableState implements MutableVariableState {
     do {
       completed = visitVariablesLocal(currentScope, filter, variableConsumer, completionCondition);
 
-      currentScope = getParent(currentScope);
+      currentScope = getParentScopeKey(currentScope);
 
     } while (!completed && currentScope >= 0);
   }
@@ -499,7 +498,7 @@ public class DbVariableState implements MutableVariableState {
     long currentScopeKey = scopeKey;
 
     do {
-      currentScopeKey = getParent(currentScopeKey);
+      currentScopeKey = getParentScopeKey(currentScopeKey);
       if (currentScopeKey != NO_PARENT) {
         rootScopeKey = currentScopeKey;
       }
