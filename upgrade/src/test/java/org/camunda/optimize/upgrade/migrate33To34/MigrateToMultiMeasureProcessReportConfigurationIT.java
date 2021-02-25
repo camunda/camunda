@@ -29,7 +29,7 @@ import java.util.Optional;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MigrateToMultiMeasureReportConfigurationIT extends AbstractUpgrade33IT {
+public class MigrateToMultiMeasureProcessReportConfigurationIT extends AbstractUpgrade33IT {
 
   public static final String PROCESS_VIEW_PROPERTY_PROPERTY_NAME = "property";
   public static final String PROCESS_REPORT_CONFIG_AGGREGATION_TYPE_PROPERTY_NAME = "aggregationType";

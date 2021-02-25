@@ -205,9 +205,7 @@ public class DecisionViewRawData extends DecisionViewPart {
 
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto dataForCommandKey) {
-    final DecisionViewDto view = new DecisionViewDto();
-    view.setProperty(ViewProperty.RAW_DATA);
-    dataForCommandKey.setView(view);
+    dataForCommandKey.setView(new DecisionViewDto(ViewProperty.RAW_DATA));
   }
 
   private void addNewVariablesAndDtoFieldsToTableColumnConfig(final ExecutionContext<DecisionReportDataDto> context,

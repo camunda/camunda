@@ -40,8 +40,6 @@ public class DecisionViewCountInstanceFrequency extends DecisionViewPart {
 
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto dataForCommandKey) {
-    DecisionViewDto view = new DecisionViewDto();
-    view.setProperty(ViewProperty.FREQUENCY);
-    dataForCommandKey.setView(view);
+    dataForCommandKey.setView(new DecisionViewDto(ViewProperty.FREQUENCY));
   }
 }

@@ -10,6 +10,7 @@ import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -1001,7 +1002,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
       .build();
-    reportData.getView().setProperty(null);
+    reportData.getView().setProperties((ViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);

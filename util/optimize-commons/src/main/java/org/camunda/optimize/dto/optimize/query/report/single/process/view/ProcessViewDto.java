@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.view;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+@NoArgsConstructor
 @Data
 @FieldNameConstants
 public class ProcessViewDto implements Combinable {
@@ -27,10 +29,6 @@ public class ProcessViewDto implements Combinable {
 
   protected ProcessViewEntity entity;
   protected List<ViewProperty> properties = new ArrayList<>();
-
-  public ProcessViewDto() {
-    super();
-  }
 
   public ProcessViewDto(ViewProperty property) {
     this(null, property);

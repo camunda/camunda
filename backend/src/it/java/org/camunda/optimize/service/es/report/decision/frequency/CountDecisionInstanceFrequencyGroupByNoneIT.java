@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
@@ -182,7 +183,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    reportData.getView().setProperty(null);
+    reportData.getView().setProperties((ViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);

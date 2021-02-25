@@ -3,9 +3,10 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index.report;
+package org.camunda.optimize.upgrade.migrate33To34.indices;
 
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
@@ -13,9 +14,9 @@ import java.io.IOException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 
-public class SingleDecisionReportIndex extends AbstractReportIndex {
+public class SingleDecisionReportIndexV5Old extends AbstractReportIndex {
 
-  public static final int VERSION = 6;
+  public static final int VERSION = 5;
 
   @Override
   public String getIndexName() {

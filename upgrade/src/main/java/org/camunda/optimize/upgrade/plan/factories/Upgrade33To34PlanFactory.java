@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -55,6 +56,7 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
       .fromVersion("3.3.0")
       .toVersion("3.4.0")
       .addUpgradeStep(migrateSingleProcessReportV6())
+      .addUpgradeStep(migrateSingleDecisionReportV6())
       .addUpgradeStep(migrateEventMappingEventSources())
       .addUpgradeStep(migrateEventPublishStateEventSources())
       .addUpgradeSteps(createDedicatedInstanceIndicesPerDecisionDefinition(existingDecisionKeys))
@@ -125,6 +127,20 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
       "}\n" +
       "reportView.remove(\"property\");\n";
     //@formatter:on
+  }
+
+  private static UpgradeStep migrateSingleDecisionReportV6() {
+    return new UpdateIndexStep(
+      new SingleDecisionReportIndex(),
+      //@formatter:off
+        "def reportView = ctx._source.data.view;\n" +
+        "reportView.properties = [];\n" +
+        "if (reportView.property != null) {\n" +
+        "  reportView.properties.add(reportView.property);\n" +
+        "}\n" +
+        "reportView.remove(\"property\");\n"
+      //@formatter:on
+    );
   }
 
   private static UpgradeStep migrateEventMappingEventSources() {

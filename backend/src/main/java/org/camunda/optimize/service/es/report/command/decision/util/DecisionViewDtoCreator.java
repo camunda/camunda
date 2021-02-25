@@ -11,15 +11,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.view.Decis
 public class DecisionViewDtoCreator {
 
   public static DecisionViewDto createDecisionRawDataView() {
-    DecisionViewDto view = new DecisionViewDto();
-    view.setProperty(ViewProperty.RAW_DATA);
-    return view;
+    return new DecisionViewDto(ViewProperty.RAW_DATA);
   }
 
   public static DecisionViewDto createCountFrequencyView() {
-    DecisionViewDto view = new DecisionViewDto();
-    view.setProperty(ViewProperty.FREQUENCY);
-    return view;
+    return new DecisionViewDto(ViewProperty.FREQUENCY);
   }
 
 }

@@ -99,8 +99,9 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     assertThat(resultDataDto.getDecisionDefinitionVersions()).containsOnly(decisionDefinitionVersion);
     assertThat(resultDataDto.getView())
       .isNotNull()
-      .extracting(DecisionViewDto::getProperty)
-      .isEqualTo(ViewProperty.RAW_DATA);
+      .extracting(DecisionViewDto::getProperties)
+      .asList()
+      .containsExactly(ViewProperty.RAW_DATA);
   }
 
   @Test
