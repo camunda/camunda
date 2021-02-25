@@ -54,6 +54,7 @@ public final class MigratedStreamProcessors {
                 JobIntent.FAILED)));
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.TESTING_ONLY);
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.EXCLUSIVE_GATEWAY);
+    MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.PARALLEL_GATEWAY);
 
     MIGRATED_VALUE_TYPES.put(ValueType.ERROR, MIGRATED);
     MIGRATED_VALUE_TYPES.put(ValueType.WORKFLOW, MIGRATED);
