@@ -57,7 +57,7 @@ public final class DeploymentReprocessingTest {
         .expectCreated()
         .deploy();
 
-    RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED).await();
+    RecordingExporter.deploymentRecords(DeploymentIntent.FULLY_DISTRIBUTED).await();
 
     engine.stop();
 

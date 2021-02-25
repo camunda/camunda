@@ -36,13 +36,18 @@ public final class DeploymentClient {
                     .getFirst();
 
             forEachPartition.accept(
-                partitionId ->
-                    RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
-                        .withPartitionId(partitionId)
-                        .withRecordKey(deploymentOnPartitionOne.getKey())
-                        .getFirst());
+                partitionId -> {
+                  if (partitionId == Protocol.DEPLOYMENT_PARTITION) {
+                    return;
+                  }
 
-            return RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+                  RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+                      .withPartitionId(partitionId)
+                      .withRecordKey(deploymentOnPartitionOne.getKey())
+                      .getFirst();
+                });
+
+            return RecordingExporter.deploymentRecords(DeploymentIntent.FULLY_DISTRIBUTED)
                 .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
                 .withRecordKey(deploymentOnPartitionOne.getKey())
                 .getFirst();

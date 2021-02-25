@@ -140,7 +140,7 @@ public final class PushDeploymentRequestHandler
           }
 
           final boolean success =
-              writeCreatingDeployment(logStream, deploymentKey, deploymentRecord);
+              writeDistributeDeployment(logStream, deploymentKey, deploymentRecord);
           if (success) {
             LOG.debug(
                 "Deployment CREATE command for deployment {} was written on partition {}",
@@ -177,11 +177,11 @@ public final class PushDeploymentRequestHandler
     responseFuture.complete(notLeaderResponse.toBytes());
   }
 
-  private boolean writeCreatingDeployment(
+  private boolean writeDistributeDeployment(
       final LogStreamRecordWriter logStreamWriter, final long key, final UnpackedObject event) {
     final RecordType recordType = RecordType.COMMAND;
     final ValueType valueType = ValueType.DEPLOYMENT;
-    final Intent intent = DeploymentIntent.CREATE;
+    final Intent intent = DeploymentIntent.DISTRIBUTE;
 
     logStreamWriter.reset();
     recordMetadata.reset().recordType(recordType).valueType(valueType).intent(intent);

@@ -8,21 +8,21 @@
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.mutable.MutableDeploymentState;
+import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 
-public class DeploymentCreatedApplier
+public class DeploymentDistributedApplier
     implements TypedEventApplier<DeploymentIntent, DeploymentRecord> {
 
-  private final MutableDeploymentState mutableDeploymentState;
+  private final MutableWorkflowState mutableWorkflowState;
 
-  public DeploymentCreatedApplier(final MutableDeploymentState mutableDeploymentState) {
-    this.mutableDeploymentState = mutableDeploymentState;
+  public DeploymentDistributedApplier(final MutableWorkflowState mutableWorkflowState) {
+    this.mutableWorkflowState = mutableWorkflowState;
   }
 
   @Override
   public void applyState(final long key, final DeploymentRecord value) {
-    mutableDeploymentState.storeDeploymentRecord(key, value);
+    mutableWorkflowState.putDeployment(value);
   }
 }

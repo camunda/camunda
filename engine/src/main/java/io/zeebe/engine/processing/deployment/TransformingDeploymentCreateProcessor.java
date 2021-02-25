@@ -35,13 +35,10 @@ import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.WorkflowRecord;
-import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.util.Either;
@@ -149,15 +146,43 @@ public final class TransformingDeploymentCreateProcessor
       responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
       stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
-      partitions.forEach(
-          partitionId -> {
-            deploymentDistributionRecord.setPartition(partitionId);
-            stateWriter.appendFollowUpEvent(
-                key, DeploymentDistributionIntent.DISTRIBUTING, deploymentDistributionRecord);
-            // todo(zell): push deployment to other partition
-            //            deploymentDistributor.pushDeployment(key, partitionId, deploymentEvent);
-          });
+      deploymentDistribution(
+          position, responseWriter, streamWriter, sideEffect, deploymentEvent, key);
 
+      messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
+          deploymentEvent, streamWriter);
+
+    } else {
+      responseWriter.writeRejectionOnCommand(
+          command,
+          deploymentTransformer.getRejectionType(),
+          deploymentTransformer.getRejectionReason());
+      streamWriter.appendRejection(
+          command,
+          deploymentTransformer.getRejectionType(),
+          deploymentTransformer.getRejectionReason());
+    }
+  }
+
+  private void deploymentDistribution(
+      final long position,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect,
+      final DeploymentRecord deploymentEvent,
+      final long key) {
+    partitions.forEach(
+        partitionId -> {
+          deploymentDistributionRecord.setPartition(partitionId);
+          stateWriter.appendFollowUpEvent(
+              key, DeploymentDistributionIntent.DISTRIBUTING, deploymentDistributionRecord);
+          // todo(zell): push deployment to other partition
+          //            deploymentDistributor.pushDeployment(key, partitionId, deploymentEvent);
+        });
+
+    if (partitions.isEmpty()) {
+      stateWriter.appendFollowUpEvent(key, DeploymentIntent.FULLY_DISTRIBUTED, deploymentEvent);
+    } else {
       // todo(zell): simplify for https://github.com/zeebe-io/zeebe/issues/6173
       // DEPLOYMENT DISTRIBUTION moved from distribute
       final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
@@ -173,21 +198,9 @@ public final class TransformingDeploymentCreateProcessor
       sideEffect.accept(
           () -> {
             distributeDeployment(key, position, bufferView, streamWriter);
+            responseWriter.flush();
             return true;
           });
-
-      messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
-          deploymentEvent, streamWriter);
-
-    } else {
-      responseWriter.writeRejectionOnCommand(
-          command,
-          deploymentTransformer.getRejectionType(),
-          deploymentTransformer.getRejectionReason());
-      streamWriter.appendRejection(
-          command,
-          deploymentTransformer.getRejectionType(),
-          deploymentTransformer.getRejectionReason());
     }
   }
 
@@ -212,11 +225,6 @@ public final class TransformingDeploymentCreateProcessor
 
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     deploymentRecord.wrap(buffer);
-    final RecordMetadata recordMetadata = new RecordMetadata();
-    recordMetadata
-        .intent(DeploymentIntent.DISTRIBUTED)
-        .valueType(ValueType.DEPLOYMENT)
-        .recordType(RecordType.EVENT);
 
     actor.runUntilDone(
         () -> {
@@ -224,7 +232,11 @@ public final class TransformingDeploymentCreateProcessor
           logStreamWriter.reset();
           logStreamWriter.configureSourceContext(sourcePosition);
           logStreamWriter.appendFollowUpEvent(
-              deploymentKey, DeploymentIntent.DISTRIBUTED, deploymentRecord);
+              deploymentKey, DeploymentIntent.FULLY_DISTRIBUTED, deploymentRecord);
+
+          // todo(zell): this will move away on next PR's
+          // https://github.com/zeebe-io/zeebe/issues/6173
+          deploymentState.removeDeploymentRecord(deploymentKey);
 
           final long position = logStreamWriter.flush();
           if (position < 0) {

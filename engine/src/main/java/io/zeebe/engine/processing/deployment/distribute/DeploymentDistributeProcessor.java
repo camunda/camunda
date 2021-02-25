@@ -7,34 +7,36 @@
  */
 package io.zeebe.engine.processing.deployment.distribute;
 
+import io.zeebe.engine.processing.deployment.DeploymentResponder;
 import io.zeebe.engine.processing.deployment.MessageStartEventSubscriptionManager;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.immutable.DeploymentState;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.util.sched.ActorControl;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
 import java.util.function.Consumer;
 
 public final class DeploymentDistributeProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
-  private final DeploymentState deploymentState;
-  private final DeploymentDistributor deploymentDistributor;
-  private final ActorControl actor;
   private final MessageStartEventSubscriptionManager messageStartEventSubscriptionManager;
+  private final DeploymentResponder deploymentResponder;
+  private final int partitionId;
+  private final StateWriter stateWriter;
 
   public DeploymentDistributeProcessor(
-      final ActorControl actor,
-      final ZeebeState zeebeState,
-      final DeploymentDistributor deploymentDistributor) {
-    deploymentState = zeebeState.getDeploymentState();
-    messageStartEventSubscriptionManager =
-        new MessageStartEventSubscriptionManager(zeebeState.getWorkflowState());
-    this.deploymentDistributor = deploymentDistributor;
-    this.actor = actor;
+      final WorkflowState workflowState,
+      final DeploymentResponder deploymentResponder,
+      final int partitionId,
+      final Writers writers) {
+    messageStartEventSubscriptionManager = new MessageStartEventSubscriptionManager(workflowState);
+    this.deploymentResponder = deploymentResponder;
+    this.partitionId = partitionId;
+    stateWriter = writers.state();
   }
 
   @Override
@@ -44,10 +46,13 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
+    final var deploymentEvent = event.getValue();
+    final var deploymentKey = event.getKey();
 
-    final var deploymentRecord = event.getValue();
+    stateWriter.appendFollowUpEvent(deploymentKey, DeploymentIntent.DISTRIBUTED, deploymentEvent);
+    deploymentResponder.sendDeploymentResponse(deploymentKey, partitionId);
 
     messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
-        deploymentRecord, streamWriter);
+        deploymentEvent, streamWriter);
   }
 }

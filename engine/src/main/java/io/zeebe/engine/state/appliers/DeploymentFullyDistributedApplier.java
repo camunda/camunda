@@ -8,7 +8,6 @@
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
@@ -16,14 +15,14 @@ import io.zeebe.protocol.record.intent.DeploymentIntent;
 public class DeploymentFullyDistributedApplier
     implements TypedEventApplier<DeploymentIntent, DeploymentRecord> {
 
-  private final MutableDeploymentState deploymentState;
+  private final MutableDeploymentState mutableDeploymentState;
 
-  public DeploymentFullyDistributedApplier(final ZeebeState zeebeState) {
-    deploymentState = zeebeState.getDeploymentState();
+  public DeploymentFullyDistributedApplier(final MutableDeploymentState mutableDeploymentState) {
+    this.mutableDeploymentState = mutableDeploymentState;
   }
 
   @Override
   public void applyState(final long key, final DeploymentRecord value) {
-    deploymentState.removeDeploymentRecord(key);
+    mutableDeploymentState.removeDeploymentRecord(key);
   }
 }

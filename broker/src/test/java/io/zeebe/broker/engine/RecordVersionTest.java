@@ -48,8 +48,13 @@ public final class RecordVersionTest {
     deployWorkflow(workflow);
 
     // then
-    assertThat(RecordingExporter.deploymentRecords().limit(4))
-        .hasSize(4)
+    assertThat(RecordingExporter.workflowRecords().limit(1))
+        .hasSize(1)
+        .extracting(Record::getBrokerVersion)
+        .containsOnly(EXPECTED_VERSION);
+
+    assertThat(RecordingExporter.deploymentRecords().limit(3))
+        .hasSize(3)
         .extracting(Record::getBrokerVersion)
         .containsOnly(EXPECTED_VERSION);
   }

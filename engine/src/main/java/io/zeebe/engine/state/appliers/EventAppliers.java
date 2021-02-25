@@ -58,8 +58,12 @@ public final class EventAppliers implements EventApplier {
         DeploymentDistributionIntent.COMPLETED,
         new DeploymentDistributionCompletedApplier(state.getDeploymentState()));
 
-    register(DeploymentIntent.CREATED, new DeploymentCreatedApplier(state));
-    register(DeploymentIntent.FULLY_DISTRIBUTED, new DeploymentFullyDistributedApplier(state));
+    register(DeploymentIntent.CREATED, new DeploymentCreatedApplier(state.getDeploymentState()));
+    register(
+        DeploymentIntent.DISTRIBUTED, new DeploymentDistributedApplier(state.getWorkflowState()));
+    register(
+        DeploymentIntent.FULLY_DISTRIBUTED,
+        new DeploymentFullyDistributedApplier(state.getDeploymentState()));
 
     register(MessageIntent.PUBLISHED, new MessagePublishedApplier(state.getMessageState()));
     register(MessageIntent.EXPIRED, new MessageExpiredApplier(state.getMessageState()));

@@ -7,11 +7,13 @@
  */
 package io.zeebe.engine.processing;
 
+import static io.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
+
 import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
-import io.zeebe.engine.processing.deployment.DeploymentEventProcessors;
 import io.zeebe.engine.processing.deployment.DeploymentResponder;
+import io.zeebe.engine.processing.deployment.TransformingDeploymentCreateProcessor;
 import io.zeebe.engine.processing.deployment.distribute.CompleteDeploymentDistributionProcessor;
 import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
@@ -26,9 +28,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
@@ -55,9 +55,6 @@ public final class EngineProcessors {
     final LogStream stream = processingContext.getLogStream();
     final int partitionId = stream.getPartitionId();
     final int maxFragmentSize = processingContext.getMaxFragmentSize();
-
-    addDistributeDeploymentProcessors(
-        actor, zeebeState, typedRecordProcessors, deploymentDistributor, writers);
 
     final var variablesState = zeebeState.getVariableState();
     final var expressionProcessor =
@@ -100,28 +97,6 @@ public final class EngineProcessors {
     return typedRecordProcessors;
   }
 
-  private static void addDistributeDeploymentProcessors(
-      final ActorControl actor,
-      final ZeebeState zeebeState,
-      final TypedRecordProcessors typedRecordProcessors,
-      final DeploymentDistributor deploymentDistributor,
-      final Writers writers) {
-
-    final DeploymentDistributeProcessor deploymentDistributeProcessor =
-        new DeploymentDistributeProcessor(
-            actor, zeebeState.getDeploymentState(), deploymentDistributor);
-
-    typedRecordProcessors.onCommand(
-        ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
-
-    final var completeDeploymentDistributionProcessor =
-        new CompleteDeploymentDistributionProcessor(zeebeState.getDeploymentState(), writers);
-    typedRecordProcessors.onCommand(
-        ValueType.DEPLOYMENT_DISTRIBUTION,
-        DeploymentDistributionIntent.COMPLETE,
-        completeDeploymentDistributionProcessor);
-  }
-
   private static TypedRecordProcessor<WorkflowInstanceRecord> addWorkflowProcessors(
       final ZeebeState zeebeState,
       final ExpressionProcessor expressionProcessor,
@@ -151,22 +126,34 @@ public final class EngineProcessors {
       final int partitionsCount,
       final ActorControl actor,
       final DeploymentDistributor deploymentDistributor) {
-    final MutableWorkflowState workflowState = zeebeState.getWorkflowState();
-    final boolean isDeploymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
-    if (isDeploymentPartition) {
-      DeploymentEventProcessors.addTransformingDeploymentProcessor(
-          typedRecordProcessors,
-          zeebeState,
-          catchEventBehavior,
-          expressionProcessor,
-          partitionsCount,
-          writers,
-          actor,
-          deploymentDistributor);
-    } else {
-      DeploymentEventProcessors.addDeploymentCreateProcessor(
-          typedRecordProcessors, workflowState, deploymentResponder, partitionId);
-    }
+
+    // on deployment partition CREATE Command is received and processed
+    // it will cause a distribution to other partitions
+    final var processor =
+        new TransformingDeploymentCreateProcessor(
+            zeebeState,
+            catchEventBehavior,
+            expressionProcessor,
+            partitionsCount,
+            writers,
+            actor,
+            deploymentDistributor);
+    typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
+
+    // on other partitions DISTRIBUTE command is received and processed
+    final DeploymentDistributeProcessor deploymentDistributeProcessor =
+        new DeploymentDistributeProcessor(
+            zeebeState.getWorkflowState(), deploymentResponder, partitionId, writers);
+    typedRecordProcessors.onCommand(
+        ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
+
+    // completes the deployment distribution
+    final var completeDeploymentDistributionProcessor =
+        new CompleteDeploymentDistributionProcessor(zeebeState.getDeploymentState(), writers);
+    typedRecordProcessors.onCommand(
+        ValueType.DEPLOYMENT_DISTRIBUTION,
+        DeploymentDistributionIntent.COMPLETE,
+        completeDeploymentDistributionProcessor);
   }
 
   private static void addIncidentProcessors(

@@ -485,7 +485,7 @@ public final class EngineRule extends ExternalResource {
             new Thread(
                     () ->
                         environmentRule.writeCommandOnPartition(
-                            partitionId, key, DeploymentIntent.CREATE, deploymentRecord))
+                            partitionId, key, DeploymentIntent.DISTRIBUTE, deploymentRecord))
                 .start();
           });
 
