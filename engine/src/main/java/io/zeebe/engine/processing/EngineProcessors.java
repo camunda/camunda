@@ -10,7 +10,6 @@ package io.zeebe.engine.processing;
 import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
-import io.zeebe.engine.processing.deployment.DeploymentCreatedProcessor;
 import io.zeebe.engine.processing.deployment.DeploymentEventProcessors;
 import io.zeebe.engine.processing.deployment.DeploymentResponder;
 import io.zeebe.engine.processing.deployment.distribute.CompleteDeploymentDistributionProcessor;
@@ -168,11 +167,6 @@ public final class EngineProcessors {
       DeploymentEventProcessors.addDeploymentCreateProcessor(
           typedRecordProcessors, workflowState, deploymentResponder, partitionId);
     }
-
-    typedRecordProcessors.onEvent(
-        ValueType.DEPLOYMENT,
-        DeploymentIntent.CREATED,
-        new DeploymentCreatedProcessor(workflowState, isDeploymentPartition));
   }
 
   private static void addIncidentProcessors(

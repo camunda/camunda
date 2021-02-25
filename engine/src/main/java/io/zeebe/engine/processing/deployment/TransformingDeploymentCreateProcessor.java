@@ -74,6 +74,7 @@ public final class TransformingDeploymentCreateProcessor
   private final MutableDeploymentState deploymentState;
   private final DeploymentDistributor deploymentDistributor;
   private final ActorControl actor;
+  private final MessageStartEventSubscriptionManager messageStartEventSubscriptionManager;
 
   public TransformingDeploymentCreateProcessor(
       final ZeebeState zeebeState,
@@ -94,6 +95,7 @@ public final class TransformingDeploymentCreateProcessor
     deploymentState = zeebeState.getDeploymentState();
     this.deploymentDistributor = deploymentDistributor;
     this.actor = actor;
+    messageStartEventSubscriptionManager = new MessageStartEventSubscriptionManager(workflowState);
 
     // partitions
     partitions =
@@ -173,6 +175,9 @@ public final class TransformingDeploymentCreateProcessor
             distributeDeployment(key, position, bufferView, streamWriter);
             return true;
           });
+
+      messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
+          deploymentEvent, streamWriter);
 
     } else {
       responseWriter.writeRejectionOnCommand(
