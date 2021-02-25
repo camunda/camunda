@@ -47,9 +47,7 @@ public final class EventAppliers implements EventApplier {
   private final Map<Intent, TypedEventApplier> mapping = new HashMap<>();
 
   public EventAppliers(final ZeebeState state) {
-    register(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-        new WorkflowInstanceElementActivatedApplier(state));
+    registerWorkflowInstanceEventAppliers(state);
 
     register(WorkflowIntent.CREATED, new WorkflowCreatedApplier(state));
     register(DeploymentDistributionIntent.DISTRIBUTING, new DeploymentDistributionApplier(state));
@@ -71,6 +69,33 @@ public final class EventAppliers implements EventApplier {
             state.getMessageState(), state.getEventScopeInstanceState()));
 
     registerJobIntentEventAppliers(state);
+  }
+
+  private void registerWorkflowInstanceEventAppliers(final ZeebeState state) {
+    final var elementInstanceState = state.getElementInstanceState();
+    final var eventScopeInstanceState = state.getEventScopeInstanceState();
+    register(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+        new WorkflowInstanceElementActivatingApplier(elementInstanceState));
+    register(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        new WorkflowInstanceElementActivatedApplier(elementInstanceState));
+    register(
+        WorkflowInstanceIntent.ELEMENT_COMPLETING,
+        new WorkflowInstanceElementCompletingApplier(elementInstanceState));
+    register(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED,
+        new WorkflowInstanceElementCompletedApplier(elementInstanceState, eventScopeInstanceState));
+    register(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING,
+        new WorkflowInstanceElementTerminatingApplier(elementInstanceState));
+    register(
+        WorkflowInstanceIntent.ELEMENT_TERMINATED,
+        new WorkflowInstanceElementTerminatedApplier(
+            elementInstanceState, eventScopeInstanceState));
+    register(
+        WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
+        new WorkflowInstanceSequenceFlowTakenApplier(elementInstanceState));
   }
 
   private void registerJobIntentEventAppliers(final ZeebeState state) {

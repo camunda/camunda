@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.streamprocessor;
 import io.zeebe.db.TransactionContext;
 import io.zeebe.db.TransactionOperation;
 import io.zeebe.db.ZeebeDbTransaction;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.ReprocessingStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -17,6 +18,7 @@ import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.KeyGeneratorControls;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
+import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -24,8 +26,10 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.retry.EndlessRetryStrategy;
 import io.zeebe.util.retry.RetryStrategy;
 import io.zeebe.util.sched.ActorControl;
@@ -144,6 +148,7 @@ public final class ReProcessingStateMachine {
   private TypedRecordProcessor eventProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
   private final boolean detectReprocessingInconsistency;
+  private final MutableWorkflowState workflowState;
 
   public ReProcessingStateMachine(final ProcessingContext context) {
     actor = context.getActor();
@@ -156,6 +161,7 @@ public final class ReProcessingStateMachine {
     eventApplier = context.getEventApplier();
     keyGeneratorControls = context.getKeyGeneratorControls();
     lastProcessedPositionState = context.getLastProcessedPositionState();
+    workflowState = context.getZeebeState().getWorkflowState();
 
     typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
     updateStateRetryStrategy = new EndlessRetryStrategy(actor);
@@ -370,6 +376,10 @@ public final class ReProcessingStateMachine {
   private void reprocessRecord(final TypedRecord<?> currentEvent) {
     final long recordPosition = currentEvent.getPosition();
 
+    if (typedEvent.getValueType() == ValueType.WORKFLOW_INSTANCE) {
+      dirtySequenceFlowReplayHack();
+    }
+
     if (MigratedStreamProcessors.isMigrated(currentEvent)) {
       // replay only events - skip commands and rejections
       // skip events if the state changes are already applied to the state in the snapshot
@@ -395,6 +405,27 @@ public final class ReProcessingStateMachine {
           noopResponseWriter,
           reprocessingStreamWriter,
           NOOP_SIDE_EFFECT_CONSUMER);
+    }
+  }
+
+  /**
+   * 💩 This is a dirty hack! It spawns a token for the taken sequence flow.
+   *
+   * <p>The migrated element processors already spawn this token when writing the
+   * SEQUENCE_FLOW_TAKEN using the statewriter. However, as long as the sequence flow processor is
+   * not migrated, this record will not be replayed. This is only necessary for reprocessing
+   * SEQUENCE_FLOW_TAKEN that is outgoing of an element with an already migrated processor
+   */
+  // todo (#6190): this should be removed once the sequence flow processor is removed
+  private void dirtySequenceFlowReplayHack() {
+    final var value = (WorkflowInstanceRecord) typedEvent.getValue();
+    if (value.getBpmnElementType() == BpmnElementType.SEQUENCE_FLOW) {
+      final var sequenceFlow =
+          workflowState.getFlowElement(
+              value.getWorkflowKey(), value.getElementIdBuffer(), ExecutableSequenceFlow.class);
+      if (MigratedStreamProcessors.isMigrated(sequenceFlow.getSource().getElementType())) {
+        eventApplier.applyState(typedEvent.getKey(), typedEvent.getIntent(), typedEvent.getValue());
+      }
     }
   }
 

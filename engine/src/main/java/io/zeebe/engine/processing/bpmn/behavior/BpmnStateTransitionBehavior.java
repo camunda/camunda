@@ -19,6 +19,7 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
@@ -43,6 +44,7 @@ public final class BpmnStateTransitionBehavior {
   private final WorkflowEngineMetrics metrics;
   private final WorkflowInstanceRecord childInstanceRecord = new WorkflowInstanceRecord();
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
 
   public BpmnStateTransitionBehavior(
       final TypedStreamWriter streamWriter,
@@ -53,6 +55,7 @@ public final class BpmnStateTransitionBehavior {
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp,
       final Writers writers) {
+    // todo (@korthout): replace streamWriter by writers
     this.streamWriter = streamWriter;
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
@@ -60,21 +63,51 @@ public final class BpmnStateTransitionBehavior {
     this.stateTransitionGuard = stateTransitionGuard;
     this.processorLookUp = processorLookUp;
     stateWriter = writers.state();
+    commandWriter = writers.command();
   }
 
+  /** @return context with updated intent */
   public BpmnElementContext transitionToActivating(final BpmnElementContext context) {
+    if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      final var elementInstance = stateBehavior.getElementInstance(context);
+      if (elementInstance != null) {
+        // if the element already exists, then the Activate_Element command is processed as a result
+        // of resolving an incident. We don't have to transition again. Just update the context
+        return context.copy(
+            context.getElementInstanceKey(),
+            context.getRecordValue(),
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+      }
+    }
     return transitionTo(context, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
   }
 
-  public void transitionToActivated(final BpmnElementContext context) {
-
-    transitionTo(context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    stateTransitionGuard.registerStateTransition(context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+  /** @return context with updated intent */
+  public BpmnElementContext transitionToActivated(final BpmnElementContext context) {
+    final BpmnElementContext transitionedContext =
+        transitionTo(context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      stateTransitionGuard.registerStateTransition(
+          context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    }
     metrics.elementInstanceActivated(context.getBpmnElementType());
+    return transitionedContext;
   }
 
+  /** @return context with updated intent */
   public BpmnElementContext transitionToCompleting(final BpmnElementContext context) {
+    if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      final var elementInstance = stateBehavior.getElementInstance(context);
+      if (elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_COMPLETING) {
+        // if the element is already completing, then the Complete_Element command is processed as a
+        // result of resolving an incident. We don't have to transition again. Just update the
+        // context
+        return context.copy(
+            context.getElementInstanceKey(),
+            context.getRecordValue(),
+            WorkflowInstanceIntent.ELEMENT_COMPLETING);
+      }
+    }
     final var transitionedContext =
         transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
     if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
@@ -84,14 +117,18 @@ public final class BpmnStateTransitionBehavior {
     return transitionedContext;
   }
 
-  public void transitionToCompleted(final BpmnElementContext context) {
-
-    transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    stateTransitionGuard.registerStateTransition(context, WorkflowInstanceIntent.ELEMENT_COMPLETED);
+  /** @return context with updated intent */
+  public BpmnElementContext transitionToCompleted(final BpmnElementContext context) {
+    final var transitionedContext = transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      stateTransitionGuard.registerStateTransition(
+          context, WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    }
     metrics.elementInstanceCompleted(context.getBpmnElementType());
+    return transitionedContext;
   }
 
+  /** @return context with updated intent */
   public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
     final var transitionedContext =
         transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATING);
@@ -102,13 +139,16 @@ public final class BpmnStateTransitionBehavior {
     return transitionedContext;
   }
 
-  public void transitionToTerminated(final BpmnElementContext context) {
-
-    transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATED);
-
-    stateTransitionGuard.registerStateTransition(
-        context, WorkflowInstanceIntent.ELEMENT_TERMINATED);
+  /** @return context with updated intent */
+  public BpmnElementContext transitionToTerminated(final BpmnElementContext context) {
+    final var transitionedContext =
+        transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATED);
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      stateTransitionGuard.registerStateTransition(
+          context, WorkflowInstanceIntent.ELEMENT_TERMINATED);
+    }
     metrics.elementInstanceTerminated(context.getBpmnElementType());
+    return transitionedContext;
   }
 
   private BpmnElementContext transitionTo(
@@ -146,10 +186,14 @@ public final class BpmnStateTransitionBehavior {
             .setElementId(sequenceFlow.getId())
             .setBpmnElementType(sequenceFlow.getElementType());
 
-    streamWriter.appendFollowUpEvent(
-        keyGenerator.nextKey(), WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
-
-    stateBehavior.spawnToken(context);
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      streamWriter.appendFollowUpEvent(
+          keyGenerator.nextKey(), WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
+      stateBehavior.spawnToken(context);
+    } else {
+      stateWriter.appendFollowUpEvent(
+          keyGenerator.nextKey(), WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
+    }
   }
 
   public ElementInstance activateChildInstance(
@@ -184,11 +228,16 @@ public final class BpmnStateTransitionBehavior {
 
     final var elementInstanceKey = keyGenerator.nextKey();
 
-    streamWriter.appendFollowUpEvent(
-        elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, elementInstanceRecord);
+    if (MigratedStreamProcessors.isMigrated(element.getElementType())) {
+      commandWriter.appendFollowUpCommand(
+          elementInstanceKey, WorkflowInstanceIntent.ACTIVATE_ELEMENT, elementInstanceRecord);
+    } else {
+      streamWriter.appendFollowUpEvent(
+          elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, elementInstanceRecord);
 
-    stateBehavior.createElementInstanceInFlowScope(
-        context, elementInstanceKey, elementInstanceRecord);
+      stateBehavior.createElementInstanceInFlowScope(
+          context, elementInstanceKey, elementInstanceRecord);
+    }
   }
 
   /**
@@ -204,7 +253,14 @@ public final class BpmnStateTransitionBehavior {
     for (final BpmnElementContext childInstanceContext : childInstances) {
 
       if (WorkflowInstanceLifecycle.canTerminate(childInstanceContext.getIntent())) {
-        transitionToTerminating(childInstanceContext);
+        if (!MigratedStreamProcessors.isMigrated(childInstanceContext.getBpmnElementType())) {
+          transitionToTerminating(childInstanceContext);
+        } else {
+          commandWriter.appendFollowUpCommand(
+              childInstanceContext.getElementInstanceKey(),
+              WorkflowInstanceIntent.TERMINATE_ELEMENT,
+              childInstanceContext.getRecordValue());
+        }
 
       } else if (childInstanceContext.getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED) {
         // clean up the state because the completed event will not be processed
