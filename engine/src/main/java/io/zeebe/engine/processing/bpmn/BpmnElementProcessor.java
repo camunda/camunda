@@ -68,7 +68,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @deprecated will be replaced by onActivate
    */
   @Deprecated // todo (#6202): remove method
-  void onActivating(final T element, final BpmnElementContext context);
+  default void onActivating(final T element, final BpmnElementContext context) {
+    throw new UnsupportedOperationException("This method is replaced by onActivate");
+  }
 
   /**
    * The element is initialized. If the element is a wait-state (i.e. it is waiting for an event or
@@ -88,7 +90,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @deprecated will be replaced by onActivate
    */
   @Deprecated // todo (#6202): remove method
-  void onActivated(final T element, final BpmnElementContext context);
+  default void onActivated(final T element, final BpmnElementContext context) {
+    throw new UnsupportedOperationException("This method is replaced by onActivate");
+  }
 
   /**
    * The element is going to be left. Perform every action to leave the element and continue with
@@ -128,7 +132,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @deprecated will be replaced by onComplete
    */
   @Deprecated // todo (#6202): remove method
-  void onCompleting(final T element, final BpmnElementContext context);
+  default void onCompleting(final T element, final BpmnElementContext context) {
+    throw new UnsupportedOperationException("This method is replaced by onComplete");
+  }
 
   /**
    * The element is left (final step). Continue with the next element.
@@ -148,7 +154,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @deprecated will be replaced by onComplete
    */
   @Deprecated // todo (#6202): remove method
-  void onCompleted(final T element, final BpmnElementContext context);
+  default void onCompleted(final T element, final BpmnElementContext context) {
+    throw new UnsupportedOperationException("This method is replaced by onComplete");
+  }
 
   /**
    * The element is going to be terminated. Perform every action to terminate the element and
@@ -188,7 +196,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @deprecated will be replaced by onTerminate
    */
   @Deprecated // todo (#6202): remove method
-  void onTerminating(final T element, final BpmnElementContext context);
+  default void onTerminating(final T element, final BpmnElementContext context) {
+    throw new UnsupportedOperationException("This method is replaced by onTerminate");
+  }
 
   /**
    * The element is terminated (final step). Continue with the element that caused the termination
@@ -211,7 +221,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @deprecated will be replaced by onTerminate
    */
   @Deprecated // todo (#6202): remove method
-  void onTerminated(final T element, final BpmnElementContext context);
+  default void onTerminated(final T element, final BpmnElementContext context) {
+    throw new UnsupportedOperationException("This method is replaced by onTerminate");
+  }
 
   /**
    * An event subscription of the element is triggered. Leave the element if it waited for this

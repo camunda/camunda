@@ -67,18 +67,6 @@ public final class ExclusiveGatewayProcessor
   }
 
   @Override
-  public void onActivating(
-      final ExecutableExclusiveGateway element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException("This method is replaced by onActivate");
-  }
-
-  @Override
-  public void onActivated(
-      final ExecutableExclusiveGateway element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException("This method is replaced by onActivate");
-  }
-
-  @Override
   public void onComplete(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
     throw new UnsupportedOperationException(
@@ -88,35 +76,11 @@ public final class ExclusiveGatewayProcessor
   }
 
   @Override
-  public void onCompleting(
-      final ExecutableExclusiveGateway element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException("This method is replaced by onActivate");
-  }
-
-  @Override
-  public void onCompleted(
-      final ExecutableExclusiveGateway element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException("This method is replaced by onActivate");
-  }
-
-  @Override
   public void onTerminate(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
     incidentBehavior.resolveIncidents(context);
     final var terminated = stateTransitionBehavior.transitionToTerminated(context);
     stateTransitionBehavior.onElementTerminated(element, terminated);
-  }
-
-  @Override
-  public void onTerminating(
-      final ExecutableExclusiveGateway element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException("This method is replaced by onTerminate");
-  }
-
-  @Override
-  public void onTerminated(
-      final ExecutableExclusiveGateway element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException("This method is replaced by onTerminate");
   }
 
   @Override
