@@ -47,10 +47,12 @@ public final class DeploymentClient {
                       .getFirst();
                 });
 
-            return RecordingExporter.deploymentRecords(DeploymentIntent.FULLY_DISTRIBUTED)
+            RecordingExporter.deploymentRecords(DeploymentIntent.FULLY_DISTRIBUTED)
                 .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
                 .withRecordKey(deploymentOnPartitionOne.getKey())
                 .getFirst();
+
+            return deploymentOnPartitionOne;
           };
 
   private static final BiFunction<Long, Consumer<Consumer<Integer>>, Record<DeploymentRecordValue>>

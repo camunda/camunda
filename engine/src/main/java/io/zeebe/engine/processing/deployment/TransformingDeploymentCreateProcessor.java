@@ -72,6 +72,7 @@ public final class TransformingDeploymentCreateProcessor
   private final DeploymentDistributor deploymentDistributor;
   private final ActorControl actor;
   private final MessageStartEventSubscriptionManager messageStartEventSubscriptionManager;
+  private final DeploymentRecord emptyDeploymentRecord;
 
   public TransformingDeploymentCreateProcessor(
       final ZeebeState zeebeState,
@@ -101,6 +102,7 @@ public final class TransformingDeploymentCreateProcessor
             .boxed()
             .collect(Collectors.toList());
     deploymentDistributionRecord = new DeploymentDistributionRecord();
+    emptyDeploymentRecord = new DeploymentRecord();
   }
 
   @Override
@@ -181,7 +183,12 @@ public final class TransformingDeploymentCreateProcessor
         });
 
     if (partitions.isEmpty()) {
-      stateWriter.appendFollowUpEvent(key, DeploymentIntent.FULLY_DISTRIBUTED, deploymentEvent);
+      // todo(zell): https://github.com/zeebe-io/zeebe/issues/6314
+      // we easily reach the record limit if we always write the deployment record
+      // since no one consumes currently the FULLY_DISTRIBUTED (only the key) we write an empty
+      // record
+      stateWriter.appendFollowUpEvent(
+          key, DeploymentIntent.FULLY_DISTRIBUTED, emptyDeploymentRecord);
     } else {
       // todo(zell): simplify for https://github.com/zeebe-io/zeebe/issues/6173
       // DEPLOYMENT DISTRIBUTION moved from distribute
@@ -220,19 +227,20 @@ public final class TransformingDeploymentCreateProcessor
       final TypedStreamWriter logStreamWriter, final long deploymentKey) {
     final PendingDeploymentDistribution pendingDeploymentDistribution =
         deploymentDistributor.removePendingDeployment(deploymentKey);
-    final DirectBuffer buffer = pendingDeploymentDistribution.getDeployment();
     final long sourcePosition = pendingDeploymentDistribution.getSourcePosition();
-
-    final DeploymentRecord deploymentRecord = new DeploymentRecord();
-    deploymentRecord.wrap(buffer);
 
     actor.runUntilDone(
         () -> {
           // we can re-use the write because we are running in the same actor/thread
           logStreamWriter.reset();
           logStreamWriter.configureSourceContext(sourcePosition);
+
+          // todo(zell): https://github.com/zeebe-io/zeebe/issues/6314
+          // we easily reach the record limit if we always write the deployment record
+          // since no one consumes currently the FULLY_DISTRIBUTED (only the key) we write an empty
+          // record
           logStreamWriter.appendFollowUpEvent(
-              deploymentKey, DeploymentIntent.FULLY_DISTRIBUTED, deploymentRecord);
+              deploymentKey, DeploymentIntent.FULLY_DISTRIBUTED, emptyDeploymentRecord);
 
           // todo(zell): this will move away on next PR's
           // https://github.com/zeebe-io/zeebe/issues/6173

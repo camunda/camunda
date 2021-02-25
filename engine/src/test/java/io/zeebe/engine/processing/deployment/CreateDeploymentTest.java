@@ -62,12 +62,12 @@ public final class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
 
     // then
-    assertThat(deployment.getKey()).isGreaterThanOrEqualTo(0L);
+    assertThat(deployment.getKey()).isNotNegative();
 
     Assertions.assertThat(deployment)
         .hasPartitionId(DEPLOYMENT_PARTITION)
         .hasRecordType(RecordType.EVENT)
-        .hasIntent(DeploymentIntent.FULLY_DISTRIBUTED);
+        .hasIntent(DeploymentIntent.CREATED);
   }
 
   @Test
@@ -208,7 +208,7 @@ public final class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource(process).deploy();
 
     // then
-    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.FULLY_DISTRIBUTED);
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
   }
 
   @Test
@@ -223,7 +223,7 @@ public final class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource(process).deploy();
 
     // then
-    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.FULLY_DISTRIBUTED);
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
   }
 
   @Test
@@ -240,7 +240,7 @@ public final class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource(process).deploy();
 
     // then
-    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.FULLY_DISTRIBUTED);
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
   }
 
   @Test

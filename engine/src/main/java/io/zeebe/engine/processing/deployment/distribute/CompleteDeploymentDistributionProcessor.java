@@ -16,6 +16,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.immutable.DeploymentState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import java.util.function.Consumer;
@@ -23,6 +24,7 @@ import java.util.function.Consumer;
 public class CompleteDeploymentDistributionProcessor
     implements TypedRecordProcessor<DeploymentDistributionRecord> {
 
+  private final DeploymentRecord emptyDeploymentRecord = new DeploymentRecord();
   private final StateWriter stateWriter;
   private final DeploymentState deploymentState;
 
@@ -47,12 +49,10 @@ public class CompleteDeploymentDistributionProcessor
         deploymentKey, DeploymentDistributionIntent.COMPLETED, record.getValue());
 
     if (!deploymentState.hasPendingDeploymentDistribution(deploymentKey)) {
-      final var storedDeploymentRecord = deploymentState.getStoredDeploymentRecord(deploymentKey);
-
-      if (storedDeploymentRecord != null) {
-        stateWriter.appendFollowUpEvent(
-            deploymentKey, DeploymentIntent.FULLY_DISTRIBUTED, storedDeploymentRecord);
-      }
+      // to be consistent we write here as well an empty deployment record
+      // https://github.com/zeebe-io/zeebe/issues/6314
+      stateWriter.appendFollowUpEvent(
+          deploymentKey, DeploymentIntent.FULLY_DISTRIBUTED, emptyDeploymentRecord);
     }
   }
 }

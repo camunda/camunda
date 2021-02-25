@@ -59,17 +59,32 @@ public final class CreateDeploymentMultiplePartitionsTest {
         ENGINE.deployment().withXmlResource("process.bpmn", modelInstance).deploy();
 
     // then
-    assertThat(deployment.getKey()).isGreaterThanOrEqualTo(0L);
+    assertThat(deployment.getKey()).isNotNegative();
 
     assertThat(deployment.getPartitionId()).isEqualTo(PARTITION_ID);
     assertThat(deployment.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.FULLY_DISTRIBUTED);
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
 
-    assertDeploymentEventResources(
-        DEPLOYMENT_PARTITION,
-        DeploymentIntent.CREATED,
-        deployment.getKey(),
-        (createdDeployment) -> assertDeploymentRecord(deployment, createdDeployment));
+    final var fullyDistributedDeployment =
+        RecordingExporter.deploymentRecords()
+            .withIntent(DeploymentIntent.FULLY_DISTRIBUTED)
+            .getFirst();
+
+    assertThat(fullyDistributedDeployment.getKey()).isNotNegative();
+    assertThat(fullyDistributedDeployment.getPartitionId()).isEqualTo(PARTITION_ID);
+    assertThat(fullyDistributedDeployment.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(fullyDistributedDeployment.getIntent())
+        .isEqualTo(DeploymentIntent.FULLY_DISTRIBUTED);
+
+    //    todo(zell): https://github.com/zeebe-io/zeebe/issues/6314 fully distributed contains
+    //    currently no longer any resources
+    //
+    //    assertDeploymentEventResources(
+    //        DEPLOYMENT_PARTITION,
+    //        DeploymentIntent.CREATED,
+    //        deployment.getKey(),
+    //        (createdDeployment) ->
+    //            assertDeploymentRecord(fullyDistributedDeployment, createdDeployment));
 
     ENGINE
         .getPartitionIds()
@@ -165,16 +180,16 @@ public final class CreateDeploymentMultiplePartitionsTest {
 
     // then
     assertThat(deployment.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.FULLY_DISTRIBUTED);
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
 
-    final List<Record<DeploymentRecordValue>> createdDeployments =
+    final List<Record<DeploymentRecordValue>> distributedDeployments =
         RecordingExporter.deploymentRecords()
             .withIntent(DeploymentIntent.DISTRIBUTED)
             .withRecordKey(deployment.getKey())
             .limit(PARTITION_COUNT - 1)
             .asList();
 
-    assertThat(createdDeployments)
+    assertThat(distributedDeployments)
         .hasSize(PARTITION_COUNT - 1)
         .extracting(Record::getValue)
         .flatExtracting(DeploymentRecordValue::getDeployedWorkflows)
