@@ -89,3 +89,9 @@ export async function loadIngestedEvents(params) {
 export async function deleteEvents(eventsIds) {
   return await post('api/event/delete', eventsIds);
 }
+
+export async function loadExternalGroups(query) {
+  const response = await get('api/event/groups', query);
+
+  return await response.json();
+}

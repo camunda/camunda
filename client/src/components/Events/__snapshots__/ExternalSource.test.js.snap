@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`display empty state with link to docs 1`] = `
+exports[`should display empty state with link to docs 1`] = `
 <div
   className="ExternalSource empty"
 >
@@ -18,22 +18,42 @@ exports[`should match snapshot 1`] = `
 <div
   className="ExternalSource"
 >
-  <Labeled
-    label="Select external events"
+  <span
+    className="title"
   >
-    <Typeahead
-      initialValue="all"
-      onChange={[Function]}
-      onClose={[Function]}
-      onOpen={[Function]}
-      onSearch={[Function]}
-    >
-      <ForwardRef(DropdownOption)
-        value="all"
-      >
-        all events
-      </ForwardRef(DropdownOption)>
-    </Typeahead>
-  </Labeled>
+    Event groups
+  </span>
+  <Checklist
+    allItems={
+      Array [
+        null,
+        "group 1",
+      ]
+    }
+    formatter={[Function]}
+    labels={
+      Object {
+        "empty": "No event groups found",
+        "search": "search for event groups",
+      }
+    }
+    loading={false}
+    onChange={[Function]}
+    onSearch={[Function]}
+    preItems={
+      <ForwardRef(LabeledInput)
+        checked={false}
+        className=""
+        label="All events in a single group"
+        onChange={[Function]}
+        type="checkbox"
+      />
+    }
+    selectedItems={
+      Array [
+        "group 1",
+      ]
+    }
+  />
 </div>
 `;

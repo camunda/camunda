@@ -55,6 +55,7 @@ test('add sources, map and publish a process', async (t) => {
 
   await t.click(e.addSource);
   await t.click(e.externalEvents);
+  await t.click(e.allExternalEventsInput);
   await t.click(e.primaryModalButton);
 
   await t.takeElementScreenshot(e.eventsTable, 'event-based-processes/eventsTable.png');

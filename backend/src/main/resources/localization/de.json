@@ -216,7 +216,12 @@
       "definitionChangeWarning": "Durch die Änderung der Prozessdefinition können Events hinzugefügt oder entfernt werden. Vorhandene Event Mappings können entfernt werden.",
       "eventListChangeWarning": "Durch die Änderung der Event-Liste können Events hinzugefügt oder entfernt werden. Vorhandene Event Mappings können entfernt werden.",
       "remove": "Quelle entfernen",
-      "camundaProcess": "Camunda Prozess"
+      "camundaProcess": "Camunda Prozess",
+      "allInOne": "Alle Eventgruppen in einer einzigen Gruppe",
+      "eventGroups": "Eventgruppen",
+      "ungrouped": "Ungruppiert",
+      "search": "Suche nach Eventgruppen",
+      "noGroups": "Keine Eventgruppen gefunden"
     },
     "ingested": {
       "label": "Verarbeitete externe Events",

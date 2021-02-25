@@ -101,9 +101,8 @@ export default class EventSources extends React.Component {
           <EventsSourceModal
             initialSource={editing}
             existingSources={sources}
-            onConfirm={(sources) => {
-              const isEditing = Object.keys(editing).length > 0;
-              this.props.onChange(sources, isEditing);
+            onConfirm={(newSources, isEditing) => {
+              this.props.onChange(newSources, isEditing);
               this.closeSourceModal();
             }}
             onClose={this.closeSourceModal}
@@ -123,9 +122,12 @@ export default class EventSources extends React.Component {
 
 function getDropdownProps({configuration, type}) {
   if (type === 'external') {
+    const {includeAllGroups, group} = configuration;
+    const groupName = group === null ? t('events.sources.ungrouped') : group;
+    const label = includeAllGroups ? t('events.sources.externalEvents') : groupName;
     return {
-      label: t('events.sources.externalEvents'),
-      key: 'externalEvents',
+      label,
+      key: label,
     };
   } else {
     const {processDefinitionKey, processDefinitionName} = configuration;

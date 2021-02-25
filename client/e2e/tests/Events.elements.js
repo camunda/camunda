@@ -53,3 +53,4 @@ export const eventCheckbox = (index) =>
 export const selectionDropdown = Selector('.selectionActions button');
 export const confirmModalButton = Selector('.confirm.Button');
 export const externalEventsTable = Selector('.Table');
+export const allExternalEventsInput = Selector('.ExternalSource .itemsList .LabeledInput').nth(0);
