@@ -11,11 +11,13 @@ import static io.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
+import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.protocol.record.ValueType;
+import io.zeebe.util.sched.ActorControl;
 
 public final class DeploymentEventProcessors {
 
@@ -36,10 +38,18 @@ public final class DeploymentEventProcessors {
       final CatchEventBehavior catchEventBehavior,
       final ExpressionProcessor expressionProcessor,
       final int partitionsCount,
-      final Writers writers) {
+      final Writers writers,
+      final ActorControl actor,
+      final DeploymentDistributor deploymentDistributor) {
     final var processor =
         new TransformingDeploymentCreateProcessor(
-            zeebeState, catchEventBehavior, expressionProcessor, partitionsCount, writers);
+            zeebeState,
+            catchEventBehavior,
+            expressionProcessor,
+            partitionsCount,
+            writers,
+            actor,
+            deploymentDistributor);
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
   }
 }

@@ -77,7 +77,9 @@ public final class EngineProcessors {
         deploymentResponder,
         expressionProcessor,
         writers,
-        partitionsCount);
+        partitionsCount,
+        actor,
+        deploymentDistributor);
     addMessageProcessors(subscriptionCommandSender, zeebeState, typedRecordProcessors, writers);
 
     final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor =
@@ -147,7 +149,9 @@ public final class EngineProcessors {
       final DeploymentResponder deploymentResponder,
       final ExpressionProcessor expressionProcessor,
       final Writers writers,
-      final int partitionsCount) {
+      final int partitionsCount,
+      final ActorControl actor,
+      final DeploymentDistributor deploymentDistributor) {
     final MutableWorkflowState workflowState = zeebeState.getWorkflowState();
     final boolean isDeploymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
     if (isDeploymentPartition) {
@@ -157,7 +161,9 @@ public final class EngineProcessors {
           catchEventBehavior,
           expressionProcessor,
           partitionsCount,
-          writers);
+          writers,
+          actor,
+          deploymentDistributor);
     } else {
       DeploymentEventProcessors.addDeploymentCreateProcessor(
           typedRecordProcessors, workflowState, deploymentResponder, partitionId);
