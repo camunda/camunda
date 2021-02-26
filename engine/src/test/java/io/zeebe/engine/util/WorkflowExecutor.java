@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.util;
 
+import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -80,19 +81,44 @@ public class WorkflowExecutor {
   private void activateAndFailJob(final StepActivateAndFailJob activateAndFailJob) {
     waitForJobToBeCreated(activateAndFailJob.getJobType());
 
-    engineRule
-        .jobs()
-        .withType(activateAndFailJob.getJobType())
-        .activate()
-        .getValue()
-        .getJobKeys()
-        .forEach(
-            jobKey -> {
-              if (activateAndFailJob.isUpdateRetries()) {
-                engineRule.job().withKey(jobKey).withRetries(5).updateRetries();
-              }
-              engineRule.job().withKey(jobKey).withRetries(1).fail();
-            });
+    if (activateAndFailJob.isUpdateRetries()) {
+      engineRule
+          .jobs()
+          .withType(activateAndFailJob.getJobType())
+          .activate()
+          .getValue()
+          .getJobKeys()
+          .forEach(
+              jobKey -> {
+                engineRule.job().withKey(jobKey).withRetries(0).fail();
+
+                final var incidentRecord =
+                    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                        .withJobKey(jobKey)
+                        .findFirst()
+                        .get();
+
+                engineRule.job().withKey(jobKey).withRetries(3).updateRetries();
+
+                engineRule
+                    .incident()
+                    .ofInstance(incidentRecord.getValue().getWorkflowInstanceKey())
+                    .withKey(incidentRecord.getKey())
+                    .resolve();
+                RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
+                    .withJobKey(jobKey)
+                    .await();
+              });
+
+    } else {
+      engineRule
+          .jobs()
+          .withType(activateAndFailJob.getJobType())
+          .activate()
+          .getValue()
+          .getJobKeys()
+          .forEach(jobKey -> engineRule.job().withKey(jobKey).withRetries(3).fail());
+    }
   }
 
   private void activateAndTimeoutJob(final StepActivateAndTimeoutJob activateAndTimeoutJob) {
