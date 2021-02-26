@@ -10,7 +10,6 @@ package io.zeebe.test.util.bpmn.random.blocks;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.zeebe.test.util.bpmn.random.ExecutionPath;
@@ -47,7 +46,8 @@ public final class ProcessBuilder {
 
   public BpmnModelInstance buildProcess() {
 
-    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(processId);
+    final io.zeebe.model.bpmn.builder.ProcessBuilder processBuilder =
+        Bpmn.createExecutableProcess(processId);
     AbstractFlowNodeBuilder<?, ?> processWorkInProgress =
         startEventBuilder.buildStartEvent(processBuilder);
 
