@@ -130,7 +130,7 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
-        git url: 'git@github.com:camunda-cloud/tasklist',
+        git url: 'https://github.com/camunda-cloud/tasklist.git',
             branch: "${params.BRANCH}",
             credentialsId: 'github-cloud-zeebe-tasklist-app',
             poll: false

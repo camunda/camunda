@@ -31,7 +31,7 @@ def seedJob = job('seed-job-tasklist') {
   scm {
     git {
       remote {
-        github "${githubOrga}/${gitRepository}", 'ssh'
+        github "${githubOrga}/${gitRepository}", 'https'
         credentials 'github-cloud-zeebe-tasklist-app'
       }
       branch gitBranch

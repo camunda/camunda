@@ -65,7 +65,7 @@ pipeline {
             poll: false
         }
         dir('tasklist') {
-          git url: 'git@github.com:camunda-cloud/tasklist',
+          git url: 'https://github.com/camunda-cloud/tasklist.git',
             branch: "${params.ZEEBE_TASKLIST_BRANCH}",
             credentialsId: 'github-cloud-zeebe-tasklist-app',
             poll: false
