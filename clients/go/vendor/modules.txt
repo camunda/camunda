@@ -124,7 +124,7 @@ github.com/stretchr/testify/suite
 ## explicit
 github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/wait
-# golang.org/x/net v0.0.0-20210224082022-3d97a244fca7
+# golang.org/x/net v0.0.0-20210226101413-39120d07d75e
 ## explicit
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
