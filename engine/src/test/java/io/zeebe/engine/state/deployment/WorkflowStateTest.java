@@ -43,38 +43,67 @@ public final class WorkflowStateTest {
   }
 
   @Test
-  public void shouldGetNextWorkflowVersion() {
+  public void shouldGetInitialWorkflowVersion() {
     // given
 
     // when
-    final long nextWorkflowVersion = workflowState.incrementAndGetWorkflowVersion("foo");
+    final long nextWorkflowVersion = workflowState.getWorkflowVersion("foo");
 
     // then
-    assertThat(nextWorkflowVersion).isEqualTo(1L);
+    assertThat(nextWorkflowVersion).isZero();
+  }
+
+  @Test
+  public void shouldGetWorkflowVersion() {
+    // given
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
+    final var workflowRecord = deploymentRecord.workflows().iterator().next();
+    workflowState.putWorkflow(workflowRecord.getKey(), workflowRecord);
+
+    // when
+    final long workflowVersion = workflowState.getWorkflowVersion("processId");
+
+    // then
+    assertThat(workflowVersion).isEqualTo(1L);
   }
 
   @Test
   public void shouldIncrementWorkflowVersion() {
     // given
-    workflowState.incrementAndGetWorkflowVersion("foo");
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
+    final var workflowRecord = deploymentRecord.workflows().iterator().next();
+    workflowState.putWorkflow(workflowRecord.getKey(), workflowRecord);
+
+    final DeploymentRecord deploymentRecord2 = creatingDeploymentRecord(zeebeState);
+    final var workflowRecord2 = deploymentRecord2.workflows().iterator().next();
+    workflowState.putWorkflow(workflowRecord2.getKey(), workflowRecord2);
 
     // when
-    final long nextWorkflowVersion = workflowState.incrementAndGetWorkflowVersion("foo");
+    workflowState.putWorkflow(workflowRecord2.getKey(), workflowRecord2);
 
     // then
-    assertThat(nextWorkflowVersion).isEqualTo(2L);
+    final long workflowVersion = workflowState.getWorkflowVersion("processId");
+    assertThat(workflowVersion).isEqualTo(2L);
   }
 
   @Test
   public void shouldNotIncrementWorkflowVersionForDifferentProcessId() {
     // given
-    workflowState.incrementAndGetWorkflowVersion("foo");
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
+    final var workflowRecord = deploymentRecord.workflows().iterator().next();
+    workflowState.putWorkflow(workflowRecord.getKey(), workflowRecord);
+
+    final DeploymentRecord deploymentRecord2 = creatingDeploymentRecord(zeebeState, "other");
+    final var workflowRecord2 = deploymentRecord2.workflows().iterator().next();
 
     // when
-    final long nextWorkflowVersion = workflowState.incrementAndGetWorkflowVersion("bar");
+    workflowState.putWorkflow(workflowRecord2.getKey(), workflowRecord2);
 
     // then
-    assertThat(nextWorkflowVersion).isEqualTo(1L);
+    final long workflowVersion = workflowState.getWorkflowVersion("processId");
+    assertThat(workflowVersion).isEqualTo(1L);
+    final long otherversion = workflowState.getWorkflowVersion("other");
+    assertThat(otherversion).isEqualTo(1L);
   }
 
   @Test
@@ -495,7 +524,7 @@ public final class WorkflowStateTest {
   public static DeploymentRecord creatingDeploymentRecord(
       final ZeebeState zeebeState, final String processId) {
     final MutableWorkflowState workflowState = zeebeState.getWorkflowState();
-    final int version = workflowState.incrementAndGetWorkflowVersion(processId);
+    final int version = workflowState.getWorkflowVersion(processId) + 1;
     return creatingDeploymentRecord(zeebeState, processId, version);
   }
 

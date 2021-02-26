@@ -16,7 +16,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
-import io.zeebe.engine.state.mutable.MutableWorkflowState;
+import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
@@ -41,7 +41,7 @@ public final class DeploymentTransformer {
   private static final Logger LOG = Loggers.WORKFLOW_PROCESSOR_LOGGER;
 
   private final BpmnValidator validator;
-  private final MutableWorkflowState workflowState;
+  private final WorkflowState workflowState;
   private final KeyGenerator keyGenerator;
   private final MessageDigest digestGenerator;
   // process id duplicate checking
@@ -176,11 +176,7 @@ public final class DeploymentTransformer {
           version = lastWorkflow.getVersion();
         } else {
           workflowKey = keyGenerator.nextKey();
-          // TODO(zell): after migrating all deployment processors to new event sourcing model we
-          // can remove this from here
-          // we should then get here the next version, but not changing the state
-          version = workflowState.incrementAndGetWorkflowVersion(bpmnProcessId);
-          workflowState.putLatestVersionDigest(wrapString(bpmnProcessId), resourceDigest);
+          version = workflowState.getWorkflowVersion(bpmnProcessId) + 1;
         }
 
         final var workflowRecord = deploymentEvent.workflows().add();

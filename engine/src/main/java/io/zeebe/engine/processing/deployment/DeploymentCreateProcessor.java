@@ -28,9 +28,8 @@ import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.TimerInstanceState;
+import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.engine.state.instance.TimerInstance;
-import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.WorkflowRecord;
@@ -38,7 +37,6 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.util.Either;
 import io.zeebe.util.sched.ActorControl;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
@@ -49,8 +47,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       "Expected to create timer for start event, but encountered the following error: %s";
 
   private final DeploymentTransformer deploymentTransformer;
-  private final MutableWorkflowState workflowState;
-  private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final WorkflowState workflowState;
   private final TimerInstanceState timerInstanceState;
   private final CatchEventBehavior catchEventBehavior;
   private final KeyGenerator keyGenerator;
@@ -68,7 +65,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final ActorControl actor,
       final DeploymentDistributor deploymentDistributor) {
     workflowState = zeebeState.getWorkflowState();
-    eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
     timerInstanceState = zeebeState.getTimerState();
     keyGenerator = zeebeState.getKeyGenerator();
     stateWriter = writers.state();
@@ -91,7 +87,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     final boolean accepted = deploymentTransformer.transform(deploymentEvent);
     if (accepted) {
       final long key = keyGenerator.nextKey();
-      workflowState.putDeployment(deploymentEvent);
 
       try {
         createTimerIfTimerStartEvent(command, streamWriter);
@@ -126,14 +121,11 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     for (final WorkflowRecord workflowRecord : record.getValue().workflows()) {
       final List<ExecutableStartEvent> startEvents =
           workflowState.getWorkflowByKey(workflowRecord.getKey()).getWorkflow().getStartEvents();
-      boolean hasAtLeastOneTimer = false;
 
       unsubscribeFromPreviousTimers(streamWriter, workflowRecord);
 
       for (final ExecutableCatchEventElement startEvent : startEvents) {
         if (startEvent.isTimer()) {
-          hasAtLeastOneTimer = true;
-
           // There are no variables when there is no process instance yet,
           // we use a negative scope key to indicate this
           final long scopeKey = -1L;
@@ -143,6 +135,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
             // todo(#4323): deal with this exceptional case without throwing an exception
             throw new EvaluationException(timerOrError.getLeft().getMessage());
           }
+
           catchEventBehavior.subscribeToTimerEvent(
               NO_ELEMENT_INSTANCE,
               NO_ELEMENT_INSTANCE,
@@ -151,10 +144,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
               timerOrError.get(),
               streamWriter);
         }
-      }
-
-      if (hasAtLeastOneTimer) {
-        eventScopeInstanceState.createIfNotExists(workflowRecord.getKey(), Collections.emptyList());
       }
     }
   }

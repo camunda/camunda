@@ -26,6 +26,8 @@ public interface WorkflowState {
 
   DirectBuffer getLatestVersionDigest(DirectBuffer processId);
 
+  int getWorkflowVersion(String bpmnProcessId);
+
   <T extends ExecutableFlowElement> T getFlowElement(
       long workflowKey, DirectBuffer elementId, Class<T> elementType);
 }
