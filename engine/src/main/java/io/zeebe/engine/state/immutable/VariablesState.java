@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.state.immutable;
 
-import io.zeebe.engine.state.instance.DbVariableState.VariableListener;
+import io.zeebe.engine.state.variable.DbVariableState.VariableListener;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 

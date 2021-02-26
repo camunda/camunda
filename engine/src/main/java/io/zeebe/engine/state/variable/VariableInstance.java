@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.state.instance;
+package io.zeebe.engine.state.variable;
 
 import io.zeebe.db.DbValue;
 import io.zeebe.msgpack.UnpackedObject;

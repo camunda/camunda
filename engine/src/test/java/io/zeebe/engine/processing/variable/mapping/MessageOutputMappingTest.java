@@ -17,11 +17,11 @@ import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.VariableIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -183,32 +183,35 @@ public final class MessageOutputMappingTest {
             .getFirst()
             .getKey();
 
-    final Record<VariableRecordValue> initialVariable =
+    final long latestPayloadVariablePosition =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
             .withWorkflowInstanceKey(workflowInstanceKey)
-            .withName(CORRELATION_VARIABLE)
-            .getFirst();
+            .filter(r -> variables.containsKey(r.getValue().getName()))
+            .limit(variables.size())
+            .map(Record::getPosition)
+            .max(Comparator.naturalOrder())
+            .orElseThrow();
 
     assertThat(
             RecordingExporter.variableRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
-                .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
+                .skipUntil(r -> r.getPosition() > latestPayloadVariablePosition)
                 .withScopeKey(elementInstanceKey)
                 .limit(expectedActivityVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> variable(v.getName(), v.getValue()))
-        .hasSize(expectedActivityVariables.size())
+        .hasSameSizeAs(expectedActivityVariables)
         .containsAll(expectedActivityVariables);
 
     assertThat(
             RecordingExporter.variableRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
-                .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
+                .skipUntil(r -> r.getPosition() > latestPayloadVariablePosition)
                 .withScopeKey(workflowInstanceKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> variable(v.getName(), v.getValue()))
-        .hasSize(expectedScopeVariables.size())
+        .hasSameSizeAs(expectedScopeVariables)
         .containsAll(expectedScopeVariables);
   }
 

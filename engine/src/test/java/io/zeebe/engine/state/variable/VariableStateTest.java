@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.state.instance;
+package io.zeebe.engine.state.variable;
 
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.test.util.MsgPackUtil.assertEquality;
@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.engine.util.ZeebeStateRule;
@@ -29,6 +30,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
@@ -586,23 +589,24 @@ public final class VariableStateTest {
   @Test
   public void shouldInvokeListenerIfSetVariablesLocalFromDocument() {
     // given
+    final Map<String, Object> document = Map.of("x", "foo", "y", "bar");
 
     // when
-    setVariablesLocalFromDocument(parent, asMsgPack("{'x':'foo', 'y':'bar'}"));
+    setVariablesLocalFromDocument(parent, asMsgPack(document));
 
     // then
-    assertThat(listener.created).hasSize(2);
-    assertThat(listener.created.get(0).name).isEqualTo("x");
-    assertThat(listener.created.get(0).value).isEqualTo(stringToMsgpack("foo"));
-    assertThat(listener.created.get(0).variableScopeKey).isEqualTo(parent);
-    assertThat(listener.created.get(0).rootScopeKey).isEqualTo(parent);
-
-    assertThat(listener.created.get(1).name).isEqualTo("y");
-    assertThat(listener.created.get(1).value).isEqualTo(stringToMsgpack("bar"));
-    assertThat(listener.created.get(1).variableScopeKey).isEqualTo(parent);
-    assertThat(listener.created.get(0).rootScopeKey).isEqualTo(parent);
-
     assertThat(listener.updated).isEmpty();
+    assertThat(listener.created).hasSize(document.size());
+    for (final Entry<String, Object> entry : document.entrySet()) {
+      assertThat(listener.created)
+          .anySatisfy(
+              v -> {
+                assertThat(v.name).isEqualTo(entry.getKey());
+                assertThat(v.value).isEqualTo(stringToMsgpack((String) entry.getValue()));
+                assertThat(v.rootScopeKey).isEqualTo(parent);
+                assertThat(v.variableScopeKey).isEqualTo(parent);
+              });
+    }
   }
 
   @Test
@@ -769,7 +773,8 @@ public final class VariableStateTest {
       created.clear();
     }
 
-    private class VariableChange {
+    private static class VariableChange {
+
       private final long key;
       private final String name;
       private final byte[] value;
