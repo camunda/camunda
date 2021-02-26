@@ -208,6 +208,7 @@ it('should add all external groups in auto generation', () => {
   node.find('[primary]').simulate('click');
 
   expect(node.find(ExternalSource)).not.toExist();
+  expect(node.find('.addExternalInfo')).toExist();
   expect(spy).toHaveBeenCalledWith([allExternalGroups], false);
 });
 

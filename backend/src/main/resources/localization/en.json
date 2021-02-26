@@ -220,7 +220,8 @@
       "eventGroups": "Event groups",
       "ungrouped": "Ungrouped",
       "search": "search for event groups",
-      "noGroups": "No event groups found"
+      "noGroups": "No event groups found",
+      "addExternalInfo": "All ingested External Events will be added."
     },
     "ingested": {
       "label": "Ingested External Events",

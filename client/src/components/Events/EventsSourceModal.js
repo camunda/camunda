@@ -269,6 +269,9 @@ export default withErrorHandling(
                     onChange={(externalSources) => this.setState({externalSources})}
                   />
                 )}
+                {autoGenerate && (
+                  <p className="addExternalInfo">{t('events.sources.addExternalInfo')}</p>
+                )}
               </Tabs.Tab>
             </Tabs>
           </Modal.Content>

@@ -220,7 +220,8 @@
       "eventGroups": "Eventgruppen",
       "ungrouped": "Ungruppiert",
       "search": "Suche nach Eventgruppen",
-      "noGroups": "Keine Eventgruppen gefunden"
+      "noGroups": "Keine Eventgruppen gefunden",
+      "addExternalInfo": "Alle Verarbeitete externe Events werden hinzugefügt."
     },
     "ingested": {
       "label": "Verarbeitete externe Events",
