@@ -206,7 +206,7 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
                             errorResponse.getErrorData().getInt(0, ByteOrder.LITTLE_ENDIAN);
                         LOG.debug(
                             "Received partition leader mismatch error from partition {} for deployment {}. Retrying.",
-                            partition,
+                            responsePartition,
                             pushRequest.deploymentKey());
 
                       } else if (errorResponse.getErrorCode() == ErrorCode.RESOURCE_EXHAUSTED) {

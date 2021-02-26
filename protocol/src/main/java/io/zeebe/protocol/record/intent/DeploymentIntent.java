@@ -18,8 +18,11 @@ package io.zeebe.protocol.record.intent;
 public enum DeploymentIntent implements Intent {
   CREATE((short) 0),
   CREATED((short) 1),
+
   DISTRIBUTE((short) 2),
-  DISTRIBUTED((short) 3);
+  DISTRIBUTED((short) 3),
+
+  FULLY_DISTRIBUTED((short) 4);
 
   private final short value;
 
@@ -41,6 +44,8 @@ public enum DeploymentIntent implements Intent {
         return DISTRIBUTE;
       case 3:
         return DISTRIBUTED;
+      case 4:
+        return FULLY_DISTRIBUTED;
       default:
         return UNKNOWN;
     }

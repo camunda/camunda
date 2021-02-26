@@ -8,6 +8,7 @@
 package io.zeebe.engine.state.immutable;
 
 import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistribution;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import java.util.function.ObjLongConsumer;
 
 public interface DeploymentState {
@@ -17,4 +18,6 @@ public interface DeploymentState {
   void foreachPending(ObjLongConsumer<PendingDeploymentDistribution> consumer);
 
   boolean hasPendingDeploymentDistribution(long deploymentKey);
+
+  DeploymentRecord getStoredDeploymentRecord(long deploymentKey);
 }

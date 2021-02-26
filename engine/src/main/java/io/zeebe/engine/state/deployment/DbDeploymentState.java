@@ -17,6 +17,7 @@ import io.zeebe.db.impl.DbNil;
 import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistribution;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.mutable.MutableDeploymentState;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import java.util.function.ObjLongConsumer;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -29,6 +30,9 @@ public final class DbDeploymentState implements MutableDeploymentState {
   private final DbInt partitionKey;
   private final DbCompositeKey<DbLong, DbInt> deploymentPartitionKey;
   private final ColumnFamily<DbCompositeKey<DbLong, DbInt>, DbNil> newPendingDeploymentColumnFamily;
+
+  private final DeploymentRaw deploymentRaw;
+  private final ColumnFamily<DbLong, DeploymentRaw> deploymentRawColumnFamily;
 
   private final ColumnFamily<DbLong, PendingDeploymentDistribution> pendingDeploymentColumnFamily;
 
@@ -53,6 +57,11 @@ public final class DbDeploymentState implements MutableDeploymentState {
             transactionContext,
             deploymentKey,
             pendingDeploymentDistribution);
+
+    deploymentRaw = new DeploymentRaw();
+    deploymentRawColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DEPLOYMENT_RAW, transactionContext, deploymentKey, deploymentRaw);
   }
 
   @Override
@@ -117,5 +126,32 @@ public final class DbDeploymentState implements MutableDeploymentState {
         });
 
     return hasPending.get();
+  }
+
+  @Override
+  public void storeDeploymentRecord(final long key, final DeploymentRecord value) {
+    deploymentKey.wrapLong(key);
+    deploymentRaw.setDeploymentRecord(value);
+    deploymentRawColumnFamily.put(deploymentKey, deploymentRaw);
+  }
+
+  @Override
+  public void removeDeploymentRecord(final long key) {
+    deploymentKey.wrapLong(key);
+    deploymentRawColumnFamily.delete(deploymentKey);
+  }
+
+  @Override
+  public DeploymentRecord getStoredDeploymentRecord(final long key) {
+    deploymentKey.wrapLong(key);
+
+    final var storedDeploymentRaw = deploymentRawColumnFamily.get(deploymentKey);
+
+    DeploymentRecord record = null;
+    if (storedDeploymentRaw != null) {
+      record = storedDeploymentRaw.getDeploymentRecord();
+    }
+
+    return record;
   }
 }

@@ -32,7 +32,7 @@ import org.junit.Test;
 
 public final class DeploymentReprocessingTest {
 
-  private static final int PARTITION_COUNT = 1;
+  private static final int PARTITION_COUNT = 2;
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -57,7 +57,7 @@ public final class DeploymentReprocessingTest {
         .expectCreated()
         .deploy();
 
-    RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED).await();
+    RecordingExporter.deploymentRecords(DeploymentIntent.FULLY_DISTRIBUTED).await();
 
     engine.stop();
 

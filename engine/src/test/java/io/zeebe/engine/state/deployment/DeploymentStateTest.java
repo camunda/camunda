@@ -7,10 +7,14 @@
  */
 package io.zeebe.engine.state.deployment;
 
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.zeebe.engine.util.ZeebeStateRule;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.record.value.deployment.ResourceType;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -108,5 +112,99 @@ public class DeploymentStateTest {
 
     // then
     assertThat(hasPending).isTrue();
+  }
+
+  @Test
+  public void shouldReturnNullOnRequestingStoredDeploymentWhenNothingStored() {
+    // given
+
+    // when
+    final var storedDeploymentRecord = deploymentState.getStoredDeploymentRecord(1);
+
+    // then
+    assertThat(storedDeploymentRecord).isNull();
+  }
+
+  @Test
+  public void shouldRemoveDeploymentIdempotent() {
+    // given
+
+    // when
+    deploymentState.removeDeploymentRecord(1);
+
+    // then
+    final var storedDeploymentRecord = deploymentState.getStoredDeploymentRecord(1);
+    assertThat(storedDeploymentRecord).isNull();
+  }
+
+  @Test
+  public void shouldStoreDeploymentInState() {
+    // given
+    final var deployment = createDeployment();
+
+    // when
+    deploymentState.storeDeploymentRecord(1, deployment);
+
+    // then
+    final var storedDeploymentRecord = deploymentState.getStoredDeploymentRecord(1);
+
+    assertThat(storedDeploymentRecord).isNotNull().isEqualTo(deployment);
+  }
+
+  @Test
+  public void shouldRemoveStoredDeployment() {
+    // given
+    final var deployment = createDeployment();
+    deploymentState.storeDeploymentRecord(1, deployment);
+
+    // when
+    deploymentState.removeDeploymentRecord(1);
+
+    // then
+    final var storedDeploymentRecord = deploymentState.getStoredDeploymentRecord(1);
+    assertThat(storedDeploymentRecord).isNull();
+  }
+
+  @Test
+  public void shouldRemoveDifferentDeployment() {
+    // given
+    final var deployment = createDeployment();
+    deploymentState.storeDeploymentRecord(1, deployment);
+    deploymentState.storeDeploymentRecord(2, deployment);
+
+    // when
+    deploymentState.removeDeploymentRecord(2);
+
+    // then
+    var storedDeploymentRecord = deploymentState.getStoredDeploymentRecord(2);
+    assertThat(storedDeploymentRecord).isNull();
+
+    storedDeploymentRecord = deploymentState.getStoredDeploymentRecord(1);
+    assertThat(storedDeploymentRecord).isNotNull().isEqualTo(deployment);
+  }
+
+  private DeploymentRecord createDeployment() {
+    final var modelInstance =
+        Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
+    final var deploymentRecord = new DeploymentRecord();
+
+    deploymentRecord
+        .resources()
+        .add()
+        .setResourceName(wrapString("resource"))
+        .setResourceType(ResourceType.BPMN_XML)
+        .setResource(wrapString(Bpmn.convertToString(modelInstance)));
+
+    deploymentRecord
+        .workflows()
+        .add()
+        .setChecksum(wrapString("checksum"))
+        .setBpmnProcessId("process")
+        .setKey(1)
+        .setVersion(1)
+        .setResourceName(wrapString("resource"))
+        .setResource(wrapString(Bpmn.convertToString(modelInstance)));
+
+    return deploymentRecord;
   }
 }

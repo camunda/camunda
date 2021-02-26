@@ -21,7 +21,6 @@ import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -47,10 +46,6 @@ public final class ReplayStateTest {
       EngineRule.singlePartition()
           .withOnProcessedCallback(record -> lastProcessedPosition = record.getPosition())
           .withOnSkippedCallback(record -> lastProcessedPosition = record.getPosition());
-
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
 
   @Parameter public TestCase testCase;
 

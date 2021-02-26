@@ -33,7 +33,7 @@ public final class SuccessfulDeploymentTest {
             .deploy();
 
     // then
-    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
     assertThat(deployment.getValue().getDeployedWorkflows()).hasSize(1);
   }
 }
