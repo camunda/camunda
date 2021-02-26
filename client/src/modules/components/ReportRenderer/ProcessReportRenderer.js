@@ -6,8 +6,9 @@
 
 import React from 'react';
 
-import {getFormatter, processResult} from './service';
+import {processResult} from 'services';
 
+import {getFormatter} from './service';
 import {Number, Table, Heatmap, Chart} from './visualizations';
 
 export default class ProcessReportRenderer extends React.Component {

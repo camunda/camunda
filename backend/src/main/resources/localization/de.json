@@ -764,9 +764,21 @@
       "label": "Mandant",
       "label-plural": "Mandanten"
     },
+    "processInstance": {
+      "label": "Prozessinstanz",
+      "label-plural": "Prozessinstanzen"
+    },
+    "incident": {
+      "label": "Zwischenfall",
+      "label-plural": "Zwischenfälle"
+    },
     "flowNode": {
       "label": "Prozessknoten",
       "label-plural": "Prozessknoten"
+    },
+    "userTask": {
+      "label": "Benutzeraufgabe",
+      "label-plural": "Benutzeraufgaben"
     },
     "multiSelect": {
       "selectAll": "Alles in Ansicht auswählen",

@@ -77,6 +77,13 @@ exports[`it should display correct configuration for barchart 1`] = `
             },
             "visualization": "bar",
           },
+          "result": Object {
+            "measures": Array [
+              Object {
+                "data": Array [],
+              },
+            ],
+          },
         }
       }
     />

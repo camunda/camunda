@@ -6,9 +6,10 @@
 
 import React from 'react';
 
-import {Table, Number, Chart, DecisionTable} from './visualizations';
+import {processResult} from 'services';
 
-import {getFormatter, processResult} from './service';
+import {Table, Number, Chart, DecisionTable} from './visualizations';
+import {getFormatter} from './service';
 
 const getComponent = (groupBy, visualization) => {
   switch (visualization) {

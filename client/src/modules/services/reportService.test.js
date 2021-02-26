@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {processResult} from './service';
+import {processResult} from './reportService';
 
 it('should process duration reports', () => {
   expect(

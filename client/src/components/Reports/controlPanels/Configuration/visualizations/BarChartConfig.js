@@ -21,10 +21,11 @@ export default function BarChartConfig({onChange, report}) {
   } = report;
 
   const durationReport = isDurationReport(combined ? Object.values(result.data)[0] : report);
+  const isMultiMeasure = combined ? false : result?.measures.length > 1;
 
   return (
     <div className="BarChartConfig">
-      {!combined && distributedBy.type === 'none' && (
+      {!combined && !isMultiMeasure && distributedBy.type === 'none' && (
         <fieldset className="colorSection">
           <legend>{t('report.config.colorPicker.legend')}</legend>
           <ColorPicker
@@ -57,23 +58,27 @@ export default function BarChartConfig({onChange, report}) {
           value={configuration.xLabel}
           onChange={({target: {value}}) => onChange({xLabel: {$set: value}})}
         />
-        <Input
-          placeholder={t('report.config.axisLabels.yAxis')}
-          type="text"
-          value={configuration.yLabel}
-          onChange={({target: {value}}) => onChange({yLabel: {$set: value}})}
-        />
-      </fieldset>
-      <fieldset>
-        <legend>
-          <Switch
-            checked={configuration.targetValue.active}
-            onChange={({target: {checked}}) => onChange({targetValue: {active: {$set: checked}}})}
-            label={t('report.config.goal.legend')}
+        {!isMultiMeasure && (
+          <Input
+            placeholder={t('report.config.axisLabels.yAxis')}
+            type="text"
+            value={configuration.yLabel}
+            onChange={({target: {value}}) => onChange({yLabel: {$set: value}})}
           />
-        </legend>
-        <ChartTargetInput {...{onChange, report}} />
+        )}
       </fieldset>
+      {!isMultiMeasure && (
+        <fieldset>
+          <legend>
+            <Switch
+              checked={configuration.targetValue.active}
+              onChange={({target: {checked}}) => onChange({targetValue: {active: {$set: checked}}})}
+              label={t('report.config.goal.legend')}
+            />
+          </legend>
+          <ChartTargetInput {...{onChange, report}} />
+        </fieldset>
+      )}
     </div>
   );
 }

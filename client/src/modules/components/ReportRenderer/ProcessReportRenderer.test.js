@@ -7,15 +7,20 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {processResult} from 'services';
+
 import ProcessReportRenderer from './ProcessReportRenderer';
 import {Number, Table} from './visualizations';
 
-import {processResult} from './service';
-
 jest.mock('./service', () => {
   return {
-    isEmpty: (str) => !str,
     getFormatter: (view) => (v) => v,
+  };
+});
+
+jest.mock('services', () => {
+  return {
+    ...jest.requireActual('services'),
     processResult: jest.fn().mockImplementation(({result}) => result),
   };
 });

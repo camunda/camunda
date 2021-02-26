@@ -8,9 +8,13 @@ import createTargetLineData from './createTargetLineData';
 
 it('should create two datasets with the same data for line chart with target values', () => {
   const result = {
-    data: [
-      {key: 'foo', value: 123},
-      {key: 'bar', value: 5},
+    measures: [
+      {
+        data: [
+          {key: 'foo', value: 123},
+          {key: 'bar', value: 5},
+        ],
+      },
     ],
   };
   const targetValue = {target: 10};
@@ -25,6 +29,7 @@ it('should create two datasets with the same data for line chart with target val
           type: '',
           value: '',
         },
+        view: {properties: ['frequency'], entity: 'flowNode'},
       },
       combined: false,
     },

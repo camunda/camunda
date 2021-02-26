@@ -27,6 +27,9 @@ const barReport = {
     distributedBy: {type: 'none', value: null},
     configuration,
   },
+  result: {
+    measures: [{data: []}],
+  },
 };
 
 it('it should display correct configuration for barchart', () => {
@@ -64,4 +67,21 @@ it('should not display color picker for hyper reports (distributed by userTask/a
   );
 
   expect(node.find('ColorPicker')).not.toExist();
+});
+
+it('should not show target value, color picker or y axis label for multi-measure reports', () => {
+  const node = shallow(
+    <BarChartConfig
+      report={{
+        ...barReport,
+        result: {
+          measures: [{data: []}, {data: []}],
+        },
+      }}
+    />
+  );
+
+  expect(node.find('ColorPicker')).not.toExist();
+  expect(node.find('[placeholder="xAxis"]')).not.toExist();
+  expect(node.find('ChartTargetInput')).not.toExist();
 });

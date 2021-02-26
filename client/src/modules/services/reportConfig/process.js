@@ -177,8 +177,8 @@ export const combinations = {
   },
   pi_multi: {
     none: ['number'],
-    date: ['table'],
-    variable: ['table'],
+    date: ['table', 'chart'],
+    variable: ['table', 'chart'],
   },
   in_resolutionDuration: {
     none: ['number'],
@@ -190,7 +190,7 @@ export const combinations = {
   },
   in_multi: {
     none: ['number'],
-    fn: ['table'],
+    fn: ['table', 'chart'],
   },
   fn_duration: {
     fn: ['table', 'chart', 'heat'],
@@ -204,9 +204,9 @@ export const combinations = {
     variable: ['table', 'chart'],
   },
   fn_multi: {
-    fn: ['table'],
-    date: ['table'],
-    variable: ['table'],
+    fn: ['table', 'chart'],
+    date: ['table', 'chart'],
+    variable: ['table', 'chart'],
   },
   userTask_duration: {
     task: ['table', 'chart', 'heat'],
@@ -220,9 +220,9 @@ export const combinations = {
     duration: ['table', 'chart'],
   },
   userTask_multi: {
-    task: ['table'],
-    date: ['table'],
-    user: ['table'],
+    task: ['table', 'chart'],
+    date: ['table', 'chart'],
+    user: ['table', 'chart'],
   },
   variable: {
     none: ['number'],

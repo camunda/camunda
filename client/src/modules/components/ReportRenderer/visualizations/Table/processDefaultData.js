@@ -4,10 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {reportConfig, formatters} from 'services';
+import {reportConfig, formatters, processResult} from 'services';
 import {t} from 'translation';
-
-import {processResult} from '../../service';
 
 const {formatReportResult, getRelativeValue, frequency, duration} = formatters;
 

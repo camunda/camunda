@@ -23,14 +23,14 @@ export default function createCombinedChartData(props) {
     return {
       label: reportsNames && reportsNames[index],
       data: report.map(({value}) => value),
-      ...createDatasetOptions(
-        visualization,
-        report,
+      ...createDatasetOptions({
+        type: visualization,
+        data: report,
         targetValue,
-        reportColors[index],
-        true,
-        isDark
-      ),
+        datasetColor: reportColors[index],
+        isStriped: true,
+        isDark,
+      }),
     };
   });
 

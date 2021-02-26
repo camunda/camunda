@@ -1,0 +1,38 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should return correct chart data object for multi-measure report 1`] = `
+Object {
+  "datasets": Array [
+    Object {
+      "backgroundColor": "#aec7e9",
+      "borderColor": "#aec7e9",
+      "borderWidth": 2,
+      "data": Array [
+        123,
+        5,
+      ],
+      "fill": false,
+      "label": "Flow Node Count",
+      "legendColor": "#aec7e9",
+      "yAxisID": "axis-0",
+    },
+    Object {
+      "backgroundColor": "#f68077",
+      "borderColor": "#f68077",
+      "borderWidth": 2,
+      "data": Array [
+        175824,
+        592754,
+      ],
+      "fill": false,
+      "label": "Flow Node Duration",
+      "legendColor": "#f68077",
+      "yAxisID": "axis-1",
+    },
+  ],
+  "labels": Array [
+    "foo",
+    "bar",
+  ],
+}
+`;

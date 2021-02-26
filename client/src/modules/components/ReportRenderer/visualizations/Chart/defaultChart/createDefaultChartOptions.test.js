@@ -15,7 +15,14 @@ it('should create dataset option for barchart report', () => {
     {key: 'foo', value: 123},
     {key: 'bar', value: 5},
   ];
-  const options = createDatasetOptions('bar', data, false, 'testColor', false, false);
+  const options = createDatasetOptions({
+    type: 'bar',
+    data,
+    targetValue: false,
+    datasetColor: 'testColor',
+    isStriped: false,
+    isDark: false,
+  });
   expect(options).toEqual({
     backgroundColor: 'testColor',
     borderColor: 'testColor',
@@ -29,7 +36,14 @@ it('should create dataset option for pie reports', () => {
     {key: 'foo', value: 123},
     {key: 'bar', value: 5},
   ];
-  const options = createDatasetOptions('pie', data, false, 'testColor', false, false);
+  const options = createDatasetOptions({
+    type: 'pie',
+    data,
+    targetValue: false,
+    datasetColor: 'testColor',
+    isStriped: false,
+    isDark: false,
+  });
   expect(options).toEqual({
     backgroundColor: ['#aec7e9', '#f68077'],
     borderColor: '#fff',
@@ -40,7 +54,7 @@ it('should create dataset option for pie reports', () => {
 it('should create default chart options', () => {
   expect(
     createDefaultChartOptions({
-      report: {data: {visualization: 'pie', configuration: {}}, result: {data: []}},
+      report: {data: {visualization: 'pie', configuration: {}}, result: {measures: [{data: []}]}},
     })
   ).toMatchSnapshot();
 });
@@ -49,6 +63,28 @@ it('should create bar options', () => {
   expect(
     createBarOptions({
       configuration: {},
+      isMultiMeasure: false,
+    })
+  ).toMatchSnapshot();
+});
+
+it('should create correct options for multi-measure charts', () => {
+  expect(
+    createDefaultChartOptions({
+      report: {
+        data: {
+          visualization: 'bar',
+          configuration: {},
+          view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
+          groupBy: {type: 'flowNodes'},
+        },
+        result: {
+          measures: [
+            {property: 'frequency', data: [{key: 'a', value: 123, label: 'a'}]},
+            {property: 'duration', data: [{key: 'a', value: 9001, label: 'a'}]},
+          ],
+        },
+      },
     })
   ).toMatchSnapshot();
 });

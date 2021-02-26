@@ -5,9 +5,11 @@
  */
 
 import React from 'react';
-import {withErrorHandling} from 'HOC';
 
-import {getFormatter, processResult as processSingleReportResult} from './service';
+import {withErrorHandling} from 'HOC';
+import {processResult as processSingleReportResult} from 'services';
+
+import {getFormatter} from './service';
 import {Table, Chart} from './visualizations';
 
 const getComponent = (visualization) => {

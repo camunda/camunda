@@ -764,9 +764,21 @@
       "label": "Tenant",
       "label-plural": "Tenants"
     },
+    "processInstance": {
+      "label": "Process Instance",
+      "label-plural": "Process Instances"
+    },
+    "incident": {
+      "label": "Incident",
+      "label-plural": "Incidents"
+    },
     "flowNode": {
       "label": "Flow Node",
       "label-plural": "Flow Nodes"
+    },
+    "userTask": {
+      "label": "User Task",
+      "label-plural": "User Tasks"
     },
     "multiSelect": {
       "selectAll": "Select all in view",

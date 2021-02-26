@@ -7,18 +7,16 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {processResult} from 'services';
+
 import CombinedReportRendererWithErrorHandling from './CombinedReportRenderer';
 import {Chart, Table} from './visualizations';
-
-import {processResult} from './service';
 
 const CombinedReportRenderer = CombinedReportRendererWithErrorHandling.WrappedComponent;
 
 jest.mock('./service', () => {
   return {
-    isEmpty: (str) => !str,
     getFormatter: (view) => (v) => v,
-    processResult: jest.fn().mockImplementation(({result}) => result),
   };
 });
 
@@ -27,6 +25,7 @@ jest.mock('services', () => {
   return {
     ...rest,
     formatters: {formatReportResult: (data, result) => result},
+    processResult: jest.fn().mockImplementation(({result}) => result),
   };
 });
 
