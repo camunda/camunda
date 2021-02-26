@@ -123,7 +123,8 @@ pipeline {
     timeout(time: 45, unit: 'MINUTES')
     withCredentials([
       usernamePassword(passwordVariable: 'NEXUS_PSW', usernameVariable: 'NEXUS_USR', credentialsId: 'camunda-nexus'),
-      usernamePassword(passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME', credentialsId: 'github-cloud-zeebe-tasklist-app'),
+      usernamePassword(passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME', credentialsId: 'camunda-jenkins-github'), // used for github release to zeebe repo
+      usernamePassword(passwordVariable: 'GITHUB_CLOUD_TOKEN', usernameVariable: 'GITHUB_CLOUD_USERNAME', credentialsId: 'github-cloud-zeebe-tasklist-app'), // used for maven release tags + commits
     ])
   }
 
