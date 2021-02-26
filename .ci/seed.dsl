@@ -1,4 +1,4 @@
-def githubOrga = 'zeebe-io'
+def githubOrga = 'camunda-cloud'
 def gitRepository = 'zeebe-tasklist'
 def gitBranch = 'master'
 
@@ -32,7 +32,7 @@ def seedJob = job('seed-job-tasklist') {
     git {
       remote {
         github "${githubOrga}/${gitRepository}", 'ssh'
-        credentials 'camunda-jenkins-github-ssh'
+        credentials 'github-cloud-zeebe-tasklist-app'
       }
       branch gitBranch
       extensions {
@@ -104,7 +104,7 @@ multibranchPipelineJob('zeebe-tasklist') {
       id 'zeebe-tasklist'
       repoOwner githubOrga
       repository gitRepository
-      scanCredentialsId 'github-zeebe-tasklist-app'
+      scanCredentialsId 'github-cloud-zeebe-tasklist-app'
     }
   }
 

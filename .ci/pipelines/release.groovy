@@ -123,16 +123,16 @@ pipeline {
     timeout(time: 45, unit: 'MINUTES')
     withCredentials([
       usernamePassword(passwordVariable: 'NEXUS_PSW', usernameVariable: 'NEXUS_USR', credentialsId: 'camunda-nexus'),
-      usernamePassword(passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME', credentialsId: 'camunda-jenkins-github'),
+      usernamePassword(passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME', credentialsId: 'github-cloud-zeebe-tasklist-app'),
     ])
   }
 
   stages {
     stage('Prepare') {
       steps {
-        git url: 'git@github.com:zeebe-io/zeebe-tasklist',
+        git url: 'git@github.com:camunda-cloud/tasklist',
             branch: "${params.BRANCH}",
-            credentialsId: 'camunda-jenkins-github-ssh',
+            credentialsId: 'github-cloud-zeebe-tasklist-app',
             poll: false
 
         container('maven') {
@@ -153,9 +153,7 @@ pipeline {
     stage('Maven Release') {
       steps {
         container('maven') {
-          sshagent(['camunda-jenkins-github-ssh']) {
-            runRelease(params)
-          }
+          runRelease(params)
         }
       }
     }

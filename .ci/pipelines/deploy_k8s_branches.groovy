@@ -64,10 +64,10 @@ pipeline {
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
         }
-        dir('zeebe-tasklist') {
-          git url: 'git@github.com:zeebe-io/zeebe-tasklist',
+        dir('tasklist') {
+          git url: 'git@github.com:camunda-cloud/tasklist',
             branch: "${params.ZEEBE_TASKLIST_BRANCH}",
-            credentialsId: 'camunda-jenkins-github-ssh',
+            credentialsId: 'github-cloud-zeebe-tasklist-app',
             poll: false
         }
 
@@ -85,7 +85,7 @@ pipeline {
             sh("""
               ./cmd/k8s/deploy-template-to-branch \
               ${WORKSPACE}/infra-core/camunda-ci-v2/deployments/zeebe-tasklist-branch \
-              ${WORKSPACE}/zeebe-tasklist/.ci/branch-deployment \
+              ${WORKSPACE}/tasklist/.ci/branch-deployment \
               ${params.BRANCH} \
               zeebe-tasklist
             """)
@@ -101,7 +101,7 @@ pipeline {
     stage('Update URLs in GitHub Status') {
       steps {
         script {
-          dir('zeebe-tasklist') {
+          dir('tasklist') {
             SHA = org.camunda.helper.GitUtilities.getGitSha(this)
           }
         }
@@ -110,8 +110,8 @@ pipeline {
             hosts = sh(script: 'cat hosts.txt', returnStdout: true).trim()
             def arr = hosts.split()
             arr.each { host -> 
-              withCredentials([usernamePassword(credentialsId: 'github-zeebe-tasklist-app', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
-                org.camunda.helper.GitHubAPI.postCommitStatus("${GITHUB_ACCESS_TOKEN}", 'zeebe-io', 'zeebe-tasklist', "${SHA}", "${host}", 'success', "https://${host}", 'deployment url')
+              withCredentials([usernamePassword(credentialsId: 'github-cloud-zeebe-tasklist-app', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
+                org.camunda.helper.GitHubAPI.postCommitStatus("${GITHUB_ACCESS_TOKEN}", 'camunda-cloud', 'tasklist', "${SHA}", "${host}", 'success', "https://${host}", 'deployment url')
               }
             }
           }

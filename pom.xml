@@ -436,15 +436,15 @@
   </distributionManagement>
 
   <scm>
-    <url>https://github.com/zeebe-io/zeebe-tasklist</url>
-    <connection>scm:git:git@github.com:zeebe-io/zeebe-tasklist.git</connection>
-    <developerConnection>scm:git:git@github.com:zeebe-io/zeebe-tasklist.git</developerConnection>
+    <url>https://github.com/camunda-cloud/tasklist</url>
+    <connection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda-cloud/tasklist.git</connection>
+    <developerConnection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda-cloud/tasklist.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
   <issueManagement>
     <system>Git</system>
-    <url>https://github.com/zeebe-io/zeebe-tasklist/issues</url>
+    <url>https://github.com/camunda-cloud/tasklist/issues</url>
   </issueManagement>
 
   <organization>

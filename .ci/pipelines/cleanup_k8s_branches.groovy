@@ -87,7 +87,7 @@ pipeline {
           sshagent(['camunda-jenkins-github-ssh']) {
             sh("""
               ./cmd/k8s/cleanup-branch-deployment \
-              zeebe-io/zeebe-tasklist \
+              camunda-cloud/tasklist \
               zeebe-tasklist \
               gcr.io/ci-30-162810/zeebe-tasklist
             """)
