@@ -174,6 +174,41 @@ describe('<Task />', () => {
     });
   });
 
+  it('should display gse notification on complete task', async () => {
+    const history = createMemoryHistory({
+      initialEntries: ['/0?gseUrl=https://www.testUrl.com'],
+    });
+
+    render(<Task />, {
+      wrapper: getWrapper({
+        history,
+        mocks: [
+          mockGetTaskCreated,
+          mockGetTaskDetailsClaimed,
+          mockTaskWithoutVariables('0'),
+          mockGetCurrentUser,
+          mockCompleteTask,
+          mockGetAllOpenTasks,
+        ],
+      }),
+    });
+
+    fireEvent.click(await screen.findByRole('button', {name: 'Complete Task'}));
+
+    await waitFor(() => {
+      expect(history.location.pathname).toBe('/');
+    });
+
+    expect(mockDisplayNotification).toHaveBeenCalledWith('info', {
+      headline: 'To continue to getting started, go back to',
+      isDismissable: false,
+      isGseNotification: true,
+      navigation: expect.objectContaining({
+        label: 'Cloud',
+      }),
+    });
+  });
+
   it('should change variable and complete task', async () => {
     const history = createMemoryHistory({
       initialEntries: ['/0'],

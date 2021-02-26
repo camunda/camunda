@@ -12,12 +12,20 @@ import {
   LogoIcon,
   UserControls,
 } from './styled';
+import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
+import {Location} from 'history';
 
 const Header: React.FC = () => {
   return (
     <HeaderContent>
       <BrandInfo>
-        <Brand to="/">
+        <Brand
+          to={(location: Location) => ({
+            ...location,
+            pathname: '/',
+            search: getPersistentQueryParams(location.search ?? ''),
+          })}
+        >
           <LogoIcon data-testid="logo" />
           <div>Zeebe Tasklist</div>
         </Brand>

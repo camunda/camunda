@@ -15,21 +15,23 @@ import {login} from 'modules/stores/login';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 
-const historyMock = createMemoryHistory();
-const Wrapper: React.FC = ({children}) => (
-  <MockedApolloProvider mocks={[mockGetCurrentUser]}>
-    <Router history={historyMock}>
-      <MockThemeProvider>{children}</MockThemeProvider>
-    </Router>
-  </MockedApolloProvider>
-);
+function createWrapper(history = createMemoryHistory()) {
+  const Wrapper: React.FC = ({children}) => (
+    <MockedApolloProvider mocks={[mockGetCurrentUser]}>
+      <Router history={history}>
+        <MockThemeProvider>{children}</MockThemeProvider>
+      </Router>
+    </MockedApolloProvider>
+  );
+  return Wrapper;
+}
 
 jest.mock('modules/stores/login');
 
 describe('<Header />', () => {
   it('should render header', async () => {
     render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: createWrapper(),
     });
     expect(screen.getByText('Zeebe Tasklist')).toBeInTheDocument();
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
@@ -38,19 +40,40 @@ describe('<Header />', () => {
   });
 
   it('should navigate to home page when brand label is clicked', async () => {
+    const historyMock = createMemoryHistory();
+
     render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: createWrapper(historyMock),
     });
     await screen.findByText('Demo User');
 
     fireEvent.click(screen.getByText('Zeebe Tasklist'));
 
     expect(historyMock.location.pathname).toBe('/');
+    expect(historyMock.location.search).toBe('');
+  });
+
+  it('should navigate to home page when brand label is clicked (with gse url)', async () => {
+    const historyMock = createMemoryHistory({
+      initialEntries: ['/?gseUrl=https://www.testUrl.com'],
+    });
+
+    render(<Header />, {
+      wrapper: createWrapper(historyMock),
+    });
+    await screen.findByText('Demo User');
+
+    fireEvent.click(screen.getByText('Zeebe Tasklist'));
+
+    expect(historyMock.location.pathname).toBe('/');
+    expect(historyMock.location.search).toBe(
+      'gseUrl=https%3A%2F%2Fwww.testUrl.com',
+    );
   });
 
   it('should handle logout', async () => {
     render(<Header />, {
-      wrapper: Wrapper,
+      wrapper: createWrapper(),
     });
 
     fireEvent.click(await screen.findByText('Demo User'));

@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {useParams} from 'react-router-dom';
+import {useParams, useLocation} from 'react-router-dom';
 import {useQuery, useMutation} from '@apollo/client';
 import {Form} from 'react-final-form';
 import {get, intersection} from 'lodash';
@@ -35,7 +35,6 @@ import {Variable} from 'modules/types';
 import {GET_TASKS} from 'modules/queries/get-tasks';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
-import {useLocation} from 'react-router-dom';
 import {FilterValues} from 'modules/constants/filterValues';
 import {useNotifications} from 'modules/notifications';
 import {getVariableFieldName} from './getVariableFieldName';
@@ -118,6 +117,23 @@ const Task: React.FC = () => {
             notifications.displayNotification('success', {
               headline: 'Task completed',
             });
+
+            const searchParams = new URLSearchParams(location.search);
+            const gseUrl = searchParams.get('gseUrl');
+
+            if (gseUrl !== null && !notifications.isGseNotificationVisible) {
+              notifications.displayNotification('info', {
+                headline: 'To continue to getting started, go back to',
+                isDismissable: false,
+                isGseNotification: true,
+                navigation: {
+                  label: 'Cloud',
+                  navigationHandler: () => {
+                    window.location.href = gseUrl;
+                  },
+                },
+              });
+            }
 
             history.push({
               pathname: Pages.Initial(),

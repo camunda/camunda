@@ -43,7 +43,9 @@ const Login: React.FC = () => {
 
             if (response.ok) {
               return history.push(
-                referrer?.pathname === undefined ? Pages.Initial() : referrer,
+                referrer?.pathname === undefined
+                  ? {...history.location, pathname: Pages.Initial()}
+                  : referrer,
               );
             }
 

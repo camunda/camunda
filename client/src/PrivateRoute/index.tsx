@@ -9,6 +9,7 @@ import {Route, Redirect, RouteProps} from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
 
 import {login} from 'modules/stores/login';
+import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
 interface Props extends RouteProps {
   redirectPath: string;
@@ -33,6 +34,7 @@ const PrivateRoute: React.FC<Props> = observer(
           state: {
             referrer: location,
           },
+          search: getPersistentQueryParams(location?.search ?? ''),
         }}
       />
     );
