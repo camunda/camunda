@@ -50,7 +50,7 @@ public final class VariableStateTest {
   private static final AtomicLong CHILD_KEY = new AtomicLong(1);
   private static final AtomicLong SECOND_CHILD_KEY = new AtomicLong(2);
   private static MutableElementInstanceState elementInstanceState;
-  private static MutableVariableState variablesState;
+  private static MutableVariableState variableState;
   private static RecordingVariableListener listener;
   private long parent;
   private long child;
@@ -60,10 +60,10 @@ public final class VariableStateTest {
   public static void setUp() {
     final ZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
     elementInstanceState = zeebeState.getElementInstanceState();
-    variablesState = zeebeState.getVariableState();
+    variableState = zeebeState.getVariableState();
 
     listener = new RecordingVariableListener();
-    variablesState.setListener(listener);
+    variableState.setListener(listener);
   }
 
   @Before
@@ -93,7 +93,7 @@ public final class VariableStateTest {
     setVariableLocal(parent, wrapString("var2"), var2Value);
 
     // when
-    final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(parent);
+    final DirectBuffer variablesDocument = variableState.getVariablesAsDocument(parent);
 
     // then
     assertEquality(variablesDocument, "{'var1': {'a': 1}, 'var2': {'x': 10}}");
@@ -105,7 +105,7 @@ public final class VariableStateTest {
     declareScope(parent);
 
     // when
-    final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(parent);
+    final DirectBuffer variablesDocument = variableState.getVariablesAsDocument(parent);
 
     // then
     assertEquality(variablesDocument, "{}");
@@ -126,7 +126,7 @@ public final class VariableStateTest {
     setVariableLocal(child, wrapString("c"), asMsgPack("3"));
 
     // when
-    final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(child);
+    final DirectBuffer variablesDocument = variableState.getVariablesAsDocument(child);
 
     // then
     assertEquality(variablesDocument, "{'a': 1, 'b': 2, 'c': 3}");
@@ -143,7 +143,7 @@ public final class VariableStateTest {
     setVariableLocal(child, wrapString("b"), asMsgPack("3"));
 
     // when
-    final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(child);
+    final DirectBuffer variablesDocument = variableState.getVariablesAsDocument(child);
 
     // then
     assertEquality(variablesDocument, "{'a': 1, 'b': 3}");
@@ -159,7 +159,7 @@ public final class VariableStateTest {
     setVariableLocal(child, wrapString("b"), asMsgPack("3"));
 
     // when
-    final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(parent);
+    final DirectBuffer variablesDocument = variableState.getVariablesAsDocument(parent);
 
     // then
     assertEquality(variablesDocument, "{'a': 1}");
@@ -177,7 +177,7 @@ public final class VariableStateTest {
     setVariableLocal(child2, wrapString("c"), asMsgPack("3"));
 
     // when
-    final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(child);
+    final DirectBuffer variablesDocument = variableState.getVariablesAsDocument(child);
 
     // then
     assertEquality(variablesDocument, "{'a': 1, 'b': 2}");
@@ -193,8 +193,8 @@ public final class VariableStateTest {
     setVariableLocal(child, wrapString("b"), asMsgPack("3"));
 
     // then
-    assertEquality(variablesState.getVariablesLocalAsDocument(parent), "{'a': 1}");
-    assertEquality(variablesState.getVariablesLocalAsDocument(child), "{'b': 3}");
+    assertEquality(variableState.getVariablesLocalAsDocument(parent), "{'a': 1}");
+    assertEquality(variableState.getVariablesLocalAsDocument(child), "{'b': 3}");
   }
 
   @Test
@@ -208,7 +208,7 @@ public final class VariableStateTest {
 
     // when
     final DirectBuffer variablesDocument =
-        variablesState.getVariablesAsDocument(
+        variableState.getVariablesAsDocument(
             parent, Arrays.asList(wrapString("a"), wrapString("c")));
 
     // then
@@ -228,7 +228,7 @@ public final class VariableStateTest {
 
     // when
     final DirectBuffer variablesDocument =
-        variablesState.getVariablesAsDocument(
+        variableState.getVariablesAsDocument(
             child2, Arrays.asList(wrapString("a"), wrapString("c")));
 
     // then
@@ -244,7 +244,7 @@ public final class VariableStateTest {
 
     // when
     final DirectBuffer variablesDocument =
-        variablesState.getVariablesAsDocument(
+        variableState.getVariablesAsDocument(
             parent, Arrays.asList(wrapString("a"), wrapString("c")));
 
     // then
@@ -262,10 +262,10 @@ public final class VariableStateTest {
     setVariablesLocalFromDocument(parent, document);
 
     // then
-    final DirectBuffer varA = variablesState.getVariableLocal(parent, wrapString("a"));
+    final DirectBuffer varA = variableState.getVariableLocal(parent, wrapString("a"));
     assertEquality(varA, "1");
 
-    final DirectBuffer varB = variablesState.getVariableLocal(parent, wrapString("b"));
+    final DirectBuffer varB = variableState.getVariableLocal(parent, wrapString("b"));
     assertEquality(varB, "2");
   }
 
@@ -281,13 +281,13 @@ public final class VariableStateTest {
     setVariablesLocalFromDocument(child, document);
 
     // then
-    final DirectBuffer varA = variablesState.getVariableLocal(child, wrapString("a"));
+    final DirectBuffer varA = variableState.getVariableLocal(child, wrapString("a"));
     assertEquality(varA, "1");
-    Assertions.assertThat(variablesState.getVariableLocal(parent, wrapString("a"))).isNull();
+    Assertions.assertThat(variableState.getVariableLocal(parent, wrapString("a"))).isNull();
 
-    final DirectBuffer varB = variablesState.getVariableLocal(child, wrapString("b"));
+    final DirectBuffer varB = variableState.getVariableLocal(child, wrapString("b"));
     assertEquality(varB, "2");
-    Assertions.assertThat(variablesState.getVariableLocal(parent, wrapString("b"))).isNull();
+    Assertions.assertThat(variableState.getVariableLocal(parent, wrapString("b"))).isNull();
   }
 
   @Test
@@ -301,7 +301,7 @@ public final class VariableStateTest {
     setVariablesLocalFromDocument(parent, document);
 
     // then
-    final DirectBuffer varA = variablesState.getVariableLocal(parent, wrapString("var"));
+    final DirectBuffer varA = variableState.getVariableLocal(parent, wrapString("var"));
     assertEquality(varA, "{'a': 1}");
   }
 
@@ -318,7 +318,7 @@ public final class VariableStateTest {
     setVariablesLocalFromDocument(parent, document);
 
     // then
-    final DirectBuffer varA = variablesState.getVariableLocal(parent, wrapString("a"));
+    final DirectBuffer varA = variableState.getVariableLocal(parent, wrapString("a"));
     assertEquality(varA, "2");
   }
 
@@ -332,10 +332,10 @@ public final class VariableStateTest {
     setVariableLocal(parent, wrapString("b"), asMsgPack("2"));
 
     // then
-    final DirectBuffer varA = variablesState.getVariableLocal(parent, wrapString("a"));
+    final DirectBuffer varA = variableState.getVariableLocal(parent, wrapString("a"));
     assertEquality(varA, "1");
 
-    final DirectBuffer varB = variablesState.getVariableLocal(parent, wrapString("b"));
+    final DirectBuffer varB = variableState.getVariableLocal(parent, wrapString("b"));
     assertEquality(varB, "2");
   }
 
@@ -345,7 +345,7 @@ public final class VariableStateTest {
     declareScope(parent);
 
     // when
-    final DirectBuffer variableValue = variablesState.getVariableLocal(parent, wrapString("a"));
+    final DirectBuffer variableValue = variableState.getVariableLocal(parent, wrapString("a"));
 
     // then
     assertThat(variableValue).isNull();
@@ -362,10 +362,10 @@ public final class VariableStateTest {
     setVariableLocal(child, wrapString("childVar2"), asMsgPack("3"));
 
     // when
-    variablesState.removeAllVariables(child);
+    variableState.removeAllVariables(child);
 
     // then
-    final DirectBuffer document = variablesState.getVariablesAsDocument(child);
+    final DirectBuffer document = variableState.getVariablesAsDocument(child);
 
     assertEquality(document, "{'parentVar1': 1}");
   }
@@ -381,10 +381,10 @@ public final class VariableStateTest {
     setVariableLocal(child, wrapString("childVar2"), asMsgPack("3"));
 
     // when
-    variablesState.removeScope(child);
+    variableState.removeScope(child);
 
     // then
-    final DirectBuffer document = variablesState.getVariablesAsDocument(child);
+    final DirectBuffer document = variableState.getVariablesAsDocument(child);
 
     assertEquality(document, "{}");
   }
@@ -409,16 +409,16 @@ public final class VariableStateTest {
     setVariablesFromDocument(child, document);
 
     // then
-    final DirectBuffer varA = variablesState.getVariableLocal(grandparent, wrapString("a"));
+    final DirectBuffer varA = variableState.getVariableLocal(grandparent, wrapString("a"));
     assertEquality(varA, "1");
 
-    final DirectBuffer varB = variablesState.getVariableLocal(parent, wrapString("b"));
+    final DirectBuffer varB = variableState.getVariableLocal(parent, wrapString("b"));
     assertEquality(varB, "2");
 
-    final DirectBuffer varC = variablesState.getVariableLocal(child, wrapString("c"));
+    final DirectBuffer varC = variableState.getVariableLocal(child, wrapString("c"));
     assertEquality(varC, "3");
 
-    final DirectBuffer varD = variablesState.getVariableLocal(grandparent, wrapString("d"));
+    final DirectBuffer varD = variableState.getVariableLocal(grandparent, wrapString("d"));
     assertEquality(varD, "4");
   }
 
@@ -436,13 +436,13 @@ public final class VariableStateTest {
     setVariablesFromDocument(parent, document);
 
     // then
-    final DirectBuffer varA = variablesState.getVariableLocal(parent, wrapString("a"));
+    final DirectBuffer varA = variableState.getVariableLocal(parent, wrapString("a"));
     assertEquality(varA, "1");
 
-    final DirectBuffer varBParent = variablesState.getVariableLocal(parent, wrapString("b"));
+    final DirectBuffer varBParent = variableState.getVariableLocal(parent, wrapString("b"));
     assertEquality(varBParent, "2");
 
-    final DirectBuffer varBChild = variablesState.getVariableLocal(child, wrapString("b"));
+    final DirectBuffer varBChild = variableState.getVariableLocal(child, wrapString("b"));
     assertEquality(varBChild, "'should-not-overwrite-this'");
   }
 
@@ -457,7 +457,7 @@ public final class VariableStateTest {
     setVariablesFromDocument(parent, document);
 
     // then
-    final DirectBuffer varA = variablesState.getVariableLocal(parent, wrapString("a"));
+    final DirectBuffer varA = variableState.getVariableLocal(parent, wrapString("a"));
     assertEquality(varA, "{'x': 1}");
   }
 
@@ -476,13 +476,13 @@ public final class VariableStateTest {
     setVariablesFromDocument(child, document);
 
     // then
-    final DirectBuffer varParent = variablesState.getVariableLocal(parent, wrapString("a"));
+    final DirectBuffer varParent = variableState.getVariableLocal(parent, wrapString("a"));
     assertEquality(varParent, "'should-not-overwrite-this'");
 
-    final DirectBuffer newVarParent = variablesState.getVariableLocal(parent, wrapString("b"));
+    final DirectBuffer newVarParent = variableState.getVariableLocal(parent, wrapString("b"));
     assertEquality(newVarParent, "2");
 
-    final DirectBuffer varChild = variablesState.getVariableLocal(child, wrapString("a"));
+    final DirectBuffer varChild = variableState.getVariableLocal(child, wrapString("a"));
     assertEquality(varChild, "1");
   }
 
@@ -493,7 +493,7 @@ public final class VariableStateTest {
     declareScope(parent, child);
 
     // when
-    final long parentScopeKey = variablesState.getParentScopeKey(child);
+    final long parentScopeKey = variableState.getParentScopeKey(child);
 
     // then
     assertThat(parentScopeKey).isEqualTo(parent);
@@ -505,7 +505,7 @@ public final class VariableStateTest {
     declareScope(parent);
 
     // when
-    final long parentScopeKey = variablesState.getParentScopeKey(parent);
+    final long parentScopeKey = variableState.getParentScopeKey(parent);
 
     // then
     assertThat(parentScopeKey).isEqualTo(VariableState.NO_PARENT);
@@ -526,10 +526,10 @@ public final class VariableStateTest {
     setVariablesFromDocument(parent2, asMsgPack("{'x': 3}"));
 
     // then
-    final DirectBuffer parent1Doc = variablesState.getVariablesAsDocument(parent1);
+    final DirectBuffer parent1Doc = variableState.getVariablesAsDocument(parent1);
     assertEquality(parent1Doc, "{'a': 1, 'b': 2}");
 
-    final DirectBuffer parent2Doc = variablesState.getVariablesAsDocument(parent2);
+    final DirectBuffer parent2Doc = variableState.getVariablesAsDocument(parent2);
     assertEquality(parent2Doc, "{'x': 3}");
   }
 
@@ -546,15 +546,15 @@ public final class VariableStateTest {
 
     // when
     final DirectBuffer variableFromLocalScope =
-        cloneBuffer(variablesState.getVariable(child2, wrapString("c")));
+        cloneBuffer(variableState.getVariable(child2, wrapString("c")));
 
     final DirectBuffer variableFromParentScope =
-        cloneBuffer(variablesState.getVariable(child2, wrapString("b")));
+        cloneBuffer(variableState.getVariable(child2, wrapString("b")));
 
     final DirectBuffer variableFromRootScope =
-        cloneBuffer(variablesState.getVariable(child2, wrapString("a")));
+        cloneBuffer(variableState.getVariable(child2, wrapString("a")));
 
-    final DirectBuffer variableFromChildScope = variablesState.getVariable(parent, wrapString("b"));
+    final DirectBuffer variableFromChildScope = variableState.getVariable(parent, wrapString("b"));
 
     // then
     assertEquality(variableFromLocalScope, "3");
@@ -596,6 +596,51 @@ public final class VariableStateTest {
     assertThat(listener.updated.get(0).value).isEqualTo("bar".getBytes());
     assertThat(listener.updated.get(0).variableScopeKey).isEqualTo(parent);
     assertThat(listener.updated.get(0).rootScopeKey).isEqualTo(parent);
+  }
+
+  @Test
+  public void shouldNotHaveVariableLocal() {
+    // given
+    declareScope(parent);
+    declareScope(parent, child);
+    setVariableLocal(parent, wrapString("x"), wrapString("foo"));
+    setVariableLocal(child, wrapString("y"), wrapString("foo"));
+
+    // when
+    final boolean hasVariable = variableState.hasVariableLocal(child, wrapString("x"));
+
+    // then
+    assertThat(hasVariable).isFalse();
+  }
+
+  @Test
+  public void shouldHaveVariableLocal() {
+    // given
+    declareScope(parent);
+    declareScope(parent, child);
+    setVariableLocal(parent, wrapString("x"), wrapString("foo"));
+    setVariableLocal(child, wrapString("x"), wrapString("foo"));
+
+    // when
+    final boolean hasVariable = variableState.hasVariableLocal(parent, wrapString("x"));
+
+    // then
+    assertThat(hasVariable).isTrue();
+  }
+
+  @Test
+  public void shouldNotHaveVariableIfScopeDoesNotExist() {
+    // given
+    final long scopeKey = child + 1;
+    declareScope(scopeKey);
+    setVariableLocal(scopeKey, wrapString("x"), wrapString("foo"));
+
+    // when
+    variableState.removeScope(scopeKey);
+    final boolean hasVariable = variableState.hasVariableLocal(scopeKey, wrapString("x"));
+
+    // then
+    assertThat(hasVariable).isFalse();
   }
 
   @Test
@@ -666,26 +711,26 @@ public final class VariableStateTest {
   @Test
   public void shouldSetTemporaryVariables() {
     // when
-    variablesState.setTemporaryVariables(parent, wrapString("a"));
-    variablesState.setTemporaryVariables(child, wrapString("b"));
+    variableState.setTemporaryVariables(parent, wrapString("a"));
+    variableState.setTemporaryVariables(child, wrapString("b"));
 
     // then
-    Assertions.assertThat(variablesState.getTemporaryVariables(parent)).isEqualTo(wrapString("a"));
-    Assertions.assertThat(variablesState.getTemporaryVariables(child)).isEqualTo(wrapString("b"));
+    Assertions.assertThat(variableState.getTemporaryVariables(parent)).isEqualTo(wrapString("a"));
+    Assertions.assertThat(variableState.getTemporaryVariables(child)).isEqualTo(wrapString("b"));
   }
 
   @Test
   public void shouldRemoveTemporaryVariables() {
     // given
-    variablesState.setTemporaryVariables(parent, wrapString("a"));
-    variablesState.setTemporaryVariables(child, wrapString("b"));
+    variableState.setTemporaryVariables(parent, wrapString("a"));
+    variableState.setTemporaryVariables(child, wrapString("b"));
 
     // when
-    variablesState.removeTemporaryVariables(parent);
+    variableState.removeTemporaryVariables(parent);
 
     // then
-    Assertions.assertThat(variablesState.getTemporaryVariables(parent)).isNull();
-    Assertions.assertThat(variablesState.getTemporaryVariables(child)).isEqualTo(wrapString("b"));
+    Assertions.assertThat(variableState.getTemporaryVariables(parent)).isNull();
+    Assertions.assertThat(variableState.getTemporaryVariables(child)).isEqualTo(wrapString("b"));
   }
 
   @Test
@@ -740,16 +785,16 @@ public final class VariableStateTest {
   }
 
   private void setVariablesFromDocument(final long scope, final DirectBuffer document) {
-    variablesState.setVariablesFromDocument(scope, WORKFLOW_KEY, document);
+    variableState.setVariablesFromDocument(scope, WORKFLOW_KEY, document);
   }
 
   private void setVariablesLocalFromDocument(final long scope, final DirectBuffer document) {
-    variablesState.setVariablesLocalFromDocument(scope, WORKFLOW_KEY, document);
+    variableState.setVariablesLocalFromDocument(scope, WORKFLOW_KEY, document);
   }
 
   public void setVariableLocal(
       final long scopeKey, final DirectBuffer name, final DirectBuffer value) {
-    variablesState.setVariableLocal(
+    variableState.setVariableLocal(
         scopeKey, WORKFLOW_KEY, name, 0, name.capacity(), value, 0, value.capacity());
   }
 

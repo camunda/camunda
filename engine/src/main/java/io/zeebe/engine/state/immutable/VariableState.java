@@ -32,6 +32,8 @@ public interface VariableState {
 
   boolean isEmpty();
 
+  boolean hasVariableLocal(long scopeKey, DirectBuffer name);
+
   void setListener(VariableListener listener);
 
   /**
