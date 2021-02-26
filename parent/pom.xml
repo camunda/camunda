@@ -746,6 +746,8 @@
           <configuration>
             <comparisonVersion>${backwards.compat.version}</comparisonVersion>
             <ignoredDifferencesFile>${ignored.changes.file}</ignoredDifferencesFile>
+            <!-- TODO(menski): Enable again after 1.0 release -->
+            <skip>true</skip>
           </configuration>
           <executions>
             <execution>
