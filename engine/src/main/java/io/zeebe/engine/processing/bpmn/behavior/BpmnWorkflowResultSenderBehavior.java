@@ -14,7 +14,7 @@ import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
-import io.zeebe.engine.state.immutable.VariablesState;
+import io.zeebe.engine.state.immutable.VariableState;
 import io.zeebe.engine.state.instance.AwaitWorkflowInstanceResultMetadata;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceResultRecord;
 import io.zeebe.protocol.record.ValueType;
@@ -29,13 +29,13 @@ public final class BpmnWorkflowResultSenderBehavior {
   private final WorkflowInstanceResultRecord resultRecord = new WorkflowInstanceResultRecord();
 
   private final ElementInstanceState elementInstanceState;
-  private final VariablesState variablesState;
+  private final VariableState variableState;
   private final TypedResponseWriter responseWriter;
 
   public BpmnWorkflowResultSenderBehavior(
       final ZeebeState zeebeState, final TypedResponseWriter responseWriter) {
     elementInstanceState = zeebeState.getElementInstanceState();
-    variablesState = zeebeState.getVariableState();
+    variableState = zeebeState.getVariableState();
     this.responseWriter = responseWriter;
   }
 
@@ -92,10 +92,10 @@ public final class BpmnWorkflowResultSenderBehavior {
 
     if (variablesToCollect.isEmpty()) {
       // collect all workflow instance variables
-      return variablesState.getVariablesAsDocument(context.getWorkflowInstanceKey());
+      return variableState.getVariablesAsDocument(context.getWorkflowInstanceKey());
 
     } else {
-      return variablesState.getVariablesAsDocument(
+      return variableState.getVariablesAsDocument(
           context.getWorkflowInstanceKey(), variablesToCollect);
     }
   }

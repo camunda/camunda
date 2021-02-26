@@ -11,17 +11,15 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
-import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.zeebe.util.buffer.BufferUtil;
 
 public final class ParallelGatewayProcessor implements BpmnElementProcessor<ExecutableFlowNode> {
 
-  private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
 
   public ParallelGatewayProcessor(final BpmnBehaviors behaviors) {
-    stateBehavior = behaviors.stateBehavior();
     stateTransitionBehavior = behaviors.stateTransitionBehavior();
   }
 
@@ -31,51 +29,29 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   }
 
   @Override
-  public void onActivating(final ExecutableFlowNode element, final BpmnElementContext context) {
+  public void onActivate(final ExecutableFlowNode element, final BpmnElementContext context) {
     // the joining of the incoming sequence flows into the parallel gateway happens in the
-    // sequence flow processor
-
-    // the activating event of the parallel gateway is written when all incoming sequence flows are
-    // taken
-
-    stateTransitionBehavior.transitionToActivated(context);
-  }
-
-  @Override
-  public void onActivated(final ExecutableFlowNode element, final BpmnElementContext context) {
-
-    stateTransitionBehavior.transitionToCompleting(context);
-  }
-
-  @Override
-  public void onCompleting(final ExecutableFlowNode element, final BpmnElementContext context) {
-
-    stateTransitionBehavior.transitionToCompleted(context);
-  }
-
-  @Override
-  public void onCompleted(final ExecutableFlowNode element, final BpmnElementContext context) {
+    // sequence flow processor. The activating event of the parallel gateway is written when all
+    // incoming sequence flows are taken
+    final var activated = stateTransitionBehavior.transitionToActivated(context);
+    final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+    final var completed = stateTransitionBehavior.transitionToCompleted(completing);
     // fork the workflow processing by taking all outgoing sequence flows of the parallel gateway
-
-    stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
-
-    stateBehavior.consumeToken(context);
-    stateBehavior.removeElementInstance(context);
+    stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
   }
 
   @Override
-  public void onTerminating(final ExecutableFlowNode element, final BpmnElementContext context) {
-
-    stateTransitionBehavior.transitionToTerminated(context);
+  public void onComplete(final ExecutableFlowNode element, final BpmnElementContext context) {
+    throw new UnsupportedOperationException(
+        String.format(
+            "Expected to explicitly process complete, but gateway %s has already been completed on processing activate",
+            BufferUtil.bufferAsString(context.getElementId())));
   }
 
   @Override
-  public void onTerminated(final ExecutableFlowNode element, final BpmnElementContext context) {
-
-    stateTransitionBehavior.onElementTerminated(element, context);
-
-    stateBehavior.consumeToken(context);
-    stateBehavior.removeElementInstance(context);
+  public void onTerminate(final ExecutableFlowNode element, final BpmnElementContext context) {
+    final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+    stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 
   @Override
