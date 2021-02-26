@@ -70,6 +70,8 @@ pipeline {
                         sh '.ci/scripts/distribution/prepare-go.sh'
                     }
 
+                    runMavenContainerCommand(".ci/scripts/distribution/ensure-naming-for-process.sh")
+
                     // prepare unstash directory for IT files - required since the file names will
                     // be the same as in the other stages. it's necessary to set the permissions to
                     // 0777 has shell scripts are executed as root, whereas Jenkins directives such
