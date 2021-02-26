@@ -7,9 +7,9 @@
  */
 package io.zeebe.engine.state.appliers;
 
-import io.zeebe.engine.processing.common.ErrorEventHandler;
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -19,18 +19,14 @@ public class JobErrorThrownApplier implements TypedEventApplier<JobIntent, JobRe
 
   private final MutableJobState jobState;
   private final MutableElementInstanceState elementInstanceState;
-  private final ErrorEventHandler errorEventHandler;
+  private final CatchEventAnalyzer stateAnalyzer;
 
   JobErrorThrownApplier(final ZeebeState state) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
 
-    errorEventHandler =
-        new ErrorEventHandler(
-            state.getWorkflowState(),
-            state.getElementInstanceState(),
-            state.getEventScopeInstanceState(),
-            state.getKeyGenerator());
+    stateAnalyzer =
+        new CatchEventAnalyzer(state.getWorkflowState(), state.getElementInstanceState());
   }
 
   @Override
@@ -42,7 +38,7 @@ public class JobErrorThrownApplier implements TypedEventApplier<JobIntent, JobRe
 
     final var errorCode = job.getErrorCodeBuffer();
 
-    if (errorEventHandler.hasCatchEvent(errorCode, serviceTaskInstance)) {
+    if (stateAnalyzer.hasCatchEvent(errorCode, serviceTaskInstance)) {
 
       // remove job reference to not cancel it while terminating the task
       serviceTaskInstance.setJobKey(-1L);
