@@ -115,6 +115,10 @@ const Task: React.FC = () => {
               },
             });
 
+            notifications.displayNotification('success', {
+              headline: 'Task completed',
+            });
+
             history.push({
               pathname: Pages.Initial(),
               search: history.location.search,

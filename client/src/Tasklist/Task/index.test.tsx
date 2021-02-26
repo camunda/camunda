@@ -42,6 +42,13 @@ import {mockGetAllOpenTasks} from 'modules/queries/get-tasks';
 import {mockClaimTask} from 'modules/mutations/claim-task';
 import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
 
+const mockDisplayNotification = jest.fn();
+jest.mock('modules/notifications', () => ({
+  useNotifications: () => ({
+    displayNotification: mockDisplayNotification,
+  }),
+}));
+
 type GetWrapperProps = {
   mocks: MockedResponse[];
   history: History;
@@ -134,6 +141,37 @@ describe('<Task />', () => {
     await waitFor(() => {
       expect(history.location.pathname).toBe('/');
     });
+
+    expect(mockDisplayNotification).toHaveBeenCalledWith('success', {
+      headline: 'Task completed',
+    });
+  });
+
+  it('should get error on complete task', async () => {
+    const history = createMemoryHistory({
+      initialEntries: ['/0'],
+    });
+
+    render(<Task />, {
+      wrapper: getWrapper({
+        history,
+        mocks: [
+          mockGetTaskCreated,
+          mockGetTaskDetailsClaimed,
+          mockTaskWithoutVariables('0'),
+          mockGetCurrentUser,
+        ],
+      }),
+    });
+
+    fireEvent.click(await screen.findByRole('button', {name: 'Complete Task'}));
+
+    await waitFor(() => {
+      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+        headline: 'Task could not be completed',
+        description: 'Service is not reachable',
+      });
+    });
   });
 
   it('should change variable and complete task', async () => {
@@ -163,6 +201,10 @@ describe('<Task />', () => {
 
     await waitFor(() => {
       expect(history.location.pathname).toBe('/');
+    });
+
+    expect(mockDisplayNotification).toHaveBeenCalledWith('success', {
+      headline: 'Task completed',
     });
   });
 
@@ -205,6 +247,10 @@ describe('<Task />', () => {
 
     await waitFor(() => {
       expect(history.location.pathname).toBe('/');
+    });
+
+    expect(mockDisplayNotification).toHaveBeenCalledWith('success', {
+      headline: 'Task completed',
     });
   });
 
