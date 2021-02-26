@@ -42,7 +42,7 @@ type FiltersType = {
  * Returns a query string for the filter objects
  * removes keys with empty values (null, "", []) so that they don't appear in URL
  */
-export function getFilterQueryString(filter = {}, name: any) {
+export function getFilterQueryString(filter = {}, name?: string) {
   const cleanedFilter = compactObject(filter);
   const filterString = `?filter=${JSON.stringify(cleanedFilter)}`;
   const nameString = `&name=${JSON.stringify(name)}`;
@@ -50,19 +50,16 @@ export function getFilterQueryString(filter = {}, name: any) {
 }
 
 export function parseQueryString(queryString = '') {
-  var params = {};
-
-  const queries = queryString.replace(/%22/g, '"').substring(1).split('&');
-
-  queries.forEach((item, index) => {
-    const [paramKey, paramValue] = queries[index].split('=');
-    if (isValidJSON(paramValue)) {
-      // @ts-expect-error ts-migrate(7053) FIXME: No index signature with a parameter of type 'strin... Remove this comment to see the full error message
-      params[paramKey] = JSON.parse(paramValue);
-    }
-  });
-
-  return params;
+  const searchParams = new URLSearchParams(queryString);
+  return Array.from(searchParams.entries()).reduce<{[key: string]: any}>(
+    (accumulator, [key, value]) => {
+      if (isValidJSON(value)) {
+        return {...accumulator, ...{[key]: JSON.parse(value)}};
+      }
+      return accumulator;
+    },
+    {}
+  );
 }
 
 /**

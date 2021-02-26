@@ -6,7 +6,7 @@
 
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
-export function concatUrl({
+export function generateQueryParams({
   bpmnProcessId,
   versions,
   hasFinishedInstances,
@@ -28,9 +28,7 @@ export function concatUrl({
     });
   }
 
-  return `/instances?filter=${JSON.stringify(filter)}&name=${JSON.stringify(
-    name
-  )}`;
+  return `?filter=${JSON.stringify(filter)}&name=${JSON.stringify(name)}`;
 }
 
 export function concatGroupTitle(

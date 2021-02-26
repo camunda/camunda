@@ -19,6 +19,7 @@ import {Instances} from './Instances';
 import {Instance} from './Instance';
 import GlobalStyles from './GlobalStyles';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
+import {GettingStartedExperience} from './GettingStartedExperience';
 import {CommonUiContext} from 'modules/CommonUiContext';
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
           <NetworkStatusWatcher />
           <CommonUiContext />
           <Router>
+            <GettingStartedExperience />
             <Switch>
               <Route path="/login" component={Login} />
               <Authentication>

@@ -101,13 +101,14 @@ describe('<Login />', () => {
     );
 
     const INITIAL_ROUTE = '/instances';
-    const mockHistory = createMemoryHistory({initialEntries: [INITIAL_ROUTE]});
+    const mockHistory = createMemoryHistory();
     mockHistory.push({
       pathname: '/login',
       state: {
         referrer: INITIAL_ROUTE,
       },
     });
+
     render(<Login />, {
       wrapper: createWrapper(mockHistory),
     });
@@ -127,6 +128,43 @@ describe('<Login />', () => {
     await waitFor(() =>
       expect(mockHistory.location.pathname).toBe(INITIAL_ROUTE)
     );
+  });
+
+  it('should redirect to the previous page with gse url', async () => {
+    mockServer.use(
+      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text('')))
+    );
+
+    const INITIAL_ROUTE = '/instances';
+    const mockHistory = createMemoryHistory();
+    mockHistory.push({
+      pathname: '/login',
+      state: {
+        referrer: INITIAL_ROUTE,
+      },
+      search: '?gseUrl=https://www.testUrl.com',
+    });
+
+    render(<Login />, {
+      wrapper: createWrapper(mockHistory),
+    });
+
+    fireEvent.change(screen.getByLabelText(/username/i), {
+      target: {
+        value: 'demo',
+      },
+    });
+    fireEvent.change(screen.getByLabelText(/password/i), {
+      target: {
+        value: 'demo',
+      },
+    });
+    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
+
+    await waitFor(() =>
+      expect(mockHistory.location.pathname).toBe(INITIAL_ROUTE)
+    );
+    expect(mockHistory.location.search).toBe('?gseUrl=https://www.testUrl.com');
   });
 
   it('should disable the login button when any field is empty', () => {

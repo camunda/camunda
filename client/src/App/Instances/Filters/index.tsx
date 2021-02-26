@@ -93,7 +93,6 @@ const Filters = observer(
     };
 
     componentDidMount = async () => {
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'filter' does not exist on type '{}'.
       const {filter, name} = parseQueryString(this.props.location.search);
       if (filter) {
         this.setFilter(filter);

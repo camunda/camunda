@@ -283,20 +283,67 @@ describe('Header', () => {
 
     fireEvent.click(await screen.findByText('Camunda Operate'));
     expect(MOCK_HISTORY.location.pathname).toBe('/');
+    expect(MOCK_HISTORY.location.search).toBe('');
 
     fireEvent.click(await screen.findByText('Running Instances'));
-    let searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
-    expect(searchParams.get('filter')).toBe('{"active":true,"incidents":true}');
+    expect(MOCK_HISTORY.location.search).toBe(
+      '?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D'
+    );
 
     fireEvent.click(await screen.findByText('Dashboard'));
     expect(MOCK_HISTORY.location.pathname).toBe('/');
+    expect(MOCK_HISTORY.location.search).toBe('');
 
     fireEvent.click(await screen.findByText('Filters'));
-    searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
-    expect(searchParams.get('filter')).toBe('{"active":true,"incidents":true}');
+    expect(MOCK_HISTORY.location.search).toBe(
+      '?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D'
+    );
 
     fireEvent.click(await screen.findByText('Incidents'));
-    searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
-    expect(searchParams.get('filter')).toBe('{"incidents":true}');
+    expect(MOCK_HISTORY.location.search).toBe(
+      '?filter=%7B%22incidents%22%3Atrue%7D'
+    );
+  });
+
+  it('should go to the correct pages when clicking on header links (with gse url)', async () => {
+    const MOCK_HISTORY = createMemoryHistory({
+      initialEntries: ['/?gseUrl=https://www.testUrl.com'],
+    });
+
+    const mockProps = {
+      history: MOCK_HISTORY,
+      location: location.instance,
+      ...mockCollapsablePanelProps,
+    };
+
+    render(<MockApp {...mockProps} />);
+    await waitForComponentToLoad();
+
+    fireEvent.click(await screen.findByText('Camunda Operate'));
+    expect(MOCK_HISTORY.location.pathname).toBe('/');
+    expect(MOCK_HISTORY.location.search).toBe(
+      '?gseUrl=https%3A%2F%2Fwww.testUrl.com'
+    );
+
+    fireEvent.click(await screen.findByText('Running Instances'));
+    expect(MOCK_HISTORY.location.search).toBe(
+      '?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D&gseUrl=https%3A%2F%2Fwww.testUrl.com'
+    );
+
+    fireEvent.click(await screen.findByText('Dashboard'));
+    expect(MOCK_HISTORY.location.pathname).toBe('/');
+    expect(MOCK_HISTORY.location.search).toBe(
+      '?gseUrl=https%3A%2F%2Fwww.testUrl.com'
+    );
+
+    fireEvent.click(await screen.findByText('Filters'));
+    expect(MOCK_HISTORY.location.search).toBe(
+      '?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D&gseUrl=https%3A%2F%2Fwww.testUrl.com'
+    );
+
+    fireEvent.click(await screen.findByText('Incidents'));
+    expect(MOCK_HISTORY.location.search).toBe(
+      '?filter=%7B%22incidents%22%3Atrue%7D&gseUrl=https%3A%2F%2Fwww.testUrl.com'
+    );
   });
 });

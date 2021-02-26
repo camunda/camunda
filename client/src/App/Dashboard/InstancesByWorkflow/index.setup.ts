@@ -24,6 +24,7 @@ const mockWithMultipleVersions = [
     ],
   }),
 ];
+
 const mockErrorResponse = {error: 'an error occured'};
 const mockEmptyResponse: any = [];
 

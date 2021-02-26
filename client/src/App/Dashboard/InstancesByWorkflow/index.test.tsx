@@ -118,7 +118,7 @@ describe('InstancesByWorkflow', () => {
     expect(workflowLink).toBeInTheDocument();
     fireEvent.click(workflowLink);
     expect(historyMock.location.search).toBe(
-      '?filter={"workflow":"orderProcess","version":"all","incidents":true,"active":true}&name="Order process"'
+      '?filter=%7B%22workflow%22%3A%22orderProcess%22%2C%22version%22%3A%22all%22%2C%22incidents%22%3Atrue%2C%22active%22%3Atrue%7D&name=%22Order+process%22'
     );
 
     expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
@@ -153,7 +153,7 @@ describe('InstancesByWorkflow', () => {
 
     fireEvent.click(firstVersion);
     expect(historyMock.location.search).toBe(
-      '?filter={"workflow":"mockWorkflow","version":"1","incidents":true,"active":true}&name="First Version"'
+      '?filter=%7B%22workflow%22%3A%22mockWorkflow%22%2C%22version%22%3A%221%22%2C%22incidents%22%3Atrue%2C%22active%22%3Atrue%7D&name=%22First+Version%22'
     );
 
     const secondVersion = screen.getByTitle(
@@ -174,7 +174,7 @@ describe('InstancesByWorkflow', () => {
 
     fireEvent.click(secondVersion);
     expect(historyMock.location.search).toBe(
-      '?filter={"workflow":"mockWorkflow","version":"2","incidents":true,"active":true}&name="Second Version"'
+      '?filter=%7B%22workflow%22%3A%22mockWorkflow%22%2C%22version%22%3A%222%22%2C%22incidents%22%3Atrue%2C%22active%22%3Atrue%7D&name=%22Second+Version%22'
     );
   });
 
@@ -208,7 +208,7 @@ describe('InstancesByWorkflow', () => {
     expect(workflowLink).toBeInTheDocument();
     fireEvent.click(workflowLink);
     expect(historyMock.location.search).toBe(
-      '?filter={"workflow":"loanProcess","version":"1","incidents":true,"active":true}&name="loanProcess"'
+      '?filter=%7B%22workflow%22%3A%22loanProcess%22%2C%22version%22%3A%221%22%2C%22incidents%22%3Atrue%2C%22active%22%3Atrue%7D&name=%22loanProcess%22'
     );
 
     expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
@@ -216,6 +216,51 @@ describe('InstancesByWorkflow', () => {
     );
     expect(screen.getByTestId('active-instances-badge')).toHaveTextContent(
       '122'
+    );
+  });
+
+  it('should navigate to correct urls when gseUrl is provided', async () => {
+    mockServer.use(
+      rest.get('/api/incidents/byWorkflow', (_, res, ctx) =>
+        res.once(ctx.json(mockWithMultipleVersions))
+      )
+    );
+
+    const historyMock = createMemoryHistory({
+      initialEntries: ['/?gseUrl=https://www.testUrl.com'],
+    });
+
+    render(<InstancesByWorkflow />, {
+      wrapper: createWrapper(historyMock),
+    });
+
+    const withinIncident = within(
+      await screen.findByTestId('incident-byWorkflow-0')
+    );
+
+    const workflowLink = withinIncident.getByText(
+      'Order process – 201 Instances in 2 Versions'
+    );
+
+    fireEvent.click(workflowLink);
+    expect(historyMock.location.search).toBe(
+      '?filter=%7B%22workflow%22%3A%22orderProcess%22%2C%22version%22%3A%22all%22%2C%22incidents%22%3Atrue%2C%22active%22%3Atrue%7D&name=%22Order+process%22&gseUrl=https%3A%2F%2Fwww.testUrl.com'
+    );
+
+    fireEvent.click(
+      withinIncident.getByTitle(
+        'Expand 201 Instances of Workflow Order process'
+      )
+    );
+
+    fireEvent.click(
+      screen.getByTitle(
+        'View 42 Instances in Version 1 of Workflow First Version'
+      )
+    );
+
+    expect(historyMock.location.search).toBe(
+      '?filter=%7B%22workflow%22%3A%22mockWorkflow%22%2C%22version%22%3A%221%22%2C%22incidents%22%3Atrue%2C%22active%22%3Atrue%7D&name=%22First+Version%22&gseUrl=https%3A%2F%2Fwww.testUrl.com'
     );
   });
 });

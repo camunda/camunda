@@ -5,14 +5,27 @@
  */
 
 import {getFilterQueryString, isVariableEmpty} from 'modules/utils/filter';
+import {mergeQueryParams} from 'modules/utils/mergeQueryParams';
+import {History, Location} from 'history';
+import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
-const setBrowserUrl = (
-  history: any,
-  location: any,
-  filter: any,
-  groupedWorkflows: any,
-  name: any
-) => {
+const setBrowserUrl = ({
+  history,
+  location,
+  filter,
+  groupedWorkflows,
+  name,
+}: {
+  history: History | null;
+  location: Location | null;
+  filter: any;
+  groupedWorkflows: any;
+  name?: string;
+}) => {
+  if (history === null || location === null) {
+    return;
+  }
+
   let workflowName;
   let urlFilterValues = {...filter};
 
@@ -31,7 +44,10 @@ const setBrowserUrl = (
 
   return history.push({
     pathname: location.pathname,
-    search: getFilterQueryString(urlFilterValues, workflowName),
+    search: mergeQueryParams({
+      newParams: getFilterQueryString(urlFilterValues, workflowName),
+      prevParams: getPersistentQueryParams(location.search),
+    }),
   });
 };
 

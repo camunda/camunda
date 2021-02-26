@@ -17,17 +17,9 @@ import {
 } from './styled';
 import {statisticsStore} from 'modules/stores/statistics';
 import {StatusMessage} from 'modules/components/StatusMessage';
-
-function getUrl({filter, hasFinishedInstances}: any) {
-  if (hasFinishedInstances) {
-    Object.assign(filter, {
-      completed: true,
-      canceled: true,
-    });
-  }
-
-  return `/instances?filter=${JSON.stringify(filter)}`;
-}
+import {generateQueryParams} from './generateQueryParams';
+import {mergeQueryParams} from 'modules/utils/mergeQueryParams';
+import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
 const MetricPanel = observer(() => {
   const {running, active, withIncidents, status} = statisticsStore.state;
@@ -44,9 +36,16 @@ const MetricPanel = observer(() => {
     <Panel data-testid="metric-panel">
       <Title
         data-testid="total-instances-link"
-        to={getUrl({
-          filter: {active: true, incidents: true},
-          hasFinishedInstances: running === 0,
+        to={(location) => ({
+          ...location,
+          pathname: '/instances',
+          search: mergeQueryParams({
+            newParams: generateQueryParams({
+              filter: {active: true, incidents: true},
+              hasFinishedInstances: running === 0,
+            }),
+            prevParams: getPersistentQueryParams(location.search),
+          }),
         })}
       >
         {status === 'fetched' && `${running} `}Running Instances in total
@@ -66,16 +65,30 @@ const MetricPanel = observer(() => {
       <LabelContainer>
         <Label
           data-testid="incident-instances-link"
-          to={getUrl({
-            filter: {incidents: true},
+          to={(location) => ({
+            ...location,
+            pathname: '/instances',
+            search: mergeQueryParams({
+              newParams: generateQueryParams({
+                filter: {incidents: true},
+              }),
+              prevParams: getPersistentQueryParams(location.search),
+            }),
           })}
         >
           Instances with Incident
         </Label>
         <Label
           data-testid="active-instances-link"
-          to={getUrl({
-            filter: {active: true},
+          to={(location) => ({
+            ...location,
+            pathname: '/instances',
+            search: mergeQueryParams({
+              newParams: generateQueryParams({
+                filter: {active: true},
+              }),
+              prevParams: getPersistentQueryParams(location.search),
+            }),
           })}
         >
           Active Instances

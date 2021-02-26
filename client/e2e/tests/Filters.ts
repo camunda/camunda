@@ -8,6 +8,7 @@ import {config} from '../config';
 import {setup} from './Filters.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
+import {convertToQueryString} from './utils/convertToQueryString';
 import {screen, within} from '@testing-library/testcafe';
 import {ClientFunction} from 'testcafe';
 
@@ -26,9 +27,14 @@ fixture('Filters')
 const getPathname = ClientFunction(() => window.location.hash);
 
 test('Initial url and filters should be correct', async (t) => {
-  await t
-    .expect(await getPathname())
-    .eql(`#/instances?filter={${encodeURI(`"active":true,"incidents":true`)}}`);
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+      }),
+    })}`
+  );
 
   await t
     .expect(screen.getByRole('checkbox', {name: 'Running Instances'}).checked)
@@ -47,9 +53,13 @@ test('Initial url and filters should be correct', async (t) => {
 
 test('Navigating in header should affect filters and url correctly', async (t) => {
   await t.click(screen.getByRole('listitem', {name: 'Incidents'}));
-  await t
-    .expect(await getPathname())
-    .eql(`#/instances?filter={${encodeURI(`"incidents":true`)}}`);
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        incidents: true,
+      }),
+    })}`
+  );
 
   await t
     .expect(screen.getByRole('checkbox', {name: 'Running Instances'}).checked)
@@ -66,9 +76,14 @@ test('Navigating in header should affect filters and url correctly', async (t) =
     .notOk();
 
   await t.click(screen.getByRole('listitem', {name: 'Running Instances'}));
-  await t
-    .expect(await getPathname())
-    .eql(`#/instances?filter={${encodeURI(`"active":true,"incidents":true`)}}`);
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+      }),
+    })}`
+  );
 
   await t
     .expect(screen.getByRole('checkbox', {name: 'Running Instances'}).checked)
@@ -108,13 +123,15 @@ test('Instance IDs filter', async (t) => {
     .eql(1);
 
   // changes reflected in the url
-  await t
-    .expect(await getPathname())
-    .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"ids":"${instanceId}"`
-      )}}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+        ids: instanceId,
+      }),
+    })}`
+  );
 
   // result is the one we filtered
   await t
@@ -144,9 +161,14 @@ test('Instance IDs filter', async (t) => {
     .eql('');
 
   // changes reflected in the url
-  await t
-    .expect(await getPathname())
-    .eql(`#/instances?filter={${encodeURI(`"active":true,"incidents":true`)}}`);
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+      }),
+    })}`
+  );
 });
 
 test('Error Message filter', async (t) => {
@@ -172,13 +194,15 @@ test('Error Message filter', async (t) => {
     .lt(instanceCount);
 
   // changes reflected in the url
-  await t
-    .expect(await getPathname())
-    .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"errorMessage":"`
-      )}${encodeURIComponent(errorMessage)}${encodeURI('"')}}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+        errorMessage: errorMessage,
+      }),
+    })}`
+  );
 
   await t.click(screen.getByRole('button', {name: /reset filters/i}));
 
@@ -195,9 +219,14 @@ test('Error Message filter', async (t) => {
     .eql('');
 
   // changes reflected in the url
-  await t
-    .expect(await getPathname())
-    .eql(`#/instances?filter={${encodeURI(`"active":true,"incidents":true`)}}`);
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+      }),
+    })}`
+  );
 });
 
 //https://jira.camunda.com/browse/OPE-1098
@@ -265,13 +294,17 @@ test.skip('End Date filter', async (t) => {
     )
     .lt(instanceCount);
 
-  await t
-    .expect(await getPathname())
-    .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"completed":true,"canceled":true,"endDate":"${endDate}"`
-      )}}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+        completed: true,
+        canceled: true,
+        endDate,
+      }),
+    })}`
+  );
 
   await t.click(screen.getByRole('button', {name: /reset filters/i}));
 
@@ -288,9 +321,14 @@ test.skip('End Date filter', async (t) => {
     .eql('');
 
   // changes reflected in the url
-  await t
-    .expect(await getPathname())
-    .eql(`#/instances?filter={${encodeURI(`"active":true,"incidents":true`)}}`);
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+      }),
+    })}`
+  );
 });
 
 test('Variable filter', async (t) => {
@@ -317,13 +355,15 @@ test('Variable filter', async (t) => {
     )
     .lt(instanceCount);
 
-  await t
-    .expect(await getPathname())
-    .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"variable":`
-      )}{${encodeURI(`"name":"filtersTest","value":"123"`)}}}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+        variable: {name: 'filtersTest', value: '123'},
+      }),
+    })}`
+  );
 
   await t.click(screen.getByRole('button', {name: /reset filters/i}));
 
@@ -341,9 +381,14 @@ test('Variable filter', async (t) => {
 
   await t.expect(screen.getByRole('textbox', {name: /value/i}).value).eql('');
 
-  await t
-    .expect(await getPathname())
-    .eql(`#/instances?filter={${encodeURI(`"active":true,"incidents":true`)}}`);
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+      }),
+    })}`
+  );
 });
 
 //https://jira.camunda.com/browse/OPE-1098
@@ -407,13 +452,17 @@ test.skip('Operation ID filter', async (t) => {
     )
     .eql(1);
 
-  await t
-    .expect(await getPathname())
-    .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"completed":true,"canceled":true,"batchOperationId":"${operationId}"`
-      )}}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+        completed: true,
+        canceled: true,
+        batchOperationId: operationId,
+      }),
+    })}`
+  );
 
   await t.click(screen.getByRole('button', {name: /reset filters/i}));
 
@@ -429,9 +478,14 @@ test.skip('Operation ID filter', async (t) => {
     .expect(screen.getByRole('textbox', {name: /operation id/i}).value)
     .eql('');
 
-  await t
-    .expect(await getPathname())
-    .eql(`#/instances?filter={${encodeURI(`"active":true,"incidents":true`)}}`);
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+      }),
+    })}`
+  );
 });
 
 test('Checkboxes', async (t) => {
@@ -450,7 +504,11 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .notOk();
 
-  await t.expect(await getPathname()).eql('#/instances?filter={}');
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({}),
+    })}`
+  );
 
   await t
     .click(screen.getByRole('checkbox', {name: 'Active'}))
@@ -467,9 +525,13 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .notOk();
 
-  await t
-    .expect(await getPathname())
-    .eql(`#/instances?filter={${encodeURI(`"active":true`)}}`);
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+      }),
+    })}`
+  );
 
   await t
     .click(screen.getByRole('checkbox', {name: 'Incidents'}))
@@ -486,9 +548,14 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .notOk();
 
-  await t
-    .expect(await getPathname())
-    .eql(`#/instances?filter={${encodeURI(`"active":true,"incidents":true`)}}`);
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+      }),
+    })}`
+  );
 
   await t
     .click(screen.getByRole('checkbox', {name: 'Finished Instances'}))
@@ -505,13 +572,17 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .ok();
 
-  await t
-    .expect(await getPathname())
-    .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"completed":true,"canceled":true`
-      )}}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+        completed: true,
+        canceled: true,
+      }),
+    })}`
+  );
+
   await t
     .click(screen.getByRole('checkbox', {name: 'Completed'}))
     .expect(screen.getByRole('checkbox', {name: 'Running Instances'}).checked)
@@ -527,13 +598,16 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .ok();
 
-  await t
-    .expect(await getPathname())
-    .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"canceled":true`
-      )}}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+        canceled: true,
+      }),
+    })}`
+  );
+
   await t
     .click(screen.getByRole('checkbox', {name: 'Canceled'}))
     .expect(screen.getByRole('checkbox', {name: 'Running Instances'}).checked)
@@ -549,9 +623,14 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .notOk();
 
-  await t
-    .expect(await getPathname())
-    .eql(`#/instances?filter={${encodeURI(`"active":true,"incidents":true`)}}`);
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+      }),
+    })}`
+  );
 
   await t
     .click(screen.getByRole('checkbox', {name: 'Finished Instances'}))
@@ -568,13 +647,16 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .ok();
 
-  await t
-    .expect(await getPathname())
-    .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"completed":true,"canceled":true`
-      )}}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+        completed: true,
+        canceled: true,
+      }),
+    })}`
+  );
 
   await t
     .click(screen.getByRole('button', {name: /reset filters/i}))
@@ -591,9 +673,14 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .notOk();
 
-  await t
-    .expect(await getPathname())
-    .eql(`#/instances?filter={${encodeURI(`"active":true,"incidents":true`)}}`);
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+      }),
+    })}`
+  );
 });
 
 test('Workflow Filter', async (t) => {
@@ -612,13 +699,17 @@ test('Workflow Filter', async (t) => {
     .expect(screen.getByRole('combobox', {name: 'Workflow Version'}).value)
     .eql('2');
 
-  await t
-    .expect(await getPathname())
-    .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"version":"2","workflow":"processWithMultipleVersions"`
-      )}}&${encodeURI(`name="Process With Multiple Versions"`)}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+        version: '2',
+        workflow: 'processWithMultipleVersions',
+      }),
+      name: '"Process With Multiple Versions"',
+    })}`
+  );
 
   await t.expect(screen.getByTestId('diagram').exists).ok();
 
@@ -645,13 +736,17 @@ test('Workflow Filter', async (t) => {
     )
     .ok();
 
-  await t
-    .expect(await getPathname())
-    .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"version":"all","workflow":"processWithMultipleVersions"`
-      )}}&${encodeURI(`name="Process With Multiple Versions"`)}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+        version: 'all',
+        workflow: 'processWithMultipleVersions',
+      }),
+      name: '"Process With Multiple Versions"',
+    })}`
+  );
 
   // reset the filters to start over
   await t.click(screen.getByRole('button', {name: /reset filters/i}));
@@ -673,13 +768,18 @@ test('Workflow Filter', async (t) => {
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('StartEvent_1');
 
-  await t
-    .expect(await getPathname())
-    .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"activityId":"StartEvent_1","version":"2","workflow":"processWithMultipleVersions"`
-      )}}&${encodeURI(`name="Process With Multiple Versions"`)}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+        activityId: 'StartEvent_1',
+        version: '2',
+        workflow: 'processWithMultipleVersions',
+      }),
+      name: '"Process With Multiple Versions"',
+    })}`
+  );
 
   // change workflow and see flow node filter has been reset
   await t
@@ -692,13 +792,17 @@ test('Workflow Filter', async (t) => {
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('');
 
-  await t
-    .expect(await getPathname())
-    .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"version":"1","workflow":"orderProcess"`
-      )}}&${encodeURI(`name="Order process"`)}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+        version: '1',
+        workflow: 'orderProcess',
+      }),
+      name: '"Order process"',
+    })}`
+  );
 });
 
 test('Workflow Filter - Interaction with diagram', async (t) => {
@@ -732,7 +836,14 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('')
     .expect(await getPathname())
-    .eql(`#/instances?filter={${encodeURI(`"active":true,"incidents":true`)}}`);
+    .eql(
+      `#/instances?${convertToQueryString({
+        filter: JSON.stringify({
+          active: true,
+          incidents: true,
+        }),
+      })}`
+    );
 
   // select a workflow that has only one version
   await t.click(workflowCombobox).click(
@@ -764,9 +875,15 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
     .eql('')
     .expect(await getPathname())
     .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"version":"1","workflow":"orderProcess"`
-      )}}&${encodeURI(`name="Order process"`)}`
+      `#/instances?${convertToQueryString({
+        filter: JSON.stringify({
+          active: true,
+          incidents: true,
+          version: '1',
+          workflow: 'orderProcess',
+        }),
+        name: '"Order process"',
+      })}`
     );
 
   // select a flow node without an instance from the diagram
@@ -779,13 +896,18 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('shipArticles');
 
-  await t
-    .expect(await getPathname())
-    .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"version":"1","workflow":"orderProcess","activityId":"shipArticles"`
-      )}}&${encodeURI(`name="Order process"`)}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+        version: '1',
+        workflow: 'orderProcess',
+        activityId: 'shipArticles',
+      }),
+      name: '"Order process"',
+    })}`
+  );
 
   // select a flow node with an instance from the diagram
   await t
@@ -798,13 +920,18 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('checkPayment');
 
-  await t
-    .expect(await getPathname())
-    .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"version":"1","workflow":"orderProcess","activityId":"checkPayment"`
-      )}}&${encodeURI(`name="Order process"`)}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      filter: JSON.stringify({
+        active: true,
+        incidents: true,
+        version: '1',
+        workflow: 'orderProcess',
+        activityId: 'checkPayment',
+      }),
+      name: '"Order process"',
+    })}`
+  );
 
   // select same flow node again and see filter is removed
   await t.click(
@@ -814,9 +941,15 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
   await t
     .expect(await getPathname())
     .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"version":"1","workflow":"orderProcess"`
-      )}}&${encodeURI(`name="Order process"`)}`
+      `#/instances?${convertToQueryString({
+        filter: JSON.stringify({
+          active: true,
+          incidents: true,
+          version: '1',
+          workflow: 'orderProcess',
+        }),
+        name: '"Order process"',
+      })}`
     )
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('');

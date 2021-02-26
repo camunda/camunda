@@ -28,6 +28,7 @@ import {instancesStore, MAX_INSTANCES_STORED} from 'modules/stores/instances';
 import {useNotifications} from 'modules/notifications';
 import usePrevious from 'modules/hooks/usePrevious';
 import {autorun} from 'mobx';
+import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
 const {TBody, TD} = Table;
 const ROW_HEIGHT = 38;
@@ -236,7 +237,11 @@ const Body = observer(function (props: any) {
             </TD>
             <TD>
               <Styled.InstanceAnchor
-                to={`/instances/${instance.id}`}
+                to={(location) => ({
+                  ...location,
+                  pathname: `/instances/${instance.id}`,
+                  search: getPersistentQueryParams(location.search),
+                })}
                 title={`View instance ${instance.id}`}
               >
                 {instance.id}

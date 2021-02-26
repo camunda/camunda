@@ -11,14 +11,11 @@ import {get, setResponseInterceptor} from 'modules/request';
 import {useNotifications} from 'modules/notifications';
 import {sessionValidationStore} from 'modules/stores/sessionValidation';
 import {logoutUrl} from 'modules/api/header';
+import {Location} from 'history';
+import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
 type Props = {
-  location: {
-    pathname: string;
-    state?: {
-      isLoggedIn?: boolean;
-    };
-  };
+  location: Location<{isLoggedIn?: boolean}>;
   children: React.ReactNode;
 };
 
@@ -74,7 +71,10 @@ const Authentication: React.FC<Props> = (props) => {
       <Redirect
         to={{
           pathname: '/login',
-          state: {referrer: props.location.pathname},
+          state: {
+            referrer: props.location.pathname,
+          },
+          search: getPersistentQueryParams(props.location.search),
         }}
         push={true}
       />

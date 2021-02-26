@@ -9,6 +9,7 @@ import {setup} from './Instances.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {getPathname} from './utils/getPathname';
+import {convertToQueryString} from './utils/convertToQueryString';
 import {screen, within} from '@testing-library/testcafe';
 
 fixture('Instances')
@@ -115,9 +116,17 @@ test('Select flow node in diagram', async (t) => {
     .ok()
     .expect(getPathname())
     .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"ids":"${instance.workflowInstanceKey}","version":"1","workflow":"orderProcess","activityId":"${shipArticlesTaskId}"`
-      )}}&name=${encodeURI('"Order process"')}`
+      `#/instances?${convertToQueryString({
+        filter: JSON.stringify({
+          active: true,
+          incidents: true,
+          ids: instance.workflowInstanceKey,
+          version: '1',
+          workflow: 'orderProcess',
+          activityId: shipArticlesTaskId,
+        }),
+        name: '"Order process"',
+      })}`
     );
 
   // Select "Check Payment" flow node
@@ -132,8 +141,16 @@ test('Select flow node in diagram', async (t) => {
     .eql(1)
     .expect(getPathname())
     .eql(
-      `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"ids":"${instance.workflowInstanceKey}","version":"1","workflow":"orderProcess","activityId":"${checkPaymentTaskId}"`
-      )}}&name=${encodeURI('"Order process"')}`
+      `#/instances?${convertToQueryString({
+        filter: JSON.stringify({
+          active: true,
+          incidents: true,
+          ids: instance.workflowInstanceKey,
+          version: '1',
+          workflow: 'orderProcess',
+          activityId: checkPaymentTaskId,
+        }),
+        name: '"Order process"',
+      })}`
     );
 });

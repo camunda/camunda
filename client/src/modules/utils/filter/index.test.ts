@@ -273,7 +273,6 @@ describe('modules/utils/filter', () => {
 
       const queryString = `?filter=${encodedFilter}`;
 
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
       expect(getFilterQueryString(DEFAULT_FILTER)).toBe(queryString);
     });
 
@@ -283,7 +282,6 @@ describe('modules/utils/filter', () => {
 
       const output = `?filter=${encodedFilter}`;
 
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
       expect(getFilterQueryString(valueWithArray)).toBe(output);
     });
   });

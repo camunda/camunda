@@ -10,7 +10,6 @@ import {createFilter, groupedWorkflowsMock} from 'modules/testUtils';
 
 const mockProps = {
   location: {
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
     search: getFilterQueryString({}),
   },
 };
@@ -36,7 +35,6 @@ const COMPLETE_FILTER = {
 const mockPropsWithDefaultFilter = {
   ...mockProps,
   location: {
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
     search: getFilterQueryString({active: true, incidents: true}),
   },
 };
@@ -44,7 +42,6 @@ const mockPropsWithDefaultFilter = {
 const mockPropsWithInitFilter = {
   ...mockProps,
   location: {
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
     search: getFilterQueryString(COMPLETE_FILTER),
   },
 };

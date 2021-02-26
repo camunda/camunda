@@ -7,9 +7,10 @@
 import React, {memo} from 'react';
 import Badge from 'modules/components/Badge';
 import * as Styled from './styled';
+import {Link} from 'react-router-dom';
 
 type BrandNavElementProps = {
-  to: string;
+  to: React.ComponentProps<typeof Link>['to'];
   dataTest: string;
   title: string;
   label: string;
@@ -29,7 +30,7 @@ export const BrandNavElement: React.FC<BrandNavElementProps> = memo((props) => (
 ));
 
 type LinkElementProps = {
-  to: string;
+  to: React.ComponentProps<typeof Link>['to'];
   dataTest: string;
   title: string;
   isActive: boolean;
@@ -56,6 +57,7 @@ export const LinkElement: React.FC<LinkElementProps> = memo((props) => (
 ));
 
 type NavElementProps = {
+  to: React.ComponentProps<typeof Link>['to'];
   dataTest: string;
   title: string;
   isActive: boolean;
@@ -73,6 +75,7 @@ export const NavElement: React.FC<NavElementProps> = memo((props) => (
       $isActive={props.isActive}
       title={props.title}
       data-testid={props.dataTest}
+      to={props.to}
       {...props.linkProps}
     >
       <Styled.NavigationLabel $isActive={props.isActive}>

@@ -7,6 +7,7 @@
 import {config} from '../config';
 import {screen} from '@testing-library/testcafe';
 import {ClientFunction} from 'testcafe';
+import {convertToQueryString} from './utils/convertToQueryString';
 const getPathname = ClientFunction(() => window.location.hash);
 
 fixture('Login')
@@ -64,5 +65,13 @@ test('Redirect to initial page after login', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('#/instances?filter={%22active%22:true,%22incidents%22:true}');
+
+    .eql(
+      `#/instances?${convertToQueryString({
+        filter: JSON.stringify({
+          active: true,
+          incidents: true,
+        }),
+      })}`
+    );
 });

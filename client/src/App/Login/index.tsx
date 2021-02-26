@@ -66,6 +66,7 @@ function Login() {
           clearStateLocally();
           history.push({
             pathname: history.location.state?.referrer ?? '/',
+            search: history.location.search,
             state: {
               isLoggedIn: true,
             },

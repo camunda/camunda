@@ -124,7 +124,7 @@ describe('IncidentsByError', () => {
       )
     );
     expect(historyMock.location.search).toBe(
-      '?filter={"errorMessage":"JSON%20path%20\'%24.paid\'%20has%20no%20result.","incidents":true}'
+      '?filter=%7B%22errorMessage%22%3A%22JSON+path+%27%24.paid%27+has+no+result.%22%2C%22incidents%22%3Atrue%7D'
     );
 
     fireEvent.click(expandButton);
@@ -141,7 +141,51 @@ describe('IncidentsByError', () => {
 
     fireEvent.click(firstVersion);
     expect(historyMock.location.search).toBe(
-      '?filter={"workflow":"mockWorkflow","version":"1","errorMessage":"JSON%20path%20\'%24.paid\'%20has%20no%20result.","incidents":true}'
+      '?filter=%7B%22workflow%22%3A%22mockWorkflow%22%2C%22version%22%3A%221%22%2C%22errorMessage%22%3A%22JSON+path+%27%24.paid%27+has+no+result.%22%2C%22incidents%22%3Atrue%7D'
+    );
+  });
+
+  it('should navigate to correct urls when gseUrl is provided', async () => {
+    mockServer.use(
+      rest.get('/api/incidents/byError', (_, res, ctx) =>
+        res.once(ctx.json(mockIncidentsByError))
+      )
+    );
+
+    const historyMock = createMemoryHistory({
+      initialEntries: ['/?gseUrl=https://www.testUrl.com'],
+    });
+
+    render(<IncidentsByError />, {
+      wrapper: createWrapper(historyMock),
+    });
+
+    const withinIncident = within(
+      await screen.findByTestId('incident-byError-0')
+    );
+
+    const expandButton = withinIncident.getByTitle(
+      "Expand 36 Instances with error JSON path '$.paid' has no result."
+    );
+
+    fireEvent.click(
+      withinIncident.getByTitle(
+        "View 36 Instances with error JSON path '$.paid' has no result."
+      )
+    );
+    expect(historyMock.location.search).toBe(
+      `?filter=%7B%22errorMessage%22%3A%22JSON+path+%27%24.paid%27+has+no+result.%22%2C%22incidents%22%3Atrue%7D&gseUrl=https%3A%2F%2Fwww.testUrl.com`
+    );
+
+    fireEvent.click(expandButton);
+
+    const firstVersion = withinIncident.getByTitle(
+      "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Workflow mockWorkflow"
+    );
+
+    fireEvent.click(firstVersion);
+    expect(historyMock.location.search).toBe(
+      '?filter=%7B%22workflow%22%3A%22mockWorkflow%22%2C%22version%22%3A%221%22%2C%22errorMessage%22%3A%22JSON+path+%27%24.paid%27+has+no+result.%22%2C%22incidents%22%3Atrue%7D&gseUrl=https%3A%2F%2Fwww.testUrl.com'
     );
   });
 });

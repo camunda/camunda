@@ -10,7 +10,7 @@ import {
   concatLabel,
   concatGroupLabel,
   concatButtonTitle,
-  concatUrl,
+  generateQueryParams,
 } from './service';
 
 describe('service', () => {
@@ -114,29 +114,29 @@ describe('service', () => {
     });
   });
 
-  describe('concatUrl', () => {
+  describe('generateQueryParams', () => {
     it('should get url - single version, finished instances', () => {
       expect(
-        concatUrl({
+        generateQueryParams({
           bpmnProcessId: 'Process_1',
           versions: [{version: 1}],
           hasFinishedInstances: true,
           name: 'Process_1',
         })
       ).toBe(
-        '/instances?filter={"workflow":"Process_1","version":"1","incidents":true,"active":true,"completed":true,"canceled":true}&name="Process_1"'
+        '?filter={"workflow":"Process_1","version":"1","incidents":true,"active":true,"completed":true,"canceled":true}&name="Process_1"'
       );
     });
 
     it('should get url - all versions, no finished instances', () => {
       expect(
-        concatUrl({
+        generateQueryParams({
           bpmnProcessId: 'Process_2',
           versions: [{version: 1}, {version: 2}],
           name: 'Process_2',
         })
       ).toBe(
-        '/instances?filter={"workflow":"Process_2","version":"all","incidents":true,"active":true}&name="Process_2"'
+        '?filter={"workflow":"Process_2","version":"all","incidents":true,"active":true}&name="Process_2"'
       );
     });
   });

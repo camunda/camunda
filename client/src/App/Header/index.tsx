@@ -25,12 +25,13 @@ import {labels, createTitle, PATHNAME} from './constants';
 import {User} from './User';
 import {NavElement, BrandNavElement, LinkElement} from './NavElements';
 import * as Styled from './styled';
+import {mergeQueryParams} from 'modules/utils/mergeQueryParams';
+import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
 type Props = {
   location: Location;
   isFiltersCollapsed: boolean;
   expandFilters: () => void;
-  onFilterReset?: () => void;
 };
 
 type State = {
@@ -59,7 +60,6 @@ const Header = observer(
         this.currentView().isInstances() &&
         prevProps.location.search !== location.search
       ) {
-        // @ts-expect-error ts-migrate(2339) FIXME: Property 'filter' does not exist on type '{}'.
         const filterFromURL = parseQueryString(location.search).filter;
         this.setState({filter: filterFromURL});
       } else if (!this.state.filter) {
@@ -86,44 +86,23 @@ const Header = observer(
       this.setState({forceRedirect: true});
     };
 
-    getFilterResetProps = (type: any) => {
-      const filters = {
-        instances: DEFAULT_FILTER,
-        filters: this.state.filter || {},
-        incidents: {incidents: true},
-      };
-      return {
-        onClick: (e: any) => {
-          e.preventDefault();
-          this.props.expandFilters();
-          // @ts-expect-error ts-migrate(2339) FIXME: Property 'onFilterReset' does not exist on type 'R... Remove this comment to see the full error message
-          this.props.onFilterReset(filters[type]);
-        },
-        to: ' ',
-      };
-    };
+    getQueryParams = (type: string) => {
+      let queryParams: string = '';
 
-    getListLinksProps = (type: any) => {
-      if (this.props.onFilterReset) {
-        return this.getFilterResetProps(type);
-      }
-
-      const queryStrings = {
-        filters: this.state.filter
+      if (type === 'filters') {
+        queryParams = this.state.filter
           ? // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
             getFilterQueryString(this.state.filter)
-          : '',
-        // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-        instances: getFilterQueryString(FILTER_SELECTION.running),
-        // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-        incidents: getFilterQueryString({incidents: true}),
-      };
+          : '';
+      } else if (type === 'instances') {
+        queryParams = `${getFilterQueryString(FILTER_SELECTION.running)}`;
+      } else if (type === 'incidents') {
+        queryParams = `${getFilterQueryString({
+          incidents: true,
+        })}`;
+      }
 
-      return {
-        // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-        to: `/instances${queryStrings[type]}`,
-        onClick: this.props.expandFilters,
-      };
+      return queryParams;
     };
 
     selectActiveCondition(type: any) {
@@ -184,7 +163,8 @@ const Header = observer(
         isActive: this.selectActiveCondition(type),
         title: createTitle(type, count),
         dataTest: 'header-link-' + type,
-        linkProps: this.getListLinksProps(type),
+        linkProps: {onClick: this.props.expandFilters},
+        queryParams: this.getQueryParams(type),
       };
     }
 
@@ -212,7 +192,14 @@ const Header = observer(
 
     render() {
       if (this.state.forceRedirect) {
-        return <Redirect to="/login" />;
+        return (
+          <Redirect
+            to={{
+              pathname: '/login',
+              search: getPersistentQueryParams(this.props.location.search),
+            }}
+          />
+        );
       }
 
       const brand = this.getLinkProperties('brand');
@@ -225,14 +212,28 @@ const Header = observer(
         <Styled.Header>
           <Styled.Menu role="navigation">
             <BrandNavElement
-              to="/"
+              to={(location: Location) => ({
+                ...location,
+                pathname: '/',
+                search: mergeQueryParams({
+                  newParams: brand.queryParams,
+                  prevParams: getPersistentQueryParams(location.search),
+                }),
+              })}
               dataTest={brand.dataTest}
               title={brand.title}
               label={labels['brand']}
             />
             <LinkElement
               dataTest={dashboard.dataTest}
-              to="/"
+              to={(location: Location) => ({
+                ...location,
+                pathname: '/',
+                search: mergeQueryParams({
+                  newParams: dashboard.queryParams,
+                  prevParams: getPersistentQueryParams(location.search),
+                }),
+              })}
               isActive={dashboard.isActive}
               title={dashboard.title}
               label={labels['dashboard']}
@@ -245,6 +246,14 @@ const Header = observer(
               count={instances.count}
               linkProps={instances.linkProps}
               type={BADGE_TYPE.RUNNING_INSTANCES}
+              to={(location: Location) => ({
+                ...location,
+                pathname: '/instances',
+                search: mergeQueryParams({
+                  newParams: instances.queryParams,
+                  prevParams: getPersistentQueryParams(location.search),
+                }),
+              })}
             />
             <Styled.FilterNavElement
               dataTest={filters.dataTest}
@@ -254,6 +263,14 @@ const Header = observer(
               count={filters.count}
               linkProps={filters.linkProps}
               type={BADGE_TYPE.FILTERS}
+              to={(location: Location) => ({
+                ...location,
+                pathname: '/instances',
+                search: mergeQueryParams({
+                  newParams: filters.queryParams,
+                  prevParams: getPersistentQueryParams(location.search),
+                }),
+              })}
             />
             <NavElement
               dataTest={incidents.dataTest}
@@ -263,6 +280,14 @@ const Header = observer(
               count={incidents.count}
               linkProps={incidents.linkProps}
               type={BADGE_TYPE.INCIDENTS}
+              to={(location: Location) => ({
+                ...location,
+                pathname: '/instances',
+                search: mergeQueryParams({
+                  newParams: incidents.queryParams,
+                  prevParams: getPersistentQueryParams(location.search),
+                }),
+              })}
             />
           </Styled.Menu>
           {this.currentView().isInstance() && (

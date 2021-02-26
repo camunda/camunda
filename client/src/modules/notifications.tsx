@@ -11,6 +11,7 @@ type Options = {
   headline: string;
   description?: string;
   isDismissable?: boolean;
+  navigation?: any;
 };
 
 type Notification = {
@@ -40,13 +41,14 @@ const NotificationProvider: React.FC<ProviderProps> = ({children}) => {
 
   const displayNotification: DisplayNotificationFn = async (
     appearance,
-    {headline, description, isDismissable}
+    {headline, description, isDismissable, navigation}
   ) => {
     return await notificationRef.current?.enqueueNotification({
       headline,
       description,
       appearance,
       userDismissable: isDismissable,
+      navigation,
     });
   };
 

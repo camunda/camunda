@@ -25,6 +25,7 @@ import {fetchGroupedWorkflows} from 'modules/api/instances';
 import {isEqual, isEmpty} from 'lodash';
 import {sanitizeFilter} from './utils/sanitizeFilter';
 import {setBrowserUrl} from './utils/setBrowserUrl';
+import {History, Location} from 'history';
 
 type State = {
   filter: unknown;
@@ -34,8 +35,8 @@ type State = {
   };
   groupedWorkflows: unknown;
   batchOperationId: string;
-  history: null | unknown;
-  location: null | unknown;
+  history: null | History;
+  location: null | Location;
   isInitialLoadComplete: boolean;
 };
 
@@ -73,19 +74,16 @@ class Filters {
       () => this.state.location !== null,
       () => {
         this.setFilterFromUrl();
-        // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-        const queryParams = parseQueryString(this.state.location.search);
+        const queryParams = parseQueryString(this.state.location?.search);
 
-        // @ts-expect-error ts-migrate(2339) FIXME: Property 'filter' does not exist on type '{}'.
         if (!isEqual(this.state.filter, queryParams.filter)) {
-          setBrowserUrl(
-            this.state.history,
-            this.state.location,
-            this.state.filter,
-            this.state.groupedWorkflows,
-            // @ts-expect-error ts-migrate(2339) FIXME: Property 'name' does not exist on type '{}'.
-            queryParams.name
-          );
+          setBrowserUrl({
+            history: this.state.history,
+            location: this.state.location,
+            filter: this.state.filter,
+            groupedWorkflows: this.state.groupedWorkflows,
+            name: queryParams.name,
+          });
         }
 
         this.completeInitialLoad();
@@ -95,7 +93,9 @@ class Filters {
     this.locationReactionDisposer = reaction(
       () => this.state.location,
       () => {
-        this.setFilterFromUrl();
+        if (this.state.location !== null) {
+          this.setFilterFromUrl();
+        }
       }
     );
 
@@ -104,13 +104,12 @@ class Filters {
         return;
       }
 
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 5 arguments, but got 4.
-      setBrowserUrl(
-        this.state.history,
-        this.state.location,
-        this.state.filter,
-        this.state.groupedWorkflows
-      );
+      setBrowserUrl({
+        history: this.state.history,
+        location: this.state.location,
+        filter: this.state.filter,
+        groupedWorkflows: this.state.groupedWorkflows,
+      });
     });
   }
 
