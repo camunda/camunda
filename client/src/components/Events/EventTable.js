@@ -185,17 +185,17 @@ export default withErrorHandling(
         <div className="EventTable" ref={this.container}>
           <div className="header">
             <b>{t('events.list')}</b>
-            <Switch
-              disabled={this.camundaSourcesAdded()}
-              checked={!this.camundaSourcesAdded() && showSuggested}
-              onChange={({target: {checked}}) =>
-                this.setState({showSuggested: checked}, async () =>
-                  this.setState({events: await this.loadEvents(searchQuery)})
-                )
-              }
-              title={this.camundaSourcesAdded() ? t('events.table.noSuggestionsMessage') : ''}
-              label={t('events.table.showSuggestions')}
-            />
+            {eventSources.length === 1 && eventSources[0].configuration.includeAllGroups && (
+              <Switch
+                checked={showSuggested}
+                label={t('events.table.showSuggestions')}
+                onChange={({target: {checked}}) =>
+                  this.setState({showSuggested: checked}, async () =>
+                    this.setState({events: await this.loadEvents(searchQuery)})
+                  )
+                }
+              />
+            )}
             <EventsSources sources={eventSources} onChange={this.props.onSourcesChange} />
             <div className="searchContainer">
               <Icon className="searchIcon" type="search" />

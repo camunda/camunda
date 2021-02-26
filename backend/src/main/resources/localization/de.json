@@ -164,8 +164,7 @@
       "allMapped": "Keine Events verfügbar.",
       "seeDocs": "Keine Events verfügbar. Informationen zum Hinzufügen von Events finden Sie in der ",
       "documentation": "Dokumentation",
-      "showSuggestions": "Zeige empfohlene Events",
-      "noSuggestionsMessage": "Nur für externe Events verfügbar"
+      "showSuggestions": "Zeige empfohlene Events"
     },
     "deleteWarning": "Der '{name}' Prozess wird endgültig gelöscht. Dies wird alle assoziierten Berichte, innerhalb und außerhalb von Sammlungen löschen.",
     "publishModal": {
