@@ -21,7 +21,14 @@ import {
 import {Table, RowTH, TD, TR} from 'modules/components/Table';
 import {formatDate} from 'modules/utils/formatDate';
 import {TaskStates} from 'modules/constants/taskStates';
-import {Container, ClaimButton} from './styled';
+import {
+  Container,
+  ClaimButton,
+  Hint,
+  Info,
+  AssigneeTD,
+  Assignee,
+} from './styled';
 import {GET_TASKS} from 'modules/queries/get-tasks';
 import {FilterValues} from 'modules/constants/filterValues';
 import {getSearchParam} from 'modules/utils/getSearchParam';
@@ -99,6 +106,30 @@ const Details: React.FC = () => {
     },
   } = data;
 
+  const handleClick = async () => {
+    try {
+      if (assignee !== null) {
+        await unclaimTask();
+      } else {
+        await claimTask();
+      }
+    } catch (error) {
+      if (shouldDisplayNotification(error.message)) {
+        notifications.displayNotification('error', {
+          headline: assignee
+            ? 'Task could not be unclaimed'
+            : 'Task could not be claimed',
+          description: getTaskAssignmentChangeErrorMessage(error.message),
+        });
+      }
+
+      // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getTaskAssigmentChangeErrorMessage
+      if (shouldFetchMore(error.message)) {
+        fetchMore({variables: {id}});
+      }
+    }
+  };
+
   return (
     <Container>
       <Table data-testid="details-table">
@@ -124,73 +155,26 @@ const Details: React.FC = () => {
 
           <TR>
             <RowTH>Assignee</RowTH>
-            <TD data-testid="assignee">
-              {assignee ? (
-                <>
-                  {assignee.firstname} {assignee.lastname}
-                  {taskState === TaskStates.Created && (
-                    <ClaimButton
-                      variant="small"
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await unclaimTask();
-                        } catch (error) {
-                          if (shouldDisplayNotification(error.message)) {
-                            notifications.displayNotification('error', {
-                              headline: 'Task could not be unclaimed',
-                              description: getTaskAssignmentChangeErrorMessage(
-                                error.message,
-                              ),
-                            });
-                          }
-
-                          // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getTaskAssignmentChangeErrorMessage
-                          if (shouldFetchMore(error.message)) {
-                            fetchMore({variables: {id}});
-                          }
-                          // Service is not reachable
-                        }
-                      }}
-                    >
-                      Unclaim
-                    </ClaimButton>
-                  )}
-                </>
-              ) : (
-                <>
-                  --
-                  {taskState === TaskStates.Created && (
-                    <ClaimButton
-                      variant="small"
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await claimTask();
-                        } catch (error) {
-                          if (shouldDisplayNotification(error.message)) {
-                            notifications.displayNotification('error', {
-                              headline: 'Task could not be claimed',
-                              description: getTaskAssignmentChangeErrorMessage(
-                                error.message,
-                              ),
-                            });
-                          }
-
-                          // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getTaskAssignmentChangeErrorMessage
-                          if (shouldFetchMore(error.message)) {
-                            fetchMore({variables: {id}});
-                          }
-                          // Service is not reachable
-                        }
-                      }}
-                    >
-                      Claim
-                    </ClaimButton>
-                  )}
-                </>
+            <AssigneeTD>
+              <Assignee data-testid="assignee-task-details">
+                {assignee ? `${assignee.firstname} ${assignee.lastname}` : '--'}
+                {taskState === TaskStates.Created && (
+                  <ClaimButton
+                    variant="small"
+                    type="button"
+                    onClick={() => handleClick()}
+                  >
+                    {assignee ? 'Unclaim' : 'Claim'}
+                  </ClaimButton>
+                )}
+              </Assignee>
+              {!assignee && (
+                <Hint>
+                  <Info />
+                  Claim the Task to start working on it
+                </Hint>
               )}
-            </TD>
+            </AssigneeTD>
           </TR>
         </tbody>
       </Table>

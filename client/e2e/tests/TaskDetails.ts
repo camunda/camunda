@@ -65,9 +65,12 @@ test('load task details when a task is selected', async (t) => {
       withinDetailsTable.getByRole('columnheader', {name: 'Assignee'}).exists,
     )
     .ok()
-    .expect(withinDetailsTable.getByText('--').exists)
-    .ok()
     .expect(withinDetailsTable.getByRole('button', {name: 'Claim'}).exists)
+    .ok()
+    .expect(
+      within(screen.getByTestId('assignee-task-details')).getByText('--')
+        .exists,
+    )
     .ok();
 });
 
@@ -80,27 +83,34 @@ test('claim and unclaim task', async (t) => {
 
   await t.expect(screen.queryByTestId('details-table').exists).ok();
 
-  const withinDetailsTable = within(screen.getByTestId('details-table'));
   await t
-    .expect(withinDetailsTable.getByRole('button', {name: 'Claim'}).exists)
+    .expect(screen.getByRole('button', {name: 'Claim'}).exists)
     .ok()
     .expect(screen.queryByRole('button', {name: 'Complete Task'}).exists)
     .notOk();
 
+  await t.click(screen.getByRole('button', {name: 'Claim'}));
+
   await t
-    .click(withinDetailsTable.getByRole('button', {name: 'Claim'}))
-    .expect(withinDetailsTable.getByText('Demo User').exists)
+    .expect(await screen.findByRole('button', {name: 'Unclaim'}).exists)
     .ok()
-    .expect(withinDetailsTable.getByRole('button', {name: 'Unclaim'}).exists)
+    .expect(
+      within(screen.getByTestId('assignee-task-details')).getByText('Demo User')
+        .exists,
+    )
     .ok()
     .expect(screen.getByRole('button', {name: 'Complete Task'}).exists)
     .ok();
 
+  await t.click(screen.getByRole('button', {name: 'Unclaim'}));
+
   await t
-    .click(withinDetailsTable.getByRole('button', {name: 'Unclaim'}))
-    .expect(withinDetailsTable.getByRole('button', {name: 'Claim'}).exists)
+    .expect(await screen.findByRole('button', {name: 'Claim'}).exists)
     .ok()
-    .expect(withinDetailsTable.getByText('--').exists)
+    .expect(
+      within(screen.getByTestId('assignee-task-details')).getByText('--')
+        .exists,
+    )
     .ok()
     .expect(screen.queryByRole('button', {name: 'Complete Task'}).exists)
     .notOk();

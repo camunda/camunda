@@ -52,7 +52,9 @@ describe('<Details />', () => {
 
     expect(await screen.findByText('My Task')).toBeInTheDocument();
     expect(screen.getByText('Nice Workflow')).toBeInTheDocument();
-    expect(screen.getByTestId('assignee')).toHaveTextContent('Demo User');
+    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
+      'Demo User',
+    );
     expect(
       screen.queryByRole('button', {name: 'Unclaim'}),
     ).not.toBeInTheDocument();
@@ -62,6 +64,9 @@ describe('<Details />', () => {
     expect(
       screen.getByText(/2020-01-01 \d{2}:\d{2}:\d{2}/),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Claim the Task to start working on it'),
+    ).not.toBeInTheDocument();
   });
 
   it('should render unclaimed task details', async () => {
@@ -71,12 +76,15 @@ describe('<Details />', () => {
 
     expect(await screen.findByText('My Task')).toBeInTheDocument();
     expect(screen.getByText('Nice Workflow')).toBeInTheDocument();
-    expect(screen.getByTestId('assignee')).toHaveTextContent('--');
+    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent('--');
     expect(screen.getByRole('button', {name: 'Claim'})).toBeInTheDocument();
     expect(
       screen.getByText(/2019-01-01 \d{2}:\d{2}:\d{2}/),
     ).toBeInTheDocument();
     expect(screen.queryByText('Completion Time')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Claim the Task to start working on it'),
+    ).toBeInTheDocument();
   });
 
   it('should render unclaimed task and claim it', async () => {
@@ -93,6 +101,10 @@ describe('<Details />', () => {
     expect(
       await screen.findByRole('button', {name: 'Claim'}),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText('Claim the Task to start working on it'),
+    ).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', {name: 'Claim'}));
 
     expect(
@@ -102,7 +114,12 @@ describe('<Details />', () => {
     expect(
       screen.queryByRole('button', {name: 'Claim'}),
     ).not.toBeInTheDocument();
-    expect(screen.getByTestId('assignee')).toHaveTextContent('Demo User');
+    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
+      'Demo User',
+    );
+    expect(
+      screen.queryByText('Claim the Task to start working on it'),
+    ).not.toBeInTheDocument();
   });
 
   it('should render claimed task and unclaim it', async () => {
@@ -117,7 +134,14 @@ describe('<Details />', () => {
       }),
     });
 
-    fireEvent.click(await screen.findByRole('button', {name: 'Unclaim'}));
+    expect(
+      await screen.findByRole('button', {name: 'Unclaim'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Claim the Task to start working on it'),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', {name: 'Unclaim'}));
 
     expect(
       await screen.findByRole('button', {name: 'Claim'}),
@@ -125,6 +149,9 @@ describe('<Details />', () => {
     expect(
       screen.queryByRole('button', {name: 'Unclaim'}),
     ).not.toBeInTheDocument();
-    expect(screen.getByTestId('assignee')).toHaveTextContent('--');
+    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent('--');
+    expect(
+      screen.getByText('Claim the Task to start working on it'),
+    ).toBeInTheDocument();
   });
 });
