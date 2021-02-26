@@ -8,10 +8,18 @@
 package io.zeebe.engine.state.immutable;
 
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import org.agrona.DirectBuffer;
 
 public interface DeploymentState {
 
   boolean hasPendingDeploymentDistribution(long deploymentKey);
 
   DeploymentRecord getStoredDeploymentRecord(long deploymentKey);
+
+  void foreachPendingDeploymentDistribution(PendingDeploymentVisitor pendingDeploymentVisitor);
+
+  @FunctionalInterface
+  interface PendingDeploymentVisitor {
+    void visit(final long deploymentKey, final int partitionId, final DirectBuffer directBuffer);
+  }
 }

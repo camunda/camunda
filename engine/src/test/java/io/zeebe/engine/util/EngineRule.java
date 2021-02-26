@@ -8,14 +8,11 @@
 package io.zeebe.engine.util;
 
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import io.zeebe.db.DbKey;
 import io.zeebe.db.DbValue;
 import io.zeebe.engine.processing.EngineProcessors;
 import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
-import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistribution;
 import io.zeebe.engine.processing.message.command.PartitionCommandSender;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandMessageHandler;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -187,10 +184,6 @@ public final class EngineRule extends ExternalResource {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
     deploymentRecord.write(deploymentBuffer, 0);
-
-    final PendingDeploymentDistribution deploymentDistribution =
-        mock(PendingDeploymentDistribution.class);
-    when(deploymentDistribution.getDeployment()).thenReturn(deploymentBuffer);
 
     forEachPartition(
         partitionId -> {
@@ -461,8 +454,6 @@ public final class EngineRule extends ExternalResource {
   }
 
   private final class DeploymentDistributionImpl implements DeploymentDistributor {
-
-    private final Map<Long, PendingDeploymentDistribution> pendingDeployments = new HashMap<>();
 
     @Override
     public ActorFuture<Void> pushDeploymentToPartition(

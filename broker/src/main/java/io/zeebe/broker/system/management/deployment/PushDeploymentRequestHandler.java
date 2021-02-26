@@ -93,7 +93,8 @@ public final class PushDeploymentRequestHandler
   public void sendDeploymentResponse(final long deploymentKey, final int partitionId) {
     final PushDeploymentResponse deploymentResponse = new PushDeploymentResponse();
     deploymentResponse.deploymentKey(deploymentKey).partitionId(partitionId);
-    final String topic = DeploymentDistributorImpl.getDeploymentResponseTopic(deploymentKey);
+    final String topic =
+        DeploymentDistributorImpl.getDeploymentResponseTopic(deploymentKey, partitionId);
 
     atomix.getEventService().broadcast(topic, deploymentResponse.toBytes());
     LOG.trace("Send deployment response on topic {} for partition {}", topic, partitionId);

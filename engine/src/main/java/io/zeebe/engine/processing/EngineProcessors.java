@@ -12,11 +12,12 @@ import static io.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
+import io.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.zeebe.engine.processing.deployment.DeploymentResponder;
-import io.zeebe.engine.processing.deployment.TransformingDeploymentCreateProcessor;
 import io.zeebe.engine.processing.deployment.distribute.CompleteDeploymentDistributionProcessor;
 import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
+import io.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
 import io.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.zeebe.engine.processing.job.JobErrorThrownProcessor;
 import io.zeebe.engine.processing.job.JobEventProcessors;
@@ -130,7 +131,7 @@ public final class EngineProcessors {
     // on deployment partition CREATE Command is received and processed
     // it will cause a distribution to other partitions
     final var processor =
-        new TransformingDeploymentCreateProcessor(
+        new DeploymentCreateProcessor(
             zeebeState,
             catchEventBehavior,
             expressionProcessor,
@@ -139,6 +140,12 @@ public final class EngineProcessors {
             actor,
             deploymentDistributor);
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
+
+    // redistributes deployments after recovery
+    final var deploymentRedistributor =
+        new DeploymentRedistributor(
+            partitionsCount, deploymentDistributor, zeebeState.getDeploymentState());
+    typedRecordProcessors.withListener(deploymentRedistributor);
 
     // on other partitions DISTRIBUTE command is received and processed
     final DeploymentDistributeProcessor deploymentDistributeProcessor =

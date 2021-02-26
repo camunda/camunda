@@ -15,6 +15,12 @@ import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.value.deployment.ResourceType;
+import io.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
+import org.apache.commons.lang3.tuple.Triple;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -181,6 +187,80 @@ public class DeploymentStateTest {
 
     storedDeploymentRecord = deploymentState.getStoredDeploymentRecord(1);
     assertThat(storedDeploymentRecord).isNotNull().isEqualTo(deployment);
+  }
+
+  @Test
+  public void shouldIterateOverPendingDeployments() {
+    // given
+    final var deployment = createDeployment();
+    deploymentState.storeDeploymentRecord(1, deployment);
+    final var deploymentKey = 1;
+    deploymentState.addPendingDeploymentDistribution(deploymentKey, 2);
+    deploymentState.addPendingDeploymentDistribution(deploymentKey, 3);
+
+    final List<Triple<Long, Integer, DirectBuffer>> pendings = new ArrayList<>();
+
+    // when
+    deploymentState.foreachPendingDeploymentDistribution(
+        (key, partitionId, deploymentBuffer) ->
+            pendings.add(Triple.of(key, partitionId, deploymentBuffer)));
+
+    // then
+    assertThat(pendings).extracting(Triple::getLeft).containsOnly(1L);
+    assertThat(pendings).extracting(Triple::getMiddle).containsExactly(2, 3);
+    assertThat(pendings)
+        .extracting(Triple::getRight)
+        .containsOnly(BufferUtil.createCopy(deployment));
+  }
+
+  @Test
+  public void shouldIterateOverMultiplePendingDeployments() {
+    // given
+    final var deployments = new ArrayList<DeploymentRecord>();
+    for (int deploymentKey = 1; deploymentKey <= 5; deploymentKey++) {
+      final var deployment = createDeployment();
+      deployments.add(deployment);
+      deploymentState.storeDeploymentRecord(deploymentKey, deployment);
+      deploymentState.addPendingDeploymentDistribution(deploymentKey, 2);
+      deploymentState.addPendingDeploymentDistribution(deploymentKey, 3);
+    }
+
+    final List<Triple<Long, Integer, DirectBuffer>> pendings = new ArrayList<>();
+
+    // when
+    deploymentState.foreachPendingDeploymentDistribution(
+        (key, partitionId, deploymentBuffer) ->
+            pendings.add(Triple.of(key, partitionId, deploymentBuffer)));
+
+    // then
+    assertThat(pendings).hasSize(10);
+    assertThat(pendings).extracting(Triple::getLeft).containsOnly(1L, 2L, 3L, 4L, 5L);
+    assertThat(pendings).extracting(Triple::getMiddle).containsOnly(2, 3);
+    assertThat(pendings)
+        .extracting(Triple::getRight)
+        .containsOnly(
+            deployments.stream()
+                .map(BufferUtil::createCopy)
+                .collect(Collectors.toList())
+                .toArray(new DirectBuffer[deployments.size()]));
+  }
+
+  @Test
+  public void shouldNotFailOnMissingDeploymentInState() {
+    // given
+    final var deploymentKey = 1;
+    deploymentState.addPendingDeploymentDistribution(deploymentKey, 2);
+    deploymentState.addPendingDeploymentDistribution(deploymentKey, 3);
+
+    final List<Triple<Long, Integer, DirectBuffer>> pendings = new ArrayList<>();
+
+    // when
+    deploymentState.foreachPendingDeploymentDistribution(
+        (key, partitionId, deploymentBuffer) ->
+            pendings.add(Triple.of(key, partitionId, deploymentBuffer)));
+
+    // then
+    assertThat(pendings).isEmpty();
   }
 
   private DeploymentRecord createDeployment() {
