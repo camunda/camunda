@@ -1,5 +1,5 @@
 def githubOrga = 'camunda-cloud'
-def gitRepository = 'zeebe-tasklist'
+def gitRepository = 'tasklist'
 def gitBranch = 'master'
 
 def dslScriptsToExecute = '''\
