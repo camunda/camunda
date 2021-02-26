@@ -182,12 +182,12 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public DeployedProcess getLatestProcessVersionByProcessId(final DirectBuffer processId) {
+  public DeployedProcess getLatestProcessVersionByProcessId(final DirectBuffer processIdBuffer) {
     final Long2ObjectHashMap<DeployedProcess> versionMap =
-        processesByProcessIdAndVersion.get(processId);
+        processesByProcessIdAndVersion.get(processIdBuffer);
 
-    processId.wrapBuffer(processId);
-    final long latestVersion = versionManager.getCurrentValue(processId);
+    processId.wrapBuffer(processIdBuffer);
+    final long latestVersion = versionManager.getCurrentValue(processIdBuffer);
 
     DeployedProcess deployedProcess;
     if (versionMap == null) {
@@ -227,8 +227,9 @@ public final class DbProcessState implements MutableProcessState {
     }
   }
 
-  private DeployedProcess lookupPersistenceState(final DirectBuffer processId, final int version) {
-    processId.wrapBuffer(processId);
+  private DeployedProcess lookupPersistenceState(
+      final DirectBuffer processIdBuffer, final int version) {
+    processId.wrapBuffer(processIdBuffer);
     processVersion.wrapLong(version);
 
     final PersistedProcess processWithVersionAndId =
@@ -238,7 +239,7 @@ public final class DbProcessState implements MutableProcessState {
       updateInMemoryState(processWithVersionAndId);
 
       final Long2ObjectHashMap<DeployedProcess> newVersionMap =
-          processesByProcessIdAndVersion.get(processId);
+          processesByProcessIdAndVersion.get(processIdBuffer);
 
       if (newVersionMap != null) {
         return newVersionMap.get(version);
@@ -296,16 +297,17 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public void putLatestVersionDigest(final DirectBuffer processId, final DirectBuffer digest) {
-    processId.wrapBuffer(processId);
+  public void putLatestVersionDigest(
+      final DirectBuffer processIdBuffer, final DirectBuffer digest) {
+    processId.wrapBuffer(processIdBuffer);
     this.digest.set(digest);
 
     digestByIdColumnFamily.put(processId, this.digest);
   }
 
   @Override
-  public DirectBuffer getLatestVersionDigest(final DirectBuffer processId) {
-    processId.wrapBuffer(processId);
+  public DirectBuffer getLatestVersionDigest(final DirectBuffer processIdBuffer) {
+    processId.wrapBuffer(processIdBuffer);
     final Digest latestDigest = digestByIdColumnFamily.get(processId);
     return latestDigest == null || digest.get().byteArray() == null ? null : latestDigest.get();
   }
