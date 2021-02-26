@@ -14,7 +14,6 @@ import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
-import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistribution;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
@@ -42,16 +41,14 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.util.Either;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.future.ActorFuture;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class TransformingDeploymentCreateProcessor
     implements TypedRecordProcessor<DeploymentRecord> {
@@ -111,20 +108,20 @@ public final class TransformingDeploymentCreateProcessor
   }
 
   private void reprocessPendingDeployments(final TypedStreamWriter logStreamWriter) {
-    deploymentState.foreachPending(
-        ((pendingDeploymentDistribution, key) -> {
-          final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-          final DirectBuffer deployment = pendingDeploymentDistribution.getDeployment();
-          buffer.putBytes(0, deployment, 0, deployment.capacity());
-
-          distributeDeployment(
-              key, pendingDeploymentDistribution.getSourcePosition(), buffer, logStreamWriter);
-        }));
+    //    deploymentState.foreachPending(
+    //        ((pendingDeploymentDistribution, key) -> {
+    //          final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+    //          final DirectBuffer deployment = pendingDeploymentDistribution.getDeployment();
+    //          buffer.putBytes(0, deployment, 0, deployment.capacity());
+    //
+    //          distributeDeployment(
+    //              key, pendingDeploymentDistribution.getSourcePosition(), buffer,
+    // logStreamWriter);
+    //        }));
   }
 
   @Override
   public void processRecord(
-      final long position,
       final TypedRecord<DeploymentRecord> command,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
@@ -148,8 +145,7 @@ public final class TransformingDeploymentCreateProcessor
       responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
       stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
-      deploymentDistribution(
-          position, responseWriter, streamWriter, sideEffect, deploymentEvent, key);
+      deploymentDistribution(responseWriter, streamWriter, sideEffect, deploymentEvent, key);
 
       messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
           deploymentEvent, streamWriter);
@@ -167,19 +163,41 @@ public final class TransformingDeploymentCreateProcessor
   }
 
   private void deploymentDistribution(
-      final long position,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect,
       final DeploymentRecord deploymentEvent,
       final long key) {
+    final var copiedDeploymentBuffer = BufferUtil.createCopy(deploymentEvent);
+
     partitions.forEach(
         partitionId -> {
           deploymentDistributionRecord.setPartition(partitionId);
           stateWriter.appendFollowUpEvent(
               key, DeploymentDistributionIntent.DISTRIBUTING, deploymentDistributionRecord);
-          // todo(zell): push deployment to other partition
-          //            deploymentDistributor.pushDeployment(key, partitionId, deploymentEvent);
+
+          final var deploymentPushedFuture =
+              deploymentDistributor.pushDeploymentToPartition(
+                  key, partitionId, copiedDeploymentBuffer);
+
+          deploymentPushedFuture.onComplete(
+              (v, t) ->
+                  actor.runUntilDone(
+                      () -> {
+                        deploymentDistributionRecord.setPartition(partitionId);
+                        streamWriter.reset();
+                        streamWriter.appendFollowUpCommand(
+                            key,
+                            DeploymentDistributionIntent.COMPLETE,
+                            deploymentDistributionRecord);
+
+                        final long pos = streamWriter.flush();
+                        if (pos < 0) {
+                          actor.yield();
+                        } else {
+                          actor.done();
+                        }
+                      }));
         });
 
     if (partitions.isEmpty()) {
@@ -189,70 +207,7 @@ public final class TransformingDeploymentCreateProcessor
       // record
       stateWriter.appendFollowUpEvent(
           key, DeploymentIntent.FULLY_DISTRIBUTED, emptyDeploymentRecord);
-    } else {
-      // todo(zell): simplify for https://github.com/zeebe-io/zeebe/issues/6173
-      // DEPLOYMENT DISTRIBUTION moved from distribute
-      final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-      deploymentEvent.write(buffer, 0);
-
-      final DirectBuffer bufferView = new UnsafeBuffer();
-      bufferView.wrap(buffer, 0, deploymentEvent.getLength());
-
-      // don't distribute the deployment on reprocessing because it may be already distributed
-      // (#3124)
-      // and it would lead to false-positives in the reprocessing issue detection (#5688)
-      // instead, distribute the pending deployments after the reprocessing
-      sideEffect.accept(
-          () -> {
-            distributeDeployment(key, position, bufferView, streamWriter);
-            responseWriter.flush();
-            return true;
-          });
     }
-  }
-
-  private void distributeDeployment(
-      final long key,
-      final long position,
-      final DirectBuffer buffer,
-      final TypedStreamWriter logStreamWriter) {
-    final ActorFuture<Void> pushDeployment =
-        deploymentDistributor.pushDeployment(key, position, buffer);
-
-    actor.runOnCompletion(
-        pushDeployment, (aVoid, throwable) -> writeCreatingDeploymentCommand(logStreamWriter, key));
-  }
-
-  private void writeCreatingDeploymentCommand(
-      final TypedStreamWriter logStreamWriter, final long deploymentKey) {
-    final PendingDeploymentDistribution pendingDeploymentDistribution =
-        deploymentDistributor.removePendingDeployment(deploymentKey);
-    final long sourcePosition = pendingDeploymentDistribution.getSourcePosition();
-
-    actor.runUntilDone(
-        () -> {
-          // we can re-use the write because we are running in the same actor/thread
-          logStreamWriter.reset();
-          logStreamWriter.configureSourceContext(sourcePosition);
-
-          // todo(zell): https://github.com/zeebe-io/zeebe/issues/6314
-          // we easily reach the record limit if we always write the deployment record
-          // since no one consumes currently the FULLY_DISTRIBUTED (only the key) we write an empty
-          // record
-          logStreamWriter.appendFollowUpEvent(
-              deploymentKey, DeploymentIntent.FULLY_DISTRIBUTED, emptyDeploymentRecord);
-
-          // todo(zell): this will move away on next PR's
-          // https://github.com/zeebe-io/zeebe/issues/6173
-          deploymentState.removeDeploymentRecord(deploymentKey);
-
-          final long position = logStreamWriter.flush();
-          if (position < 0) {
-            actor.yield();
-          } else {
-            actor.done();
-          }
-        });
   }
 
   private void createTimerIfTimerStartEvent(

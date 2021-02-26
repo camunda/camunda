@@ -14,17 +14,12 @@ import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbInt;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
-import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistribution;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import java.util.function.ObjLongConsumer;
 import org.agrona.collections.MutableBoolean;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class DbDeploymentState implements MutableDeploymentState {
-
-  private final PendingDeploymentDistribution pendingDeploymentDistribution;
 
   private final DbLong deploymentKey;
   private final DbInt partitionKey;
@@ -33,8 +28,6 @@ public final class DbDeploymentState implements MutableDeploymentState {
 
   private final DeploymentRaw deploymentRaw;
   private final ColumnFamily<DbLong, DeploymentRaw> deploymentRawColumnFamily;
-
-  private final ColumnFamily<DbLong, PendingDeploymentDistribution> pendingDeploymentColumnFamily;
 
   public DbDeploymentState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -49,54 +42,10 @@ public final class DbDeploymentState implements MutableDeploymentState {
             deploymentPartitionKey,
             DbNil.INSTANCE);
 
-    pendingDeploymentDistribution =
-        new PendingDeploymentDistribution(new UnsafeBuffer(0, 0), -1, 0);
-    pendingDeploymentColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PENDING_DEPLOYMENT,
-            transactionContext,
-            deploymentKey,
-            pendingDeploymentDistribution);
-
     deploymentRaw = new DeploymentRaw();
     deploymentRawColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DEPLOYMENT_RAW, transactionContext, deploymentKey, deploymentRaw);
-  }
-
-  @Override
-  public void putPendingDeployment(
-      final long key, final PendingDeploymentDistribution pendingDeploymentDistribution) {
-
-    deploymentKey.wrapLong(key);
-    pendingDeploymentColumnFamily.put(deploymentKey, pendingDeploymentDistribution);
-  }
-
-  private PendingDeploymentDistribution getPending(final long key) {
-    deploymentKey.wrapLong(key);
-    return pendingDeploymentColumnFamily.get(deploymentKey);
-  }
-
-  @Override
-  public PendingDeploymentDistribution getPendingDeployment(final long key) {
-    return getPending(key);
-  }
-
-  @Override
-  public PendingDeploymentDistribution removePendingDeployment(final long key) {
-    final PendingDeploymentDistribution pending = getPending(key);
-    if (pending != null) {
-      pendingDeploymentColumnFamily.delete(deploymentKey);
-    }
-    return pending;
-  }
-
-  @Override
-  public void foreachPending(final ObjLongConsumer<PendingDeploymentDistribution> consumer) {
-
-    pendingDeploymentColumnFamily.forEach(
-        (deploymentKey, pendingDeployment) ->
-            consumer.accept(pendingDeployment, deploymentKey.getValue()));
   }
 
   @Override

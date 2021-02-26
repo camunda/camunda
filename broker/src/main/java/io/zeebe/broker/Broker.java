@@ -455,7 +455,7 @@ public final class Broker implements AutoCloseable {
 
       final DeploymentDistributorImpl deploymentDistributor =
           new DeploymentDistributorImpl(
-              clusterCfg, atomix, partitionListener, zeebeState.getDeploymentState(), actor);
+              atomix, partitionListener, zeebeState.getDeploymentState(), actor);
 
       final PartitionCommandSenderImpl partitionCommandSender =
           new PartitionCommandSenderImpl(atomix, topologyManager, actor);

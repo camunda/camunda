@@ -465,36 +465,21 @@ public final class EngineRule extends ExternalResource {
     private final Map<Long, PendingDeploymentDistribution> pendingDeployments = new HashMap<>();
 
     @Override
-    public ActorFuture<Void> pushDeployment(
-        final long key, final long position, final DirectBuffer buffer) {
-      final PendingDeploymentDistribution pendingDeployment =
-          new PendingDeploymentDistribution(buffer, position, partitionCount);
-      pendingDeployments.put(key, pendingDeployment);
+    public ActorFuture<Void> pushDeploymentToPartition(
+        final long key, final int partitionId, final DirectBuffer deploymentBuffer) {
 
-      forEachPartition(
-          partitionId -> {
-            if (partitionId == PARTITION_ID) {
-              return;
-            }
+      final DeploymentRecord deploymentRecord = new DeploymentRecord();
+      deploymentRecord.wrap(deploymentBuffer);
 
-            final DeploymentRecord deploymentRecord = new DeploymentRecord();
-            deploymentRecord.wrap(buffer);
-
-            // we run in processor actor, we are not allowed to wait on futures
-            // which means we cant get new writer in sync way
-            new Thread(
-                    () ->
-                        environmentRule.writeCommandOnPartition(
-                            partitionId, key, DeploymentIntent.DISTRIBUTE, deploymentRecord))
-                .start();
-          });
+      // we run in processor actor, we are not allowed to wait on futures
+      // which means we cant get new writer in sync way
+      new Thread(
+              () ->
+                  environmentRule.writeCommandOnPartition(
+                      partitionId, key, DeploymentIntent.DISTRIBUTE, deploymentRecord))
+          .start();
 
       return CompletableActorFuture.completed(null);
-    }
-
-    @Override
-    public PendingDeploymentDistribution removePendingDeployment(final long key) {
-      return pendingDeployments.remove(key);
     }
   }
 

@@ -143,7 +143,7 @@ public final class PushDeploymentRequestHandler
               writeDistributeDeployment(logStream, deploymentKey, deploymentRecord);
           if (success) {
             LOG.debug(
-                "Deployment CREATE command for deployment {} was written on partition {}",
+                "Deployment DISTRIBUTE command for deployment {} was written on partition {}",
                 deploymentKey,
                 partitionId);
             actor.done();
