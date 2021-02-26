@@ -137,6 +137,7 @@ pipeline {
                 }
 
                 stage('BPMN TCK') {
+                    when { expression { return false } } // disable TCK until migrated to new API
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/test-tck.sh')
