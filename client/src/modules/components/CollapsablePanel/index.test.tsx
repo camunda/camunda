@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import * as React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 
 import {CollapsablePanel} from './index';
