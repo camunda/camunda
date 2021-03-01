@@ -76,22 +76,31 @@ it('should edit a source from the list', () => {
 });
 
 it('should edit a scope of a source', () => {
-  const node = shallow(<EventsSources {...props} />);
+  const node = shallow(
+    <EventsSources
+      {...props}
+      sources={[
+        {
+          type: 'camunda',
+          configuration: {processDefinitionKey: 'src1', eventScope: 'start_end'},
+        },
+      ]}
+    />
+  );
 
   node.find(Dropdown.Option).at(2).simulate('click');
 
   const modal = node.find('VisibleEventsModal');
-  expect(modal).toExist();
+
+  expect(modal.prop('initialScope')).toBe('start_end');
 
   modal.prop('onConfirm')(['start_end', 'processInstance'], true);
-
   expect(props.onChange).toHaveBeenCalledWith(
     [
       {
         type: 'camunda',
         configuration: {eventScope: ['start_end', 'processInstance'], processDefinitionKey: 'src1'},
       },
-      {type: 'external', configuration: {includeAllGroups: true, group: null}},
     ],
     true
   );

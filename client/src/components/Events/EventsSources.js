@@ -110,7 +110,7 @@ export default class EventSources extends React.Component {
         )}
         {editingScope && (
           <VisibleEventsModal
-            initialScope={editingScope.eventScope}
+            initialScope={editingScope.configuration.eventScope}
             onConfirm={this.updateSourceScope}
             onClose={this.closeEditScopeModal}
           />
