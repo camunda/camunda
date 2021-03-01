@@ -20,8 +20,10 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.function.Function;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -31,40 +33,43 @@ public final class CallActivityIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
-  private static final String PROCESS_ID_PARENT = "wf-parent";
-  private static final String PROCESS_ID_CHILD = "wf-child";
-
   private static final String PROCESS_ID_VARIABLE = "wfChild";
 
-  private static final BpmnModelInstance WORKFLOW_PARENT =
-      Bpmn.createExecutableProcess(PROCESS_ID_PARENT)
-          .startEvent()
-          .callActivity("call", c -> c.zeebeProcessId(PROCESS_ID_CHILD))
-          .done();
-
-  private static final BpmnModelInstance WORKFLOW_PARENT_PROCESS_ID_EXPRESSION =
-      Bpmn.createExecutableProcess(PROCESS_ID_PARENT)
-          .startEvent()
-          .callActivity("call", c -> c.zeebeProcessIdExpression(PROCESS_ID_VARIABLE))
-          .done();
-
-  private static final BpmnModelInstance WORKFLOW_CHILD =
-      Bpmn.createExecutableProcess(PROCESS_ID_CHILD).startEvent().endEvent().done();
+  private static final Function<String, BpmnModelInstance>
+      WORKFLOW_PARENT_PROCESS_ID_EXPRESSION_SUPPLIER =
+          (parentProcessId) ->
+              Bpmn.createExecutableProcess(parentProcessId)
+                  .startEvent()
+                  .callActivity("call", c -> c.zeebeProcessIdExpression(PROCESS_ID_VARIABLE))
+                  .done();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
+  private String parentProcessId;
+  private String childProcessId;
+
   @Before
   public void init() {
-    ENGINE.deployment().withXmlResource("wf-parent.bpmn", WORKFLOW_PARENT).deploy();
+    parentProcessId = Strings.newRandomValidBpmnId();
+    childProcessId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            Bpmn.createExecutableProcess(parentProcessId)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(childProcessId))
+                .done())
+        .deploy();
   }
 
   @Test
   public void shouldCreateIncidentIfWorkflowIsNotDeployed() {
     // when
     final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+        ENGINE.workflowInstance().ofBpmnProcessId(parentProcessId).create();
 
     // then
     final Record<IncidentRecordValue> incident = getIncident(workflowInstanceKey);
@@ -77,7 +82,7 @@ public final class CallActivityIncidentTest {
         .hasErrorType(ErrorType.CALLED_ELEMENT_ERROR)
         .hasErrorMessage(
             "Expected workflow with BPMN process id '"
-                + PROCESS_ID_CHILD
+                + childProcessId
                 + "' to be deployed, but not found.");
   }
 
@@ -87,7 +92,7 @@ public final class CallActivityIncidentTest {
     ENGINE
         .deployment()
         .withXmlResource(
-            Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
+            Bpmn.createExecutableProcess(childProcessId)
                 .startEvent()
                 .message("start")
                 .endEvent()
@@ -96,7 +101,7 @@ public final class CallActivityIncidentTest {
 
     // when
     final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+        ENGINE.workflowInstance().ofBpmnProcessId(parentProcessId).create();
 
     // then
     final Record<IncidentRecordValue> incident = getIncident(workflowInstanceKey);
@@ -109,18 +114,21 @@ public final class CallActivityIncidentTest {
         .hasErrorType(ErrorType.CALLED_ELEMENT_ERROR)
         .hasErrorMessage(
             "Expected workflow with BPMN process id '"
-                + PROCESS_ID_CHILD
+                + childProcessId
                 + "' to have a none start event, but not found.");
   }
 
   @Test
   public void shouldCreateIncidentIfProcessIdVariableNotExists() {
     // given
-    ENGINE.deployment().withXmlResource(WORKFLOW_PARENT_PROCESS_ID_EXPRESSION).deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(WORKFLOW_PARENT_PROCESS_ID_EXPRESSION_SUPPLIER.apply(parentProcessId))
+        .deploy();
 
     // when
     final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+        ENGINE.workflowInstance().ofBpmnProcessId(parentProcessId).create();
 
     // then
     final Record<IncidentRecordValue> incident = getIncident(workflowInstanceKey);
@@ -142,13 +150,16 @@ public final class CallActivityIncidentTest {
   @Test
   public void shouldCreateIncidentIfProcessIdVariableIsNaString() {
     // given
-    ENGINE.deployment().withXmlResource(WORKFLOW_PARENT_PROCESS_ID_EXPRESSION).deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(WORKFLOW_PARENT_PROCESS_ID_EXPRESSION_SUPPLIER.apply(parentProcessId))
+        .deploy();
 
     // when
     final long workflowInstanceKey =
         ENGINE
             .workflowInstance()
-            .ofBpmnProcessId(PROCESS_ID_PARENT)
+            .ofBpmnProcessId(parentProcessId)
             .withVariable(PROCESS_ID_VARIABLE, 123)
             .create();
 
@@ -171,12 +182,16 @@ public final class CallActivityIncidentTest {
   public void shouldResolveIncident() {
     // given
     final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+        ENGINE.workflowInstance().ofBpmnProcessId(parentProcessId).create();
 
     final Record<IncidentRecordValue> incident = getIncident(workflowInstanceKey);
 
     // when
-    ENGINE.deployment().withXmlResource(WORKFLOW_CHILD).deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(childProcessId).startEvent().endEvent().done())
+        .deploy();
 
     ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incident.getKey()).resolve();
 
