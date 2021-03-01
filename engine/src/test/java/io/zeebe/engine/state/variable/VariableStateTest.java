@@ -9,7 +9,6 @@ package io.zeebe.engine.state.variable;
 
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.test.util.MsgPackUtil.assertEquality;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,10 +24,7 @@ import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.util.buffer.BufferUtil;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
@@ -45,9 +41,9 @@ public final class VariableStateTest {
   private static final AtomicLong PARENT_KEY = new AtomicLong(0);
   private static final AtomicLong CHILD_KEY = new AtomicLong(1);
   private static final AtomicLong SECOND_CHILD_KEY = new AtomicLong(2);
+  private static final AtomicLong KEY_GENERATOR = new AtomicLong();
   private static MutableElementInstanceState elementInstanceState;
   private static MutableVariableState variableState;
-  private static RecordingVariableListener listener;
   private long parent;
   private long child;
   private long child2;
@@ -57,9 +53,6 @@ public final class VariableStateTest {
     final ZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
     elementInstanceState = zeebeState.getElementInstanceState();
     variableState = zeebeState.getVariableState();
-
-    listener = new RecordingVariableListener();
-    variableState.setListener(listener);
   }
 
   @Before
@@ -74,7 +67,6 @@ public final class VariableStateTest {
     elementInstanceState.removeInstance(child2);
     elementInstanceState.removeInstance(child);
     elementInstanceState.removeInstance(parent);
-    listener.reset();
   }
 
   @Test
@@ -253,15 +245,17 @@ public final class VariableStateTest {
     declareScope(parent);
 
     // when
-    setVariableLocal(parent, wrapString("a"), asMsgPack("1"));
-    setVariableLocal(parent, wrapString("b"), asMsgPack("2"));
+    final long keyVarA = setVariableLocal(parent, wrapString("a"), asMsgPack("1"));
+    final long keyVarB = setVariableLocal(parent, wrapString("b"), asMsgPack("2"));
 
     // then
-    final DirectBuffer varA = variableState.getVariableLocal(parent, wrapString("a"));
-    assertEquality(varA, "1");
+    final VariableInstance varA = variableState.getVariableInstanceLocal(parent, wrapString("a"));
+    assertThat(varA.getKey()).isEqualTo(keyVarA);
+    assertEquality(varA.getValue(), "1");
 
-    final DirectBuffer varB = variableState.getVariableLocal(parent, wrapString("b"));
-    assertEquality(varB, "2");
+    final VariableInstance varB = variableState.getVariableInstanceLocal(parent, wrapString("b"));
+    assertThat(varB.getKey()).isEqualTo(keyVarB);
+    assertEquality(varB.getValue(), "2");
   }
 
   @Test
@@ -370,41 +364,6 @@ public final class VariableStateTest {
   }
 
   @Test
-  public void shouldInvokeListenerOnCreate() {
-    // given
-
-    // when
-    setVariableLocal(parent, wrapString("x"), wrapString("foo"));
-
-    // then
-    assertThat(listener.created).hasSize(1);
-    assertThat(listener.created.get(0).name).isEqualTo("x");
-    assertThat(listener.created.get(0).value).isEqualTo("foo".getBytes());
-    assertThat(listener.created.get(0).variableScopeKey).isEqualTo(parent);
-    assertThat(listener.created.get(0).rootScopeKey).isEqualTo(parent);
-
-    assertThat(listener.updated).isEmpty();
-  }
-
-  @Test
-  public void shouldInvokeListenerOnUpdate() {
-    // given
-
-    // when
-    setVariableLocal(parent, wrapString("x"), wrapString("foo"));
-    setVariableLocal(parent, wrapString("x"), wrapString("bar"));
-
-    // then
-    assertThat(listener.created).hasSize(1);
-
-    assertThat(listener.updated).hasSize(1);
-    assertThat(listener.updated.get(0).name).isEqualTo("x");
-    assertThat(listener.updated.get(0).value).isEqualTo("bar".getBytes());
-    assertThat(listener.updated.get(0).variableScopeKey).isEqualTo(parent);
-    assertThat(listener.updated.get(0).rootScopeKey).isEqualTo(parent);
-  }
-
-  @Test
   public void shouldNotGetVariableInstanceLocal() {
     // given
     declareScope(parent);
@@ -425,7 +384,7 @@ public final class VariableStateTest {
     // given
     declareScope(parent);
     declareScope(parent, child);
-    setVariableLocal(parent, wrapString("x"), wrapString("foo"));
+    final long expectedKey = setVariableLocal(parent, wrapString("x"), wrapString("foo"));
     setVariableLocal(child, wrapString("x"), wrapString("foo"));
 
     // when
@@ -435,7 +394,7 @@ public final class VariableStateTest {
     // then
     assertThat(variable).isNotNull();
     assertThat(variable.getValue()).isEqualTo(wrapString("foo"));
-    assertThat(variable.getKey()).isPositive();
+    assertThat(variable.getKey()).isEqualTo(expectedKey);
   }
 
   @Test
@@ -452,19 +411,6 @@ public final class VariableStateTest {
 
     // then
     assertThat(variable).isNull();
-  }
-
-  @Test
-  public void shouldNotInvokeListenerIfNotChanged() {
-    // given
-
-    // when
-    setVariableLocal(parent, wrapString("x"), wrapString("foo"));
-    setVariableLocal(parent, wrapString("x"), wrapString("foo"));
-
-    // then
-    assertThat(listener.created).hasSize(1);
-    assertThat(listener.updated).isEmpty();
   }
 
   @Test
@@ -490,20 +436,6 @@ public final class VariableStateTest {
     // then
     Assertions.assertThat(variableState.getTemporaryVariables(parent)).isNull();
     Assertions.assertThat(variableState.getTemporaryVariables(child)).isEqualTo(wrapString("b"));
-  }
-
-  @Test
-  public void shouldReuseVariableKeyOnUpdate() {
-    // given
-
-    // when
-    setVariableLocal(parent, wrapString("x"), wrapString("foo"));
-    setVariableLocal(parent, wrapString("x"), wrapString("bar"));
-
-    // then
-    final long variableKey = listener.created.get(0).key;
-    assertThat(variableKey).isPositive();
-    assertThat(listener.updated.get(0).key).isEqualTo(variableKey);
   }
 
   private void declareScope(final long key) {
@@ -539,78 +471,10 @@ public final class VariableStateTest {
     return workflowInstanceRecord;
   }
 
-  public void setVariableLocal(
+  public long setVariableLocal(
       final long scopeKey, final DirectBuffer name, final DirectBuffer value) {
-    variableState.setVariableLocal(
-        scopeKey, WORKFLOW_KEY, name, 0, name.capacity(), value, 0, value.capacity());
-  }
-
-  private static class RecordingVariableListener implements DbVariableState.VariableListener {
-
-    private final List<VariableChange> created = new ArrayList<>();
-    private final List<VariableChange> updated = new ArrayList<>();
-
-    @Override
-    public void onCreate(
-        final long key,
-        final long workflowKey,
-        final DirectBuffer name,
-        final DirectBuffer value,
-        final long variableScopeKey,
-        final long rootScopeKey) {
-      final VariableChange change =
-          new VariableChange(
-              key,
-              bufferAsString(name),
-              BufferUtil.bufferAsArray(value),
-              variableScopeKey,
-              rootScopeKey);
-      created.add(change);
-    }
-
-    @Override
-    public void onUpdate(
-        final long key,
-        final long workflowKey,
-        final DirectBuffer name,
-        final DirectBuffer value,
-        final long variableScopeKey,
-        final long rootScopeKey) {
-      final VariableChange change =
-          new VariableChange(
-              key,
-              bufferAsString(name),
-              BufferUtil.bufferAsArray(value),
-              variableScopeKey,
-              rootScopeKey);
-      updated.add(change);
-    }
-
-    public void reset() {
-      updated.clear();
-      created.clear();
-    }
-
-    private static class VariableChange {
-
-      private final long key;
-      private final String name;
-      private final byte[] value;
-      private final long variableScopeKey;
-      private final long rootScopeKey;
-
-      VariableChange(
-          final long key,
-          final String name,
-          final byte[] value,
-          final long variableScopeKey,
-          final long rootScopeKey) {
-        this.key = key;
-        this.name = name;
-        this.value = value;
-        this.variableScopeKey = variableScopeKey;
-        this.rootScopeKey = rootScopeKey;
-      }
-    }
+    final long key = KEY_GENERATOR.incrementAndGet();
+    variableState.setVariableLocal(key, scopeKey, WORKFLOW_KEY, name, value);
+    return key;
   }
 }

@@ -7,96 +7,75 @@
  */
 package io.zeebe.engine.processing.variable;
 
-import io.zeebe.engine.Loggers;
-import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.msgpack.spec.MsgpackReaderException;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
-import org.agrona.DirectBuffer;
 
 public final class UpdateVariableDocumentProcessor
-    implements CommandProcessor<VariableDocumentRecord> {
+    implements TypedRecordProcessor<VariableDocumentRecord> {
 
   private final ElementInstanceState elementInstanceState;
-  private final VariableDocumentBehavior variableDocumentBehavior;
-
-  public UpdateVariableDocumentProcessor(
-      final ElementInstanceState elementInstanceState, final MutableVariableState variablesState) {
-    this(elementInstanceState, new VariableDocumentBehavior(variablesState));
-  }
+  private final VariableBehavior variableBehavior;
+  private final StateWriter stateWriter;
 
   public UpdateVariableDocumentProcessor(
       final ElementInstanceState elementInstanceState,
-      final VariableDocumentBehavior variableDocumentBehavior) {
+      final VariableBehavior variableBehavior,
+      final StateWriter stateWriter) {
     this.elementInstanceState = elementInstanceState;
-    this.variableDocumentBehavior = variableDocumentBehavior;
+    this.variableBehavior = variableBehavior;
+    this.stateWriter = stateWriter;
   }
 
   @Override
-  public boolean onCommand(
-      final TypedRecord<VariableDocumentRecord> command,
-      final CommandControl<VariableDocumentRecord> controller) {
-    final VariableDocumentRecord record = command.getValue();
+  public void processRecord(
+      final TypedRecord<VariableDocumentRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
+    final VariableDocumentRecord value = record.getValue();
 
-    final ElementInstance scope = elementInstanceState.getInstance(record.getScopeKey());
+    final ElementInstance scope = elementInstanceState.getInstance(value.getScopeKey());
     if (scope == null || scope.isTerminating() || scope.isInFinalState()) {
-      controller.reject(
-          RejectionType.NOT_FOUND,
+      final String reason =
           String.format(
               "Expected to update variables for element with key '%d', but no such element was found",
-              record.getScopeKey()));
-      return true;
+              value.getScopeKey());
+      streamWriter.appendRejection(record, RejectionType.NOT_FOUND, reason);
+      responseWriter.writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
+      return;
     }
 
     final long workflowKey = scope.getValue().getWorkflowKey();
-
-    if (mergeDocument(record, workflowKey, controller)) {
-      controller.accept(VariableDocumentIntent.UPDATED, record);
-    }
-    return true;
-  }
-
-  private boolean mergeDocument(
-      final VariableDocumentRecord record,
-      final long workflowKey,
-      final CommandControl<VariableDocumentRecord> controller) {
+    final long workflowInstanceKey = scope.getValue().getWorkflowInstanceKey();
     try {
-      getUpdateOperation(record.getUpdateSemantics())
-          .apply(record.getScopeKey(), workflowKey, record.getVariablesBuffer());
-      return true;
+      if (value.getUpdateSemantics() == VariableDocumentUpdateSemantic.LOCAL) {
+        variableBehavior.mergeLocalDocument(
+            scope.getKey(), workflowKey, workflowInstanceKey, value.getVariablesBuffer());
+      } else {
+        variableBehavior.mergeDocument(
+            scope.getKey(), workflowKey, workflowInstanceKey, value.getVariablesBuffer());
+      }
     } catch (final MsgpackReaderException e) {
-      Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
-          "Expected to merge variable document for scope '{}', but its document could not be read",
-          record.getScopeKey(),
-          e);
-
-      controller.reject(
-          RejectionType.INVALID_ARGUMENT,
+      final String reason =
           String.format(
               "Expected document to be valid msgpack, but it could not be read: '%s'",
-              e.getMessage()));
-      return false;
+              e.getMessage());
+      streamWriter.appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
+      responseWriter.writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
+      return;
     }
-  }
 
-  private UpdateOperation getUpdateOperation(final VariableDocumentUpdateSemantic updateSemantics) {
-    switch (updateSemantics) {
-      case LOCAL:
-        return variableDocumentBehavior::mergeLocalDocument;
-      case PROPAGATE:
-      default:
-        return variableDocumentBehavior::mergeDocument;
-    }
-  }
-
-  @FunctionalInterface
-  private interface UpdateOperation {
-    void apply(long scopeKey, long workflowKey, DirectBuffer variables);
+    stateWriter.appendFollowUpEvent(record.getKey(), VariableDocumentIntent.UPDATED, value);
+    responseWriter.writeEventOnCommand(
+        record.getKey(), VariableDocumentIntent.UPDATED, value, record);
   }
 }

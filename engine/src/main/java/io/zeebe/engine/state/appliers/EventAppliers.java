@@ -19,6 +19,7 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.VariableIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowIntent;
 import java.util.HashMap;
@@ -83,6 +84,13 @@ public final class EventAppliers implements EventApplier {
             state.getMessageState(), state.getEventScopeInstanceState()));
 
     registerJobIntentEventAppliers(state);
+    registerVariableEventAppliers(state);
+  }
+
+  private void registerVariableEventAppliers(final ZeebeState state) {
+    final VariableApplier variableApplier = new VariableApplier(state.getVariableState());
+    register(VariableIntent.CREATED, variableApplier);
+    register(VariableIntent.UPDATED, variableApplier);
   }
 
   private void registerWorkflowInstanceEventAppliers(final ZeebeState state) {

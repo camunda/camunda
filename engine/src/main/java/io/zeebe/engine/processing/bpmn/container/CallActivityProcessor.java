@@ -75,7 +75,7 @@ public final class CallActivityProcessor
               stateBehavior.updateElementInstance(callActivityInstance);
 
               final var callActivityInstanceKey = context.getElementInstanceKey();
-              stateBehavior.copyVariables(
+              stateBehavior.copyVariablesToWorkflowInstance(
                   callActivityInstanceKey, childWorkflowInstanceKey, workflow);
             },
             failure -> incidentBehavior.createIncident(failure, context));

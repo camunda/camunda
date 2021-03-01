@@ -82,6 +82,9 @@ public final class MigratedStreamProcessors {
     MIGRATED_VALUE_TYPES.put(
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
         record -> record.getIntent() == MessageStartEventSubscriptionIntent.CORRELATED);
+
+    MIGRATED_VALUE_TYPES.put(ValueType.VARIABLE_DOCUMENT, MIGRATED);
+    MIGRATED_VALUE_TYPES.put(ValueType.VARIABLE, MIGRATED);
   }
 
   private MigratedStreamProcessors() {}

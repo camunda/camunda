@@ -416,12 +416,18 @@ public final class ElementInstanceStateTest {
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
             parent, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    zeebeState
+        .getVariableState()
+        .setVariableLocal(
+            1, parent, WORKFLOW_KEY, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
 
     workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
         parentInstance, child, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
+    zeebeState
+        .getVariableState()
+        .setVariableLocal(
+            2, child, WORKFLOW_KEY, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
 
     // when
     elementInstanceState.removeInstance(101);
@@ -515,13 +521,5 @@ public final class ElementInstanceStateTest {
     assertThat(record.getVersion()).isEqualTo(1);
     assertThat(record.getWorkflowKey()).isEqualTo(2);
     assertThat(record.getBpmnElementType()).isEqualTo(BpmnElementType.START_EVENT);
-  }
-
-  public void setVariableLocal(
-      final long scopeKey, final DirectBuffer name, final DirectBuffer value) {
-    zeebeState
-        .getVariableState()
-        .setVariableLocal(
-            scopeKey, WORKFLOW_KEY, name, 0, name.capacity(), value, 0, value.capacity());
   }
 }

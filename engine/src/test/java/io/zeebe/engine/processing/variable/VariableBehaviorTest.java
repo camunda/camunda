@@ -8,12 +8,10 @@
 package io.zeebe.engine.processing.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.ZeebeDbState;
@@ -29,44 +27,33 @@ import io.zeebe.protocol.record.value.VariableRecordValueAssert;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.io.DirectBufferInputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-/**
- * The following tests currently assert both that the right follow up events are produced AND that
- * the state was correctly modified. This is because right now the behaviour modifies the state, and
- * relies on the listener to produce follow up events.
- *
- * <p>Once event sourcing has been applied to variables, we can stop asserting on the state and rely
- * purely on the events - other tests should ensure the state is correctly built up from the events.
- */
-final class VariableDocumentBehaviorTest {
+final class VariableBehaviorTest {
 
   private final RecordingTypedEventWriter eventWriter = new RecordingTypedEventWriter();
 
   private ZeebeDb<ZbColumnFamilies> db;
-  private ZeebeState zeebeState;
   private MutableVariableState state;
-  private VariableDocumentBehavior behavior;
+  private VariableBehavior behavior;
 
   @BeforeEach
   void beforeEach(final @TempDir File directory) {
     db = DefaultZeebeDbFactory.defaultFactory().createDb(directory);
-    zeebeState = new ZeebeDbState(db, db.createContext());
+    final ZeebeState zeebeState = new ZeebeDbState(db, db.createContext());
+    final StateWriter stateWriter =
+        new EventApplyingStateWriter(eventWriter, new EventAppliers(zeebeState));
 
     state = zeebeState.getVariableState();
-    behavior = new VariableDocumentBehavior(state);
+    behavior = new VariableBehavior(state, stateWriter, zeebeState.getKeyGenerator());
   }
 
   @AfterEach
@@ -77,23 +64,20 @@ final class VariableDocumentBehaviorTest {
   @Test
   void shouldMergeLocalDocument() {
     // given
-    final int workflowKey = 1;
-    final int parentScopeKey = 1;
-    final int childScopeKey = 2;
+    final long workflowKey = 1;
+    final long parentScopeKey = 1;
+    final long childScopeKey = 2;
+    final long childFooKey = 3;
     final Map<String, Object> document = Map.of("foo", "bar", "baz", "buz");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
     state.createScope(childScopeKey, parentScopeKey);
-    final long childFooKey = setVariable(childScopeKey, workflowKey, "foo", "qux");
+    setVariable(childFooKey, childScopeKey, workflowKey, "foo", "qux");
 
     // when
-    listenForStateChanges();
-    behavior.mergeLocalDocument(childScopeKey, workflowKey, MsgPackUtil.asMsgPack(document));
+    behavior.mergeLocalDocument(
+        childScopeKey, workflowKey, parentScopeKey, MsgPackUtil.asMsgPack(document));
 
     // then
-    assertThat(getScopeVariables(childScopeKey))
-        .containsOnly(entry("foo", "bar"), entry("baz", "buz"));
-    assertThat(getScopeVariables(parentScopeKey)).isEmpty();
-
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
     assertThat(events)
         .satisfiesExactlyInAnyOrder(
@@ -121,42 +105,38 @@ final class VariableDocumentBehaviorTest {
   @Test
   void shouldNotMergeLocalDocumentIfEmpty() {
     // given
-    final int workflowKey = 1;
-    final int scopeKey = 1;
+    final long workflowKey = 1;
+    final long scopeKey = 1;
     final Map<String, Object> document = Map.of();
-    setVariable(scopeKey, workflowKey, "foo", "qux");
+    setVariable(2, scopeKey, workflowKey, "foo", "qux");
 
     // when
-    listenForStateChanges();
-    behavior.mergeLocalDocument(scopeKey, workflowKey, MsgPackUtil.asMsgPack(document));
+    behavior.mergeLocalDocument(scopeKey, workflowKey, scopeKey, MsgPackUtil.asMsgPack(document));
 
     // then
-    assertThat(getScopeVariables(scopeKey)).containsOnly(entry("foo", "qux"));
     assertThat(getFollowUpEvents()).isEmpty();
   }
 
   @Test
   void shouldMergeDocumentWithoutPropagatingMoreThanOnce() {
     // given
-    final int workflowKey = 1;
-    final int rootScopeKey = 1;
-    final int parentScopeKey = 2;
-    final int childScopeKey = 3;
+    final long workflowKey = 1;
+    final long rootScopeKey = 1;
+    final long parentScopeKey = 2;
+    final long childScopeKey = 3;
+    final long parentFooKey = 4;
     final Map<String, Object> document = Map.of("foo", "bar");
     state.createScope(rootScopeKey, VariableState.NO_PARENT);
     state.createScope(parentScopeKey, rootScopeKey);
     state.createScope(childScopeKey, parentScopeKey);
-    final long parentFooKey = setVariable(parentScopeKey, workflowKey, "foo", "qux");
-    setVariable(rootScopeKey, workflowKey, "foo", "biz");
+    setVariable(parentFooKey, parentScopeKey, workflowKey, "foo", "qux");
+    setVariable(5, rootScopeKey, workflowKey, "foo", "biz");
 
     // when
-    listenForStateChanges();
-    behavior.mergeDocument(childScopeKey, workflowKey, MsgPackUtil.asMsgPack(document));
+    behavior.mergeDocument(
+        childScopeKey, workflowKey, rootScopeKey, MsgPackUtil.asMsgPack(document));
 
     // then
-    assertThat(getScopeVariables(parentScopeKey)).containsOnly(entry("foo", "bar"));
-    assertThat(getScopeVariables(rootScopeKey)).containsOnly(entry("foo", "biz"));
-
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
     assertThat(events)
         .satisfiesExactlyInAnyOrder(
@@ -175,25 +155,20 @@ final class VariableDocumentBehaviorTest {
   @Test
   void shouldMergeDocumentPropagatingToRoot() {
     // given
-    final int workflowKey = 1;
-    final int rootScopeKey = 1;
-    final int parentScopeKey = 2;
-    final int childScopeKey = 3;
+    final long workflowKey = 1;
+    final long rootScopeKey = 1;
+    final long parentScopeKey = 2;
+    final long childScopeKey = 3;
     final Map<String, Object> document = Map.of("foo", "bar", "buz", "baz");
     state.createScope(rootScopeKey, VariableState.NO_PARENT);
     state.createScope(parentScopeKey, rootScopeKey);
     state.createScope(childScopeKey, parentScopeKey);
 
     // when
-    listenForStateChanges();
-    behavior.mergeDocument(childScopeKey, workflowKey, MsgPackUtil.asMsgPack(document));
+    behavior.mergeDocument(
+        childScopeKey, workflowKey, rootScopeKey, MsgPackUtil.asMsgPack(document));
 
     // then
-    assertThat(getScopeVariables(rootScopeKey))
-        .containsOnly(entry("foo", "bar"), entry("buz", "baz"));
-    assertThat(getScopeVariables(parentScopeKey)).isEmpty();
-    assertThat(getScopeVariables(childScopeKey)).isEmpty();
-
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
     assertThat(events)
         .satisfiesExactlyInAnyOrder(
@@ -220,23 +195,21 @@ final class VariableDocumentBehaviorTest {
   @Test
   void shouldMergeDocumentWithoutPropagatingExistingVariables() {
     // given
-    final int workflowKey = 1;
-    final int parentScopeKey = 1;
-    final int childScopeKey = 2;
+    final long workflowKey = 1;
+    final long parentScopeKey = 1;
+    final long childScopeKey = 2;
+    final long childFooKey = 3;
     final Map<String, Object> document = Map.of("foo", "bar");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
     state.createScope(childScopeKey, parentScopeKey);
-    final long childFooKey = setVariable(childScopeKey, workflowKey, "foo", "qux");
-    setVariable(parentScopeKey, workflowKey, "foo", "biz");
+    setVariable(childFooKey, childScopeKey, workflowKey, "foo", "qux");
+    setVariable(4, parentScopeKey, workflowKey, "foo", "biz");
 
     // when
-    listenForStateChanges();
-    behavior.mergeDocument(childScopeKey, workflowKey, MsgPackUtil.asMsgPack(document));
+    behavior.mergeDocument(
+        childScopeKey, workflowKey, parentScopeKey, MsgPackUtil.asMsgPack(document));
 
     // then
-    assertThat(getScopeVariables(childScopeKey)).containsOnly(entry("foo", "bar"));
-    assertThat(getScopeVariables(parentScopeKey)).containsOnly(entry("foo", "biz"));
-
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
     assertThat(events)
         .satisfiesExactlyInAnyOrder(
@@ -261,31 +234,91 @@ final class VariableDocumentBehaviorTest {
     final Map<String, Object> document = Map.of();
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
     state.createScope(childScopeKey, parentScopeKey);
-    setVariable(parentScopeKey, workflowKey, "foo", "qux");
-    setVariable(childScopeKey, workflowKey, "foo", "bar");
+    setVariable(3, parentScopeKey, workflowKey, "foo", "qux");
+    setVariable(4, childScopeKey, workflowKey, "foo", "bar");
 
     // when
-    listenForStateChanges();
-    behavior.mergeDocument(childScopeKey, workflowKey, MsgPackUtil.asMsgPack(document));
+    behavior.mergeDocument(
+        childScopeKey, workflowKey, parentScopeKey, MsgPackUtil.asMsgPack(document));
 
     // then
-    assertThat(getScopeVariables(parentScopeKey)).containsOnly(entry("foo", "qux"));
-    assertThat(getScopeVariables(childScopeKey)).containsOnly(entry("foo", "bar"));
-
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
     assertThat(events).isEmpty();
   }
 
-  /**
-   * This sets up the test to start listening for follow up events. It's usually a good idea to do
-   * this after the initial setup so you can easily ignore those events.
-   */
-  private void listenForStateChanges() {
-    final EventAppliers eventApplier = new EventAppliers(zeebeState);
-    final EventApplyingStateWriter stateWriter =
-        new EventApplyingStateWriter(eventWriter, eventApplier);
-    final UpdateVariableStreamWriter listener = new UpdateVariableStreamWriter(stateWriter);
-    state.setListener(listener);
+  @Test
+  void shouldCreateLocalVariable() {
+    // given
+    final int workflowKey = 1;
+    final int parentScopeKey = 1;
+    final int childScopeKey = 2;
+    final DirectBuffer variableName = BufferUtil.wrapString("foo");
+    final DirectBuffer variableValue = packString("bar");
+    state.createScope(parentScopeKey, VariableState.NO_PARENT);
+    state.createScope(childScopeKey, parentScopeKey);
+
+    // when
+    behavior.setLocalVariable(
+        childScopeKey,
+        workflowKey,
+        parentScopeKey,
+        variableName,
+        variableValue,
+        0,
+        variableValue.capacity());
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events)
+        .satisfiesExactlyInAnyOrder(
+            event -> {
+              assertThat(event.intent).isEqualTo(VariableIntent.CREATED);
+              VariableRecordValueAssert.assertThat(event.value)
+                  .hasName("foo")
+                  .hasValue("\"bar\"")
+                  .hasScopeKey(childScopeKey)
+                  .hasWorkflowKey(workflowKey)
+                  .hasWorkflowInstanceKey(parentScopeKey);
+            });
+  }
+
+  @Test
+  void shouldUpdateLocalVariable() {
+    // given
+    final long workflowKey = 1;
+    final long parentScopeKey = 1;
+    final long childScopeKey = 2;
+    final long parentFooKey = 3;
+    final DirectBuffer variableName = BufferUtil.wrapString("foo");
+    final DirectBuffer variableValue = packString("bar");
+    state.createScope(parentScopeKey, VariableState.NO_PARENT);
+    state.createScope(childScopeKey, parentScopeKey);
+    setVariable(parentFooKey, parentScopeKey, workflowKey, "foo", "qux");
+
+    // when
+    behavior.setLocalVariable(
+        parentScopeKey,
+        workflowKey,
+        parentScopeKey,
+        variableName,
+        variableValue,
+        0,
+        variableValue.capacity());
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events)
+        .satisfiesExactlyInAnyOrder(
+            event -> {
+              assertThat(event.intent).isEqualTo(VariableIntent.UPDATED);
+              assertThat(event.key).isEqualTo(parentFooKey);
+              VariableRecordValueAssert.assertThat(event.value)
+                  .hasName("foo")
+                  .hasValue("\"bar\"")
+                  .hasScopeKey(parentScopeKey)
+                  .hasWorkflowKey(workflowKey)
+                  .hasWorkflowInstanceKey(parentScopeKey);
+            });
   }
 
   @SuppressWarnings("unchecked")
@@ -297,23 +330,17 @@ final class VariableDocumentBehaviorTest {
   }
 
   @SuppressWarnings("SameParameterValue")
-  private long setVariable(
-      final long scopeKey, final long workflowKey, final String name, final String value) {
+  private void setVariable(
+      final long key,
+      final long scopeKey,
+      final long workflowKey,
+      final String name,
+      final String value) {
     final DirectBuffer nameBuffer = BufferUtil.wrapString(name);
-    state.setVariableLocal(scopeKey, workflowKey, nameBuffer, packString(value));
-    return state.getVariableInstanceLocal(scopeKey, nameBuffer).getKey();
+    state.setVariableLocal(key, scopeKey, workflowKey, nameBuffer, packString(value));
   }
 
   private DirectBuffer packString(final String value) {
     return MsgPackUtil.encodeMsgPack(b -> b.packString(value));
-  }
-
-  private Map<String, Object> getScopeVariables(final long scopeKey) {
-    final DirectBuffer rawDocument = state.getVariablesLocalAsDocument(scopeKey);
-    try (final DirectBufferInputStream input = new DirectBufferInputStream(rawDocument)) {
-      return new ObjectMapper(new MessagePackFactory()).readValue(input, new TypeReference<>() {});
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 }

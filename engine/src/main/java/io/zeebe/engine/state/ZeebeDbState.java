@@ -79,7 +79,7 @@ public class ZeebeDbState implements ZeebeState {
     this.zeebeDb = zeebeDb;
     keyGenerator = new DbKeyGenerator(partitionId, zeebeDb, transactionContext);
 
-    variableState = new DbVariableState(zeebeDb, transactionContext, keyGenerator);
+    variableState = new DbVariableState(zeebeDb, transactionContext);
     workflowState = new DbWorkflowState(zeebeDb, transactionContext);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
     elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
@@ -143,22 +143,9 @@ public class ZeebeDbState implements ZeebeState {
     return keyGenerator;
   }
 
-  public KeyGeneratorControls getKeyGeneratorControls() {
-    return keyGenerator;
-  }
-
   @Override
   public MutableBlackListState getBlackListState() {
     return blackListState;
-  }
-
-  public MutableLastProcessedPositionState getLastProcessedPositionState() {
-    return lastProcessedPositionState;
-  }
-
-  @Override
-  public int getPartitionId() {
-    return partitionId;
   }
 
   @Override
@@ -182,6 +169,11 @@ public class ZeebeDbState implements ZeebeState {
   }
 
   @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
   public boolean isEmpty(final ZbColumnFamilies column) {
     final var newContext = zeebeDb.createContext();
     return zeebeDb.isEmpty(column, newContext);
@@ -199,5 +191,13 @@ public class ZeebeDbState implements ZeebeState {
     zeebeDb
         .createColumnFamily(columnFamily, newContext, keyInstance, valueInstance)
         .forEach(visitor);
+  }
+
+  public KeyGeneratorControls getKeyGeneratorControls() {
+    return keyGenerator;
+  }
+
+  public MutableLastProcessedPositionState getLastProcessedPositionState() {
+    return lastProcessedPositionState;
   }
 }
