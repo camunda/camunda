@@ -1,10 +1,6 @@
 {
-  "plugins": ["testing-library", "prettier"],
-  "extends": [
-    "react-app",
-    "plugin:camunda-licensed/commercial",
-    "plugin:prettier/recommended"
-  ],
+  "plugins": ["testing-library"],
+  "extends": ["react-app", "plugin:camunda-licensed/commercial", "prettier"],
   "rules": {
     "import/no-anonymous-default-export": 0,
     "testing-library/await-async-query": "error",
