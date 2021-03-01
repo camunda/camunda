@@ -16,12 +16,32 @@ import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
+import java.util.function.LongFunction;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class VariableClient {
 
+  private static final LongFunction<Record<VariableDocumentRecordValue>>
+      SUCCESSFUL_EXPECTATION_SUPPLIER =
+          (sourceRecordPosition) ->
+              RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
+                  .withSourceRecordPosition(sourceRecordPosition)
+                  .getFirst();
+
+  private static final LongFunction<Record<VariableDocumentRecordValue>>
+      REJECTION_EXPECTATION_SUPPLIER =
+          (sourceRecordPosition) ->
+              RecordingExporter.variableDocumentRecords()
+                  .onlyCommandRejections()
+                  .withSourceRecordPosition(sourceRecordPosition)
+                  .getFirst();
+
   private final VariableDocumentRecord variableDocumentRecord;
   private final StreamProcessorRule environmentRule;
+
+  private LongFunction<Record<VariableDocumentRecordValue>> expectation =
+      SUCCESSFUL_EXPECTATION_SUPPLIER;
 
   public VariableClient(final StreamProcessorRule environmentRule) {
     this.environmentRule = environmentRule;
@@ -34,8 +54,13 @@ public final class VariableClient {
   }
 
   public VariableClient withDocument(final Map<String, Object> variables) {
-    variableDocumentRecord.setVariables(
-        new UnsafeBuffer(MsgPackUtil.asMsgPack(variables).byteArray()));
+    final UnsafeBuffer serializedVariables =
+        new UnsafeBuffer(MsgPackUtil.asMsgPack(variables).byteArray());
+    return withDocument(serializedVariables);
+  }
+
+  public VariableClient withDocument(final DirectBuffer variables) {
+    variableDocumentRecord.setVariables(variables);
     return this;
   }
 
@@ -44,13 +69,14 @@ public final class VariableClient {
     return this;
   }
 
+  public VariableClient expectRejection() {
+    expectation = REJECTION_EXPECTATION_SUPPLIER;
+    return this;
+  }
+
   public Record<VariableDocumentRecordValue> update() {
     final long position =
         environmentRule.writeCommand(VariableDocumentIntent.UPDATE, variableDocumentRecord);
-
-    return RecordingExporter.variableDocumentRecords()
-        .withIntent(VariableDocumentIntent.UPDATED)
-        .withSourceRecordPosition(position)
-        .getFirst();
+    return expectation.apply(position);
   }
 }

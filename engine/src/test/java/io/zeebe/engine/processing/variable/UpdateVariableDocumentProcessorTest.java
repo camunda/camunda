@@ -7,146 +7,208 @@
  */
 package io.zeebe.engine.processing.variable;
 
+import static io.zeebe.protocol.record.Assertions.assertThat;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
-import io.zeebe.engine.processing.CommandProcessorTestCase;
-import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.zeebe.engine.state.mutable.MutableVariableState;
-import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.engine.util.EngineRule;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.VariableDocumentIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.VariableIntent;
+import io.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
-import org.agrona.DirectBuffer;
+import io.zeebe.protocol.record.value.VariableRecordValue;
+import io.zeebe.test.util.Strings;
+import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.awaitility.Awaitility;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class UpdateVariableDocumentProcessorTest
-    extends CommandProcessorTestCase<VariableDocumentRecord> {
+public final class UpdateVariableDocumentProcessorTest {
 
-  public static final int WORKFLOW_KEY = -1;
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  private static final String PROCESS_ID = "process";
 
-  private MutableElementInstanceState elementInstanceState;
-  private MutableVariableState variablesState;
-  private UpdateVariableDocumentProcessor processor;
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
+
+  private String jobType;
 
   @Before
-  public void setUp() {
-    final ZeebeState state = ZEEBE_STATE_RULE.getZeebeState();
-    elementInstanceState = state.getElementInstanceState();
-    variablesState = Mockito.spy(state.getVariableState());
-    processor = new UpdateVariableDocumentProcessor(elementInstanceState, variablesState);
+  public void before() {
+    jobType = Strings.newRandomValidBpmnId();
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeJobType(jobType))
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
   }
 
   @Test
   public void shouldRejectIfNoScopeFound() {
     // given
-    final TypedRecord<VariableDocumentRecord> command = newCommand(VariableDocumentRecord.class);
-    command.getValue().setScopeKey(1);
+    final long invalidScopeKey = Long.MAX_VALUE;
+    final Map<String, Object> document = Map.of("foo", "bar", "baz", 1);
 
     // when
-    processor.onCommand(command, controller);
+    final Record<VariableDocumentRecordValue> result =
+        ENGINE
+            .variables()
+            .ofScope(invalidScopeKey)
+            .withDocument(document)
+            .expectRejection()
+            .update();
 
     // then
-    refuteAccepted();
-    assertRejected(RejectionType.NOT_FOUND);
+    assertThat(result)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
   public void shouldRejectOnMsgpackReadError() {
     // given
-    final ElementInstance instance = newElementInstance();
-    final TypedRecord<VariableDocumentRecord> command = newCommand(VariableDocumentRecord.class);
-    final MutableDirectBuffer badDocument = new UnsafeBuffer(asMsgPack("{}"));
-    command
-        .getValue()
-        .setScopeKey(instance.getKey())
-        .setUpdateSemantics(VariableDocumentUpdateSemantic.PROPAGATE)
-        .setVariables(badDocument);
-    badDocument.putByte(0, (byte) 0); // overwrite map header
+    final MutableDirectBuffer badDocument = new UnsafeBuffer(asMsgPack("{\"a\": 1}"));
+    badDocument.putByte(1, (byte) 0); // overwrite string header type
+    final long workflowInstanceKey = startProcessWithVariables(Map.of());
 
     // when
-    processor.onCommand(command, controller);
+    final Record<VariableDocumentRecordValue> result =
+        ENGINE
+            .variables()
+            .ofScope(workflowInstanceKey)
+            .withDocument(badDocument)
+            .expectRejection()
+            .update();
 
     // then
-    refuteAccepted();
-    assertRejected(RejectionType.INVALID_ARGUMENT);
+    assertThat(result)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
   }
 
   @Test
-  public void shouldApplyPropagateUpdateOperation() {
+  public void shouldPropagateValueFromTaskToWorkflow() {
     // given
-    final DirectBuffer variables = asMsgPack("a", 1);
-    final ElementInstance instance = newElementInstance();
-    final TypedRecord<VariableDocumentRecord> command = newCommand(VariableDocumentRecord.class);
-    command
-        .getValue()
-        .setScopeKey(instance.getKey())
-        .setUpdateSemantics(VariableDocumentUpdateSemantic.PROPAGATE)
-        .setVariables(variables);
+    final Map<String, Object> document = Map.of("updated", "newValue", "created", 1);
+    final long workflowInstanceKey = startProcessWithVariables(Map.of("updated", "oldValue"));
+    final long serviceTaskScopeKey = getServiceTaskScopeKey();
 
     // when
-    processor.onCommand(command, controller);
+    final Record<VariableDocumentRecordValue> result =
+        ENGINE
+            .variables()
+            .ofScope(serviceTaskScopeKey)
+            .withDocument(document)
+            .withUpdateSemantic(VariableDocumentUpdateSemantic.PROPAGATE)
+            .update();
 
     // then
-    verify(variablesState, times(1))
-        .setVariablesFromDocument(instance.getKey(), WORKFLOW_KEY, variables);
+    final Record<VariableRecordValue> createdVariable =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .skipUntil(r -> r.getPosition() > result.getSourceRecordPosition())
+            .withScopeKey(workflowInstanceKey)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limit(document.size())
+            .findFirst()
+            .orElseThrow();
+    final Record<VariableRecordValue> updatedVariable =
+        RecordingExporter.variableRecords(VariableIntent.UPDATED)
+            .withScopeKey(workflowInstanceKey)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limit(document.size())
+            .findFirst()
+            .orElseThrow();
+    assertThat(result).hasRecordType(RecordType.EVENT).hasIntent(VariableDocumentIntent.UPDATED);
+    assertThat(createdVariable.getValue()).hasName("created").hasValue("1");
+    assertThat(updatedVariable.getValue()).hasName("updated").hasValue("\"newValue\"");
   }
 
   @Test
-  public void shouldApplyLocalUpdateOperation() {
+  public void shouldNotPropagateValueWithLocalSemantic() {
     // given
-    final DirectBuffer variables = asMsgPack("a", 1);
-    final ElementInstance instance = newElementInstance();
-    final TypedRecord<VariableDocumentRecord> command = newCommand(VariableDocumentRecord.class);
-    command
-        .getValue()
-        .setScopeKey(instance.getKey())
-        .setUpdateSemantics(VariableDocumentUpdateSemantic.LOCAL)
-        .setVariables(variables);
+    final Map<String, Object> document = Map.of("updated", "newValue");
+    final long workflowInstanceKey = startProcessWithVariables(Map.of("updated", "oldValue"));
+    final long serviceTaskScopeKey = getServiceTaskScopeKey();
 
     // when
-    processor.onCommand(command, controller);
+    final Record<VariableDocumentRecordValue> result =
+        ENGINE
+            .variables()
+            .ofScope(serviceTaskScopeKey)
+            .withDocument(document)
+            .withUpdateSemantic(VariableDocumentUpdateSemantic.LOCAL)
+            .update();
 
     // then
-    verify(variablesState, times(1))
-        .setVariablesLocalFromDocument(instance.getKey(), WORKFLOW_KEY, variables);
+    final Record<VariableRecordValue> createdVariable =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .skipUntil(r -> r.getPosition() > result.getSourceRecordPosition())
+            .withScopeKey(serviceTaskScopeKey)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limit(document.size())
+            .findFirst()
+            .orElseThrow();
+    assertThat(result).hasRecordType(RecordType.EVENT).hasIntent(VariableDocumentIntent.UPDATED);
+    assertThat(createdVariable.getValue()).hasName("updated").hasValue("\"newValue\"");
   }
 
   @Test
-  public void shouldPublishUpdatedRecord() {
+  public void shouldNotPropagateExistingVariable() {
     // given
-    final DirectBuffer variables = asMsgPack("a", 1);
-    final ElementInstance instance = newElementInstance();
-    final TypedRecord<VariableDocumentRecord> command = newCommand(VariableDocumentRecord.class);
-    command
-        .getValue()
-        .setScopeKey(instance.getKey())
-        .setUpdateSemantics(VariableDocumentUpdateSemantic.PROPAGATE)
-        .setVariables(variables);
+    final Map<String, Object> document = Map.of("updated", "newValue");
+    final long workflowInstanceKey = startProcessWithVariables(Map.of());
+    final long serviceTaskScopeKey = getServiceTaskScopeKey();
 
     // when
-    processor.onCommand(command, controller);
+    ENGINE
+        .variables()
+        .ofScope(serviceTaskScopeKey)
+        .withDocument(Map.of("updated", "oldValue"))
+        .withUpdateSemantic(VariableDocumentUpdateSemantic.LOCAL)
+        .update();
+    final Record<VariableDocumentRecordValue> result =
+        ENGINE
+            .variables()
+            .ofScope(serviceTaskScopeKey)
+            .withDocument(document)
+            .withUpdateSemantic(VariableDocumentUpdateSemantic.PROPAGATE)
+            .update();
 
     // then
-    refuteRejected();
-    assertAccepted(VariableDocumentIntent.UPDATED, command.getValue());
+    final Record<VariableRecordValue> updatedVariable =
+        RecordingExporter.variableRecords(VariableIntent.UPDATED)
+            .withScopeKey(serviceTaskScopeKey)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limit(document.size())
+            .findFirst()
+            .orElseThrow();
+    assertThat(result).hasRecordType(RecordType.EVENT).hasIntent(VariableDocumentIntent.UPDATED);
+    assertThat(updatedVariable.getValue()).hasName("updated").hasValue("\"newValue\"");
   }
 
-  private ElementInstance newElementInstance() {
-    return elementInstanceState.newInstance(
-        1, new WorkflowInstanceRecord(), WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+  private long startProcessWithVariables(final Map<String, Object> variables) {
+    return ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariables(variables).create();
+  }
+
+  private long getServiceTaskScopeKey() {
+    final Record<JobBatchRecordValue> activatedJobs =
+        Awaitility.await()
+            .until(
+                () -> ENGINE.jobs().withType(jobType).activate(),
+                r -> r.getValue().getJobs().size() > 0);
+    return activatedJobs.getValue().getJobs().get(0).getElementInstanceKey();
   }
 }
