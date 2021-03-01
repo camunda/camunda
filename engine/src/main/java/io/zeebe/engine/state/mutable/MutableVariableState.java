@@ -12,8 +12,6 @@ import org.agrona.DirectBuffer;
 
 public interface MutableVariableState extends VariableState {
 
-  void setVariablesLocalFromDocument(long scopeKey, long workflowKey, DirectBuffer document);
-
   void setVariableLocal(long scopeKey, long workflowKey, DirectBuffer name, DirectBuffer value);
 
   void setVariableLocal(
@@ -33,8 +31,6 @@ public interface MutableVariableState extends VariableState {
       DirectBuffer value,
       int valueOffset,
       int valueLength);
-
-  void setVariablesFromDocument(long scopeKey, long workflowKey, DirectBuffer document);
 
   void createScope(long childKey, long parentKey);
 

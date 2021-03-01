@@ -25,12 +25,12 @@ public final class EventApplyingStateWriter implements StateWriter {
 
   private static final UnaryOperator<RecordMetadata> NO_MODIFIER = UnaryOperator.identity();
 
-  private final TypedStreamWriter streamWriter;
+  private final TypedEventWriter eventWriter;
   private final EventApplier eventApplier;
 
   public EventApplyingStateWriter(
-      final TypedStreamWriter streamWriter, final EventApplier eventApplier) {
-    this.streamWriter = streamWriter;
+      final TypedEventWriter eventWriter, final EventApplier eventApplier) {
+    this.eventWriter = eventWriter;
     this.eventApplier = eventApplier;
   }
 
@@ -45,7 +45,7 @@ public final class EventApplyingStateWriter implements StateWriter {
       final Intent intent,
       final RecordValue value,
       final UnaryOperator<RecordMetadata> modifier) {
-    streamWriter.appendFollowUpEvent(key, intent, value, modifier);
+    eventWriter.appendFollowUpEvent(key, intent, value, modifier);
     eventApplier.applyState(key, intent, value);
   }
 }

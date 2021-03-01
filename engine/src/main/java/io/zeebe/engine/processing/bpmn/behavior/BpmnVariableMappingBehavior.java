@@ -12,6 +12,7 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.zeebe.engine.processing.variable.VariableDocumentBehavior;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
@@ -24,12 +25,14 @@ public final class BpmnVariableMappingBehavior {
   private final ExpressionProcessor expressionProcessor;
   private final MutableVariableState variablesState;
   private final ElementInstanceState elementInstanceState;
+  private final VariableDocumentBehavior variableDocumentBehavior;
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor, final ZeebeState zeebeState) {
     this.expressionProcessor = expressionProcessor;
     elementInstanceState = zeebeState.getElementInstanceState();
     variablesState = zeebeState.getVariableState();
+    variableDocumentBehavior = new VariableDocumentBehavior(variablesState);
   }
 
   /**
@@ -49,7 +52,7 @@ public final class BpmnVariableMappingBehavior {
           .map(
               result -> {
                 final var workflowKey = context.getWorkflowKey();
-                variablesState.setVariablesLocalFromDocument(scopeKey, workflowKey, result);
+                variableDocumentBehavior.mergeLocalDocument(scopeKey, workflowKey, result);
                 return null;
               });
     }
@@ -76,10 +79,10 @@ public final class BpmnVariableMappingBehavior {
     if (temporaryVariables != null) {
       outputMappingExpression.ifPresentOrElse(
           expression ->
-              variablesState.setVariablesLocalFromDocument(
+              variableDocumentBehavior.mergeLocalDocument(
                   elementInstanceKey, workflowKey, temporaryVariables),
           () ->
-              variablesState.setVariablesFromDocument(
+              variableDocumentBehavior.mergeDocument(
                   elementInstanceKey, workflowKey, temporaryVariables));
       variablesState.removeTemporaryVariables(elementInstanceKey);
     }
@@ -89,7 +92,7 @@ public final class BpmnVariableMappingBehavior {
           .evaluateVariableMappingExpression(outputMappingExpression.get(), elementInstanceKey)
           .map(
               result -> {
-                variablesState.setVariablesFromDocument(
+                variableDocumentBehavior.mergeDocument(
                     getVariableScopeKey(context), workflowKey, result);
                 return null;
               });

@@ -22,13 +22,20 @@ import org.agrona.DirectBuffer;
 
 public final class UpdateVariableDocumentProcessor
     implements CommandProcessor<VariableDocumentRecord> {
+
   private final ElementInstanceState elementInstanceState;
-  private final MutableVariableState variablesState;
+  private final VariableDocumentBehavior variableDocumentBehavior;
 
   public UpdateVariableDocumentProcessor(
       final ElementInstanceState elementInstanceState, final MutableVariableState variablesState) {
+    this(elementInstanceState, new VariableDocumentBehavior(variablesState));
+  }
+
+  public UpdateVariableDocumentProcessor(
+      final ElementInstanceState elementInstanceState,
+      final VariableDocumentBehavior variableDocumentBehavior) {
     this.elementInstanceState = elementInstanceState;
-    this.variablesState = variablesState;
+    this.variableDocumentBehavior = variableDocumentBehavior;
   }
 
   @Override
@@ -81,10 +88,10 @@ public final class UpdateVariableDocumentProcessor
   private UpdateOperation getUpdateOperation(final VariableDocumentUpdateSemantic updateSemantics) {
     switch (updateSemantics) {
       case LOCAL:
-        return variablesState::setVariablesLocalFromDocument;
+        return variableDocumentBehavior::mergeLocalDocument;
       case PROPAGATE:
       default:
-        return variablesState::setVariablesFromDocument;
+        return variableDocumentBehavior::mergeDocument;
     }
   }
 
