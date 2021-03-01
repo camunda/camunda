@@ -29,7 +29,7 @@ import {
   AssigneeTD,
   Assignee,
 } from './styled';
-import {GET_TASKS} from 'modules/queries/get-tasks';
+import {GetTasks, GET_TASKS} from 'modules/queries/get-tasks';
 import {FilterValues} from 'modules/constants/filterValues';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
@@ -43,6 +43,12 @@ import {
   GET_CURRENT_USER,
   GetCurrentUser,
 } from 'modules/queries/get-current-user';
+import {
+  MAX_TASKS_PER_REQUEST,
+  MAX_TASKS_DISPLAYED,
+} from 'modules/constants/tasks';
+import {getSortValues} from '../getSortValues';
+
 const Details: React.FC = () => {
   const {id} = useParams<{id: string}>();
   const location = useLocation();
@@ -52,6 +58,12 @@ const Details: React.FC = () => {
   const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER, {
     skip: !isClaimedByMeFilter,
   });
+
+  const {data: dataFromCache} = useQuery<GetTasks>(GET_TASKS, {
+    fetchPolicy: 'cache-only',
+  });
+  const currentTaskCount = dataFromCache?.tasks?.length ?? 0;
+
   const [claimTask] = useMutation<GetTaskDetails, ClaimTaskVariables>(
     CLAIM_TASK,
     {
@@ -59,9 +71,16 @@ const Details: React.FC = () => {
       refetchQueries: [
         {
           query: GET_TASKS,
-          variables: getQueryVariables(filter, {
-            username: userData?.currentUser.username,
-          }),
+          variables: {
+            ...getQueryVariables(filter, {
+              username: userData?.currentUser.username,
+              pageSize:
+                currentTaskCount <= MAX_TASKS_PER_REQUEST
+                  ? MAX_TASKS_PER_REQUEST
+                  : MAX_TASKS_DISPLAYED,
+              searchAfterOrEqual: getSortValues(dataFromCache?.tasks),
+            }),
+          },
         },
       ],
     },
@@ -74,9 +93,16 @@ const Details: React.FC = () => {
       refetchQueries: [
         {
           query: GET_TASKS,
-          variables: getQueryVariables(filter, {
-            username: userData?.currentUser.username,
-          }),
+          variables: {
+            ...getQueryVariables(filter, {
+              username: userData?.currentUser.username,
+              pageSize:
+                currentTaskCount <= MAX_TASKS_PER_REQUEST
+                  ? MAX_TASKS_PER_REQUEST
+                  : MAX_TASKS_DISPLAYED,
+              searchAfterOrEqual: getSortValues(dataFromCache?.tasks),
+            }),
+          },
         },
       ],
     },

@@ -18,6 +18,8 @@ const unclaimedTask: Task = {
   completionTime: null,
   variables: [],
   taskState: TaskStates.Created,
+  sortValues: [],
+  isFirst: false,
 };
 
 const claimedTask: Task = {

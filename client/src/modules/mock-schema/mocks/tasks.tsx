@@ -19,6 +19,8 @@ const tasks: ReadonlyArray<Task> = [
     assignee: currentUser,
     variables: [],
     taskState: TaskStates.Created,
+    sortValues: ['0'],
+    isFirst: true,
   },
   {
     __typename: 'Task',
@@ -37,6 +39,8 @@ const tasks: ReadonlyArray<Task> = [
       {name: 'isCool', value: '"yes"'},
     ],
     taskState: TaskStates.Created,
+    sortValues: ['1'],
+    isFirst: false,
   },
   {
     __typename: 'Task',
@@ -48,6 +52,8 @@ const tasks: ReadonlyArray<Task> = [
     assignee: null,
     variables: [],
     taskState: TaskStates.Created,
+    sortValues: ['2'],
+    isFirst: false,
   },
 ];
 
@@ -67,4 +73,29 @@ const completedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
   taskState: TaskStates.Completed,
 }));
 
-export {tasks, tasksClaimedByDemoUser, unclaimedTasks, completedTasks};
+const generateTask = (id: string) => {
+  return {
+    id,
+    name: `TASK ${id}`,
+    workflowName: 'Flight registration',
+    assignee: {
+      username: 'demo',
+      firstname: 'Demo',
+      lastname: 'User',
+      __typename: 'User',
+    },
+    creationTime: '2021-01-13T12:13:18.655Z',
+    taskState: 'CREATED',
+    sortValues: ['1610539998655', '4503599627371091'],
+    __typename: 'Task',
+    isFirst: false,
+  };
+};
+
+export {
+  tasks,
+  tasksClaimedByDemoUser,
+  unclaimedTasks,
+  completedTasks,
+  generateTask,
+};

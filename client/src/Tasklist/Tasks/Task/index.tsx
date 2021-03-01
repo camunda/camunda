@@ -29,39 +29,39 @@ interface Props {
   creationTime: TaskType['creationTime'];
 }
 
-const Task: React.FC<Props> = ({
-  taskId,
-  name,
-  workflowName,
-  assignee,
-  creationTime,
-}) => {
-  const {id} = useParams<{id: string}>();
+const Task = React.forwardRef<HTMLLIElement, Props>(
+  ({taskId, name, workflowName, assignee, creationTime}, ref) => {
+    const {id} = useParams<{id: string}>();
 
-  return (
-    <Link
-      to={(location: Location) => ({
-        ...location,
-        pathname: Pages.TaskDetails(taskId),
-      })}
-    >
-      <Entry isSelected={id === taskId} data-testid={`task-${taskId}`}>
-        <TaskInfo>
-          <TaskName>{name}</TaskName>
-          <WorkflowName>{workflowName}</WorkflowName>
-        </TaskInfo>
-        <TaskStatus>
-          <Assignee data-testid="assignee">
-            {assignee ? `${assignee.firstname} ${assignee.lastname}` : '--'}
-          </Assignee>
+    return (
+      <Link
+        to={(location: Location) => ({
+          ...location,
+          pathname: Pages.TaskDetails(taskId),
+        })}
+      >
+        <Entry
+          ref={ref}
+          isSelected={id === taskId}
+          data-testid={`task-${taskId}`}
+        >
+          <TaskInfo>
+            <TaskName>{name}</TaskName>
+            <WorkflowName>{workflowName}</WorkflowName>
+          </TaskInfo>
+          <TaskStatus>
+            <Assignee data-testid="assignee">
+              {assignee ? `${assignee.firstname} ${assignee.lastname}` : '--'}
+            </Assignee>
 
-          <CreationTime data-testid="creation-time">
-            {formatDate(creationTime)}
-          </CreationTime>
-        </TaskStatus>
-      </Entry>
-    </Link>
-  );
-};
+            <CreationTime data-testid="creation-time">
+              {formatDate(creationTime)}
+            </CreationTime>
+          </TaskStatus>
+        </Entry>
+      </Link>
+    );
+  },
+);
 
 export {Task};

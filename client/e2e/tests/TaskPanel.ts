@@ -114,3 +114,50 @@ test('update task list according to user actions', async (t) => {
     )
     .ok();
 });
+
+test('scrolling', async (t) => {
+  await t
+    .expect(screen.getAllByTestId(/task-/).count)
+    .eql(50)
+    .expect(screen.getByText('usertask_for_scrolling_1').exists)
+    .ok();
+
+  await t.hover(screen.getAllByTestId(/task-/).nth(49));
+  await t
+    .expect(screen.getAllByTestId(/task-/).count)
+    .eql(100)
+    .expect(screen.getByText('usertask_for_scrolling_1').exists)
+    .ok();
+
+  await t.hover(screen.getAllByTestId(/task-/).nth(99));
+  await t
+    .expect(screen.getAllByTestId(/task-/).count)
+    .eql(150)
+    .expect(screen.getByText('usertask_for_scrolling_1').exists)
+    .ok();
+
+  await t.hover(screen.getAllByTestId(/task-/).nth(149));
+  await t
+    .expect(screen.getAllByTestId(/task-/).count)
+    .eql(200)
+    .expect(screen.getByText('usertask_for_scrolling_1').exists)
+    .ok();
+
+  await t.hover(screen.getAllByTestId(/task-/).nth(199));
+  await t
+    .expect(screen.getByText('usertask_for_scrolling_3').exists)
+    .ok()
+    .expect(screen.queryByText('usertask_for_scrolling_1').exists)
+    .notOk()
+    .expect(screen.getAllByTestId(/task-/).count)
+    .eql(200);
+
+  await t.hover(screen.getAllByTestId(/task-/).nth(0));
+  await t
+    .expect(screen.getByText('usertask_for_scrolling_1').exists)
+    .ok()
+    .expect(screen.queryByText('usertask_for_scrolling_3').exists)
+    .notOk()
+    .expect(screen.getAllByTestId(/task-/).count)
+    .eql(200);
+});

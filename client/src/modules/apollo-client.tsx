@@ -11,9 +11,45 @@ import {ApolloClient, InMemoryCache, HttpLink} from '@apollo/client';
 import {getCsrfToken, CsrfKeyName} from 'modules/utils/getCsrfToken';
 import {login} from 'modules/stores/login';
 import {mergePathname} from 'modules/utils/mergePathname';
+import {MAX_TASKS_DISPLAYED} from 'modules/constants/tasks';
 
 const client = new ApolloClient({
-  cache: new InMemoryCache(), //TODO - Issue #243
+  cache: new InMemoryCache({
+    typePolicies: {
+      Query: {
+        fields: {
+          tasks: {
+            keyArgs: false,
+            merge(existing, incoming, {args}) {
+              let merged = existing ? existing.slice(0) : [];
+
+              // refreshing after mutations / polling
+              if (args?.query?.searchAfterOrEqual !== undefined) {
+                return incoming;
+              }
+              // requesting next page
+              if (args?.query?.searchAfter !== undefined) {
+                merged.push(...incoming);
+                return merged.slice(
+                  Math.max(merged.length - MAX_TASKS_DISPLAYED, 0),
+                );
+              }
+              // requesting previous page
+              if (args?.query?.searchBefore !== undefined) {
+                if (incoming.length > 0) {
+                  merged.unshift(...incoming);
+                }
+
+                return merged.slice(0, MAX_TASKS_DISPLAYED);
+              }
+
+              return incoming;
+            },
+          },
+        },
+      },
+    },
+  }),
   link: new HttpLink({
     uri: mergePathname(window.clientConfig?.contextPath ?? '/', '/graphql'),
     async fetch(uri: RequestInfo, options: RequestInit) {

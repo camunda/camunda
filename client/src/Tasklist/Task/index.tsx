@@ -32,12 +32,17 @@ import {
 } from 'modules/queries/get-current-user';
 import {Pages} from 'modules/constants/pages';
 import {Variable} from 'modules/types';
-import {GET_TASKS} from 'modules/queries/get-tasks';
+import {GetTasks, GET_TASKS} from 'modules/queries/get-tasks';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
 import {FilterValues} from 'modules/constants/filterValues';
 import {useNotifications} from 'modules/notifications';
 import {getVariableFieldName} from './getVariableFieldName';
+import {
+  MAX_TASKS_PER_REQUEST,
+  MAX_TASKS_DISPLAYED,
+} from 'modules/constants/tasks';
+import {getSortValues} from './getSortValues';
 
 const Task: React.FC = () => {
   const {id} = useParams<{id: string}>();
@@ -45,6 +50,11 @@ const Task: React.FC = () => {
   const location = useLocation();
   const filter =
     getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
+
+  const {data: dataFromCache} = useQuery<GetTasks>(GET_TASKS, {
+    fetchPolicy: 'cache-only',
+  });
+  const currentTaskCount = dataFromCache?.tasks?.length ?? 0;
 
   const {data, loading, fetchMore} = useQuery<GetTask, TaskQueryVariables>(
     GET_TASK,
@@ -59,9 +69,16 @@ const Task: React.FC = () => {
       refetchQueries: [
         {
           query: GET_TASKS,
-          variables: getQueryVariables(filter, {
-            username: userData?.currentUser.username,
-          }),
+          variables: {
+            ...getQueryVariables(filter, {
+              username: userData?.currentUser.username,
+              pageSize:
+                currentTaskCount <= MAX_TASKS_PER_REQUEST
+                  ? MAX_TASKS_PER_REQUEST
+                  : MAX_TASKS_DISPLAYED,
+              searchAfterOrEqual: getSortValues(dataFromCache?.tasks),
+            }),
+          },
         },
       ],
     },
