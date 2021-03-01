@@ -100,7 +100,7 @@ public class ReplayStateRandomizedPropertyTest {
     final var position = result.getPosition();
 
     Awaitility.await("await the last workflow record to be processed")
-        .untilAsserted(() -> assertThat(lastProcessedPosition).isEqualTo(position));
+        .untilAsserted(() -> assertThat(lastProcessedPosition).isGreaterThanOrEqualTo(position));
 
     stopAndRestartEngineAndCompareStates();
   }
@@ -124,32 +124,39 @@ public class ReplayStateRandomizedPropertyTest {
                     .isEqualTo(Phase.PROCESSING));
 
     // then
-    final var replayState = engineRule.collectState();
+    Awaitility.await("await that the replay state is equal to the processing state")
+        .untilAsserted(
+            () -> {
+              final var replayState = engineRule.collectState();
 
-    final var softly = new SoftAssertions();
+              final var softly = new SoftAssertions();
 
-    processingState.entrySet().stream()
-        .filter(entry -> entry.getKey() != ZbColumnFamilies.DEFAULT)
-        .forEach(
-            entry -> {
-              final var column = entry.getKey();
-              final var processingEntries = entry.getValue();
-              final var replayEntries = replayState.get(column);
+              processingState.entrySet().stream()
+                  .filter(entry -> entry.getKey() != ZbColumnFamilies.DEFAULT)
+                  .forEach(
+                      entry -> {
+                        final var column = entry.getKey();
+                        final var processingEntries = entry.getValue();
+                        final var replayEntries = replayState.get(column);
 
-              if (processingEntries.isEmpty()) {
-                softly
-                    .assertThat(replayEntries)
-                    .describedAs("The state column '%s' should be empty after replay", column)
-                    .isEmpty();
-              } else {
-                softly
-                    .assertThat(replayEntries)
-                    .describedAs("The state column '%s' has different entries after replay", column)
-                    .containsExactlyInAnyOrderEntriesOf(processingEntries);
-              }
+                        if (processingEntries.isEmpty()) {
+                          softly
+                              .assertThat(replayEntries)
+                              .describedAs(
+                                  "The state column '%s' should be empty after replay", column)
+                              .isEmpty();
+                        } else {
+                          softly
+                              .assertThat(replayEntries)
+                              .describedAs(
+                                  "The state column '%s' has different entries after replay",
+                                  column)
+                              .containsExactlyInAnyOrderEntriesOf(processingEntries);
+                        }
+                      });
+
+              softly.assertAll();
             });
-
-    softly.assertAll();
   }
 
   private void waitForProcessingToStop() {
@@ -162,8 +169,8 @@ public class ReplayStateRandomizedPropertyTest {
   @Parameters(name = "{0}")
   public static Collection<TestDataRecord> getTestRecords() {
     // use the following code to rerun a specific test case:
-    //    final var workflowSeed = 8354930473519021610L;
-    //    final var executionPathSeed = 4913527714508155594L;
+    //    final var workflowSeed = 4151337193744273092L;
+    //    final var executionPathSeed = 8078198989481167852L;
     //    return List.of(TestDataGenerator.regenerateTestRecord(workflowSeed, executionPathSeed));
     return TestDataGenerator.generateTestRecords(WORKFLOW_COUNT, EXECUTION_PATH_COUNT);
   }
