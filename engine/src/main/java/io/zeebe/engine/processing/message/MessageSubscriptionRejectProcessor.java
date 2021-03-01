@@ -83,25 +83,23 @@ public final class MessageSubscriptionRejectProcessor
         subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.getCorrelationKeyBuffer(),
         subscription -> {
+          final var correlatingSubscription = subscription.getRecord();
+
           final var canBeCorrelated =
-              subscription.getBpmnProcessId().equals(subscriptionRecord.getBpmnProcessIdBuffer())
+              correlatingSubscription
+                      .getBpmnProcessIdBuffer()
+                      .equals(subscriptionRecord.getBpmnProcessIdBuffer())
                   && !subscription.isCorrelating();
 
           if (canBeCorrelated) {
-            // TODO (saig0): retrieve the subscription record from the state (#6180)
-            final var correlatingSubscription = new MessageSubscriptionRecord();
             correlatingSubscription
                 .setMessageKey(messageKey)
-                .setVariables(storedMessage.getMessage().getVariablesBuffer())
-                .setMessageName(subscription.getMessageName())
-                .setCorrelationKey(subscription.getCorrelationKey())
-                .setBpmnProcessId(subscription.getBpmnProcessId())
-                .setWorkflowInstanceKey(subscription.getWorkflowInstanceKey())
-                .setElementInstanceKey(subscription.getElementInstanceKey())
-                .setCloseOnCorrelate(subscription.shouldCloseOnCorrelate());
+                .setVariables(storedMessage.getMessage().getVariablesBuffer());
 
             stateWriter.appendFollowUpEvent(
-                -1L, MessageSubscriptionIntent.CORRELATING, correlatingSubscription);
+                subscription.getKey(),
+                MessageSubscriptionIntent.CORRELATING,
+                correlatingSubscription);
 
             sideEffect.accept(() -> sendCorrelateCommand(correlatingSubscription));
           }

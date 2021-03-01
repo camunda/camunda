@@ -29,8 +29,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
-  private final BooleanProperty closeOnCorrelateProp =
-      new BooleanProperty("closeOnCorrelate", true);
+  private final BooleanProperty interruptingProp = new BooleanProperty("interrupting", true);
 
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
 
@@ -40,13 +39,24 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(messageKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp)
-        .declareProperty(closeOnCorrelateProp)
+        .declareProperty(interruptingProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(variablesProp);
   }
 
-  public boolean shouldCloseOnCorrelate() {
-    return closeOnCorrelateProp.getValue();
+  public void wrap(final MessageSubscriptionRecord record) {
+    setWorkflowInstanceKey(record.getWorkflowInstanceKey());
+    setElementInstanceKey(record.getElementInstanceKey());
+    setMessageKey(record.getMessageKey());
+    setMessageName(record.getMessageNameBuffer());
+    setCorrelationKey(record.getCorrelationKeyBuffer());
+    setInterrupting(record.isInterrupting());
+    setBpmnProcessId(record.getBpmnProcessIdBuffer());
+    setVariables(record.getVariablesBuffer());
+  }
+
+  public boolean isInterrupting() {
+    return interruptingProp.getValue();
   }
 
   @JsonIgnore
@@ -119,8 +129,8 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  public MessageSubscriptionRecord setCloseOnCorrelate(final boolean closeOnCorrelate) {
-    closeOnCorrelateProp.setValue(closeOnCorrelate);
+  public MessageSubscriptionRecord setInterrupting(final boolean interrupting) {
+    interruptingProp.setValue(interrupting);
     return this;
   }
 

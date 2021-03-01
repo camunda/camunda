@@ -35,6 +35,9 @@
             },
             "variables": {
               "enabled": false
+            },
+            "interrupting": {
+              "type": "boolean"
             }
           }
         }

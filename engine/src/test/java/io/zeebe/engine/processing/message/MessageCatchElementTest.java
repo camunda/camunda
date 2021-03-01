@@ -278,12 +278,10 @@ public final class MessageCatchElementTest {
   @Test
   public void shouldCloseMessageSubscription() {
     // given
-    final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        getFirstElementRecord(enteredState);
-
-    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
-        .await();
+    final var subscriptionCreated =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
 
     // when
     ENGINE_RULE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
@@ -292,13 +290,15 @@ public final class MessageCatchElementTest {
     final Record<MessageSubscriptionRecordValue> messageSubscription =
         getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.DELETED);
 
-    assertThat(messageSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
+    Assertions.assertThat(messageSubscription)
+        .hasRecordType(RecordType.EVENT)
+        .hasKey(subscriptionCreated.getKey());
 
     Assertions.assertThat(messageSubscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
-        .hasElementInstanceKey(catchEventEntered.getKey())
+        .hasElementInstanceKey(subscriptionCreated.getValue().getElementInstanceKey())
         .hasMessageName(MESSAGE_NAME)
-        .hasCorrelationKey("");
+        .hasCorrelationKey(subscriptionCreated.getValue().getCorrelationKey());
   }
 
   @Test
@@ -375,6 +375,30 @@ public final class MessageCatchElementTest {
             tuple(RecordType.EVENT, MessageSubscriptionIntent.CORRELATING),
             tuple(RecordType.COMMAND, MessageSubscriptionIntent.CORRELATE),
             tuple(RecordType.EVENT, MessageSubscriptionIntent.CORRELATED));
+  }
+
+  @Test
+  public void shouldHaveSameMessageSubscriptionKey() {
+    // given
+    final var messageSubscriptionKey =
+        getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CREATED).getKey();
+
+    // when
+    ENGINE_RULE.message().withCorrelationKey(correlationKey).withName(MESSAGE_NAME).publish();
+
+    // then
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withMessageName(MESSAGE_NAME)
+                .limit(5))
+        .extracting(Record::getIntent, Record::getKey)
+        .containsExactly(
+            tuple(MessageSubscriptionIntent.CREATE, -1L),
+            tuple(MessageSubscriptionIntent.CREATED, messageSubscriptionKey),
+            tuple(MessageSubscriptionIntent.CORRELATING, messageSubscriptionKey),
+            tuple(MessageSubscriptionIntent.CORRELATE, -1L),
+            tuple(MessageSubscriptionIntent.CORRELATED, messageSubscriptionKey));
   }
 
   private Record<WorkflowInstanceRecordValue> getFirstElementRecord(
