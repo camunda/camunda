@@ -599,7 +599,7 @@ public final class VariableStateTest {
   }
 
   @Test
-  public void shouldNotHaveVariableLocal() {
+  public void shouldNotGetVariableInstanceLocal() {
     // given
     declareScope(parent);
     declareScope(parent, child);
@@ -607,14 +607,15 @@ public final class VariableStateTest {
     setVariableLocal(child, wrapString("y"), wrapString("foo"));
 
     // when
-    final boolean hasVariable = variableState.hasVariableLocal(child, wrapString("x"));
+    final VariableInstance variable =
+        variableState.getVariableInstanceLocal(child, wrapString("x"));
 
     // then
-    assertThat(hasVariable).isFalse();
+    assertThat(variable).isNull();
   }
 
   @Test
-  public void shouldHaveVariableLocal() {
+  public void shouldGetVariableInstanceLocal() {
     // given
     declareScope(parent);
     declareScope(parent, child);
@@ -622,14 +623,17 @@ public final class VariableStateTest {
     setVariableLocal(child, wrapString("x"), wrapString("foo"));
 
     // when
-    final boolean hasVariable = variableState.hasVariableLocal(parent, wrapString("x"));
+    final VariableInstance variable =
+        variableState.getVariableInstanceLocal(parent, wrapString("x"));
 
     // then
-    assertThat(hasVariable).isTrue();
+    assertThat(variable).isNotNull();
+    assertThat(variable.getValue()).isEqualTo(wrapString("foo"));
+    assertThat(variable.getKey()).isPositive();
   }
 
   @Test
-  public void shouldNotHaveVariableIfScopeDoesNotExist() {
+  public void shouldNotGetVariableInstanceLocalIfScopeDoesNotExist() {
     // given
     final long scopeKey = child + 1;
     declareScope(scopeKey);
@@ -637,10 +641,11 @@ public final class VariableStateTest {
 
     // when
     variableState.removeScope(scopeKey);
-    final boolean hasVariable = variableState.hasVariableLocal(scopeKey, wrapString("x"));
+    final VariableInstance variable =
+        variableState.getVariableInstanceLocal(scopeKey, wrapString("x"));
 
     // then
-    assertThat(hasVariable).isFalse();
+    assertThat(variable).isNull();
   }
 
   @Test

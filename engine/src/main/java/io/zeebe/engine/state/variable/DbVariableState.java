@@ -410,12 +410,8 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public boolean hasVariableLocal(final long scopeKey, final DirectBuffer name) {
-    this.scopeKey.wrapLong(scopeKey);
-    variableNameView.wrap(name, 0, name.capacity());
-    variableName.wrapBuffer(variableNameView);
-
-    return variablesColumnFamily.exists(scopeKeyVariableNameKey);
+  public VariableInstance getVariableInstanceLocal(final long scopeKey, final DirectBuffer name) {
+    return getVariableLocal(scopeKey, name, 0, name.capacity());
   }
 
   @Override
@@ -433,6 +429,14 @@ public class DbVariableState implements MutableVariableState {
 
     final ParentScopeKey parentScopeKey = childParentColumnFamily.get(childKey);
     return parentScopeKey != null ? parentScopeKey.get() : NO_PARENT;
+  }
+
+  private boolean hasVariableLocal(final long scopeKey, final DirectBuffer name) {
+    this.scopeKey.wrapLong(scopeKey);
+    variableNameView.wrap(name, 0, name.capacity());
+    variableName.wrapBuffer(variableNameView);
+
+    return variablesColumnFamily.exists(scopeKeyVariableNameKey);
   }
 
   private VariableInstance getVariableLocal(
