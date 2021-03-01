@@ -217,7 +217,7 @@ public final class SubscriptionCommandMessageHandler
     return writeCommand(
         closeMessageSubscriptionCommand.getSubscriptionPartitionId(),
         ValueType.MESSAGE_SUBSCRIPTION,
-        MessageSubscriptionIntent.CLOSE,
+        MessageSubscriptionIntent.DELETE,
         messageSubscriptionRecord);
   }
 

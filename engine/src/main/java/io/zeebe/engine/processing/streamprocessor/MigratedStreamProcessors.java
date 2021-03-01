@@ -78,7 +78,9 @@ public final class MigratedStreamProcessors {
                 MessageSubscriptionIntent.CREATED,
                 MessageSubscriptionIntent.CORRELATING,
                 MessageSubscriptionIntent.CORRELATE,
-                MessageSubscriptionIntent.CORRELATED)));
+                MessageSubscriptionIntent.CORRELATED,
+                MessageSubscriptionIntent.DELETE,
+                MessageSubscriptionIntent.DELETED)));
     MIGRATED_VALUE_TYPES.put(
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
         record -> record.getIntent() == MessageStartEventSubscriptionIntent.CORRELATED);

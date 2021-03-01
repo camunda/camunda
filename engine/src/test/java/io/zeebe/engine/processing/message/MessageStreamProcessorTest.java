@@ -175,7 +175,7 @@ public final class MessageStreamProcessorTest {
                 .exists());
 
     // when
-    rule.writeCommand(MessageSubscriptionIntent.CLOSE, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.DELETE, subscription);
     rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
 
     // then
@@ -199,13 +199,13 @@ public final class MessageStreamProcessorTest {
                 .exists());
 
     // when
-    rule.writeCommand(MessageSubscriptionIntent.CLOSE, subscription);
-    rule.writeCommand(MessageSubscriptionIntent.CLOSE, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.DELETE, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.DELETE, subscription);
 
     // then
     final Record<MessageSubscriptionRecord> rejection = awaitAndGetFirstSubscriptionRejection();
 
-    assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.CLOSE);
+    assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.DELETE);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
 
     // cannot verify messageName buffer since it is a view around another buffer which is changed

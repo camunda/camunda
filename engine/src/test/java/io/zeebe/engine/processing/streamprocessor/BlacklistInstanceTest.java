@@ -138,8 +138,8 @@ public final class BlacklistInstanceTest {
       {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.CREATED, true},
       {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.CORRELATE, true},
       {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.CORRELATED, true},
-      {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.CLOSE, true},
-      {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.CLOSED, true},
+      {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.DELETE, true},
+      {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.DELETED, true},
 
       ////////////////////////////////////////
       //////////////// TIMERS ////////////////

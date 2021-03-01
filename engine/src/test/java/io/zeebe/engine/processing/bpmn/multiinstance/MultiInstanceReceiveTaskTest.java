@@ -152,7 +152,7 @@ public final class MultiInstanceReceiveTaskTest {
 
     // then
     assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CLOSED)
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .limit(3))
         .hasSize(3);

@@ -66,16 +66,7 @@ public final class EventAppliers implements EventApplier {
     register(MessageIntent.PUBLISHED, new MessagePublishedApplier(state.getMessageState()));
     register(MessageIntent.EXPIRED, new MessageExpiredApplier(state.getMessageState()));
 
-    register(
-        MessageSubscriptionIntent.CREATED,
-        new MessageSubscriptionCreatedApplier(state.getMessageSubscriptionState()));
-    register(
-        MessageSubscriptionIntent.CORRELATING,
-        new MessageSubscriptionCorrelatingApplier(
-            state.getMessageSubscriptionState(), state.getMessageState()));
-    register(
-        MessageSubscriptionIntent.CORRELATED,
-        new MessageSubscriptionCorrelatedApplier(state.getMessageSubscriptionState()));
+    registerMessageSubscriptionAppliers(state);
 
     register(
         MessageStartEventSubscriptionIntent.CORRELATED,
@@ -120,6 +111,22 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.FAILED, new JobFailedApplier(state));
     register(JobIntent.RETRIES_UPDATED, new JobRetriesUpdatedApplier(state));
     register(JobIntent.TIMED_OUT, new JobTimedOutApplier(state));
+  }
+
+  private void registerMessageSubscriptionAppliers(final ZeebeState state) {
+    register(
+        MessageSubscriptionIntent.CREATED,
+        new MessageSubscriptionCreatedApplier(state.getMessageSubscriptionState()));
+    register(
+        MessageSubscriptionIntent.CORRELATING,
+        new MessageSubscriptionCorrelatingApplier(
+            state.getMessageSubscriptionState(), state.getMessageState()));
+    register(
+        MessageSubscriptionIntent.CORRELATED,
+        new MessageSubscriptionCorrelatedApplier(state.getMessageSubscriptionState()));
+    register(
+        MessageSubscriptionIntent.DELETED,
+        new MessageSubscriptionDeletedApplier(state.getMessageSubscriptionState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

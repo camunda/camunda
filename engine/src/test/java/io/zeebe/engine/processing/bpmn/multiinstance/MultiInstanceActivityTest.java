@@ -1083,8 +1083,8 @@ public final class MultiInstanceActivityTest {
             MessageSubscriptionIntent.CORRELATING,
             MessageSubscriptionIntent.CORRELATE,
             MessageSubscriptionIntent.CORRELATED,
-            MessageSubscriptionIntent.CLOSE,
-            MessageSubscriptionIntent.CLOSED);
+            MessageSubscriptionIntent.DELETE,
+            MessageSubscriptionIntent.DELETED);
 
     assertThat(
             RecordingExporter.workflowInstanceRecords()
