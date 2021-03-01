@@ -24,18 +24,15 @@ public class PersistableJournalRecord implements JournalRecord {
   final long index;
   final long asqn;
   final DirectBuffer data;
-  final PersistableJournalRecordMetadata metadata = new PersistableJournalRecordMetadata();
-  final PersistableJournalIndexedRecord record;
 
   public PersistableJournalRecord(final long index, final long asqn, final DirectBuffer data) {
     this.index = index;
     this.asqn = asqn;
     this.data = data;
-    record = new PersistableJournalIndexedRecord(index, asqn, data);
   }
 
   public int getLength() {
-    return metadata.getLength() + record.getLength();
+    return 0; // TODO
   }
 
   @Override

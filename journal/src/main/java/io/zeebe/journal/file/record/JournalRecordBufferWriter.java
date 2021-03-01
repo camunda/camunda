@@ -16,7 +16,7 @@
 package io.zeebe.journal.file.record;
 
 import io.zeebe.journal.JournalRecord;
-import java.nio.ByteBuffer;
+import org.agrona.MutableDirectBuffer;
 
 public interface JournalRecordBufferWriter {
 
@@ -27,13 +27,12 @@ public interface JournalRecordBufferWriter {
    * @param record to write
    * @param buffer to which the record will be written
    */
-  JournalRecord write(JournalRecord record, ByteBuffer buffer);
+  int write(JournalIndexedRecord record, MutableDirectBuffer buffer);
 
-  /**
-   * Write an invalid record so that a reader does not read a record at buffer.position(). The
-   * position of the buffer does not advance.
-   *
-   * @param buffer
-   */
-  void invalidate(ByteBuffer buffer);
+  int write(JournalRecordMetadata record, MutableDirectBuffer buffer);
+
+  int metadataLength();
+
+  int getSerializedLength(JournalIndexedRecord record);
+
 }

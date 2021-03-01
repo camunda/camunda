@@ -24,9 +24,6 @@ import io.zeebe.journal.Journal;
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
 import io.zeebe.journal.StorageException;
-import io.zeebe.journal.file.record.JournalRecordBufferReader;
-import io.zeebe.journal.file.record.JournalRecordBufferWriter;
-import io.zeebe.journal.file.record.SBESerializer;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -444,9 +441,7 @@ public class SegmentedJournal implements Journal {
     return new JournalSegment(
         segmentFile,
         descriptor,
-        journalIndex,
-        this::createJournalRecordBufferWriter,
-        this::createJournalRecordBufferReader);
+        journalIndex, maxEntrySize);
   }
 
   /** Loads a segment. */
@@ -577,13 +572,5 @@ public class SegmentedJournal implements Journal {
 
   public JournalIndex getJournalIndex() {
     return journalIndex;
-  }
-
-  private JournalRecordBufferReader createJournalRecordBufferReader() {
-    return new SBESerializer(new ChecksumGenerator(), maxEntrySize);
-  }
-
-  private JournalRecordBufferWriter createJournalRecordBufferWriter() {
-    return new SBESerializer(new ChecksumGenerator(), maxEntrySize);
   }
 }

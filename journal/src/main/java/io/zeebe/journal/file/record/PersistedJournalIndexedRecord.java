@@ -27,7 +27,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <p>{@link PersistedJournalIndexedRecord} is the JournalIndexedRecord which is serialized in to a
  * buffer as part of a {@link PersistedJournalRecord}.
  */
-final class PersistedJournalIndexedRecord {
+final class PersistedJournalIndexedRecord implements JournalIndexedRecord {
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final JournalIndexedRecordDecoder decoder = new JournalIndexedRecordDecoder();
   private final DirectBuffer data = new UnsafeBuffer();

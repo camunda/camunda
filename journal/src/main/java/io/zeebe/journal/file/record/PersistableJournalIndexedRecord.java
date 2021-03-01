@@ -18,7 +18,6 @@ package io.zeebe.journal.file.record;
 import io.zeebe.journal.file.JournalIndexedRecordEncoder;
 import io.zeebe.journal.file.MessageHeaderEncoder;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 
 /**
  * A {@link PersistedJournalRecord} consists of two parts. The first part is JournalRecordMetadata.
@@ -27,7 +26,7 @@ import org.agrona.MutableDirectBuffer;
  * <p>{@link PersistableJournalIndexedRecord} is the JournalRecordMetadata which can be serialized
  * in to a buffer as part of a {@link PersistedJournalRecord}.
  */
-public class PersistableJournalIndexedRecord {
+public class PersistableJournalIndexedRecord implements JournalIndexedRecord {
 
   protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final JournalIndexedRecordEncoder encoder = new JournalIndexedRecordEncoder();
@@ -42,28 +41,18 @@ public class PersistableJournalIndexedRecord {
     this.data = data;
   }
 
-  /**
-   * Returns the length required to write this record to a buffer
-   *
-   * @return the length
-   */
-  public int getLength() {
-    return headerEncoder.encodedLength()
-        + encoder.sbeBlockLength()
-        + JournalIndexedRecordEncoder.applicationRecordHeaderLength()
-        + data.capacity();
+  @Override
+  public long index() {
+    return index;
   }
 
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    headerEncoder
-        .wrap(buffer, offset)
-        .blockLength(encoder.sbeBlockLength())
-        .templateId(encoder.sbeTemplateId())
-        .schemaId(encoder.sbeSchemaId())
-        .version(encoder.sbeSchemaVersion());
+  @Override
+  public long asqn() {
+    return asqn;
+  }
 
-    encoder.wrap(buffer, offset + headerEncoder.encodedLength());
-
-    encoder.index(index).asqn(asqn).putApplicationRecord(data, 0, data.capacity());
+  @Override
+  public DirectBuffer data() {
+    return data;
   }
 }

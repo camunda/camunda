@@ -16,10 +16,8 @@
 package io.zeebe.journal.file.record;
 
 import io.zeebe.journal.JournalRecord;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * A JournalRecord stored in a buffer.
@@ -28,23 +26,13 @@ import org.agrona.concurrent.UnsafeBuffer;
  * PersistedJournalRecordMetadata}. The second part is {@link PersistedJournalIndexedRecord}.
  */
 public class PersistedJournalRecord implements JournalRecord {
-  final PersistedJournalRecordMetadata metadata;
-  final PersistedJournalIndexedRecord record;
+  private final JournalRecordMetadata metadata;
+  private final JournalIndexedRecord record;
 
-  public PersistedJournalRecord(final ByteBuffer buffer) {
-    final var slice = buffer.slice();
-    metadata = new PersistedJournalRecordMetadata(new UnsafeBuffer(slice));
-    final var metadataLength = metadata.getLength();
-    slice.position(metadataLength);
-    record = new PersistedJournalIndexedRecord(new UnsafeBuffer(slice.slice()));
-  }
-
-  public int getMetadataLength() {
-    return metadata.getLength();
-  }
-
-  public int getIndexedRecordLength() {
-    return record.getLength();
+  public PersistedJournalRecord(final JournalRecordMetadata metadata,
+      final JournalIndexedRecord record) {
+    this.metadata = metadata;
+    this.record = record;
   }
 
   @Override
@@ -65,10 +53,6 @@ public class PersistedJournalRecord implements JournalRecord {
   @Override
   public DirectBuffer data() {
     return record.data();
-  }
-
-  public int getLength() {
-    return metadata.getLength() + record.getLength();
   }
 
   @Override

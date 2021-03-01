@@ -16,128 +16,91 @@
 package io.zeebe.journal.file.record;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.journal.StorageException;
-import io.zeebe.journal.file.ChecksumGenerator;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class SBESerializerTest {
 
-  private PersistableJournalRecord firstRecord;
-  private PersistableJournalRecord secondRecord;
-  private final int maxEntrySize = 2048;
+  private JournalIndexedRecord record;
+  private JournalRecordMetadata metadata;
+  private SBESerializer serializer;
+  private int recordLength;
 
   @BeforeEach
   public void setup() {
+    serializer = new SBESerializer();
+
     final DirectBuffer data = new UnsafeBuffer();
-    data.wrap("Test".getBytes());
-    firstRecord = new PersistableJournalRecord(1, 2, data);
-    secondRecord = new PersistableJournalRecord(2, 4, data);
+    data.wrap("firstData".getBytes());
+    record = new PersistableJournalIndexedRecord(1, 2, data);
+    recordLength = serializer.getSerializedLength(record);
+
+    metadata = new JournalRecordMetadataImpl(1L, 2);
   }
 
   @Test
   public void shouldWriteRecord() {
     // given
-    final ByteBuffer buffer = ByteBuffer.allocate(firstRecord.getLength());
-    final SBESerializer serializer = new SBESerializer(new ChecksumGenerator(), maxEntrySize);
+    final ByteBuffer buffer = ByteBuffer.allocate(recordLength);
+    final MutableDirectBuffer directBuffer = new UnsafeBuffer(buffer);
 
     // when
-    final var recordWritten = serializer.write(firstRecord, buffer);
+    final var recordWrittenLength = serializer.write(record, directBuffer);
 
     // then
-    assertThat(recordWritten.index()).isEqualTo(1);
-    assertThat(recordWritten.asqn()).isEqualTo(2);
+    assertThat(recordWrittenLength).isEqualTo(recordLength);
   }
 
   @Test
   public void shouldReadRecord() {
     // given
-    final ByteBuffer buffer = ByteBuffer.allocate(firstRecord.getLength());
-    final SBESerializer serializer = new SBESerializer(new ChecksumGenerator(), maxEntrySize);
-    final var recordWritten = serializer.write(firstRecord, buffer);
+    final ByteBuffer buffer = ByteBuffer.allocate(recordLength);
+    final MutableDirectBuffer directBuffer = new UnsafeBuffer(buffer);
+
+    serializer.write(record, directBuffer);
 
     // when
     buffer.position(0);
-    final var recordRead = serializer.read(buffer);
+    final var recordRead = serializer.readRecord(directBuffer);
 
     // then
-    assertThat(recordRead).isEqualTo(recordWritten);
+    assertThat(recordRead.asqn()).isEqualTo(record.asqn());
+    assertThat(recordRead.index()).isEqualTo(record.index());
+    assertThat(recordRead.data()).isEqualTo(record.data());
   }
 
   @Test
-  public void shouldAdvancePositionAfterWritingAndReading() {
+  public void shouldWriteMetadata() {
     // given
-    final ByteBuffer buffer = ByteBuffer.allocate(firstRecord.getLength() * 2);
-    final SBESerializer serializer = new SBESerializer(new ChecksumGenerator(), maxEntrySize);
-    final var firstRecordWritten = serializer.write(firstRecord, buffer);
-    assertThat(firstRecordWritten.index()).isEqualTo(1);
+    final ByteBuffer buffer = ByteBuffer.allocate(recordLength);
+    final MutableDirectBuffer directBuffer = new UnsafeBuffer(buffer);
 
     // when
-    final var secondRecordWritten = serializer.write(secondRecord, buffer);
-    assertThat(secondRecordWritten.index()).isEqualTo(2);
+    final var recordWrittenLength = serializer.write(metadata, directBuffer);
 
     // then
+    assertThat(recordWrittenLength).isEqualTo(serializer.metadataLength());
+  }
+
+  @Test
+  public void shouldReadMetadata() {
+    // given
+    final ByteBuffer buffer = ByteBuffer.allocate(recordLength);
+    final MutableDirectBuffer directBuffer = new UnsafeBuffer(buffer);
+
+    serializer.write(metadata, directBuffer);
+
+    // when
     buffer.position(0);
-    final var recordRead = serializer.read(buffer);
-    assertThat(recordRead).isEqualTo(firstRecordWritten);
-
-    final var recordRead2 = serializer.read(buffer);
-    assertThat(recordRead2).isEqualTo(secondRecordWritten);
-  }
-
-  @Test
-  public void shouldRightAndReadRecordAtAnyPosition() {
-    // given
-    final int initialOffset = 8;
-    final ByteBuffer buffer = ByteBuffer.allocate(initialOffset + firstRecord.getLength() * 2);
-    final SBESerializer serializer = new SBESerializer(new ChecksumGenerator(), maxEntrySize);
-
-    // when
-    buffer.position(initialOffset); // should start writing from a non-zero start position
-
-    final var firstRecordWritten = serializer.write(firstRecord, buffer);
-    assertThat(firstRecordWritten.index()).isEqualTo(1);
-
-    final var secondRecordWritten = serializer.write(secondRecord, buffer);
-    assertThat(secondRecordWritten.index()).isEqualTo(2);
+    final var recordRead = serializer.readMetadata(directBuffer);
 
     // then
-    buffer.position(initialOffset);
-    final var recordRead = serializer.read(buffer);
-    assertThat(recordRead).isEqualTo(firstRecordWritten);
-
-    final var recordRead2 = serializer.read(buffer);
-    assertThat(recordRead2).isEqualTo(secondRecordWritten);
-  }
-
-  @Test
-  public void shouldRejectRecordBiggerThanMaxEntrySize() {
-    // given
-    final ByteBuffer buffer = ByteBuffer.allocate(firstRecord.getLength());
-    final SBESerializer serializer =
-        new SBESerializer(new ChecksumGenerator(), firstRecord.getLength() - 1);
-
-    // when - then
-    assertThatThrownBy(() -> serializer.write(firstRecord, buffer))
-        .isInstanceOf(StorageException.TooLarge.class);
-    assertThat(buffer.position()).isEqualTo(0);
-  }
-
-  @Test
-  public void shouldNotWriteWhenNotEnoughSpace() {
-    // given
-    final ByteBuffer buffer = ByteBuffer.allocate(firstRecord.getLength() - 1);
-    final SBESerializer serializer = new SBESerializer(new ChecksumGenerator(), maxEntrySize);
-
-    // when - then
-    assertThatThrownBy(() -> serializer.write(firstRecord, buffer))
-        .isInstanceOf(BufferOverflowException.class);
-    assertThat(buffer.position()).isEqualTo(0);
+    assertThat(recordRead.checksum()).isEqualTo(metadata.checksum());
+    assertThat(recordRead.length()).isEqualTo(metadata.length());
   }
 }

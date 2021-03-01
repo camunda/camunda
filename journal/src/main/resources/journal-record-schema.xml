@@ -16,6 +16,8 @@
 
   <sbe:message name="JournalRecordMetadata" id="1">
     <field name="checksum" id="1" type="uint64"/>
+    <field name="length" id="2" type="uint32"/>
+
   </sbe:message>
 
   <sbe:message name="JournalIndexedRecord" id="2">

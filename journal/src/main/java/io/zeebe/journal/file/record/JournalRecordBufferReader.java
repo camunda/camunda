@@ -16,7 +16,7 @@
 package io.zeebe.journal.file.record;
 
 import io.zeebe.journal.JournalRecord;
-import java.nio.ByteBuffer;
+import org.agrona.DirectBuffer;
 
 public interface JournalRecordBufferReader {
 
@@ -27,5 +27,12 @@ public interface JournalRecordBufferReader {
    * @param buffer to read
    * @return a journal record that is read.
    */
-  JournalRecord read(ByteBuffer buffer);
+  JournalRecordMetadata readMetadata(DirectBuffer buffer);
+
+  JournalIndexedRecord readRecord(DirectBuffer buffer);
+
+  int getMetadataLength(DirectBuffer buffer);
+
+
+  boolean hasMetadata(DirectBuffer buffer);
 }

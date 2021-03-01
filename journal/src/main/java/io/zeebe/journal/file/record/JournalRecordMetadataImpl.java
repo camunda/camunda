@@ -17,44 +17,33 @@ package io.zeebe.journal.file.record;
 
 import io.zeebe.journal.file.JournalRecordMetadataEncoder;
 import io.zeebe.journal.file.MessageHeaderEncoder;
-import org.agrona.MutableDirectBuffer;
 
 /**
  * A {@link PersistedJournalRecord} consists of two parts. The first part is JournalRecordMetadata.
  * The second part is JournalIndexedRecord.
  *
- * <p>{@link PersistableJournalRecordMetadata} is the JournalRecordMetadata which can be serialized
- * in to a buffer as part of a {@link PersistedJournalRecord}.
+ * <p>{@link JournalRecordMetadataImpl} is the JournalRecordMetadata which can be serialized in to a
+ * buffer as part of a {@link PersistedJournalRecord}.
  */
-final class PersistableJournalRecordMetadata {
+public final class JournalRecordMetadataImpl implements JournalRecordMetadata {
 
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final JournalRecordMetadataEncoder encoder = new JournalRecordMetadataEncoder();
-  private long checksum;
+  private final long checksum;
+  private final int length;
 
-  public void setChecksum(final long checksum) {
+  public JournalRecordMetadataImpl(final long checksum, final int recordLength) {
     this.checksum = checksum;
+    length = recordLength;
   }
 
-  /**
-   * Returns the length required to write this record to a buffer
-   *
-   * @return the length
-   */
-  public int getLength() {
-    return headerEncoder.encodedLength() + encoder.sbeBlockLength();
+  @Override
+  public long checksum() {
+    return checksum;
   }
 
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    headerEncoder
-        .wrap(buffer, offset)
-        .blockLength(encoder.sbeBlockLength())
-        .templateId(encoder.sbeTemplateId())
-        .schemaId(encoder.sbeSchemaId())
-        .version(encoder.sbeSchemaVersion());
-
-    encoder.wrap(buffer, offset + headerEncoder.encodedLength());
-
-    encoder.checksum(checksum);
+  @Override
+  public long length() {
+    return length;
   }
 }

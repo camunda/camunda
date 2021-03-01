@@ -67,16 +67,57 @@ public class JournalTest {
   public void shouldAppendData() {
     // when
     final var recordAppended = journal.append(1, data);
-    assertThat(recordAppended.index()).isEqualTo(1);
-    assertThat(recordAppended.asqn()).isEqualTo(1);
 
     // then
-    final var recordRead = journal.openReader().next();
-    assertThat(recordAppended).isEqualTo(recordRead);
+    assertThat(recordAppended.index()).isEqualTo(1);
+    assertThat(recordAppended.asqn()).isEqualTo(1);
   }
 
   @Test
-  public void shouldAppendMultipleRecords() {
+  public void shouldReadRecord() {
+    // given
+    final var recordAppended = journal.append(1, data);
+
+    // when
+    final var reader = journal.openReader();
+    final var recordRead = reader.next();
+
+    // then
+    assertThat(recordRead).isEqualTo(recordAppended);
+  }
+
+  @Test
+  public void shouldAppendMultipleData() {
+    // when
+    final var firstRecord = journal.append(10, data);
+    final var secondRecord = journal.append(20, data);
+
+    // then
+    assertThat(firstRecord.index()).isEqualTo(1);
+    assertThat(firstRecord.asqn()).isEqualTo(10);
+
+    assertThat(secondRecord.index()).isEqualTo(2);
+    assertThat(secondRecord.asqn()).isEqualTo(20);
+  }
+
+  @Test
+  public void shouldReadMultipleRecord() {
+    // given
+    final var firstRecord = journal.append(1, data);
+    final var secondRecord = journal.append(20, data);
+
+    // when
+    final var reader = journal.openReader();
+    final var firstRecordRead = reader.next();
+    final var secondRecordRead = reader.next();
+
+    // then
+    assertThat(firstRecordRead).isEqualTo(firstRecord);
+    assertThat(secondRecordRead).isEqualTo(secondRecord);
+  }
+
+  @Test
+  public void shouldAppendAndReadMultipleRecordsInOrder() {
     // when
     for (int i = 0; i < 10; i++) {
       final var recordAppended = journal.append(i + 10, data);

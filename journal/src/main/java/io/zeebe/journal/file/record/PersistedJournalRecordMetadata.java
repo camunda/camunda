@@ -26,7 +26,7 @@ import org.agrona.DirectBuffer;
  * <p>{@link PersistedJournalRecordMetadata} is the JournalRecordMetadata which is serialized in to
  * a buffer as part of a {@link PersistedJournalRecord}.
  */
-final class PersistedJournalRecordMetadata {
+final class PersistedJournalRecordMetadata implements JournalRecordMetadata {
 
   protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final JournalRecordMetadataDecoder decoder = new JournalRecordMetadataDecoder();
@@ -39,6 +39,11 @@ final class PersistedJournalRecordMetadata {
     return decoder.checksum();
   }
 
+  @Override
+  public long length() {
+    return decoder.length();
+  }
+
   public void wrap(final DirectBuffer buffer) {
     wrap(buffer, 0, buffer.capacity());
   }
@@ -48,9 +53,9 @@ final class PersistedJournalRecordMetadata {
   }
 
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    if (!canRead(buffer, 0)) {
+    /*if (!canRead(buffer, 0)) {
       throw new InvalidRecord("Cannot read buffer. Header does not match.");
-    }
+    }*/
     headerDecoder.wrap(buffer, offset);
     decoder.wrap(
         buffer,

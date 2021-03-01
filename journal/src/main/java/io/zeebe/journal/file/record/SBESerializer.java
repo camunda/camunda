@@ -15,26 +15,28 @@
  */
 package io.zeebe.journal.file.record;
 
-import io.zeebe.journal.JournalRecord;
-import io.zeebe.journal.StorageException;
-import io.zeebe.journal.file.ChecksumGenerator;
+import io.zeebe.journal.file.JournalIndexedRecordDecoder;
+import io.zeebe.journal.file.JournalIndexedRecordEncoder;
+import io.zeebe.journal.file.JournalRecordMetadataDecoder;
+import io.zeebe.journal.file.JournalRecordMetadataEncoder;
+import io.zeebe.journal.file.MessageHeaderDecoder;
 import io.zeebe.journal.file.MessageHeaderEncoder;
-import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class SBESerializer implements JournalRecordBufferWriter, JournalRecordBufferReader {
 
-  private final ChecksumGenerator checksumGenerator;
-  private final int maxEntrySize;
+  protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+  private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
 
-  public SBESerializer(final ChecksumGenerator checksumGenerator, final int maxEntrySize) {
-    this.checksumGenerator = checksumGenerator;
-    this.maxEntrySize = maxEntrySize;
-  }
+  private final JournalIndexedRecordEncoder recordEncoder = new JournalIndexedRecordEncoder();
+  private final JournalRecordMetadataEncoder metadataEncoder = new JournalRecordMetadataEncoder();
 
-  @Override
+  private final JournalIndexedRecordDecoder recordDecoder = new JournalIndexedRecordDecoder();
+  private final JournalRecordMetadataDecoder metadataDecoder = new JournalRecordMetadataDecoder();
+
+  /* @Override
   public JournalRecord read(final ByteBuffer buffer) {
     final var recordPosition = buffer.position();
     try {
@@ -51,9 +53,9 @@ public final class SBESerializer implements JournalRecordBufferWriter, JournalRe
       buffer.position(recordPosition);
       return null;
     }
-  }
+  }*/
 
-  @Override
+  /* @Override
   public JournalRecord write(final JournalRecord record, final ByteBuffer buffer) {
     final int recordStartPosition = buffer.position();
     buffer.mark();
@@ -91,8 +93,81 @@ public final class SBESerializer implements JournalRecordBufferWriter, JournalRe
     final var recordWritten = new PersistedJournalRecord(buffer);
     buffer.position(recordStartPosition + recordLength);
     return recordWritten;
+  }*/
+
+  @Override
+  public int write(final JournalIndexedRecord record, final MutableDirectBuffer buffer) {
+
+    headerEncoder
+        .wrap(buffer, 0)
+        .blockLength(recordEncoder.sbeBlockLength())
+        .templateId(recordEncoder.sbeTemplateId())
+        .schemaId(recordEncoder.sbeSchemaId())
+        .version(recordEncoder.sbeSchemaVersion());
+
+    recordEncoder.wrap(buffer, headerEncoder.encodedLength());
+
+    recordEncoder
+        .index(record.index())
+        .asqn(record.asqn())
+        .putApplicationRecord(record.data(), 0, record.data().capacity());
+
+    return headerEncoder.encodedLength() + recordEncoder.encodedLength();
   }
 
+  @Override
+  public int write(final JournalRecordMetadata metadata, final MutableDirectBuffer buffer) {
+
+    headerEncoder
+        .wrap(buffer, 0)
+        .blockLength(metadataEncoder.sbeBlockLength())
+        .templateId(metadataEncoder.sbeTemplateId())
+        .schemaId(metadataEncoder.sbeSchemaId())
+        .version(metadataEncoder.sbeSchemaVersion());
+
+    metadataEncoder.wrap(buffer, headerEncoder.encodedLength());
+
+    metadataEncoder.checksum(metadata.checksum()).length(metadata.length());
+
+    return headerEncoder.encodedLength() + metadataEncoder.encodedLength();
+  }
+
+  @Override
+  public int metadataLength() {
+    return headerEncoder.encodedLength() + metadataEncoder.sbeBlockLength();
+  }
+
+  @Override
+  public int getSerializedLength(final JournalIndexedRecord record) {
+    return headerEncoder.encodedLength()
+        + recordEncoder.sbeBlockLength()
+        + JournalIndexedRecordEncoder.applicationRecordHeaderLength()
+        + record.data().capacity();
+  }
+
+  @Override
+  public JournalRecordMetadata readMetadata(final DirectBuffer buffer) {
+    return new PersistedJournalRecordMetadata(new UnsafeBuffer(buffer));
+  }
+
+  @Override
+  public boolean hasMetadata(final DirectBuffer buffer) {
+    headerDecoder.wrap(buffer, 0);
+    return (headerDecoder.schemaId() == metadataDecoder.sbeSchemaId()
+        && headerDecoder.templateId() == metadataDecoder.sbeTemplateId());
+  }
+
+  @Override
+  public JournalIndexedRecord readRecord(final DirectBuffer buffer) {
+    return new PersistedJournalIndexedRecord(buffer);
+  }
+
+  public int getMetadataLength(final DirectBuffer buffer) {
+    headerDecoder.wrap(buffer, 0);
+    return headerDecoder.encodedLength() + headerDecoder.blockLength();
+  }
+
+  /*
   @Override
   public void invalidate(final ByteBuffer buffer) {
     final var bufferToInvalidate = buffer.slice();
@@ -105,5 +180,5 @@ public final class SBESerializer implements JournalRecordBufferWriter, JournalRe
     final var record = buffer.slice();
     record.limit(length);
     return checksumGenerator.compute(record);
-  }
+  }*/
 }
