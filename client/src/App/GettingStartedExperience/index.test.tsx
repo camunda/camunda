@@ -5,17 +5,9 @@
  */
 
 import React from 'react';
-import {
-  render,
-  screen,
-  fireEvent,
-  waitForElementToBeRemoved,
-  waitFor,
-} from '@testing-library/react';
+import {render} from '@testing-library/react';
 import {Router} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import {GettingStartedExperience} from './index';

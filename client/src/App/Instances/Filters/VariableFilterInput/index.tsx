@@ -8,16 +8,14 @@ import React, {useState, useEffect} from 'react';
 
 import {Container, TextInput, Warning} from './styled';
 
-type OwnProps = {
+type Props = {
   onFilterChange: (...args: any[]) => any;
   variable: any;
-  checkIsValueValid?: (...args: any[]) => any;
-  checkIsNameComplete?: (...args: any[]) => any;
-  checkIsValueComplete?: (...args: any[]) => any;
+  checkIsValueValid: (variable: any) => boolean;
+  checkIsNameComplete: (variable: any) => boolean;
+  checkIsValueComplete: (variable: any) => boolean;
   onChange?: (...args: any[]) => any;
 };
-
-type Props = OwnProps & typeof VariableFilterInput.defaultProps;
 
 function VariableFilterInput({
   onFilterChange,

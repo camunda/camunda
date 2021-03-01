@@ -14,7 +14,7 @@ import {DIRECTION} from '../../constants';
 
 const TRANSITION_TIMEOUT = 200;
 
-type OwnProps = {
+type Props = {
   label: string;
   panelPosition: 'RIGHT' | 'LEFT';
   header?: React.ReactNode;
@@ -23,14 +23,13 @@ type OwnProps = {
   toggle: (...args: any[]) => any;
   isCollapsed: boolean;
   children?: React.ReactNode;
-  verticalLabelOffset?: number;
+  verticalLabelOffset: number;
   hasBackgroundColor?: boolean;
   scrollable?: boolean;
   maxWidth?: number;
   onScroll?: (event: React.UIEvent<HTMLDivElement, UIEvent>) => void;
+  renderHeader: () => string;
 };
-
-type Props = OwnProps & typeof CollapsablePanel.defaultProps;
 
 function CollapsablePanel({
   label,

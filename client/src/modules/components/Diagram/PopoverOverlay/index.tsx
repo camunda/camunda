@@ -80,7 +80,6 @@ export default class PopoverOverlay extends React.Component<Props, State> {
       selectedFlowNodeId,
     });
 
-    // @ts-expect-error ts-migrate(2349) FIXME: Each member of the union type '(<U>(callbackfn: (v... Remove this comment to see the full error message
     return breadcrumbs.map((item: any) => {
       return item.hasLink ? (
         <Fragment key={`${selectedFlowNodeId}-a${item.name}`}>

@@ -306,7 +306,6 @@ const Filters = observer(
               <Styled.ValidationTextInput
                 value={decodeURIComponent(ids)}
                 name="ids"
-                // @ts-expect-error ts-migrate(2769) FIXME: Property 'placeholder' does not exist on type 'Int... Remove this comment to see the full error message
                 placeholder="Instance Id(s) separated by space or comma"
                 onChange={this.handleControlledInputChange}
                 checkIsComplete={isIdComplete}
@@ -322,7 +321,6 @@ const Filters = observer(
                 value={decodeURIComponent(errorMessage)}
                 data-testid="error-message"
                 name="errorMessage"
-                // @ts-expect-error ts-migrate(2769) FIXME: Property 'placeholder' does not exist on type 'Int... Remove this comment to see the full error message
                 placeholder="Error Message"
                 onChange={(event) =>
                   this.handleControlledInputChange(event, null, {
@@ -335,7 +333,6 @@ const Filters = observer(
               </Styled.ValidationTextInput>
             </Styled.Field>
             <Styled.Field>
-              {/* @ts-expect-error ts-migrate(2769) FIXME: Type '(date: any) => boolean' is not assignable to... Remove this comment to see the full error message */}
               <Styled.ValidationTextInput
                 value={startDate}
                 name="startDate"
@@ -350,7 +347,6 @@ const Filters = observer(
               </Styled.ValidationTextInput>
             </Styled.Field>
             <Styled.Field>
-              {/* @ts-expect-error ts-migrate(2769) FIXME: Type '(date: any) => boolean' is not assignable to... Remove this comment to see the full error message */}
               <Styled.ValidationTextInput
                 value={endDate}
                 name="endDate"
@@ -381,7 +377,6 @@ const Filters = observer(
               />
             </Styled.Field>
             <Styled.Field>
-              {/* @ts-expect-error ts-migrate(2769) FIXME: Type '(variable: any) => boolean' is not assignabl... Remove this comment to see the full error message */}
               <Styled.VariableFilterInput
                 variable={variable}
                 onFilterChange={() => this.waitForTimer(this.propagateFilter)}
@@ -392,7 +387,6 @@ const Filters = observer(
               />
             </Styled.Field>
             <Styled.Field>
-              {/* @ts-expect-error ts-migrate(2769) FIXME: Type '(batchOperationId: any) => boolean' is not a... Remove this comment to see the full error message */}
               <Styled.ValidationTextInput
                 value={batchOperationId}
                 name="batchOperationId"

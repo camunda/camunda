@@ -8,18 +8,17 @@ import React, {useState, useEffect} from 'react';
 
 import {InputContainer, Warning} from './styled';
 
-type OwnProps = {
+type Props = {
   onChange: (...args: any[]) => any;
-  checkIsComplete?: (...args: any[]) => any;
-  checkIsValid?: (...args: any[]) => any;
-  onFilterChange?: (...args: any[]) => any;
+  checkIsComplete: (...args: any[]) => any;
+  checkIsValid: (...args: any[]) => any;
+  onFilterChange: (...args: any[]) => any;
   name?: string;
   value?: string;
   children?: React.ReactNode;
   errorMessage?: string;
+  placeholder?: string;
 };
-
-type Props = OwnProps & typeof ValidationTextInput.defaultProps;
 
 function ValidationTextInput({
   children,

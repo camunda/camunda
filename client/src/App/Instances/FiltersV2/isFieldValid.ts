@@ -6,7 +6,7 @@
 
 import {FieldMetaState} from 'react-final-form';
 
-function isFieldValid(meta: FieldMetaState<string>) {
+function isFieldValid(meta: FieldMetaState<string | undefined>) {
   const {dirtySinceLastSubmit, error, submitError} = meta;
 
   return (
