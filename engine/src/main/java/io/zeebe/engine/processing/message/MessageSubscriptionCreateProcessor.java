@@ -11,36 +11,41 @@ import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.message.MessageSubscription;
-import io.zeebe.engine.state.mutable.MutableMessageState;
-import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.zeebe.engine.state.immutable.MessageState;
+import io.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
 
-public final class OpenMessageSubscriptionProcessor
+public final class MessageSubscriptionCreateProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
-  public static final String SUBSCRIPTION_ALREADY_OPENED_MESSAGE =
+  private static final String SUBSCRIPTION_ALREADY_OPENED_MESSAGE =
       "Expected to open a new message subscription for element with key '%d' and message name '%s', "
           + "but there is already a message subscription for that element key and message name opened";
+
   private final MessageCorrelator messageCorrelator;
-  private final MutableMessageSubscriptionState subscriptionState;
+  private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
+  private final StateWriter stateWriter;
 
   private MessageSubscriptionRecord subscriptionRecord;
 
-  public OpenMessageSubscriptionProcessor(
-      final MutableMessageState messageState,
-      final MutableMessageSubscriptionState subscriptionState,
-      final SubscriptionCommandSender commandSender) {
+  public MessageSubscriptionCreateProcessor(
+      final MessageState messageState,
+      final MessageSubscriptionState subscriptionState,
+      final SubscriptionCommandSender commandSender,
+      final Writers writers) {
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
-    messageCorrelator = new MessageCorrelator(messageState, subscriptionState, commandSender);
+    stateWriter = writers.state();
+    messageCorrelator = new MessageCorrelator(messageState, commandSender, stateWriter);
   }
 
   @Override
@@ -65,29 +70,20 @@ public final class OpenMessageSubscriptionProcessor
       return;
     }
 
-    handleNewSubscription(record, streamWriter, sideEffect);
+    handleNewSubscription(sideEffect);
   }
 
-  private void handleNewSubscription(
-      final TypedRecord<MessageSubscriptionRecord> record,
-      final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
-    final MessageSubscription subscription =
-        new MessageSubscription(
-            subscriptionRecord.getWorkflowInstanceKey(),
-            subscriptionRecord.getElementInstanceKey(),
-            subscriptionRecord.getBpmnProcessIdBuffer(),
-            subscriptionRecord.getMessageNameBuffer(),
-            subscriptionRecord.getCorrelationKeyBuffer(),
-            subscriptionRecord.shouldCloseOnCorrelate());
+  private void handleNewSubscription(final Consumer<SideEffectProducer> sideEffect) {
 
-    sideEffect.accept(this::sendAcknowledgeCommand);
+    // TODO (saig0): the subscription should have a key (#2805)
+    stateWriter.appendFollowUpEvent(-1L, MessageSubscriptionIntent.CREATED, subscriptionRecord);
 
-    subscriptionState.put(subscription);
-    messageCorrelator.correlateNextMessage(subscription, subscriptionRecord, sideEffect);
+    final var isMessageCorrelated =
+        messageCorrelator.correlateNextMessage(subscriptionRecord, sideEffect);
 
-    streamWriter.appendFollowUpEvent(
-        record.getKey(), MessageSubscriptionIntent.OPENED, subscriptionRecord);
+    if (!isMessageCorrelated) {
+      sideEffect.accept(this::sendAcknowledgeCommand);
+    }
   }
 
   private boolean sendAcknowledgeCommand() {

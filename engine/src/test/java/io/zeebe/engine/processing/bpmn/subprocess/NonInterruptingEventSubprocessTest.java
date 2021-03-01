@@ -83,7 +83,7 @@ public class NonInterruptingEventSubprocessTest {
             s -> s.message(b -> b.name(messageName).zeebeCorrelationKeyExpression("key"))),
         eventTrigger(
             key -> {
-              RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+              RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
                   .withWorkflowInstanceKey(key)
                   .withMessageName(messageName)
                   .await();

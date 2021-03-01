@@ -9,51 +9,56 @@ package io.zeebe.engine.processing.message;
 
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.zeebe.engine.state.message.MessageSubscription;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.state.immutable.MessageState;
 import io.zeebe.engine.state.message.StoredMessage;
-import io.zeebe.engine.state.mutable.MutableMessageState;
-import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.collections.MutableBoolean;
 
 public final class MessageCorrelator {
 
-  private final DirectBuffer messageVariables = new UnsafeBuffer();
-  private final MutableMessageState messageState;
-  private final MutableMessageSubscriptionState subscriptionState;
+  private final MessageState messageState;
   private final SubscriptionCommandSender commandSender;
+  private final StateWriter stateWriter;
+
   private Consumer<SideEffectProducer> sideEffect;
   private MessageSubscriptionRecord subscriptionRecord;
-  private MessageSubscription subscription;
-  private long messageKey;
 
   public MessageCorrelator(
-      final MutableMessageState messageState,
-      final MutableMessageSubscriptionState subscriptionState,
-      final SubscriptionCommandSender commandSender) {
+      final MessageState messageState,
+      final SubscriptionCommandSender commandSender,
+      final StateWriter stateWriter) {
     this.messageState = messageState;
-    this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
+    this.stateWriter = stateWriter;
   }
 
-  public void correlateNextMessage(
-      final MessageSubscription subscription,
+  public boolean correlateNextMessage(
       final MessageSubscriptionRecord subscriptionRecord,
       final Consumer<SideEffectProducer> sideEffect) {
-    this.subscription = subscription;
     this.subscriptionRecord = subscriptionRecord;
     this.sideEffect = sideEffect;
 
+    final var isMessageCorrelated = new MutableBoolean(false);
+
     messageState.visitMessages(
-        subscription.getMessageName(), subscription.getCorrelationKey(), this::correlateMessage);
+        subscriptionRecord.getMessageNameBuffer(),
+        subscriptionRecord.getCorrelationKeyBuffer(),
+        storedMessage -> {
+          // correlate the first message which is not correlated to the workflow instance yet
+          final var isCorrelated = correlateMessage(storedMessage);
+          isMessageCorrelated.set(isCorrelated);
+          return !isCorrelated;
+        });
+
+    return isMessageCorrelated.get();
   }
 
   private boolean correlateMessage(final StoredMessage storedMessage) {
-    // correlate the first message which is not correlated to the workflow instance yet
-    messageKey = storedMessage.getMessageKey();
+    final long messageKey = storedMessage.getMessageKey();
     final var message = storedMessage.getMessage();
 
     final boolean correlateMessage =
@@ -62,17 +67,15 @@ public final class MessageCorrelator {
                 messageKey, subscriptionRecord.getBpmnProcessIdBuffer());
 
     if (correlateMessage) {
-      subscriptionState.updateToCorrelatingState(
-          subscription, message.getVariablesBuffer(), ActorClock.currentTimeMillis(), messageKey);
+      subscriptionRecord.setMessageKey(messageKey).setVariables(message.getVariablesBuffer());
 
-      // send the correlate instead of acknowledge command
-      messageVariables.wrap(message.getVariablesBuffer());
+      stateWriter.appendFollowUpEvent(
+          -1, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
+
       sideEffect.accept(this::sendCorrelateCommand);
-
-      messageState.putMessageCorrelation(messageKey, subscriptionRecord.getBpmnProcessIdBuffer());
     }
 
-    return !correlateMessage;
+    return correlateMessage;
   }
 
   private boolean sendCorrelateCommand() {
@@ -81,8 +84,8 @@ public final class MessageCorrelator {
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getBpmnProcessIdBuffer(),
         subscriptionRecord.getMessageNameBuffer(),
-        messageKey,
-        messageVariables,
-        subscription.getCorrelationKey());
+        subscriptionRecord.getMessageKey(),
+        subscriptionRecord.getVariablesBuffer(),
+        subscriptionRecord.getCorrelationKeyBuffer());
   }
 }

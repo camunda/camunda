@@ -175,7 +175,7 @@ public final class MessageCatchElementTest {
         getFirstElementRecord(enteredState);
 
     final Record<MessageSubscriptionRecordValue> messageSubscription =
-        getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.OPENED);
+        getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CREATED);
 
     assertThat(messageSubscription.getValueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
     assertThat(messageSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
@@ -242,7 +242,7 @@ public final class MessageCatchElementTest {
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
         getFirstElementRecord(enteredState);
 
-    getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.OPENED);
+    getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CREATED);
 
     // when
     final var messagePublished =
@@ -272,7 +272,7 @@ public final class MessageCatchElementTest {
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName(MESSAGE_NAME)
-        .hasCorrelationKey("");
+        .hasCorrelationKey(correlationKey);
   }
 
   @Test
@@ -281,7 +281,7 @@ public final class MessageCatchElementTest {
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
         getFirstElementRecord(enteredState);
 
-    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .await();
 
@@ -352,7 +352,7 @@ public final class MessageCatchElementTest {
   @Test
   public void testMessageSubscriptionLifecycle() {
     // given
-    getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.OPENED);
+    getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CREATED);
 
     // when
     ENGINE_RULE
@@ -370,8 +370,8 @@ public final class MessageCatchElementTest {
                 .limit(5))
         .extracting(Record::getRecordType, Record::getIntent)
         .containsExactly(
-            tuple(RecordType.COMMAND, MessageSubscriptionIntent.OPEN),
-            tuple(RecordType.EVENT, MessageSubscriptionIntent.OPENED),
+            tuple(RecordType.COMMAND, MessageSubscriptionIntent.CREATE),
+            tuple(RecordType.EVENT, MessageSubscriptionIntent.CREATED),
             tuple(RecordType.EVENT, MessageSubscriptionIntent.CORRELATING),
             tuple(RecordType.COMMAND, MessageSubscriptionIntent.CORRELATE),
             tuple(RecordType.EVENT, MessageSubscriptionIntent.CORRELATED));

@@ -129,7 +129,7 @@ public final class SubscriptionCommandMessageHandler
     return writeCommand(
         openMessageSubscriptionCommand.getSubscriptionPartitionId(),
         ValueType.MESSAGE_SUBSCRIPTION,
-        MessageSubscriptionIntent.OPEN,
+        MessageSubscriptionIntent.CREATE,
         messageSubscriptionRecord);
   }
 

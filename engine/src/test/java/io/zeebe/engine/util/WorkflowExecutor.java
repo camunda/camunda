@@ -89,7 +89,7 @@ public class WorkflowExecutor {
   }
 
   private void publishMessage(final StepPublishMessage publishMessage) {
-    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
         .withMessageName(publishMessage.getMessageName())
         .withCorrelationKey(IntermediateMessageCatchEventBlockBuilder.CORRELATION_KEY_VALUE)
         .await();

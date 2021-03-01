@@ -29,11 +29,11 @@
   <difference>
     <className>io/zeebe/protocol/record/intent/MessageIntent</className>
     <differenceType>6001</differenceType>
-    <field>DELETE</field>
+    <field>*</field>
   </difference>
   <difference>
-    <className>io/zeebe/protocol/record/intent/MessageIntent</className>
+    <className>io/zeebe/protocol/record/intent/MessageSubscriptionIntent</className>
     <differenceType>6001</differenceType>
-    <field>DELETED</field>
+    <field>*</field>
   </difference>
 </differences>

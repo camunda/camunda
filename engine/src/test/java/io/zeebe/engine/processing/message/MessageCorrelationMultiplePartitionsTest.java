@@ -84,7 +84,7 @@ public final class MessageCorrelationMultiplePartitionsTest {
 
     // then
     assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
                 .limit(30))
         .extracting(r -> tuple(r.getPartitionId(), r.getValue().getCorrelationKey()))
         .containsOnly(
@@ -153,7 +153,7 @@ public final class MessageCorrelationMultiplePartitionsTest {
             });
 
     assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
                 .limit(15)
                 .count())
         .isEqualTo(15);
@@ -179,7 +179,7 @@ public final class MessageCorrelationMultiplePartitionsTest {
 
     // then
     assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
                 .limit(30))
         .extracting(r -> tuple(r.getPartitionId(), r.getValue().getCorrelationKey()))
         .hasSize(30)

@@ -13,6 +13,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.message.MessageSubscription;
 import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -34,9 +35,10 @@ public final class CorrelateMessageSubscriptionProcessor
   public CorrelateMessageSubscriptionProcessor(
       final MutableMessageState messageState,
       final MutableMessageSubscriptionState subscriptionState,
-      final SubscriptionCommandSender commandSender) {
+      final SubscriptionCommandSender commandSender,
+      final Writers writers) {
     this.subscriptionState = subscriptionState;
-    messageCorrelator = new MessageCorrelator(messageState, subscriptionState, commandSender);
+    messageCorrelator = new MessageCorrelator(messageState, commandSender, writers.state());
   }
 
   @Override
@@ -52,15 +54,20 @@ public final class CorrelateMessageSubscriptionProcessor
             subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
 
     if (subscription != null) {
+      // TODO (saig0): not all values are written in the command (#3346)
+      subscriptionRecord
+          .setCorrelationKey(subscription.getCorrelationKey())
+          .setCloseOnCorrelate(subscription.shouldCloseOnCorrelate());
+
+      streamWriter.appendFollowUpEvent(
+          record.getKey(), MessageSubscriptionIntent.CORRELATED, subscriptionRecord);
+
       if (subscription.shouldCloseOnCorrelate()) {
         subscriptionState.remove(subscription);
       } else {
         subscriptionState.resetSentTime(subscription);
-        messageCorrelator.correlateNextMessage(subscription, subscriptionRecord, sideEffect);
+        messageCorrelator.correlateNextMessage(subscriptionRecord, sideEffect);
       }
-
-      streamWriter.appendFollowUpEvent(
-          record.getKey(), MessageSubscriptionIntent.CORRELATED, subscriptionRecord);
     } else {
       streamWriter.appendRejection(
           record,
