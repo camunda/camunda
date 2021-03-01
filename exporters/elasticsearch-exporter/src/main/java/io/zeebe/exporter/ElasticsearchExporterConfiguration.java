@@ -13,8 +13,10 @@ import io.zeebe.protocol.record.ValueType;
 
 public class ElasticsearchExporterConfiguration {
 
-  // elasticsearch http url
-  public String url = "http://localhost:9200";
+  private static final String DEFAULT_URL = "http://localhost:9200";
+
+  /** Comma-separated Elasticsearch http urls */
+  public String url = DEFAULT_URL;
 
   public final IndexConfiguration index = new IndexConfiguration();
   public final BulkConfiguration bulk = new BulkConfiguration();
