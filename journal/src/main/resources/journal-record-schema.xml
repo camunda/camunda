@@ -15,14 +15,14 @@
   </types>
 
   <sbe:message name="JournalRecordMetadata" id="1">
-    <field name="checksum" id="1" type="uint64"/>
-    <field name="length" id="2" type="uint32"/>
+    <field name="checksum" id="1" type="int64"/>
+    <field name="length" id="2" type="int32"/>
 
   </sbe:message>
 
   <sbe:message name="JournalIndexedRecord" id="2">
     <field name="index" id="1" type="uint64"/>
     <field name="asqn" id="2" type="uint64"/>
-    <data name="applicationRecord" id="3" type="blob"/>
+    <data name="data" id="3" type="blob"/>
   </sbe:message>
 </sbe:messageSchema>

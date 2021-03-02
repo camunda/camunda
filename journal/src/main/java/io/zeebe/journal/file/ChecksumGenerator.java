@@ -23,9 +23,9 @@ public final class ChecksumGenerator {
   private final CRC32 crc32 = new CRC32();
 
   /** Compute checksum of given ByteBuffer */
-  public int compute(final ByteBuffer buffer) {
+  public long compute(final ByteBuffer buffer) {
     crc32.reset();
     crc32.update(buffer);
-    return (int) crc32.getValue();
+    return crc32.getValue();
   }
 }

@@ -39,6 +39,9 @@ public final class JournalRecordReaderUtil {
     // Mark the buffer so it can be reset if necessary.
     buffer.mark();
 
+    if (buffer.position() + serializer.getMetadataLength() > buffer.limit()) {
+      return null;
+    }
     final int startPosition = buffer.position();
     try {
       final UnsafeBuffer directBuffer = new UnsafeBuffer(buffer.slice());

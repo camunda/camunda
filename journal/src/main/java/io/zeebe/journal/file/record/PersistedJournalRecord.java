@@ -68,7 +68,7 @@ public class PersistedJournalRecord implements JournalRecord {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final PersistedJournalRecord that = (PersistedJournalRecord) o;
+    final JournalRecord that = (JournalRecord) o;
     return that.index() == index()
         && that.asqn() == asqn()
         && that.checksum() == checksum()

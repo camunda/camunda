@@ -16,6 +16,7 @@
 package io.zeebe.journal.file;
 
 import io.zeebe.journal.JournalRecord;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 
 public class TestJournalRecord implements JournalRecord {
@@ -51,5 +52,25 @@ public class TestJournalRecord implements JournalRecord {
   @Override
   public DirectBuffer data() {
     return data;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(index, asqn, checksum, data);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final JournalRecord that = (JournalRecord) o;
+    return index == that.index()
+        && asqn == that.asqn()
+        && checksum == that.checksum()
+        && Objects.equals(data, that.data());
   }
 }

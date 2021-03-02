@@ -43,7 +43,7 @@ public final class JournalRecordMetadataImpl implements JournalRecordMetadata {
   }
 
   @Override
-  public long length() {
+  public int length() {
     return length;
   }
 

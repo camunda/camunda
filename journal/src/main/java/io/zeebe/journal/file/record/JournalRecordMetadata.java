@@ -19,5 +19,5 @@ public interface JournalRecordMetadata {
 
   long checksum();
 
-  long length();
+  int length();
 }

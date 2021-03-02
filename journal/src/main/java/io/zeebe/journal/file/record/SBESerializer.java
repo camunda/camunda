@@ -57,7 +57,7 @@ public final class SBESerializer implements JournalRecordSerializer {
     recordEncoder
         .index(record.index())
         .asqn(record.asqn())
-        .putApplicationRecord(record.data(), 0, record.data().capacity());
+        .putData(record.data(), 0, record.data().capacity());
 
     return headerEncoder.encodedLength() + recordEncoder.encodedLength();
   }
@@ -88,7 +88,7 @@ public final class SBESerializer implements JournalRecordSerializer {
   public int getSerializedLength(final JournalIndexedRecord record) {
     return headerEncoder.encodedLength()
         + recordEncoder.sbeBlockLength()
-        + JournalIndexedRecordEncoder.applicationRecordHeaderLength()
+        + JournalIndexedRecordEncoder.dataHeaderLength()
         + record.data().capacity();
   }
 
@@ -111,7 +111,7 @@ public final class SBESerializer implements JournalRecordSerializer {
         headerDecoder.version());
 
     return new JournalRecordMetadataImpl(
-        metadataDecoder.checksum(), (int) metadataDecoder.length()); // TODO: int <-> long
+        metadataDecoder.checksum(),  metadataDecoder.length()); // TODO: int <-> long
   }
 
   @Override
@@ -128,7 +128,7 @@ public final class SBESerializer implements JournalRecordSerializer {
         headerDecoder.version());
 
     final DirectBuffer data = new UnsafeBuffer();
-    recordDecoder.wrapApplicationRecord(data);
+    recordDecoder.wrapData(data);
     return new JournalIndexedRecordImpl(recordDecoder.index(), recordDecoder.asqn(), data);
   }
 

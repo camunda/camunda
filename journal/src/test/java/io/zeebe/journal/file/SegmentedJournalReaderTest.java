@@ -18,7 +18,8 @@ package io.zeebe.journal.file;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.journal.JournalReader;
-import io.zeebe.journal.file.record.PersistableJournalRecord;
+import io.zeebe.journal.file.record.JournalIndexedRecordImpl;
+import io.zeebe.journal.file.record.SBESerializer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.agrona.DirectBuffer;
@@ -107,6 +108,8 @@ class SegmentedJournalReaderTest {
   }
 
   private int getSerializedSize(final DirectBuffer data) {
-    return new PersistableJournalRecord(1, 1, data).getLength();
+    final var record = new JournalIndexedRecordImpl(1, 1, data);
+    final var serializer = new SBESerializer();
+    return serializer.getMetadataLength() + serializer.getSerializedLength(record);
   }
 }

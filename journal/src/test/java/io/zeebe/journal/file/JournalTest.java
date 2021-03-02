@@ -297,15 +297,16 @@ public class JournalTest {
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .build();
-    final var record = journal.append(10, data);
+    final var expected = journal.append(10, data);
 
     // when
-    receiverJournal.append(record);
+    receiverJournal.append(expected);
 
     // then
     final var reader = receiverJournal.openReader();
     assertThat(reader.hasNext()).isTrue();
-    assertThat(reader.next().asqn()).isEqualTo(10);
+    final var actual = reader.next();
+    assertThat(expected).isEqualTo(actual);
   }
 
   @Test
