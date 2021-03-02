@@ -23,10 +23,10 @@ import org.agrona.DirectBuffer;
  * A {@link PersistedJournalRecord} consists of two parts. The first part is JournalRecordMetadata.
  * The second part is JournalIndexedRecord.
  *
- * <p>{@link PersistableJournalIndexedRecord} is the JournalRecordMetadata which can be serialized
- * in to a buffer as part of a {@link PersistedJournalRecord}.
+ * <p>{@link JournalIndexedRecordImpl} is the JournalRecordMetadata which can be serialized in to a
+ * buffer as part of a {@link PersistedJournalRecord}.
  */
-public class PersistableJournalIndexedRecord implements JournalIndexedRecord {
+public class JournalIndexedRecordImpl implements JournalIndexedRecord {
 
   protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final JournalIndexedRecordEncoder encoder = new JournalIndexedRecordEncoder();
@@ -34,8 +34,7 @@ public class PersistableJournalIndexedRecord implements JournalIndexedRecord {
   private final long asqn;
   private final DirectBuffer data;
 
-  public PersistableJournalIndexedRecord(
-      final long index, final long asqn, final DirectBuffer data) {
+  public JournalIndexedRecordImpl(final long index, final long asqn, final DirectBuffer data) {
     this.index = index;
     this.asqn = asqn;
     this.data = data;
@@ -54,5 +53,10 @@ public class PersistableJournalIndexedRecord implements JournalIndexedRecord {
   @Override
   public DirectBuffer data() {
     return data;
+  }
+
+  @Override
+  public String toString() {
+    return "JournalIndexedRecordImpl{" + "index=" + index + ", asqn=" + asqn + '}';
   }
 }

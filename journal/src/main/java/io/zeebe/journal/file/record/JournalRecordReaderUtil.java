@@ -25,9 +25,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 /** Common methods used by SegmentWriter and SegmentReader to read records from a buffer. */
 public final class JournalRecordReaderUtil {
 
-  private final JournalRecordBufferReader serializer;
+  private final JournalRecordSerializer serializer;
 
-  public JournalRecordReaderUtil(final JournalRecordBufferReader serializer) {
+  public JournalRecordReaderUtil(final JournalRecordSerializer serializer) {
     this.serializer = serializer;
   }
 
@@ -41,8 +41,7 @@ public final class JournalRecordReaderUtil {
 
     final int startPosition = buffer.position();
     try {
-      final UnsafeBuffer directBuffer =
-          new UnsafeBuffer(buffer.slice());
+      final UnsafeBuffer directBuffer = new UnsafeBuffer(buffer.slice());
       if (!serializer.hasMetadata(directBuffer)) {
         return null;
       }

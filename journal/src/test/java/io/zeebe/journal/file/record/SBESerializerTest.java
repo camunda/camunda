@@ -16,6 +16,7 @@
 package io.zeebe.journal.file.record;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
@@ -30,6 +31,7 @@ public class SBESerializerTest {
   private JournalRecordMetadata metadata;
   private SBESerializer serializer;
   private int recordLength;
+  private MutableDirectBuffer writeBuffer;
 
   @BeforeEach
   public void setup() {
@@ -37,20 +39,19 @@ public class SBESerializerTest {
 
     final DirectBuffer data = new UnsafeBuffer();
     data.wrap("firstData".getBytes());
-    record = new PersistableJournalIndexedRecord(1, 2, data);
+    record = new JournalIndexedRecordImpl(1, 2, data);
     recordLength = serializer.getSerializedLength(record);
 
     metadata = new JournalRecordMetadataImpl(1L, 2);
+
+    final ByteBuffer buffer = ByteBuffer.allocate(recordLength);
+    writeBuffer = new UnsafeBuffer(buffer);
   }
 
   @Test
   public void shouldWriteRecord() {
-    // given
-    final ByteBuffer buffer = ByteBuffer.allocate(recordLength);
-    final MutableDirectBuffer directBuffer = new UnsafeBuffer(buffer);
-
-    // when
-    final var recordWrittenLength = serializer.write(record, directBuffer);
+    // given - when
+    final var recordWrittenLength = serializer.write(record, writeBuffer);
 
     // then
     assertThat(recordWrittenLength).isEqualTo(recordLength);
@@ -59,14 +60,10 @@ public class SBESerializerTest {
   @Test
   public void shouldReadRecord() {
     // given
-    final ByteBuffer buffer = ByteBuffer.allocate(recordLength);
-    final MutableDirectBuffer directBuffer = new UnsafeBuffer(buffer);
-
-    serializer.write(record, directBuffer);
+    serializer.write(record, writeBuffer);
 
     // when
-    buffer.position(0);
-    final var recordRead = serializer.readRecord(directBuffer);
+    final var recordRead = serializer.readRecord(writeBuffer);
 
     // then
     assertThat(recordRead.asqn()).isEqualTo(record.asqn());
@@ -76,31 +73,78 @@ public class SBESerializerTest {
 
   @Test
   public void shouldWriteMetadata() {
-    // given
-    final ByteBuffer buffer = ByteBuffer.allocate(recordLength);
-    final MutableDirectBuffer directBuffer = new UnsafeBuffer(buffer);
-
-    // when
-    final var recordWrittenLength = serializer.write(metadata, directBuffer);
+    // given - when
+    final var recordWrittenLength = serializer.write(metadata, writeBuffer);
 
     // then
-    assertThat(recordWrittenLength).isEqualTo(serializer.metadataLength());
+    assertThat(recordWrittenLength).isEqualTo(serializer.getMetadataLength());
   }
 
   @Test
   public void shouldReadMetadata() {
     // given
-    final ByteBuffer buffer = ByteBuffer.allocate(recordLength);
-    final MutableDirectBuffer directBuffer = new UnsafeBuffer(buffer);
-
-    serializer.write(metadata, directBuffer);
+    serializer.write(metadata, writeBuffer);
 
     // when
-    buffer.position(0);
-    final var recordRead = serializer.readMetadata(directBuffer);
+    final var recordRead = serializer.readMetadata(writeBuffer);
 
     // then
     assertThat(recordRead.checksum()).isEqualTo(metadata.checksum());
     assertThat(recordRead.length()).isEqualTo(metadata.length());
+  }
+
+  @Test
+  public void shouldCheckMetadata() {
+    // given
+    writeBuffer.putLong(0, 0);
+
+    // when - then
+    assertThat(serializer.hasMetadata(writeBuffer)).isFalse();
+  }
+
+  @Test
+  public void shouldThrowExceptionWhenInvalidMetadata() {
+    // given
+    writeBuffer.putLong(0, 0);
+
+    // when - then
+    assertThatThrownBy(() -> serializer.readMetadata(writeBuffer))
+        .isInstanceOf(InvalidRecord.class);
+  }
+
+  @Test
+  public void shouldThrowExceptionWhenInvalidRecord() {
+    // given
+    writeBuffer.putLong(0, 0);
+
+    // when - then
+    assertThatThrownBy(() -> serializer.readRecord(writeBuffer)).isInstanceOf(InvalidRecord.class);
+  }
+
+  @Test
+  public void shouldEstimatedLengthEqualToActualLength() {
+    // given
+    final int estimatedRecordLength = serializer.getSerializedLength(record);
+    final int estimatedMetadataLength = serializer.getMetadataLength();
+
+    // when
+    final int actualRecordLength = serializer.write(record, writeBuffer);
+    final int actualMetadataLength = serializer.write(metadata, writeBuffer);
+
+    // then
+    assertThat(estimatedRecordLength).isEqualTo(actualRecordLength);
+    assertThat(estimatedMetadataLength).isEqualTo(actualMetadataLength);
+  }
+
+  @Test
+  public void shouldReadLengthEqualToActualLength() {
+    // given
+    final int actualMetadataLength = serializer.write(metadata, writeBuffer);
+
+    // when
+    final int readMetadataLength = serializer.getMetadataLength(writeBuffer);
+
+    // then
+    assertThat(readMetadataLength).isEqualTo(actualMetadataLength);
   }
 }

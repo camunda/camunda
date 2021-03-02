@@ -46,4 +46,9 @@ public final class JournalRecordMetadataImpl implements JournalRecordMetadata {
   public long length() {
     return length;
   }
+
+  @Override
+  public String toString() {
+    return "JournalRecordMetadataImpl{" + "checksum=" + checksum + ", length=" + length + '}';
+  }
 }

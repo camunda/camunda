@@ -23,14 +23,14 @@ import org.agrona.DirectBuffer;
  * A JournalRecord stored in a buffer.
  *
  * <p>A {@link PersistedJournalRecord} consists of two parts. The first part is {@link
- * PersistedJournalRecordMetadata}. The second part is {@link PersistedJournalIndexedRecord}.
+ * JournalRecordMetadata}. The second part is {@link JournalIndexedRecord}.
  */
 public class PersistedJournalRecord implements JournalRecord {
   private final JournalRecordMetadata metadata;
   private final JournalIndexedRecord record;
 
-  public PersistedJournalRecord(final JournalRecordMetadata metadata,
-      final JournalIndexedRecord record) {
+  public PersistedJournalRecord(
+      final JournalRecordMetadata metadata, final JournalIndexedRecord record) {
     this.metadata = metadata;
     this.record = record;
   }
@@ -73,5 +73,10 @@ public class PersistedJournalRecord implements JournalRecord {
         && that.asqn() == asqn()
         && that.checksum() == checksum()
         && Objects.equals(that.data(), data());
+  }
+
+  @Override
+  public String toString() {
+    return "PersistedJournalRecord{" + "metadata=" + metadata + ", record=" + record + '}';
   }
 }

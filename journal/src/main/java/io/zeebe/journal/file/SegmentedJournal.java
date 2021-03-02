@@ -438,10 +438,7 @@ public class SegmentedJournal implements Journal {
    */
   protected JournalSegment newSegment(
       final JournalSegmentFile segmentFile, final JournalSegmentDescriptor descriptor) {
-    return new JournalSegment(
-        segmentFile,
-        descriptor,
-        journalIndex, maxEntrySize);
+    return new JournalSegment(segmentFile, descriptor, journalIndex, maxEntrySize);
   }
 
   /** Loads a segment. */

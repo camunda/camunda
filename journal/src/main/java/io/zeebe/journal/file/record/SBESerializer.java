@@ -25,75 +25,22 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class SBESerializer implements JournalRecordBufferWriter, JournalRecordBufferReader {
+/**
+ * The serializer that writes and reads a journal record according to the SBE schema defined. A
+ * journal record consists of two parts - a metadata and an indexed record.
+ *
+ * <p>Metadata consists of the checksum and the length of the record. The record consists of index,
+ * asqn and the data.
+ */
+public final class SBESerializer implements JournalRecordSerializer {
 
-  protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-  private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-
-  private final JournalIndexedRecordEncoder recordEncoder = new JournalIndexedRecordEncoder();
+  private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final JournalRecordMetadataEncoder metadataEncoder = new JournalRecordMetadataEncoder();
+  private final JournalIndexedRecordEncoder recordEncoder = new JournalIndexedRecordEncoder();
 
-  private final JournalIndexedRecordDecoder recordDecoder = new JournalIndexedRecordDecoder();
+  private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final JournalRecordMetadataDecoder metadataDecoder = new JournalRecordMetadataDecoder();
-
-  /* @Override
-  public JournalRecord read(final ByteBuffer buffer) {
-    final var recordPosition = buffer.position();
-    try {
-      final var record = new PersistedJournalRecord(buffer);
-      buffer.position(recordPosition + record.getMetadataLength());
-      final var expectedChecksum = computeChecksum(buffer, record.getIndexedRecordLength());
-      if (record.checksum() != expectedChecksum) {
-        buffer.position(recordPosition);
-        return null; // TODO: throw an exception??
-      }
-      buffer.position(recordPosition + record.getLength());
-      return record;
-    } catch (final Exception e) {
-      buffer.position(recordPosition);
-      return null;
-    }
-  }*/
-
-  /* @Override
-  public JournalRecord write(final JournalRecord record, final ByteBuffer buffer) {
-    final int recordStartPosition = buffer.position();
-    buffer.mark();
-
-    final PersistableJournalIndexedRecord indexedRecord =
-        new PersistableJournalIndexedRecord(record.index(), record.asqn(), record.data());
-    final PersistableJournalRecordMetadata recordMetadata = new PersistableJournalRecordMetadata();
-    final var recordLength = recordMetadata.getLength() + indexedRecord.getLength();
-    if (buffer.position() + recordLength > buffer.limit()) {
-      throw new BufferOverflowException();
-    }
-
-    if (recordLength > maxEntrySize) {
-      // Just reset the buffer. There's no need to zero the bytes since we haven't written anything
-      buffer.reset();
-      throw new StorageException.TooLarge(
-          "Entry size " + recordLength + " exceeds maximum allowed bytes (" + maxEntrySize + ")");
-    }
-
-    // Write JournalIndexedRecord
-    final MutableDirectBuffer bufferToWrite = new UnsafeBuffer();
-    buffer.position(recordStartPosition + recordMetadata.getLength());
-    bufferToWrite.wrap(buffer, buffer.position(), indexedRecord.getLength());
-    indexedRecord.write(bufferToWrite, 0);
-
-    // Calculate checksum and write JournalRecordMetadata
-    buffer.position(recordStartPosition + recordMetadata.getLength());
-    final long checksum = computeChecksum(buffer, indexedRecord.getLength());
-    recordMetadata.setChecksum(checksum);
-    buffer.position(recordStartPosition);
-    bufferToWrite.wrap(buffer, recordStartPosition, recordLength);
-    recordMetadata.write(bufferToWrite, 0);
-
-    buffer.position(recordStartPosition);
-    final var recordWritten = new PersistedJournalRecord(buffer);
-    buffer.position(recordStartPosition + recordLength);
-    return recordWritten;
-  }*/
+  private final JournalIndexedRecordDecoder recordDecoder = new JournalIndexedRecordDecoder();
 
   @Override
   public int write(final JournalIndexedRecord record, final MutableDirectBuffer buffer) {
@@ -133,7 +80,7 @@ public final class SBESerializer implements JournalRecordBufferWriter, JournalRe
   }
 
   @Override
-  public int metadataLength() {
+  public int getMetadataLength() {
     return headerEncoder.encodedLength() + metadataEncoder.sbeBlockLength();
   }
 
@@ -146,11 +93,6 @@ public final class SBESerializer implements JournalRecordBufferWriter, JournalRe
   }
 
   @Override
-  public JournalRecordMetadata readMetadata(final DirectBuffer buffer) {
-    return new PersistedJournalRecordMetadata(new UnsafeBuffer(buffer));
-  }
-
-  @Override
   public boolean hasMetadata(final DirectBuffer buffer) {
     headerDecoder.wrap(buffer, 0);
     return (headerDecoder.schemaId() == metadataDecoder.sbeSchemaId()
@@ -158,27 +100,40 @@ public final class SBESerializer implements JournalRecordBufferWriter, JournalRe
   }
 
   @Override
+  public JournalRecordMetadata readMetadata(final DirectBuffer buffer) {
+    if (!hasMetadata(buffer)) {
+      throw new InvalidRecord("Cannot read buffer. Header does not match.");
+    }
+    metadataDecoder.wrap(
+        buffer,
+        headerDecoder.encodedLength(),
+        headerDecoder.blockLength(),
+        headerDecoder.version());
+
+    return new JournalRecordMetadataImpl(
+        metadataDecoder.checksum(), (int) metadataDecoder.length()); // TODO: int <-> long
+  }
+
+  @Override
   public JournalIndexedRecord readRecord(final DirectBuffer buffer) {
-    return new PersistedJournalIndexedRecord(buffer);
+    headerDecoder.wrap(buffer, 0);
+    if (!(headerDecoder.schemaId() == recordDecoder.sbeSchemaId()
+        && headerDecoder.templateId() == recordDecoder.sbeTemplateId())) {
+      throw new InvalidRecord("Cannot read buffer. Header does not match.");
+    }
+    recordDecoder.wrap(
+        buffer,
+        headerDecoder.encodedLength(),
+        headerDecoder.blockLength(),
+        headerDecoder.version());
+
+    final DirectBuffer data = new UnsafeBuffer();
+    recordDecoder.wrapApplicationRecord(data);
+    return new JournalIndexedRecordImpl(recordDecoder.index(), recordDecoder.asqn(), data);
   }
 
   public int getMetadataLength(final DirectBuffer buffer) {
     headerDecoder.wrap(buffer, 0);
     return headerDecoder.encodedLength() + headerDecoder.blockLength();
   }
-
-  /*
-  @Override
-  public void invalidate(final ByteBuffer buffer) {
-    final var bufferToInvalidate = buffer.slice();
-    while (bufferToInvalidate.position() <= MessageHeaderEncoder.ENCODED_LENGTH) {
-      bufferToInvalidate.putInt(0);
-    }
-  }
-
-  private long computeChecksum(final ByteBuffer buffer, final int length) {
-    final var record = buffer.slice();
-    record.limit(length);
-    return checksumGenerator.compute(record);
-  }*/
 }
