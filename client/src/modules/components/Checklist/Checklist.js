@@ -125,7 +125,7 @@ export default function Checklist({
             {preItems}
             {filteredData.map(({id, label, checked, disabled}) => (
               <LabeledInput
-                className={classnames({highlight: checked})}
+                className={classnames({highlight: checked && !disabled})}
                 disabled={disabled}
                 key={id}
                 type="checkbox"

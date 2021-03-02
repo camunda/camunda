@@ -179,24 +179,36 @@ it('should add selected external sources', () => {
   expect(spy).toHaveBeenCalledWith([testSource], false);
 });
 
-it('should edit external sources if there are already existing external sources', () => {
+it('should add new external sources to already existing ones', () => {
+  const existingGroupSource = {type: 'external', configuration: {group: 'test'}};
   const spy = jest.fn();
   const node = shallow(
-    <EventsSourceModal
-      {...props}
-      onConfirm={spy}
-      existingSources={[{type: 'external', configuration: {group: 'test'}}]}
-    />
+    <EventsSourceModal {...props} onConfirm={spy} existingSources={[existingGroupSource]} />
   );
 
   node.find('Tabs').prop('onChange')('external');
 
-  const testSource = {type: 'external', configuration: {group: 'testGroup'}};
-  node.find(ExternalSource).prop('onChange')([testSource]);
+  const newGroupSource = {type: 'external', configuration: {group: 'testGroup'}};
+  node.find(ExternalSource).prop('onChange')([newGroupSource]);
 
   node.find('[primary]').simulate('click');
 
-  expect(spy).toHaveBeenCalledWith([testSource], true);
+  expect(spy).toHaveBeenCalledWith([newGroupSource, existingGroupSource], true);
+});
+
+it('should not include existing groups if all external groups is selected', () => {
+  const existingGroupSource = {type: 'external', configuration: {group: 'test'}};
+  const spy = jest.fn();
+  const node = shallow(
+    <EventsSourceModal {...props} onConfirm={spy} existingSources={[existingGroupSource]} />
+  );
+
+  node.find('Tabs').prop('onChange')('external');
+  node.find(ExternalSource).prop('onChange')([allExternalGroups]);
+
+  node.find('[primary]').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith([allExternalGroups], true);
 });
 
 it('should add all external groups in auto generation', () => {

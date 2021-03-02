@@ -19,7 +19,8 @@ jest.mock('debounce', () => (fn) => fn);
 
 const props = {
   empty: false,
-  existingSources: [{type: 'external', configuration: {group: 'group 1'}}],
+  externalSources: [{type: 'external', configuration: {group: 'group 1'}}],
+  existingExternalSources: [],
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
@@ -75,7 +76,7 @@ it('should select and disable all items if inlude all groups is selected', () =>
   const node = shallow(
     <ExternalSource
       {...props}
-      existingSources={[{configuration: {group: null, includeAllGroups: true}, type: 'external'}]}
+      externalSources={[{configuration: {group: null, includeAllGroups: true}, type: 'external'}]}
     />
   );
 
@@ -117,4 +118,19 @@ it('should increase the limit by 10 when clicking loadMore button', async () => 
   runLastEffect();
 
   expect(loadExternalGroups).toHaveBeenCalledWith({limit: 21, searchTerm: ''});
+});
+
+it('should disable deselection of existing groups', () => {
+  const node = shallow(
+    <ExternalSource {...props} existingExternalSources={[{configuration: {group: 'group 1'}}]} />
+  );
+
+  expect(node.find('Checklist').prop('formatter')(['group 1'], ['group 1'])).toEqual([
+    {
+      id: 'group 1',
+      label: 'group 1',
+      checked: true,
+      disabled: true,
+    },
+  ]);
 });

@@ -29,7 +29,9 @@ import {loadEvents} from './service';
 
 import './EventsSourceModal.scss';
 
-const allExternalGroups = {type: 'external', configuration: {includeAllGroups: true, group: null}};
+const allExternalGroups = [
+  {type: 'external', configuration: {includeAllGroups: true, group: null}},
+];
 
 const defaultSource = {
   processDefinitionKey: '',
@@ -48,7 +50,7 @@ export default withErrorHandling(
       variables: null,
       type: 'camunda',
       externalExist: false,
-      externalSources: this.props.existingSources.filter((src) => src.type === 'external'),
+      externalSources: includeAllGroups(this.props.existingSources) ? allExternalGroups : [],
     };
 
     componentDidMount = async () => {
@@ -58,7 +60,7 @@ export default withErrorHandling(
       }
 
       this.props.mightFail(
-        loadEvents({eventSources: [allExternalGroups]}),
+        loadEvents({eventSources: allExternalGroups}),
         (events) => this.setState({externalExist: !!events.length}),
         showError
       );
@@ -69,8 +71,15 @@ export default withErrorHandling(
       const {source, type, externalSources} = this.state;
       if (type === 'external') {
         const camundaSources = existingSources.filter((src) => src.type !== 'external');
-        const externalSourcesToAdd = autoGenerate ? [allExternalGroups] : externalSources;
-        const updatedSources = camundaSources.concat(externalSourcesToAdd);
+        const existingExternalGroups = existingSources.filter(
+          (src) => src.type === 'external' && !src.configuration.includeAllGroups
+        );
+        const newExternalSources =
+          autoGenerate || includeAllGroups(externalSources)
+            ? allExternalGroups
+            : externalSources.concat(existingExternalGroups);
+
+        const updatedSources = camundaSources.concat(newExternalSources);
         this.props.onConfirm(updatedSources, camundaSources.length < existingSources.length);
       } else {
         let updatedSources;
@@ -265,7 +274,10 @@ export default withErrorHandling(
                 {!autoGenerate && (
                   <ExternalSource
                     empty={!externalExist}
-                    existingSources={externalSources}
+                    existingExternalSources={this.props.existingSources.filter(
+                      (src) => src.type === 'external'
+                    )}
+                    externalSources={externalSources}
                     onChange={(externalSources) => this.setState({externalSources})}
                   />
                 )}
@@ -305,4 +317,8 @@ function getDisabledMessage(tracedByBusinessKey, variables) {
   }
 
   return t('events.sources.selectProcess');
+}
+
+function includeAllGroups(sources) {
+  return sources.some((src) => src.configuration.includeAllGroups);
 }
