@@ -105,7 +105,12 @@
     <profile>
       <id>engine-snapshot</id>
       <properties>
-        <camunda.engine.version>7.15.0-SNAPSHOT</camunda.engine.version>
+        <!--
+        Note: the below is intended for CI usage only, as part of
+        engine_compatibility job.
+        See also setCamBpmSnapshotVersion() in optimize-jenkins-shared-library.
+        -->
+        <camunda.engine.version>${env.CAMBPM_SNAPSHOT_VERSION}</camunda.engine.version>
       </properties>
     </profile>
 
