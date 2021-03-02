@@ -40,20 +40,24 @@ public final class JournalRecordReaderUtil {
     buffer.mark();
 
     if (buffer.position() + serializer.getMetadataLength() > buffer.limit()) {
+      // Reached end of the segment
       return null;
     }
+
     final int startPosition = buffer.position();
     try {
       final UnsafeBuffer directBuffer = new UnsafeBuffer(buffer.slice());
       if (!serializer.hasMetadata(directBuffer)) {
+        // No valid record here
         return null;
       }
       final JournalRecordMetadata metadata = serializer.readMetadata(directBuffer);
 
       final int metadataLength = serializer.getMetadataLength(directBuffer);
-      final var recordLength = (int) metadata.length(); // TODO int <-> long
+      final var recordLength = metadata.length();
       if (buffer.position() + metadataLength + recordLength > buffer.limit()) {
-        // There is no valid record here
+        // There is no valid record here. This should not happen, if we have magic headers before
+        // each record.
         return null;
       }
 
@@ -62,7 +66,8 @@ public final class JournalRecordReaderUtil {
       final long checksum = computeChecksum(buffer.slice(), recordLength);
 
       if (checksum != metadata.checksum()) {
-        buffer.reset(); // TODO: Throw exception
+        // TODO: Throw an exception, when we introduce magic headers before each record
+        buffer.reset();
         return null;
       }
 

@@ -15,9 +15,9 @@
  */
 package io.zeebe.journal.file.record;
 
-public class InvalidRecord extends RuntimeException {
+public class InvalidRecordException extends RuntimeException {
 
-  public InvalidRecord(final String message) {
+  public InvalidRecordException(final String message) {
     super(message);
   }
 }

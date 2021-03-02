@@ -102,7 +102,7 @@ public final class SBESerializer implements JournalRecordSerializer {
   @Override
   public JournalRecordMetadata readMetadata(final DirectBuffer buffer) {
     if (!hasMetadata(buffer)) {
-      throw new InvalidRecord("Cannot read buffer. Header does not match.");
+      throw new InvalidRecordException("Cannot read buffer. Header does not match.");
     }
     metadataDecoder.wrap(
         buffer,
@@ -111,7 +111,7 @@ public final class SBESerializer implements JournalRecordSerializer {
         headerDecoder.version());
 
     return new JournalRecordMetadataImpl(
-        metadataDecoder.checksum(),  metadataDecoder.length()); // TODO: int <-> long
+        metadataDecoder.checksum(), metadataDecoder.length()); // TODO: int <-> long
   }
 
   @Override
@@ -119,7 +119,7 @@ public final class SBESerializer implements JournalRecordSerializer {
     headerDecoder.wrap(buffer, 0);
     if (!(headerDecoder.schemaId() == recordDecoder.sbeSchemaId()
         && headerDecoder.templateId() == recordDecoder.sbeTemplateId())) {
-      throw new InvalidRecord("Cannot read buffer. Header does not match.");
+      throw new InvalidRecordException("Cannot read buffer. Header does not match.");
     }
     recordDecoder.wrap(
         buffer,

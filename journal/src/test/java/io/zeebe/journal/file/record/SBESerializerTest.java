@@ -109,7 +109,7 @@ public class SBESerializerTest {
 
     // when - then
     assertThatThrownBy(() -> serializer.readMetadata(writeBuffer))
-        .isInstanceOf(InvalidRecord.class);
+        .isInstanceOf(InvalidRecordException.class);
   }
 
   @Test
@@ -118,7 +118,8 @@ public class SBESerializerTest {
     writeBuffer.putLong(0, 0);
 
     // when - then
-    assertThatThrownBy(() -> serializer.readRecord(writeBuffer)).isInstanceOf(InvalidRecord.class);
+    assertThatThrownBy(() -> serializer.readRecord(writeBuffer))
+        .isInstanceOf(InvalidRecordException.class);
   }
 
   @Test
