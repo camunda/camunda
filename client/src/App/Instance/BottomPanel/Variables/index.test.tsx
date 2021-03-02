@@ -48,7 +48,7 @@ describe('Variables', () => {
     it('should display empty content if there are no variables', async () => {
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json([]))
         )
       );
@@ -62,7 +62,7 @@ describe('Variables', () => {
     it('should display skeleton on initial load', async () => {
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -75,7 +75,7 @@ describe('Variables', () => {
     it('should display spinner on second variable fetch', async () => {
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -85,7 +85,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -101,7 +101,7 @@ describe('Variables', () => {
     it('should render variables table', async () => {
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -125,7 +125,7 @@ describe('Variables', () => {
       currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -161,7 +161,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -180,7 +180,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -258,7 +258,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -294,7 +294,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) =>
             res.once(
               ctx.json([
@@ -328,7 +328,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -362,7 +362,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -394,7 +394,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -432,7 +432,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -457,7 +457,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -507,7 +507,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -523,7 +523,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -539,7 +539,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -564,7 +564,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+          '/api/workflow-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );

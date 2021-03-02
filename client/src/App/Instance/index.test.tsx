@@ -61,21 +61,19 @@ describe('Instance', () => {
           })
         )
       ),
-      rest.get(
-        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
-        (_, res, ctx) =>
-          res(
-            ctx.json([
-              {
-                id: '2251799813686037-mwst',
-                name: 'newVariable',
-                value: '1234',
-                scopeId: '2251799813686037',
-                workflowInstanceId: '2251799813686037',
-                hasActiveOperation: false,
-              },
-            ])
-          )
+      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+        res(
+          ctx.json([
+            {
+              id: '2251799813686037-mwst',
+              name: 'newVariable',
+              value: '1234',
+              scopeId: '2251799813686037',
+              workflowInstanceId: '2251799813686037',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       )
     );
   });

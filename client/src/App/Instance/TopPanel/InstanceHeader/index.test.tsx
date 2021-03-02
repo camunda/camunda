@@ -157,9 +157,8 @@ describe('InstanceHeader', () => {
       rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithoutOperations))
       ),
-      rest.get(
-        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
-        (_, res, ctx) => res.once(ctx.json([mockVariable]))
+      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json([mockVariable]))
       ),
       rest.post(
         '/api/workflow-instances/:instanceId/operation',

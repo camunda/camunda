@@ -53,9 +53,8 @@ describe('stores/variables', () => {
 
   beforeEach(() => {
     mockServer.use(
-      rest.get(
-        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
-        (_, res, ctx) => res.once(ctx.json(mockVariables))
+      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json(mockVariables))
       ),
       rest.post(
         '/api/workflow-instances/:instanceId/operation',
@@ -106,22 +105,20 @@ describe('stores/variables', () => {
     );
 
     mockServer.use(
-      rest.get(
-        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              ...mockVariables,
-              {
-                id: '2251799813686374-clientNo',
-                name: 'clientNo',
-                value: '"CNT-1211132-02"',
-                scopeId: '2251799813686374',
-                workflowInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-              },
-            ])
-          )
+      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            ...mockVariables,
+            {
+              id: '2251799813686374-clientNo',
+              name: 'clientNo',
+              value: '"CNT-1211132-02"',
+              scopeId: '2251799813686374',
+              workflowInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       )
     );
     jest.runOnlyPendingTimers();
@@ -140,30 +137,28 @@ describe('stores/variables', () => {
     );
 
     mockServer.use(
-      rest.get(
-        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              ...mockVariables,
-              {
-                id: '2251799813686374-clientNo',
-                name: 'clientNo',
-                value: '"CNT-1211132-02"',
-                scopeId: '2251799813686374',
-                workflowInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-              },
-              {
-                id: '2251799813686374-orderNo',
-                name: 'orderNo',
-                value: '"CMD0001-01"',
-                scopeId: '2251799813686374',
-                workflowInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-              },
-            ])
-          )
+      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            ...mockVariables,
+            {
+              id: '2251799813686374-clientNo',
+              name: 'clientNo',
+              value: '"CNT-1211132-02"',
+              scopeId: '2251799813686374',
+              workflowInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+            },
+            {
+              id: '2251799813686374-orderNo',
+              name: 'orderNo',
+              value: '"CMD0001-01"',
+              scopeId: '2251799813686374',
+              workflowInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       )
     );
     jest.runOnlyPendingTimers();
@@ -472,9 +467,8 @@ describe('stores/variables', () => {
 
   it('should get hasNoVariables', async () => {
     mockServer.use(
-      rest.get(
-        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
-        (_, res, ctx) => res.once(ctx.json([]))
+      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json([]))
       )
     );
 
@@ -488,9 +482,8 @@ describe('stores/variables', () => {
     expect(variablesStore.hasNoVariables).toBe(true);
 
     mockServer.use(
-      rest.get(
-        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
-        (_, res, ctx) => res.once(ctx.json([]))
+      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json([]))
       )
     );
 
@@ -504,9 +497,8 @@ describe('stores/variables', () => {
     variablesStore.fetchVariables('1');
 
     mockServer.use(
-      rest.get(
-        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
-        (_, res, ctx) => res.once(ctx.json(mockVariables))
+      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json(mockVariables))
       )
     );
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
@@ -525,9 +517,8 @@ describe('stores/variables', () => {
 
   it('should not update state if store is reset when there are ongoing requests', async () => {
     mockServer.use(
-      rest.get(
-        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
-        (_, res, ctx) => res.once(ctx.status(500), ctx.json(mockVariables))
+      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.status(500), ctx.json(mockVariables))
       )
     );
 
@@ -566,45 +557,43 @@ describe('stores/variables', () => {
     });
 
     mockServer.use(
-      rest.get(
-        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                id: '2251799813686374-mwst',
-                name: 'mwst',
-                value: '63.27',
-                scopeId: '2251799813686374',
-                workflowInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-              },
-              {
-                id: '2251799813686374-orderStatus',
-                name: 'orderStatus',
-                value: '"NEW"',
-                scopeId: '2251799813686374',
-                workflowInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-              },
-              {
-                id: '2251799813686374-paid',
-                name: 'paid',
-                value: 'true',
-                scopeId: '2251799813686374',
-                workflowInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-              },
-              {
-                id: '2251799813686374-orderNo',
-                name: 'someNewVariableFromServer',
-                value: '"CMD0001-01"',
-                scopeId: '2251799813686374',
-                workflowInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-              },
-            ])
-          )
+      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              id: '2251799813686374-mwst',
+              name: 'mwst',
+              value: '63.27',
+              scopeId: '2251799813686374',
+              workflowInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+            },
+            {
+              id: '2251799813686374-orderStatus',
+              name: 'orderStatus',
+              value: '"NEW"',
+              scopeId: '2251799813686374',
+              workflowInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+            },
+            {
+              id: '2251799813686374-paid',
+              name: 'paid',
+              value: 'true',
+              scopeId: '2251799813686374',
+              workflowInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+            },
+            {
+              id: '2251799813686374-orderNo',
+              name: 'someNewVariableFromServer',
+              value: '"CMD0001-01"',
+              scopeId: '2251799813686374',
+              workflowInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       )
     );
 
