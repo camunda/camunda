@@ -35,7 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class JournalTest {
+class JournalTest {
 
   @TempDir Path directory;
   private final Namespace namespace =
@@ -51,7 +51,7 @@ public class JournalTest {
   private Journal journal;
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     entry = "TestData".getBytes();
     data.wrap(entry);
 
@@ -61,13 +61,13 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldBeEmpty() {
+  void shouldBeEmpty() {
     // when-then
     assertThat(journal.isEmpty()).isTrue();
   }
 
   @Test
-  public void shouldNotBeEmpty() {
+  void shouldNotBeEmpty() {
     // given
     journal.append(1, data);
 
@@ -76,7 +76,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldAppendData() {
+  void shouldAppendData() {
     // when
     final var recordAppended = journal.append(1, data);
     assertThat(recordAppended.index()).isEqualTo(1);
@@ -88,7 +88,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldAppendMultipleRecords() {
+  void shouldAppendMultipleRecords() {
     // when
     for (int i = 0; i < 10; i++) {
       final var recordAppended = journal.append(i + 10, data);
@@ -109,7 +109,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldAppendAndReadMultipleRecords() {
+  void shouldAppendAndReadMultipleRecords() {
     final var reader = journal.openReader();
     for (int i = 0; i < 10; i++) {
       // given
@@ -132,7 +132,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldReset() {
+  void shouldReset() {
     // given
     long asqn = 1;
     assertThat(journal.getLastIndex()).isEqualTo(0);
@@ -150,7 +150,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldResetWhileReading() {
+  void shouldResetWhileReading() {
     // given
     final var reader = journal.openReader();
     long asqn = 1;
@@ -176,7 +176,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldWriteToTruncatedIndex() {
+  void shouldWriteToTruncatedIndex() {
     // given
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
@@ -201,7 +201,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldTruncate() {
+  void shouldTruncate() {
     // given
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
@@ -220,7 +220,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldNotReadTruncatedEntries() {
+  void shouldNotReadTruncatedEntries() {
     // given
     final int totalWrites = 10;
     final int truncateIndex = 5;
@@ -261,7 +261,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldAppendJournalRecord() {
+  void shouldAppendJournalRecord() {
     // given
     final var receiverJournal =
         SegmentedJournal.builder()
@@ -280,7 +280,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldNotAppendRecordWithAlreadyAppendedIndex() {
+  void shouldNotAppendRecordWithAlreadyAppendedIndex() {
     // given
     final var record = journal.append(1, data);
     journal.append(data);
@@ -290,7 +290,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldNotAppendRecordWithGapInIndex() {
+  void shouldNotAppendRecordWithGapInIndex() {
     // given
     final var receiverJournal =
         SegmentedJournal.builder()
@@ -305,7 +305,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldNotAppendLastRecord() {
+  void shouldNotAppendLastRecord() {
     // given
     final var record = journal.append(1, data);
 
@@ -314,7 +314,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldNotAppendRecordWithInvalidChecksum() {
+  void shouldNotAppendRecordWithInvalidChecksum() {
     // given
     final var receiverJournal =
         SegmentedJournal.builder()
@@ -333,7 +333,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldReturnFirstIndex() {
+  void shouldReturnFirstIndex() {
     // when
     final long firstIndex = journal.append(data).index();
     journal.append(data);
@@ -343,7 +343,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldReturnLastIndex() {
+  void shouldReturnLastIndex() {
     // when
     journal.append(data);
     final long lastIndex = journal.append(data).index();
@@ -353,7 +353,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldOpenAndClose() throws Exception {
+  void shouldOpenAndClose() throws Exception {
     // when/then
     assertThat(journal.isOpen()).isTrue();
     journal.close();
@@ -361,7 +361,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldReopenJournalWithExistingRecords() throws Exception {
+  void shouldReopenJournalWithExistingRecords() throws Exception {
     // given
     journal.append(data);
     journal.append(data);
@@ -378,7 +378,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldReadReopenedJournal() throws Exception {
+  void shouldReadReopenedJournal() throws Exception {
     // given
     final var appendedRecord = journal.append(data);
     journal.close();
@@ -394,7 +394,7 @@ public class JournalTest {
   }
 
   @Test
-  public void shouldWriteToReopenedJournalAtNextIndex() throws Exception {
+  void shouldWriteToReopenedJournalAtNextIndex() throws Exception {
     // given
     final var firstRecord = journal.append(data);
     journal.close();
@@ -413,6 +413,30 @@ public class JournalTest {
 
     assertThat(reader.hasNext()).isTrue();
     assertThat(reader.next()).isEqualTo(secondRecord);
+  }
+
+  @Test
+  void shouldNotReadDeletedEntries() {
+    // given
+    final var firstRecord = journal.append(data);
+    journal.append(data);
+    journal.append(data);
+
+    // when
+    journal.deleteAfter(firstRecord.index());
+    final var newSecondRecord = journal.append(data);
+
+    // then
+    final JournalReader reader = journal.openReader();
+    assertThat(newSecondRecord.index()).isEqualTo(2);
+
+    assertThat(reader.hasNext()).isTrue();
+    assertThat(reader.next()).isEqualTo(firstRecord);
+
+    assertThat(reader.hasNext()).isTrue();
+    assertThat(reader.next()).isEqualTo(newSecondRecord);
+
+    assertThat(reader.hasNext()).isFalse();
   }
 
   private int getSerializedSize(final DirectBuffer data) {
