@@ -7,7 +7,7 @@
 import React, {useEffect} from 'react';
 import {Collapse} from '../Collapse';
 import InstancesBar from 'modules/components/InstancesBar';
-import PanelListItem from '../PanelListItem';
+import {PanelListItem} from '../PanelListItem';
 import {instancesByWorkflowStore} from 'modules/stores/instancesByWorkflow';
 
 import * as Styled from './styled';
@@ -24,6 +24,8 @@ import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {mergeQueryParams} from 'modules/utils/mergeQueryParams';
 import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
+import {IS_FILTERS_V2} from 'modules/utils/filter';
+import {Locations} from 'modules/routes';
 
 const InstancesByWorkflow = observer(() => {
   useEffect(() => {
@@ -41,40 +43,76 @@ const InstancesByWorkflow = observer(() => {
             item.instancesWithActiveIncidentsCount + item.activeInstancesCount;
           return (
             <Styled.VersionLi key={item.workflowId}>
-              <PanelListItem
-                // @ts-expect-error ts-migrate(2322) FIXME: Property 'to' does not exist on type 'IntrinsicAtt... Remove this comment to see the full error message
-                to={(location) => ({
-                  ...location,
-                  pathname: '/instances',
-                  search: mergeQueryParams({
-                    newParams: generateQueryParams({
-                      bpmnProcessId: item.bpmnProcessId,
-                      versions: [item],
-                      hasFinishedInstances: totalInstancesCount === 0,
-                      name,
-                    }),
-                    prevParams: getPersistentQueryParams(location.search),
-                  }),
-                })}
-                title={concatTitle(
-                  item.name || workflowName,
-                  totalInstancesCount,
-                  item.version
-                )}
-                $boxSize="small"
-              >
-                <InstancesBar
-                  label={concatLabel(
+              {IS_FILTERS_V2 ? (
+                <PanelListItem
+                  to={(location) =>
+                    Locations.filters(location, {
+                      workflow: item.bpmnProcessId,
+                      workflowVersion: item.version,
+                      active: true,
+                      incidents: true,
+                      ...(totalInstancesCount === 0
+                        ? {
+                            completed: true,
+                            canceled: true,
+                          }
+                        : {}),
+                    })
+                  }
+                  title={concatTitle(
                     item.name || workflowName,
                     totalInstancesCount,
                     item.version
                   )}
-                  incidentsCount={item.instancesWithActiveIncidentsCount}
-                  activeCount={item.activeInstancesCount}
-                  size="small"
-                  barHeight={3}
-                />
-              </PanelListItem>
+                  $boxSize="small"
+                >
+                  <InstancesBar
+                    label={concatLabel(
+                      item.name || workflowName,
+                      totalInstancesCount,
+                      item.version
+                    )}
+                    incidentsCount={item.instancesWithActiveIncidentsCount}
+                    activeCount={item.activeInstancesCount}
+                    size="small"
+                    barHeight={3}
+                  />
+                </PanelListItem>
+              ) : (
+                <PanelListItem
+                  to={(location) => ({
+                    ...location,
+                    pathname: '/instances',
+                    search: mergeQueryParams({
+                      newParams: generateQueryParams({
+                        bpmnProcessId: item.bpmnProcessId,
+                        versions: [item],
+                        hasFinishedInstances: totalInstancesCount === 0,
+                        name,
+                      }),
+                      prevParams: getPersistentQueryParams(location.search),
+                    }),
+                  })}
+                  title={concatTitle(
+                    item.name || workflowName,
+                    totalInstancesCount,
+                    item.version
+                  )}
+                  $boxSize="small"
+                >
+                  <InstancesBar
+                    label={concatLabel(
+                      item.name || workflowName,
+                      totalInstancesCount,
+                      item.version
+                    )}
+                    incidentsCount={item.instancesWithActiveIncidentsCount}
+                    activeCount={item.activeInstancesCount}
+                    size="small"
+                    barHeight={3}
+                  />
+                </PanelListItem>
+              )}
             </Styled.VersionLi>
           );
         })}
@@ -87,9 +125,47 @@ const InstancesByWorkflow = observer(() => {
     const totalInstancesCount =
       item.instancesWithActiveIncidentsCount + item.activeInstancesCount;
 
+    if (IS_FILTERS_V2) {
+      return (
+        <PanelListItem
+          to={(location) =>
+            Locations.filters(location, {
+              workflow: item.bpmnProcessId,
+              workflowVersion:
+                item.workflows.length === 1 ? item.workflows[0].version : 'all',
+              active: true,
+              incidents: true,
+              ...(totalInstancesCount === 0
+                ? {
+                    completed: true,
+                    canceled: true,
+                  }
+                : {}),
+            })
+          }
+          title={concatGroupTitle(
+            name,
+            totalInstancesCount,
+            item.workflows.length
+          )}
+        >
+          <InstancesBar
+            label={concatGroupLabel(
+              name,
+              totalInstancesCount,
+              item.workflows.length
+            )}
+            incidentsCount={item.instancesWithActiveIncidentsCount}
+            activeCount={item.activeInstancesCount}
+            size="medium"
+            barHeight={5}
+          />
+        </PanelListItem>
+      );
+    }
+
     return (
       <PanelListItem
-        // @ts-expect-error ts-migrate(2322) FIXME: Property 'to' does not exist on type 'IntrinsicAtt... Remove this comment to see the full error message
         to={(location) => ({
           ...location,
           pathname: '/instances',

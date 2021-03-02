@@ -23,36 +23,55 @@ type Workflow = {
 
 type State = {
   workflows: Workflow[];
+  status: 'initial' | 'fetching' | 'fetched' | 'fetch-error';
+};
+
+const INITIAL_STATE: State = {
+  workflows: [],
+  status: 'initial',
 };
 
 class Workflows {
-  state: State = {
-    workflows: [],
-  };
+  state: State = INITIAL_STATE;
 
   constructor() {
     makeAutoObservable(this, {
-      fetch: false,
+      fetchWorkflows: false,
     });
   }
 
-  fetch = async () => {
+  fetchWorkflows = async () => {
+    this.startFetching();
+
     try {
       const response = await fetchGroupedWorkflows();
 
       if (response.ok) {
-        this.setWorkflows(await response.json());
+        this.handleFetchSuccess(await response.json());
       } else {
-        logger.error('Failed to fetch workflows');
+        this.handleFetchError();
       }
     } catch (error) {
-      logger.error('Failed to fetch workflows');
+      this.handleFetchError(error);
+    }
+  };
+
+  startFetching = () => {
+    this.state.status = 'fetching';
+  };
+
+  handleFetchError = (error?: Error) => {
+    this.state.status = 'fetch-error';
+    logger.error('Failed to fetch workflows');
+
+    if (error !== undefined) {
       logger.error(error);
     }
   };
 
-  setWorkflows = (workflows: Workflow[]) => {
+  handleFetchSuccess = (workflows: Workflow[]) => {
     this.state.workflows = workflows;
+    this.state.status = 'fetched';
   };
 
   get workflows() {
@@ -95,7 +114,7 @@ class Workflows {
   }
 
   reset = () => {
-    this.state.workflows = [];
+    this.state = INITIAL_STATE;
   };
 }
 

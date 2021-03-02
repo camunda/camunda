@@ -20,4 +20,4 @@ type Errors = {
 
 type VariablePair = Pick<FiltersType, 'variableName' | 'variableValue'>;
 
-export type {FiltersType, Errors, VariablePair};
+export type {Errors, VariablePair};

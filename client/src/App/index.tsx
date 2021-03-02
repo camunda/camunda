@@ -21,6 +21,7 @@ import GlobalStyles from './GlobalStyles';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {GettingStartedExperience} from './GettingStartedExperience';
 import {CommonUiContext} from 'modules/CommonUiContext';
+import {Routes} from 'modules/routes';
 
 function App() {
   return (
@@ -33,12 +34,12 @@ function App() {
           <Router>
             <GettingStartedExperience />
             <Switch>
-              <Route path="/login" component={Login} />
+              <Route path={Routes.login()} component={Login} />
               <Authentication>
                 <Header />
-                <Route exact path="/" component={Dashboard} />
-                <Route exact path="/instances" component={Instances} />
-                <Route exact path="/instances/:id" component={Instance} />
+                <Route exact path={Routes.dashboard()} component={Dashboard} />
+                <Route exact path={Routes.instances()} component={Instances} />
+                <Route exact path={Routes.instance()} component={Instance} />
               </Authentication>
             </Switch>
           </Router>

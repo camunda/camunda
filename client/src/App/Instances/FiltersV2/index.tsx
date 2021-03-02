@@ -4,6 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {useEffect} from 'react';
 import {Form, Field} from 'react-final-form';
 import {useHistory} from 'react-router-dom';
 import {isEqual} from 'lodash';
@@ -18,7 +19,6 @@ import Button from 'modules/components/Button';
 import {AutoSubmit} from './AutoSubmit';
 import {isFieldValid} from './isFieldValid';
 import {Error, VariableError} from './Error';
-import {FiltersType} from './types';
 import {
   submissionValidator,
   handleIdsFieldValidation,
@@ -29,46 +29,16 @@ import {
 } from './validators';
 import {
   getFilters,
-  FILTER_FIELDS,
-  BOOLEAN_FILTER_FIELDS,
-  parseFilters,
+  updateFiltersSearchString,
+  FiltersType,
 } from 'modules/utils/filter';
-
-function updateFiltersSearchString(
-  currentSearch: string,
-  newFilters: FiltersType
-) {
-  const oldParams = Object.fromEntries(new URLSearchParams(currentSearch));
-  const fieldsToDelete = FILTER_FIELDS.filter(
-    (field) => newFilters[field] === undefined
-  );
-  const newParams = new URLSearchParams(
-    Object.entries({
-      ...oldParams,
-      ...newFilters,
-    }) as [string, string][]
-  );
-
-  fieldsToDelete.forEach((field) => {
-    if (newParams.has(field)) {
-      newParams.delete(field);
-    }
-  });
-
-  BOOLEAN_FILTER_FIELDS.forEach((field) => {
-    if (newParams.get(field) === 'false') {
-      newParams.delete(field);
-    }
-  });
-
-  return newParams.toString();
-}
+import {storeStateLocally} from 'modules/utils/localStorage';
 
 const Filters: React.FC = () => {
   const history = useHistory();
   const initialValues: FiltersType = {
-    active: 'true',
-    incidents: 'true',
+    active: true,
+    incidents: true,
   };
 
   function setFiltersToURL(filters: FiltersType) {
@@ -77,6 +47,12 @@ const Filters: React.FC = () => {
       search: updateFiltersSearchString(history.location.search, filters),
     });
   }
+
+  useEffect(() => {
+    storeStateLocally({
+      filters: getFilters(history.location.search),
+    });
+  }, [history.location.search]);
 
   return (
     <Form<FiltersType>
@@ -159,6 +135,13 @@ const Filters: React.FC = () => {
               {({input, meta}) => (
                 <Input
                   {...input}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    input.onChange(event);
+
+                    if (event.target.value === '') {
+                      form.submit();
+                    }
+                  }}
                   aria-invalid={!isFieldValid(meta)}
                   placeholder="Variable"
                 />
@@ -171,6 +154,13 @@ const Filters: React.FC = () => {
               {({input, meta}) => (
                 <Input
                   {...input}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    input.onChange(event);
+
+                    if (event.target.value === '') {
+                      form.submit();
+                    }
+                  }}
                   aria-invalid={!isFieldValid(meta)}
                   placeholder="Value"
                 />
@@ -225,9 +215,9 @@ const Filters: React.FC = () => {
           </Row>
           <Row>
             <Button
-              title="Reset filters"
+              title="Reset Filters"
               size="small"
-              disabled={isEqual(parseFilters(initialValues), values)}
+              disabled={isEqual(initialValues, values)}
               type="reset"
               onClick={() => {
                 form.reset();

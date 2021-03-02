@@ -2504,6 +2504,13 @@
   dependencies:
     "@testing-library/dom" "^7.27.1"
 
+"@testing-library/user-event@^12.7.3":
+  version "12.7.3"
+  resolved "https://registry.yarnpkg.com/@testing-library/user-event/-/user-event-12.7.3.tgz#ef674ccb91794e52123b3532c336485d16f453b3"
+  integrity sha512-IdSHkWfbeSSJRFlldvHDWfVX0U18TbXIvLSGII+JbqkJrsflFr4OWlQIua0TvcVVJNna3BNrNvRSvpQ0yvSXlA==
+  dependencies:
+    "@babel/runtime" "^7.12.5"
+
 "@types/anymatch@*":
   version "1.3.1"
   resolved "https://registry.yarnpkg.com/@types/anymatch/-/anymatch-1.3.1.tgz#336badc1beecb9dacc38bea2cf32adf627a8421a"

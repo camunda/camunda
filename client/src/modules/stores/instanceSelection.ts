@@ -15,6 +15,7 @@ import {instancesStore} from 'modules/stores/instances';
 import {filtersStore} from 'modules/stores/filters';
 import {INSTANCE_SELECTION_MODE} from 'modules/constants';
 import {isEqual} from 'lodash';
+import {IS_FILTERS_V2} from 'modules/utils/filter';
 
 type Mode = 'INCLUDE' | 'EXCLUDE' | 'ALL';
 type State = {
@@ -56,13 +57,15 @@ class InstanceSelection {
       }
     });
 
-    this.observeDisposer = observe(filtersStore.state, 'filter', (change) => {
-      if (isEqual(filtersStore.state.filter, change.oldValue)) {
-        return;
-      }
+    if (!IS_FILTERS_V2) {
+      this.observeDisposer = observe(filtersStore.state, 'filter', (change) => {
+        if (isEqual(filtersStore.state.filter, change.oldValue)) {
+          return;
+        }
 
-      this.resetState();
-    });
+        this.resetState();
+      });
+    }
   }
 
   setMode(mode: Mode) {

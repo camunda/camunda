@@ -212,17 +212,24 @@ class Diagram extends React.PureComponent<Props, State> {
     const canvas = this.Viewer.get('canvas');
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
     const elementRegistry = this.Viewer.get('elementRegistry');
-    canvas.addMarker(id, className);
-    const gfx = elementRegistry.getGraphics(id).querySelector('.djs-outline');
-    gfx.setAttribute('rx', '14px');
-    gfx.setAttribute('ry', '14px');
+
+    if (elementRegistry.get(id) !== undefined) {
+      canvas.addMarker(id, className);
+      const gfx = elementRegistry.getGraphics(id).querySelector('.djs-outline');
+      gfx.setAttribute('rx', '14px');
+      gfx.setAttribute('ry', '14px');
+    }
   };
 
   removeMarker = (id: any, className: any) => {
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
     const canvas = this.Viewer.get('canvas');
+    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
+    const elementRegistry = this.Viewer.get('elementRegistry');
 
-    canvas.removeMarker(id, className);
+    if (elementRegistry.get(id) !== undefined) {
+      canvas.removeMarker(id, className);
+    }
   };
 
   colorElement = (id: any, color: any) => {
@@ -327,8 +334,12 @@ class Diagram extends React.PureComponent<Props, State> {
 
   // @ts-expect-error ts-migrate(7019) FIXME: Rest parameter 'args' implicitly has an 'any[]' ty... Remove this comment to see the full error message
   handleOverlayAdd = (...args) => {
-    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-    this.Viewer.get('overlays').add(...args);
+    const viewer = this.Viewer;
+    // @ts-expect-error
+    if (viewer.get('elementRegistry').get(args[0]) !== undefined) {
+      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
+      viewer.get('overlays').add(...args);
+    }
   };
 
   // @ts-expect-error ts-migrate(7019) FIXME: Rest parameter 'args' implicitly has an 'any[]' ty... Remove this comment to see the full error message

@@ -5,17 +5,18 @@
  */
 
 import {PATHNAME} from './constants';
+import {createLocation} from 'history';
 
 const location = {
-  dashboard: {
+  dashboard: createLocation({
     pathname: PATHNAME.DASHBOARD,
-  },
-  instances: {
+  }),
+  instances: createLocation({
     pathname: PATHNAME.INSTANCES,
-  },
-  instance: {
+  }),
+  instance: createLocation({
     pathname: PATHNAME.INSTANCE,
-  },
+  }),
 };
 
 const mockCollapsablePanelProps = {

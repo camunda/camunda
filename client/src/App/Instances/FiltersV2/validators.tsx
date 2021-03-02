@@ -6,8 +6,8 @@
 
 import {FieldValidator} from 'final-form';
 import {isValidJSON} from 'modules/utils';
-import {FiltersType, Errors, VariablePair} from './types';
-import {parseIds, parseFilterDate} from 'modules/utils/filter';
+import {Errors, VariablePair} from './types';
+import {parseIds, parseFilterDate, FiltersType} from 'modules/utils/filter';
 import {isValid} from 'date-fns';
 
 const ERRORS = {

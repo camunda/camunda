@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {Field, useField} from 'react-final-form';
+import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 
 import {workflowsStore} from 'modules/stores/workflows';
@@ -20,6 +20,7 @@ const WorkflowVersionField: React.FC = observer(() => {
       value: version,
       label: `Version ${version}`,
     })) ?? [];
+  const form = useForm();
 
   return (
     <Field
@@ -32,6 +33,7 @@ const WorkflowVersionField: React.FC = observer(() => {
           onChange={(event) => {
             if (event.target.value !== '') {
               input.onChange(event);
+              form.change('flowNodeId', undefined);
             }
           }}
           placeholder="Workflow Version"

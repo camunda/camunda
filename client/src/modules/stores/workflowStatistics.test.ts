@@ -80,7 +80,6 @@ describe('stores/workflowStatistics', () => {
       )
     );
 
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.
     await workflowStatisticsStore.fetchWorkflowStatistics();
     expect(workflowStatisticsStore.state.statistics).toEqual([
       {
@@ -106,7 +105,6 @@ describe('stores/workflowStatistics', () => {
     expect(workflowStatisticsStore.state.isLoading).toBe(false);
     expect(workflowStatisticsStore.state.statistics).toEqual([]);
 
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.
     workflowStatisticsStore.fetchWorkflowStatistics();
     expect(workflowStatisticsStore.state.isLoading).toBe(true);
     await waitFor(() =>

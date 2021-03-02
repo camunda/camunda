@@ -64,7 +64,6 @@ const OperationsPanel: React.FC<Props> = observer(
         >
           {['initial', 'fetching'].includes(status) && <Skeleton />}
           {operations.map((operation) => (
-            // @ts-expect-error
             <OperationsEntry key={operation.id} operation={operation} />
           ))}
           {operations.length === 0 && status === 'fetched' && (

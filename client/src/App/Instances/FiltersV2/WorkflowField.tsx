@@ -28,10 +28,7 @@ const WorkflowField: React.FC = observer(() => {
 
             input.onChange(event);
             form.change('workflowVersion', initialVersionSelection);
-
-            if (event.target.value === '') {
-              form.change('activityId', undefined);
-            }
+            form.change('flowNodeId', undefined);
           }}
           placeholder="Workflows"
           options={workflows}

@@ -19,7 +19,11 @@ import {
 } from 'modules/api/instances';
 import {filtersStore} from 'modules/stores/filters';
 import {logger} from 'modules/logger';
-import {getRequestFilters, IS_FILTERS_V2} from 'modules/utils/filter';
+import {
+  getRequestFilters,
+  IS_FILTERS_V2,
+  getSorting,
+} from 'modules/utils/filter';
 
 type Payload = Parameters<typeof fetchWorkflowInstances>['0'];
 
@@ -190,7 +194,7 @@ class Instances {
         query: IS_FILTERS_V2
           ? getRequestFilters()
           : filtersStore.getFiltersPayload(),
-        sorting: filtersStore.state.sorting,
+        sorting: IS_FILTERS_V2 ? getSorting() : filtersStore.state.sorting,
         searchBefore: instancesStore.state.workflowInstances[0]?.sortValues,
         pageSize: MAX_INSTANCES_PER_REQUEST,
       },
@@ -206,7 +210,7 @@ class Instances {
         query: IS_FILTERS_V2
           ? getRequestFilters()
           : filtersStore.getFiltersPayload(),
-        sorting: filtersStore.state.sorting,
+        sorting: IS_FILTERS_V2 ? getSorting() : filtersStore.state.sorting,
         searchAfter: this.state.workflowInstances[
           this.state.workflowInstances.length - 1
         ]?.sortValues,
@@ -234,7 +238,7 @@ class Instances {
       fetchType: 'initial',
       payload: {
         query: getRequestFilters(),
-        sorting: filtersStore.state.sorting,
+        sorting: getSorting(),
         pageSize: MAX_INSTANCES_PER_REQUEST,
         searchBefore: undefined,
         searchAfter: undefined,
@@ -392,7 +396,9 @@ class Instances {
               query: IS_FILTERS_V2
                 ? getRequestFilters()
                 : filtersStore.getFiltersPayload(),
-              sorting: filtersStore.state.sorting,
+              sorting: IS_FILTERS_V2
+                ? getSorting()
+                : filtersStore.state.sorting,
               pageSize:
                 this.state.workflowInstances.length > 0
                   ? this.state.workflowInstances.length
@@ -421,7 +427,7 @@ class Instances {
         query: IS_FILTERS_V2
           ? getRequestFilters()
           : filtersStore.getFiltersPayload(),
-        sorting: filtersStore.state.sorting,
+        sorting: IS_FILTERS_V2 ? getSorting() : filtersStore.state.sorting,
         pageSize:
           this.state.workflowInstances.length > 0
             ? this.state.workflowInstances.length

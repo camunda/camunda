@@ -27,6 +27,8 @@ import {NavElement, BrandNavElement, LinkElement} from './NavElements';
 import * as Styled from './styled';
 import {mergeQueryParams} from 'modules/utils/mergeQueryParams';
 import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
+import {Locations} from 'modules/routes';
+import {IS_FILTERS_V2} from 'modules/utils/filter';
 
 type Props = {
   location: Location;
@@ -108,9 +110,10 @@ const Header = observer(
     selectActiveCondition(type: any) {
       const currentView = this.currentView();
       const {filter} = this.state;
+      const {location} = this.props;
 
       // Is 'running instances' or 'incidents badge' active;
-      if (type === 'instances' || type === 'incidents') {
+      if ((type === 'instances' || type === 'incidents') && !IS_FILTERS_V2) {
         const isRunningInstanceFilter = isEqual(
           filter,
           FILTER_SELECTION.running
@@ -130,6 +133,12 @@ const Header = observer(
       const conditions = {
         dashboard: currentView.isDashboard(),
         filters: currentView.isInstances() && !this.props.isFiltersCollapsed,
+        instances:
+          Locations.runningInstances(location).search ===
+          location.search.replace('?', ''),
+        incidents:
+          Locations.incidents(location).search ===
+          location.search.replace('?', ''),
       };
 
       // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
@@ -155,11 +164,22 @@ const Header = observer(
       return conditions[type];
     }
 
-    getLinkProperties(type: any) {
+    getLinkProperties(
+      type: 'brand' | 'dashboard' | 'instances' | 'incidents' | 'filters'
+    ) {
       const count = this.selectCount(type);
 
+      if (type === 'brand' || type === 'dashboard') {
+        return {
+          count,
+          isActive: this.selectActiveCondition(type),
+          title: createTitle(type, count),
+          dataTest: 'header-link-' + type,
+        };
+      }
+
       return {
-        count: count,
+        count,
         isActive: this.selectActiveCondition(type),
         title: createTitle(type, count),
         dataTest: 'header-link-' + type,
@@ -194,10 +214,16 @@ const Header = observer(
       if (this.state.forceRedirect) {
         return (
           <Redirect
-            to={{
-              pathname: '/login',
-              search: getPersistentQueryParams(this.props.location.search),
-            }}
+            to={
+              IS_FILTERS_V2
+                ? Locations.login(this.props.location)
+                : {
+                    pathname: '/login',
+                    search: getPersistentQueryParams(
+                      this.props.location.search
+                    ),
+                  }
+            }
           />
         );
       }
@@ -212,82 +238,102 @@ const Header = observer(
         <Styled.Header>
           <Styled.Menu role="navigation">
             <BrandNavElement
-              to={(location: Location) => ({
-                ...location,
-                pathname: '/',
-                search: mergeQueryParams({
-                  newParams: brand.queryParams,
-                  prevParams: getPersistentQueryParams(location.search),
-                }),
-              })}
+              to={
+                IS_FILTERS_V2
+                  ? (location: Location) => Locations.dashboard(location)
+                  : (location: Location) => ({
+                      ...location,
+                      pathname: '/',
+                      search: mergeQueryParams({
+                        newParams: brand.queryParams,
+                        prevParams: getPersistentQueryParams(location.search),
+                      }),
+                    })
+              }
               dataTest={brand.dataTest}
               title={brand.title}
-              label={labels['brand']}
+              label={labels.brand}
             />
             <LinkElement
               dataTest={dashboard.dataTest}
-              to={(location: Location) => ({
-                ...location,
-                pathname: '/',
-                search: mergeQueryParams({
-                  newParams: dashboard.queryParams,
-                  prevParams: getPersistentQueryParams(location.search),
-                }),
-              })}
+              to={
+                IS_FILTERS_V2
+                  ? (location: Location) => Locations.dashboard(location)
+                  : (location: Location) => ({
+                      ...location,
+                      pathname: '/',
+                      search: mergeQueryParams({
+                        newParams: dashboard.queryParams,
+                        prevParams: getPersistentQueryParams(location.search),
+                      }),
+                    })
+              }
               isActive={dashboard.isActive}
               title={dashboard.title}
-              label={labels['dashboard']}
+              label={labels.dashboard}
             />
             <NavElement
               dataTest={instances.dataTest}
               isActive={instances.isActive}
               title={instances.title}
-              label={labels['instances']}
+              label={labels.instances}
               count={instances.count}
               linkProps={instances.linkProps}
               type={BADGE_TYPE.RUNNING_INSTANCES}
-              to={(location: Location) => ({
-                ...location,
-                pathname: '/instances',
-                search: mergeQueryParams({
-                  newParams: instances.queryParams,
-                  prevParams: getPersistentQueryParams(location.search),
-                }),
-              })}
+              to={
+                IS_FILTERS_V2
+                  ? (location: Location) => Locations.runningInstances(location)
+                  : (location: Location) => ({
+                      ...location,
+                      pathname: '/instances',
+                      search: mergeQueryParams({
+                        newParams: instances.queryParams,
+                        prevParams: getPersistentQueryParams(location.search),
+                      }),
+                    })
+              }
             />
             <Styled.FilterNavElement
               dataTest={filters.dataTest}
               isActive={filters.isActive}
               title={filters.title}
-              label={labels['filters']}
+              label={labels.filters}
               count={filters.count}
               linkProps={filters.linkProps}
               type={BADGE_TYPE.FILTERS}
-              to={(location: Location) => ({
-                ...location,
-                pathname: '/instances',
-                search: mergeQueryParams({
-                  newParams: filters.queryParams,
-                  prevParams: getPersistentQueryParams(location.search),
-                }),
-              })}
+              to={
+                IS_FILTERS_V2
+                  ? (location: Location) => Locations.filters(location)
+                  : (location: Location) => ({
+                      ...location,
+                      pathname: '/instances',
+                      search: mergeQueryParams({
+                        newParams: filters.queryParams,
+                        prevParams: getPersistentQueryParams(location.search),
+                      }),
+                    })
+              }
             />
             <NavElement
               dataTest={incidents.dataTest}
               isActive={incidents.isActive}
               title={incidents.title}
-              label={labels['incidents']}
+              label={labels.incidents}
               count={incidents.count}
               linkProps={incidents.linkProps}
               type={BADGE_TYPE.INCIDENTS}
-              to={(location: Location) => ({
-                ...location,
-                pathname: '/instances',
-                search: mergeQueryParams({
-                  newParams: incidents.queryParams,
-                  prevParams: getPersistentQueryParams(location.search),
-                }),
-              })}
+              to={
+                IS_FILTERS_V2
+                  ? (location: Location) => Locations.incidents(location)
+                  : (location: Location) => ({
+                      ...location,
+                      pathname: '/instances',
+                      search: mergeQueryParams({
+                        newParams: incidents.queryParams,
+                        prevParams: getPersistentQueryParams(location.search),
+                      }),
+                    })
+              }
             />
           </Styled.Menu>
           {this.currentView().isInstance() && (

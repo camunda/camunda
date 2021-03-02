@@ -16,6 +16,9 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 import {isOperationRunning} from '../service';
 import ProgressBar from './ProgressBar';
 import {filtersStore} from 'modules/stores/filters';
+import {useHistory} from 'react-router-dom';
+import {IS_FILTERS_V2} from 'modules/utils/filter';
+import {Locations} from 'modules/routes';
 
 const {
   UPDATE_VARIABLE,
@@ -30,14 +33,7 @@ const TYPE_LABELS = {
 } as const;
 
 type Props = {
-  operation: {
-    id: string;
-    type: OperationEntityType;
-    endDate?: string;
-    instancesCount: number;
-    operationsTotalCount: number;
-    operationsFinishedCount: number;
-  };
+  operation: OperationEntity;
 };
 
 const OperationsEntry: React.FC<Props> = ({operation}) => {
@@ -49,17 +45,30 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
     operationsTotalCount,
     operationsFinishedCount,
   } = operation;
+  const history = useHistory();
 
-  const handleInstancesClick = (batchOperationId: any) => {
-    filtersStore.setFilter({
-      ...DEFAULT_FILTER_CONTROLLED_VALUES,
-      active: true,
-      incidents: true,
-      completed: true,
-      canceled: true,
-      batchOperationId,
-    });
-  };
+  function handleInstancesClick(operationId: OperationEntity['id']) {
+    if (IS_FILTERS_V2) {
+      history.push(
+        Locations.filters(history.location, {
+          active: true,
+          incidents: true,
+          completed: true,
+          canceled: true,
+          operationId,
+        })
+      );
+    } else {
+      filtersStore.setFilter({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        active: true,
+        incidents: true,
+        completed: true,
+        canceled: true,
+        batchOperationId: operationId,
+      });
+    }
+  }
 
   return (
     <Styled.Entry
@@ -90,10 +99,9 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         />
       )}
       <Styled.EntryDetails>
-        <LinkButton onClick={() => handleInstancesClick(id)}>{`${pluralSuffix(
-          instancesCount,
-          'Instance'
-        )}`}</LinkButton>
+        <LinkButton onClick={() => handleInstancesClick(id)}>
+          {`${pluralSuffix(instancesCount, 'Instance')}`}
+        </LinkButton>
         {endDate && <Styled.EndDate>{formatDate(endDate)}</Styled.EndDate>}
       </Styled.EntryDetails>
     </Styled.Entry>

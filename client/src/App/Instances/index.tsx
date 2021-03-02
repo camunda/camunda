@@ -22,29 +22,38 @@ import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {workflowsStore} from 'modules/stores/workflows';
 import {Filters as FiltersV2} from './FiltersV2';
 import {getFilters, IS_FILTERS_V2} from 'modules/utils/filter';
+import {Location, History} from 'history';
 
 import {observer} from 'mobx-react';
 import * as Styled from './styled';
 
-const Instances = observer((props: any) => {
-  const {workflow, workflowVersion} = getFilters(props.location.search);
+type Props = {
+  location: Location;
+  history: History;
+};
+
+const Instances: React.FC<Props> = observer(({location, history}) => {
+  const {workflow, workflowVersion} = getFilters(location.search);
   const workflowId =
     workflow !== undefined && workflowVersion !== undefined
       ? workflowsStore.versionsByWorkflow?.[workflow]?.[
           parseInt(workflowVersion) - 1
         ]?.id
       : undefined;
+  const {status: workflowsStatus} = workflowsStore.state;
+  const isSingleWorkflowSelected = workflowId !== undefined;
 
   useEffect(() => {
-    filtersStore.init();
     instanceSelectionStore.init();
-    instancesDiagramStore.init();
-    workflowStatisticsStore.init();
     instancesStore.init();
+    workflowStatisticsStore.init();
     document.title = PAGE_TITLE.INSTANCES;
 
     if (IS_FILTERS_V2) {
-      workflowsStore.fetch();
+      workflowsStore.fetchWorkflows();
+    } else {
+      filtersStore.init();
+      instancesDiagramStore.init();
     }
     return () => {
       filtersStore.reset();
@@ -61,26 +70,41 @@ const Instances = observer((props: any) => {
 
   useEffect(() => {
     if (!IS_FILTERS_V2) {
-      const {history, location} = props;
       filtersStore.setUrlParameters(history, location);
     }
-  }, [props]);
+  }, [history, location]);
 
   useEffect(() => {
     if (IS_FILTERS_V2) {
+      instanceSelectionStore.resetState();
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    if (IS_FILTERS_V2 && workflowsStatus === 'fetched') {
       instancesStore.fetchInstancesFromFilters();
     }
-  }, [props.location.search]);
+  }, [location.search, workflowsStatus]);
 
   useEffect(() => {
-    if (IS_FILTERS_V2) {
-      if (typeof workflowId === 'string') {
-        instancesDiagramStore.fetchWorkflowXml(workflowId);
-      } else {
-        instancesDiagramStore.resetDiagramModel();
+    async function handleWorkflowChange() {
+      if (IS_FILTERS_V2) {
+        if (workflowId === undefined) {
+          instancesDiagramStore.resetDiagramModel();
+        } else {
+          instancesDiagramStore.fetchWorkflowXml(workflowId);
+        }
       }
     }
+
+    handleWorkflowChange();
   }, [workflowId]);
+
+  useEffect(() => {
+    if (IS_FILTERS_V2 && isSingleWorkflowSelected) {
+      workflowStatisticsStore.fetchWorkflowStatistics();
+    }
+  }, [location.search, isSingleWorkflowSelected]);
 
   return (
     <Styled.Instances>

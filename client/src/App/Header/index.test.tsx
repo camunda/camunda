@@ -10,7 +10,7 @@ import {Router} from 'react-router-dom';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import Header from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {createMemoryHistory, History} from 'history';
+import {createMemoryHistory, History, Location} from 'history';
 import {render, within, fireEvent, screen} from '@testing-library/react';
 import {location, mockCollapsablePanelProps} from './index.setup';
 import {instancesStore} from 'modules/stores/instances';
@@ -28,9 +28,7 @@ const waitForComponentToLoad = async () => {
 
 type Props = {
   history?: History;
-  location: {
-    pathname: string;
-  };
+  location: Location;
   isFiltersCollapsed: boolean;
   expandFilters: () => void;
 };
@@ -126,16 +124,13 @@ describe('Header', () => {
 
     expect(
       within(screen.getByTestId('header-link-incidents')).getByTestId('badge')
-      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'number' is not assignable to par... Remove this comment to see the full error message
-    ).toHaveTextContent(731);
+    ).toHaveTextContent('731');
     expect(
       within(screen.getByTestId('header-link-filters')).getByTestId('badge')
-      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'number' is not assignable to par... Remove this comment to see the full error message
-    ).toHaveTextContent(200);
+    ).toHaveTextContent('200');
     expect(
       within(screen.getByTestId('header-link-instances')).getByTestId('badge')
-      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'number' is not assignable to par... Remove this comment to see the full error message
-    ).toHaveTextContent(821);
+    ).toHaveTextContent('821');
   });
 
   it('should render user element', async () => {

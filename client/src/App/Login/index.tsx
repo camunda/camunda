@@ -28,6 +28,7 @@ import {
   Copyright,
 } from './styled';
 import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
+import {Routes} from 'modules/routes';
 
 type FormValues = {
   username: string;
@@ -65,7 +66,7 @@ function Login() {
           }
           clearStateLocally();
           history.push({
-            pathname: history.location.state?.referrer ?? '/',
+            pathname: history.location.state?.referrer ?? Routes.dashboard(),
             search: history.location.search,
             state: {
               isLoggedIn: true,

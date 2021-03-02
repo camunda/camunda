@@ -20,19 +20,8 @@ import {logger} from 'modules/logger';
 type Query = Parameters<typeof applyBatchOperation>['1'];
 type OperationPayload = Parameters<typeof applyOperation>['1'];
 
-type Operation = {
-  endDate: null | string;
-  id: string;
-  instancesCount: number;
-  name: null | string;
-  operationsFinishedCount: number;
-  operationsTotalCount: number;
-  sortValues: unknown;
-  startDate: string;
-  type: string;
-};
 type State = {
-  operations: Operation[];
+  operations: OperationEntity[];
   hasMoreOperations: boolean;
   page: number;
   status: 'initial' | 'fetching' | 'fetched' | 'error';
@@ -206,7 +195,7 @@ class Operations {
     }
   };
 
-  prependOperations = (response: Operation) => {
+  prependOperations = (response: OperationEntity) => {
     this.state.operations.unshift(response);
   };
 

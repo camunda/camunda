@@ -45,48 +45,54 @@ class WorkflowStatistics {
   }
 
   init = () => {
-    this.diagramReactionDisposer = reaction(
-      () => instancesDiagramStore.state.diagramModel,
-      () => {
-        if (instancesDiagramStore.state.diagramModel !== null) {
-          this.fetchWorkflowStatistics(
-            IS_FILTERS_V2
-              ? getRequestFilters()
-              : filtersStore.getFiltersPayload()
-          );
+    if (!IS_FILTERS_V2) {
+      this.diagramReactionDisposer = reaction(
+        () => instancesDiagramStore.state.diagramModel,
+        () => {
+          if (instancesDiagramStore.state.diagramModel !== null) {
+            this.fetchWorkflowStatistics(filtersStore.getFiltersPayload());
+          }
         }
-      }
-    );
+      );
 
-    this.filterObserveDisposer = observe(
-      filtersStore.state,
-      'filter',
-      (change) => {
-        if (isEqual(filtersStore.state.filter, change.oldValue)) {
-          return;
-        }
+      this.filterObserveDisposer = observe(
+        filtersStore.state,
+        'filter',
+        (change) => {
+          if (isEqual(filtersStore.state.filter, change.oldValue)) {
+            return;
+          }
 
-        if (isEmpty(filtersStore.workflow)) {
-          this.resetState();
-        } else if (
-          // @ts-expect-error ts-migrate(2339) FIXME: Property 'workflow' does not exist on type '{}'.
-          filtersStore.state.filter.workflow === change.oldValue.workflow &&
-          // @ts-expect-error ts-migrate(2339) FIXME: Property 'version' does not exist on type '{}'.
-          filtersStore.state.filter.version === change.oldValue.version
-        ) {
-          this.fetchWorkflowStatistics(filtersStore.getFiltersPayload());
+          if (isEmpty(filtersStore.workflow)) {
+            this.resetState();
+          } else if (
+            // @ts-expect-error ts-migrate(2339) FIXME: Property 'workflow' does not exist on type '{}'.
+            filtersStore.state.filter.workflow === change.oldValue.workflow &&
+            // @ts-expect-error ts-migrate(2339) FIXME: Property 'version' does not exist on type '{}'.
+            filtersStore.state.filter.version === change.oldValue.version
+          ) {
+            this.fetchWorkflowStatistics(filtersStore.getFiltersPayload());
+          }
         }
-      }
-    );
+      );
+    }
 
     instancesStore.addCompletedOperationsHandler(() => {
-      if (filtersStore.isSingleWorkflowSelected) {
-        this.fetchWorkflowStatistics(filtersStore.getFiltersPayload());
+      const filters = getRequestFilters();
+      const workflowIds = filters?.workflowIds || [];
+      const shouldRefetchStatistics = IS_FILTERS_V2
+        ? workflowIds.length > 0
+        : filtersStore.isSingleWorkflowSelected;
+
+      if (shouldRefetchStatistics) {
+        this.fetchWorkflowStatistics(
+          IS_FILTERS_V2 ? filters : filtersStore.getFiltersPayload()
+        );
       }
     });
   };
 
-  fetchWorkflowStatistics = async (payload: any) => {
+  fetchWorkflowStatistics = async (payload = getRequestFilters()) => {
     this.setWorkflowStatistics([]);
     this.startLoading();
     const response = await fetchWorkflowInstancesStatistics(payload);

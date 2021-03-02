@@ -7,7 +7,7 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {Router, Route} from 'react-router-dom';
-import {createMemoryHistory} from 'history';
+import {createMemoryHistory, createLocation} from 'history';
 
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -83,9 +83,9 @@ describe('Instances', () => {
 
   it('should render title and document title', () => {
     const mockHistory = createMemoryHistory({initialEntries: ['/instances']});
-    const mockLocation = {
+    const mockLocation = createLocation({
       search: '?filter={%22active%22:true,%22incidents%22:true}',
-    };
+    });
     render(<Instances history={mockHistory} location={mockLocation} />, {
       wrapper: Wrapper,
     });
@@ -96,9 +96,9 @@ describe('Instances', () => {
 
   it('should render page components', () => {
     const mockHistory = createMemoryHistory({initialEntries: ['/instances']});
-    const mockLocation = {
+    const mockLocation = createLocation({
       search: '?filter={%22active%22:true,%22incidents%22:true}',
-    };
+    });
     render(<Instances history={mockHistory} location={mockLocation} />, {
       wrapper: Wrapper,
     });

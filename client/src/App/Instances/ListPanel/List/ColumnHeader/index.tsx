@@ -4,51 +4,123 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import * as Styled from './styled';
+import {IS_FILTERS_V2, getSorting} from 'modules/utils/filter';
+import {useHistory} from 'react-router-dom';
+
+function toggleSorting(search: string, column: string) {
+  const params = new URLSearchParams(search);
+  const {sortBy, sortOrder} = getSorting();
+
+  if (params.get('sort') === null) {
+    params.set('sort', `${column}+desc`);
+  }
+
+  if (sortBy === column) {
+    if (sortOrder === 'asc') {
+      params.set('sort', `${column}+desc`);
+    } else {
+      params.set('sort', `${column}+asc`);
+    }
+  } else {
+    params.set('sort', `${column}+desc`);
+  }
+
+  return params.toString();
+}
 
 type Props = {
   disabled?: boolean;
   label: string;
   sortKey?: string;
-  onSort?: (...args: any[]) => any;
-  sorting?: any;
+  onSort?: (sortKey: string) => void;
+  sorting?: {
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+  };
 };
 
-function ColumnHeader(props: Props) {
-  const isSortable = Boolean(props.sortKey);
-  const {sortKey, onSort, disabled, sorting} = props;
-  const Component = isSortable ? Styled.SortColumnHeader : Styled.ColumnHeader;
-  const componentProps = isSortable
-    ? {
-        disabled,
-        onClick: () => {
-          // @ts-expect-error ts-migrate(2722) FIXME: Cannot invoke an object which is possibly 'undefin... Remove this comment to see the full error message
-          !disabled && onSort(sortKey);
-        },
-        title: `Sort by ${sortKey}`,
-        'data-testid': `sort-by-${sortKey}`,
-      }
-    : {disabled};
+function getSortOrder({
+  disabled,
+  sortKey,
+  sorting,
+  sortBy,
+  sortOrder,
+}: Pick<Props, 'disabled' | 'sortKey' | 'sorting'> & {
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+}) {
+  if (disabled) {
+    return undefined;
+  }
 
-  const isActive = isSortable && props.sorting.sortBy === props.sortKey;
+  if (IS_FILTERS_V2) {
+    return sortKey === sortBy ? sortOrder : undefined;
+  }
 
-  return (
-    <Component {...componentProps}>
-      <Styled.Label active={isActive} disabled={props.disabled}>
-        {props.label}
-      </Styled.Label>
-      {isSortable && (
+  return sorting?.sortBy === sortKey && sorting?.sortBy !== undefined
+    ? sorting?.sortOrder
+    : undefined;
+}
+
+const ColumnHeader: React.FC<Props> = ({
+  sortKey,
+  onSort,
+  disabled,
+  sorting,
+  label,
+}) => {
+  const isSortable = sortKey !== undefined;
+  const history = useHistory();
+  const {sortBy, sortOrder} = getSorting();
+  const isActive =
+    (isSortable && IS_FILTERS_V2 && sortKey === sortBy) ||
+    (isSortable && sorting?.sortBy === sortKey);
+
+  if (isSortable) {
+    return (
+      <Styled.SortColumnHeader
+        disabled={disabled}
+        onClick={() => {
+          if (!disabled && sortKey !== undefined) {
+            if (IS_FILTERS_V2) {
+              history.push({
+                ...history.location,
+                search: toggleSorting(history.location.search, sortKey),
+              });
+            } else {
+              onSort?.(sortKey);
+            }
+          }
+        }}
+        title={`Sort by ${sortKey}`}
+        data-testid={`sort-by-${sortKey}`}
+      >
+        <Styled.Label active={isActive} disabled={disabled}>
+          {label}
+        </Styled.Label>
         <Styled.SortIcon
           active={isActive}
-          disabled={props.disabled}
-          sortOrder={
-            !disabled && sorting.sortBy === sortKey ? sorting.sortOrder : null
-          }
+          disabled={disabled}
+          sortOrder={getSortOrder({
+            sorting,
+            sortKey,
+            disabled,
+            sortBy,
+            sortOrder,
+          })}
         />
-      )}
-    </Component>
+      </Styled.SortColumnHeader>
+    );
+  }
+
+  return (
+    <Styled.ColumnHeader>
+      <Styled.Label active={isActive} disabled={disabled}>
+        {label}
+      </Styled.Label>
+    </Styled.ColumnHeader>
   );
-}
+};
 
 export default ColumnHeader;

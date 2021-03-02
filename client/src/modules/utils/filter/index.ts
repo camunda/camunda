@@ -12,7 +12,6 @@ import {
   format,
   parse,
 } from 'date-fns';
-
 import {compactObject} from '../index';
 import {isValidJSON, trimValue, tryDecodeURI} from 'modules/utils';
 import {trimVariable} from 'modules/utils/variable';
@@ -35,7 +34,20 @@ type FilterFieldsType =
   | 'canceled';
 
 type FiltersType = {
-  [key in FilterFieldsType]?: string;
+  workflow?: string;
+  workflowVersion?: string;
+  ids?: string;
+  errorMessage?: string;
+  startDate?: string;
+  endDate?: string;
+  flowNodeId?: string;
+  variableName?: string;
+  variableValue?: string;
+  operationId?: string;
+  active?: boolean;
+  incidents?: boolean;
+  completed?: boolean;
+  canceled?: boolean;
 };
 
 /**
@@ -279,40 +291,26 @@ const BOOLEAN_FILTER_FIELDS = ['active', 'incidents', 'completed', 'canceled'];
 function getFilters(
   searchParams: string,
   fields: FilterFieldsType[] = FILTER_FIELDS
-): ParsedFilters {
-  return parseFilters(
-    Array.from(new URLSearchParams(searchParams)).reduce(
-      (accumulator, [param, value]) => {
-        if (fields.includes(param as FilterFieldsType)) {
-          return {
-            ...accumulator,
-            [param]: value,
-          };
-        }
-
-        return accumulator;
-      },
-      {}
-    )
-  );
-}
-
-type ParsedFilters = FiltersType & {
-  active?: boolean;
-  incidents?: boolean;
-  completed?: boolean;
-  canceled?: boolean;
-};
-
-function parseFilters(filters: FiltersType): ParsedFilters {
-  return Object.fromEntries(
-    Object.entries(filters).map(([field, value]) => {
-      if (BOOLEAN_FILTER_FIELDS.includes(field)) {
-        return [field, value === 'true'];
+): FiltersType {
+  return Array.from(new URLSearchParams(searchParams)).reduce(
+    (accumulator, [param, value]) => {
+      if (BOOLEAN_FILTER_FIELDS.includes(param as FilterFieldsType)) {
+        return {
+          ...accumulator,
+          [param]: value === 'true',
+        };
       }
 
-      return [field, value];
-    })
+      if (fields.includes(param as FilterFieldsType)) {
+        return {
+          ...accumulator,
+          [param]: value,
+        };
+      }
+
+      return accumulator;
+    },
+    {}
   );
 }
 
@@ -438,98 +436,151 @@ function getRequestFilters(): RequestFilters {
   const filters = getFilters(getSearchString());
 
   return Object.entries(filters).reduce<RequestFilters>(
-    (accumulator, [key, value]) => {
+    (accumulator, [key, value]): RequestFilters => {
       if (value === undefined) {
         return accumulator;
       }
 
-      if (['active', 'incidents'].includes(key) && typeof value === 'boolean') {
-        return {
-          ...accumulator,
-          [key]: value,
-          ...(value === true ? {running: true} : {}),
-        };
-      }
-
-      if (
-        ['canceled', 'completed'].includes(key) &&
-        typeof value === 'boolean'
-      ) {
-        return {
-          ...accumulator,
-          [key]: value,
-          ...(value === true ? {finished: true} : {}),
-        };
-      }
-
-      if (key === 'errorMessage') {
-        return {
-          ...accumulator,
-          [key]: value,
-        };
-      }
-
-      if (key === 'flowNodeId') {
-        return {
-          ...accumulator,
-          activityId: value,
-        };
-      }
-
-      if (key === 'operationId') {
-        return {
-          ...accumulator,
-          batchOperationId: value,
-        };
-      }
-
-      if (key === 'ids') {
-        return {
-          ...accumulator,
-          ids: parseIds(value),
-        };
-      }
-
-      if (
-        key === 'workflowVersion' &&
-        filters.workflow !== undefined &&
-        value !== undefined
-      ) {
-        const workflowIds = getWorkflowIds(filters.workflow, value);
-
-        if (workflowIds.length > 0) {
+      if (typeof value === 'boolean') {
+        if (['active', 'incidents'].includes(key)) {
           return {
             ...accumulator,
-            workflowIds,
+            [key]: value,
+            ...(value === true ? {running: true} : {}),
           };
         }
-      }
 
-      if (key === 'variableName' || key === 'variableValue') {
-        return {
-          ...accumulator,
-          variables: {
-            ...(accumulator?.variable ?? {}),
-            [key === 'variableName' ? 'name' : 'value']: value,
-          },
-        };
-      }
+        if (['canceled', 'completed'].includes(key)) {
+          return {
+            ...accumulator,
+            [key]: value,
+            ...(value === true ? {finished: true} : {}),
+          };
+        }
+      } else {
+        if (key === 'errorMessage') {
+          return {
+            ...accumulator,
+            errorMessage: value,
+          };
+        }
 
-      const parsedDate = parseFilterDate(value);
-      if (
-        (key === 'startDate' || key === 'endDate') &&
-        parsedDate !== undefined
-      ) {
-        return {
-          ...accumulator,
-          ...getRequestDatePair(parsedDate, key),
-        };
+        if (key === 'flowNodeId') {
+          return {
+            ...accumulator,
+            activityId: value,
+          };
+        }
+
+        if (key === 'operationId') {
+          return {
+            ...accumulator,
+            batchOperationId: value,
+          };
+        }
+
+        if (key === 'ids') {
+          return {
+            ...accumulator,
+            ids: parseIds(value),
+          };
+        }
+
+        if (
+          key === 'workflowVersion' &&
+          filters.workflow !== undefined &&
+          value !== undefined
+        ) {
+          const workflowIds = getWorkflowIds(filters.workflow, value);
+
+          if (workflowIds.length > 0) {
+            return {
+              ...accumulator,
+              workflowIds,
+            };
+          }
+        }
+
+        if (
+          (key === 'variableName' || key === 'variableValue') &&
+          filters.variableName !== undefined &&
+          filters.variableValue !== undefined
+        ) {
+          return {
+            ...accumulator,
+            variable: {
+              name: filters.variableName,
+              value: filters.variableValue,
+            },
+          };
+        }
+
+        const parsedDate = parseFilterDate(value);
+        if (
+          (key === 'startDate' || key === 'endDate') &&
+          parsedDate !== undefined
+        ) {
+          return {
+            ...accumulator,
+            ...getRequestDatePair(parsedDate, key),
+          };
+        }
       }
 
       return accumulator;
     },
     {}
   );
+}
+
+function updateFiltersSearchString(
+  currentSearch: string,
+  newFilters: FiltersType
+) {
+  const oldParams = Object.fromEntries(new URLSearchParams(currentSearch));
+  const fieldsToDelete = FILTER_FIELDS.filter(
+    (field) => newFilters[field] === undefined
+  );
+  const newParams = new URLSearchParams(
+    Object.entries({
+      ...oldParams,
+      ...newFilters,
+    }) as [string, string][]
+  );
+
+  fieldsToDelete.forEach((field) => {
+    if (newParams.has(field)) {
+      newParams.delete(field);
+    }
+  });
+
+  BOOLEAN_FILTER_FIELDS.forEach((field) => {
+    if (newParams.get(field) === 'false') {
+      newParams.delete(field);
+    }
+  });
+
+  return newParams.toString();
+}
+
+function getSorting(): {sortBy: string; sortOrder: 'asc' | 'desc'} {
+  const params = new URLSearchParams(getSearchString());
+  const sort = params.get('sort');
+  const PARAM_PATTERN = /^\w{1,}\+(asc|desc)/;
+
+  if (sort !== null && PARAM_PATTERN.test(sort)) {
+    const [sortBy, sortOrder] = sort.split('+');
+
+    return {
+      sortBy,
+      sortOrder,
+    } as {sortBy: string; sortOrder: 'asc' | 'desc'};
+  }
+
+  return {
+    sortBy: 'workflowName',
+    sortOrder: 'desc',
+  };
 }
 
 const IS_FILTERS_V2 = false;
@@ -542,8 +593,7 @@ export {
   parseFilterDate,
   getRequestFilters,
   IS_FILTERS_V2,
-  FILTER_FIELDS,
-  BOOLEAN_FILTER_FIELDS,
-  parseFilters,
+  updateFiltersSearchString,
+  getSorting,
 };
-export type {FilterFieldsType, FiltersType, ParsedFilters, RequestFilters};
+export type {FilterFieldsType, FiltersType, RequestFilters};

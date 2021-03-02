@@ -17,7 +17,6 @@ describe('OperationsEntry', () => {
     render(
       <OperationsEntry
         {...mockProps}
-        // @ts-expect-error
         operation={{
           ...OPERATIONS.RETRY,
           instancesCount: 1,

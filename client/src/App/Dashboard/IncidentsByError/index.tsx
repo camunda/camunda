@@ -7,7 +7,7 @@
 import React, {useEffect} from 'react';
 import {Collapse} from '../Collapse';
 import {getFilterQueryString} from 'modules/utils/filter';
-import PanelListItem from '../PanelListItem';
+import {PanelListItem} from '../PanelListItem';
 import {
   concatTitle,
   concatLabel,
@@ -20,6 +20,8 @@ import {incidentsByErrorStore} from 'modules/stores/incidentsByError';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {Skeleton} from '../Skeleton';
 import {observer} from 'mobx-react';
+import {IS_FILTERS_V2} from 'modules/utils/filter';
+import {Locations} from 'modules/routes';
 import {mergeQueryParams} from 'modules/utils/mergeQueryParams';
 import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
@@ -42,7 +44,6 @@ const IncidentsByError = observer(() => {
             errorMessage,
             incidents: true,
           });
-
           const title = concatTitle(
             name,
             item.instancesWithActiveIncidentsCount,
@@ -50,29 +51,49 @@ const IncidentsByError = observer(() => {
             errorMessage
           );
           const label = concatLabel(name, item.version);
-
           return (
             <Styled.VersionLi key={item.workflowId}>
-              <PanelListItem
-                // @ts-expect-error ts-migrate(2322) FIXME: Property 'to' does not exist on type 'IntrinsicAtt... Remove this comment to see the full error message
-                to={(location) => ({
-                  ...location,
-                  pathname: '/instances',
-                  search: mergeQueryParams({
-                    newParams: queryParams,
-                    prevParams: getPersistentQueryParams(location.search),
-                  }),
-                })}
-                title={title}
-                $boxSize="small"
-              >
-                <Styled.VersionLiInstancesBar
-                  label={label}
-                  incidentsCount={item.instancesWithActiveIncidentsCount}
-                  barHeight={2}
-                  size="small"
-                />
-              </PanelListItem>
+              {IS_FILTERS_V2 ? (
+                <PanelListItem
+                  to={(location) =>
+                    Locations.filters(location, {
+                      workflow: item.bpmnProcessId,
+                      workflowVersion: item.version,
+                      errorMessage,
+                      incidents: true,
+                    })
+                  }
+                  title={title}
+                  $boxSize="small"
+                >
+                  <Styled.VersionLiInstancesBar
+                    label={label}
+                    incidentsCount={item.instancesWithActiveIncidentsCount}
+                    barHeight={2}
+                    size="small"
+                  />
+                </PanelListItem>
+              ) : (
+                <PanelListItem
+                  to={(location) => ({
+                    ...location,
+                    pathname: '/instances',
+                    search: mergeQueryParams({
+                      newParams: queryParams,
+                      prevParams: getPersistentQueryParams(location.search),
+                    }),
+                  })}
+                  title={title}
+                  $boxSize="small"
+                >
+                  <Styled.VersionLiInstancesBar
+                    label={label}
+                    incidentsCount={item.instancesWithActiveIncidentsCount}
+                    barHeight={2}
+                    size="small"
+                  />
+                </PanelListItem>
+              )}
             </Styled.VersionLi>
           );
         })}
@@ -90,10 +111,29 @@ const IncidentsByError = observer(() => {
     });
 
     const title = concatGroupTitle(instancesWithErrorCount, errorMessage);
+    if (IS_FILTERS_V2) {
+      return (
+        <PanelListItem
+          to={(location) =>
+            Locations.filters(location, {
+              errorMessage,
+              incidents: true,
+            })
+          }
+          title={title}
+        >
+          <Styled.LiInstancesBar
+            label={errorMessage}
+            incidentsCount={instancesWithErrorCount}
+            size="medium"
+            barHeight={2}
+          />
+        </PanelListItem>
+      );
+    }
 
     return (
       <PanelListItem
-        // @ts-expect-error ts-migrate(2322) FIXME: Property 'to' does not exist on type 'IntrinsicAtt... Remove this comment to see the full error message
         to={(location) => ({
           ...location,
           pathname: '/instances',
