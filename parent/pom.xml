@@ -115,7 +115,7 @@
     </plugin.version.proto-backwards-compatibility>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.2.0</plugin.version.resources>
-    <plugin.version.scala>4.4.0</plugin.version.scala>
+    <plugin.version.scala>4.4.1</plugin.version.scala>
     <plugin.version.shade>3.2.4</plugin.version.shade>
     <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
     <plugin.version.versions>2.8.1</plugin.version.versions>
