@@ -26,7 +26,6 @@ import io.zeebe.journal.file.record.KryoSerializer;
 import io.zeebe.journal.file.record.PersistedJournalRecord;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -89,7 +88,7 @@ class MappedJournalSegmentWriter {
     // TODO: Should reject append if the asqn is not greater than the previous record
 
     final int recordStartPosition = buffer.position();
-    lastEntry = write(buffer, recordIndex, asqn, data);
+    lastEntry = write(recordIndex, asqn, data);
     index.index(lastEntry, recordStartPosition);
     return lastEntry;
   }
@@ -106,7 +105,7 @@ class MappedJournalSegmentWriter {
     }
 
     final int recordStartPosition = buffer.position();
-    lastEntry = write(buffer, record);
+    lastEntry = write(record);
     index.index(lastEntry, recordStartPosition);
   }
 
@@ -115,8 +114,7 @@ class MappedJournalSegmentWriter {
    * the method returns, the position of buffer will be advanced to a position were the next record
    * will be written.
    */
-  private JournalRecord write(
-      final ByteBuffer buffer, final long index, final long asqn, final DirectBuffer data) {
+  private JournalRecord write(final long index, final long asqn, final DirectBuffer data) {
 
     // compute checksum and construct the record
     // TODO: checksum should also include asqn. https://github.com/zeebe-io/zeebe/issues/6218
@@ -125,7 +123,7 @@ class MappedJournalSegmentWriter {
     final var checksum = checksumGenerator.compute(data);
     final var recordToWrite = new PersistedJournalRecord(index, asqn, checksum, data);
 
-    writeInternal(buffer, recordToWrite);
+    writeInternal(recordToWrite);
     return recordToWrite;
   }
 
@@ -133,16 +131,16 @@ class MappedJournalSegmentWriter {
    * Write the record to the buffer. After the method returns, the position of buffer will be
    * advanced to a position were the next record will be written.
    */
-  private JournalRecord write(final ByteBuffer buffer, final JournalRecord record) {
+  private JournalRecord write(final JournalRecord record) {
     final var checksum = checksumGenerator.compute(record.data());
     if (checksum != record.checksum()) {
       throw new InvalidChecksum("Checksum invalid for record " + record);
     }
-    writeInternal(buffer, record);
+    writeInternal(record);
     return record;
   }
 
-  private void writeInternal(final ByteBuffer buffer, final JournalRecord recordToWrite) {
+  private void writeInternal(final JournalRecord recordToWrite) {
     final int recordStartPosition = buffer.position();
     buffer.mark();
     if (recordStartPosition + Integer.BYTES > buffer.limit()) {
@@ -168,9 +166,22 @@ class MappedJournalSegmentWriter {
           "Entry size " + length + " exceeds maximum allowed bytes (" + maxEntrySize + ")");
     }
 
+    // invalidate next entry
+    final int nextEntryOffset = recordStartPosition + Integer.BYTES + length;
+    invalidateNextEntry(nextEntryOffset);
+
     buffer.position(recordStartPosition);
     buffer.putInt(length);
-    buffer.position(recordStartPosition + Integer.BYTES + length);
+    buffer.position(nextEntryOffset);
+  }
+
+  private void invalidateNextEntry(final int position) {
+    if (position + (Integer.BYTES * 2) >= buffer.capacity()) {
+      return;
+    }
+
+    buffer.putInt(position, 0);
+    buffer.putInt(position + Integer.BYTES, 0);
   }
 
   private void reset(final long index) {
@@ -210,18 +221,10 @@ class MappedJournalSegmentWriter {
 
     if (index < segment.index()) {
       buffer.position(JournalSegmentDescriptor.BYTES);
-      buffer.putInt(0);
-      buffer.putInt(0);
-      buffer.position(JournalSegmentDescriptor.BYTES);
+      invalidateNextEntry(JournalSegmentDescriptor.BYTES);
     } else {
-      // Reset the writer to the given index.
       reset(index);
-
-      // Zero entries after the given index.
-      final int position = buffer.position();
-      buffer.putInt(0);
-      buffer.putInt(0);
-      buffer.position(position);
+      invalidateNextEntry(buffer.position());
     }
   }
 
