@@ -106,6 +106,14 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   }
 
   @Override
+  public boolean isAcceptingEvent(final long eventScopeKey) {
+    this.eventScopeKey.wrapLong(eventScopeKey);
+    final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
+
+    return isAcceptingEvent(instance);
+  }
+
+  @Override
   public boolean triggerEvent(
       final long eventScopeKey,
       final long eventKey,
@@ -114,7 +122,7 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
     this.eventScopeKey.wrapLong(eventScopeKey);
     final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
 
-    if (instance != null && instance.isAccepting()) {
+    if (isAcceptingEvent(instance)) {
       if (instance.isInterrupting(elementId)) {
         instance.setAccepting(false);
         eventScopeInstanceColumnFamily.put(this.eventScopeKey, instance);
@@ -126,6 +134,10 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
     } else {
       return false;
     }
+  }
+
+  private boolean isAcceptingEvent(final EventScopeInstance instance) {
+    return instance != null && instance.isAccepting();
   }
 
   private void createTrigger(

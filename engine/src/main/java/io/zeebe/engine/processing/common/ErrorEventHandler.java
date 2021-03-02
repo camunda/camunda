@@ -21,8 +21,6 @@ public final class ErrorEventHandler {
 
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
-  private final WorkflowState workflowState;
-  private final ElementInstanceState elementInstanceState;
   private final EventHandle eventHandle;
   private final CatchEventAnalyzer stateAnalyzer;
 
@@ -31,8 +29,6 @@ public final class ErrorEventHandler {
       final ElementInstanceState elementInstanceState,
       final MutableEventScopeInstanceState eventScopeInstanceState,
       final KeyGenerator keyGenerator) {
-    this.workflowState = workflowState;
-    this.elementInstanceState = elementInstanceState;
 
     eventHandle = new EventHandle(keyGenerator, eventScopeInstanceState);
     stateAnalyzer = new CatchEventAnalyzer(workflowState, elementInstanceState);

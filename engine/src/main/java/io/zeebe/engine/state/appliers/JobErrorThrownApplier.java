@@ -7,23 +7,32 @@
  */
 package io.zeebe.engine.state.appliers;
 
+import io.zeebe.engine.processing.job.JobThrowErrorProcessor;
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.analyzers.CatchEventAnalyzer;
+import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class JobErrorThrownApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
+  private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
+
   private final MutableJobState jobState;
   private final MutableElementInstanceState elementInstanceState;
+  private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final CatchEventAnalyzer stateAnalyzer;
 
   JobErrorThrownApplier(final ZeebeState state) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
+    eventScopeInstanceState = state.getEventScopeInstanceState();
 
     stateAnalyzer =
         new CatchEventAnalyzer(state.getWorkflowState(), state.getElementInstanceState());
@@ -31,20 +40,37 @@ public class JobErrorThrownApplier implements TypedEventApplier<JobIntent, JobRe
 
   @Override
   public void applyState(final long jobKey, final JobRecord job) {
+    final var serviceTaskInstanceId = job.getElementId();
     jobState.throwError(jobKey, job);
 
-    final var serviceTaskInstanceKey = job.getElementInstanceKey();
-    final var serviceTaskInstance = elementInstanceState.getInstance(serviceTaskInstanceKey);
+    if (!JobThrowErrorProcessor.NO_CATCH_EVENT_FOUND.equals(serviceTaskInstanceId)) {
+      final var serviceTaskInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
 
-    final var errorCode = job.getErrorCodeBuffer();
+      removeJobReference(jobKey, job, serviceTaskInstance);
 
-    if (stateAnalyzer.hasCatchEvent(errorCode, serviceTaskInstance)) {
-
-      // remove job reference to not cancel it while terminating the task
-      serviceTaskInstance.setJobKey(-1L);
-      elementInstanceState.updateInstance(serviceTaskInstance);
-
-      jobState.delete(jobKey, job);
+      // TODO (#6472) remove this after the right event is being written
+      triggerEvent(jobKey, job, serviceTaskInstance);
     }
+  }
+
+  private void removeJobReference(
+      final long jobKey, final JobRecord job, final ElementInstance serviceTaskInstance) {
+    // remove job reference to not cancel it while terminating the task
+    serviceTaskInstance.setJobKey(-1L);
+    elementInstanceState.updateInstance(serviceTaskInstance);
+
+    jobState.delete(jobKey, job);
+  }
+
+  private void triggerEvent(
+      final long jobKey, final JobRecord job, final ElementInstance serviceTaskInstance) {
+    final var foundCatchEvent =
+        stateAnalyzer.findCatchEvent(job.getErrorCodeBuffer(), serviceTaskInstance);
+
+    final var eventScopeInstance = foundCatchEvent.getElementInstance();
+    final var catchEvent = foundCatchEvent.getCatchEvent();
+
+    eventScopeInstanceState.triggerEvent(
+        eventScopeInstance.getKey(), jobKey, catchEvent.getId(), NO_VARIABLES);
   }
 }
