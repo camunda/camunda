@@ -5,16 +5,13 @@
  */
 
 import styled from 'styled-components';
-import {Warning} from 'modules/components/Warning';
 
-const Container = styled.div`
-  justify-content: center;
+const FiltersHeader = styled.div`
   display: flex;
-  width: 20px;
+  justify-content: flex-start;
+
+  align-items: center;
+  flex-shrink: 0;
 `;
 
-const WarningIcon = styled(Warning)`
-  padding: 3px 0;
-`;
-
-export {Container, WarningIcon};
+export {FiltersHeader};

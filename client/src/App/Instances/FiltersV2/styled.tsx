@@ -4,23 +4,20 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-
+import styled, {css} from 'styled-components';
+import Panel from 'modules/components/Panel';
 import {Input} from 'modules/components/Input';
 
 const FiltersForm = styled.form`
-  width: 328px;
-  display: grid;
-  grid-template-columns: 17px 1fr 17px;
-  grid-column-gap: 3px;
-  justify-content: center;
-  padding: 0 2px;
+  width: 100%;
+  height: 100%;
 `;
 
 const Row = styled.div`
-  grid-column-start: 2;
   width: 100%;
   height: fit-content;
+  padding-left: 20px;
+  display: flex;
 
   &:not(:last-child) {
     padding-bottom: 20px;
@@ -29,12 +26,18 @@ const Row = styled.div`
   &:first-child {
     padding-top: 20px;
   }
+
+  & textarea,
+  & input,
+  & select {
+    width: calc(100% - 20px);
+  }
 `;
 
 const VariableRow = styled(Row)`
   display: flex;
   ${Input} {
-    width: 50%;
+    width: calc(50% - 10px);
   }
 
   ${Input}:focus {
@@ -53,4 +56,23 @@ const VariableRow = styled(Row)`
   }
 `;
 
-export {FiltersForm, Row, VariableRow};
+const ResetButtonContainer = styled(Panel.Footer)`
+  ${({theme}) => {
+    const shadow = theme.shadows.filters.resetButtonContainer;
+
+    return css`
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      box-shadow: ${shadow};
+      border-radius: 0;
+    `;
+  }}
+`;
+
+const Fields = styled.div`
+  height: calc(100% - 38px);
+  overflow-y: auto;
+`;
+
+export {FiltersForm, Row, VariableRow, ResetButtonContainer, Fields};

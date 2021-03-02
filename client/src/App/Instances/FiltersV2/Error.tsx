@@ -7,8 +7,7 @@
 import {useField} from 'react-final-form';
 
 import {isFieldValid} from './isFieldValid';
-import {Container} from './Error.styled';
-import {Warning} from 'modules/components/Warning';
+import {Container, WarningIcon} from './Error.styled';
 
 type ErrorProps = {
   name: string;
@@ -19,7 +18,7 @@ const Error: React.FC<ErrorProps> = ({name}) => {
 
   return isFieldValid(meta) ? null : (
     <Container>
-      <Warning title={meta.submitError ?? meta.error} />
+      <WarningIcon title={meta.submitError ?? meta.error} />
     </Container>
   );
 };
@@ -36,7 +35,7 @@ const VariableError: React.FC<VariableErrorProps> = ({names}) => {
   return isFieldValid(firstField.meta) &&
     isFieldValid(secondField.meta) ? null : (
     <Container>
-      <Warning
+      <WarningIcon
         title={
           firstField.meta.submitError ??
           secondField.meta.submitError ??
