@@ -19,7 +19,6 @@ public enum ZbColumnFamilies {
   // workflow cache
   WORKFLOW_CACHE,
   WORKFLOW_CACHE_BY_ID_AND_VERSION,
-  WORKFLOW_CACHE_LATEST_KEY,
   WORKFLOW_CACHE_DIGEST_BY_ID,
 
   // element instance

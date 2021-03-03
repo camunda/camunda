@@ -40,6 +40,8 @@ import org.agrona.io.DirectBufferInputStream;
 
 public final class DbWorkflowState implements MutableWorkflowState {
 
+  private static final int DEFAULT_VERSION_VALUE = 0;
+
   private final BpmnTransformer transformer = BpmnFactory.createTransformer();
 
   private final Map<DirectBuffer, Long2ObjectHashMap<DeployedWorkflow>>
@@ -56,9 +58,7 @@ public final class DbWorkflowState implements MutableWorkflowState {
   private final DbLong workflowVersion;
   private final DbCompositeKey<DbString, DbLong> idAndVersionKey;
 
-  private final ColumnFamily<DbString, LatestWorkflowVersion> latestWorkflowColumnFamily;
   private final DbString workflowId;
-  private final LatestWorkflowVersion latestVersion = new LatestWorkflowVersion();
 
   private final ColumnFamily<DbString, Digest> digestByIdColumnFamily;
   private final Digest digest = new Digest();
@@ -83,13 +83,6 @@ public final class DbWorkflowState implements MutableWorkflowState {
             idAndVersionKey,
             persistedWorkflow);
 
-    latestWorkflowColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.WORKFLOW_CACHE_LATEST_KEY,
-            transactionContext,
-            workflowId,
-            latestVersion);
-
     digestByIdColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.WORKFLOW_CACHE_DIGEST_BY_ID, transactionContext, workflowId, digest);
@@ -97,7 +90,8 @@ public final class DbWorkflowState implements MutableWorkflowState {
     workflowsByKey = new Long2ObjectHashMap<>();
 
     versionManager =
-        new NextValueManager(zeebeDb, transactionContext, ZbColumnFamilies.WORKFLOW_VERSION);
+        new NextValueManager(
+            DEFAULT_VERSION_VALUE, zeebeDb, transactionContext, ZbColumnFamilies.WORKFLOW_VERSION);
   }
 
   @Override
@@ -124,18 +118,17 @@ public final class DbWorkflowState implements MutableWorkflowState {
     workflowVersion.wrapLong(workflowRecord.getVersion());
 
     workflowByIdAndVersionColumnFamily.put(idAndVersionKey, persistedWorkflow);
-
-    versionManager.setValue(workflowRecord.getBpmnProcessId(), workflowRecord.getVersion());
   }
 
   private void updateLatestVersion(final WorkflowRecord workflowRecord) {
     workflowId.wrapBuffer(workflowRecord.getBpmnProcessIdBuffer());
-    final LatestWorkflowVersion storedVersion = latestWorkflowColumnFamily.get(workflowId);
-    final long latestVersion = storedVersion == null ? -1 : storedVersion.get();
+    final var bpmnProcessId = workflowRecord.getBpmnProcessId();
 
-    if (workflowRecord.getVersion() > latestVersion) {
-      this.latestVersion.set(workflowRecord.getVersion());
-      latestWorkflowColumnFamily.put(workflowId, this.latestVersion);
+    final var currentVersion = versionManager.getCurrentValue(bpmnProcessId);
+    final var nextVersion = workflowRecord.getVersion();
+
+    if (nextVersion > currentVersion) {
+      versionManager.setValue(bpmnProcessId, nextVersion);
     }
   }
 
@@ -156,9 +149,9 @@ public final class DbWorkflowState implements MutableWorkflowState {
 
     final ExecutableWorkflow executableWorkflow =
         definitions.stream()
-            .filter((w) -> BufferUtil.equals(persistedWorkflow.getBpmnProcessId(), w.getId()))
+            .filter(w -> BufferUtil.equals(persistedWorkflow.getBpmnProcessId(), w.getId()))
             .findFirst()
-            .get();
+            .orElseThrow();
 
     final DeployedWorkflow deployedWorkflow =
         new DeployedWorkflow(executableWorkflow, copiedWorkflow);
@@ -178,13 +171,9 @@ public final class DbWorkflowState implements MutableWorkflowState {
     final DirectBuffer bpmnProcessId = deployedWorkflow.getBpmnProcessId();
     workflowsByKey.put(deployedWorkflow.getKey(), deployedWorkflow);
 
-    Long2ObjectHashMap<DeployedWorkflow> versionMap =
-        workflowsByProcessIdAndVersion.get(bpmnProcessId);
-
-    if (versionMap == null) {
-      versionMap = new Long2ObjectHashMap<>();
-      workflowsByProcessIdAndVersion.put(bpmnProcessId, versionMap);
-    }
+    final Long2ObjectHashMap<DeployedWorkflow> versionMap =
+        workflowsByProcessIdAndVersion.computeIfAbsent(
+            bpmnProcessId, id -> new Long2ObjectHashMap<>());
 
     final int version = deployedWorkflow.getVersion();
     versionMap.put(version, deployedWorkflow);
@@ -196,13 +185,13 @@ public final class DbWorkflowState implements MutableWorkflowState {
         workflowsByProcessIdAndVersion.get(processId);
 
     workflowId.wrapBuffer(processId);
-    final LatestWorkflowVersion latestVersion = latestWorkflowColumnFamily.get(workflowId);
+    final long latestVersion = versionManager.getCurrentValue(processId);
 
     DeployedWorkflow deployedWorkflow;
     if (versionMap == null) {
       deployedWorkflow = lookupWorkflowByIdAndPersistedVersion(latestVersion);
     } else {
-      deployedWorkflow = versionMap.get(latestVersion.get());
+      deployedWorkflow = versionMap.get(latestVersion);
       if (deployedWorkflow == null) {
         deployedWorkflow = lookupWorkflowByIdAndPersistedVersion(latestVersion);
       }
@@ -210,17 +199,14 @@ public final class DbWorkflowState implements MutableWorkflowState {
     return deployedWorkflow;
   }
 
-  private DeployedWorkflow lookupWorkflowByIdAndPersistedVersion(
-      final LatestWorkflowVersion version) {
-    final long latestVersion = version != null ? version.get() : -1;
+  private DeployedWorkflow lookupWorkflowByIdAndPersistedVersion(final long latestVersion) {
     workflowVersion.wrapLong(latestVersion);
 
-    final PersistedWorkflow persistedWorkflow =
+    final PersistedWorkflow workflowWithVersionAndId =
         workflowByIdAndVersionColumnFamily.get(idAndVersionKey);
 
-    if (persistedWorkflow != null) {
-      final DeployedWorkflow deployedWorkflow = updateInMemoryState(persistedWorkflow);
-      return deployedWorkflow;
+    if (workflowWithVersionAndId != null) {
+      return updateInMemoryState(workflowWithVersionAndId);
     }
     return null;
   }
@@ -245,11 +231,11 @@ public final class DbWorkflowState implements MutableWorkflowState {
     workflowId.wrapBuffer(processId);
     workflowVersion.wrapLong(version);
 
-    final PersistedWorkflow persistedWorkflow =
+    final PersistedWorkflow workflowWithVersionAndId =
         workflowByIdAndVersionColumnFamily.get(idAndVersionKey);
 
-    if (persistedWorkflow != null) {
-      updateInMemoryState(persistedWorkflow);
+    if (workflowWithVersionAndId != null) {
+      updateInMemoryState(workflowWithVersionAndId);
 
       final Long2ObjectHashMap<DeployedWorkflow> newVersionMap =
           workflowsByProcessIdAndVersion.get(processId);
@@ -276,12 +262,11 @@ public final class DbWorkflowState implements MutableWorkflowState {
   private DeployedWorkflow lookupPersistenceStateForWorkflowByKey(final long workflowKey) {
     this.workflowKey.wrapLong(workflowKey);
 
-    final PersistedWorkflow persistedWorkflow = workflowColumnFamily.get(this.workflowKey);
-    if (persistedWorkflow != null) {
-      updateInMemoryState(persistedWorkflow);
+    final PersistedWorkflow workflowWithKey = workflowColumnFamily.get(this.workflowKey);
+    if (workflowWithKey != null) {
+      updateInMemoryState(workflowWithKey);
 
-      final DeployedWorkflow deployedWorkflow = workflowsByKey.get(workflowKey);
-      return deployedWorkflow;
+      return workflowsByKey.get(workflowKey);
     }
     // does not exist in persistence and in memory state
     return null;
@@ -308,7 +293,7 @@ public final class DbWorkflowState implements MutableWorkflowState {
   }
 
   private void updateCompleteInMemoryState() {
-    workflowColumnFamily.forEach((workflow) -> updateInMemoryState(persistedWorkflow));
+    workflowColumnFamily.forEach(this::updateInMemoryState);
   }
 
   @Override

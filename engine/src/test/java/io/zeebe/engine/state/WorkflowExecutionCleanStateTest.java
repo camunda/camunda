@@ -40,7 +40,6 @@ public final class WorkflowExecutionCleanStateTest {
           ZbColumnFamilies.WORKFLOW_VERSION,
           ZbColumnFamilies.WORKFLOW_CACHE,
           ZbColumnFamilies.WORKFLOW_CACHE_BY_ID_AND_VERSION,
-          ZbColumnFamilies.WORKFLOW_CACHE_LATEST_KEY,
           ZbColumnFamilies.WORKFLOW_CACHE_DIGEST_BY_ID);
 
   @Rule public EngineRule engineRule = EngineRule.singlePartition();
