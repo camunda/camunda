@@ -265,7 +265,8 @@ public final class DbJobState implements JobState, MutableJobState {
         jobTypeKey,
         ((compositeKey, zbNil) -> {
           final long jobKey = compositeKey.getSecond().getValue();
-          return visitJob(jobKey, callback, () -> activatableColumnFamily.delete(compositeKey));
+          // TODO #6521 reconsider race condition and whether or not the cleanup task is needed
+          return visitJob(jobKey, callback, () -> {});
         }));
   }
 

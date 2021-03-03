@@ -62,4 +62,9 @@ public final class TypedResponseWriterProxy implements TypedResponseWriter {
     flushCallback.accept(writer);
     return true;
   }
+
+  @Override
+  public void reset() {
+    writer.reset();
+  }
 }

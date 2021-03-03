@@ -42,4 +42,7 @@ public final class NoopResponseWriter implements TypedResponseWriter {
   public boolean flush() {
     return false;
   }
+
+  @Override
+  public void reset() {}
 }
