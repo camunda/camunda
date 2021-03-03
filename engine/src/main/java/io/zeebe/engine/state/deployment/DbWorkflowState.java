@@ -25,7 +25,6 @@ import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.zeebe.protocol.impl.record.value.deployment.WorkflowRecord;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
@@ -104,14 +103,7 @@ public final class DbWorkflowState implements MutableWorkflowState {
   @Override
   public void putDeployment(final DeploymentRecord deploymentRecord) {
     for (final WorkflowRecord workflowRecord : deploymentRecord.workflows()) {
-      final long workflowKey = workflowRecord.getKey();
-      final DirectBuffer resourceName = workflowRecord.getResourceNameBuffer();
-      for (final DeploymentResource resource : deploymentRecord.resources()) {
-        if (resource.getResourceNameBuffer().equals(resourceName)) {
-          persistWorkflow(workflowKey, workflowRecord, resource);
-          updateLatestVersion(workflowRecord);
-        }
-      }
+      putWorkflow(workflowRecord.getKey(), workflowRecord);
     }
   }
 
@@ -132,21 +124,8 @@ public final class DbWorkflowState implements MutableWorkflowState {
     workflowVersion.wrapLong(workflowRecord.getVersion());
 
     workflowByIdAndVersionColumnFamily.put(idAndVersionKey, persistedWorkflow);
-  }
 
-  @Deprecated
-  private void persistWorkflow(
-      final long workflowKey,
-      final WorkflowRecord workflowRecord,
-      final DeploymentResource resource) {
-    persistedWorkflow.wrap(resource, workflowRecord, workflowKey);
-    this.workflowKey.wrapLong(workflowKey);
-    workflowColumnFamily.put(this.workflowKey, persistedWorkflow);
-
-    workflowId.wrapBuffer(workflowRecord.getBpmnProcessIdBuffer());
-    workflowVersion.wrapLong(workflowRecord.getVersion());
-
-    workflowByIdAndVersionColumnFamily.put(idAndVersionKey, persistedWorkflow);
+    versionManager.setValue(workflowRecord.getBpmnProcessId(), workflowRecord.getVersion());
   }
 
   private void updateLatestVersion(final WorkflowRecord workflowRecord) {
@@ -348,8 +327,8 @@ public final class DbWorkflowState implements MutableWorkflowState {
   }
 
   @Override
-  public int incrementAndGetWorkflowVersion(final String bpmnProcessId) {
-    return (int) versionManager.getNextValue(bpmnProcessId);
+  public int getWorkflowVersion(final String bpmnProcessId) {
+    return (int) versionManager.getCurrentValue(bpmnProcessId);
   }
 
   @Override

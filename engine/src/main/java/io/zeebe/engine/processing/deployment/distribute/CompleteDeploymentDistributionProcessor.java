@@ -11,12 +11,14 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.immutable.DeploymentState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import java.util.function.Consumer;
@@ -24,14 +26,19 @@ import java.util.function.Consumer;
 public class CompleteDeploymentDistributionProcessor
     implements TypedRecordProcessor<DeploymentDistributionRecord> {
 
+  private static final String REJECT_MSG_DEPLOYMENT_DISTRIBUTION_COMPLETED =
+      "Expected to find pending deployment with key %d, but deployment distribution already completed.";
+
   private final DeploymentRecord emptyDeploymentRecord = new DeploymentRecord();
   private final StateWriter stateWriter;
   private final DeploymentState deploymentState;
+  private final TypedRejectionWriter rejectionWriter;
 
   public CompleteDeploymentDistributionProcessor(
       final DeploymentState deploymentState, final Writers writers) {
     stateWriter = writers.state();
     this.deploymentState = deploymentState;
+    rejectionWriter = writers.rejection();
   }
 
   @Override
@@ -43,8 +50,14 @@ public class CompleteDeploymentDistributionProcessor
       final Consumer<SideEffectProducer> sideEffect) {
 
     final var deploymentKey = record.getKey();
-    // DeploymentDistribution.COMPLETE is idempotent
-    // even if we already removed the pending we will not reject it
+    if (!deploymentState.hasPendingDeploymentDistribution(deploymentKey)) {
+      rejectionWriter.appendRejection(
+          record,
+          RejectionType.NOT_FOUND,
+          String.format(REJECT_MSG_DEPLOYMENT_DISTRIBUTION_COMPLETED, deploymentKey));
+      return;
+    }
+
     stateWriter.appendFollowUpEvent(
         deploymentKey, DeploymentDistributionIntent.COMPLETED, record.getValue());
 
