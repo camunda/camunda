@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.zeebeimport.v1_0.record.value.deployment;
 
+import java.util.Arrays;
 import java.util.Objects;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 
@@ -13,6 +14,8 @@ public class DeployedWorkflowImpl implements DeployedWorkflow {
   private String resourceName;
   private long workflowKey;
   private int version;
+  private byte[] checksum;
+  private byte[] resource;
 
   public DeployedWorkflowImpl() {
   }
@@ -37,6 +40,21 @@ public class DeployedWorkflowImpl implements DeployedWorkflow {
     return version;
   }
 
+  @Override
+  public byte[] getChecksum() {
+    return checksum;
+  }
+
+  @Override
+  public byte[] getResource() {
+    return resource;
+  }
+
+  @Override
+  public String toJson() {
+    throw new UnsupportedOperationException("toJson operation is not supported");
+  }
+
   public void setBpmnProcessId(String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
   }
@@ -53,8 +71,18 @@ public class DeployedWorkflowImpl implements DeployedWorkflow {
     this.version = version;
   }
 
+  public DeployedWorkflowImpl setChecksum(final byte[] checksum) {
+    this.checksum = checksum;
+    return this;
+  }
+
+  public DeployedWorkflowImpl setResource(final byte[] resource) {
+    this.resource = resource;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -62,30 +90,31 @@ public class DeployedWorkflowImpl implements DeployedWorkflow {
       return false;
     }
     final DeployedWorkflowImpl that = (DeployedWorkflowImpl) o;
-    return workflowKey == that.workflowKey
-        && version == that.version
-        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(resourceName, that.resourceName);
+    return workflowKey == that.workflowKey &&
+        version == that.version &&
+        Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
+        Objects.equals(resourceName, that.resourceName) &&
+        Arrays.equals(checksum, that.checksum) &&
+        Arrays.equals(resource, that.resource);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(bpmnProcessId, resourceName, workflowKey, version);
+    int result = Objects.hash(bpmnProcessId, resourceName, workflowKey, version);
+    result = 31 * result + Arrays.hashCode(checksum);
+    result = 31 * result + Arrays.hashCode(resource);
+    return result;
   }
 
   @Override
   public String toString() {
-    return "DeployedWorkflowImpl{"
-        + "bpmnProcessId='"
-        + bpmnProcessId
-        + '\''
-        + ", resourceName='"
-        + resourceName
-        + '\''
-        + ", workflowKey="
-        + workflowKey
-        + ", version="
-        + version
-        + '}';
+    return "DeployedWorkflowImpl{" +
+        "bpmnProcessId='" + bpmnProcessId + '\'' +
+        ", resourceName='" + resourceName + '\'' +
+        ", workflowKey=" + workflowKey +
+        ", version=" + version +
+        ", checksum=" + Arrays.toString(checksum) +
+        ", resource=" + Arrays.toString(resource) +
+        '}';
   }
 }
