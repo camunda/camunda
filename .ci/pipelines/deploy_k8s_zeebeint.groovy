@@ -6,7 +6,8 @@
 // general properties for CI execution
 def static NODE_POOL() { "agents-n1-standard-32-netssd-preempt" }
 def static GCLOUD_DOCKER_IMAGE() { "gcr.io/google.com/cloudsdktool/cloud-sdk:alpine" }
-static String kubectlAgent(postgresVersion='9.6-alpine') {
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
+static String kubectlAgent() {
   return """
 metadata:
   labels:
@@ -35,6 +36,22 @@ spec:
       requests:
         cpu: 500m
         memory: 512Mi
+  - name: maven
+    image: ${MAVEN_DOCKER_IMAGE()}
+    command: ["cat"]
+    tty: true
+    env:
+      - name: LIMITS_CPU
+        value: 2
+      - name: TZ
+        value: Europe/Berlin
+    resources:
+      limits:
+        cpu: 6
+        memory: 6Gi
+      requests:
+        cpu: 6
+        memory: 6Gi
 """
 }
 
@@ -105,6 +122,18 @@ pipeline {
         }
       }
     }
+    stage('Zeebe Data Generation') {
+      steps {
+        container('maven') {
+          runMaven('mvn -s \\$MAVEN_SETTINGS_XML -f zeebe-data-generator clean compile exec:java')
+        }
+      }
+      post {
+        always {
+          archiveArtifacts artifacts: 'infra-core/rendered-templates/**/*'
+        }
+      }
+    }
   }
 
   post {
@@ -119,5 +148,11 @@ pipeline {
         }
       }
     }
+  }
+}
+
+void runMaven(String cmd) {
+  configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+    sh("mvn ${cmd} -s \$MAVEN_SETTINGS_XML -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
   }
 }
