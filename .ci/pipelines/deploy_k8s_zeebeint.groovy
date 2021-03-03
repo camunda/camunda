@@ -5,8 +5,11 @@
 
 // general properties for CI execution
 def static NODE_POOL() { "agents-n1-standard-32-netssd-preempt" }
+
 def static GCLOUD_DOCKER_IMAGE() { "gcr.io/google.com/cloudsdktool/cloud-sdk:alpine" }
+
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
+
 static String kubectlAgent() {
   return """
 metadata:
@@ -125,7 +128,7 @@ pipeline {
     stage('Zeebe Data Generation') {
       steps {
         container('maven') {
-          runMaven('-T\$LIMITS_CPU -pl backend -am -DskipTests -Dskip.fe.build -Dskip.docker clean install')
+          runMaven('-T\$LIMITS_CPU -am -DskipTests -Dskip.fe.build -Dskip.docker clean install')
           runMaven('-f zeebe-data-generator clean compile exec:java')
         }
       }
@@ -139,7 +142,7 @@ pipeline {
 
   post {
     changed {
-      sendNotification(currentBuild.result,null,null,[[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
+      sendNotification(currentBuild.result, null, null, [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
     }
     always {
       // Retrigger the build if the agent node disconnected
