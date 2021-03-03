@@ -33,6 +33,7 @@ import {GetTasks, GET_TASKS} from 'modules/queries/get-tasks';
 import {FilterValues} from 'modules/constants/filterValues';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
+import {getUserDisplayName} from 'modules/utils/getUserDisplayName';
 import {useLocation} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
 import {shouldFetchMore} from './shouldFetchMore';
@@ -183,7 +184,7 @@ const Details: React.FC = () => {
             <RowTH>Assignee</RowTH>
             <AssigneeTD>
               <Assignee data-testid="assignee-task-details">
-                {assignee ? `${assignee.firstname} ${assignee.lastname}` : '--'}
+                {getUserDisplayName(assignee)}
                 {taskState === TaskStates.Created && (
                   <ClaimButton
                     variant="small"
