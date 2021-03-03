@@ -125,7 +125,8 @@ pipeline {
     stage('Zeebe Data Generation') {
       steps {
         container('maven') {
-          runMaven('mvn -f zeebe-data-generator clean compile exec:java')
+          runMaven('-T\$LIMITS_CPU -pl backend -am -DskipTests -Dskip.fe.build -Dskip.docker clean install')
+          runMaven('-f zeebe-data-generator clean compile exec:java')
         }
       }
       post {
