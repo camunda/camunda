@@ -103,6 +103,12 @@
     </dependency>
 
     <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-common</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-api</artifactId>
       <scope>test</scope>
@@ -131,6 +137,12 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -243,7 +255,12 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>-Xmx2048m -XX:MaxDirectMemorySize=4g</argLine>
+          <!--
+            as our in-house CI does not enable IPv6, clients not running in a Testcontainer-managed
+            container will not be able to use IPv6; as such, ensure we always prefer IPv4 when
+            resolving host names
+          -->
+          <argLine>-Xmx2048m -XX:MaxDirectMemorySize=4g -Djava.net.preferIPv4Stack=true</argLine>
         </configuration>
       </plugin>
 
