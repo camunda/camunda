@@ -102,7 +102,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     // then
     assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
-    assertAllEntriesInElasticsearchHaveAllDataWithCount(getDecisionInstanceIndexAliasName(decisionDefinitionEngineDto.getKey()), 0L);
+    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances()).isEmpty();
     assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 1L);
     assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 1L);
   }
@@ -142,7 +142,7 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_MULTI_ALIAS, 0L);
+    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances()).isEmpty();
 
     // given failed ES update requests to store new instance
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =

@@ -516,7 +516,9 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       .setRefresh(true);
 
     // Delete all dedicated decision instance indices
-    getOptimizeElasticClient().deleteIndexByRawIndexNames(new DecisionInstanceIndex("*").getIndexName());
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(
+      getIndexNameService().getOptimizeIndexAliasForIndex(new DecisionInstanceIndex("*").getIndexName())
+    );
 
     try {
       getOptimizeElasticClient().getHighLevelClient().deleteByQuery(request, RequestOptions.DEFAULT);
