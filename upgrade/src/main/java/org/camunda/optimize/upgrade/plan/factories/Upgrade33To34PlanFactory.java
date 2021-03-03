@@ -68,7 +68,9 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
   private static UpgradeStep migrateSingleProcessReportV6() {
     return new UpdateIndexStep(
       new SingleProcessReportIndex(),
-      createMigrateFlowNodeStatusConfigToFiltersScript() + createProcessReportToMultiMeasureFieldsScript()
+      createMigrateFlowNodeStatusConfigToFiltersScript()
+        + createProcessReportToMultiMeasureFieldsScript()
+        + createProcessReportColumnOrderConfigScript()
     );
   }
 
@@ -129,18 +131,51 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
     //@formatter:on
   }
 
+  private static String createProcessReportColumnOrderConfigScript() {
+    //@formatter:off
+    return
+      "def configuration = ctx._source.data.configuration;\n" +
+      "configuration.tableColumns.columnOrder = [];\n" +
+      "if (configuration.columnOrder != null) {\n" +
+      "  configuration.tableColumns.columnOrder.addAll(configuration.columnOrder.instanceProps);\n" +
+      "  configuration.tableColumns.columnOrder.addAll(configuration.columnOrder.variables);\n" +
+      "}\n" +
+      "configuration.remove(\"columnOrder\");\n"
+      ;
+    //@formatter:on
+  }
+
   private static UpgradeStep migrateSingleDecisionReportV6() {
     return new UpdateIndexStep(
       new SingleDecisionReportIndex(),
-      //@formatter:off
-        "def reportView = ctx._source.data.view;\n" +
-        "reportView.properties = [];\n" +
-        "if (reportView.property != null) {\n" +
-        "  reportView.properties.add(reportView.property);\n" +
-        "}\n" +
-        "reportView.remove(\"property\");\n"
-      //@formatter:on
+      createDecisionReportViewScript() + createDecisionReportColumnOrderConfigScript()
     );
+  }
+
+  private static String createDecisionReportViewScript() {
+    //@formatter:off
+    return
+      "def reportView = ctx._source.data.view;\n" +
+      "reportView.properties = [];\n" +
+      "if (reportView.property != null) {\n" +
+      "  reportView.properties.add(reportView.property);\n" +
+      "}\n" +
+      "reportView.remove(\"property\");\n";
+    //@formatter:on
+  }
+
+  private static String createDecisionReportColumnOrderConfigScript() {
+    //@formatter:off
+    return
+      "def configuration = ctx._source.data.configuration;\n" +
+      "configuration.tableColumns.columnOrder = [];\n" +
+      "if (configuration.columnOrder != null) {\n" +
+      "  configuration.tableColumns.columnOrder.addAll(configuration.columnOrder.instanceProps);\n" +
+      "  configuration.tableColumns.columnOrder.addAll(configuration.columnOrder.inputVariables);\n" +
+      "  configuration.tableColumns.columnOrder.addAll(configuration.columnOrder.outputVariables);\n" +
+      "}\n" +
+      "configuration.remove(\"columnOrder\");\n";
+    //@formatter:on
   }
 
   private static UpgradeStep migrateEventMappingEventSources() {

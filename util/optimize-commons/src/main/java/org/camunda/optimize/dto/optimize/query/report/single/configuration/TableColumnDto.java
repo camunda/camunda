@@ -19,7 +19,7 @@ import static java.util.stream.Collectors.toList;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldNameConstants(asEnum = true)
+@FieldNameConstants
 @Builder
 @Data
 public class TableColumnDto {
