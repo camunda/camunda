@@ -240,7 +240,7 @@ public final class MultiInstanceSubProcessTest {
 
     // then
     assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .limit(3))
         .hasSize(3)

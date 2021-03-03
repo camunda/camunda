@@ -104,7 +104,8 @@ public final class MessageCorrelationTest {
             .create();
 
     assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED).exists())
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .exists())
         .isTrue();
 
     // when
@@ -263,7 +264,8 @@ public final class MessageCorrelationTest {
             .create();
 
     assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED).exists())
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .exists())
         .isTrue();
 
     // when

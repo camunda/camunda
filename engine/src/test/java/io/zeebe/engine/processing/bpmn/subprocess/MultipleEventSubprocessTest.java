@@ -109,7 +109,7 @@ public final class MultipleEventSubprocessTest {
         ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
                 .withWorkflowInstanceKey(wfInstanceKey)
                 .exists())
         .describedAs("Expected event subprocess message start subscription to be opened.")
@@ -252,7 +252,7 @@ public final class MultipleEventSubprocessTest {
   }
 
   private void triggerMessageStart(final long wfInstanceKey, final String msgName) {
-    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
         .withWorkflowInstanceKey(wfInstanceKey)
         .await();
 

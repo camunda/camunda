@@ -92,7 +92,7 @@ public class DiskSpaceRecoveryClusteredTest {
         .timeout(Duration.ofSeconds(60))
         .until(
             () ->
-                RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+                RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
                         .limit(3)
                         .count()
                     == 3);

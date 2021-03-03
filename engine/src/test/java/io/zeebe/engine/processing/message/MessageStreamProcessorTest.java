@@ -27,13 +27,11 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -76,15 +74,15 @@ public final class MessageStreamProcessorTest {
     // given
     final MessageSubscriptionRecord subscription = messageSubscription();
 
-    rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
 
     // when
-    rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
 
     // then
     final Record<MessageSubscriptionRecord> rejection = awaitAndGetFirstSubscriptionRejection();
 
-    assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.OPEN);
+    assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.CREATE);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
 
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
@@ -101,7 +99,7 @@ public final class MessageStreamProcessorTest {
     final MessageSubscriptionRecord subscription = messageSubscription();
     final MessageRecord message = message();
 
-    rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
     rule.writeCommand(MessageIntent.PUBLISH, message);
     waitUntil(
         () -> rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).exists());
@@ -132,13 +130,13 @@ public final class MessageStreamProcessorTest {
     final MessageRecord message = message();
 
     rule.writeCommand(MessageIntent.PUBLISH, message);
-    rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
 
     waitUntil(
         () ->
             rule.events()
                 .onlyMessageSubscriptionRecords()
-                .withIntent(MessageSubscriptionIntent.OPENED)
+                .withIntent(MessageSubscriptionIntent.CREATED)
                 .exists());
 
     // when
@@ -168,12 +166,12 @@ public final class MessageStreamProcessorTest {
     final MessageRecord message = message();
 
     rule.writeCommand(MessageIntent.PUBLISH, message);
-    rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
     waitUntil(
         () ->
             rule.events()
                 .onlyMessageSubscriptionRecords()
-                .withIntent(MessageSubscriptionIntent.OPENED)
+                .withIntent(MessageSubscriptionIntent.CREATED)
                 .exists());
 
     // when
@@ -191,13 +189,13 @@ public final class MessageStreamProcessorTest {
   public void shouldRejectDuplicatedCloseMessageSubscription() {
     // given
     final MessageSubscriptionRecord subscription = messageSubscription();
-    rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
 
     waitUntil(
         () ->
             rule.events()
                 .onlyMessageSubscriptionRecords()
-                .withIntent(MessageSubscriptionIntent.OPENED)
+                .withIntent(MessageSubscriptionIntent.CREATED)
                 .exists());
 
     // when
@@ -226,7 +224,7 @@ public final class MessageStreamProcessorTest {
     final MessageRecord message = message();
 
     // when
-    rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
     rule.writeCommand(MessageIntent.PUBLISH, message);
     waitUntil(
         () -> rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).exists());
@@ -255,7 +253,7 @@ public final class MessageStreamProcessorTest {
     subscription.setCloseOnCorrelate(false);
 
     // when
-    rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
     rule.writeCommand(MessageIntent.PUBLISH, message);
     rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
     rule.writeCommand(MessageIntent.PUBLISH, message);
@@ -305,20 +303,20 @@ public final class MessageStreamProcessorTest {
 
     // when
     rule.writeCommand(MessageIntent.PUBLISH, first);
-    rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
 
     waitUntil(
         () ->
             rule.events()
                 .onlyMessageSubscriptionRecords()
-                .withIntent(MessageSubscriptionIntent.OPENED)
+                .withIntent(MessageSubscriptionIntent.CREATED)
                 .exists());
 
     rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
     rule.writeCommand(MessageIntent.PUBLISH, second);
 
     // then
-    assertAllMessagesReceived(subscription, first, second);
+    assertAllMessagesReceived(subscription);
   }
 
   @Test
@@ -331,18 +329,18 @@ public final class MessageStreamProcessorTest {
     // when
     rule.writeCommand(MessageIntent.PUBLISH, first);
     rule.writeCommand(MessageIntent.PUBLISH, second);
-    rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
 
     waitUntil(
         () ->
             rule.events()
                 .onlyMessageSubscriptionRecords()
-                .withIntent(MessageSubscriptionIntent.OPENED)
+                .withIntent(MessageSubscriptionIntent.CREATED)
                 .exists());
     rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
 
     // then
-    assertAllMessagesReceived(subscription, first, second);
+    assertAllMessagesReceived(subscription);
   }
 
   @Test
@@ -356,13 +354,13 @@ public final class MessageStreamProcessorTest {
 
     // when
     rule.writeCommand(MessageIntent.PUBLISH, message);
-    rule.writeCommand(MessageSubscriptionIntent.OPEN, firstSubscription);
-    rule.writeCommand(MessageSubscriptionIntent.OPEN, secondSubscription);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, firstSubscription);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, secondSubscription);
     waitUntil(
         () ->
             rule.events()
                 .onlyMessageSubscriptionRecords()
-                .withIntent(MessageSubscriptionIntent.OPENED)
+                .withIntent(MessageSubscriptionIntent.CREATED)
                 .filter(
                     r ->
                         r.getValue().getElementInstanceKey()
@@ -396,14 +394,7 @@ public final class MessageStreamProcessorTest {
             eq(secondSubscription.getCorrelationKeyBuffer()));
   }
 
-  private void assertAllMessagesReceived(
-      final MessageSubscriptionRecord subscription,
-      final MessageRecord first,
-      final MessageRecord second) {
-    final ArgumentCaptor<DirectBuffer> nameCaptor = ArgumentCaptor.forClass(DirectBuffer.class);
-    final ArgumentCaptor<DirectBuffer> variablesCaptor =
-        ArgumentCaptor.forClass(DirectBuffer.class);
-
+  private void assertAllMessagesReceived(final MessageSubscriptionRecord subscription) {
     waitUntil(
         () ->
             rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).limit(2).count()
@@ -423,9 +414,9 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getWorkflowInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             eq(subscription.getBpmnProcessIdBuffer()),
-            nameCaptor.capture(),
+            eq(subscription.getMessageNameBuffer()),
             eq(firstMessageKey),
-            variablesCaptor.capture(),
+            any(),
             eq(subscription.getCorrelationKeyBuffer()));
 
     verify(mockSubscriptionCommandSender, timeout(5_000))
@@ -433,18 +424,10 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getWorkflowInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             eq(subscription.getBpmnProcessIdBuffer()),
-            nameCaptor.capture(),
+            eq(subscription.getMessageNameBuffer()),
             eq(lastMessageKey),
-            variablesCaptor.capture(),
+            any(),
             eq(subscription.getCorrelationKeyBuffer()));
-
-    assertThat(variablesCaptor.getAllValues().get(0)).isEqualTo(first.getVariablesBuffer());
-    assertThat(nameCaptor.getValue()).isEqualTo(subscription.getMessageNameBuffer());
-    assertThat(BufferUtil.equals(nameCaptor.getAllValues().get(1), second.getNameBuffer()))
-        .isTrue();
-    assertThat(
-            BufferUtil.equals(variablesCaptor.getAllValues().get(1), second.getVariablesBuffer()))
-        .isTrue();
   }
 
   private MessageSubscriptionRecord messageSubscription() {

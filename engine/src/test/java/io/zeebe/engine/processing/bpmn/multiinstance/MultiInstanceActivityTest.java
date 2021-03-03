@@ -940,7 +940,7 @@ public final class MultiInstanceActivityTest {
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size() - 1);
 
     // make sure message subcription is opened, before publishing
-    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .await();
 
@@ -959,8 +959,8 @@ public final class MultiInstanceActivityTest {
                 .limit(5))
         .extracting(Record::getIntent)
         .containsExactly(
-            MessageSubscriptionIntent.OPEN,
-            MessageSubscriptionIntent.OPENED,
+            MessageSubscriptionIntent.CREATE,
+            MessageSubscriptionIntent.CREATED,
             MessageSubscriptionIntent.CORRELATING,
             MessageSubscriptionIntent.CORRELATE,
             MessageSubscriptionIntent.CORRELATED);
@@ -1036,7 +1036,7 @@ public final class MultiInstanceActivityTest {
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size() - 1);
 
     // make sure message subscription is opened, before publishing
-    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .await();
 
@@ -1078,8 +1078,8 @@ public final class MultiInstanceActivityTest {
                 .limit(7))
         .extracting(Record::getIntent)
         .containsExactly(
-            MessageSubscriptionIntent.OPEN,
-            MessageSubscriptionIntent.OPENED,
+            MessageSubscriptionIntent.CREATE,
+            MessageSubscriptionIntent.CREATED,
             MessageSubscriptionIntent.CORRELATING,
             MessageSubscriptionIntent.CORRELATE,
             MessageSubscriptionIntent.CORRELATED,

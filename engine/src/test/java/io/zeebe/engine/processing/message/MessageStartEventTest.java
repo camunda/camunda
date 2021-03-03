@@ -323,7 +323,7 @@ public final class MessageStartEventTest {
         .withVariables(Map.of("key", CORRELATION_KEY_1, "x", 1))
         .publish();
 
-    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED).await();
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED).await();
 
     final var message2 =
         engine

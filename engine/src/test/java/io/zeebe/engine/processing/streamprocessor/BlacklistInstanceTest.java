@@ -134,8 +134,8 @@ public final class BlacklistInstanceTest {
       ////////////////////////////////////////
       /////////////// MSG SUB ////////////////
       ////////////////////////////////////////
-      {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.OPEN, true},
-      {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.OPENED, true},
+      {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.CREATE, true},
+      {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.CREATED, true},
       {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.CORRELATE, true},
       {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.CORRELATED, true},
       {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.CLOSE, true},

@@ -78,7 +78,7 @@ public final class MultiInstanceReceiveTaskTest {
             .collect(Collectors.toList());
 
     assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .limit(3))
         .hasSize(3)
@@ -142,7 +142,7 @@ public final class MultiInstanceReceiveTaskTest {
             .withVariable(INPUT_COLLECTION, Arrays.asList(10, 20, 30))
             .create();
 
-    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .limit(3)
         .exists();
