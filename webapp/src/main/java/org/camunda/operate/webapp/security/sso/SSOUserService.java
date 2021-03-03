@@ -6,6 +6,7 @@
 package org.camunda.operate.webapp.security.sso;
 
 import java.util.Map;
+import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.rest.dto.UserDto;
 import org.camunda.operate.webapp.security.AbstractUserService;
 import org.camunda.operate.webapp.security.OperateURIs;
@@ -23,7 +24,7 @@ public class SSOUserService extends AbstractUserService {
   private static final String EMPTY = "";
 
   @Autowired
-  private SSOWebSecurityConfig configuration;
+  private OperateProperties operateProperties;
 
   @Override
   public UserDto getCurrentUser() {
@@ -35,8 +36,8 @@ public class SSOUserService extends AbstractUserService {
   private UserDto buildUserDtoFrom(TokenAuthentication tokenAuth) {
     Map<String, Claim> claims = tokenAuth.getClaims();
     String name = "No name";
-    if (claims.containsKey(configuration.getNameKey())) {
-      name = claims.get(configuration.getNameKey()).asString();
+    if (claims.containsKey(operateProperties.getAuth0().getNameKey())) {
+      name = claims.get(operateProperties.getAuth0().getNameKey()).asString();
     }
     return new UserDto()
         .setFirstname(EMPTY)

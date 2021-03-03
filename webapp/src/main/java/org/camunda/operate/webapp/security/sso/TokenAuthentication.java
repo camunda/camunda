@@ -10,6 +10,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.security.OperateURIs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,11 +39,12 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   private boolean authenticated = false;
 
   @Autowired
-  private SSOWebSecurityConfig config;
+  private OperateProperties operateProperties;
 
   private final Predicate<Map> idEqualsOrganization = new Predicate<>() {
     @Override public boolean test(Map orgs) {
-      return orgs.containsKey("id") && orgs.get("id").equals(config.getOrganization());
+      return orgs.containsKey("id") && orgs.get("id").equals(operateProperties.getAuth0()
+          .getOrganization());
     }
   };
 
@@ -80,7 +82,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
 
   public void authenticate(Tokens tokens) {
     jwt = JWT.decode(tokens.getIdToken());
-    Claim claim = jwt.getClaim(config.getClaimName());
+    Claim claim = jwt.getClaim(operateProperties.getAuth0().getClaimName());
     tryAuthenticateAsListOfStrings(claim);
     if (!authenticated) {
       tryAuthenticateAsListOfMaps(claim);
@@ -106,7 +108,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     try {
       List<String> claims = claim.asList(String.class);
       if (claims != null) {
-        authenticated = claims.contains(config.getOrganization());
+        authenticated = claims.contains(operateProperties.getAuth0().getOrganization());
       }
     } catch (JWTDecodeException e) {
       logger.debug("Read organization claim as list of strings failed.", e);

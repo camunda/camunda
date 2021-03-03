@@ -7,28 +7,57 @@ package org.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.List;
 import java.util.Optional;
 import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.IncidentEntity;
+import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
+import org.camunda.operate.util.TestApplication;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
+import org.camunda.operate.zeebeimport.v26.processors.IncidentZeebeRecordProcessor;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.IfProfileValue;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.unit.DataSize;
 
+@SpringBootTest(
+    classes = {TestApplication.class},
+    properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+        OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+        OperateProperties.PREFIX + ".isNextFlowNodeInstances = true",
+        //configure webhook to notify about the incidents
+        OperateProperties.PREFIX + ".alert.webhook = http://somepath"})
 public class IncidentIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private UpdateVariableHandler updateVariableHandler;
+
+  @MockBean
+  private IncidentNotifier incidentNotifier;
+
+  @Autowired
+  @InjectMocks
+  private IncidentZeebeRecordProcessor incidentZeebeRecordProcessor100;
+
+  @Autowired
+  @InjectMocks
+  private org.camunda.operate.zeebeimport.v26.processors.IncidentZeebeRecordProcessor
+      incidentZeebeRecordProcessor26;
 
   @Before
   public void before() {
@@ -135,6 +164,9 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     assertErrorType(incidentResponse, ErrorType.IO_MAPPING_ERROR, 1);
     assertErrorType(incidentResponse, ErrorType.EXTRACT_VALUE_ERROR, 1);
     assertErrorType(incidentResponse, ErrorType.CONDITION_ERROR, 1);
+
+    //verify that incidents notification was called
+    verify(incidentNotifier, atLeastOnce()).notifyOnIncidents(any());
   }
 
   protected void assertIncidentEntity(IncidentEntity anIncident,ErrorType anErrorType,String anErrorTypeTitle) {

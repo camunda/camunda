@@ -78,6 +78,12 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private LdapProperties ldap = new LdapProperties();
 
+  @NestedConfigurationProperty
+  private Auth0Properties auth0 = new Auth0Properties();
+
+  @NestedConfigurationProperty
+  private AlertingProperties alert = new AlertingProperties();
+
   public boolean isImporterEnabled() {
     return importerEnabled;
   }
@@ -218,4 +224,21 @@ public class OperateProperties {
     return this;
   }
 
+  public Auth0Properties getAuth0() {
+    return auth0;
+  }
+
+  public OperateProperties setAuth0(final Auth0Properties auth0) {
+    this.auth0 = auth0;
+    return this;
+  }
+
+  public AlertingProperties getAlert() {
+    return alert;
+  }
+
+  public OperateProperties setAlert(final AlertingProperties alert) {
+    this.alert = alert;
+    return this;
+  }
 }

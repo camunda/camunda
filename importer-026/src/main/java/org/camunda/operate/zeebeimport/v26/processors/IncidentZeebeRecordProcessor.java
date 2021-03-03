@@ -5,20 +5,27 @@
  */
 package org.camunda.operate.zeebeimport.v26.processors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.protocol.record.Record;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.schema.templates.IncidentTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
+import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.schema.templates.IncidentTemplate;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.ElasticsearchManager;
-import org.camunda.operate.zeebeimport.v26.record.value.IncidentRecordValueImpl;
+import org.camunda.operate.zeebeimport.IncidentNotifier;
 import org.camunda.operate.zeebeimport.v26.record.Intent;
+import org.camunda.operate.zeebeimport.v26.record.value.IncidentRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -28,13 +35,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.protocol.record.Record;
 
 @Component
 public class IncidentZeebeRecordProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(IncidentZeebeRecordProcessor.class);
+
+  @Autowired
+  private OperateProperties operateProperties;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -45,14 +53,29 @@ public class IncidentZeebeRecordProcessor {
   @Autowired
   private ElasticsearchManager elasticsearchManager;
 
-  public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
+  @Autowired
+  private IncidentNotifier incidentNotifier;
+
+  public void processIncidentRecord(List<Record> records, BulkRequest bulkRequest) throws PersistenceException {
+    List<IncidentEntity> newIncidents = new ArrayList<>();
+    for (Record record: records) {
+      processIncidentRecord(record, bulkRequest, newIncidents::add);
+    }
+    if (operateProperties.getAlert().getWebhook() != null) {
+      incidentNotifier.notifyOnIncidents(newIncidents);
+    }
+  }
+
+  public void processIncidentRecord(Record record, BulkRequest bulkRequest,
+      Consumer<IncidentEntity> newIncidentHandler) throws PersistenceException {
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
 
-    persistIncident(record, recordValue, bulkRequest);
+    persistIncident(record, recordValue, bulkRequest, newIncidentHandler);
 
   }
 
-  private void persistIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
+  private void persistIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequest bulkRequest,
+      Consumer<IncidentEntity> newIncidentHandler) throws PersistenceException {
     final String intentStr = record.getIntent().name();
     final Long incidentKey = record.getKey();
     if (intentStr.equals(Intent.RESOLVED.toString())) {
@@ -84,6 +107,7 @@ public class IncidentZeebeRecordProcessor {
       incident.setState(IncidentState.ACTIVE);
       incident.setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
       bulkRequest.add(getIncidentInsertQuery(incident));
+      newIncidentHandler.accept(incident);
     }
   }
 

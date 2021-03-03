@@ -5,12 +5,20 @@
  */
 package org.camunda.operate.webapp.security.sso;
 
+import static org.camunda.operate.webapp.security.OperateURIs.CALLBACK_URI;
+import static org.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
+import static org.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
+import static org.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
+import static org.camunda.operate.webapp.security.OperateURIs.ROOT;
+import static org.camunda.operate.webapp.security.OperateURIs.SSO_AUTH_PROFILE;
+
+import com.auth0.AuthenticationController;
+import com.auth0.Tokens;
+import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-
-import static org.camunda.operate.webapp.security.OperateURIs.*;
+import org.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -23,9 +31,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.auth0.AuthenticationController;
-import com.auth0.Tokens;
-
 @Controller
 @Profile(SSO_AUTH_PROFILE)
 public class SSOController {
@@ -33,7 +38,7 @@ public class SSOController {
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Autowired
-  protected SSOWebSecurityConfig config;
+  protected OperateProperties operateProperties;
 
   @Autowired
   private BeanFactory beanFactory;
@@ -57,7 +62,7 @@ public class SSOController {
     return authenticationController
         .buildAuthorizeUrl(req, res, getRedirectURI(req, CALLBACK_URI))
         .withAudience(
-            String.format("https://%s/userinfo", config.getBackendDomain())) // get user profile
+            String.format("https://%s/userinfo", operateProperties.getAuth0().getBackendDomain())) // get user profile
         .withScope("openid profile email") // which info we request
         .build();
   }
@@ -132,7 +137,9 @@ public class SSOController {
   }
 
   public String getLogoutUrlFor(String returnTo) {
-    return String.format("https://%s/v2/logout?client_id=%s&returnTo=%s", config.getDomain(), config.getClientId(), returnTo);
+    return String.format("https://%s/v2/logout?client_id=%s&returnTo=%s",
+        operateProperties.getAuth0().getDomain(), operateProperties.getAuth0().getClientId(),
+        returnTo);
   }
 
   protected void logoutFromAuth0(HttpServletResponse res, String returnTo) throws IOException {
