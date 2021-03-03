@@ -125,7 +125,7 @@ pipeline {
     stage('Zeebe Data Generation') {
       steps {
         container('maven') {
-          runMaven('mvn -s \\$MAVEN_SETTINGS_XML -f zeebe-data-generator clean compile exec:java')
+          runMaven('mvn -f zeebe-data-generator clean compile exec:java')
         }
       }
       post {
