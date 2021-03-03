@@ -39,7 +39,6 @@ public enum ZbColumnFamilies {
 
   // pending deployments
   PENDING_DEPLOYMENT,
-  NEW_PENDING_DEPLOYMENT,
   DEPLOYMENT_RAW,
 
   // jobs

@@ -55,8 +55,15 @@ public final class CreateDeploymentMultiplePartitionsTest {
             .startEvent()
             .endEvent()
             .done();
+    final BpmnModelInstance secondNoopModel =
+        Bpmn.createExecutableProcess("shouldCreateDeploymentOnAllPartitionsSecondNoopDeployment")
+            .startEvent()
+            .endEvent()
+            .done();
     final Record<DeploymentRecordValue> deployment =
         ENGINE.deployment().withXmlResource("process.bpmn", modelInstance).deploy();
+    final Record<DeploymentRecordValue> secondDeployment =
+        ENGINE.deployment().withXmlResource("secondNoopModel.bpmn", secondNoopModel).deploy();
 
     // then
     assertThat(deployment.getKey()).isNotNegative();
@@ -65,16 +72,45 @@ public final class CreateDeploymentMultiplePartitionsTest {
     assertThat(deployment.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
 
-    final var fullyDistributedDeployment =
-        RecordingExporter.deploymentRecords()
-            .withIntent(DeploymentIntent.FULLY_DISTRIBUTED)
-            .getFirst();
+    final var deploymentRecords =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getIntent() == DeploymentIntent.FULLY_DISTRIBUTED
+                        && r.getKey() == secondDeployment.getKey())
+            .withRecordKey(deployment.getKey())
+            .collect(Collectors.toList());
 
+    final var listOfFullyDistributed =
+        deploymentRecords.stream()
+            .filter(r -> r.getIntent() == DeploymentIntent.FULLY_DISTRIBUTED)
+            .collect(Collectors.toList());
+    assertThat(listOfFullyDistributed).hasSize(1);
+
+    final var fullyDistributedDeployment = listOfFullyDistributed.get(0);
     assertThat(fullyDistributedDeployment.getKey()).isNotNegative();
     assertThat(fullyDistributedDeployment.getPartitionId()).isEqualTo(PARTITION_ID);
     assertThat(fullyDistributedDeployment.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(fullyDistributedDeployment.getIntent())
         .isEqualTo(DeploymentIntent.FULLY_DISTRIBUTED);
+
+    assertThat(
+            deploymentRecords.stream()
+                .filter(r -> r.getIntent() == DeploymentIntent.DISTRIBUTE)
+                .count())
+        .isEqualTo(PARTITION_COUNT - 1);
+
+    assertThat(
+            deploymentRecords.stream()
+                .filter(r -> r.getIntent() == DeploymentDistributionIntent.DISTRIBUTING)
+                .count())
+        .isEqualTo(PARTITION_COUNT - 1);
+
+    assertThat(
+            deploymentRecords.stream()
+                .filter(r -> r.getIntent() == DeploymentDistributionIntent.COMPLETE)
+                .count())
+        .isEqualTo(PARTITION_COUNT - 1);
 
     //    todo(zell): https://github.com/zeebe-io/zeebe/issues/6314 fully distributed contains
     //    currently no longer any resources

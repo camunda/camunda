@@ -14,27 +14,28 @@ import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbInt;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
-import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistribution;
+import io.zeebe.engine.Loggers;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import java.util.function.ObjLongConsumer;
+import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableBoolean;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.collections.MutableLong;
+import org.agrona.collections.MutableReference;
+import org.slf4j.Logger;
 
 public final class DbDeploymentState implements MutableDeploymentState {
 
-  private final PendingDeploymentDistribution pendingDeploymentDistribution;
+  private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final DbLong deploymentKey;
   private final DbInt partitionKey;
   private final DbCompositeKey<DbLong, DbInt> deploymentPartitionKey;
-  private final ColumnFamily<DbCompositeKey<DbLong, DbInt>, DbNil> newPendingDeploymentColumnFamily;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbInt>, DbNil> pendingDeploymentColumnFamily;
 
   private final DeploymentRaw deploymentRaw;
   private final ColumnFamily<DbLong, DeploymentRaw> deploymentRawColumnFamily;
-
-  private final ColumnFamily<DbLong, PendingDeploymentDistribution> pendingDeploymentColumnFamily;
 
   public DbDeploymentState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -42,21 +43,12 @@ public final class DbDeploymentState implements MutableDeploymentState {
     deploymentKey = new DbLong();
     partitionKey = new DbInt();
     deploymentPartitionKey = new DbCompositeKey<>(deploymentKey, partitionKey);
-    newPendingDeploymentColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.NEW_PENDING_DEPLOYMENT,
-            transactionContext,
-            deploymentPartitionKey,
-            DbNil.INSTANCE);
-
-    pendingDeploymentDistribution =
-        new PendingDeploymentDistribution(new UnsafeBuffer(0, 0), -1, 0);
     pendingDeploymentColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PENDING_DEPLOYMENT,
             transactionContext,
-            deploymentKey,
-            pendingDeploymentDistribution);
+            deploymentPartitionKey,
+            DbNil.INSTANCE);
 
     deploymentRaw = new DeploymentRaw();
     deploymentRawColumnFamily =
@@ -65,52 +57,17 @@ public final class DbDeploymentState implements MutableDeploymentState {
   }
 
   @Override
-  public void putPendingDeployment(
-      final long key, final PendingDeploymentDistribution pendingDeploymentDistribution) {
-
-    deploymentKey.wrapLong(key);
-    pendingDeploymentColumnFamily.put(deploymentKey, pendingDeploymentDistribution);
-  }
-
-  private PendingDeploymentDistribution getPending(final long key) {
-    deploymentKey.wrapLong(key);
-    return pendingDeploymentColumnFamily.get(deploymentKey);
-  }
-
-  @Override
-  public PendingDeploymentDistribution getPendingDeployment(final long key) {
-    return getPending(key);
-  }
-
-  @Override
-  public PendingDeploymentDistribution removePendingDeployment(final long key) {
-    final PendingDeploymentDistribution pending = getPending(key);
-    if (pending != null) {
-      pendingDeploymentColumnFamily.delete(deploymentKey);
-    }
-    return pending;
-  }
-
-  @Override
-  public void foreachPending(final ObjLongConsumer<PendingDeploymentDistribution> consumer) {
-
-    pendingDeploymentColumnFamily.forEach(
-        (deploymentKey, pendingDeployment) ->
-            consumer.accept(pendingDeployment, deploymentKey.getValue()));
-  }
-
-  @Override
   public void addPendingDeploymentDistribution(final long deploymentKey, final int partition) {
     this.deploymentKey.wrapLong(deploymentKey);
     partitionKey.wrapInt(partition);
-    newPendingDeploymentColumnFamily.put(deploymentPartitionKey, DbNil.INSTANCE);
+    pendingDeploymentColumnFamily.put(deploymentPartitionKey, DbNil.INSTANCE);
   }
 
   @Override
   public void removePendingDeploymentDistribution(final long deploymentKey, final int partition) {
     this.deploymentKey.wrapLong(deploymentKey);
     partitionKey.wrapInt(partition);
-    newPendingDeploymentColumnFamily.delete(deploymentPartitionKey);
+    pendingDeploymentColumnFamily.delete(deploymentPartitionKey);
   }
 
   @Override
@@ -118,7 +75,7 @@ public final class DbDeploymentState implements MutableDeploymentState {
     this.deploymentKey.wrapLong(deploymentKey);
 
     final var hasPending = new MutableBoolean();
-    newPendingDeploymentColumnFamily.whileEqualPrefix(
+    pendingDeploymentColumnFamily.whileEqualPrefix(
         this.deploymentKey,
         (dbLongDbIntDbCompositeKey, dbNil) -> {
           hasPending.set(true);
@@ -133,6 +90,35 @@ public final class DbDeploymentState implements MutableDeploymentState {
     deploymentKey.wrapLong(key);
     deploymentRaw.setDeploymentRecord(value);
     deploymentRawColumnFamily.put(deploymentKey, deploymentRaw);
+  }
+
+  @Override
+  public void foreachPendingDeploymentDistribution(
+      final PendingDeploymentVisitor pendingDeploymentVisitor) {
+
+    final MutableReference<DirectBuffer> lastDeployment = new MutableReference<>();
+    final MutableLong lastDeploymentKey = new MutableLong(0);
+    pendingDeploymentColumnFamily.forEach(
+        (compositeKey, nil) -> {
+          final var deploymentKey = compositeKey.getFirst().getValue();
+          final var partitionId = compositeKey.getSecond().getValue();
+
+          if (lastDeploymentKey.value != deploymentKey) {
+            final var deploymentRaw = deploymentRawColumnFamily.get(compositeKey.getFirst());
+            if (deploymentRaw == null) {
+              LOG.warn(
+                  "Expected to find a deployment with key {} for a pending partition {}, but none found. The state is inconsistent.",
+                  deploymentKey,
+                  partitionId);
+              // we ignore this currently
+              return;
+            }
+            lastDeployment.set(BufferUtil.createCopy(deploymentRaw.getDeploymentRecord()));
+            lastDeploymentKey.set(deploymentKey);
+          }
+
+          pendingDeploymentVisitor.visit(deploymentKey, partitionId, lastDeployment.get());
+        });
   }
 
   @Override

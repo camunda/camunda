@@ -7,17 +7,19 @@
  */
 package io.zeebe.engine.state.immutable;
 
-import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistribution;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import java.util.function.ObjLongConsumer;
+import org.agrona.DirectBuffer;
 
 public interface DeploymentState {
-
-  PendingDeploymentDistribution getPendingDeployment(long key);
-
-  void foreachPending(ObjLongConsumer<PendingDeploymentDistribution> consumer);
 
   boolean hasPendingDeploymentDistribution(long deploymentKey);
 
   DeploymentRecord getStoredDeploymentRecord(long deploymentKey);
+
+  void foreachPendingDeploymentDistribution(PendingDeploymentVisitor pendingDeploymentVisitor);
+
+  @FunctionalInterface
+  interface PendingDeploymentVisitor {
+    void visit(final long deploymentKey, final int partitionId, final DirectBuffer directBuffer);
+  }
 }

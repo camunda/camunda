@@ -70,6 +70,12 @@ public final class BufferUtil {
     }
   }
 
+  public static DirectBuffer createCopy(final BufferWriter writer) {
+    final var buffer = new UnsafeBuffer(new byte[writer.getLength()]);
+    writer.write(buffer, 0);
+    return buffer;
+  }
+
   /**
    * Creates a new instance of the src buffer class and copies the underlying bytes.
    *
