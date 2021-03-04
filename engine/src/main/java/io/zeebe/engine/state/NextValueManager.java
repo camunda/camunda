@@ -11,23 +11,15 @@ import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbString;
+import org.agrona.DirectBuffer;
 
 public final class NextValueManager {
-
-  private static final int INITIAL_VALUE = 0;
 
   private final long initialValue;
 
   private final ColumnFamily<DbString, NextValue> nextValueColumnFamily;
   private final DbString nextValueKey;
   private final NextValue nextValue = new NextValue();
-
-  public NextValueManager(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final TransactionContext transactionContext,
-      final ZbColumnFamilies columnFamily) {
-    this(INITIAL_VALUE, zeebeDb, transactionContext, columnFamily);
-  }
 
   public NextValueManager(
       final long initialValue,
@@ -58,7 +50,15 @@ public final class NextValueManager {
 
   public long getCurrentValue(final String key) {
     nextValueKey.wrapString(key);
+    return getCurrentValue();
+  }
 
+  public long getCurrentValue(final DirectBuffer key) {
+    nextValueKey.wrapBuffer(key);
+    return getCurrentValue();
+  }
+
+  private long getCurrentValue() {
     final NextValue readValue = nextValueColumnFamily.get(nextValueKey);
 
     long currentValue = initialValue;
