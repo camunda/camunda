@@ -73,6 +73,9 @@ public final class EventAppliers implements EventApplier {
         MessageSubscriptionIntent.CORRELATING,
         new MessageSubscriptionCorrelatingApplier(
             state.getMessageSubscriptionState(), state.getMessageState()));
+    register(
+        MessageSubscriptionIntent.CORRELATED,
+        new MessageSubscriptionCorrelatedApplier(state.getMessageSubscriptionState()));
 
     register(
         MessageStartEventSubscriptionIntent.CORRELATED,

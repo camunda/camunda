@@ -11,34 +11,41 @@ import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.zeebe.engine.state.immutable.MessageState;
+import io.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.zeebe.engine.state.message.MessageSubscription;
-import io.zeebe.engine.state.mutable.MutableMessageState;
-import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
 
-public final class CorrelateMessageSubscriptionProcessor
+public final class MessageSubscriptionCorrelateProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
-  public static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
+
+  private static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to correlate subscription for element with key '%d' and message name '%s', "
           + "but no such message subscription exists";
 
-  private final MutableMessageSubscriptionState subscriptionState;
+  private final MessageSubscriptionState subscriptionState;
   private final MessageCorrelator messageCorrelator;
+  private final StateWriter stateWriter;
+  private final TypedRejectionWriter rejectionWriter;
 
-  public CorrelateMessageSubscriptionProcessor(
-      final MutableMessageState messageState,
-      final MutableMessageSubscriptionState subscriptionState,
+  public MessageSubscriptionCorrelateProcessor(
+      final MessageState messageState,
+      final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
       final Writers writers) {
     this.subscriptionState = subscriptionState;
-    messageCorrelator = new MessageCorrelator(messageState, commandSender, writers.state());
+    stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
+    messageCorrelator = new MessageCorrelator(messageState, commandSender, stateWriter);
   }
 
   @Override
@@ -53,29 +60,32 @@ public final class CorrelateMessageSubscriptionProcessor
         subscriptionState.get(
             subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
 
-    if (subscription != null) {
-      // TODO (saig0): not all values are written in the command (#3346)
-      subscriptionRecord
-          .setCorrelationKey(subscription.getCorrelationKey())
-          .setCloseOnCorrelate(subscription.shouldCloseOnCorrelate());
-
-      streamWriter.appendFollowUpEvent(
-          record.getKey(), MessageSubscriptionIntent.CORRELATED, subscriptionRecord);
-
-      if (subscription.shouldCloseOnCorrelate()) {
-        subscriptionState.remove(subscription);
-      } else {
-        subscriptionState.resetSentTime(subscription);
-        messageCorrelator.correlateNextMessage(subscriptionRecord, sideEffect);
-      }
-    } else {
-      streamWriter.appendRejection(
-          record,
-          RejectionType.NOT_FOUND,
-          String.format(
-              NO_SUBSCRIPTION_FOUND_MESSAGE,
-              subscriptionRecord.getElementInstanceKey(),
-              BufferUtil.bufferAsString(subscriptionRecord.getMessageNameBuffer())));
+    if (subscription == null) {
+      rejectCommand(record);
+      return;
     }
+
+    // TODO (saig0): not all values are written in the command (#3346)
+    subscriptionRecord
+        .setCorrelationKey(subscription.getCorrelationKey())
+        .setCloseOnCorrelate(subscription.shouldCloseOnCorrelate());
+
+    stateWriter.appendFollowUpEvent(
+        record.getKey(), MessageSubscriptionIntent.CORRELATED, subscriptionRecord);
+
+    if (!subscription.shouldCloseOnCorrelate()) {
+      messageCorrelator.correlateNextMessage(subscriptionRecord, sideEffect);
+    }
+  }
+
+  private void rejectCommand(final TypedRecord<MessageSubscriptionRecord> record) {
+    final var subscription = record.getValue();
+    final var reason =
+        String.format(
+            NO_SUBSCRIPTION_FOUND_MESSAGE,
+            subscription.getElementInstanceKey(),
+            BufferUtil.bufferAsString(subscription.getMessageNameBuffer()));
+
+    rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, reason);
   }
 }
