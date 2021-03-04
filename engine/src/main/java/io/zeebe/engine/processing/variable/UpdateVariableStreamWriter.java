@@ -9,7 +9,7 @@ package io.zeebe.engine.processing.variable;
 
 import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
 import io.zeebe.engine.state.variable.DbVariableState.VariableListener;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.record.intent.VariableIntent;
@@ -20,11 +20,17 @@ public final class UpdateVariableStreamWriter
 
   private final VariableRecord record = new VariableRecord();
 
-  private TypedStreamWriter streamWriter;
+  private TypedEventWriter eventWriter;
+
+  public UpdateVariableStreamWriter() {}
+
+  public UpdateVariableStreamWriter(final TypedEventWriter eventWriter) {
+    this.eventWriter = eventWriter;
+  }
 
   @Override
   public void onRecovered(final ReadonlyProcessingContext context) {
-    streamWriter = context.getLogStreamWriter();
+    eventWriter = context.getWriters().state();
 
     final var zeebeState = context.getZeebeState();
     final var variablesState = zeebeState.getVariableState();
@@ -47,7 +53,7 @@ public final class UpdateVariableStreamWriter
         .setWorkflowInstanceKey(rootScopeKey)
         .setWorkflowKey(workflowKey);
 
-    streamWriter.appendFollowUpEvent(key, VariableIntent.CREATED, record);
+    eventWriter.appendFollowUpEvent(key, VariableIntent.CREATED, record);
   }
 
   @Override
@@ -65,6 +71,6 @@ public final class UpdateVariableStreamWriter
         .setWorkflowInstanceKey(rootScopeKey)
         .setWorkflowKey(workflowKey);
 
-    streamWriter.appendFollowUpEvent(key, VariableIntent.UPDATED, record);
+    eventWriter.appendFollowUpEvent(key, VariableIntent.UPDATED, record);
   }
 }

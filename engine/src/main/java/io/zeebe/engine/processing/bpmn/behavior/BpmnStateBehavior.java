@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.bpmn.behavior;
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
+import io.zeebe.engine.processing.variable.VariableDocumentBehavior;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.immutable.JobState;
@@ -33,6 +34,7 @@ public final class BpmnStateBehavior {
   private final MutableVariableState variablesState;
   private final JobState jobState;
   private final WorkflowState workflowState;
+  private final VariableDocumentBehavior variableDocumentBehavior;
 
   public BpmnStateBehavior(final ZeebeState zeebeState) {
     workflowState = zeebeState.getWorkflowState();
@@ -40,6 +42,8 @@ public final class BpmnStateBehavior {
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
     variablesState = zeebeState.getVariableState();
     jobState = zeebeState.getJobState();
+
+    variableDocumentBehavior = new VariableDocumentBehavior(variablesState);
   }
 
   public ElementInstance getElementInstance(final BpmnElementContext context) {
@@ -218,14 +222,14 @@ public final class BpmnStateBehavior {
     final var variablesAsDocument =
         variablesState.getVariablesAsDocument(sourceScope, List.of(variableName));
 
-    variablesState.setVariablesFromDocument(
+    variableDocumentBehavior.mergeDocument(
         targetScope, context.getWorkflowKey(), variablesAsDocument);
   }
 
   public void copyVariables(
       final long source, final long target, final DeployedWorkflow targetWorkflow) {
     final var variables = variablesState.getVariablesAsDocument(source);
-    variablesState.setVariablesFromDocument(target, targetWorkflow.getKey(), variables);
+    variableDocumentBehavior.mergeDocument(target, targetWorkflow.getKey(), variables);
   }
 
   public void propagateTemporaryVariables(

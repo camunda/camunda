@@ -25,14 +25,10 @@ import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
@@ -252,77 +248,6 @@ public final class VariableStateTest {
   }
 
   @Test
-  public void shouldSetLocalVariablesFromDocument() {
-    // given
-    declareScope(parent);
-
-    final DirectBuffer document = asMsgPack(b -> b.put("a", 1).put("b", 2));
-
-    // when
-    setVariablesLocalFromDocument(parent, document);
-
-    // then
-    final DirectBuffer varA = variableState.getVariableLocal(parent, wrapString("a"));
-    assertEquality(varA, "1");
-
-    final DirectBuffer varB = variableState.getVariableLocal(parent, wrapString("b"));
-    assertEquality(varB, "2");
-  }
-
-  @Test
-  public void shouldSetLocalVariablesFromDocumentInHierarchy() {
-    // given
-    declareScope(parent);
-    declareScope(parent, child);
-
-    final DirectBuffer document = asMsgPack(b -> b.put("a", 1).put("b", 2));
-
-    // when
-    setVariablesLocalFromDocument(child, document);
-
-    // then
-    final DirectBuffer varA = variableState.getVariableLocal(child, wrapString("a"));
-    assertEquality(varA, "1");
-    Assertions.assertThat(variableState.getVariableLocal(parent, wrapString("a"))).isNull();
-
-    final DirectBuffer varB = variableState.getVariableLocal(child, wrapString("b"));
-    assertEquality(varB, "2");
-    Assertions.assertThat(variableState.getVariableLocal(parent, wrapString("b"))).isNull();
-  }
-
-  @Test
-  public void shouldSetLocalVariableFromDocumentAsObject() {
-    // given
-    declareScope(parent);
-
-    final DirectBuffer document = asMsgPack(b -> b.put("var", Collections.singletonMap("a", 1)));
-
-    // when
-    setVariablesLocalFromDocument(parent, document);
-
-    // then
-    final DirectBuffer varA = variableState.getVariableLocal(parent, wrapString("var"));
-    assertEquality(varA, "{'a': 1}");
-  }
-
-  @Test
-  public void shouldOverwriteLocalVariableFromDocument() {
-    // given
-    declareScope(parent);
-
-    setVariableLocal(parent, wrapString("a"), asMsgPack("1"));
-
-    final DirectBuffer document = asMsgPack("a", 2);
-
-    // when
-    setVariablesLocalFromDocument(parent, document);
-
-    // then
-    final DirectBuffer varA = variableState.getVariableLocal(parent, wrapString("a"));
-    assertEquality(varA, "2");
-  }
-
-  @Test
   public void shouldSetLocalVariable() {
     // given
     declareScope(parent);
@@ -390,103 +315,6 @@ public final class VariableStateTest {
   }
 
   @Test
-  public void shouldSetVariablesFromDocument() {
-    // given
-    final long grandparent = parent;
-    final long parent = child;
-    final long child = child2;
-    declareScope(grandparent);
-    declareScope(grandparent, parent);
-    declareScope(parent, child);
-
-    setVariableLocal(grandparent, wrapString("a"), asMsgPack("'should-overwrite-this'"));
-    setVariableLocal(parent, wrapString("b"), asMsgPack("'should-overwrite-this'"));
-    setVariableLocal(child, wrapString("c"), asMsgPack("'should-overwrite-this'"));
-
-    final DirectBuffer document = asMsgPack(b -> b.put("a", 1).put("b", 2).put("c", 3).put("d", 4));
-
-    // when
-    setVariablesFromDocument(child, document);
-
-    // then
-    final DirectBuffer varA = variableState.getVariableLocal(grandparent, wrapString("a"));
-    assertEquality(varA, "1");
-
-    final DirectBuffer varB = variableState.getVariableLocal(parent, wrapString("b"));
-    assertEquality(varB, "2");
-
-    final DirectBuffer varC = variableState.getVariableLocal(child, wrapString("c"));
-    assertEquality(varC, "3");
-
-    final DirectBuffer varD = variableState.getVariableLocal(grandparent, wrapString("d"));
-    assertEquality(varD, "4");
-  }
-
-  @Test
-  public void shouldSetVariablesFromDocumentNotInChildScopes() {
-    // given
-    declareScope(parent);
-    declareScope(parent, child);
-
-    setVariableLocal(child, wrapString("b"), asMsgPack("'should-not-overwrite-this'"));
-
-    final DirectBuffer document = asMsgPack(b -> b.put("a", 1).put("b", 2));
-
-    // when
-    setVariablesFromDocument(parent, document);
-
-    // then
-    final DirectBuffer varA = variableState.getVariableLocal(parent, wrapString("a"));
-    assertEquality(varA, "1");
-
-    final DirectBuffer varBParent = variableState.getVariableLocal(parent, wrapString("b"));
-    assertEquality(varBParent, "2");
-
-    final DirectBuffer varBChild = variableState.getVariableLocal(child, wrapString("b"));
-    assertEquality(varBChild, "'should-not-overwrite-this'");
-  }
-
-  @Test
-  public void shouldSetVariablesFromDocumentAsObject() {
-    // given
-    declareScope(parent);
-
-    final DirectBuffer document = asMsgPack(b -> b.put("a", Collections.singletonMap("x", 1)));
-
-    // when
-    setVariablesFromDocument(parent, document);
-
-    // then
-    final DirectBuffer varA = variableState.getVariableLocal(parent, wrapString("a"));
-    assertEquality(varA, "{'x': 1}");
-  }
-
-  @Test
-  public void shouldSetVariablesFromDocumentNotInParentScope() {
-    // given
-    declareScope(parent);
-    declareScope(parent, child);
-
-    setVariableLocal(parent, wrapString("a"), asMsgPack("'should-not-overwrite-this'"));
-    setVariableLocal(child, wrapString("a"), asMsgPack("'should-overwrite-this'"));
-
-    final DirectBuffer document = asMsgPack(b -> b.put("a", 1).put("b", 2));
-
-    // when
-    setVariablesFromDocument(child, document);
-
-    // then
-    final DirectBuffer varParent = variableState.getVariableLocal(parent, wrapString("a"));
-    assertEquality(varParent, "'should-not-overwrite-this'");
-
-    final DirectBuffer newVarParent = variableState.getVariableLocal(parent, wrapString("b"));
-    assertEquality(newVarParent, "2");
-
-    final DirectBuffer varChild = variableState.getVariableLocal(child, wrapString("a"));
-    assertEquality(varChild, "1");
-  }
-
-  @Test
   public void shouldReturnParentScopeKey() {
     // given
     declareScope(parent);
@@ -509,28 +337,6 @@ public final class VariableStateTest {
 
     // then
     assertThat(parentScopeKey).isEqualTo(VariableState.NO_PARENT);
-  }
-
-  /** Making sure the method is reusable and does not leave data structures dirty */
-  @Test
-  public void shouldSetVariablesFromDocumentRepeatedly() {
-    // given
-    final long parent1 = parent;
-    final long parent2 = child;
-    declareScope(parent1);
-    declareScope(parent2);
-
-    setVariablesFromDocument(parent1, asMsgPack("{'a': 1, 'b': 2}"));
-
-    // when
-    setVariablesFromDocument(parent2, asMsgPack("{'x': 3}"));
-
-    // then
-    final DirectBuffer parent1Doc = variableState.getVariablesAsDocument(parent1);
-    assertEquality(parent1Doc, "{'a': 1, 'b': 2}");
-
-    final DirectBuffer parent2Doc = variableState.getVariablesAsDocument(parent2);
-    assertEquality(parent2Doc, "{'x': 3}");
   }
 
   @Test
@@ -658,59 +464,7 @@ public final class VariableStateTest {
 
     // then
     assertThat(listener.created).hasSize(1);
-
-    assertThat(listener.updated).hasSize(0);
-  }
-
-  @Test
-  public void shouldInvokeListenerIfSetVariablesLocalFromDocument() {
-    // given
-    final Map<String, Object> document = Map.of("x", "foo", "y", "bar");
-
-    // when
-    setVariablesLocalFromDocument(parent, asMsgPack(document));
-
-    // then
     assertThat(listener.updated).isEmpty();
-    assertThat(listener.created).hasSize(document.size());
-    for (final Entry<String, Object> entry : document.entrySet()) {
-      assertThat(listener.created)
-          .anySatisfy(
-              v -> {
-                assertThat(v.name).isEqualTo(entry.getKey());
-                assertThat(v.value).isEqualTo(stringToMsgpack((String) entry.getValue()));
-                assertThat(v.rootScopeKey).isEqualTo(parent);
-                assertThat(v.variableScopeKey).isEqualTo(parent);
-              });
-    }
-  }
-
-  @Test
-  public void shouldInvokeListenerIfSetVariablesFromDocument() {
-    // given
-    final long parentScope = parent;
-    final long childScope = child;
-
-    declareScope(parentScope);
-    declareScope(parentScope, childScope);
-
-    setVariablesLocalFromDocument(childScope, asMsgPack("{'x':'foo'}"));
-
-    // when
-    setVariablesFromDocument(childScope, asMsgPack("{'x':'bar', 'y':'bar'}"));
-
-    // then
-    assertThat(listener.created).hasSize(2);
-    assertThat(listener.created.get(1).name).isEqualTo("y");
-    assertThat(listener.created.get(1).value).isEqualTo(stringToMsgpack("bar"));
-    assertThat(listener.created.get(1).variableScopeKey).isEqualTo(parentScope);
-    assertThat(listener.created.get(1).rootScopeKey).isEqualTo(parentScope);
-
-    assertThat(listener.updated).hasSize(1);
-    assertThat(listener.updated.get(0).name).isEqualTo("x");
-    assertThat(listener.updated.get(0).value).isEqualTo(stringToMsgpack("bar"));
-    assertThat(listener.updated.get(0).variableScopeKey).isEqualTo(childScope);
-    assertThat(listener.updated.get(0).rootScopeKey).isEqualTo(parentScope);
   }
 
   @Test
@@ -748,12 +502,8 @@ public final class VariableStateTest {
 
     // then
     final long variableKey = listener.created.get(0).key;
-    assertThat(variableKey).isGreaterThan(0);
+    assertThat(variableKey).isPositive();
     assertThat(listener.updated.get(0).key).isEqualTo(variableKey);
-  }
-
-  private byte[] stringToMsgpack(final String value) {
-    return MsgPackUtil.encodeMsgPack(b -> b.packString(value)).byteArray();
   }
 
   private void declareScope(final long key) {
@@ -787,14 +537,6 @@ public final class VariableStateTest {
     }
 
     return workflowInstanceRecord;
-  }
-
-  private void setVariablesFromDocument(final long scope, final DirectBuffer document) {
-    variableState.setVariablesFromDocument(scope, WORKFLOW_KEY, document);
-  }
-
-  private void setVariablesLocalFromDocument(final long scope, final DirectBuffer document) {
-    variableState.setVariablesLocalFromDocument(scope, WORKFLOW_KEY, document);
   }
 
   public void setVariableLocal(

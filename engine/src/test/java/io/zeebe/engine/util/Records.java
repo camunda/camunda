@@ -16,11 +16,15 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.buffer.BufferUtil;
+import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class Records {
 
@@ -172,5 +176,17 @@ public final class Records {
         .setRepetitions(0)
         .setWorkflowKey(1);
     return event;
+  }
+
+  public static <T extends UnpackedObject & RecordValue> T cloneValue(final RecordValue value) {
+    final UnpackedObject unpackedValue = (UnpackedObject) value;
+    final MutableDirectBuffer buffer =
+        new UnsafeBuffer(ByteBuffer.allocate(unpackedValue.getLength()));
+    final T cloned = (T) ReflectUtil.newInstance(value.getClass());
+
+    unpackedValue.write(buffer, 0);
+    cloned.wrap(buffer, 0, unpackedValue.getLength());
+
+    return cloned;
   }
 }

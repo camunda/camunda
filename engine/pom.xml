@@ -32,7 +32,6 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
-
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-protocol</artifactId>
@@ -152,6 +151,23 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.msgpack</groupId>
+      <artifactId>jackson-dataformat-msgpack</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
       <scope>test</scope>
     </dependency>
 
