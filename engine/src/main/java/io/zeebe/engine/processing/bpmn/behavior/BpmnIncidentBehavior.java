@@ -70,13 +70,16 @@ public final class BpmnIncidentBehavior {
         .setErrorType(errorType)
         .setErrorMessage(errorMessage);
 
-    final var intent = determineCommandIntent(context);
-    elementInstanceState.storeRecord(
-        context.getElementInstanceKey(),
-        context.getFlowScopeKey(),
-        context.getRecordValue(),
-        intent,
-        Purpose.FAILED);
+    // todo: remove storing record after incident is migrated
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      final var intent = determineCommandIntent(context);
+      elementInstanceState.storeRecord(
+          context.getElementInstanceKey(),
+          context.getFlowScopeKey(),
+          context.getRecordValue(),
+          intent,
+          Purpose.FAILED);
+    }
 
     streamWriter.appendNewCommand(IncidentIntent.CREATE, incidentCommand);
   }

@@ -31,6 +31,7 @@ final class WorkflowInstanceElementCompletedApplier
   public void applyState(final long key, final WorkflowInstanceRecord value) {
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.consumeToken(value.getFlowScopeKey());
+    // stored records for incidents are removed when the instance is deleted
     elementInstanceState.removeInstance(key);
   }
 }
