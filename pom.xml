@@ -5,7 +5,7 @@
   <name>Zeebe Tasklist - Root POM</name>
   <groupId>io.zeebe.tasklist</groupId>
   <artifactId>parent</artifactId>
-  <version>1.0.0-alpha2</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <modules>
@@ -439,7 +439,7 @@
     <url>https://github.com/camunda-cloud/tasklist</url>
     <connection>scm:git:https://${env.GITHUB_CLOUD_USERNAME}:${env.GITHUB_CLOUD_TOKEN}@github.com/camunda-cloud/tasklist.git</connection>
     <developerConnection>scm:git:https://${env.GITHUB_CLOUD_USERNAME}:${env.GITHUB_CLOUD_TOKEN}@github.com/camunda-cloud/tasklist.git</developerConnection>
-    <tag>1.0.0-alpha2</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <issueManagement>
