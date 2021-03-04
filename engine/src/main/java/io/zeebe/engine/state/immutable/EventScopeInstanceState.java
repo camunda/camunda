@@ -28,4 +28,10 @@ public interface EventScopeInstanceState {
    * @return the next event trigger or null if none exist
    */
   EventTrigger peekEventTrigger(long eventScopeKey);
+
+  /**
+   * @param eventScopeKey the key of the event scope the event is triggered in
+   * @return true if the event can be accepted
+   */
+  boolean isAcceptingEvent(long eventScopeKey);
 }

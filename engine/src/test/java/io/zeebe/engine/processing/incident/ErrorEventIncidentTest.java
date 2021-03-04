@@ -164,7 +164,7 @@ public final class ErrorEventIncidentTest {
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .hasErrorMessage(
             String.format("An error was thrown with the code '%s' but not caught.", ERROR_CODE))
-        .hasElementId("task-in-subprocess");
+        .hasElementId("NO_CATCH_EVENT_FOUND");
   }
 
   @Test

@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.util;
 
+import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -19,7 +20,10 @@ import io.zeebe.test.util.bpmn.random.blocks.MessageStartEventBuilder.StepPublis
 import io.zeebe.test.util.bpmn.random.blocks.NoneStartEventBuilder.StepStartProcessInstance;
 import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateAndCompleteJob;
 import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateAndFailJob;
+import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateAndTimeoutJob;
+import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateJobAndThrowError;
 import io.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 
 /** This class executes individual {@link AbstractExecutionStep} for a given workflow */
 public class WorkflowExecutor {
@@ -47,6 +51,13 @@ public class WorkflowExecutor {
     } else if (step instanceof StepActivateAndFailJob) {
       final StepActivateAndFailJob activateAndFailJob = (StepActivateAndFailJob) step;
       activateAndFailJob(activateAndFailJob);
+    } else if (step instanceof StepActivateAndTimeoutJob) {
+      final StepActivateAndTimeoutJob activateAndTimeoutJob = (StepActivateAndTimeoutJob) step;
+      activateAndTimeoutJob(activateAndTimeoutJob);
+    } else if (step instanceof StepActivateJobAndThrowError) {
+      final StepActivateJobAndThrowError activateJobAndThrowError =
+          (StepActivateJobAndThrowError) step;
+      activateJobAndThrowError(activateJobAndThrowError);
     } else if ((step instanceof StepPickDefaultCase) || (step instanceof StepPickConditionCase)) {
       /*
        * Nothing to do here, as the choice is made by the engine. The default case is for debugging
@@ -75,13 +86,77 @@ public class WorkflowExecutor {
   private void activateAndFailJob(final StepActivateAndFailJob activateAndFailJob) {
     waitForJobToBeCreated(activateAndFailJob.getJobType());
 
+    if (activateAndFailJob.isUpdateRetries()) {
+      engineRule
+          .jobs()
+          .withType(activateAndFailJob.getJobType())
+          .activate()
+          .getValue()
+          .getJobKeys()
+          .forEach(
+              jobKey -> {
+                engineRule.job().withKey(jobKey).withRetries(0).fail();
+
+                final var incidentRecord =
+                    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                        .withJobKey(jobKey)
+                        .findFirst()
+                        .get();
+
+                engineRule.job().withKey(jobKey).withRetries(3).updateRetries();
+
+                engineRule
+                    .incident()
+                    .ofInstance(incidentRecord.getValue().getWorkflowInstanceKey())
+                    .withKey(incidentRecord.getKey())
+                    .resolve();
+                RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
+                    .withJobKey(jobKey)
+                    .await();
+              });
+
+    } else {
+      engineRule
+          .jobs()
+          .withType(activateAndFailJob.getJobType())
+          .activate()
+          .getValue()
+          .getJobKeys()
+          .forEach(jobKey -> engineRule.job().withKey(jobKey).withRetries(3).fail());
+    }
+  }
+
+  private void activateAndTimeoutJob(final StepActivateAndTimeoutJob activateAndTimeoutJob) {
+    waitForJobToBeCreated(activateAndTimeoutJob.getJobType());
+
+    engineRule.jobs().withType(activateAndTimeoutJob.getJobType()).withTimeout(100).activate();
+
+    engineRule.getClock().addTime(Duration.ofSeconds(150));
+
+    RecordingExporter.jobRecords(JobIntent.TIME_OUT)
+        .withType(activateAndTimeoutJob.getJobType())
+        .await();
+  }
+
+  private void activateJobAndThrowError(
+      final StepActivateJobAndThrowError stepActivateJobAndThrowError) {
+    waitForJobToBeCreated(stepActivateJobAndThrowError.getJobType());
+
     engineRule
         .jobs()
-        .withType(activateAndFailJob.getJobType())
+        .withType(stepActivateJobAndThrowError.getJobType())
+        .withTimeout(100)
         .activate()
         .getValue()
         .getJobKeys()
-        .forEach(jobKey -> engineRule.job().withKey(jobKey).withRetries(2).fail());
+        .forEach(
+            jobKey -> {
+              engineRule
+                  .job()
+                  .withKey(jobKey)
+                  .withErrorCode(stepActivateJobAndThrowError.getErrorCode())
+                  .throwError();
+            });
   }
 
   private void waitForJobToBeCreated(final String jobType) {

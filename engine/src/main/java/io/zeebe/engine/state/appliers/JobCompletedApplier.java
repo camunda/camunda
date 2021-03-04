@@ -18,14 +18,14 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-class JobCompletedEventApplier implements TypedEventApplier<JobIntent, JobRecord> {
+class JobCompletedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableJobState jobState;
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variableState;
 
-  JobCompletedEventApplier(final ZeebeState state) {
+  JobCompletedApplier(final ZeebeState state) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     eventScopeInstanceState = state.getEventScopeInstanceState();

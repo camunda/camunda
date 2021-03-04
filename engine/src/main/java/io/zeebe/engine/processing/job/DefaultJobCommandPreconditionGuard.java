@@ -49,7 +49,6 @@ final class DefaultJobCommandPreconditionGuard<J extends JobRecord> {
     } else if (jobState == State.NOT_FOUND) {
       final String message = String.format(NO_JOB_FOUND_MESSAGE, intent, jobKey);
       commandControl.reject(RejectionType.NOT_FOUND, message);
-
     } else {
       final String message = String.format(INVALID_JOB_STATE_MESSAGE, intent, jobKey, jobState);
       commandControl.reject(RejectionType.INVALID_STATE, message);

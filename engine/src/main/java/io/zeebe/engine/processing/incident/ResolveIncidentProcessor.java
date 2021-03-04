@@ -38,17 +38,16 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   private final ZeebeState zeebeState;
   private final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor;
-  private final JobErrorThrownProcessor jobErrorThrownProcessor;
 
   private final IncidentRecordWrapper incidentRecordWrapper = new IncidentRecordWrapper();
+  private final JobErrorThrownProcessor jobErrorThrownProcessor;
 
   public ResolveIncidentProcessor(
       final ZeebeState zeebeState,
-      final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor,
-      final JobErrorThrownProcessor jobErrorThrownProcessor) {
+      final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     this.zeebeState = zeebeState;
-    this.jobErrorThrownProcessor = jobErrorThrownProcessor;
+    jobErrorThrownProcessor = new JobErrorThrownProcessor(zeebeState);
   }
 
   @Override
@@ -133,6 +132,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
       jobState.resolve(jobKey, job);
 
     } else if (state == State.ERROR_THROWN) {
+
       // try to throw the error again
       jobErrorThrownProcessor.processRecord(jobKey, job, streamWriter);
     }

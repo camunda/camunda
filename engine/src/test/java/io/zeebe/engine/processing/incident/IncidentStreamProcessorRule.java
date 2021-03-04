@@ -95,12 +95,10 @@ public final class IncidentStreamProcessorRule extends ExternalResource {
                   mockTimerEventScheduler,
                   processingContext.getWriters());
 
-          final var jobErrorThrownProcessor =
-              JobEventProcessors.addJobProcessors(
-                  typedRecordProcessors, zeebeState, type -> {}, Integer.MAX_VALUE);
+          JobEventProcessors.addJobProcessors(
+              typedRecordProcessors, zeebeState, type -> {}, Integer.MAX_VALUE);
 
-          IncidentEventProcessors.addProcessors(
-              typedRecordProcessors, zeebeState, stepProcessor, jobErrorThrownProcessor);
+          IncidentEventProcessors.addProcessors(typedRecordProcessors, zeebeState, stepProcessor);
 
           return typedRecordProcessors;
         });
