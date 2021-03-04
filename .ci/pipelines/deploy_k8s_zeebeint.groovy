@@ -5,12 +5,8 @@
 
 // general properties for CI execution
 def static NODE_POOL() { "agents-n1-standard-32-netssd-preempt" }
-
 def static GCLOUD_DOCKER_IMAGE() { "gcr.io/google.com/cloudsdktool/cloud-sdk:alpine" }
-
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
-
-static String kubectlAgent() {
+static String kubectlAgent(postgresVersion='9.6-alpine') {
   return """
 metadata:
   labels:
@@ -39,22 +35,6 @@ spec:
       requests:
         cpu: 500m
         memory: 512Mi
-  - name: maven
-    image: ${MAVEN_DOCKER_IMAGE()}
-    command: ["cat"]
-    tty: true
-    env:
-      - name: LIMITS_CPU
-        value: 2
-      - name: TZ
-        value: Europe/Berlin
-    resources:
-      limits:
-        cpu: 6
-        memory: 6Gi
-      requests:
-        cpu: 6
-        memory: 6Gi
 """
 }
 
@@ -125,24 +105,11 @@ pipeline {
         }
       }
     }
-    stage('Zeebe Data Generation') {
-      steps {
-        container('maven') {
-          runMaven('-T\$LIMITS_CPU -am -DskipTests -Dskip.fe.build -Dskip.docker clean install')
-          runMaven('-f zeebe-data-generator clean compile exec:java')
-        }
-      }
-      post {
-        always {
-          archiveArtifacts artifacts: 'infra-core/rendered-templates/**/*'
-        }
-      }
-    }
   }
 
   post {
     changed {
-      sendNotification(currentBuild.result, null, null, [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
+      sendNotification(currentBuild.result,null,null,[[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
     }
     always {
       // Retrigger the build if the agent node disconnected
@@ -152,11 +119,5 @@ pipeline {
         }
       }
     }
-  }
-}
-
-void runMaven(String cmd) {
-  configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-    sh("mvn ${cmd} -s \$MAVEN_SETTINGS_XML -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
   }
 }
