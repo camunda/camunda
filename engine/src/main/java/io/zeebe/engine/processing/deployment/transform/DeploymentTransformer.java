@@ -163,32 +163,32 @@ public final class DeploymentTransformer {
         final String bpmnProcessId = workflow.getId();
         final DeployedWorkflow lastWorkflow =
             workflowState.getLatestWorkflowVersionByProcessId(BufferUtil.wrapString(bpmnProcessId));
-        final long workflowKey;
-        final int version;
 
         final DirectBuffer lastDigest =
             workflowState.getLatestVersionDigest(wrapString(bpmnProcessId));
         final DirectBuffer resourceDigest =
             new UnsafeBuffer(digestGenerator.digest(deploymentResource.getResource()));
 
-        if (isDuplicateOfLatest(deploymentResource, resourceDigest, lastWorkflow, lastDigest)) {
-          workflowKey = lastWorkflow.getKey();
-          version = lastWorkflow.getVersion();
-        } else {
-          workflowKey = keyGenerator.nextKey();
-          version = workflowState.getWorkflowVersion(bpmnProcessId) + 1;
-        }
-
+        // adds workflow record to deployment record
         final var workflowRecord = deploymentEvent.workflows().add();
         workflowRecord
             .setBpmnProcessId(BufferUtil.wrapString(workflow.getId()))
-            .setVersion(version)
-            .setKey(workflowKey)
             .setChecksum(resourceDigest)
             .setResourceName(deploymentResource.getResourceNameBuffer())
             .setResource(deploymentResource.getResourceBuffer());
 
-        stateWriter.appendFollowUpEvent(workflowKey, WorkflowIntent.CREATED, workflowRecord);
+        final var isDuplicate =
+            isDuplicateOfLatest(deploymentResource, resourceDigest, lastWorkflow, lastDigest);
+        if (isDuplicate) {
+          workflowRecord.setVersion(lastWorkflow.getVersion()).setKey(lastWorkflow.getKey());
+        } else {
+          final var key = keyGenerator.nextKey();
+          workflowRecord
+              .setKey(key)
+              .setVersion(workflowState.getWorkflowVersion(bpmnProcessId) + 1);
+
+          stateWriter.appendFollowUpEvent(key, WorkflowIntent.CREATED, workflowRecord);
+        }
       }
     }
   }

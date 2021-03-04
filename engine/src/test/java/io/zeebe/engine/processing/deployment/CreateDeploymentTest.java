@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.deployment;
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
@@ -22,6 +23,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.zeebe.protocol.record.intent.WorkflowIntent;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
@@ -54,7 +56,7 @@ public final class CreateDeploymentTest {
   private BpmnModelInstance workflow_V2;
   private BpmnModelInstance workflow2_V2;
 
-  private BpmnModelInstance createWorkflow(String processId, String startEventId) {
+  private BpmnModelInstance createWorkflow(final String processId, final String startEventId) {
     return Bpmn.createExecutableProcess(processId).startEvent(startEventId).endEvent().done();
   }
 
@@ -81,6 +83,64 @@ public final class CreateDeploymentTest {
         .hasPartitionId(DEPLOYMENT_PARTITION)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(DeploymentIntent.CREATED);
+  }
+
+  @Test
+  public void testLifecycle() {
+    // when
+    final Record<DeploymentRecordValue> deployment =
+        ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    // then
+    final var deploymentPartitionRecords =
+        RecordingExporter.records()
+            .limit(r -> r.getIntent() == DeploymentIntent.FULLY_DISTRIBUTED)
+            .collect(Collectors.toList());
+
+    assertThat(deploymentPartitionRecords)
+        .extracting(Record::getIntent, Record::getRecordType)
+        .containsExactly(
+            tuple(DeploymentIntent.CREATE, RecordType.COMMAND),
+            tuple(WorkflowIntent.CREATED, RecordType.EVENT),
+            tuple(DeploymentIntent.CREATED, RecordType.EVENT),
+            tuple(DeploymentIntent.FULLY_DISTRIBUTED, RecordType.EVENT));
+  }
+
+  @Test
+  public void testLifecycleOfDuplicateDeployment() {
+    // when
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+    final var duplicatedDeployment = ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    // then
+    final var deploymentRecords =
+        RecordingExporter.records()
+            .limit(r -> r.getIntent() == DeploymentIntent.FULLY_DISTRIBUTED)
+            .collect(Collectors.toList());
+
+    assertThat(deploymentRecords)
+        .extracting(Record::getIntent, Record::getRecordType)
+        .containsExactly(
+            tuple(DeploymentIntent.CREATE, RecordType.COMMAND),
+            tuple(WorkflowIntent.CREATED, RecordType.EVENT),
+            tuple(DeploymentIntent.CREATED, RecordType.EVENT),
+            tuple(DeploymentIntent.FULLY_DISTRIBUTED, RecordType.EVENT));
+
+    final var duplicatedDeploymentRecords =
+        RecordingExporter.records()
+            .skipUntil(
+                r ->
+                    r.getIntent() == DeploymentIntent.CREATE
+                        && r.getPosition() == duplicatedDeployment.getSourceRecordPosition())
+            .limit(r -> r.getIntent() == DeploymentIntent.FULLY_DISTRIBUTED)
+            .collect(Collectors.toList());
+
+    assertThat(duplicatedDeploymentRecords)
+        .extracting(Record::getIntent, Record::getRecordType)
+        .containsExactly(
+            tuple(DeploymentIntent.CREATE, RecordType.COMMAND),
+            tuple(DeploymentIntent.CREATED, RecordType.EVENT),
+            tuple(DeploymentIntent.FULLY_DISTRIBUTED, RecordType.EVENT));
   }
 
   @Test
