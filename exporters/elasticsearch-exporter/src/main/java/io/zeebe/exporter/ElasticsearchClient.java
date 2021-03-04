@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -250,9 +251,10 @@ public class ElasticsearchClient {
   }
 
   private RestClient createClient() {
-    final HttpHost httpHost = urlToHttpHost(configuration.url);
+    final HttpHost[] httpHosts = urlsToHttpHosts(configuration.url);
     final RestClientBuilder builder =
-        RestClient.builder(httpHost).setHttpClientConfigCallback(this::setHttpClientConfigCallback);
+        RestClient.builder(httpHosts)
+            .setHttpClientConfigCallback(this::setHttpClientConfigCallback);
 
     return builder.build();
   }
@@ -277,6 +279,13 @@ public class ElasticsearchClient {
             configuration.getAuthentication().getPassword()));
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
+  }
+
+  private static HttpHost[] urlsToHttpHosts(final String urls) {
+    return Arrays.stream(urls.split(","))
+        .map(String::trim)
+        .map(ElasticsearchClient::urlToHttpHost)
+        .toArray(HttpHost[]::new);
   }
 
   private static HttpHost urlToHttpHost(final String url) {
