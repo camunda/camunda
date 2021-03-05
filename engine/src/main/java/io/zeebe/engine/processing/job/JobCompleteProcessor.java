@@ -8,9 +8,12 @@
 package io.zeebe.engine.processing.job;
 
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.immutable.JobState;
@@ -20,36 +23,27 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
   private final DefaultJobCommandPreconditionGuard<JobRecord> defaultProcessor;
+  private final TypedEventWriter eventWriter;
 
-  public JobCompleteProcessor(final ZeebeState state) {
+  public JobCompleteProcessor(final ZeebeState state, final Writers writers) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     defaultProcessor =
         new DefaultJobCommandPreconditionGuard<>("complete", jobState, this::acceptCommand);
+    eventWriter = writers.events();
   }
 
   @Override
   public boolean onCommand(
       final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     return defaultProcessor.onCommand(command, commandControl);
-  }
-
-  private void acceptCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-
-    final long jobKey = command.getKey();
-
-    final JobRecord job = jobState.getJob(jobKey);
-
-    job.setVariables(command.getValue().getVariablesBuffer());
-
-    commandControl.accept(JobIntent.COMPLETED, job);
   }
 
   @Override
@@ -73,9 +67,26 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
         // TODO (#6172) send out COMPLETE_ELEMENT command when service task processor is registered
         // for COMPLETE_ELEMENT commands; switch out for command writer
-        stateWriter.appendFollowUpEvent(
-            serviceTaskKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, workflowInstanceRecord);
+        if (MigratedStreamProcessors.isMigrated(BpmnElementType.SERVICE_TASK)) {
+          stateWriter.appendFollowUpEvent(
+              serviceTaskKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, workflowInstanceRecord);
+        } else {
+          eventWriter.appendFollowUpEvent(
+              serviceTaskKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, workflowInstanceRecord);
+        }
       }
     }
+  }
+
+  private void acceptCommand(
+      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
+
+    final long jobKey = command.getKey();
+
+    final JobRecord job = jobState.getJob(jobKey);
+
+    job.setVariables(command.getValue().getVariablesBuffer());
+
+    commandControl.accept(JobIntent.COMPLETED, job);
   }
 }

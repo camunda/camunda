@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.job;
 import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
@@ -22,14 +23,15 @@ public final class JobEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ZeebeState zeebeState,
       final Consumer<String> onJobsAvailableCallback,
-      final int maxRecordSize) {
+      final int maxRecordSize,
+      final Writers writers) {
 
     final var jobState = zeebeState.getJobState();
     final var keyGenerator = zeebeState.getKeyGenerator();
 
     typedRecordProcessors
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor())
-        .onCommand(ValueType.JOB, JobIntent.COMPLETE, new JobCompleteProcessor(zeebeState))
+        .onCommand(ValueType.JOB, JobIntent.COMPLETE, new JobCompleteProcessor(zeebeState, writers))
         .onCommand(ValueType.JOB, JobIntent.FAIL, new JobFailProcessor(zeebeState))
         .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, new JobThrowErrorProcessor(zeebeState))
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new JobTimeOutProcessor(zeebeState))
