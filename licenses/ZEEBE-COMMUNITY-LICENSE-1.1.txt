@@ -23,12 +23,13 @@ of the Software, the Licensee must attach this Agreement.
 
 Condition 2: Without limiting other conditions in this Agreement, the grant of
 rights under this Agreement does not include the right to provide a Commercial
-Process Service.
+Process Automation Service.
 
-A "Commercial Process Service" is a service intended for or directed towards
-commercial advantage or monetary compensation for the provider of the service
-enabling third parties (other than the provider’s employees or Contractors) to
-deploy and execute Custom Processes or to access the Software via its APIs.
+A "Commercial Process Automation Service" is a service intended for or directed
+towards commercial advantage or monetary compensation for the provider of the
+service enabling third parties (other than the provider’s employees or
+Contractors) to deploy and execute Custom Processes or to access the Software
+via its APIs.
 
 "Contractors" means third parties who are engaged to perform ICT development,
 maintenance, configuration, training, consulting or associated management
@@ -38,7 +39,8 @@ services and are acting in that capacity.
 configuration files, that specify the logic for executing programmatic
 services, such that third parties can define these programmatic services freely
 (as opposed to selecting them from a restricted set of pre-defined programmatic
-services made available by the provider of the Commercial Process Service).
+services made available by the provider of the Commercial Process Automation
+Service).
 
 If the Licensee is in breach of the Conditions, this Agreement, including the
 rights granted under it, will automatically terminate with immediate effect.

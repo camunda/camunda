@@ -179,7 +179,7 @@ need to sign the CLA once.
 ## Licenses
 
 Zeebe source files are made available under the [Zeebe Community License
-Version 1.0](/licenses/ZEEBE-COMMUNITY-LICENSE-1.0.txt) except for the parts listed
+Version 1.1](/licenses/ZEEBE-COMMUNITY-LICENSE-1.1.txt) except for the parts listed
 below, which are made available under the [Apache License, Version
 2.0](/licenses/APACHE-2.0.txt).  See individual source files for details.
 

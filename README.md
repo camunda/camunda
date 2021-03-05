@@ -57,7 +57,7 @@ unacceptable behavior as soon as possible.
 ## License
 
 Zeebe source files are made available under the [Zeebe Community License
-Version 1.0](/licenses/ZEEBE-COMMUNITY-LICENSE-1.0.txt) except for the parts listed
+Version 1.1](/licenses/ZEEBE-COMMUNITY-LICENSE-1.1.txt) except for the parts listed
 below, which are made available under the [Apache License, Version
 2.0](/licenses/APACHE-2.0.txt).  See individual source files for details.
 
@@ -73,7 +73,7 @@ Available under the [Apache License, Version 2.0](/licenses/APACHE-2.0.txt):
 
 The Zeebe Gateway Protocol (API) as published in the
 [gateway-protocol](/gateway-protocol/src/main/proto/gateway.proto) is licensed
-under the Zeebe Community License 1.0. Using gRPC tooling to generate stubs for
+under the Zeebe Community License 1.1. Using gRPC tooling to generate stubs for
 the protocol does not constitute creating a derivative work under the Zeebe
-Community License 1.0 and no licensing restrictions are imposed on the
-resulting stub code by the Zeebe Community License 1.0.
+Community License 1.1 and no licensing restrictions are imposed on the
+resulting stub code by the Zeebe Community License 1.1.
