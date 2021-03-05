@@ -61,7 +61,7 @@ spec:
         GPG_PASS = credentials('password_maven_central_gpg_signing_key')
         GPG_PUB_KEY = credentials('maven_central_gpg_signing_key_pub')
         GPG_SEC_KEY = credentials('maven_central_gpg_signing_key_sec')
-        GITHUB_TOKEN = credentials('camunda-jenkins-github')
+        GITHUB_TOKEN = credentials('github-cloud-zeebe-app')
         RELEASE_VERSION = "${params.RELEASE_VERSION}"
         RELEASE_BRANCH = "release-${params.RELEASE_VERSION}"
         DEVELOPMENT_VERSION = "${params.DEVELOPMENT_VERSION}"
@@ -81,9 +81,9 @@ spec:
     stages {
         stage('Prepare') {
             steps {
-                git url: 'git@github.com:zeebe-io/zeebe',
+                git url: 'https://github.com/camunda-cloud/zeebe.git',
                         branch: "${env.RELEASE_BRANCH}",
-                        credentialsId: 'camunda-jenkins-github-ssh',
+                        credentialsId: 'github-cloud-zeebe-app',
                         poll: false
 
                 container('maven') {
@@ -109,10 +109,8 @@ spec:
         stage('Maven Release') {
             steps {
                 container('maven') {
-                    sshagent(['camunda-jenkins-github-ssh']) {
-                        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                            sh '.ci/scripts/release/maven-release.sh'
-                        }
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh '.ci/scripts/release/maven-release.sh'
                     }
                 }
             }

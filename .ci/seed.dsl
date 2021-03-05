@@ -17,8 +17,8 @@ def seedJob = job('seed-job-zeebe') {
   scm {
     git {
       remote {
-        github 'zeebe-io/zeebe', 'ssh'
-        credentials 'camunda-jenkins-github-ssh'
+        github 'camunda-cloud/zeebe', 'https'
+        credentials 'github-cloud-zeebe-app'
       }
       branch 'develop'
       extensions {

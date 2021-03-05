@@ -46,7 +46,7 @@ spec:
     stages {
         stage('Prepare') {
             steps {
-                git url: 'git@github.com:zeebe-io/zeebe', branch: "${params.BRANCH}", credentialsId: 'camunda-jenkins-github-ssh', poll: false
+                git url: 'https://github.com/camunda-cloud/zeebe.git', branch: "${params.BRANCH}", credentialsId: 'github-cloud-zeebe-app', poll: false
                 container('debian') {
                     sh '.ci/scripts/docs/prepare.sh'
                 }
