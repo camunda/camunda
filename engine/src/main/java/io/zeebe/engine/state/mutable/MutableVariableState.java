@@ -12,17 +12,41 @@ import org.agrona.DirectBuffer;
 
 public interface MutableVariableState extends VariableState {
 
-  void setVariableLocal(long scopeKey, long workflowKey, DirectBuffer name, DirectBuffer value);
-
+  /**
+   * Creates or updates the variable with {@code name} within the given scope with {@code scopeKey},
+   * setting its value to the given {@code value}.
+   *
+   * <p>This method is expected to be called directly ONLY from an {@link
+   * io.zeebe.engine.state.EventApplier} or from tests.
+   *
+   * @param key the variable key
+   * @param scopeKey the local scope of the variable
+   * @param workflowKey the associated workflow key, mostly for monitoring purposes
+   * @param name the name of the variable
+   * @param value the value of the variable (MsgPack encoded)
+   */
   void setVariableLocal(
-      long scopeKey,
-      long workflowKey,
-      DirectBuffer name,
-      DirectBuffer value,
-      int valueOffset,
-      int valueLength);
+      long key, long scopeKey, long workflowKey, DirectBuffer name, DirectBuffer value);
 
+  /**
+   * Creates or updates the variable with {@code name} within the given scope with {@code scopeKey},
+   * setting its value to the given {@code value}.
+   *
+   * <p>This method is expected to be called directly ONLY from an {@link
+   * io.zeebe.engine.state.EventApplier} or from tests.
+   *
+   * @param key the variable key
+   * @param scopeKey the local scope of the variable
+   * @param workflowKey the associated workflow key, mostly for monitoring purposes
+   * @param name the name of the variable
+   * @param nameOffset offset at which the name starts in the {@code name} buffer
+   * @param nameLength length of the variable name in the {@code name} buffer
+   * @param value the value of the variable (MsgPack encoded)
+   * @param valueOffset offset at which the value starts in the {@code value} buffer
+   * @param valueLength length of the variable value in the {@code value} buffer
+   */
   void setVariableLocal(
+      long key,
       long scopeKey,
       long workflowKey,
       DirectBuffer name,

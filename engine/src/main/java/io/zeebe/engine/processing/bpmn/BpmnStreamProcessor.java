@@ -23,6 +23,7 @@ import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.zeebe.engine.processing.variable.VariableBehavior;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.WorkflowState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -48,6 +49,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
   public BpmnStreamProcessor(
       final ExpressionProcessor expressionProcessor,
       final CatchEventBehavior catchEventBehavior,
+      final VariableBehavior variableBehavior,
       final ZeebeState zeebeState,
       final Writers writers) {
     workflowState = zeebeState.getWorkflowState();
@@ -60,6 +62,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
             sideEffectQueue,
             zeebeState,
             catchEventBehavior,
+            variableBehavior,
             this::getContainerProcessor,
             writers);
     processors = new BpmnElementProcessors(bpmnBehaviors);
