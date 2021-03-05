@@ -86,10 +86,6 @@ public final class BpmnStateTransitionBehavior {
   public BpmnElementContext transitionToActivated(final BpmnElementContext context) {
     final BpmnElementContext transitionedContext =
         transitionTo(context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      stateTransitionGuard.registerStateTransition(
-          context, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    }
     metrics.elementInstanceActivated(context.getBpmnElementType());
     return transitionedContext;
   }
@@ -108,13 +104,7 @@ public final class BpmnStateTransitionBehavior {
             WorkflowInstanceIntent.ELEMENT_COMPLETING);
       }
     }
-    final var transitionedContext =
-        transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      stateTransitionGuard.registerStateTransition(
-          context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
-    }
-    return transitionedContext;
+    return transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
   }
 
   /** @return context with updated intent */
@@ -130,13 +120,7 @@ public final class BpmnStateTransitionBehavior {
 
   /** @return context with updated intent */
   public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
-    final var transitionedContext =
-        transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATING);
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      stateTransitionGuard.registerStateTransition(
-          context, WorkflowInstanceIntent.ELEMENT_TERMINATING);
-    }
-    return transitionedContext;
+    return transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATING);
   }
 
   /** @return context with updated intent */
@@ -155,7 +139,12 @@ public final class BpmnStateTransitionBehavior {
       final BpmnElementContext context, final WorkflowInstanceIntent transition) {
     final var key = context.getElementInstanceKey();
     final var value = context.getRecordValue();
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+    // todo (#6202): remove this after migrating all element processors
+    // we cannot yet deal with transitioning to a final state for unmigrated processors since the
+    // statewriter would remove the element instance, but the completed/terminated record still
+    // needs to be processed
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())
+        && WorkflowInstanceLifecycle.isFinalState(transition)) {
       verifyTransition(context, transition);
       streamWriter.appendFollowUpEvent(key, transition, value);
     } else {
@@ -186,14 +175,8 @@ public final class BpmnStateTransitionBehavior {
             .setElementId(sequenceFlow.getId())
             .setBpmnElementType(sequenceFlow.getElementType());
 
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      streamWriter.appendFollowUpEvent(
-          keyGenerator.nextKey(), WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
-      stateBehavior.spawnToken(context);
-    } else {
-      stateWriter.appendFollowUpEvent(
-          keyGenerator.nextKey(), WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
-    }
+    stateWriter.appendFollowUpEvent(
+        keyGenerator.nextKey(), WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
   }
 
   public ElementInstance activateChildInstance(
@@ -232,11 +215,8 @@ public final class BpmnStateTransitionBehavior {
       commandWriter.appendFollowUpCommand(
           elementInstanceKey, WorkflowInstanceIntent.ACTIVATE_ELEMENT, elementInstanceRecord);
     } else {
-      streamWriter.appendFollowUpEvent(
+      stateWriter.appendFollowUpEvent(
           elementInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, elementInstanceRecord);
-
-      stateBehavior.createElementInstanceInFlowScope(
-          context, elementInstanceKey, elementInstanceRecord);
     }
   }
 
