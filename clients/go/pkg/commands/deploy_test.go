@@ -34,8 +34,6 @@ func TestDeployCommand_AddResourceFile(t *testing.T) {
 	demoBytes := readBytes(t, demoName)
 	anotherName := "../../../java/src/test/resources/processes/another-demo-process.bpmn"
 	anotherBytes := readBytes(t, anotherName)
-	yamlName := "../../../java/src/test/resources/processes/simple-process.yaml"
-	yamlBytes := readBytes(t, yamlName)
 
 	request := &pb.DeployProcessRequest{
 		Processes: []*pb.ProcessRequestObject{
@@ -49,11 +47,6 @@ func TestDeployCommand_AddResourceFile(t *testing.T) {
 				Type:       pb.ProcessRequestObject_FILE,
 				Definition: anotherBytes,
 			},
-			{
-				Name:       yamlName,
-				Type:       pb.ProcessRequestObject_FILE,
-				Definition: yamlBytes,
-			},
 		},
 	}
 	stub := &pb.DeployProcessResponse{}
@@ -65,7 +58,6 @@ func TestDeployCommand_AddResourceFile(t *testing.T) {
 	response, err := command.
 		AddResourceFile(demoName).
 		AddResourceFile(anotherName).
-		AddResourceFile(yamlName).
 		Send(context.Background())
 
 	if err != nil {
