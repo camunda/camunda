@@ -118,7 +118,7 @@ public final class MultipleEventSubprocessTest {
 
     // then
     assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CLOSED)
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
                 .withWorkflowInstanceKey(wfInstanceKey)
                 .withMessageName(helper.getMessageName())
                 .exists())

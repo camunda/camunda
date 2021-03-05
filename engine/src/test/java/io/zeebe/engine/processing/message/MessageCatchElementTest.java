@@ -290,7 +290,7 @@ public final class MessageCatchElementTest {
 
     // then
     final Record<MessageSubscriptionRecordValue> messageSubscription =
-        getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CLOSED);
+        getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.DELETED);
 
     assertThat(messageSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
 

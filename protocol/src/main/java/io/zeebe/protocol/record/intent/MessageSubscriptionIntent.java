@@ -26,8 +26,8 @@ public enum MessageSubscriptionIntent implements WorkflowInstanceRelatedIntent {
   REJECT((short) 4),
   REJECTED((short) 5),
 
-  CLOSE((short) 6),
-  CLOSED((short) 7);
+  DELETE((short) 6),
+  DELETED((short) 7);
 
   private final short value;
   private final boolean shouldBlacklist;
@@ -61,9 +61,9 @@ public enum MessageSubscriptionIntent implements WorkflowInstanceRelatedIntent {
       case 5:
         return REJECTED;
       case 6:
-        return CLOSE;
+        return DELETE;
       case 7:
-        return CLOSED;
+        return DELETED;
       case 8:
         return CORRELATING;
       default:

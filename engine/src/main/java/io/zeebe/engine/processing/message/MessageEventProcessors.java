@@ -64,8 +64,9 @@ public final class MessageEventProcessors {
                 messageState, subscriptionState, subscriptionCommandSender, writers))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
-            MessageSubscriptionIntent.CLOSE,
-            new CloseMessageSubscriptionProcessor(subscriptionState, subscriptionCommandSender))
+            MessageSubscriptionIntent.DELETE,
+            new MessageSubscriptionDeleteProcessor(
+                subscriptionState, subscriptionCommandSender, writers))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.REJECT,

@@ -351,7 +351,7 @@ public class InterruptingEventSubprocessTest {
                 .withWorkflowInstanceKey(wfInstanceKey)
                 .withMessageName("other-message"))
         .extracting(Record::getIntent)
-        .contains(MessageSubscriptionIntent.CLOSED);
+        .contains(MessageSubscriptionIntent.DELETED);
 
     assertThat(
             RecordingExporter.records()

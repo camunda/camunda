@@ -11,31 +11,40 @@ import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
 
-public final class CloseMessageSubscriptionProcessor
+public final class MessageSubscriptionDeleteProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
-  public static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
+  private static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to close message subscription for element with key '%d' and message name '%s', "
           + "but no such message subscription exists";
-  private final MutableMessageSubscriptionState subscriptionState;
+
+  private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
+  private final StateWriter stateWriter;
+  private final TypedRejectionWriter rejectionWriter;
 
   private MessageSubscriptionRecord subscriptionRecord;
 
-  public CloseMessageSubscriptionProcessor(
-      final MutableMessageSubscriptionState subscriptionState,
-      final SubscriptionCommandSender commandSender) {
+  public MessageSubscriptionDeleteProcessor(
+      final MessageSubscriptionState subscriptionState,
+      final SubscriptionCommandSender commandSender,
+      final Writers writers) {
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
+    stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
   }
 
   @Override
@@ -46,24 +55,30 @@ public final class CloseMessageSubscriptionProcessor
       final Consumer<SideEffectProducer> sideEffect) {
     subscriptionRecord = record.getValue();
 
-    final boolean removed =
-        subscriptionState.remove(
+    final boolean exists =
+        subscriptionState.existSubscriptionForElementInstance(
             subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
-    if (removed) {
-      streamWriter.appendFollowUpEvent(
-          record.getKey(), MessageSubscriptionIntent.CLOSED, subscriptionRecord);
+
+    if (exists) {
+      stateWriter.appendFollowUpEvent(
+          record.getKey(), MessageSubscriptionIntent.DELETED, subscriptionRecord);
 
     } else {
-      streamWriter.appendRejection(
-          record,
-          RejectionType.NOT_FOUND,
-          String.format(
-              NO_SUBSCRIPTION_FOUND_MESSAGE,
-              subscriptionRecord.getElementInstanceKey(),
-              BufferUtil.bufferAsString(subscriptionRecord.getMessageNameBuffer())));
+      rejectCommand(record);
     }
 
     sideEffect.accept(this::sendAcknowledgeCommand);
+  }
+
+  private void rejectCommand(final TypedRecord<MessageSubscriptionRecord> record) {
+    final var subscription = record.getValue();
+    final var reason =
+        String.format(
+            NO_SUBSCRIPTION_FOUND_MESSAGE,
+            subscription.getElementInstanceKey(),
+            BufferUtil.bufferAsString(subscription.getMessageNameBuffer()));
+
+    rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, reason);
   }
 
   private boolean sendAcknowledgeCommand() {
