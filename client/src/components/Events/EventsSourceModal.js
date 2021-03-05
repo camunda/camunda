@@ -29,6 +29,8 @@ import {loadEvents} from './service';
 
 import './EventsSourceModal.scss';
 
+const allExternalGroups = {type: 'external', configuration: {includeAllGroups: true, group: null}};
+
 const defaultSource = {
   processDefinitionKey: '',
   processDefinitionName: '',
@@ -38,56 +40,63 @@ const defaultSource = {
   tracedByBusinessKey: false,
   traceVariable: null,
 };
+
 export default withErrorHandling(
   class EventsSourceModal extends React.Component {
     state = {
-      source: this.props.initialSource?.processDefinitionKey
-        ? this.props.initialSource
-        : defaultSource,
+      source: this.props.initialSource?.configuration || defaultSource,
       variables: null,
       type: 'camunda',
       externalExist: false,
+      externalSources: this.props.existingSources.filter((src) => src.type === 'external'),
     };
 
     componentDidMount = async () => {
       if (this.isEditing()) {
-        const {processDefinitionKey, versions, tenants} = this.props.initialSource;
+        const {processDefinitionKey, versions, tenants} = this.props.initialSource.configuration;
         this.loadVariables(processDefinitionKey, versions, tenants);
       }
 
       this.props.mightFail(
-        loadEvents({eventSources: [{type: 'external'}]}),
+        loadEvents({eventSources: [allExternalGroups]}),
         (events) => this.setState({externalExist: !!events.length}),
         showError
       );
     };
 
     updateSources = () => {
-      const {existingSources} = this.props;
-      const {source, type} = this.state;
-      let updatedSources;
+      const {existingSources, autoGenerate} = this.props;
+      const {source, type, externalSources} = this.state;
       if (type === 'external') {
-        updatedSources = update(existingSources, {$push: [{type: 'external'}]});
+        const camundaSources = existingSources.filter((src) => src.type !== 'external');
+        const externalSourcesToAdd = autoGenerate ? [allExternalGroups] : externalSources;
+        const updatedSources = camundaSources.concat(externalSourcesToAdd);
+        this.props.onConfirm(updatedSources, camundaSources.length < existingSources.length);
       } else {
+        let updatedSources;
         const newSource = {
-          ...source,
-          traceVariable: source.tracedByBusinessKey ? null : source.traceVariable,
+          type: 'camunda',
+          configuration: {
+            ...source,
+            traceVariable: source.tracedByBusinessKey ? null : source.traceVariable,
+          },
         };
 
         if (this.isEditing()) {
           const sourceIndex = existingSources.findIndex(
-            ({processDefinitionKey}) => processDefinitionKey === source.processDefinitionKey
+            ({configuration: {processDefinitionKey}}) =>
+              processDefinitionKey === source.processDefinitionKey
           );
 
           updatedSources = update(existingSources, {[sourceIndex]: {$set: newSource}});
         } else {
           updatedSources = update(existingSources, {$push: [newSource]});
         }
+        this.props.onConfirm(updatedSources, this.isEditing());
       }
-      this.props.onConfirm(updatedSources);
     };
 
-    isEditing = () => this.props.initialSource?.processDefinitionKey;
+    isEditing = () => !!this.props.initialSource?.configuration;
 
     alreadyExists = () =>
       this.props.existingSources.some(
@@ -95,9 +104,9 @@ export default withErrorHandling(
       );
 
     isValid = () => {
-      const {source, type, externalExist} = this.state;
+      const {source, type, externalExist, externalSources} = this.state;
       if (type === 'external') {
-        return externalExist;
+        return externalExist && (externalSources.length > 0 || this.props.autoGenerate);
       } else {
         const {processDefinitionKey, tracedByBusinessKey, traceVariable} = source;
         return (
@@ -127,8 +136,8 @@ export default withErrorHandling(
     };
 
     render() {
-      const {onClose, existingSources, autoGenerate} = this.props;
-      const {source, variables, type, externalExist} = this.state;
+      const {onClose, autoGenerate} = this.props;
+      const {source, variables, type, externalExist, externalSources} = this.state;
       const {
         processDefinitionKey,
         versions,
@@ -137,7 +146,6 @@ export default withErrorHandling(
         traceVariable,
         eventScope,
       } = source;
-      const externalAlreadyAdded = existingSources.some((src) => src.type === 'external');
 
       return (
         <Modal open onClose={onClose} onConfirm={this.updateSources} className="EventsSourceModal">
@@ -253,12 +261,17 @@ export default withErrorHandling(
                   )}
                 </Form>
               </Tabs.Tab>
-              <Tabs.Tab
-                value="external"
-                title={t('events.sources.externalEvents')}
-                disabled={externalAlreadyAdded}
-              >
-                <ExternalSource empty={!externalExist} />
+              <Tabs.Tab value="external" title={t('events.sources.externalEvents')}>
+                {!autoGenerate && (
+                  <ExternalSource
+                    empty={!externalExist}
+                    existingSources={externalSources}
+                    onChange={(externalSources) => this.setState({externalSources})}
+                  />
+                )}
+                {autoGenerate && (
+                  <p className="addExternalInfo">{t('events.sources.addExternalInfo')}</p>
+                )}
               </Tabs.Tab>
             </Tabs>
           </Modal.Content>

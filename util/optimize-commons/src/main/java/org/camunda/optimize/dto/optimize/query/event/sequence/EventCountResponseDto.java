@@ -13,7 +13,7 @@ import lombok.NonNull;
 import lombok.experimental.FieldNameConstants;
 
 @Data
-@Builder
+@Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldNameConstants

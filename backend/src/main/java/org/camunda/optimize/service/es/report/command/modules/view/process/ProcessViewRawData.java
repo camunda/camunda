@@ -9,11 +9,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
@@ -60,6 +60,11 @@ public class ProcessViewRawData extends ProcessViewPart {
   private final OptimizeElasticsearchClient esClient;
 
   private final RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper = new RawProcessDataResultDtoMapper();
+
+  @Override
+  public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {
+    return ViewProperty.RAW_DATA;
+  }
 
   @Override
   public void adjustSearchRequest(final SearchRequest searchRequest,
@@ -146,24 +151,22 @@ public class ProcessViewRawData extends ProcessViewPart {
       );
     }
 
-    final RawDataProcessReportResultDto rawDataSingleReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
+    final List<RawDataProcessInstanceDto> rawData = rawDataSingleReportResultDtoMapper.mapFrom(
       rawDataProcessInstanceDtos,
-      response.getHits().getTotalHits().value,
-      context,
       objectMapper
     );
-    addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawDataSingleReportResultDto);
-    return new ViewResult().setProcessRawData(rawDataSingleReportResultDto);
+    addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawData);
+    return new ViewResult().setRawData(rawData);
   }
 
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.setView(new ProcessViewDto(ProcessViewProperty.RAW_DATA));
+    dataForCommandKey.setView(new ProcessViewDto(ViewProperty.RAW_DATA));
   }
 
   private void addNewVariablesAndDtoFieldsToTableColumnConfig(final ExecutionContext<ProcessReportDataDto> context,
-                                                              final RawDataProcessReportResultDto result) {
-    final List<String> variableNames = result.getData()
+                                                              final List<RawDataProcessInstanceDto> rawData) {
+    final List<String> variableNames = rawData
       .stream()
       .flatMap(rawDataProcessInstanceDto -> rawDataProcessInstanceDto.getVariables().keySet().stream())
       .map(varKey -> VARIABLE_PREFIX + varKey)

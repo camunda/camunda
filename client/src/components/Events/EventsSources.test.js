@@ -12,7 +12,10 @@ import EventsSources from './EventsSources';
 import {Dropdown} from 'components';
 
 const props = {
-  sources: [{type: 'camunda', processDefinitionKey: 'src1'}, {type: 'external'}],
+  sources: [
+    {type: 'camunda', configuration: {processDefinitionKey: 'src1'}},
+    {type: 'external', configuration: {includeAllGroups: true, group: null}},
+  ],
   onChange: jest.fn(),
 };
 
@@ -41,7 +44,10 @@ it('should remove a source from the list', () => {
 
   node.find('DeleterErrorHandler').prop('deleteEntity')(props.sources[0]);
 
-  expect(props.onChange).toHaveBeenCalledWith([{type: 'external'}], true);
+  expect(props.onChange).toHaveBeenCalledWith(
+    [{type: 'external', configuration: {includeAllGroups: true, group: null}}],
+    true
+  );
 });
 
 it('should hide/show source', () => {
@@ -50,7 +56,10 @@ it('should hide/show source', () => {
   node.find(Dropdown.Option).at(0).simulate('click');
 
   expect(props.onChange).toHaveBeenCalledWith(
-    [{hidden: true, type: 'camunda', processDefinitionKey: 'src1'}, {type: 'external'}],
+    [
+      {hidden: true, type: 'camunda', configuration: {processDefinitionKey: 'src1'}},
+      {type: 'external', configuration: {includeAllGroups: true, group: null}},
+    ],
     false
   );
 });
@@ -61,25 +70,37 @@ it('should edit a source from the list', () => {
   node.find(Dropdown.Option).at(1).simulate('click');
 
   expect(node.find(EventsSourceModal).prop('initialSource')).toEqual({
-    processDefinitionKey: 'src1',
+    configuration: {processDefinitionKey: 'src1'},
     type: 'camunda',
   });
 });
 
 it('should edit a scope of a source', () => {
-  const node = shallow(<EventsSources {...props} />);
+  const node = shallow(
+    <EventsSources
+      {...props}
+      sources={[
+        {
+          type: 'camunda',
+          configuration: {processDefinitionKey: 'src1', eventScope: 'start_end'},
+        },
+      ]}
+    />
+  );
 
   node.find(Dropdown.Option).at(2).simulate('click');
 
   const modal = node.find('VisibleEventsModal');
-  expect(modal).toExist();
 
-  modal.prop('onConfirm')(['start_end', 'processInstance']);
+  expect(modal.prop('initialScope')).toBe('start_end');
 
+  modal.prop('onConfirm')(['start_end', 'processInstance'], true);
   expect(props.onChange).toHaveBeenCalledWith(
     [
-      {eventScope: ['start_end', 'processInstance'], processDefinitionKey: 'src1', type: 'camunda'},
-      {type: 'external'},
+      {
+        type: 'camunda',
+        configuration: {eventScope: ['start_end', 'processInstance'], processDefinitionKey: 'src1'},
+      },
     ],
     true
   );

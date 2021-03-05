@@ -6,10 +6,13 @@
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.variable.distributedby.date;
 
 import org.assertj.core.util.Maps;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -19,6 +22,7 @@ import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
@@ -47,11 +51,11 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateWithPartRep
       .setStartFlowNodeId("foo")
       .setEndFlowNodeId(END_EVENT)
       .build();
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData().isEmpty()).isTrue();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData().isEmpty()).isTrue();
   }
 
   @Test
@@ -74,11 +78,11 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateWithPartRep
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId("foo")
       .build();
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData().isEmpty()).isTrue();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData().isEmpty()).isTrue();
   }
 
   @Test
@@ -107,7 +111,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateWithPartRep
       START_EVENT,
       SERVICE_TASK_ID_1
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result includes the activity duration of 2 seconds
     final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
@@ -115,8 +119,9 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateWithPartRep
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains("a string")
-        .distributedByContains(localDateTimeToString(startOfReferenceDate), 2000.0)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("a string")
+          .distributedByContains(localDateTimeToString(startOfReferenceDate), 2000.0)
       .doAssert(result);
     // @formatter:on
   }

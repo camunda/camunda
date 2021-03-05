@@ -8,11 +8,11 @@ package org.camunda.optimize.service.es.report.command.modules.view.process.vari
 import com.google.common.collect.ImmutableMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.VariableViewPropertyDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
@@ -64,6 +64,11 @@ public class ProcessViewVariable extends ProcessViewPart {
       .put(AggregationType.MEDIAN, new MedianAggregation())
       .put(AggregationType.SUM, new SumAggregation())
       .build();
+
+  @Override
+  public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {
+    return ViewProperty.VARIABLE(getVariableName(context), getVariableType(context));
+  }
 
   @Override
   public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
@@ -120,6 +125,6 @@ public class ProcessViewVariable extends ProcessViewPart {
 
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.setView(new ProcessViewDto(ProcessViewEntity.VARIABLE, ProcessViewProperty.VARIABLE(null, null)));
+    dataForCommandKey.setView(new ProcessViewDto(ProcessViewEntity.VARIABLE, ViewProperty.VARIABLE(null, null)));
   }
 }

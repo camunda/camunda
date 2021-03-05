@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
-import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
+import org.camunda.optimize.service.importing.DefinitionXmlImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.ProcessDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.engine.handler.ProcessDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionXmlImportService;
@@ -22,7 +22,7 @@ import java.util.List;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionXmlEngineImportMediator
-  extends ScrollBasedImportMediator<ProcessDefinitionXmlImportIndexHandler, ProcessDefinitionXmlEngineDto> {
+  extends DefinitionXmlImportMediator<ProcessDefinitionXmlImportIndexHandler, ProcessDefinitionXmlEngineDto> {
 
   private final ProcessDefinitionXmlFetcher engineEntityFetcher;
 

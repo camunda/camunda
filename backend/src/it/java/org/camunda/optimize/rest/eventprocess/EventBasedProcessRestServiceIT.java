@@ -13,6 +13,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDto;
@@ -20,8 +21,9 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
@@ -30,7 +32,6 @@ import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
-import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -78,6 +79,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntryForGroup;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
@@ -219,10 +221,10 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
                                                                                                    final String path,
                                                                                                    final Object payload) {
     // given
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEventBasedProcessConfiguration()
-      .getAuthorizedUserIds()
-      .clear();
+    final EventBasedProcessConfiguration eventProcessConfiguration =
+      embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration();
+    eventProcessConfiguration.getAuthorizedUserIds().clear();
+    eventProcessConfiguration.getAuthorizedGroupIds().clear();
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -339,6 +341,32 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void createEventProcessMapping_multipleExternalEventSources() {
+    // given
+    final List<EventSourceEntryDto<?>> externalEventSources = Arrays.asList(
+      createExternalEventSourceEntryForGroup("firstGroup"),
+      createExternalEventSourceEntryForGroup("secondGroup")
+    );
+    Map<String, EventMappingDto> eventMappings = new HashMap<>();
+    eventMappings.put(USER_TASK_ID_ONE, createEventMappingsDto(createMappedEventDto(), createMappedEventDto()));
+    eventMappings.put(USER_TASK_ID_TWO, createEventMappingsDto(createMappedEventDto(), null));
+    eventMappings.put(USER_TASK_ID_THREE, createEventMappingsDto(null, createMappedEventDto()));
+    EventProcessMappingDto eventProcessMappingDto =
+      eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
+        eventMappings, "process name", simpleDiagramXml, externalEventSources
+      );
+
+    // when
+    final String processId = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto)
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode()).getId();
+
+    // then
+    assertThat(eventProcessClient.getEventProcessMapping(processId))
+      .extracting(EventProcessMappingResponseDto::getEventSources)
+      .isEqualTo(externalEventSources);
   }
 
   @Test
@@ -477,7 +505,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(actual)
       .extracting(EventProcessMappingDto.Fields.eventSources).asList()
       .hasSize(1)
-      .containsExactly(convertToEventSourceRestEntryDto(eventProcessMappingDto.getEventSources().get(0)));
+      .containsExactly(eventProcessMappingDto.getEventSources().get(0));
     assertThat(actual.getLastModified()).isEqualTo(now);
     assertThat(actual.getState()).isEqualTo(EventProcessState.MAPPED);
     assertThat(actual.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
@@ -627,7 +655,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     // then the fields have been updated
-    EventSourceEntryDto eventSourceEntry = updateDto.getEventSources().get(0);
+    EventSourceEntryDto<?> eventSourceEntry = updateDto.getEventSources().get(0);
     EventProcessMappingResponseDto storedDto = eventProcessClient.getEventProcessMapping(storedEventProcessMappingId);
     assertThat(storedDto)
       .usingRecursiveComparison().ignoringFields(
@@ -644,14 +672,14 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(storedDto.getEventSources())
       .hasSize(1)
       .extracting(
-        EventSourceEntryResponseDto::getId,
-        EventSourceEntryResponseDto::getType,
-        EventSourceEntryResponseDto::getEventScope
+        EventSourceEntryDto::getId,
+        EventSourceEntryDto::getSourceType,
+        source -> source.getConfiguration().getEventScope()
       )
       .containsExactly(Tuple.tuple(
         eventSourceEntry.getId(),
-        eventSourceEntry.getType(),
-        eventSourceEntry.getEventScope()
+        eventSourceEntry.getSourceType(),
+        eventSourceEntry.getConfiguration().getEventScope()
       ));
   }
 
@@ -736,6 +764,35 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
     // then the update response code is correct
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void updateEventProcessMapping_multipleExternalEventSources() {
+    // given
+    final ExternalEventSourceEntryDto firstGroupSource = createExternalEventSourceEntryForGroup("firstGroup");
+    Map<String, EventMappingDto> eventMappings = new HashMap<>();
+    eventMappings.put(USER_TASK_ID_ONE, createEventMappingsDto(createMappedEventDto(), createMappedEventDto()));
+    eventMappings.put(USER_TASK_ID_TWO, createEventMappingsDto(createMappedEventDto(), null));
+    eventMappings.put(USER_TASK_ID_THREE, createEventMappingsDto(null, createMappedEventDto()));
+    EventProcessMappingDto eventProcessMappingDto =
+      eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
+        eventMappings, "process name", simpleDiagramXml, Collections.singletonList(firstGroupSource)
+      );
+
+    // when
+    final String eventMappingId = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto)
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode()).getId();
+    final List<EventSourceEntryDto<?>> updatedSources = Arrays.asList(
+      firstGroupSource,
+      createExternalEventSourceEntryForGroup("secondGroup")
+    );
+    eventProcessMappingDto.setEventSources(updatedSources);
+    eventProcessClient.updateEventProcessMapping(eventMappingId, eventProcessMappingDto);
+
+    // then
+    assertThat(eventProcessClient.getEventProcessMapping(eventMappingId))
+      .extracting(EventProcessMappingResponseDto::getEventSources)
+      .isEqualTo(updatedSources);
   }
 
   @Test
@@ -887,7 +944,9 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
                            Instant.ofEpochMilli(0L),
                            ZoneId.systemDefault()
                          ))
-                         .eventSource(convertToEventSourceEntryDto(storedEventProcessMapping.getEventSources().get(0)))
+                         .eventImportSourceType(storedEventProcessMapping.getEventSources().get(0).getSourceType())
+                         .eventSourceConfigurations(Collections.singletonList(
+                           storedEventProcessMapping.getEventSources().get(0).getConfiguration()))
                          .build());
   }
 
@@ -1341,20 +1400,6 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     return getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)
       .orElseThrow(() -> new OptimizeIntegrationTestException("Failed reading first publish date"))
       .getPublishDateTime();
-  }
-
-  private EventSourceEntryResponseDto convertToEventSourceRestEntryDto(EventSourceEntryDto eventSourceEntry) {
-    return EventSourceEntryResponseDto.builder()
-      .id(eventSourceEntry.getId())
-      .type(eventSourceEntry.getType())
-      .eventScope(eventSourceEntry.getEventScope())
-      .processDefinitionName(null)
-      .processDefinitionKey(eventSourceEntry.getProcessDefinitionKey())
-      .versions(eventSourceEntry.getVersions())
-      .tenants(eventSourceEntry.getTenants())
-      .tracedByBusinessKey(eventSourceEntry.isTracedByBusinessKey())
-      .traceVariable(eventSourceEntry.getTraceVariable())
-      .build();
   }
 
   private EventProcessMappingDto createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource() {

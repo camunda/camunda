@@ -7,10 +7,11 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {DefinitionSelection, Tabs} from 'components';
+import {DefinitionSelection} from 'components';
 import {loadVariables} from 'services';
 
 import EventsSourceModalWithErrorHandling from './EventsSourceModal';
+import ExternalSource from './ExternalSource';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -19,14 +20,19 @@ jest.mock('services', () => {
 
 const EventsSourceModal = EventsSourceModalWithErrorHandling.WrappedComponent;
 
+const allExternalGroups = {type: 'external', configuration: {includeAllGroups: true, group: null}};
+
 const testSource = {
-  processDefinitionKey: 'foo',
-  processDefinitionName: 'Foo',
-  versions: ['1'],
-  tenants: ['a', 'b'],
-  eventScope: ['start_end'],
-  tracedByBusinessKey: false,
-  traceVariable: 'var',
+  type: 'camunda',
+  configuration: {
+    processDefinitionKey: 'foo',
+    processDefinitionName: 'Foo',
+    versions: ['1'],
+    tenants: ['a', 'b'],
+    eventScope: ['start_end'],
+    tracedByBusinessKey: false,
+    traceVariable: 'var',
+  },
 };
 
 const props = {
@@ -91,17 +97,23 @@ it('should edit a source when clicking confirm', () => {
 
   node.find('[primary]').simulate('click');
 
-  expect(spy).toHaveBeenCalledWith([
-    {
-      eventScope: ['start_end'],
-      processDefinitionKey: 'foo',
-      processDefinitionName: 'Foo',
-      tenants: ['a', 'b'],
-      traceVariable: null,
-      tracedByBusinessKey: true,
-      versions: ['1'],
-    },
-  ]);
+  expect(spy).toHaveBeenCalledWith(
+    [
+      {
+        type: 'camunda',
+        configuration: {
+          eventScope: ['start_end'],
+          processDefinitionKey: 'foo',
+          processDefinitionName: 'Foo',
+          tenants: ['a', 'b'],
+          traceVariable: null,
+          tracedByBusinessKey: true,
+          versions: ['1'],
+        },
+      },
+    ],
+    true
+  );
 });
 
 it('should add a source when clicking confirm', () => {
@@ -121,17 +133,23 @@ it('should add a source when clicking confirm', () => {
 
   node.find('[primary]').simulate('click');
 
-  expect(spy).toHaveBeenCalledWith([
-    {
-      processDefinitionKey: 'test',
-      processDefinitionName: 'Test',
-      versions: ['1'],
-      tenants: ['a', 'b'],
-      tracedByBusinessKey: false,
-      traceVariable: 'boolVar',
-      eventScope: ['process_instance'],
-    },
-  ]);
+  expect(spy).toHaveBeenCalledWith(
+    [
+      {
+        type: 'camunda',
+        configuration: {
+          processDefinitionKey: 'test',
+          processDefinitionName: 'Test',
+          versions: ['1'],
+          tenants: ['a', 'b'],
+          tracedByBusinessKey: false,
+          traceVariable: 'boolVar',
+          eventScope: ['process_instance'],
+        },
+      },
+    ],
+    false
+  );
 });
 
 it('should show an error when adding already existing source', async () => {
@@ -147,21 +165,51 @@ it('should show an error when adding already existing source', async () => {
   expect(node.find({error: true})).toExist();
 });
 
-it('should add external sources', () => {
+it('should add selected external sources', () => {
   const spy = jest.fn();
   const node = shallow(<EventsSourceModal {...props} onConfirm={spy} />);
 
   node.find('Tabs').prop('onChange')('external');
 
+  const testSource = {type: 'external', configuration: {group: 'testGroup'}};
+  node.find(ExternalSource).prop('onChange')([testSource]);
+
   node.find('[primary]').simulate('click');
 
-  expect(spy).toHaveBeenCalledWith([{type: 'external'}]);
+  expect(spy).toHaveBeenCalledWith([testSource], false);
 });
 
-it('should disable external source if already added', () => {
-  const node = shallow(<EventsSourceModal {...props} existingSources={[{type: 'external'}]} />);
+it('should edit external sources if there are already existing external sources', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <EventsSourceModal
+      {...props}
+      onConfirm={spy}
+      existingSources={[{type: 'external', configuration: {group: 'test'}}]}
+    />
+  );
 
-  expect(node.find(Tabs.Tab).at(1)).toBeDisabled();
+  node.find('Tabs').prop('onChange')('external');
+
+  const testSource = {type: 'external', configuration: {group: 'testGroup'}};
+  node.find(ExternalSource).prop('onChange')([testSource]);
+
+  node.find('[primary]').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith([testSource], true);
+});
+
+it('should add all external groups in auto generation', () => {
+  const spy = jest.fn();
+  const node = shallow(<EventsSourceModal {...props} onConfirm={spy} autoGenerate={true} />);
+
+  node.find('Tabs').prop('onChange')('external');
+
+  node.find('[primary]').simulate('click');
+
+  expect(node.find(ExternalSource)).not.toExist();
+  expect(node.find('.addExternalInfo')).toExist();
+  expect(spy).toHaveBeenCalledWith([allExternalGroups], false);
 });
 
 it('should contain a change warning and not contain event scope selection', () => {

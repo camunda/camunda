@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -74,7 +74,7 @@ public class EventProcessPublishStateReader {
       try {
         result = objectMapper.readValue(
           searchResponse.getHits().getAt(0).getSourceAsString(),
-          IndexableEventProcessPublishStateDto.class
+          EsEventProcessPublishStateDto.class
         ).toEventProcessPublishStateDto();
       } catch (IOException e) {
         String reason =
@@ -114,10 +114,10 @@ public class EventProcessPublishStateReader {
 
     return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
-      IndexableEventProcessPublishStateDto.class,
+      EsEventProcessPublishStateDto.class,
       objectMapper,
       esClient,
       configurationService.getEsScrollTimeoutInSeconds()
-    ).stream().map(IndexableEventProcessPublishStateDto::toEventProcessPublishStateDto).collect(Collectors.toList());
+    ).stream().map(EsEventProcessPublishStateDto::toEventProcessPublishStateDto).collect(Collectors.toList());
   }
 }

@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 
 import javax.validation.Valid;
 import java.util.ArrayList;
@@ -38,5 +38,5 @@ public class EventProcessMappingRequestDto {
 
   @Builder.Default
   @Valid
-  private List<EventSourceEntryDto> eventSources = new ArrayList<>();
+  private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
 }

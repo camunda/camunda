@@ -96,10 +96,10 @@ queue(seedJob)
 // By default, this job is enabled for prod env only.
 if (binding.variables.get("ENVIRONMENT") == "prod") {
   multibranchPipelineJob('camunda-optimize') {
-  
+
     displayName 'Camunda Optimize'
     description 'MultiBranchJob for Camunda Optimize'
-  
+
     branchSources {
       github {
         id 'optimize-repo'
@@ -112,16 +112,16 @@ if (binding.variables.get("ENVIRONMENT") == "prod") {
         buildOriginPRHead()
         // Based on team usage and decision, only main branch, PRs, and selected branches will be part of CI.
         // That to avoid running the same CI job twice (one for branch and one for PR).
-        includes 'master PR-* CI-*'
+        includes 'master prototype_zeebeint PR-* CI-*'
       }
     }
-  
+
     orphanedItemStrategy {
       discardOldItems {
         daysToKeep(1)
       }
     }
-  
+
     triggers {
       periodicFolderTrigger {
         interval('1d')

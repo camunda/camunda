@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.flownode.frequency
 import com.google.common.collect.ImmutableList;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -15,12 +16,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.ModelElementFrequencyByModelElementDurationByModelElementIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
+import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
@@ -96,22 +99,24 @@ public class FlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
       .dateFreezer(startTime.plus(completedActivityInstanceDurations + 1, ChronoUnit.MILLIS))
       .freezeDateAndReturn();
     final ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>resultDto = evaluationResponse.getResult();
+    // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(createDurationBucketKey(completedActivityInstanceDurations))
-      .distributedByContains(END_EVENT, 1., END_EVENT)
-      .distributedByContains(START_EVENT, 2., START_EVENT)
-      .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
-      .groupByContains(createDurationBucketKey((int) Duration.between(startTime, currentTime).toMillis()))
-      .distributedByContains(END_EVENT, null, END_EVENT)
-      .distributedByContains(START_EVENT, null, START_EVENT)
-      .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(createDurationBucketKey(completedActivityInstanceDurations))
+          .distributedByContains(END_EVENT, 1., END_EVENT)
+          .distributedByContains(START_EVENT, 2., START_EVENT)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
+        .groupByContains(createDurationBucketKey((int) Duration.between(startTime, currentTime).toMillis()))
+        .distributedByContains(END_EVENT, null, END_EVENT)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
       .doAssert(resultDto);
     // @formatter:on
   }
@@ -134,15 +139,15 @@ public class FlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
       .add()
       .buildList();
     reportData.setFilter(filterYieldingNoResults);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(result.getDataEntryForKey(createDurationBucketKey(1000))).isPresent();
-    assertThat(result.getDataEntryForKey(createDurationBucketKey(5000))).isPresent();
-    assertThat(result.getDataEntryForKey(createDurationBucketKey(10000))).isNotPresent();
-    assertThat(result.getData()).allSatisfy(bucket -> {
+    assertThat(MapResultUtil.getDataEntryForKey(result.getFirstMeasureData(), createDurationBucketKey(1000))).isPresent();
+    assertThat(MapResultUtil.getDataEntryForKey(result.getFirstMeasureData(), createDurationBucketKey(5000))).isPresent();
+    assertThat(MapResultUtil.getDataEntryForKey(result.getFirstMeasureData(), createDurationBucketKey(10000))).isNotPresent();
+    assertThat(result.getFirstMeasureData()).allSatisfy(bucket -> {
       if (bucket.getKey().equals(createDurationBucketKey(1000)) ||
         bucket.getKey().equals(createDurationBucketKey(5000))) {
         assertThat(bucket.getValue())

@@ -18,8 +18,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -77,10 +77,10 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
       PROC_INST_DUR_GROUP_BY_START_DATE,
       AggregateByDateUnit.DAY
     );
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(startDate, ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
     assertThat(resultData.get(0).getValue())
@@ -120,11 +120,11 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
       AggregateByDateUnit.DAY
     );
     reportData.setFilter(Lists.newArrayList(startDateFilterDto));
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(5);
 
     assertThat(resultData.get(0).getKey())
@@ -165,13 +165,13 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
       getTestReportDataType(),
       AggregateByDateUnit.DAY
     );
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
 
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
 
     assertThat(resultData)
       .isNotNull()
@@ -232,10 +232,10 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setFilter(runningInstanceFilter)
       .build();
-    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getFirstMeasureData();
     assertThat(resultData)
       .isNotNull()
       .hasSize(1);
@@ -286,10 +286,10 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setFilter(durationFilter)
       .build();
-    ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getFirstMeasureData();
     assertThat(resultData)
       .isNotNull()
       .hasSize(1);

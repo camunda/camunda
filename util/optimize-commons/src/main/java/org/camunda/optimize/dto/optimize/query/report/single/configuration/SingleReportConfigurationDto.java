@@ -21,6 +21,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.targe
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 @AllArgsConstructor
@@ -32,9 +34,9 @@ public class SingleReportConfigurationDto {
   @Builder.Default
   private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
   @Builder.Default
-  private AggregationType aggregationType = AggregationType.AVERAGE;
+  private List<AggregationType> aggregationTypes = Arrays.asList(AggregationType.AVERAGE);
   @Builder.Default
-  private UserTaskDurationTime userTaskDurationTime = UserTaskDurationTime.TOTAL;
+  private List<UserTaskDurationTime> userTaskDurationTimes = Arrays.asList(UserTaskDurationTime.TOTAL);
   @Builder.Default
   private HiddenNodesDto hiddenNodes = new HiddenNodesDto();
   @Builder.Default
@@ -66,8 +68,6 @@ public class SingleReportConfigurationDto {
   @Builder.Default
   private TableColumnDto tableColumns = new TableColumnDto();
   @Builder.Default
-  private ColumnOrderDto columnOrder = new ColumnOrderDto();
-  @Builder.Default
   private SingleReportTargetValueDto targetValue = new SingleReportTargetValueDto();
   @Builder.Default
   private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
@@ -89,6 +89,46 @@ public class SingleReportConfigurationDto {
   @JsonIgnore
   public String createCommandKey() {
     return getProcessPart().map(ProcessPartDto::createCommandKey).orElse(null);
+  }
+
+  // to be removed with OPT-4871 when the result evaluation needs to read all values
+  @Deprecated
+  public AggregationType getAggregationType() {
+    return this.aggregationTypes != null && !this.aggregationTypes.isEmpty() ? this.aggregationTypes.get(0) : null;
+  }
+
+  // to be removed with OPT-4872, just here for jackson and API backwards compatibility thus protected
+  @Deprecated
+  protected void setAggregationType(final AggregationType aggregationType) {
+    if (this.aggregationTypes == null || this.aggregationTypes.isEmpty()) {
+      this.aggregationTypes = Arrays.asList(aggregationType);
+    } else {
+      this.aggregationTypes.set(0, aggregationType);
+    }
+  }
+
+  public void setAggregationTypes(final AggregationType... aggregationTypes) {
+    this.aggregationTypes = Arrays.asList(aggregationTypes);
+  }
+
+  // to be removed with OPT-4871 when the result evaluation needs to read all values
+  @Deprecated
+  public UserTaskDurationTime getUserTaskDurationTime() {
+    return this.userTaskDurationTimes != null && !this.userTaskDurationTimes.isEmpty() ? this.userTaskDurationTimes.get(0) : null;
+  }
+
+  // to be removed with OPT-4872, just here for jackson and API backwards compatibility thus protected
+  @Deprecated
+  protected void setUserTaskDurationTime(final UserTaskDurationTime userTaskDurationTime) {
+    if (this.userTaskDurationTimes == null || this.userTaskDurationTimes.isEmpty()) {
+      this.userTaskDurationTimes = Arrays.asList(userTaskDurationTime);
+    } else {
+      this.userTaskDurationTimes.set(0, userTaskDurationTime);
+    }
+  }
+
+  public void setUserTaskDurationTimes(final UserTaskDurationTime... userTaskDurationTimes) {
+    this.userTaskDurationTimes = Arrays.asList(userTaskDurationTimes);
   }
 
   public Optional<ReportSortingDto> getSorting() {

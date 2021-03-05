@@ -7,8 +7,10 @@ package org.camunda.optimize.service.es.report.process.single.user_task.duration
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.util.List;
@@ -48,9 +50,9 @@ public class UserTaskIdleDurationByCandidateGroupByUserTaskReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithFlowNodeStatusFilters(final ReportHyperMapResultDto result,
+  protected void assertEvaluateReportWithFlowNodeStatusFilters(final ReportResultResponseDto<List<HyperMapResultEntryDto>> result,
                                                                final FlowNodeStatusTestValues expectedValues) {
-    assertThat(result.getDataEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
+    assertThat(MapResultUtil.getDataEntryForKey(result.getFirstMeasureData(), FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
       .isEqualTo(expectedValues.getExpectedIdleDurationValues());
   }
 }

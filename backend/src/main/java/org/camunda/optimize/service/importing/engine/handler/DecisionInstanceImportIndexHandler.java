@@ -29,7 +29,7 @@ public class DecisionInstanceImportIndexHandler extends TimestampBasedEngineImpo
 
   @Override
   protected String getElasticsearchDocID() {
-    return ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+    return ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
   }
 
 }

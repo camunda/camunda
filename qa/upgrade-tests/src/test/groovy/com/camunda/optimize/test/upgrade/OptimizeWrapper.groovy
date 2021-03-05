@@ -81,8 +81,7 @@ class OptimizeWrapper {
                 .pollDelay(30, SECONDS)
                 .atMost(timeoutInSeconds, MINUTES)
                 .ignoreException(ProcessingException)
-                .until(
-                        statusClient::getOldStatus, getStartPredicate(true))
+                .until(statusClient::getOldStatus, getStartPredicate(true))
       } else {
         await()
         // this delay is here for avoiding race conditions of still running initializations
@@ -90,8 +89,7 @@ class OptimizeWrapper {
                 .pollDelay(30, SECONDS)
                 .atMost(timeoutInSeconds, MINUTES)
                 .ignoreException(ProcessingException)
-                .until(
-                        statusClient::getStatus, getStartPredicate(false))
+                .until(statusClient::getStatus, getStartPredicate(false))
       }
 
       println "Optimize ${optimizeVersion} is up!"

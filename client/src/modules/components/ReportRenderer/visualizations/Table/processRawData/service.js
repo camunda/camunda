@@ -33,46 +33,31 @@ export function cockpitLink(endpoints, instance, type) {
 }
 
 export function sortColumns(head, body, columnOrder) {
-  if (!columnOrderDefined(columnOrder)) {
+  if (!columnOrder.length) {
     return {sortedHead: head, sortedBody: body};
   }
 
-  const sortedHead = sortHead(head, columnOrder);
+  const sortedHead = head.slice().sort(byOrder(columnOrder));
+
   const sortedBody = body.map((row) => row.map(valueForNewColumnPosition(head, sortedHead)));
 
   return {sortedHead, sortedBody};
 }
 
-function columnOrderDefined({instanceProps, variables, inputVariables, outputVariables}) {
-  return (
-    instanceProps.length || variables.length || inputVariables.length || outputVariables.length
-  );
-}
-
-function sortHead(head, columnOrder) {
-  const sortedHeadWithoutVariables = head
-    .filter((entry) => !entry.type)
-    .sort(byOrder(columnOrder.instanceProps));
-
-  const sortedHeadVariables = sortNested(head, columnOrder, 'variables');
-  const sortedHeadInputVariables = sortNested(head, columnOrder, 'inputVariables');
-  const sortedHeadOutputVariables = sortNested(head, columnOrder, 'outputVariables');
-
-  return [
-    ...sortedHeadWithoutVariables,
-    ...sortedHeadVariables,
-    ...sortedHeadInputVariables,
-    ...sortedHeadOutputVariables,
-  ];
-}
-
-function sortNested(head, columnOrder, accessor) {
-  return head.filter((entry) => entry.type === accessor).sort(byOrder(columnOrder[accessor]));
-}
-
 function byOrder(order) {
   return function (a, b) {
-    return order.indexOf(a.id || a) - order.indexOf(b.id || b);
+    let indexA = order.indexOf(a.id || a);
+    let indexB = order.indexOf(b.id || b);
+
+    // put columns without specified order at end
+    if (indexA === -1) {
+      indexA = Infinity;
+    }
+    if (indexB === -1) {
+      indexB = Infinity;
+    }
+
+    return indexA - indexB;
   };
 }
 

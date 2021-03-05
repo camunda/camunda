@@ -23,7 +23,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.DECISION_INSTANCE_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class EngineDataDecisionCleanupServiceIT extends AbstractEngineDataCleanupIT {
@@ -119,7 +119,7 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractEngineDataCleanu
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(DECISION_INSTANCE_INDEX_NAME)
+      .indices(DECISION_INSTANCE_MULTI_ALIAS)
       .source(searchSourceBuilder);
 
     return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()

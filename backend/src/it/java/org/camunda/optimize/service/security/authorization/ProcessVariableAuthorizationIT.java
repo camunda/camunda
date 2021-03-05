@@ -54,10 +54,10 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
+    Response response = executeVariableRequestsAsKermit(processDefinition);
 
     // then
-    responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -71,10 +71,10 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<Response> responses = executeVariableRequestsAsKermit(processDefinition, Collections.singletonList(null));
+    Response response = executeVariableRequestsAsKermit(processDefinition, Collections.singletonList(null));
 
     // then
-    responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -89,9 +89,10 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .withoutAuthentication()
       .buildProcessVariableNamesRequest(
-        createVariableNameRequest("", "", Collections.emptyList())
+        createVariableNameRequest("someKey", "1", Collections.emptyList())
       )
       .execute();
+
     Response variableValueResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
@@ -101,8 +102,8 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    Arrays.asList(variableNameResponse, variableValueResponse)
-      .forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(variableNameResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(variableValueResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -118,10 +119,10 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
+    Response response = executeVariableRequestsAsKermit(processDefinition);
 
     // then
-    responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -136,10 +137,10 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
+    Response response = executeVariableRequestsAsKermit(processDefinition);
 
     // then
-    responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -158,13 +159,13 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<Response> responses = executeVariableRequestsAsKermit(
+    Response response = executeVariableRequestsAsKermit(
       processDefinition1,
       Lists.newArrayList(tenantId1, tenantId2)
     );
 
     // then
-    responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -251,22 +252,15 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     assertThat(variableValues).containsExactly("val1");
   }
 
-  private List<Response> executeVariableRequestsAsKermit(final ProcessDefinitionEngineDto processDefinition) {
+  private Response executeVariableRequestsAsKermit(final ProcessDefinitionEngineDto processDefinition) {
     return executeVariableRequestsAsKermit(
       processDefinition,
       processDefinition.getTenantId().map(Collections::singletonList).orElse(Collections.emptyList())
     );
   }
 
-  private List<Response> executeVariableRequestsAsKermit(final ProcessDefinitionEngineDto processDefinition,
+  private Response executeVariableRequestsAsKermit(final ProcessDefinitionEngineDto processDefinition,
                                                          List<String> tenantIds) {
-    Response variableNameResponse = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildProcessVariableNamesRequest(createVariableNameRequest(
-        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), tenantIds
-      ))
-      .execute();
 
     Response variableValueResponse = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -275,7 +269,9 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
         processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), tenantIds
       ))
       .execute();
-    return Lists.newArrayList(variableNameResponse, variableValueResponse);
+
+
+    return variableValueResponse;
   }
 
   private ProcessVariableReportValuesRequestDto createVariableValuesForReportsRequest(final List<String> reportIds,

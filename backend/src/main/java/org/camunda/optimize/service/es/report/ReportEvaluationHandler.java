@@ -9,9 +9,11 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.CombinedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -20,10 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.service.es.reader.ReportReader;
-import org.camunda.optimize.service.es.report.command.CommandContext;
-import org.camunda.optimize.service.es.report.result.process.CombinedProcessReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
@@ -38,7 +37,6 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.ForbiddenException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,6 +46,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.mapping;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TOO_MANY_BUCKETS_EXCEPTION_TYPE;
 
 @RequiredArgsConstructor
 @Component
@@ -68,7 +67,7 @@ public abstract class ReportEvaluationHandler {
         evaluationInfo.getUserId(),
         evaluationInfo.getReport().getName()
       )));
-    final ReportEvaluationResult<?, ?> result;
+    final ReportEvaluationResult result;
     if (evaluationInfo.getReport().isCombined()) {
       result = evaluateCombinedReport(evaluationInfo, currentUserRole);
     } else {
@@ -77,8 +76,8 @@ public abstract class ReportEvaluationHandler {
     return new AuthorizedReportEvaluationResult(result, currentUserRole);
   }
 
-  private CombinedProcessReportResult evaluateCombinedReport(final ReportEvaluationInfo evaluationInfo,
-                                                             final RoleType currentUserRole) {
+  private CombinedReportEvaluationResult evaluateCombinedReport(final ReportEvaluationInfo evaluationInfo,
+                                                                final RoleType currentUserRole) {
     final CombinedReportDefinitionRequestDto combinedReportDefinitionDto =
       (CombinedReportDefinitionRequestDto) evaluationInfo.getReport();
     ValidationHelper.validateCombinedReportDefinition(combinedReportDefinitionDto, currentUserRole);
@@ -90,38 +89,22 @@ public abstract class ReportEvaluationHandler {
       });
     final List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions =
       getAuthorizedSingleReportDefinitions(evaluationInfo);
-    final List<ReportEvaluationResult> resultList =
-      combinedReportEvaluator.evaluate(singleReportDefinitions, evaluationInfo.getTimezone());
+    final AtomicReference<Class<?>> singleReportResultType = new AtomicReference<>();
+    final List<SingleReportEvaluationResult<?>> resultList =
+      combinedReportEvaluator.evaluate(singleReportDefinitions, evaluationInfo.getTimezone())
+        .stream()
+        .filter(this::isProcessMapOrNumberResult)
+        .filter(singleReportResult -> singleReportResult.getFirstCommandResult()
+          .getClass()
+          .equals(singleReportResultType.get())
+          || singleReportResultType.compareAndSet(null, singleReportResult.getFirstCommandResult().getClass()))
+        .collect(Collectors.toList());
     final long instanceCount = combinedReportEvaluator.evaluateCombinedReportInstanceCount(singleReportDefinitions);
-    return transformToCombinedReportResult(combinedReportDefinitionDto, resultList, instanceCount);
+    return new CombinedReportEvaluationResult(resultList, instanceCount, combinedReportDefinitionDto);
   }
 
-  private CombinedProcessReportResult transformToCombinedReportResult(
-    final CombinedReportDefinitionRequestDto combinedReportDefinition,
-    final List<ReportEvaluationResult> singleReportResultList,
-    final long instanceCount) {
-
-    final AtomicReference<Class> singleReportResultType = new AtomicReference<>();
-    final Map<String, ReportEvaluationResult> reportIdToMapResult = singleReportResultList
-      .stream()
-      .filter(this::isProcessMapOrNumberResult)
-      .filter(singleReportResult -> singleReportResult.getResultAsDto().getClass().equals(singleReportResultType.get())
-        || singleReportResultType.compareAndSet(null, singleReportResult.getResultAsDto().getClass()))
-      .collect(Collectors.toMap(
-        ReportEvaluationResult::getId,
-        singleReportResultDto -> singleReportResultDto,
-        (u, v) -> {
-          throw new IllegalStateException(String.format("Duplicate key %s", u));
-        },
-        LinkedHashMap::new
-      ));
-    final CombinedProcessReportResultDto combinedSingleReportResultDto =
-      new CombinedProcessReportResultDto(reportIdToMapResult, instanceCount);
-    return new CombinedProcessReportResult(combinedSingleReportResultDto, combinedReportDefinition);
-  }
-
-  private boolean isProcessMapOrNumberResult(ReportEvaluationResult reportResult) {
-    final ResultType resultType = reportResult.getResultAsDto().getType();
+  private boolean isProcessMapOrNumberResult(SingleReportEvaluationResult<?> reportResult) {
+    final ResultType resultType = reportResult.getFirstCommandResult().getType();
     return ResultType.MAP.equals(resultType) ||
       ResultType.NUMBER.equals(resultType);
   }
@@ -154,7 +137,7 @@ public abstract class ReportEvaluationHandler {
    * Checks if the user is allowed to see the given report.
    */
   protected abstract Optional<RoleType> getAuthorizedRole(final String userId,
-                                                          final ReportDefinitionDto report);
+                                                          final ReportDefinitionDto<?> report);
 
   private ReportEvaluationResult evaluateSingleReportWithErrorCheck(final ReportEvaluationInfo evaluationInfo,
                                                                     final RoleType currentUserRole) {
@@ -168,7 +151,8 @@ public abstract class ReportEvaluationHandler {
       );
     }
     try {
-      CommandContext<ReportDefinitionDto<?>> context = CommandContext.fromReportEvaluation(evaluationInfo);
+      ReportEvaluationContext<ReportDefinitionDto<?>> context = ReportEvaluationContext
+        .fromReportEvaluation(evaluationInfo);
       return singleReportEvaluator.evaluate(context);
     } catch (OptimizeException | OptimizeValidationException e) {
       final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
@@ -179,7 +163,7 @@ public abstract class ReportEvaluationHandler {
         new AuthorizedReportDefinitionResponseDto(evaluationInfo.getReport(), currentUserRole);
       if (Arrays.stream(e.getSuppressed())
         .map(Throwable::getMessage)
-        .anyMatch(msg -> msg.contains("too_many_buckets_exception"))) {
+        .anyMatch(msg -> msg.contains(TOO_MANY_BUCKETS_EXCEPTION_TYPE))) {
         throw new TooManyBucketsException(authorizedReportDefinitionDto, e);
       }
       throw e;

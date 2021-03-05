@@ -6,9 +6,9 @@
 package org.camunda.optimize.service.es.report.command.exec;
 
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
@@ -30,8 +30,7 @@ import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefini
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @Slf4j
-public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
-  extends ReportCmdExecutionPlan<R, ProcessReportDataDto> {
+public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, ProcessReportDataDto> {
 
   protected final ProcessDefinitionReader processDefinitionReader;
   protected final ProcessQueryFilterEnhancer queryFilterEnhancer;
@@ -39,7 +38,7 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
   public ProcessReportCmdExecutionPlan(final ViewPart<ProcessReportDataDto> viewPart,
                                        final GroupByPart<ProcessReportDataDto> groupByPart,
                                        final DistributedByPart<ProcessReportDataDto> distributedByPart,
-                                       final Function<CompositeCommandResult, R> mapToReportResult,
+                                       final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult,
                                        final OptimizeElasticsearchClient esClient,
                                        final ProcessDefinitionReader processDefinitionReader,
                                        final ProcessQueryFilterEnhancer queryFilterEnhancer) {
@@ -71,7 +70,7 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
   }
 
   @Override
-  protected String getIndexName() {
+  protected String getIndexName(final ExecutionContext<ProcessReportDataDto> context) {
     return PROCESS_INSTANCE_INDEX_NAME;
   }
 

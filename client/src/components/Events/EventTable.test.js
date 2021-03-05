@@ -52,7 +52,7 @@ const props = {
   onMappingChange: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   xml: 'some xml',
-  eventSources: [{type: 'external'}],
+  eventSources: [{type: 'external', configuration: {includeAllGroups: true}}],
   onSelectEvent: jest.fn(),
 };
 
@@ -187,10 +187,29 @@ it('should mark suggested events', async () => {
   expect(events[1].props.className).not.toContain('suggested');
 });
 
-it('should disable events Suggestion if there are any camunda event sources', () => {
-  const node = shallow(<EventTable {...props} eventSources={[{type: 'camunda'}]} />);
+it('should hide events Suggestion if there are any camunda event sources', () => {
+  const node = shallow(
+    <EventTable
+      {...props}
+      eventSources={[...props.eventSources, {type: 'camunda', configuration: {}}]}
+    />
+  );
 
-  expect(node.find('Switch')).toBeDisabled();
+  expect(node.find('.header Switch')).not.toExist();
+});
+
+it('should hide events Suggestion if an external group were added', () => {
+  const node = shallow(
+    <EventTable
+      {...props}
+      eventSources={[
+        ...props.eventSources,
+        {type: 'external', configuration: {group: 'test', includeAllGroups: false}},
+      ]}
+    />
+  );
+
+  expect(node.find('.header Switch')).not.toExist();
 });
 
 it('should not show events from hidden sources in the table', async () => {
@@ -212,7 +231,10 @@ it('should not show events from hidden sources in the table', async () => {
   const node = shallow(
     <EventTable
       {...props}
-      eventSources={[{type: 'external', hidden: true}, {processDefinitionKey: 'bookrequest'}]}
+      eventSources={[
+        {type: 'external', hidden: true},
+        {type: 'camunda', configuration: {processDefinitionKey: 'bookrequest'}},
+      ]}
     />
   );
 

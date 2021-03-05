@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
@@ -61,6 +62,16 @@ public class EventRestService {
       userId, searchTerm, eventCountRequestDto
     );
     return eventCountSorter.applySort(eventCounts);
+  }
+
+  @GET
+  @Path("/groups")
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<String> getExternalEventGroups(@Context final ContainerRequestContext requestContext,
+                                             @BeanParam @Valid final EventGroupRequestDto groupRequestDto) {
+    validateEventProcessManagementAuthorization(requestContext);
+    groupRequestDto.validateRequest();
+    return externalEventService.getEventGroups(groupRequestDto);
   }
 
   @GET

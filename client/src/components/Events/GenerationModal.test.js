@@ -13,6 +13,7 @@ import {createProcess} from './service';
 import {Button} from 'components';
 
 jest.mock('./service', () => ({createProcess: jest.fn().mockReturnValue('processId')}));
+
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
@@ -22,7 +23,7 @@ it('should add/remove a source from the list', () => {
 
   node.find('EntityList').prop('action').props.onClick({});
 
-  node.find(EventsSourceModal).prop('onConfirm')([{type: 'external'}]);
+  node.find(EventsSourceModal).prop('onConfirm')([{type: 'external', configuration: {}}]);
 
   expect(node.find('EntityList').prop('data')[0].name).toBe('all events');
 
@@ -32,15 +33,16 @@ it('should add/remove a source from the list', () => {
 });
 
 it('should redirect to the process view on confirmation', () => {
+  const sources = [{type: 'external', configuration: {}}];
   const node = shallow(<GenerationModal {...props} />);
 
   node.find('EntityList').prop('action').props.onClick({});
-  node.find(EventsSourceModal).prop('onConfirm')([{type: 'external'}]);
+  node.find(EventsSourceModal).prop('onConfirm')(sources);
   node.find(Button).at(1).simulate('click');
 
   expect(createProcess).toHaveBeenCalledWith({
     autogenerate: true,
-    eventSources: [{type: 'external'}],
+    eventSources: sources,
   });
 
   expect(node.find('Redirect')).toExist();

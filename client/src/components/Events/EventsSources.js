@@ -42,11 +42,11 @@ export default class EventSources extends React.Component {
 
   updateSourceScope = (newScope) => {
     const sourceIndex = this.props.sources.findIndex(
-      ({processDefinitionKey}) =>
-        processDefinitionKey === this.state.editingScope.processDefinitionKey
+      ({configuration: {processDefinitionKey}}) =>
+        processDefinitionKey === this.state.editingScope.configuration.processDefinitionKey
     );
     const updateSources = update(this.props.sources, {
-      [sourceIndex]: {eventScope: {$set: newScope}},
+      [sourceIndex]: {configuration: {eventScope: {$set: newScope}}},
     });
     this.props.onChange(updateSources, true);
     this.closeEditScopeModal();
@@ -101,9 +101,8 @@ export default class EventSources extends React.Component {
           <EventsSourceModal
             initialSource={editing}
             existingSources={sources}
-            onConfirm={(sources) => {
-              const isEditing = Object.keys(editing).length > 0;
-              this.props.onChange(sources, isEditing);
+            onConfirm={(newSources, isEditing) => {
+              this.props.onChange(newSources, isEditing);
               this.closeSourceModal();
             }}
             onClose={this.closeSourceModal}
@@ -111,7 +110,7 @@ export default class EventSources extends React.Component {
         )}
         {editingScope && (
           <VisibleEventsModal
-            initialScope={editingScope.eventScope}
+            initialScope={editingScope.configuration.eventScope}
             onConfirm={this.updateSourceScope}
             onClose={this.closeEditScopeModal}
           />
@@ -121,13 +120,17 @@ export default class EventSources extends React.Component {
   }
 }
 
-function getDropdownProps({processDefinitionKey, processDefinitionName, type}) {
+function getDropdownProps({configuration, type}) {
   if (type === 'external') {
+    const {includeAllGroups, group} = configuration;
+    const groupName = group === null ? t('events.sources.ungrouped') : group;
+    const label = includeAllGroups ? t('events.sources.externalEvents') : groupName;
     return {
-      label: t('events.sources.externalEvents'),
-      key: 'externalEvents',
+      label,
+      key: label,
     };
   } else {
+    const {processDefinitionKey, processDefinitionName} = configuration;
     return {
       label: processDefinitionName || processDefinitionKey,
       key: processDefinitionKey,

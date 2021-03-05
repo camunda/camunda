@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.flownode.frequency
 import com.google.common.collect.ImmutableList;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -16,13 +17,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -63,7 +64,7 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
       "stringVar",
       VariableType.STRING
     );
-    final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then
@@ -72,16 +73,16 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.FLOW_NODE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName()).isEqualTo("stringVar");
     assertThat(variableGroupByDto.getValue().getType()).isEqualTo(VariableType.STRING);
 
-    final ReportMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).isNotNull().hasSize(1);
-    assertThat(result.getEntryForKey("aStringValue"))
+    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "aStringValue"))
       .isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
@@ -102,12 +103,12 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
       "doubleVar",
       VariableType.DOUBLE
     );
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).isNotNull().hasSize(1);
-    assertThat(result.getEntryForKey("1.00"))
+    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "1.00"))
       .isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
@@ -140,7 +141,7 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
     reportData.getConfiguration().getCustomBucket().setActive(true);
     reportData.getConfiguration().getCustomBucket().setBaseline(10.0);
     reportData.getConfiguration().getCustomBucket().setBucketSize(100.0);
-    final List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+    final List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getFirstMeasureData();
 
     // then
     assertThat(resultData).isNotNull().hasSize(3);
@@ -180,18 +181,18 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
       VariableType.DATE
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(unit);
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(numberOfInstances);
-    assertThat(result.getData()).isNotNull().hasSize(numberOfInstances);
+    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(numberOfInstances);
 
     for (int i = 0; i < numberOfInstances; i++) {
       final String expectedBucketKey = embeddedOptimizeExtension.formatToHistogramBucketKey(
         dateVarValue.plus(chronoUnit.getDuration().multipliedBy(i)),
         chronoUnit
       );
-      assertThat(result.getEntryForKey(expectedBucketKey))
+      assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), expectedBucketKey))
         .isPresent()
         .get()
         .extracting(MapResultEntryDto::getValue)
@@ -225,24 +226,24 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
       VariableType.DATE
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(AggregateByDateUnit.AUTOMATIC);
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(numberOfInstances);
-    assertThat(result.getData()).isNotNull().hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
 
     // the bucket span covers the earliest and the latest date variable value
     final DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
-    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(result.getData().get(0).getKey()));
+    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(result.getFirstMeasureData().get(0).getKey()));
     final OffsetDateTime startOfLastBucket = OffsetDateTime
-      .from(formatter.parse(result.getData().get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1).getKey()));
+      .from(formatter.parse(result.getFirstMeasureData().get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1).getKey()));
     final OffsetDateTime firstTruncatedDateVariableValue =
       dateVarValue.plusMinutes(numberOfInstances).truncatedTo(ChronoUnit.MILLIS);
     final OffsetDateTime lastTruncatedDateVariableValue = dateVarValue.truncatedTo(ChronoUnit.MILLIS);
 
     assertThat(startOfFirstBucket).isBeforeOrEqualTo(firstTruncatedDateVariableValue);
     assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
-    assertThat(result.getData().stream().mapToDouble(MapResultEntryDto::getValue).sum())
+    assertThat(result.getFirstMeasureData().stream().mapToDouble(MapResultEntryDto::getValue).sum())
       .isEqualTo(4.0 * numberOfInstances); // each instance went through 4 flownodes
   }
 
@@ -277,16 +278,16 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
       "testVar",
       VariableType.STRING
     );
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the instance withValue has passed through 4 flownodes and the 4 instances without the variable
     // have passed through 16 flownodes (4 flownodes each)
-    assertThat(result.getData()).isNotNull().hasSize(2);
-    assertThat(result.getEntryForKey("withValue")).isPresent()
+    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(2);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "withValue")).isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(4.);
-    assertThat(result.getEntryForKey("missing")).isPresent()
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "missing")).isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(16.);
@@ -311,11 +312,11 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
       "stringVar",
       VariableType.STRING
     );
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the result counts 2 flownodes from first definition plus 4 flownodes of the latest definition
-    assertThat(result.getData()).isNotNull().hasSize(1);
-    assertThat(result.getEntryForKey("aStringValue")).isPresent()
+    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "aStringValue")).isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(6.);
@@ -341,11 +342,11 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
       "stringVar",
       VariableType.STRING
     );
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the result counts 2 flownodes of the first decfinition plus 4 flownodes of the latest definition
-    assertThat(result.getData()).isNotNull().hasSize(1);
-    assertThat(result.getEntryForKey("aStringValue")).isPresent()
+    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "aStringValue")).isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(6.);
@@ -373,11 +374,11 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
     // when
     final ProcessReportDataDto reportData =
       createReport(testMIProcess, "1", "stringVar", VariableType.STRING);
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then the result counts 7 flownodes
-    assertThat(result.getData()).isNotNull().hasSize(1);
-    assertThat(result.getEntryForKey("aStringValue")).isPresent()
+    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "aStringValue")).isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(7.);
@@ -419,13 +420,13 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
         .filterLevel(filterApplicationLevel)
         .add()
         .buildList());
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(result.getData()).isNotNull().hasSize(1);
-    assertThat(result.getEntryForKey("1.00"))
+    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "1.00"))
       .isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)

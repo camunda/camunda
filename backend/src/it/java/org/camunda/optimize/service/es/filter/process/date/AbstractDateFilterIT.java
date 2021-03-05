@@ -14,8 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.filter.process.AbstractFilterIT;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -50,7 +49,7 @@ public abstract class AbstractDateFilterIT extends AbstractFilterIT {
 
   protected void assertResults(
     ProcessInstanceEngineDto processInstance,
-    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult,
+    AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult,
     int expectedPiCount) {
 
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
@@ -67,7 +66,7 @@ public abstract class AbstractDateFilterIT extends AbstractFilterIT {
     }
   }
 
-  protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> createAndEvaluateReportWithStartDateFilter(
+  protected AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> createAndEvaluateReportWithStartDateFilter(
     String processDefinitionKey,
     String processDefinitionVersion,
     DateFilterUnit unit,
@@ -109,7 +108,7 @@ public abstract class AbstractDateFilterIT extends AbstractFilterIT {
       .buildList();
   }
 
-  protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> createAndEvaluateReportWithRollingEndDateFilter(
+  protected AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> createAndEvaluateReportWithRollingEndDateFilter(
     String processDefinitionKey,
     String processDefinitionVersion,
     DateFilterUnit unit,
@@ -132,7 +131,7 @@ public abstract class AbstractDateFilterIT extends AbstractFilterIT {
     return evaluateReport(reportData, newToken);
   }
 
-  private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReport(ProcessReportDataDto reportData, boolean newToken) {
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateReport(ProcessReportDataDto reportData, boolean newToken) {
     if (newToken) {
       return evaluateReportWithNewToken(reportData);
     } else {
@@ -140,13 +139,13 @@ public abstract class AbstractDateFilterIT extends AbstractFilterIT {
     }
   }
 
-  private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReportWithNewToken(ProcessReportDataDto reportData) {
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateReportWithNewToken(ProcessReportDataDto reportData) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .withGivenAuthToken(embeddedOptimizeExtension.getNewAuthenticationToken())
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>>() {});
       // @formatter:on
   }
 

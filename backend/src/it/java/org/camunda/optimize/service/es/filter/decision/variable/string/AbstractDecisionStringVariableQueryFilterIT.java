@@ -10,8 +10,9 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 
 import java.util.HashMap;
@@ -25,8 +26,8 @@ import static org.camunda.optimize.util.DmnModels.createInputEqualsOutput;
 public abstract class AbstractDecisionStringVariableQueryFilterIT extends AbstractDecisionDefinitionIT {
 
 
-  protected RawDataDecisionReportResultDto evaluateReportWithFilter(final DecisionDefinitionEngineDto decisionDefinitionDto,
-                                                                  final List<DecisionFilterDto<?>> containsFilter) {
+  protected ReportResultResponseDto<List<RawDataDecisionInstanceDto>> evaluateReportWithFilter(final DecisionDefinitionEngineDto decisionDefinitionDto,
+                                                                                               final List<DecisionFilterDto<?>> containsFilter) {
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
     reportData.setFilter(containsFilter);
     return reportClient.evaluateDecisionRawReport(reportData).getResult();

@@ -11,27 +11,32 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
 import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.rest.providers.BeanConstraintViolationExceptionHandler.THE_REQUEST_BODY_WAS_INVALID;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
-import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
 
 public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventProcessIT {
@@ -113,6 +118,22 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
         .mappings(Collections.emptyMap())
         .xml("invalid BPMN Xml")
         .eventSources(ImmutableList.of(createSimpleCamundaEventSourceEntry(definitionKey, ALL_VERSIONS)))
+        .build()
+    ).execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidExternalEventSourceCombinations")
+  public void cleanupMissingFlowNodeMappings_invalidExternalEventSourceCombination(final List<EventSourceEntryDto<?>> sources) {
+    // when
+    final Response response = eventProcessClient.createCleanupEventProcessMappingsRequest(
+      EventMappingCleanupRequestDto.builder()
+        .mappings(Collections.emptyMap())
+        .xml(createTwoEventAndOneTaskActivitiesProcessDefinitionXml())
+        .eventSources(sources)
         .build()
     ).execute();
 
@@ -210,7 +231,7 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
         .xml(xml)
         .eventSources(ImmutableList.of(
           createSimpleCamundaEventSourceEntry(definitionKey1, ALL_VERSIONS),
-          createExternalEventSourceEntry()
+          createExternalEventAllGroupsSourceEntry()
         ))
         .build()
     );
@@ -257,16 +278,16 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
     );
 
     // and the scope does not include non-start/end BPMN events
+    final CamundaEventSourceEntryDto camundaEntry =
+      createSimpleCamundaEventSourceEntry(definitionKey, ALL_VERSIONS);
+    camundaEntry.getConfiguration()
+      .setEventScope(Arrays.asList(EventScopeType.PROCESS_INSTANCE, EventScopeType.START_END));
+
     Map<String, EventMappingDto> cleanedMapping = eventProcessClient.cleanupEventProcessMappings(
       EventMappingCleanupRequestDto.builder()
         .mappings(eventMappings)
         .xml(xml)
-        .eventSources(ImmutableList.of(
-          createSimpleCamundaEventSourceEntry(definitionKey, ALL_VERSIONS)
-            .toBuilder()
-            .eventScope(Arrays.asList(EventScopeType.PROCESS_INSTANCE, EventScopeType.START_END))
-            .build()
-        ))
+        .eventSources(ImmutableList.of(camundaEntry))
         .build()
     );
 
@@ -360,7 +381,7 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
         .xml(xml)
         .eventSources(ImmutableList.of(
           createSimpleCamundaEventSourceEntry(definitionKey, ALL_VERSIONS),
-          createExternalEventSourceEntry()
+          createExternalEventAllGroupsSourceEntry()
         ))
         .build()
     );
@@ -411,7 +432,7 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
         .xml(xml)
         .eventSources(ImmutableList.of(
           createSimpleCamundaEventSourceEntry(definitionKey, "1"),
-          createExternalEventSourceEntry()
+          createExternalEventAllGroupsSourceEntry()
         ))
         .build()
     );
@@ -425,6 +446,7 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
     // given
     final String definitionKey = THREE_EVENT_PROCESS_DEFINITION_KEY_1;
     final String tenant1 = "tenant1";
+    engineIntegrationExtension.createTenant(tenant1);
     final BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(definitionKey)
       .camundaVersionTag("aVersionTag")
       .name("aProcessName")
@@ -464,7 +486,7 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
         .xml(xml)
         .eventSources(ImmutableList.of(
           createSimpleCamundaEventSourceEntry(definitionKey, "1", tenant1),
-          createExternalEventSourceEntry()
+          createExternalEventAllGroupsSourceEntry()
         ))
         .build()
     );

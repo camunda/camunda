@@ -16,9 +16,9 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -27,20 +27,19 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.DateDistributedByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.HyperMapMeasureResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.MapMeasureResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -225,21 +224,21 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .build();
 
     // when
-    final ReportMapResultDto result = embeddedOptimizeExtension
+    final List<MapResultEntryDto> resultData = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // the timezone has an offset of -1(UTC)/-2 (UTC DST) and if the truncation is wrong
       // the result date would fall into the year 2019
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Atlantic/Cape_Verde")
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {})
       // @formatter:on
-      .getResult();
+      .getResult().getFirstMeasureData();
 
     // then
     OffsetDateTime expectedDate =
       ZonedDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneId.of("Atlantic/Cape_Verde")).toOffsetDateTime();
-    assertThat(result.getData())
+    assertThat(resultData)
       .hasSize(1)
       .first()
       .extracting(MapResultEntryDto::getKey)
@@ -418,17 +417,18 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .build();
 
     // when
-    final ReportMapResultDto result = embeddedOptimizeExtension
+    final List<MapResultEntryDto> resultData = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto>>() {})
-      .getResult();
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>>>() {})
+      .getResult()
+      .getFirstMeasureData();
       // @formatter:on
 
     // then
-    assertThat(result.getData())
+    assertThat(resultData)
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey)
       .first()
@@ -458,22 +458,22 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       reportClient.createNewCombinedReport(singleProcessReportId1, singleProcessReportId2);
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = embeddedOptimizeExtension
+    AuthorizedCombinedReportEvaluationResponseDto<List<MapResultEntryDto>> result = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(combinedReportId)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
       // @formatter:off
-      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResponseDto<List<MapResultEntryDto>>>() {});
       // @formatter:on
-    final CombinedProcessReportResultDataDto<ReportMapResultDto> resultData = result.getResult();
-    final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = resultData.getData();
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> resultData = result.getResult();
+    final Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> resultMap = resultData.getData();
 
     // then
     assertThat(resultMap).hasSize(2);
     assertThat(resultMap.values())
       .hasSize(2)
-      .extracting(AuthorizedProcessReportEvaluationResultDto::getResult)
-      .flatExtracting(ReportMapResultDto::getData)
+      .extracting(AuthorizedProcessReportEvaluationResponseDto::getResult)
+      .flatExtracting(ReportResultResponseDto::getFirstMeasureData)
       .extracting(MapResultEntryDto::getKey)
       .hasSize(2)
       .first()
@@ -505,22 +505,21 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       reportClient.createNewCombinedReport(singleProcessReportId1, singleProcessReportId2);
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = embeddedOptimizeExtension
+    AuthorizedCombinedReportEvaluationResponseDto<List<MapResultEntryDto>> result = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(combinedReportId)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
       // @formatter:off
-      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResponseDto<List<MapResultEntryDto>>>() {});
     // @formatter:on
-    final CombinedProcessReportResultDataDto<ReportMapResultDto> resultData = result.getResult();
-    final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> combinedResultMap =
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> resultData = result.getResult();
+    final Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> combinedResultMap =
       resultData.getData();
 
     // then
     assertThat(combinedResultMap).hasSize(2);
-    for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> value : combinedResultMap.values()) {
-      final ReportMapResultDto resultMap = value.getResult();
-      final List<String> dateAsStringDateResultEntries = resultMap.getData()
+    for (AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> value : combinedResultMap.values()) {
+      final List<String> dateAsStringDateResultEntries = value.getResult().getFirstMeasureData()
         .stream()
         .map(MapResultEntryDto::getKey)
         .collect(Collectors.toList());
@@ -557,17 +556,18 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     final String singleProcessReportId = reportClient.createSingleProcessReport(groupByDate);
 
     // when
-    final ReportMapResultDto result = embeddedOptimizeExtension
+    final List<MapResultEntryDto> resultData = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(singleProcessReportId)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
-      .getResult();
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {})
+      .getResult()
+      .getFirstMeasureData();
       // @formatter:on
 
     // then
-    assertThat(result.getData())
+    assertThat(resultData)
       .hasSize(1)
       .first()
       .extracting(MapResultEntryDto::getKey)
@@ -596,16 +596,17 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
 
     // when
     // @formatter:off
-    final ReportMapResultDto result = embeddedOptimizeExtension
+    final List<MapResultEntryDto> resultData = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSharedReportRequest(reportShareId)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
-      .getResult();
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {})
+      .getResult()
+      .getFirstMeasureData();
     // @formatter:on
 
     // then
-    assertThat(result.getData())
+    assertThat(resultData)
       .hasSize(1)
       .first()
       .extracting(MapResultEntryDto::getKey)
@@ -635,16 +636,17 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     final String dashboardShareId = sharingClient.shareDashboard(dashboardId);
 
     // when
-    final ReportMapResultDto result = embeddedOptimizeExtension
+    final List<MapResultEntryDto> resultData = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {
       })
-      .getResult();
+      .getResult()
+      .getFirstMeasureData();
 
     // then
-    assertThat(result.getData())
+    assertThat(resultData)
       .hasSize(1)
       .first()
       .extracting(MapResultEntryDto::getKey)
@@ -664,23 +666,24 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     final ProcessReportDataDto rawDataReport = new ProcessReportDataBuilderHelper()
       .processDefinitionKey(processInstance.getProcessDefinitionKey())
       .processDefinitionVersions(Collections.singletonList(processInstance.getProcessDefinitionVersion()))
-      .viewProperty(ProcessViewProperty.RAW_DATA)
+      .viewProperty(ViewProperty.RAW_DATA)
       .visualization(ProcessVisualization.TABLE)
       .build();
 
     // when
-    final RawDataProcessReportResultDto result = embeddedOptimizeExtension
+    final List<RawDataProcessInstanceDto> resultData = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(rawDataReport)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {})
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>>() {})
       // @formatter:on
-      .getResult();
+      .getResult()
+      .getFirstMeasureData();
 
     // then
-    assertThat(result.getData()).hasSize(1);
-    RawDataProcessInstanceDto rawInstance = result.getData().get(0);
+    assertThat(resultData).hasSize(1);
+    RawDataProcessInstanceDto rawInstance = resultData.get(0);
     assertThat(getOffsetDiffInHours(rawInstance.getStartDate(), now)).isOne();
     assertThat(getOffsetDiffInHours(rawInstance.getEndDate(), now)).isOne();
   }
@@ -701,18 +704,19 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .build();
 
     // when
-    final RawDataDecisionReportResultDto result = embeddedOptimizeExtension
+    final List<RawDataDecisionInstanceDto> resultData = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(rawDataReport)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {})
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>>>() {})
       // @formatter:on
-      .getResult();
+      .getResult()
+      .getFirstMeasureData();
 
     // then
-    assertThat(result.getData()).hasSize(1);
-    RawDataDecisionInstanceDto rawInstance = result.getData().get(0);
+    assertThat(resultData).hasSize(1);
+    RawDataDecisionInstanceDto rawInstance = resultData.get(0);
     assertThat(getOffsetDiffInHours(rawInstance.getEvaluationDateTime(), now)).isOne();
   }
 
@@ -813,18 +817,19 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     reportData.setFilter(fixedStartDateFilter);
 
     // when
-    final ReportMapResultDto result = embeddedOptimizeExtension
+    final List<MapResultEntryDto> result = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // timezone that should be used for the filter is adjusted as well
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "UTC")
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {})
       // @formatter:on
-      .getResult();
+      .getResult()
+      .getFirstMeasureData();
 
     // then there should be a result
-    assertThat(result.getData())
+    assertThat(result)
       .hasSize(1)
       .last()
       .extracting(MapResultEntryDto::getValue)
@@ -845,19 +850,19 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .build();
 
     // when
-    final ReportMapResultDto result = embeddedOptimizeExtension
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // I adjust timezone that should be used for the filter as well
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/Berlin")
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {})
       // @formatter:on
       .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .hasSize(1)
       .first()
       .extracting(MapResultEntryDto::getValue)
@@ -893,7 +898,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     reportData.setFilter(relativeStartDateFilter);
 
     // when
-    final ReportMapResultDto result = embeddedOptimizeExtension
+    final List<MapResultEntryDto> resultData = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // difference between UTC and Berlin time is +1 (UTC) or +2 (UTC DST)
@@ -902,13 +907,14 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       // Thus, the instance will not be part of the result if the timezone of this request is respected.
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "UTC")
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {})
       // @formatter:on
-      .getResult();
+      .getResult()
+      .getFirstMeasureData();
 
     // then
     // if the timezone of the request was not respected then the result would be not be empty
-    assertThat(result.getData()).isEmpty();
+    assertThat(resultData).isEmpty();
   }
 
   @Test
@@ -955,17 +961,17 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
   }
 
   private List<String> evaluateReportInLondonTimezoneAndReturnDateEntries(final ProcessReportDataDto reportData) {
-    final ProcessReportResultDto result = embeddedOptimizeExtension
+    final MeasureResponseDto<?> result = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessReportResultDto>>() {})
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<?>>() {})
       // @formatter:on
-      .getResult();
+      .getResult().getMeasures().get(0);
     assertThat(result).isNotNull();
-    if (result instanceof ReportHyperMapResultDto) {
-      ReportHyperMapResultDto hyperMapResultDto = (ReportHyperMapResultDto) result;
+    if (result instanceof HyperMapMeasureResponseDto) {
+      HyperMapMeasureResponseDto hyperMapResultDto = (HyperMapMeasureResponseDto) result;
       if (reportData.getDistributedBy().getValue() instanceof DateDistributedByValueDto) {
         return hyperMapResultDto.getData().stream()
           .flatMap(hyperEntry -> hyperEntry.getValue().stream())
@@ -974,8 +980,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       } else {
         return hyperMapResultDto.getData().stream().map(HyperMapResultEntryDto::getKey).collect(Collectors.toList());
       }
-    } else if (result instanceof ReportMapResultDto) {
-      ReportMapResultDto reportMapResultDto = (ReportMapResultDto) result;
+    } else if (result instanceof MapMeasureResponseDto) {
+      MapMeasureResponseDto reportMapResultDto = (MapMeasureResponseDto) result;
       return reportMapResultDto.getData().stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     } else {
       throw new OptimizeIntegrationTestException("Unknown result type!");

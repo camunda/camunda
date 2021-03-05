@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report.process.combined;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
@@ -19,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResponseDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.AfterEach;
@@ -74,7 +73,7 @@ public class CombinedReportCombinationsIT extends AbstractIT {
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    AuthorizedCombinedReportEvaluationResultDto<SingleReportResultDto> result =
+    AuthorizedCombinedReportEvaluationResponseDto<?> result =
       reportClient.evaluateCombinedReportById(response.getId());
 
     assertThat(result.getReportDefinition().getData().getReports()).containsExactlyInAnyOrderElementsOf(reportIds);

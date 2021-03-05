@@ -7,17 +7,19 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.du
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.DateDistributedByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
@@ -58,7 +60,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
 
     // when
     final ProcessReportDataDto reportData = createReportData(procInstance, VariableType.STRING, "stringVar");
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
@@ -67,20 +69,21 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(procInstance.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(getDistributeByType());
     assertThat(((DateDistributedByValueDto) resultReportDataDto.getDistributedBy().getValue()).getUnit())
       .isEqualTo(AggregateByDateUnit.DAY);
 
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
     final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains("a string")
-        .distributedByContains(localDateTimeToString(startOfReferenceDate), 1000.0)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("a string")
+          .distributedByContains(localDateTimeToString(startOfReferenceDate), 1000.0)
       .doAssert(result);
     // @formatter:on
   }
@@ -96,7 +99,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     // when
     final ProcessReportDataDto reportData = createReportData(procInstance, VariableType.STRING, "stringVar");
     final String reportId = createNewReport(reportData);
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReportById(reportId);
 
     // then
@@ -105,20 +108,21 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(procInstance.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(getDistributeByType());
     assertThat(((DateDistributedByValueDto) resultReportDataDto.getDistributedBy().getValue()).getUnit())
       .isEqualTo(AggregateByDateUnit.DAY);
 
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = evaluationResponse.getResult();
     final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains("a string")
-        .distributedByContains(localDateTimeToString(startOfReferenceDate), 1000.0)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("a string")
+          .distributedByContains(localDateTimeToString(startOfReferenceDate), 1000.0)
       .doAssert(result);
     // @formatter:on
   }
@@ -137,7 +141,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
 
     // when
     final ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
@@ -145,8 +149,9 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains("a string")
-        .distributedByContains(localDateTimeToString(startOfReferenceDate), 1000.)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("a string")
+          .distributedByContains(localDateTimeToString(startOfReferenceDate), 1000.)
       .doAssert(result);
     // @formatter:on
   }
@@ -166,7 +171,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
 
     // when
     ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar", unit);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     final ZonedDateTime truncatedReferenceDate = truncateToStartOfUnit(referenceDate, chronoUnit);
@@ -174,8 +179,9 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains("a string")
-        .distributedByContains(localDateTimeToString(truncatedReferenceDate), 1000.0)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("a string")
+          .distributedByContains(localDateTimeToString(truncatedReferenceDate), 1000.0)
       .doAssert(result);
     // @formatter:on
   }
@@ -203,7 +209,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
       "dateVar",
       unit
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     final ZonedDateTime truncatedReferenceDate = truncateToStartOfUnit(referenceDate, chronoUnit);
@@ -212,8 +218,9 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(truncatedVariableDate))
-        .distributedByContains(localDateTimeToString(truncatedReferenceDate), 1000.0)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains(localDateTimeToString(truncatedVariableDate))
+          .distributedByContains(localDateTimeToString(truncatedReferenceDate), 1000.0)
       .doAssert(result);
     // @formatter:on
   }
@@ -236,7 +243,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
 
     // when
     ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.DOUBLE, "doubleVar", unit);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     final ZonedDateTime truncatedReferenceDate = truncateToStartOfUnit(referenceDate, chronoUnit);
@@ -244,8 +251,9 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains("10.00")
-        .distributedByContains(localDateTimeToString(truncatedReferenceDate), 1000.0)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("10.00")
+          .distributedByContains(localDateTimeToString(truncatedReferenceDate), 1000.0)
       .doAssert(result);
     // @formatter:on
   }
@@ -276,28 +284,29 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     reportData.getConfiguration().getCustomBucket().setActive(true);
     reportData.getConfiguration().getCustomBucket().setBaseline(1.0);
     reportData.getConfiguration().getCustomBucket().setBucketSize(1.0);
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then the bucket "2.0" has all distrBy keys that the other buckets have
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = evaluationResponse.getResult();
     final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains("1.00")
-        .distributedByContains(localDateTimeToString(startOfToday), 1000.)
-        .distributedByContains(localDateTimeToString(startOfToday.plusDays(1)), null)
-        .distributedByContains(localDateTimeToString(startOfToday.plusDays(2)), null)
-      .groupByContains("2.00") // this empty bucket includes all distrBy keys despite all distrBy values being null
-        .distributedByContains(localDateTimeToString(startOfToday), null)
-        .distributedByContains(localDateTimeToString(startOfToday.plusDays(1)), null)
-        .distributedByContains(localDateTimeToString(startOfToday.plusDays(2)), null)
-      .groupByContains("3.00")
-        .distributedByContains(localDateTimeToString(startOfToday), null)
-        .distributedByContains(localDateTimeToString(startOfToday.plusDays(1)), null)
-        .distributedByContains(localDateTimeToString(startOfToday.plusDays(2)), 1000.)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("1.00")
+          .distributedByContains(localDateTimeToString(startOfToday), 1000.)
+          .distributedByContains(localDateTimeToString(startOfToday.plusDays(1)), null)
+          .distributedByContains(localDateTimeToString(startOfToday.plusDays(2)), null)
+        .groupByContains("2.00") // this empty bucket includes all distrBy keys despite all distrBy values being null
+          .distributedByContains(localDateTimeToString(startOfToday), null)
+          .distributedByContains(localDateTimeToString(startOfToday.plusDays(1)), null)
+          .distributedByContains(localDateTimeToString(startOfToday.plusDays(2)), null)
+        .groupByContains("3.00")
+          .distributedByContains(localDateTimeToString(startOfToday), null)
+          .distributedByContains(localDateTimeToString(startOfToday.plusDays(1)), null)
+          .distributedByContains(localDateTimeToString(startOfToday.plusDays(2)), 1000.)
       .doAssert(result);
     // @formatter:on
   }
@@ -323,13 +332,13 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
       "stringVar",
       AggregateByDateUnit.AUTOMATIC
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(result.getData()).hasSize(1);
-    final List<MapResultEntryDto> resultEntries = result.getData().get(0).getValue();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
+    final List<MapResultEntryDto> resultEntries = result.getFirstMeasureData().get(0).getValue();
     assertThat(resultEntries)
       .extracting(MapResultEntryDto::getValue)
       .filteredOn(Objects::nonNull)
@@ -364,13 +373,13 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
       "dateVar",
       AggregateByDateUnit.AUTOMATIC
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(result.getData()).hasSize(1);
-    final List<MapResultEntryDto> resultEntries = result.getData().get(0).getValue();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
+    final List<MapResultEntryDto> resultEntries = result.getFirstMeasureData().get(0).getValue();
     assertThat(resultEntries)
       .extracting(MapResultEntryDto::getValue)
       .filteredOn(Objects::nonNull)
@@ -405,13 +414,13 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
       "doubleVar",
       AggregateByDateUnit.AUTOMATIC
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(result.getData()).hasSize(1);
-    final List<MapResultEntryDto> resultEntries = result.getData().get(0).getValue();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
+    final List<MapResultEntryDto> resultEntries = result.getFirstMeasureData().get(0).getValue();
     assertThat(resultEntries)
       .extracting(MapResultEntryDto::getValue)
       .filteredOn(Objects::nonNull)
@@ -431,7 +440,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
 
     // when
     ProcessReportDataDto reportData = createReportData(instance1, VariableType.STRING, "stringVar");
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
@@ -439,10 +448,11 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains("a string")
-        .distributedByContains(localDateTimeToString(startOfReferenceDate.minusDays(2)), 9000.0)
-        .distributedByContains(localDateTimeToString(startOfReferenceDate.minusDays(1)), null)
-        .distributedByContains(localDateTimeToString(startOfReferenceDate), 1000.0)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("a string")
+          .distributedByContains(localDateTimeToString(startOfReferenceDate.minusDays(2)), 9000.0)
+          .distributedByContains(localDateTimeToString(startOfReferenceDate.minusDays(1)), null)
+          .distributedByContains(localDateTimeToString(startOfReferenceDate), 1000.0)
       .doAssert(result);
     // @formatter:on
   }

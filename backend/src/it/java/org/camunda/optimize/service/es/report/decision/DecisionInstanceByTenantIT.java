@@ -7,7 +7,8 @@ package org.camunda.optimize.service.es.report.decision;
 
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
@@ -85,7 +86,7 @@ public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
       .setReportDataType(DecisionReportDataType.RAW_DATA)
       .build();
     reportData.setTenantIds(selectedTenants);
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) expectedTenants.size()));

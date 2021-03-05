@@ -10,7 +10,7 @@ import io.github.classgraph.ScanResult;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.importing.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
-import org.camunda.optimize.service.importing.ScrollBasedImportIndexHandler;
+import org.camunda.optimize.service.importing.DefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +40,7 @@ public class EngineImportIndexHandlerProvider {
       .scan()) {
       TIMESTAMP_BASED_HANDLER_CLASSES = scanResult.getSubclasses(TimestampBasedEngineImportIndexHandler.class.getName())
         .loadClasses();
-      SCROLL_BASED_HANDLER_CLASSES = scanResult.getSubclasses(ScrollBasedImportIndexHandler.class.getName())
+      SCROLL_BASED_HANDLER_CLASSES = scanResult.getSubclasses(DefinitionXmlImportIndexHandler.class.getName())
         .loadClasses();
       ALL_ENTITIES_HANDLER_CLASSES = scanResult.getSubclasses(AllEntitiesBasedImportIndexHandler.class.getName())
         .loadClasses();
@@ -51,7 +51,7 @@ public class EngineImportIndexHandlerProvider {
   @Autowired
   private BeanFactory beanFactory;
   private List<AllEntitiesBasedImportIndexHandler> allEntitiesBasedHandlers;
-  private List<ScrollBasedImportIndexHandler> scrollBasedHandlers;
+  private List<DefinitionXmlImportIndexHandler> scrollBasedHandlers;
   private List<TimestampBasedEngineImportIndexHandler> timestampBasedEngineHandlers;
   private Map<String, ImportIndexHandler<?, ?>> allHandlers;
 
@@ -81,7 +81,7 @@ public class EngineImportIndexHandlerProvider {
           engineContext,
           clazz
         );
-        scrollBasedHandlers.add((ScrollBasedImportIndexHandler) importIndexHandlerInstance);
+        scrollBasedHandlers.add((DefinitionXmlImportIndexHandler) importIndexHandlerInstance);
         allHandlers.put(clazz.getSimpleName(), importIndexHandlerInstance);
       });
 
@@ -104,7 +104,7 @@ public class EngineImportIndexHandlerProvider {
     return timestampBasedEngineHandlers;
   }
 
-  public List<ScrollBasedImportIndexHandler> getScrollBasedHandlers() {
+  public List<DefinitionXmlImportIndexHandler> getScrollBasedHandlers() {
     return scrollBasedHandlers;
   }
 

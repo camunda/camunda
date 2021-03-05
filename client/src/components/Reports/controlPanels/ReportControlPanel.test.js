@@ -6,12 +6,13 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import update from 'immutability-helper';
+
+import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables} from 'services';
+import {DefinitionSelection, Button} from 'components';
 
 import ReportSelect from './ReportSelect';
-
 import ReportControlPanelWithErrorHandling from './ReportControlPanel';
-import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables} from 'services';
-import {DefinitionSelection} from 'components';
 
 const ReportControlPanel = ReportControlPanelWithErrorHandling.WrappedComponent;
 
@@ -54,14 +55,19 @@ const report = {
     groupBy: {type: 'none', unit: null},
     visualization: 'number',
     filter: [],
-    configuration: {xml: 'fooXml'},
+    configuration: {
+      xml: 'fooXml',
+      tableColumns: {columnOrder: []},
+      heatmapTargetValue: {values: {}},
+    },
   },
-  result: {instanceCount: 3},
+  result: {instanceCount: 3, instanceCountWithoutFilters: 5},
 };
 
 const props = {
   report,
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  setLoading: () => {},
 };
 
 it('should call the provided updateReport property function when a setting changes', () => {
@@ -233,7 +239,6 @@ it('should reset variable groupBy report when changing to a definition that does
         data: {...report.data, groupBy: {type: 'variable', value: {name: 'doubleVar'}}},
       }}
       updateReport={spy}
-      setLoading={jest.fn()}
     />
   );
 
@@ -258,7 +263,6 @@ it('should reset variable view report when changing to a definition that does no
         },
       }}
       updateReport={spy}
-      setLoading={jest.fn()}
     />
   );
 
@@ -282,7 +286,6 @@ it('should reset distributed by variable report when changing to a definition th
         },
       }}
       updateReport={spy}
-      setLoading={jest.fn()}
     />
   );
 
@@ -292,7 +295,7 @@ it('should reset distributed by variable report when changing to a definition th
 });
 
 it('should not reset variable report when changing to a definition that has the same variable', async () => {
-  loadVariables.mockReturnValue([{name: 'doubleVar'}]);
+  loadVariables.mockReturnValueOnce([{name: 'doubleVar'}]);
   const spy = jest.fn();
   const node = shallow(
     <ReportControlPanel
@@ -302,7 +305,6 @@ it('should not reset variable report when changing to a definition that has the 
         data: {...report.data, groupBy: {type: 'variable', value: {name: 'doubleVar'}}},
       }}
       updateReport={spy}
-      setLoading={jest.fn()}
     />
   );
 
@@ -310,20 +312,161 @@ it('should not reset variable report when changing to a definition that has the 
   expect(spy.mock.calls[0][0].groupBy).toEqual(undefined);
 });
 
-it('should reset definition specific configurations on definition change', async () => {
+it('should reset heatmap target value on definition change if flow nodes does not exist', async () => {
+  const reportWithConfig = update(report, {
+    data: {
+      configuration: {
+        heatmapTargetValue: {
+          values: {
+            $set: {
+              nonExistingFlowNode: {},
+            },
+          },
+        },
+      },
+    },
+  });
+
   const spy = jest.fn();
-  const node = shallow(<ReportControlPanel {...props} updateReport={spy} />);
+  const node = shallow(
+    <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
+  );
 
   await node.find(DefinitionSelection).prop('onChange')({});
 
-  expect(spy.mock.calls[0][0].configuration.tableColumns).toBeDefined();
-  expect(spy.mock.calls[0][0].configuration.columnOrder).toBeDefined();
   expect(spy.mock.calls[0][0].configuration.heatmapTargetValue).toBeDefined();
+});
+
+it('should reset process part on definition change if flow nodes does not exist', async () => {
+  const reportWithConfig = update(report, {
+    data: {
+      configuration: {
+        processPart: {
+          $set: {
+            start: 'nonExistingFlowNode',
+            end: 'nonExistingFlowNode',
+          },
+        },
+      },
+    },
+  });
+
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
+  );
+
+  await node.find(DefinitionSelection).prop('onChange')({});
+
   expect(spy.mock.calls[0][0].configuration.processPart).toBeDefined();
+});
+
+it('should not reset heatmap target value on definition change if flow nodes exits', async () => {
+  loadVariables.mockReturnValueOnce([{name: 'existingFlowNode'}]);
+  const reportWithConfig = update(report, {
+    data: {
+      configuration: {
+        heatmapTargetValue: {
+          values: {
+            $set: {
+              a: {},
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
+  );
+
+  await node.find(DefinitionSelection).prop('onChange')({});
+
+  expect(spy.mock.calls[0][0].configuration.heatmapTargetValue).not.toBeDefined();
+});
+
+it('should not reset process part on definition change if flow nodes exist', async () => {
+  const reportWithConfig = update(report, {
+    data: {
+      configuration: {
+        processPart: {
+          $set: {
+            start: 'a',
+            end: 'b',
+          },
+        },
+      },
+    },
+  });
+
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
+  );
+
+  await node.find(DefinitionSelection).prop('onChange')({});
+
+  expect(spy.mock.calls[0][0].configuration.processPart).not.toBeDefined();
 });
 
 it('should show the number of process instances in the current Filter', () => {
   const node = shallow(<ReportControlPanel {...props} />);
 
-  expect(node).toIncludeText('3 instances in current filter');
+  expect(node).toIncludeText('Displaying 3 of 5 instances');
+});
+
+it('should show a measure selection for views that have a measure', () => {
+  const node = shallow(<ReportControlPanel {...props} />);
+
+  expect(node).toIncludeText('Measure');
+  expect(node.find('Select').prop('value')).toBe('frequency');
+});
+
+it('should show not show a measure selection where it does not make sense', () => {
+  const node = shallow(
+    <ReportControlPanel
+      {...props}
+      report={update(props.report, {data: {view: {$set: {entity: null, property: 'rawData'}}}})}
+    />
+  );
+
+  expect(node).not.toIncludeText('Measure');
+});
+
+it('should allow collapsing sections', () => {
+  const node = shallow(<ReportControlPanel {...props} />);
+
+  node.find('.source').find(Button).simulate('click');
+  expect(node.find('.source')).toHaveClassName('hidden');
+
+  node.find('.source').find(Button).simulate('click');
+  expect(node.find('.source')).not.toHaveClassName('hidden');
+});
+
+it('should filter non existing variables from columnOrder configuration', async () => {
+  loadVariables.mockReturnValueOnce([{name: 'existingVariable'}]);
+  const reportWithConfig = update(report, {
+    data: {
+      configuration: {
+        tableColumns: {
+          columnOrder: {
+            $set: ['variable:nonExistingVariable', 'variable:existingVariable'],
+          },
+        },
+      },
+    },
+  });
+
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
+  );
+
+  await node.find(DefinitionSelection).prop('onChange')({});
+
+  expect(spy.mock.calls[0][0].configuration.tableColumns).toEqual({
+    columnOrder: {$set: ['variable:existingVariable']},
+  });
 });

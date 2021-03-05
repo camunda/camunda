@@ -9,6 +9,12 @@ There are two test suites:
 
 It can be run either on a prepared environment (usually Jenkins) or using an environment created by docker-compose (locally).
 
+## Windows
+
+If you're on Windows, you might experience issues running the commands using `bin/bash`. You can use `cmd.exe` instead.
+For example, you can replace `def command = ["/bin/bash", "./optimize-startup.sh"]` in `OptimizeWrapper.groovy` with 
+`def command = ["cmd.exe", "/C", "optimize-startup.bat"]`.
+
 # Camunda Optimize Upgrade Test - Prepared environment
 
 Prerequisites:

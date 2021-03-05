@@ -40,7 +40,7 @@ it('should not contain any filter modal when no newFilter is selected', () => {
 it('should contain a filter modal when a newFilter should be created', () => {
   const node = shallow(<Filter {...props} />);
 
-  node.instance().openNewFilterModal('startDate')();
+  node.instance().openNewFilterModal('instance')('startDate')();
 
   expect(node).toIncludeText('DateFilter');
 });
@@ -63,7 +63,7 @@ it('should contain an edit filter modal when a filter should be edited', () => {
 it('should contain a FilterModal component based on the selected new Filter', () => {
   const node = shallow(<Filter {...props} />);
 
-  node.instance().openNewFilterModal('variable')();
+  node.instance().openNewFilterModal('instance')('variable')();
 
   expect(node).toIncludeText('VariableFilter');
   expect(node).not.toIncludeText('DateFilter');
@@ -101,7 +101,7 @@ it('should add a filter to the list of filters', () => {
     <Filter {...props} data={previousFilters} onChange={spy} filterLevel="view" />
   );
 
-  node.instance().addFilter({type: 'Filter 2'});
+  node.instance().addFilter({type: 'Filter 2', filterLevel: 'view'});
 
   expect(spy.mock.calls[0][0].filter).toEqual({
     $set: [sampleFilter, {type: 'Filter 2', filterLevel: 'view'}],
@@ -167,4 +167,17 @@ it('should render available filters depending on the provided filter level', () 
 
   expect(node.find('InstanceFilters')).not.toExist();
   expect(node.find('ViewFilters')).toExist();
+});
+
+it('should render two "Add Filter" dropdowns and all added filters if no filterLevel is set', () => {
+  const filters = [
+    {type: 'runningInstancesOnly', data: null, filterLevel: 'instance'},
+    {type: 'runningFlowNodesOnly', data: null, filterLevel: 'view'},
+  ];
+  const node = shallow(<Filter data={filters} />);
+
+  expect(node.find('InstanceFilters')).toExist();
+  expect(node.find('ViewFilters')).toExist();
+  expect(node.find('FilterList')).toExist();
+  expect(node.find('FilterList').prop('data')).toEqual(filters);
 });

@@ -6,12 +6,12 @@
 
 import React from 'react';
 
+import {Button, Icon} from 'components';
+import {t} from 'translation';
+
 import {DurationHeatmapModal} from './DurationHeatmap';
 
-import {Button, Icon} from 'components';
-
 import './TargetValueComparison.scss';
-import {t} from 'translation';
 
 export default class TargetValueComparison extends React.Component {
   constructor(props) {
@@ -24,12 +24,15 @@ export default class TargetValueComparison extends React.Component {
 
   getConfig = () => this.props.report.data.configuration.heatmapTargetValue;
 
-  toggleMode = () => {
-    const {active, values} = this.getConfig();
+  hasValues = () => {
+    const {values} = this.getConfig();
+    return values && Object.keys(values).length > 0;
+  };
 
-    if (active) {
+  toggleMode = () => {
+    if (this.getConfig().active) {
       this.setActive(false);
-    } else if (!values || Object.keys(values).length === 0) {
+    } else if (!this.hasValues()) {
       this.openModal();
     } else {
       this.setActive(true);
@@ -75,13 +78,16 @@ export default class TargetValueComparison extends React.Component {
   isResultAvailable = () => typeof this.props.report.result !== 'undefined';
 
   render() {
+    const {active} = this.getConfig();
+
     return (
       <div className="TargetValueComparison">
-        <Button className="toggleButton" active={this.getConfig().active} onClick={this.toggleMode}>
-          {t('report.heatTarget.label')}
+        <Button className="toggleButton" active={active} onClick={this.toggleMode}>
+          {this.hasValues() ? t('report.config.goal.target') : t('common.add')}
+          <Icon type={active ? 'show' : 'hide'} />
         </Button>
         <Button className="editButton" onClick={this.openModal}>
-          <Icon type="settings" />
+          <Icon type="edit" />
         </Button>
         {this.isResultAvailable() && (
           <DurationHeatmapModal

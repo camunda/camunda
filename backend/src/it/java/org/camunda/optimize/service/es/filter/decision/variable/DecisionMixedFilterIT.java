@@ -11,9 +11,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.InputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.OutputVariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
@@ -92,7 +94,8 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
       rollingEvaluationDateFilter
     ));
     final String reportId = reportClient.createSingleDecisionReport(reportData);
-    final RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReportById(reportId).getResult();
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = reportClient
+      .evaluateDecisionRawReportById(reportId).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);

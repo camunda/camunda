@@ -160,5 +160,134 @@
     "type": "InvoiceProcessed",
     "traceid": "correlationValue_3",
     "time": "2019-12-17T13:51:51.000Z"
+  },
+  {
+    "specversion": "1.0",
+    "id": "1edc4160-74e5-4ffc-af59-2d281cf5aca341",
+    "group": "recruitment",
+    "source": "system",
+    "type": "CandidateApplied",
+    "traceid": "correlationValue_1",
+    "time": "2019-12-17T14:30:00.000Z"
+  },
+  {
+    "specversion": "1.0",
+    "id": "2edc4160-74e5-4ffc-af59-2d281cf5aca342",
+    "group": "recruitment",
+    "source": "system",
+    "type": "ReviewApplication",
+    "traceid": "correlationValue_1",
+    "time": "2019-12-17T14:30:10.000Z",
+    "data": {
+      "approveCandidate": true
+    }
+  },
+  {
+    "specversion": "1.0",
+    "id": "3edc4160-74e5-4ffc-af59-2d281cf5aca343",
+    "group": "recruitment",
+    "source": "system",
+    "type": "MakeOffer",
+    "traceid": "correlationValue_1",
+    "time": "2019-12-17T14:30:20.000Z"
+  },
+  {
+    "specversion": "1.0",
+    "id": "1edc4161-74e5-4ffc-af59-2d281cf5aca341",
+    "group": "recruitment",
+    "source": "system",
+    "type": "CandidateApplied",
+    "traceid": "correlationValue_2",
+    "time": "2019-12-17T14:30:00.000Z"
+  },
+  {
+    "specversion": "1.0",
+    "id": "2edc4162-74e5-4ffc-af59-2d281cf5aca342",
+    "group": "recruitment",
+    "source": "system",
+    "type": "ReviewApplication",
+    "traceid": "correlationValue_2",
+    "time": "2019-12-17T14:30:10.000Z",
+    "data": {
+      "approveCandidate": false
+    }
+  },
+  {
+    "specversion": "1.0",
+    "id": "3edc4163-74e5-4ffc-af59-2d281cf5aca343",
+    "group": "recruitment",
+    "source": "system",
+    "type": "RejectCandidate",
+    "traceid": "correlationValue_2",
+    "time": "2019-12-17T14:30:20.000Z"
+  },
+  {
+    "specversion": "1.0",
+    "id": "1edc4361-74e5-4ffc-af59-2d281cf5aca341",
+    "group": "recruitment",
+    "source": "system",
+    "type": "CandidateApplied",
+    "traceid": "correlationValue_3",
+    "time": "2019-12-17T14:30:00.000Z"
+  },
+  {
+    "specversion": "1.0",
+    "id": "1edc4160-1000-4ffc-af59-2d281cf5aca341",
+    "group": null,
+    "source": "system",
+    "type": "ItemSoldOut",
+    "traceid": "correlationValue_1",
+    "time": "2019-12-17T15:30:00.000Z"
+  },
+  {
+    "specversion": "1.0",
+    "id": "2edc4160-2000-4ffc-af59-2d281cf5aca342",
+    "group": null,
+    "source": "system",
+    "type": "OrderStock",
+    "traceid": "correlationValue_1",
+    "time": "2019-12-17T15:30:10.000Z",
+    "data": {
+      "stockOrdered": 5000
+    }
+  },
+  {
+    "specversion": "1.0",
+    "id": "3edc4160-3000-4ffc-af59-2d281cf5aca343",
+    "group": null,
+    "source": "system",
+    "type": "PublishItemListing",
+    "traceid": "correlationValue_1",
+    "time": "2019-12-17T15:30:20.000Z"
+  },
+  {
+    "specversion": "1.0",
+    "id": "1edc4160-0100-4ffc-af59-2d281cf5aca341",
+    "group": null,
+    "source": "system",
+    "type": "NewItemAvailable",
+    "traceid": "correlationValue_1",
+    "time": "2019-12-17T13:30:00.000Z"
+  },
+  {
+    "specversion": "1.0",
+    "id": "2edc4160-0200-4ffc-af59-2d281cf5aca342",
+    "group": null,
+    "source": "system",
+    "type": "OrderStock",
+    "traceid": "correlationValue_1",
+    "time": "2019-12-17T15:30:10.000Z",
+    "data": {
+      "stockOrdered": 1000
+    }
+  },
+  {
+    "specversion": "1.0",
+    "id": "3edc4160-0300-4ffc-af59-2d281cf5aca343",
+    "group": null,
+    "source": "system",
+    "type": "PublishItemListing",
+    "traceid": "correlationValue_1",
+    "time": "2019-12-17T15:30:20.000Z"
   }
 ]

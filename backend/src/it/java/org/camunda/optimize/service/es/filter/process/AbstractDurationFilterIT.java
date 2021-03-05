@@ -7,11 +7,9 @@ package org.camunda.optimize.service.es.filter.process;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -32,10 +30,13 @@ public class AbstractDurationFilterIT extends AbstractFilterIT {
   private void adjustProcessInstanceDates(String processInstanceId,
                                           OffsetDateTime startDate,
                                           long daysToShift,
-                                          long durationInSec) throws SQLException {
+                                          long durationInSec) {
     OffsetDateTime shiftedStartDate = startDate.plusDays(daysToShift);
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
-    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedStartDate.plusSeconds(durationInSec));
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+      processInstanceId,
+      shiftedStartDate.plusSeconds(durationInSec)
+    );
   }
 
 
@@ -43,7 +44,7 @@ public class AbstractDurationFilterIT extends AbstractFilterIT {
     return engineIntegrationExtension.deployAndStartProcessWithVariables(getSimpleBpmnDiagram(), variables);
   }
 
-  protected ProcessInstanceEngineDto deployWithTimeShift(long daysToShift, long durationInSec) throws SQLException {
+  protected ProcessInstanceEngineDto deployWithTimeShift(long daysToShift, long durationInSec) {
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     adjustProcessInstanceDates(processInstance.getId(), startDate, daysToShift, durationInSec);
@@ -51,12 +52,13 @@ public class AbstractDurationFilterIT extends AbstractFilterIT {
     return processInstance;
   }
 
-  protected void assertResult(ProcessInstanceEngineDto processInstance, AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult) {
+  protected void assertResult(ProcessInstanceEngineDto processInstance,
+                              AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult) {
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    final List<RawDataProcessInstanceDto> resultData = evaluationResult.getResult().getData();
+    final List<RawDataProcessInstanceDto> resultData = evaluationResult.getResult().getFirstMeasureData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     final RawDataProcessInstanceDto rawDataProcessInstanceDto = resultData.get(0);

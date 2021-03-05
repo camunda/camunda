@@ -61,7 +61,7 @@ public class BackoffCalculator {
     nextRetryTime = OffsetDateTime.now().minusMinutes(1L);
   }
 
-  public long getMaximumBackoffSeconds() {
+  public long getMaximumBackoffMilliseconds() {
     return maximumBackoff;
   }
 

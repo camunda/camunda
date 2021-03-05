@@ -6,12 +6,14 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.frequency.groupby.date.distributed_by.assignee;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -45,16 +47,17 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(groupedByDayDateAsString(referenceDate))
-      .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-      .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(referenceDate))
+          .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
       .doAssert(result);
     // @formatter:on
   }
@@ -84,12 +87,13 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
     reportData.setFilter(processFilter);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     final HyperMapAsserter.GroupByAdder groupByAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(expectedInstanceCount)
       .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
     if (assignee1Count != null) {
       groupByAsserter.distributedByContains(DEFAULT_USERNAME, assignee1Count, DEFAULT_FULLNAME);
@@ -122,12 +126,13 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList());
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
       .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
       .doAssert(result);

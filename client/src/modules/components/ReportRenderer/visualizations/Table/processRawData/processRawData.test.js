@@ -18,6 +18,7 @@ const data = {
       includeNewVariables: true,
       includedColumns: [],
       excludedColumns: [],
+      columnOrder: [],
     },
   },
 };
@@ -54,6 +55,7 @@ it('should not include columns that are hidden', () => {
         includeNewVariables: false,
         includedColumns: ['processInstanceId'],
         excludedColumns: ['processDefinitionId', 'variable:var1', 'variable:var1'],
+        columnOrder: [],
       },
     },
   };
@@ -70,6 +72,7 @@ it('should exclude variable columns using the variable prefix', () => {
         includeNewVariables: true,
         includedColumns: [],
         excludedColumns: ['variable:var1'],
+        columnOrder: [],
       },
     },
   };

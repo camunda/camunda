@@ -13,9 +13,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserT
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
@@ -49,9 +49,8 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
-        reportClient.evaluateReport(
-          report);
+      AuthorizedSingleReportEvaluationResponseDto<?, SingleProcessReportDefinitionRequestDto> result =
+        reportClient.evaluateReport(report);
 
       // then
       assertThat(result.getResult().getInstanceCount()).isEqualTo(3L);
@@ -73,9 +72,8 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
-        reportClient.evaluateReport(
-          report);
+      AuthorizedSingleReportEvaluationResponseDto<?, SingleProcessReportDefinitionRequestDto> result =
+        reportClient.evaluateReport(report);
 
       // then
       assertThat(result.getResult().getInstanceCount()).isEqualTo(5L);
@@ -96,9 +94,8 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
-        reportClient.evaluateReport(
-          report);
+      AuthorizedSingleReportEvaluationResponseDto<?, SingleProcessReportDefinitionRequestDto> result =
+        reportClient.evaluateReport(report);
 
       // then
       assertThat(result.getResult().getInstanceCount()).isEqualTo(1L);
@@ -111,9 +108,8 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
 
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> result =
-        reportClient.evaluateReport(
-          report);
+      AuthorizedSingleReportEvaluationResponseDto<?, SingleProcessReportDefinitionRequestDto> result =
+        reportClient.evaluateReport(report);
 
       // then
       assertThat(result.getResult().getInstanceCount()).isEqualTo(4L);
@@ -133,7 +129,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      ProcessReportResultDto result = reportClient.evaluateReport(report).getResult();
+      ReportResultResponseDto<?> result = reportClient.evaluateReport(report).getResult();
 
       // then
       assertThat(result.getInstanceCount()).isZero();

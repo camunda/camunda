@@ -32,7 +32,7 @@ spec:
         image: registry.camunda.cloud/optimize-ee/optimize:3.2.0
         imagePullPolicy: Always
         env:
-        - name: JAVA_OPTS
+        - name: OPTIMIZE_JAVA_OPTS
           value: |
             -Xms2g
             -Xmx2g

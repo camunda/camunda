@@ -9,9 +9,10 @@ import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.util.List;
@@ -55,18 +56,18 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportMapResultDto result,
+  protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportResultResponseDto<List<MapResultEntryDto>> result,
                                                               final FlowNodeStatusTestValues expectedValues) {
-    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), FIRST_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
       .isEqualTo(expectedValues.getExpectedWorkDurationValues().get(FIRST_CANDIDATE_GROUP_ID));
-    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
       .isEqualTo(expectedValues.getExpectedWorkDurationValues().get(SECOND_CANDIDATE_GROUP_ID));
   }
 
   @Override
-  protected void assertMap_ForOneProcessWithUnassignedTasks(final Double setDuration, final ReportMapResultDto result) {
-    assertThat(result.getData()).hasSize(1);
-    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
+  protected void assertMap_ForOneProcessWithUnassignedTasks(final Double setDuration, final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+    assertThat(result.getFirstMeasureData()).hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(FIRST_CANDIDATE_GROUP_ID))
         .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(setDuration))
@@ -75,14 +76,14 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertMap_ForSeveralProcesses(final ReportMapResultDto result) {
-    assertThat(result.getData()).hasSize(2);
-    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
+  protected void assertMap_ForSeveralProcesses(final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+    assertThat(result.getFirstMeasureData()).hasSize(2);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(FIRST_CANDIDATE_GROUP_ID))
         .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS))
       );
-    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID)).isPresent().get()
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_CANDIDATE_GROUP_ID)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(SECOND_CANDIDATE_GROUP_ID))
         .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
@@ -92,7 +93,7 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
 
   @Override
   protected void assertMap_ForSeveralProcessesWithAllAggregationTypes(
-    final Map<AggregationType, ReportMapResultDto> results) {
+    final Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> results) {
     assertDurationMapReportResults(
       results,
       ImmutableMap.of(
@@ -104,14 +105,14 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertMap_ForMultipleEvents(final ReportMapResultDto result) {
-    assertThat(result.getData()).hasSize(2);
-    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
+  protected void assertMap_ForMultipleEvents(final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+    assertThat(result.getFirstMeasureData()).hasSize(2);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(FIRST_CANDIDATE_GROUP_ID))
         .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
       );
-    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP_ID)).isPresent().get()
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_CANDIDATE_GROUP_ID)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(SECOND_CANDIDATE_GROUP_ID))
         .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
@@ -119,7 +120,7 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertMap_ForMultipleEventsWithAllAggregationTypes(final Map<AggregationType, ReportMapResultDto> results) {
+  protected void assertMap_ForMultipleEventsWithAllAggregationTypes(final Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> results) {
     assertDurationMapReportResults(
       results,
       ImmutableMap.of(
@@ -130,17 +131,17 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertMap_otherProcessDefinitionsDoNotInfluenceResult(final ReportMapResultDto result1,
-                                                                       final ReportMapResultDto result2) {
-    assertThat(result1.getData()).hasSize(1);
-    assertThat(result1.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
+  protected void assertMap_otherProcessDefinitionsDoNotInfluenceResult(final ReportResultResponseDto<List<MapResultEntryDto>> result1,
+                                                                       final ReportResultResponseDto<List<MapResultEntryDto>> result2) {
+    assertThat(result1.getFirstMeasureData()).hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result1.getFirstMeasureData(), FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " in result 1")
         .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
       );
 
-    assertThat(result2.getData()).hasSize(1);
-    assertThat(result2.getEntryForKey(FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
+    assertThat(result2.getFirstMeasureData()).hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result2.getFirstMeasureData(), FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(FIRST_CANDIDATE_GROUP_ID) + " in result 2")
         .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
@@ -148,8 +149,8 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertCustomOrderOnResultValueIsApplied(ReportMapResultDto result) {
-    assertThat(result.getData()).hasSize(2);
+  protected void assertCustomOrderOnResultValueIsApplied(ReportResultResponseDto<List<MapResultEntryDto>> result) {
+    assertThat(result.getFirstMeasureData()).hasSize(2);
     assertCorrectValueOrdering(result);
   }
 }

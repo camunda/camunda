@@ -46,9 +46,9 @@ import static org.camunda.optimize.service.es.report.command.service.VariableAgg
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.MISSING_VARIABLES_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.NESTED_FLOWNODE_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.NESTED_VARIABLE_AGGREGATION;
-import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLES_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLES_INSTANCE_COUNT_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLE_HISTOGRAM_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -77,7 +77,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   protected abstract String getVariablePath();
 
-  protected abstract String getIndexName();
+  protected abstract String getIndexName(ExecutionContext<Data> context);
 
   protected abstract BoolQueryBuilder getVariableUndefinedOrNullQuery(final ExecutionContext<Data> context);
 
@@ -92,7 +92,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
           getVariablePath(),
           getNestedVariableNameFieldLabel(),
           getNestedVariableValueFieldLabel(getVariableType(context)),
-          getIndexName(),
+          getIndexName(context),
           baseQuery
         )
       );
@@ -112,7 +112,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       .variablePath(getVariablePath())
       .nestedVariableNameField(getNestedVariableNameFieldLabel())
       .nestedVariableValueFieldLabel(getNestedVariableValueFieldLabel(getVariableType(context)))
-      .indexName(getIndexName())
+      .indexName(getIndexName(context))
       .timezone(context.getTimezone())
       .customBucketDto(context.getReportData().getConfiguration().getCustomBucket())
       .dateUnit(getGroupByDateUnit(context))
@@ -185,7 +185,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     }
     MultiBucketsAggregation variableTerms = filteredParentAgg.getAggregations().get(VARIABLES_AGGREGATION);
     if (variableTerms == null) {
-      variableTerms = filteredParentAgg.getAggregations().get(RANGE_AGGREGATION);
+      variableTerms = filteredParentAgg.getAggregations().get(VARIABLE_HISTOGRAM_AGGREGATION);
     }
 
     Map<String, Aggregations> bucketAggregations =

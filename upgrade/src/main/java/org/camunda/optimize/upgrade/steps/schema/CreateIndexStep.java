@@ -11,11 +11,20 @@ import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.UpgradeStepType;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @EqualsAndHashCode(callSuper = true)
 public class CreateIndexStep extends UpgradeStep {
+  private Set<String> readOnlyAliases = new HashSet<>();
 
   public CreateIndexStep(final IndexMappingCreator index) {
     super(index);
+  }
+
+  public CreateIndexStep(final IndexMappingCreator index, final Set<String> readOnlyAliases) {
+    super(index);
+    this.readOnlyAliases = readOnlyAliases;
   }
 
   @Override
@@ -25,6 +34,6 @@ public class CreateIndexStep extends UpgradeStep {
 
   @Override
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
-    schemaUpgradeClient.createOrUpdateIndex(index);
+    schemaUpgradeClient.createOrUpdateIndex(index, readOnlyAliases);
   }
 }

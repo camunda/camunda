@@ -62,8 +62,8 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty.FREQUENCY;
-import static org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty.RAW_DATA;
+import static org.camunda.optimize.dto.optimize.query.report.single.ViewProperty.FREQUENCY;
+import static org.camunda.optimize.dto.optimize.query.report.single.ViewProperty.RAW_DATA;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -103,9 +103,7 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     rawReport.setDecisionDefinitionKey(DEFINITION_KEY);
     rawReport.setDecisionDefinitionVersion(DEFINITION_VERSION);
     rawReport.setVisualization(DecisionVisualization.TABLE);
-    final DecisionViewDto rawDataView = new DecisionViewDto();
-    rawDataView.setProperty(RAW_DATA);
-    rawReport.setView(rawDataView);
+    rawReport.setView(new DecisionViewDto(RAW_DATA));
     rawReport.getConfiguration().getTableColumns().setIncludeNewVariables(false);
     rawReport.getConfiguration().getTableColumns().getExcludedColumns().add(DecisionInstanceDto.Fields.engine);
 
@@ -113,9 +111,7 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     final DecisionReportDataDto groupByVarReport = new DecisionReportDataDto();
     groupByVarReport.setDecisionDefinitionKey(DEFINITION_KEY);
     groupByVarReport.setDecisionDefinitionVersion(DEFINITION_VERSION);
-    final DecisionViewDto evalCountView = new DecisionViewDto();
-    evalCountView.setProperty(FREQUENCY);
-    groupByVarReport.setView(evalCountView);
+    groupByVarReport.setView(new DecisionViewDto(FREQUENCY));
     groupByVarReport.setVisualization(DecisionVisualization.BAR);
     final DecisionGroupByVariableValueDto variableValueDto = new DecisionGroupByVariableValueDto();
     variableValueDto.setId("testVariableID");

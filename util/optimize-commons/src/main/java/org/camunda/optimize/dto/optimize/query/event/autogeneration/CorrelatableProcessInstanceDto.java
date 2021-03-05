@@ -7,7 +7,9 @@ package org.camunda.optimize.dto.optimize.query.event.autogeneration;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 
 import java.util.List;
@@ -21,21 +23,25 @@ public class CorrelatableProcessInstanceDto extends CorrelatableInstanceDto {
 
   @Override
   public String getSourceIdentifier() {
-    return processDefinitionKey;
+    return EventSourceType.CAMUNDA.getId() + ":" + processDefinitionKey;
   }
 
   @Override
-  public String getCorrelationValueForEventSource(final EventSourceEntryDto eventSourceEntryDto) {
-    if (eventSourceEntryDto.isTracedByBusinessKey()) {
-      return businessKey;
-    } else {
-      final String traceVariableName = eventSourceEntryDto.getTraceVariable();
-      return variables
-        .stream()
-        .filter(var -> var.getName().equals(traceVariableName))
-        .map(SimpleProcessVariableDto::getValue)
-        .findFirst().orElse(null);
+  public String getCorrelationValueForEventSource(final EventSourceEntryDto<?> eventSourceEntryDto) {
+    if (eventSourceEntryDto instanceof CamundaEventSourceEntryDto) {
+      final CamundaEventSourceEntryDto camundaSource = (CamundaEventSourceEntryDto) eventSourceEntryDto;
+      if (camundaSource.getConfiguration().isTracedByBusinessKey()) {
+        return businessKey;
+      } else {
+        final String traceVariableName = camundaSource.getConfiguration().getTraceVariable();
+        return variables
+          .stream()
+          .filter(var -> var.getName().equals(traceVariableName))
+          .map(SimpleProcessVariableDto::getValue)
+          .findFirst().orElse(null);
+      }
     }
+    throw new IllegalArgumentException("Cannot get correlation value from non-Camunda sources");
   }
 
 }

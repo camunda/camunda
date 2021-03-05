@@ -41,7 +41,14 @@
   },
   "eventSources": [
     {
-      "type": "external"
+      "type": "external",
+      "configuration" :{
+        "eventScope": [
+          "all"
+        ],
+        "includeAllGroups": true,
+        "group": null
+      }
     }
   ]
 }

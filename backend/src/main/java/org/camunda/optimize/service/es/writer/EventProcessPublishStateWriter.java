@@ -13,7 +13,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -57,7 +57,7 @@ public class EventProcessPublishStateWriter {
         .id(id)
         .source(
           objectMapper.writeValueAsString(
-            IndexableEventProcessPublishStateDto.fromEventProcessPublishStateDto(eventProcessPublishStateDto)
+            EsEventProcessPublishStateDto.fromEventProcessPublishStateDto(eventProcessPublishStateDto)
           ),
           XContentType.JSON
         )
@@ -89,7 +89,7 @@ public class EventProcessPublishStateWriter {
           EventProcessPublishStateIndex.PUBLISH_PROGRESS,
           EventProcessPublishStateIndex.STATE
         ),
-        IndexableEventProcessPublishStateDto.fromEventProcessPublishStateDto(eventProcessPublishStateDto),
+        EsEventProcessPublishStateDto.fromEventProcessPublishStateDto(eventProcessPublishStateDto),
         objectMapper
       );
       final UpdateRequest request = new UpdateRequest()
@@ -135,9 +135,9 @@ public class EventProcessPublishStateWriter {
     );
     final Script updateScript = createDefaultScriptWithPrimitiveParams(
       ElasticsearchWriterUtil.createUpdateFieldsScript(
-        ImmutableSet.of(IndexableEventProcessPublishStateDto.Fields.deleted)
+        ImmutableSet.of(EsEventProcessPublishStateDto.Fields.deleted)
       ),
-      ImmutableMap.of(IndexableEventProcessPublishStateDto.Fields.deleted, true)
+      ImmutableMap.of(EsEventProcessPublishStateDto.Fields.deleted, true)
     );
 
     return ElasticsearchWriterUtil.tryUpdateByQueryRequest(
@@ -164,9 +164,9 @@ public class EventProcessPublishStateWriter {
     );
     final Script updateScript = createDefaultScriptWithPrimitiveParams(
       ElasticsearchWriterUtil.createUpdateFieldsScript(
-        ImmutableSet.of(IndexableEventProcessPublishStateDto.Fields.deleted)
+        ImmutableSet.of(EsEventProcessPublishStateDto.Fields.deleted)
       ),
-      ImmutableMap.of(IndexableEventProcessPublishStateDto.Fields.deleted, true)
+      ImmutableMap.of(EsEventProcessPublishStateDto.Fields.deleted, true)
     );
 
     final BoolQueryBuilder query = boolQuery()

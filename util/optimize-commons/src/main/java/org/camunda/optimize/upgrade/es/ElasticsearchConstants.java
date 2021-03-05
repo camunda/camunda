@@ -44,7 +44,8 @@ public class ElasticsearchConstants {
   public static final String TYPE_DATE = "date";
 
   public static final String DECISION_DEFINITION_INDEX_NAME = "decision-definition";
-  public static final String DECISION_INSTANCE_INDEX_NAME = "decision-instance";
+  public static final String DECISION_INSTANCE_MULTI_ALIAS = "decision-instance";
+  public static final String DECISION_INSTANCE_INDEX_PREFIX = "decision-instance-";
 
   public static final String SINGLE_PROCESS_REPORT_INDEX_NAME = "single-process-report";
   public static final String SINGLE_DECISION_REPORT_INDEX_NAME = "single-decision-report";
@@ -85,4 +86,8 @@ public class ElasticsearchConstants {
   public static final String EVENT_PROCESSING_ENGINE_REFERENCE = "optimize";
 
   public static final String INDEX = "_index";
+
+  public static final String TOO_MANY_BUCKETS_EXCEPTION_TYPE = "too_many_buckets_exception";
+  public static final String INDEX_NOT_FOUND_EXCEPTION_TYPE = "index_not_found_exception";
+  public static final String INDEX_ALREADY_EXISTS_EXCEPTION_TYPE = "resource_already_exists_exception";
 }

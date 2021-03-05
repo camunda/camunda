@@ -8,9 +8,10 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -47,12 +48,12 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(3L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData(), is(3.));
+    assertThat(result.getFirstMeasureData(), is(notNullValue()));
+    assertThat(result.getFirstMeasureData(), is(3.));
   }
 
   @Test
@@ -74,12 +75,12 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(5L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData(), is(5.));
+    assertThat(result.getFirstMeasureData(), is(notNullValue()));
+    assertThat(result.getFirstMeasureData(), is(5.));
   }
 
   @Test
@@ -104,12 +105,12 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(5L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData(), is(5.));
+    assertThat(result.getFirstMeasureData(), is(notNullValue()));
+    assertThat(result.getFirstMeasureData(), is(5.));
   }
 
   @Test
@@ -131,10 +132,10 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .setTenantIds(selectedTenants)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is((double) selectedTenants.size()));
+    assertThat(result.getFirstMeasureData(), is((double) selectedTenants.size()));
   }
 
   @Test
@@ -166,12 +167,12 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
         INPUT_AMOUNT_ID, FilterOperator.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
-    final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(2L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData(), is(2.));
+    assertThat(result.getFirstMeasureData(), is(notNullValue()));
+    assertThat(result.getFirstMeasureData(), is(2.));
   }
 
   @Test
@@ -182,7 +183,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    reportData.getView().setProperty(null);
+    reportData.getView().setProperties((ViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);

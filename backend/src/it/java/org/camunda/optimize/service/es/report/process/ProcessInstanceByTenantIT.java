@@ -7,9 +7,10 @@ package org.camunda.optimize.service.es.report.process;
 
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -85,7 +86,7 @@ public class ProcessInstanceByTenantIT extends AbstractProcessDefinitionIT {
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
     reportData.setTenantIds(selectedTenants);
-    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) expectedTenants.size()));

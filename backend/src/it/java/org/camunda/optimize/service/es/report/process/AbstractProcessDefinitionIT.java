@@ -21,12 +21,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -430,13 +429,13 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     Double endRange,
     int expectedNumberOfBuckets,
     int resultSize,
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap) {
+    Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> resultMap) {
     DecimalFormatSymbols decimalSymbols = new DecimalFormatSymbols(Locale.US);
     final DecimalFormat decimalFormat = new DecimalFormat("0.00", decimalSymbols);
 
     assertThat(resultMap).hasSize(resultSize);
-    for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
-      final List<MapResultEntryDto> resultData = result.getResult().getData();
+    for (AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> result : resultMap.values()) {
+      final List<MapResultEntryDto> resultData = result.getResult().getFirstMeasureData();
       assertThat(resultData.size()).isEqualTo(expectedNumberOfBuckets);
       assertThat(resultData.get(0).getKey()).isEqualTo(decimalFormat.format(startRange));
       assertThat(resultData.get(resultData.size() - 1).getKey()).isEqualTo(decimalFormat.format(endRange));

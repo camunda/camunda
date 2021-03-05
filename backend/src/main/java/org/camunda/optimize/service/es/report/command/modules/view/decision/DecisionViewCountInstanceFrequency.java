@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.view.decision;
 
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.elasticsearch.action.search.SearchResponse;
@@ -27,6 +27,11 @@ public class DecisionViewCountInstanceFrequency extends DecisionViewPart {
   private static final String COUNT_AGGREGATION = "_count";
 
   @Override
+  public ViewProperty getViewProperty(final ExecutionContext<DecisionReportDataDto> context) {
+    return ViewProperty.FREQUENCY;
+  }
+
+  @Override
   public AggregationBuilder createAggregation(final ExecutionContext<DecisionReportDataDto> context) {
     return filter(COUNT_AGGREGATION, QueryBuilders.matchAllQuery());
   }
@@ -40,8 +45,6 @@ public class DecisionViewCountInstanceFrequency extends DecisionViewPart {
 
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto dataForCommandKey) {
-    DecisionViewDto view = new DecisionViewDto();
-    view.setProperty(DecisionViewProperty.FREQUENCY);
-    dataForCommandKey.setView(view);
+    dataForCommandKey.setView(new DecisionViewDto(ViewProperty.FREQUENCY));
   }
 }

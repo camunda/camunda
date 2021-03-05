@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.fr
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -14,14 +15,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -41,6 +41,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -75,7 +76,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
 
     // when
     ProcessReportDataDto reportData = createReportData(procInstance, VariableType.STRING, "stringVar");
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
@@ -84,21 +85,22 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(procInstance.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy()
       .getValue()).getUnit()).isEqualTo(AggregateByDateUnit.DAY);
     assertThat(resultReportDataDto.getDistributedBy().getType())
       .isEqualTo(DistributedByType.VARIABLE);
 
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(localDateTimeToString(startOfToday))
+          .distributedByContains("a string", 1.0)
       .doAssert(result);
     // @formatter:on
   }
@@ -115,7 +117,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     // when
     ProcessReportDataDto reportData = createReportData(procInstance, VariableType.STRING, "stringVar");
     final String reportId = createNewReport(reportData);
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReportById(reportId);
 
     // then
@@ -124,21 +126,22 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(procInstance.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit())
       .isEqualTo(AggregateByDateUnit.DAY);
     assertThat(resultReportDataDto.getDistributedBy().getType())
       .isEqualTo(DistributedByType.VARIABLE);
 
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = evaluationResponse.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(localDateTimeToString(startOfToday))
+          .distributedByContains("a string", 1.0)
       .doAssert(result);
     // @formatter:on
   }
@@ -171,7 +174,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
     final String reportId = createNewReport(reportData);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReportById(reportId).getResult();
 
     // then
     final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
@@ -179,18 +182,19 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
-        .distributedByContains("another string", 0.0)
-        .distributedByContains("this is also a string", 0.0)
-      .groupByContains(localDateTimeToString(startOfToday.minusDays(1)))
-        .distributedByContains("a string", 0.0)
-        .distributedByContains("another string", 1.0)
-        .distributedByContains("this is also a string", 0.0)
-      .groupByContains(localDateTimeToString(startOfToday.minusDays(2)))
-        .distributedByContains("a string", 0.0)
-        .distributedByContains("another string", 0.0)
-        .distributedByContains("this is also a string", 1.0)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(localDateTimeToString(startOfToday))
+          .distributedByContains("a string", 1.0)
+          .distributedByContains("another string", 0.0)
+          .distributedByContains("this is also a string", 0.0)
+        .groupByContains(localDateTimeToString(startOfToday.minusDays(1)))
+          .distributedByContains("a string", 0.0)
+          .distributedByContains("another string", 1.0)
+          .distributedByContains("this is also a string", 0.0)
+        .groupByContains(localDateTimeToString(startOfToday.minusDays(2)))
+          .distributedByContains("a string", 0.0)
+          .distributedByContains("another string", 0.0)
+          .distributedByContains("this is also a string", 1.0)
       .doAssert(result);
     // @formatter:on
   }
@@ -215,7 +219,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     // when
     ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
     final String reportId = createNewReport(reportData);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReportById(reportId).getResult();
 
     // then
     final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
@@ -223,9 +227,10 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
-        .distributedByContains(MISSING_VARIABLE_KEY, 1.0)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(localDateTimeToString(startOfToday))
+          .distributedByContains("a string", 1.0)
+          .distributedByContains(MISSING_VARIABLE_KEY, 1.0)
       .doAssert(result);
     // @formatter:on
   }
@@ -244,7 +249,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     // when
     ProcessReportDataDto reportData = createReportData(procInstance, VariableType.STRING, "stringVar1");
     final String reportId = createNewReport(reportData);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReportById(reportId).getResult();
 
     // then
     final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
@@ -252,8 +257,9 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(localDateTimeToString(startOfToday))
+          .distributedByContains("a string", 1.0)
       .doAssert(result);
     // @formatter:on
   }
@@ -278,17 +284,17 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
       // when
       VariableType variableType = getTypeForId(entry.getKey());
       ProcessReportDataDto reportData = createReportData(processInstanceDto, variableType, entry.getKey());
-      final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+      final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
       // then
-      assertThat(result.getData()
+      assertThat(result.getFirstMeasureData()
                    .stream()
                    .flatMap(hyperEntry -> hyperEntry.getValue().stream())
                    .mapToDouble(MapResultEntryDto::getValue)
                    .sum())
         .withFailMessage("Failed instance count assertion on variable " + entry.getKey())
         .isEqualTo(1.0);
-      assertThat(result.getData()
+      assertThat(result.getFirstMeasureData()
                    .stream()
                    .flatMap(hyperEntry -> hyperEntry.getValue().stream())
                    .map(MapResultEntryDto::getKey))
@@ -314,7 +320,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     // when
     ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.DATE, "dateVar");
     reportData.getConfiguration().setDistributeByDateVariableUnit(unit);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     final ZonedDateTime truncatedReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
@@ -323,8 +329,9 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(truncatedReferenceDate))
-        .distributedByContains(localDateTimeToString(truncatedDateVariableValue), 1.0)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(localDateTimeToString(truncatedReferenceDate))
+          .distributedByContains(localDateTimeToString(truncatedDateVariableValue), 1.0)
       .doAssert(result);
     // @formatter:on
   }
@@ -351,20 +358,20 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     // when
     ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.DATE, "dateVar");
     reportData.getConfiguration().setDistributeByDateVariableUnit(AggregateByDateUnit.AUTOMATIC);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then result has 80 buckets each and they include both instances
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .extracting(HyperMapResultEntryDto::getValue)
       .hasSize(2);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .extracting(HyperMapResultEntryDto::getValue)
       .allSatisfy(
         resultEntries -> assertThat(resultEntries).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION)
       );
-    assertThat(result.getData()
+    assertThat(result.getFirstMeasureData()
                  .stream()
                  .flatMap(hyperEntry -> hyperEntry.getValue().stream())
                  .mapToDouble(MapResultEntryDto::getValue)
@@ -405,7 +412,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
         .bucketSize(100.0)
         .build()
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
@@ -413,10 +420,11 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("50.00", 1.0)
-        .distributedByContains("150.00", 1.0)
-        .distributedByContains("250.00", 1.0)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(localDateTimeToString(startOfToday))
+          .distributedByContains("50.00", 1.0)
+          .distributedByContains("150.00", 1.0)
+          .distributedByContains("250.00", 1.0)
       .doAssert(result);
     // @formatter:on
   }
@@ -440,7 +448,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
         .bucketSize(100.0)
         .build()
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the report returns an empty distrBy result
     final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
@@ -448,6 +456,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
         .groupByContains(localDateTimeToString(startOfToday))
       .doAssert(result);
     // @formatter:on
@@ -465,10 +474,10 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
 
     // when
     ProcessReportDataDto reportData = createReportData(procInstance, VariableType.DOUBLE, "doubleVar");
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .flatExtracting(HyperMapResultEntryDto::getValue)
       .extracting(MapResultEntryDto::getKey)
       .isNotEmpty()
@@ -514,7 +523,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     // when
     ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
     final String reportId = createNewReport(reportData);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReportById(reportId).getResult();
 
     // then
     final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
@@ -522,9 +531,10 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     HyperMapAsserter.asserter()
       .processInstanceCount(5L)
       .processInstanceCountWithoutFilters(5L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
-        .distributedByContains(MISSING_VARIABLE_KEY, 4.0)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(localDateTimeToString(startOfToday))
+          .distributedByContains("a string", 1.0)
+          .distributedByContains(MISSING_VARIABLE_KEY, 4.0)
       .doAssert(result);
     // @formatter:on
   }
@@ -551,19 +561,19 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     // when
     ProcessReportDataDto reportData =
       createReportData(procInstance, VariableType.BOOLEAN, "boolVar", AggregateByDateUnit.AUTOMATIC);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then a non-empty result is returned with instances in the first and last bucket
     assertThat(result.getInstanceCount()).isEqualTo(2);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
-    assertThat(result.getData()).isNotEmpty();
+    assertThat(result.getFirstMeasureData()).isNotEmpty();
 
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .flatExtracting(HyperMapResultEntryDto::getValue)
       .first()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.0);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .flatExtracting(HyperMapResultEntryDto::getValue)
       .last()
       .extracting(MapResultEntryDto::getValue)

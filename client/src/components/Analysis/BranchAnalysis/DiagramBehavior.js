@@ -5,11 +5,12 @@
  */
 
 import React, {useEffect} from 'react';
-import {formatters} from 'services';
+
+import {ClickBehavior, PartHighlight} from 'components';
+import {formatters, getReportResult} from 'services';
 import {t} from 'translation';
 
 import './DiagramBehavior.scss';
-import {ClickBehavior, PartHighlight} from 'components';
 
 export default function DiagramBehavior({
   setViewer,
@@ -64,7 +65,9 @@ export default function DiagramBehavior({
   );
 }
 
-function addEndEventOverlay(element, viewer, {result: {data, instanceCount: piCount}}) {
+function addEndEventOverlay(element, viewer, report) {
+  const {data, instanceCount: piCount} = getReportResult(report);
+
   const flowNodes = formatters.objectifyResult(data);
 
   const overlays = viewer.get('overlays');

@@ -1,8 +1,21 @@
 .ExternalSource {
+  position: relative;
+
   &.empty {
     text-align: center;
     color: var(--grey-lighten-56);
     padding-top: 10px;
     padding-bottom: 20px;
+  }
+
+  .Checklist .header .selectAll {
+    display: none;
+  }
+
+  .title {
+    position: absolute;
+    font-size: 0.875em;
+    top: 15px;
+    padding-left: 7px;
   }
 }

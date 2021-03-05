@@ -14,7 +14,6 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.util.List;
-import java.util.Optional;
 
 @EqualsAndHashCode
 @ToString
@@ -26,10 +25,6 @@ public class HyperMapResultEntryDto {
   @Getter @Setter private List<MapResultEntryDto> value;
   @Setter private String label;
   // @formatter:on
-
-  public Optional<MapResultEntryDto> getDataEntryForKey(final String key) {
-    return this.value.stream().filter(entry -> key.equals(entry.getKey())).findFirst();
-  }
 
   public HyperMapResultEntryDto(@NonNull final String key, final List<MapResultEntryDto> value) {
     this.key = key;

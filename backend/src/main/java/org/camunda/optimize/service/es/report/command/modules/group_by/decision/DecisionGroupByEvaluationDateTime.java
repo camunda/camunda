@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.EVALUATION_DATE_TIME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 
 @RequiredArgsConstructor
 @Component
@@ -61,7 +61,7 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
     final MinMaxStatDto stats = minMaxStatsService.getMinMaxDateRange(
       context,
       searchSourceBuilder.query(),
-      DECISION_INSTANCE_INDEX_NAME,
+      getIndexName(context),
       EVALUATION_DATE_TIME
     );
 
@@ -130,6 +130,10 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
         distributedByPart.retrieveResult(response, stringBucketEntry.getValue(), context)
       ))
       .collect(Collectors.toList());
+  }
+
+  protected String getIndexName(final ExecutionContext<DecisionReportDataDto> context) {
+    return getDecisionInstanceIndexAliasName(context.getReportData().getDecisionDefinitionKey());
   }
 
   @Override

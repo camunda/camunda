@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
@@ -47,7 +47,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1);
@@ -76,7 +76,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1);
@@ -109,7 +109,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
       .inOperator()
       .add()
       .buildList();
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3);
@@ -148,7 +148,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
       .notInOperator()
       .add()
       .buildList();
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2);
@@ -189,7 +189,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2);
@@ -233,7 +233,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
       .notInOperator()
       .add()
       .buildList();
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1);
@@ -294,7 +294,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
       .inOperator()
       .add()
       .buildList();
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3);
@@ -345,7 +345,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
       .notInOperator()
       .add()
       .buildList();
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1);
@@ -400,7 +400,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
         .id(END_EVENT)
         .add()
         .buildList();
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3);
@@ -454,7 +454,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
         .inOperator()
         .add()
         .buildList();
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1);
@@ -486,7 +486,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
       .id(END_EVENT)
       .add()
       .buildList();
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2);

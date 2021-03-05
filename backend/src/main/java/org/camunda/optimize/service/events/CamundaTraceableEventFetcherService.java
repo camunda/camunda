@@ -16,7 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class CamundaTraceableEventFetcherService implements EventFetcherService {
+public class CamundaTraceableEventFetcherService implements EventFetcherService<OrderedEventDto> {
 
   private final CamundaEventService camundaEventService;
   private final String definitionKey;

@@ -164,8 +164,7 @@
       "allMapped": "Keine Events verfügbar.",
       "seeDocs": "Keine Events verfügbar. Informationen zum Hinzufügen von Events finden Sie in der ",
       "documentation": "Dokumentation",
-      "showSuggestions": "Zeige empfohlene Events",
-      "noSuggestionsMessage": "Nur für externe Events verfügbar"
+      "showSuggestions": "Zeige empfohlene Events"
     },
     "deleteWarning": "Der '{name}' Prozess wird endgültig gelöscht. Dies wird alle assoziierten Berichte, innerhalb und außerhalb von Sammlungen löschen.",
     "publishModal": {
@@ -216,7 +215,13 @@
       "definitionChangeWarning": "Durch die Änderung der Prozessdefinition können Events hinzugefügt oder entfernt werden. Vorhandene Event Mappings können entfernt werden.",
       "eventListChangeWarning": "Durch die Änderung der Event-Liste können Events hinzugefügt oder entfernt werden. Vorhandene Event Mappings können entfernt werden.",
       "remove": "Quelle entfernen",
-      "camundaProcess": "Camunda Prozess"
+      "camundaProcess": "Camunda Prozess",
+      "allInOne": "Alle Eventgruppen in einer einzigen Gruppe",
+      "eventGroups": "Eventgruppen",
+      "ungrouped": "Ungruppiert",
+      "search": "Suche nach Eventgruppen",
+      "noGroups": "Keine Eventgruppen gefunden",
+      "addExternalInfo": "Alle Verarbeitete externe Events werden hinzugefügt."
     },
     "ingested": {
       "label": "Verarbeitete externe Events",
@@ -242,6 +247,7 @@
     "addName": "Berichtname",
     "reportSetup": "Einstellungen",
     "downloadCSV": "CSV herunterladen",
+    "measure": "Maß",
     "templates": {
       "blank": "Leerer Bericht",
       "heatmap": "Heatmap: Prozessknoten Anzahl",
@@ -260,12 +266,12 @@
       "reportFilters": "Zeigt Daten von {count} aus {totalCount} Instanz",
       "reportFilters-plural": "Zeigt Daten von {count} aus {totalCount} Instanzen",
       "process": {
-        "label": "{count} Instanz im aktuellen Filter",
-        "label-plural": "{count} Instanzen im aktuellen Filter"
+        "label": "Zeigt Daten von {count} aus {totalCount} Instanz",
+        "label-plural": "Zeigt Daten von {count} aus {totalCount} Instanzen"
       },
       "decision": {
-        "label": "{count} Evaluierung im aktuellen Filter",
-        "label-plural": "{count} Evaluierungen im aktuellen Filter"
+        "label": "Zeigt Daten von {count} aus {totalCount} Evaluierung",
+        "label-plural": "Zeigt Daten von {count} aus {totalCount} Evaluierungen"
       }
     },
     "view": {
@@ -437,6 +443,13 @@
         "average": "Durchschnitt",
         "median": "Median",
         "maximum": "Maximum"
+      },
+      "aggregationShort": {
+        "sum": "Se",
+        "min": "Min",
+        "avg": "Durchschn",
+        "median": "Med",
+        "max": "Max"
       },
       "userTaskDuration": {
         "legend": "Dauer der Benutzeraufgabe",
@@ -818,6 +831,11 @@
       "openInOptimize": "In Optimize Öffnen"
     },
     "filter": {
+      "label": "Filter",
+      "tooltip": {
+        "instance": "Prozessinstanzfilter geben Daten von Prozessinstanzen zurück, die der Filteranforderung entsprechen. Wenn der Filter auf einem Prozessknoten basiert, zeigen die zurückgegebenen Daten alle Fälle an, in denen dieser Prozessknoten ausgelöst wurde.",
+        "view": "Prozessknoten-Filter geben nur Daten von Prozessknoten zurück, bei denen der Prozessknoten oder seine Eigenschaft den Filteranforderungen entsprechen. Am nützlichsten in Prozessknoten- und Benutzeraufgaben-Ansichten."
+      },
       "types": {
         "instanceState": "Instanzstatus",
         "runningInstancesOnly": "Nur laufende Instanzen",

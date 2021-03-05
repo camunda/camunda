@@ -10,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.camunda.optimize.dto.optimize.AuthorizedEntityDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 

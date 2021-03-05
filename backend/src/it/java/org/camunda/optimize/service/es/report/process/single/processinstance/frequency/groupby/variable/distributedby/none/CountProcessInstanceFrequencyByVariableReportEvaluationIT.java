@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -19,16 +20,16 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -78,7 +79,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       "foo",
       VariableType.STRING
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then
@@ -87,17 +88,17 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName()).isEqualTo("foo");
     assertThat(variableGroupByDto.getValue().getType()).isEqualTo(VariableType.STRING);
 
-    final ReportMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
-    assertThat(result.getEntryForKey("bar").get().getValue()).isEqualTo(1.);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "bar").get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -115,7 +116,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     );
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReportById(reportId);
 
     // then
@@ -124,17 +125,17 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstance.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName()).isEqualTo("foo");
     assertThat(variableGroupByDto.getValue().getType()).isEqualTo(VariableType.STRING);
 
-    final ReportMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
-    assertThat(result.getEntryForKey("bar").get().getValue()).isEqualTo(1.);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "bar").get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -154,14 +155,14 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       "foo",
       VariableType.STRING
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
-    assertThat(result.getEntryForKey("bar").get().getValue()).isEqualTo(1.);
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "bar").get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -180,7 +181,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     ProcessReportDataDto reportData =
       createReport(processKey, ALL_VERSIONS, DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_TYPE);
     reportData.setTenantIds(selectedTenants);
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(selectedTenants.size());
@@ -204,15 +205,15 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       "foo",
       VariableType.STRING
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).hasSize(2);
-    assertThat(resultDto.getEntryForKey("bar1").get().getValue()).isEqualTo(1.);
-    assertThat(resultDto.getEntryForKey("bar2").get().getValue()).isEqualTo(2.);
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData()).hasSize(2);
+    assertThat(MapResultUtil.getEntryForKey(resultDto.getFirstMeasureData(), "bar1").get().getValue()).isEqualTo(1.);
+    assertThat(MapResultUtil.getEntryForKey(resultDto.getFirstMeasureData(), "bar2").get().getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -240,11 +241,11 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       10.0,
       100.0
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(3);
     assertThat(resultData.stream()
@@ -473,11 +474,11 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       30.0,
       5.0
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then the report returns an empty result
-    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
   }
@@ -502,11 +503,11 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       varName,
       VariableType.INTEGER
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then the result includes all instances
-    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData.stream().mapToDouble(MapResultEntryDto::getValue).sum()).isEqualTo(2.0);
   }
@@ -533,11 +534,11 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       -10.0,
       null
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then the baseline is correct and the result includes all instances
-    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData.get(0).getKey()).isEqualTo("-10");
     assertThat(resultData.stream()
@@ -567,11 +568,11 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       varName,
       VariableType.DOUBLE
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData)
       .extracting(MapResultEntryDto::getKey)
@@ -598,7 +599,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       varName,
       VariableType.LONG
     );
-    final List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+    final List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getFirstMeasureData();
 
     // then the amount of buckets does not exceed NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION
     // (a precaution to avoid too many buckets for distributed reports)
@@ -632,10 +633,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.STRING
     );
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
@@ -665,10 +666,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.STRING
     );
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
@@ -691,15 +692,15 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       "foo",
       VariableType.STRING
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(2);
-    assertThat(result.getEntryForKey("1").get().getValue()).isEqualTo(1.);
-    assertThat(result.getEntryForKey(MISSING_VARIABLE_KEY).get().getValue()).isEqualTo(1.);
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(2);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "1").get().getValue()).isEqualTo(1.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), MISSING_VARIABLE_KEY).get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -719,14 +720,14 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       "foo1",
       VariableType.STRING
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
-    assertThat(result.getEntryForKey("bar1").get().getValue()).isEqualTo(2.);
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "bar1").get().getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -752,7 +753,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
         entry.getKey(),
         variableType
       );
-      List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+      List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getFirstMeasureData();
 
       // then
 
@@ -799,14 +800,14 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       "testVar",
       VariableType.STRING
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
-    assertThat(result.getEntryForKey("withValue").get().getValue()).isEqualTo(1.);
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "withValue").get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -839,15 +840,15 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       "testVar",
       VariableType.STRING
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(2);
-    assertThat(result.getEntryForKey("withValue").get().getValue()).isEqualTo(1.);
-    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(4.);
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(2);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "withValue").get().getValue()).isEqualTo(1.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "missing").get().getValue()).isEqualTo(4.);
   }
 
   @Test
@@ -874,15 +875,15 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       varName,
       VariableType.DOUBLE
     );
-    final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(2);
-    assertThat(result.getEntryForKey("1.00").get().getValue()).isEqualTo(1.);
-    assertThat(result.getEntryForKey("missing").get().getValue()).isEqualTo(1.);
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(2);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "1.00").get().getValue()).isEqualTo(1.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "missing").get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -909,11 +910,11 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.DATE
     );
 
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> response =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> response =
       reportClient.evaluateMapReport(reportData);
 
     // then
-    final List<MapResultEntryDto> resultData = response.getResult().getData();
+    final List<MapResultEntryDto> resultData = response.getResult().getFirstMeasureData();
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(resultKeys).isSortedAccordingTo(Comparator.naturalOrder());
   }
@@ -940,20 +941,20 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
                            .end(past.minusSeconds(1L))
                            .add()
                            .buildList());
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).isEmpty();
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
     result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
-    assertThat(result.getEntryForKey("bar").get().getValue()).isEqualTo(1.);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "bar").get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -973,7 +974,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
-    dataDto.getView().setProperty(null);
+    dataDto.getView().setProperties((ViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
@@ -1051,7 +1052,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.DATE
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(unit);
-    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getFirstMeasureData();
 
     // then
     assertThat(resultData).isNotNull();
@@ -1094,10 +1095,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       dateVarName,
       VariableType.DATE
     );
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     // the bucket span covers the earliest and the latest date variable value
@@ -1111,7 +1112,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
 
     assertThat(startOfFirstBucket).isBeforeOrEqualTo(firstTruncatedDateVariableValue);
     assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
-    assertThat(result.getData().stream().mapToDouble(MapResultEntryDto::getValue).sum())
+    assertThat(result.getFirstMeasureData().stream().mapToDouble(MapResultEntryDto::getValue).sum())
       .isEqualTo(3.0); // each instance falls into one bucket
   }
 
@@ -1129,10 +1130,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       dateVarName,
       VariableType.DATE
     );
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
   }

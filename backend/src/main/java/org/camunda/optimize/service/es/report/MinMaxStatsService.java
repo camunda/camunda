@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -31,6 +32,7 @@ import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isDecisionInstanceIndexNotFoundException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -148,6 +150,11 @@ public class MinMaxStatsService {
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
+    } catch (ElasticsearchStatusException e) {
+      if (isDecisionInstanceIndexNotFoundException(e)) {
+        return new MinMaxStatDto(0, 0);
+      }
+      throw e;
     }
 
     final Stats minMaxStats = Optional.ofNullable(pathForNestedStatsAgg)
@@ -185,28 +192,14 @@ public class MinMaxStatsService {
                                                  final String format,
                                                  final String pathForNestedStatsAgg,
                                                  final QueryBuilder filterQueryToWrapStatsWith) {
-    AggregationBuilder statsAggField1 = createStatsAggregation(
-      STATS_AGGREGATION_FIRST_FIELD,
-      firstField,
-      format
-    );
-    AggregationBuilder statsAggField2 = createStatsAggregation(
-      STATS_AGGREGATION_SECOND_FIELD,
-      secondField,
-      format
-    );
+    AggregationBuilder statsAggField1 = createStatsAggregation(STATS_AGGREGATION_FIRST_FIELD, firstField, format);
+    AggregationBuilder statsAggField2 = createStatsAggregation(STATS_AGGREGATION_SECOND_FIELD, secondField, format);
 
     if (filterQueryToWrapStatsWith != null) {
       statsAggField1 = wrapWithFilterLimitedParentAggregation(
-        FILTER_AGGREGATION_FIRST_FIELD,
-        filterQueryToWrapStatsWith,
-        statsAggField1
-      );
+        FILTER_AGGREGATION_FIRST_FIELD, filterQueryToWrapStatsWith, statsAggField1);
       statsAggField2 = wrapWithFilterLimitedParentAggregation(
-        FILTER_AGGREGATION_SECOND_FIELD,
-        filterQueryToWrapStatsWith,
-        statsAggField2
-      );
+        FILTER_AGGREGATION_SECOND_FIELD, filterQueryToWrapStatsWith, statsAggField2);
     }
 
     if (pathForNestedStatsAgg != null) {
@@ -234,6 +227,11 @@ public class MinMaxStatsService {
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
+    } catch (ElasticsearchStatusException e) {
+      if (isDecisionInstanceIndexNotFoundException(e)) {
+        return new MinMaxStatDto(0, 0);
+      }
+      throw e;
     }
     return mapCrossFieldStatAggregationsToStatDto(response);
   }

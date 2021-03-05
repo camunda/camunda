@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.process.single;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
@@ -16,11 +17,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
@@ -66,7 +66,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // when
     final ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
-    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
@@ -75,14 +75,15 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(definition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(getProcessViewEntity());
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.DURATION);
     assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(getDistributedByType());
 
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(createDurationBucketKey(durationInMilliseconds))
       .distributedByContains(createExpectedDistributedByEntries(1.0D))
       .doAssert(result);
@@ -99,7 +100,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     final String reportId = createAndStoreDefaultReportDefinition(definition.getKey(), definition.getVersionAsString());
 
     // when
-    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReportById(reportId);
 
     // then
@@ -108,14 +109,15 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(definition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(getProcessViewEntity());
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.DURATION);
     assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(getDistributedByType());
 
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = evaluationResponse.getResult();
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(createDurationBucketKey(durationInMilliseconds))
       .distributedByContains(createExpectedDistributedByEntries(1.0D))
       .doAssert(result);
@@ -138,13 +140,13 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
       .add()
       .buildList();
     reportData.setFilter(filterYieldingNoResults);
-    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(0L);
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   @Test
@@ -159,14 +161,15 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // when
     ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = evaluationResponse.getResult();
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(createDurationBucketKey(durationInMilliseconds))
       .distributedByContains(createExpectedDistributedByEntries(1.0D))
       .doAssert(result);
@@ -187,7 +190,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     // when
     final ProcessReportDataDto reportData = createReport(processKey, ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(selectedTenants.size());
@@ -204,14 +207,15 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // when
     final ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = evaluationResponse.getResult();
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(createDurationBucketKey(durationInMilliseconds))
       .distributedByContains(createExpectedDistributedByEntries(2.0D))
       .doAssert(result);
@@ -227,12 +231,12 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // when
     final ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       // if the data range fits into the default max bucket number of 80, we should see a bucket for each value
       .hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION)
@@ -251,12 +255,12 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // when
     final ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getFirstMeasureData())
       // buckets from 1000ms (nearest lower power of 10 to min value) to 2000ms (start and end inclusive)
       // in intervals of 100ms (nearest power of 10 interval for this range)
       .hasSize(11)
@@ -283,15 +287,16 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
         .bucketSize(100.0D)
         .build()
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>resultDto = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(createDurationBucketKey(10))
       .distributedByContains(createExpectedDistributedByEntries(1.0D))
       .groupByContains(createDurationBucketKey(110))
@@ -337,12 +342,12 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
         .bucketSizeUnit(unit)
         .build()
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getFirstMeasureData())
       .isNotNull()
       .hasSize(3)
       .extracting(HyperMapResultEntryDto::getKey)
@@ -372,12 +377,12 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
         .bucketSize(100.0D)
         .build()
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData()).isNotNull().isEmpty();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getFirstMeasureData()).isNotNull().isEmpty();
   }
 
   @Test
@@ -393,12 +398,12 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
 
     // when
     final ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData())
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getFirstMeasureData())
       .hasSize(20)
       .isSortedAccordingTo(Comparator.comparing(byDurationEntry -> Double.valueOf(byDurationEntry.getKey())));
   }

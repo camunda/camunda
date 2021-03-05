@@ -6,38 +6,41 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.view;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.google.common.collect.ImmutableSet;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-@Getter
-@Setter
+@NoArgsConstructor
 @Data
+@FieldNameConstants
 public class ProcessViewDto implements Combinable {
   private static final Set<ProcessViewEntity> FLOW_NODE_ENTITIES = ImmutableSet.of(
     ProcessViewEntity.FLOW_NODE, ProcessViewEntity.USER_TASK
   );
+  private static final String COMMAND_KEY_SEPARATOR = "-";
 
   protected ProcessViewEntity entity;
-  protected ProcessViewProperty property;
+  protected List<ViewProperty> properties = new ArrayList<>();
 
-  public ProcessViewDto() {
-    super();
-  }
-
-  public ProcessViewDto(ProcessViewProperty property) {
+  public ProcessViewDto(ViewProperty property) {
     this(null, property);
   }
 
   public ProcessViewDto(final ProcessViewEntity entity,
-                        final ProcessViewProperty property) {
+                        final ViewProperty property) {
     this.entity = entity;
-    this.property = property;
+    this.properties.add(property);
   }
 
   @Override
@@ -52,6 +55,43 @@ public class ProcessViewDto implements Combinable {
     return isEntityCombinable(viewDto) && isPropertyCombinable(viewDto);
   }
 
+  public List<String> createCommandKeys() {
+    return properties.stream()
+      .distinct()
+      .map(property -> entity + COMMAND_KEY_SEPARATOR + property)
+      .collect(Collectors.toList());
+  }
+
+  @JsonIgnore
+  public String createCommandKey() {
+    return createCommandKeys().get(0);
+  }
+
+  // to be removed with OPT-4871 when the result evaluation needs to read all properties
+  @Deprecated
+  public ViewProperty getProperty() {
+    return this.properties != null && !this.properties.isEmpty() ? properties.get(0) : null;
+  }
+
+  // to be removed with OPT-4872, just here for jackson and API backwards compatibility thus protected
+  @Deprecated
+  protected void setProperty(final ViewProperty property) {
+    if (this.properties == null || this.properties.isEmpty()) {
+      this.properties = Arrays.asList(property);
+    } else {
+      this.properties.set(0, property);
+    }
+  }
+
+  @JsonSetter
+  public void setProperties(final List<ViewProperty> properties) {
+    this.properties = new ArrayList<>(properties);
+  }
+
+  public void setProperties(final ViewProperty... properties) {
+    this.properties = Arrays.asList(properties);
+  }
+
   private boolean isEntityCombinable(final ProcessViewDto viewDto) {
     // note: user tasks are combinable with flow nodes as they are a subset of flow nodes
     return Objects.equals(entity, viewDto.entity)
@@ -59,20 +99,6 @@ public class ProcessViewDto implements Combinable {
   }
 
   private boolean isPropertyCombinable(final ProcessViewDto viewDto) {
-    return Combinable.isCombinable(property, viewDto.property);
-  }
-
-  @JsonIgnore
-  public String createCommandKey() {
-    String separator = "-";
-    return entity + separator + property;
-  }
-
-  @Override
-  public String toString() {
-    return "ProcessViewDto{" +
-      ", entity='" + entity + '\'' +
-      ", property='" + property + '\'' +
-      '}';
+    return Combinable.isCombinable(getProperty(), viewDto.getProperty());
   }
 }

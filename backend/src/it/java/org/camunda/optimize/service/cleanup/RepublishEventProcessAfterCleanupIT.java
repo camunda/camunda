@@ -53,7 +53,7 @@ public class RepublishEventProcessAfterCleanupIT extends AbstractEventProcessIT 
     // then
     final String eventProcessPublishState = getEventPublishStateIdForEventProcessMappingId(eventProcessMapping);
     final List<EventProcessInstanceDto> eventProcessInstances =
-      getEventProcessInstancesFromElasticsearchForProcessMappingId(eventProcessPublishState);
+      getEventProcessInstancesFromElasticsearchForProcessPublishStateId(eventProcessPublishState);
 
     assertThat(eventProcessInstances)
       .extracting(ProcessInstanceDto::getProcessInstanceId)
@@ -92,7 +92,7 @@ public class RepublishEventProcessAfterCleanupIT extends AbstractEventProcessIT 
     // then
     final String eventProcessPublishState = getEventPublishStateIdForEventProcessMappingId(eventProcessMapping);
     final List<EventProcessInstanceDto> eventProcessInstances =
-      getEventProcessInstancesFromElasticsearchForProcessMappingId(eventProcessPublishState);
+      getEventProcessInstancesFromElasticsearchForProcessPublishStateId(eventProcessPublishState);
 
     assertThat(eventProcessInstances)
       .extracting(ProcessInstanceDto::getProcessInstanceId)
@@ -140,7 +140,7 @@ public class RepublishEventProcessAfterCleanupIT extends AbstractEventProcessIT 
     // then
     final String eventProcessPublishState = getEventPublishStateIdForEventProcessMappingId(eventProcessMapping);
     final List<EventProcessInstanceDto> eventProcessInstances =
-      getEventProcessInstancesFromElasticsearchForProcessMappingId(eventProcessPublishState);
+      getEventProcessInstancesFromElasticsearchForProcessPublishStateId(eventProcessPublishState);
 
     assertThat(eventProcessInstances)
       .extracting(ProcessInstanceDto::getProcessInstanceId)
@@ -168,7 +168,7 @@ public class RepublishEventProcessAfterCleanupIT extends AbstractEventProcessIT 
     // then
     final String eventProcessPublishState = getEventPublishStateIdForEventProcessMappingId(eventProcessMapping);
     final List<EventProcessInstanceDto> eventProcessInstances =
-      getEventProcessInstancesFromElasticsearchForProcessMappingId(eventProcessPublishState);
+      getEventProcessInstancesFromElasticsearchForProcessPublishStateId(eventProcessPublishState);
 
     assertThat(eventProcessInstances)
       .extracting(ProcessInstanceDto::getProcessInstanceId)

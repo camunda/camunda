@@ -58,6 +58,23 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
   }
 
   @Test
+  public void getInputVariableValuesWhenNoInstancesPresentReturnsEmpty() {
+    // given a definition with no definition instances
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<String> amountInputVariableValues = variablesClient.getDecisionInputVariableValues(
+      decisionDefinitionDto,
+      INPUT_AMOUNT_ID,
+      VariableType.DOUBLE
+    );
+
+    // then
+    assertThat(amountInputVariableValues).isEmpty();
+  }
+
+  @Test
   public void getOutputVariableValues() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
@@ -80,6 +97,20 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     assertThat(auditOutputVariableValues)
       .hasSize(2)
       .containsExactlyInAnyOrder("true", "false");
+  }
+
+  @Test
+  public void getOutputVariableValuesWhenNoInstancesPresentReturnsEmpty() {
+    // given a definition with no definition instances
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<String> auditOutputVariableValues = variablesClient
+      .getDecisionOutputVariableValues(decisionDefinitionDto, OUTPUT_AUDIT_ID, VariableType.BOOLEAN, null);
+
+    // then
+    assertThat(auditOutputVariableValues).isEmpty();
   }
 
   @Test
@@ -107,7 +138,6 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     assertThat(amountInputVariableValues)
       .isEqualTo(amountInputValues.stream().map(String::valueOf).collect(toList()));
   }
-
 
   @Test
   public void inputValuesDoNotContainDuplicates() {

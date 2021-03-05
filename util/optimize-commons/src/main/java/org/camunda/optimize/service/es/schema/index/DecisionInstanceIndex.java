@@ -7,18 +7,18 @@ package org.camunda.optimize.service.es.schema.index;
 
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FIELDS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 public class DecisionInstanceIndex extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
 
-  public static final int VERSION = 4;
+  public static final int VERSION = 5;
 
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
@@ -57,9 +57,15 @@ public class DecisionInstanceIndex extends DefaultIndexMappingCreator implements
   public static final String ENGINE = "engine";
   public static final String TENANT_ID = "tenantId";
 
+  private final String indexName;
+
+  public DecisionInstanceIndex(final String decisionDefinitionKey) {
+    indexName = DECISION_INSTANCE_INDEX_PREFIX + decisionDefinitionKey.toLowerCase();
+  }
+
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+    return indexName;
   }
 
   @Override

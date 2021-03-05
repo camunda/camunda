@@ -23,7 +23,7 @@ import java.time.ZoneId;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ReportEvaluationInfo {
 
-  private ReportDefinitionDto report;
+  private ReportDefinitionDto<?> report;
   private String reportId;
 
   private String userId;
@@ -41,7 +41,7 @@ public class ReportEvaluationInfo {
     }
   }
 
-  public static ReportEvaluationInfoBuilder builder(final ReportDefinitionDto report) {
+  public static ReportEvaluationInfoBuilder builder(final ReportDefinitionDto<?> report) {
     ReportEvaluationInfo reportEvaluationInfo = new ReportEvaluationInfo();
     reportEvaluationInfo.setReport(report);
     return new ReportEvaluationInfoBuilder(reportEvaluationInfo);

@@ -5,29 +5,27 @@
  */
 package org.camunda.optimize.service.es.report.command.decision.frequency;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
-import org.camunda.optimize.service.es.report.command.Command;
-import org.camunda.optimize.service.es.report.command.CommandContext;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.service.es.report.command.DecisionCmd;
 import org.camunda.optimize.service.es.report.command.exec.DecisionReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.decision.DecisionDistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.decision.DecisionGroupByEvaluationDateTime;
 import org.camunda.optimize.service.es.report.command.modules.view.decision.DecisionViewCountInstanceFrequency;
-import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
-public class CountDecisionInstanceFrequencyGroupByEvaluationDateTimeCmd
-  implements Command<SingleDecisionReportDefinitionRequestDto> {
+public class CountDecisionInstanceFrequencyGroupByEvaluationDateTimeCmd extends DecisionCmd<List<MapResultEntryDto>> {
 
-  private final DecisionReportCmdExecutionPlan<ReportMapResultDto> executionPlan;
-
-  @Autowired
   public CountDecisionInstanceFrequencyGroupByEvaluationDateTimeCmd(final ReportCmdExecutionPlanBuilder builder) {
-    this.executionPlan = builder.createExecutionPlan()
+    super(builder);
+  }
+
+  @Override
+  protected DecisionReportCmdExecutionPlan<List<MapResultEntryDto>> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
+    return builder.createExecutionPlan()
       .decisionCommand()
       .view(DecisionViewCountInstanceFrequency.class)
       .groupBy(DecisionGroupByEvaluationDateTime.class)
@@ -36,14 +34,4 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateTimeCmd
       .build();
   }
 
-  @Override
-  public ReportEvaluationResult evaluate(final CommandContext<SingleDecisionReportDefinitionRequestDto> commandContext) {
-    final ReportMapResultDto evaluate = executionPlan.evaluate(commandContext);
-    return new SingleDecisionMapReportResult(evaluate, commandContext.getReportDefinition());
-  }
-
-  @Override
-  public String createCommandKey() {
-    return executionPlan.generateCommandKey();
-  }
 }

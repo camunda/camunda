@@ -66,7 +66,7 @@ public class ProcessGroupByVariable extends AbstractGroupByVariable<ProcessRepor
   }
 
   @Override
-  protected String getIndexName() {
+  protected String getIndexName(final ExecutionContext<ProcessReportDataDto> context) {
     return PROCESS_INSTANCE_INDEX_NAME;
   }
 

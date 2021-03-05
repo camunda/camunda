@@ -21,6 +21,6 @@ export const option = (text) => Selector('.DropdownOption').withText(text);
 export const reportChart = reportRenderer.find('canvas');
 export const configurationButton = Selector('.Configuration .Popover');
 export const gradientBarsSwitch = Selector('.Popover label').withText('Show Gradient Bars');
-export const reportNumber = reportRenderer.find('.Number');
+export const reportNumber = reportRenderer.find('.Number .data');
 export const report = Selector('.Report');
 export const modalDecisionTable = Selector('.DiagramModal .DMNDiagram');

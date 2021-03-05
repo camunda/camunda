@@ -223,7 +223,6 @@ public class EngineDefinitionAuthorizationService
     final Set<String> authorizedTenants = new HashSet<>();
     for (Map.Entry<String, Set<String>> engineAndTenants : tenantsPerEngine.entrySet()) {
       final String engineId = engineAndTenants.getKey();
-
       for (String tenantId : engineAndTenants.getValue()) {
         if (isAuthorizedToSeeFullyQualifiedDefinition(
           identityId, identityType, definitionKey, definitionType, tenantId, engineId
@@ -231,11 +230,9 @@ public class EngineDefinitionAuthorizationService
           authorizedTenants.add(tenantId);
         }
       }
-
       if (authorizedTenants.containsAll(tenantIds)) {
         break;
       }
-
     }
     return new ArrayList<>(authorizedTenants);
   }

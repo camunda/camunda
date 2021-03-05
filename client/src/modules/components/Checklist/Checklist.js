@@ -24,6 +24,7 @@ export default function Checklist({
     empty: t('common.multiSelect.empty'),
   },
   headerHidden,
+  preItems,
 }) {
   const [query, setQuery] = useState('');
 
@@ -121,6 +122,7 @@ export default function Checklist({
                 }
               />
             )}
+            {preItems}
             {filteredData.map(({id, label, checked, disabled}) => (
               <LabeledInput
                 className={classnames({highlight: checked})}

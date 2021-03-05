@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.es.report.command.exec;
 
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
@@ -22,11 +22,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 
 @Slf4j
-public class DecisionReportCmdExecutionPlan<R extends DecisionReportResultDto>
-  extends ReportCmdExecutionPlan<R, DecisionReportDataDto> {
+public class DecisionReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, DecisionReportDataDto> {
 
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final DecisionQueryFilterEnhancer queryFilterEnhancer;
@@ -34,7 +33,7 @@ public class DecisionReportCmdExecutionPlan<R extends DecisionReportResultDto>
   public DecisionReportCmdExecutionPlan(final ViewPart<DecisionReportDataDto> viewPart,
                                         final GroupByPart<DecisionReportDataDto> groupByPart,
                                         final DistributedByPart<DecisionReportDataDto> distributedByPart,
-                                        final Function<CompositeCommandResult, R> mapToReportResult,
+                                        final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult,
                                         final OptimizeElasticsearchClient esClient,
                                         final DecisionDefinitionReader decisionDefinitionReader,
                                         final DecisionQueryFilterEnhancer queryFilterEnhancer) {
@@ -56,14 +55,14 @@ public class DecisionReportCmdExecutionPlan<R extends DecisionReportResultDto>
       reportData.getDefinitionKey(),
       reportData.getDefinitionVersions(),
       reportData.getTenantIds(),
-      new DecisionInstanceIndex(),
+      new DecisionInstanceIndex(reportData.getDefinitionKey()),
       decisionDefinitionReader::getLatestVersionToKey
     );
   }
 
   @Override
-  protected String getIndexName() {
-    return DECISION_INSTANCE_INDEX_NAME;
+  protected String getIndexName(final ExecutionContext<DecisionReportDataDto> context) {
+    return getDecisionInstanceIndexAliasName(context.getReportData().getDecisionDefinitionKey());
   }
 
   @Override

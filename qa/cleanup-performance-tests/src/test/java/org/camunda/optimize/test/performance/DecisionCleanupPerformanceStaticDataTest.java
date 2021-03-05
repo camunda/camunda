@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Period;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 
 @Tag("engine-cleanup")
 public class DecisionCleanupPerformanceStaticDataTest extends AbstractDataCleanupTest {
@@ -41,7 +41,7 @@ public class DecisionCleanupPerformanceStaticDataTest extends AbstractDataCleanu
   }
 
   private Integer getDecisionInstanceCount() {
-    return elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_INDEX_NAME);
+    return elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_MULTI_ALIAS);
   }
 
 }

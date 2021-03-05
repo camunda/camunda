@@ -11,17 +11,17 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
@@ -43,7 +43,6 @@ import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
-import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
 
 public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT extends AbstractProcessDefinitionIT {
@@ -71,7 +70,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
@@ -80,23 +79,24 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
 
-    final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, 1.)
-        .distributedByContains(USER_TASK_2, null)
-        .distributedByContains(USER_TASK_A, 1.)
-        .distributedByContains(USER_TASK_B, null)
-      .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, null)
-        .distributedByContains(USER_TASK_2, 1.)
-        .distributedByContains(USER_TASK_A, null)
-        .distributedByContains(USER_TASK_B, 1.)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, 1.)
+          .distributedByContains(USER_TASK_2, null)
+          .distributedByContains(USER_TASK_A, 1.)
+          .distributedByContains(USER_TASK_B, null)
+        .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, null)
+          .distributedByContains(USER_TASK_2, 1.)
+          .distributedByContains(USER_TASK_A, null)
+          .distributedByContains(USER_TASK_B, 1.)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -117,17 +117,18 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_ID)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_ID)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -145,7 +146,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
@@ -154,23 +155,24 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
 
-    final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, 1.)
-        .distributedByContains(USER_TASK_2, null)
-        .distributedByContains(USER_TASK_A, 1.)
-        .distributedByContains(USER_TASK_B, null)
-      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
-        .distributedByContains(USER_TASK_1, null)
-        .distributedByContains(USER_TASK_2, 1.)
-        .distributedByContains(USER_TASK_A, null)
-        .distributedByContains(USER_TASK_B, 1.)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, 1.)
+          .distributedByContains(USER_TASK_2, null)
+          .distributedByContains(USER_TASK_A, 1.)
+          .distributedByContains(USER_TASK_B, null)
+        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+          .distributedByContains(USER_TASK_1, null)
+          .distributedByContains(USER_TASK_2, 1.)
+          .distributedByContains(USER_TASK_A, null)
+          .distributedByContains(USER_TASK_B, 1.)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -193,19 +195,20 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-      .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+        .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -226,28 +229,29 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, 2.)
-        .distributedByContains(USER_TASK_2, null)
-        .distributedByContains(USER_TASK_A, 2.)
-        .distributedByContains(USER_TASK_B, null)
-      .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, null)
-        .distributedByContains(USER_TASK_2, 1.)
-        .distributedByContains(USER_TASK_A, null)
-        .distributedByContains(USER_TASK_B, 1.)
-      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
-        .distributedByContains(USER_TASK_1, null)
-        .distributedByContains(USER_TASK_2, 1.)
-        .distributedByContains(USER_TASK_A, null)
-        .distributedByContains(USER_TASK_B, 1.)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, 2.)
+          .distributedByContains(USER_TASK_2, null)
+          .distributedByContains(USER_TASK_A, 2.)
+          .distributedByContains(USER_TASK_B, null)
+        .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, null)
+          .distributedByContains(USER_TASK_2, 1.)
+          .distributedByContains(USER_TASK_A, null)
+          .distributedByContains(USER_TASK_B, 1.)
+        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+          .distributedByContains(USER_TASK_1, null)
+          .distributedByContains(USER_TASK_2, 1.)
+          .distributedByContains(USER_TASK_A, null)
+          .distributedByContains(USER_TASK_B, 1.)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -270,19 +274,20 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-      .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -310,22 +315,23 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-      .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+          .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+        .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -353,22 +359,23 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_LABEL, SortOrder.DESC));
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-      .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+          .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+        .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -393,27 +400,29 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
     final ProcessReportDataDto reportData2 = createReport(processDefinition2);
-    final ReportHyperMapResultDto actualResult1 = reportClient.evaluateHyperMapReport(reportData1).getResult();
-    final ReportHyperMapResultDto actualResult2 = reportClient.evaluateHyperMapReport(reportData2).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult1 = reportClient.evaluateHyperMapReport(reportData1).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult2 = reportClient.evaluateHyperMapReport(reportData2).getResult();
 
     // then
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
       .doAssert(actualResult1);
 
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-      .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+          .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(actualResult2);
     // @formatter:on
   }
@@ -433,7 +442,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(actualResult.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -445,10 +454,10 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     final ProcessReportDataDto reportData = createReport(
       "nonExistingProcessDefinitionId", "1"
     );
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(actualResult.getData()).isEmpty();
+    assertThat(actualResult.getFirstMeasureData()).isEmpty();
   }
 
   @Data
@@ -508,11 +517,11 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(flowNodeStatusTestValues.processFilter);
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(actualResult.getData()).hasSize(1);
-    assertThat(actualResult.getData().get(0)).isEqualTo(flowNodeStatusTestValues.expectedFrequencyValues);
+    assertThat(actualResult.getFirstMeasureData()).hasSize(1);
+    assertThat(actualResult.getFirstMeasureData().get(0)).isEqualTo(flowNodeStatusTestValues.expectedFrequencyValues);
   }
 
   @Test
@@ -540,11 +549,11 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList());
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(actualResult.getData()).hasSize(1);
-    assertThat(actualResult.getData().get(0)).isEqualTo(getExpectedResultsMap(1., 1.));
+    assertThat(actualResult.getFirstMeasureData()).hasSize(1);
+    assertThat(actualResult.getFirstMeasureData().get(0)).isEqualTo(getExpectedResultsMap(1., 1.));
   }
 
   @Test
@@ -572,12 +581,13 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
       .distributedByContains(USER_TASK_1, 2.)
       .doAssert(actualResult);
@@ -599,12 +609,13 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     HyperMapAsserter.asserter()
       .processInstanceCount(11L)
       .processInstanceCountWithoutFilters(11L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
       .distributedByContains(USER_TASK_1, 11., USER_TASK_1_NAME)
       .doAssert(actualResult);
@@ -629,12 +640,13 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // when
     ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(createStartDateFilter(null, processStartTime.minusSeconds(1L)));
-    ReportHyperMapResultDto actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     HyperMapAsserter.asserter()
       .processInstanceCount(0L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
       .doAssert(actualResult);
 
     // when
@@ -646,6 +658,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
       .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
       .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
       .doAssert(actualResult);
@@ -668,7 +681,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
-    dataDto.getView().setProperty(null);
+    dataDto.getView().setProperties((ViewProperty) null);
 
     // when
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);

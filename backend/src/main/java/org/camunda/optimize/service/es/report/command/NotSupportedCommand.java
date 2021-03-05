@@ -9,26 +9,28 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.service.es.report.ReportEvaluationContext;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
 @Slf4j
 @Component
-public class NotSupportedCommand implements Command {
+public class NotSupportedCommand implements Command<Object, ReportDefinitionDto<?>> {
 
   private final ObjectMapper objectMapper;
 
   @Override
-  public ReportEvaluationResult evaluate(final CommandContext commandContext) {
+  public CommandEvaluationResult<Object> evaluate(final ReportEvaluationContext<ReportDefinitionDto<?>> reportEvaluationContext) {
     // Error should contain the report Name
     try {
       log.warn(
         "The following settings combination of the report data is not supported in Optimize: \n" +
           "{} \n " +
           "Therefore returning error result.",
-        objectMapper.writeValueAsString(commandContext.getReportDefinition())
+        objectMapper.writeValueAsString(reportEvaluationContext.getReportDefinition())
       );
     } catch (JsonProcessingException e) {
       log.error("can't serialize report data", e);

@@ -6,13 +6,12 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.ReportType;
-import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceConfigDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
-import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -146,9 +145,11 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
       EventProcessMappingCreateRequestDto.eventProcessMappingCreateBuilder()
         .name(eventProcessName)
         .eventSources(Collections.singletonList(
-          EventSourceEntryDto.builder()
-            .eventScope(Collections.singletonList(EventScopeType.ALL))
-            .type(EventSourceType.EXTERNAL)
+          ExternalEventSourceEntryDto.builder()
+            .configuration(ExternalEventSourceConfigDto.builder()
+                             .includeAllGroups(true)
+                             .eventScope(Collections.singletonList(EventScopeType.ALL))
+                             .build())
             .build()))
         .build();
     return eventProcessClient.createEventProcessMapping(eventBasedProcessDto);

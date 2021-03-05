@@ -52,6 +52,7 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
@@ -73,7 +74,6 @@ public class MappingMetadataUtil {
       new DashboardIndex(),
       new DashboardShareIndex(),
       new DecisionDefinitionIndex(),
-      new DecisionInstanceIndex(),
       new LicenseIndex(),
       new MetadataIndex(),
       new OnboardingStateIndex(),
@@ -94,6 +94,14 @@ public class MappingMetadataUtil {
       new SingleDecisionReportIndex(),
       new SingleProcessReportIndex()
     );
+  }
+
+  public static List<DecisionInstanceIndex> retrieveAllDecisionInstanceIndices(
+    final OptimizeElasticsearchClient esClient) {
+    return retrieveAllDynamicIndexKeysForPrefix(esClient, DECISION_INSTANCE_INDEX_PREFIX)
+      .stream()
+      .map(DecisionInstanceIndex::new)
+      .collect(toList());
   }
 
   public static List<EventProcessInstanceIndex> retrieveAllEventProcessInstanceIndices(
@@ -133,6 +141,7 @@ public class MappingMetadataUtil {
     dynamicMappings.addAll(retrieveAllCamundaActivityEventIndices(esClient));
     dynamicMappings.addAll(retrieveAllSequenceCountIndices(esClient));
     dynamicMappings.addAll(retrieveAllEventTraceIndices(esClient));
+    dynamicMappings.addAll(retrieveAllDecisionInstanceIndices(esClient));
     return dynamicMappings;
   }
 

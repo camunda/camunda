@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -41,5 +42,10 @@ public class CombinedReportDataDto implements ReportDataDto {
   @Override
   public String createCommandKey() {
     return "combined";
+  }
+
+  @Override
+  public List<String> createCommandKeys() {
+    return Collections.singletonList(createCommandKey());
   }
 }

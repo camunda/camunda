@@ -21,10 +21,7 @@ export default function processDecisionRawData(
   {
     report: {
       data: {
-        configuration: {
-          tableColumns,
-          columnOrder = {instanceProps: [], variables: [], inputVariables: [], outputVariables: []},
-        },
+        configuration: {tableColumns},
       },
       result: {data: result},
     },
@@ -57,6 +54,10 @@ export default function processDecisionRawData(
     const propertyValues = instanceProps.map((entry) => {
       if (entry === 'decisionInstanceId') {
         return cockpitLink(endpoints, instance, 'decision');
+      }
+
+      if (entry === 'processInstanceId') {
+        return cockpitLink(endpoints, instance, 'process');
       }
 
       if (entry === 'evaluationDateTime' && instance[entry]) {
@@ -113,7 +114,7 @@ export default function processDecisionRawData(
       })
     );
 
-  const {sortedHead, sortedBody} = sortColumns(head, body, columnOrder);
+  const {sortedHead, sortedBody} = sortColumns(head, body, tableColumns.columnOrder);
 
   return {head: sortedHead, body: sortedBody};
 }

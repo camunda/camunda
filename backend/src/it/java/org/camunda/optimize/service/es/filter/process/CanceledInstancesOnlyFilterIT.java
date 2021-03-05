@@ -9,7 +9,6 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 
@@ -42,11 +41,11 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
-    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
 
     // then
-    assertThat(result.getData().size(), is(2));
-    List<String> resultProcDefIds = result.getData()
+    assertThat(resultData.size(), is(2));
+    List<String> resultProcDefIds = resultData
       .stream()
       .map(RawDataProcessInstanceDto::getProcessInstanceId)
       .collect(Collectors.toList());
@@ -77,11 +76,11 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
-    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
 
     // then
-    assertThat(result.getData().size(), is(2));
-    List<String> resultProcDefIds = result.getData()
+    assertThat(resultData.size(), is(2));
+    List<String> resultProcDefIds = resultData
       .stream()
       .map(RawDataProcessInstanceDto::getProcessInstanceId)
       .collect(Collectors.toList());
@@ -106,11 +105,11 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
-    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
 
     // then
-    assertThat(result.getData().size(), is(2));
-    List<String> resultProcDefIds = result.getData()
+    assertThat(resultData.size(), is(2));
+    List<String> resultProcDefIds = resultData
       .stream()
       .map(RawDataProcessInstanceDto::getProcessInstanceId)
       .collect(Collectors.toList());

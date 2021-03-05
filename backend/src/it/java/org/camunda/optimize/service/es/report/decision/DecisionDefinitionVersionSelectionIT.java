@@ -9,10 +9,10 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     );
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionRequestDto> result =
+      AuthorizedSingleReportEvaluationResponseDto<?, SingleDecisionReportDefinitionRequestDto> result =
         reportClient.evaluateReport(report);
 
       // then
@@ -67,7 +67,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     );
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionRequestDto> result =
+      AuthorizedSingleReportEvaluationResponseDto<?, SingleDecisionReportDefinitionRequestDto> result =
         reportClient.evaluateReport(report);
 
       // then
@@ -87,7 +87,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       createAllPossibleDecisionReports(decisionDefinitionDto1.getKey(), ImmutableList.of(LATEST_VERSION));
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionRequestDto> result =
+      AuthorizedSingleReportEvaluationResponseDto<?, SingleDecisionReportDefinitionRequestDto> result =
         reportClient.evaluateReport(report);
 
       // then
@@ -100,7 +100,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
 
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionRequestDto> result =
+      AuthorizedSingleReportEvaluationResponseDto<?, SingleDecisionReportDefinitionRequestDto> result =
         reportClient.evaluateReport(report);
 
       // then
@@ -121,7 +121,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     );
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      DecisionReportResultDto result = reportClient.evaluateReport(report).getResult();
+      ReportResultResponseDto<Object> result = reportClient.evaluateReport(report).getResult();
 
       // then
       assertThat(result.getInstanceCount()).isZero();

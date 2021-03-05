@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
@@ -88,7 +88,7 @@ public abstract class AbstractImportTest {
       logger.info(
         "The Camunda Platform contains {} historic decision instances. Optimize: {}",
         engineDatabaseExtension.countHistoricDecisionInstances(),
-        elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_INDEX_NAME)
+        elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_MULTI_ALIAS)
       );
     } catch (SQLException e) {
       logger.error("Failed producing stats", e);
@@ -134,7 +134,7 @@ public abstract class AbstractImportTest {
       .as("historicActivityInstanceCount").isEqualTo(engineDatabaseExtension.countHistoricActivityInstances());
     assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME))
       .as("decisionDefinitionsCount").isEqualTo(engineDatabaseExtension.countDecisionDefinitions());
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_INDEX_NAME))
+    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_MULTI_ALIAS))
       .as("decisionInstancesCount").isEqualTo(engineDatabaseExtension.countHistoricDecisionInstances());
   }
 }

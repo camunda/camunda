@@ -10,10 +10,10 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -57,11 +57,11 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
       instance.getProcessDefinitionKey(),
       instance.getProcessDefinitionVersion()
     );
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final int expectedNumberOfBuckets = NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(expectedNumberOfBuckets);
   }
@@ -85,10 +85,9 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
       instance.getProcessDefinitionKey(),
       instance.getProcessDefinitionVersion()
     );
-    final ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
+    final List<MapResultEntryDto> resultData = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
 
     // bucket span should include the full runtime of both instances
@@ -122,10 +121,9 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
       engineDto.getKey(),
       engineDto.getVersionAsString()
     );
-    ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
+    final List<MapResultEntryDto> resultData = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isEmpty();
   }
 
@@ -147,10 +145,9 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
       engineDto.getProcessDefinitionKey(),
       engineDto.getProcessDefinitionVersion()
     );
-    final ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
+    final List<MapResultEntryDto> resultData = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then the single data point should be grouped by month
-    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(1);
     final ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
     final String nowStrippedToMonthAsString = zonedDateTimeToString(nowStrippedToMonth);
@@ -176,15 +173,15 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
     final String singleReportId2 = createNewSingleReport(procDefSecondRange);
 
     // when
-    final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
       reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId1, singleReportId2));
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
+    Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> resultMap = result.getData();
     assertResultIsInCorrectRanges(
       new Date(now.plusDays(6).toInstant().toEpochMilli()),
       new Date(now.plusDays(1).toInstant().toEpochMilli()),
-      resultMap.values().stream().map(resultDto -> resultDto.getResult().getData()).collect(toList())
+      resultMap.values().stream().map(resultDto -> resultDto.getResult().getFirstMeasureData()).collect(toList())
     );
   }
 
@@ -206,15 +203,15 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
     final String singleReportId2 = createNewSingleReport(procDefSecondRange);
 
     // when
-    final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
       reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
+    Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> resultMap = result.getData();
     assertResultIsInCorrectRanges(
       new Date(now.plusDays(6).toInstant().toEpochMilli()),
       new Date(now.plusDays(1).toInstant().toEpochMilli()),
-      resultMap.values().stream().map(resultDto -> resultDto.getResult().getData()).collect(toList())
+      resultMap.values().stream().map(resultDto -> resultDto.getResult().getFirstMeasureData()).collect(toList())
     );
   }
 
@@ -232,15 +229,15 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
 
 
     // when
-    final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
       reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId1, singleReportId2));
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
+    Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> resultMap = result.getData();
     assertResultIsInCorrectRanges(
       new Date(now.plusDays(6).toInstant().toEpochMilli()),
       new Date(now.plusDays(1).toInstant().toEpochMilli()),
-      resultMap.values().stream().map(resultDto -> resultDto.getResult().getData()).collect(toList())
+      resultMap.values().stream().map(resultDto -> resultDto.getResult().getFirstMeasureData()).collect(toList())
     );
   }
 

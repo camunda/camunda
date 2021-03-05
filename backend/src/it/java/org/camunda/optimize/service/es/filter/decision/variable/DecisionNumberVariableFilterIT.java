@@ -9,8 +9,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
@@ -21,6 +22,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -60,7 +62,9 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     reportData.setFilter(Lists.newArrayList(createNumericInputVariableFilter(
       inputVariableIdToFilterOn, IN, categoryInputValueToFilterFor
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
+      reportClient.evaluateDecisionRawReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -100,7 +104,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       inputVariableIdToFilterOn, IN,
       firstCategoryInputValueToFilterFor, secondCategoryInputValueToFilterFor
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -157,7 +161,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     reportData.setFilter(Lists.newArrayList(createNumericInputVariableFilter(
       inputClauseId, operator, filterValues
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getData()).hasSize(expectedInstanceCount);
@@ -187,7 +191,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     reportData.setFilter(Lists.newArrayList(createNumericInputVariableFilter(
       inputVariableIdToFilterOn, NOT_IN, categoryInputValueToExclude
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -219,7 +223,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     reportData.setFilter(Lists.newArrayList(createNumericInputVariableFilter(
       INPUT_AMOUNT_ID, LESS_THAN_EQUALS, categoryInputValueToFilterFor
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -249,7 +253,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     reportData.setFilter(Lists.newArrayList(createNumericInputVariableFilter(
       inputVariableIdToFilterOn, GREATER_THAN, categoryInputValueToFilter
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);

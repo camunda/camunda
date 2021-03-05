@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.view.process.duration;
 
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
@@ -37,7 +37,7 @@ public class ProcessViewFlowNodeDuration extends ProcessViewDuration {
   public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
     ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.FLOW_NODE);
-    view.setProperty(ProcessViewProperty.DURATION);
+    view.setProperties(ViewProperty.DURATION);
     dataForCommandKey.setView(view);
   }
 }

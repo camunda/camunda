@@ -5,8 +5,9 @@
  */
 
 import React from 'react';
+import classnames from 'classnames';
 
-import {DefinitionSelection} from 'components';
+import {DefinitionSelection, Icon, Button} from 'components';
 import {DecisionFilter} from 'filter';
 import {
   loadInputVariables,
@@ -28,6 +29,10 @@ export class DecisionControlPanel extends React.Component {
       inputVariable: null,
       outputVariable: null,
     },
+    scrolled: false,
+    showSource: true,
+    showSetup: true,
+    showFilter: true,
   };
 
   componentDidMount() {
@@ -51,6 +56,16 @@ export class DecisionControlPanel extends React.Component {
   variableExists = (type, varName) =>
     this.state.variables[type].some((variable) => variable.id === varName);
 
+  filterNonExistingVariables = (columns) =>
+    columns.filter((col) => {
+      if (col.includes('Variable:')) {
+        const [type, name] = col.split(':');
+        return this.variableExists(type, name);
+      }
+
+      return true;
+    });
+
   changeDefinition = async ({key, versions, tenantIds, name}) => {
     const {groupBy} = this.props.report.data;
 
@@ -60,21 +75,6 @@ export class DecisionControlPanel extends React.Component {
       decisionDefinitionVersions: {$set: versions},
       tenantIds: {$set: tenantIds},
       configuration: {
-        tableColumns: {
-          $set: {
-            includeNewVariables: true,
-            includedColumns: [],
-            excludedColumns: [],
-          },
-        },
-        columnOrder: {
-          $set: {
-            inputVariables: [],
-            instanceProps: [],
-            outputVariables: [],
-            variables: [],
-          },
-        },
         xml: {
           $set:
             key && versions && versions[0]
@@ -90,13 +90,22 @@ export class DecisionControlPanel extends React.Component {
       tenantIds,
     };
 
-    if (['inputVariable', 'outputVariable'].includes(groupBy?.type)) {
+    const columnOrder = this.props.report.data.configuration.tableColumns.columnOrder;
+    const variableReport = ['inputVariable', 'outputVariable'].includes(groupBy?.type);
+
+    if (variableReport || columnOrder.length) {
       this.props.setLoading(true);
       await this.loadVariables(definitionData);
       this.props.setLoading(false);
-      if (!this.variableExists(groupBy.type, groupBy.value.id)) {
+      if (variableReport && !this.variableExists(groupBy.type, groupBy.value.id)) {
         change.groupBy = {$set: null};
         change.visualization = {$set: null};
+      }
+
+      if (columnOrder.length) {
+        change.configuration.tableColumns = {
+          columnOrder: {$set: this.filterNonExistingVariables(columnOrder)},
+        };
       }
     } else {
       this.loadVariables(definitionData);
@@ -117,11 +126,24 @@ export class DecisionControlPanel extends React.Component {
       filter,
       configuration: {xml},
     } = data;
+    const {showSource, showSetup, showFilter, scrolled} = this.state;
 
     return (
       <div className="DecisionControlPanel ReportControlPanel">
-        <div className="select source">
-          <h3 className="sectionTitle">{t('common.dataSource')}</h3>
+        <section className={classnames('select', 'source', {hidden: !showSource})}>
+          <h3 className="sectionTitle">
+            <Icon type="data-source" />
+            {t('common.dataSource')}
+            <Button
+              icon
+              className="sectionToggle"
+              onClick={() => {
+                this.setState({showSource: !showSource});
+              }}
+            >
+              <Icon type={showSource ? 'up' : 'down'} />
+            </Button>
+          </h3>
           <DefinitionSelection
             type="decision"
             definitionKey={decisionDefinitionKey}
@@ -130,9 +152,66 @@ export class DecisionControlPanel extends React.Component {
             xml={xml}
             onChange={this.changeDefinition}
           />
+        </section>
+        <section className={classnames('reportSetup', {hidden: !showSetup})}>
+          <h3 className="sectionTitle">
+            <Icon type="report" />
+            {t('report.reportSetup')}
+            <Button
+              icon
+              className="sectionToggle"
+              onClick={() => {
+                this.setState({showSetup: !showSetup});
+              }}
+            >
+              <Icon type={showSetup ? 'up' : 'down'} />
+            </Button>
+          </h3>
+          <ul>
+            {['view', 'groupBy'].map((field, idx, fields) => {
+              const previous = fields
+                .filter((prev, prevIdx) => prevIdx < idx)
+                .map((prev) => data[prev]);
+
+              return (
+                <li className="select" key={field}>
+                  <span className="label">{t(`report.${field}.label`)}</span>
+                  <ReportSelect
+                    type="decision"
+                    field={field}
+                    report={this.props.report}
+                    value={data[field]}
+                    variables={this.state.variables}
+                    previous={previous}
+                    disabled={!decisionDefinitionKey || previous.some((entry) => !entry)}
+                    onChange={(newValue) => this.updateReport(field, newValue)}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+        <div className="filter header">
+          <h3 className="sectionTitle">
+            <Icon type="filter" />
+            {t('common.filter.label')}
+            <Button
+              icon
+              className="sectionToggle"
+              onClick={() => {
+                this.setState({showFilter: !showFilter});
+              }}
+            >
+              <Icon type={showFilter ? 'up' : 'down'} />
+            </Button>
+            {filter?.length > 0 && <span className="filterCount">{filter.length}</span>}
+          </h3>
         </div>
-        <div className="scrollable">
-          <div className="filter">
+        <div
+          className={classnames('scrollable', {withDivider: scrolled || !showFilter})}
+          onScroll={(evt) => this.setState({scrolled: evt.target.scrollTop > 0})}
+        >
+          <section className={classnames('filter', {hidden: !showFilter})}>
             <DecisionFilter
               data={filter}
               onChange={this.props.updateReport}
@@ -141,44 +220,18 @@ export class DecisionControlPanel extends React.Component {
               tenants={tenantIds}
               variables={this.state.variables}
             />
-          </div>
-          <div className="reportSetup">
-            <h3 className="sectionTitle">{t('report.reportSetup')}</h3>
-            <ul>
-              {['view', 'groupBy'].map((field, idx, fields) => {
-                const previous = fields
-                  .filter((prev, prevIdx) => prevIdx < idx)
-                  .map((prev) => data[prev]);
-
-                return (
-                  <li className="select" key={field}>
-                    <span className="label">{t(`report.${field}.label`)}</span>
-                    <ReportSelect
-                      type="decision"
-                      field={field}
-                      report={this.props.report}
-                      value={data[field]}
-                      variables={this.state.variables}
-                      previous={previous}
-                      disabled={!decisionDefinitionKey || previous.some((entry) => !entry)}
-                      onChange={(newValue) => this.updateReport(field, newValue)}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-          {result && typeof result.instanceCount !== 'undefined' && (
-            <div className="instanceCount">
-              {t(
-                `report.instanceCount.decision.label${result.instanceCount !== 1 ? '-plural' : ''}`,
-                {
-                  count: result.instanceCount,
-                }
-              )}
-            </div>
-          )}
+          </section>
         </div>
+        {result && typeof result.instanceCount !== 'undefined' && (
+          <div className="instanceCount">
+            {t(
+              `report.instanceCount.decision.label${
+                result.instanceCountWithoutFilters !== 1 ? '-plural' : ''
+              }`,
+              {count: result.instanceCount, totalCount: result.instanceCountWithoutFilters}
+            )}
+          </div>
+        )}
       </div>
     );
   }

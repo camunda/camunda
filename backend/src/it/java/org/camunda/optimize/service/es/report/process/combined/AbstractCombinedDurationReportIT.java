@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -55,16 +54,16 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      reportClient.<ReportMapResultDto>evaluateCombinedReportById(response.getId()).getResult();
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
+      reportClient.<List<MapResultEntryDto>>evaluateCombinedReportById(response.getId()).getResult();
     assertThat(result.getData().values())
       .hasSize(2)
       .allSatisfy(singleReportResult -> {
-        assertThat(singleReportResult.getResult().getData())
+        assertThat(singleReportResult.getResult().getFirstMeasureData())
           .hasSize(10)
           .extracting(MapResultEntryDto::getKey)
           .first().isEqualTo(createDurationBucketKey(1000));
-        assertThat(singleReportResult.getResult().getData())
+        assertThat(singleReportResult.getResult().getFirstMeasureData())
           .extracting(MapResultEntryDto::getKey)
           .last().isEqualTo(createDurationBucketKey(10_000));
       });
@@ -93,17 +92,17 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      reportClient.<ReportMapResultDto>evaluateCombinedReportById(response.getId()).getResult();
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
+      reportClient.<List<MapResultEntryDto>>evaluateCombinedReportById(response.getId()).getResult();
     assertThat(result.getData().values())
       .hasSize(2)
       .allSatisfy(singleReportResult -> {
-        assertThat(singleReportResult.getResult().getData())
+        assertThat(singleReportResult.getResult().getFirstMeasureData())
           // expecting the range to be from 1000ms (nearest lower base 10 to min value) to 10000ms (max value)
           .hasSize(10)
           .extracting(MapResultEntryDto::getKey)
           .first().isEqualTo(createDurationBucketKey(1000));
-        assertThat(singleReportResult.getResult().getData())
+        assertThat(singleReportResult.getResult().getFirstMeasureData())
           .extracting(MapResultEntryDto::getKey)
           .last().isEqualTo(createDurationBucketKey(10_000));
       });
@@ -132,17 +131,17 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    final CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      reportClient.<ReportMapResultDto>evaluateCombinedReportById(response.getId()).getResult();
+    final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
+      reportClient.<List<MapResultEntryDto>>evaluateCombinedReportById(response.getId()).getResult();
     assertThat(result.getData().values())
       .hasSize(2)
       .allSatisfy(singleReportResult -> {
-        assertThat(singleReportResult.getResult().getData())
+        assertThat(singleReportResult.getResult().getFirstMeasureData())
           // expecting the range to be from 10_000ms (nearest lower base 10 to minimum) to 100_000ms (max value)
           .hasSize(10)
           .extracting(MapResultEntryDto::getKey)
           .first().isEqualTo(createDurationBucketKey(10_000));
-        assertThat(singleReportResult.getResult().getData())
+        assertThat(singleReportResult.getResult().getFirstMeasureData())
           .extracting(MapResultEntryDto::getKey)
           .last().isEqualTo(createDurationBucketKey(100_000));
       });

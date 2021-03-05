@@ -26,12 +26,13 @@ import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEven
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -42,6 +43,7 @@ import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
@@ -92,12 +94,13 @@ import java.util.stream.StreamSupport;
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isDecisionInstanceIndexNotFoundException;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
@@ -343,10 +346,17 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> type) {
-    return getAllDocumentsOfIndicesAs(new String[]{indexName}, type);
+    try {
+      return getAllDocumentsOfIndicesAs(new String[]{indexName}, type);
+    } catch (ElasticsearchStatusException e) {
+      if (isDecisionInstanceIndexNotFoundException(e)) {
+        return Collections.emptyList();
+      }
+      throw e;
+    }
   }
 
-  public <T> List<T> getAllDocumentsOfIndicesAs(final String[] indexNames, final Class<T> type) {
+  private <T> List<T> getAllDocumentsOfIndicesAs(final String[] indexNames, final Class<T> type) {
     final SearchResponse response = getSearchResponseForAllDocumentsOfIndices(indexNames);
     return mapHits(response.getHits(), type, getObjectMapper());
   }
@@ -380,6 +390,11 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       return Long.valueOf(countResponse.getCount()).intValue();
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not query the import count!", e);
+    } catch (ElasticsearchStatusException e) {
+      if (isDecisionInstanceIndexNotFoundException(e)) {
+        return 0;
+      }
+      throw e;
     }
   }
 
@@ -499,6 +514,11 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     DeleteByQueryRequest request = new DeleteByQueryRequest(getIndexNameService().getIndexPrefix() + "*")
       .setQuery(matchAllQuery())
       .setRefresh(true);
+
+    // Delete all dedicated decision instance indices
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(
+      getIndexNameService().getOptimizeIndexAliasForIndex(new DecisionInstanceIndex("*").getIndexName())
+    );
 
     try {
       getOptimizeElasticClient().getHighLevelClient().deleteByQuery(request, RequestOptions.DEFAULT);
@@ -623,7 +643,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public List<DecisionInstanceDto> getAllDecisionInstances() {
-    return getAllDocumentsOfIndexAs(DECISION_INSTANCE_INDEX_NAME, DecisionInstanceDto.class);
+    return getAllDocumentsOfIndexAs(DECISION_INSTANCE_MULTI_ALIAS, DecisionInstanceDto.class);
   }
 
   public List<ProcessInstanceDto> getAllProcessInstances() {
@@ -666,7 +686,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
                                                                                final String name,
                                                                                final String version,
                                                                                final List<IdentityDto> identityDtos) {
-    final IndexableEventProcessMappingDto eventProcessMappingDto = IndexableEventProcessMappingDto.builder()
+    final EsEventProcessMappingDto eventProcessMappingDto = EsEventProcessMappingDto.builder()
       .id(key)
       .roles(normalizeToSimpleIdentityDtos(identityDtos))
       .build();

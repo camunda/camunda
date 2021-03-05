@@ -8,16 +8,16 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedReportEvaluationResponseDto;
 import org.camunda.optimize.rest.mapper.ReportRestMapper;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.report.ReportEvaluationService;
@@ -169,10 +169,10 @@ public class ReportRestService {
   @Path("/{id}/evaluate")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public AuthorizedEvaluationResultDto evaluateReportByIdWithFilters(@Context ContainerRequestContext requestContext,
-                                                                     @PathParam("id") String reportId,
-                                                                     @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
-                                                                     AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter) {
+  public AuthorizedReportEvaluationResponseDto evaluateReportByIdWithFilters(@Context ContainerRequestContext requestContext,
+                                                                             @PathParam("id") String reportId,
+                                                                             @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
+                                                                             AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);
     final AuthorizedReportEvaluationResult reportEvaluationResult =
@@ -195,9 +195,9 @@ public class ReportRestService {
   @Path("/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public AuthorizedEvaluationResultDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
-                                                              @NotNull ReportDefinitionDto reportDefinitionDto,
-                                                              @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
+  public AuthorizedReportEvaluationResponseDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
+                                                                      @NotNull ReportDefinitionDto reportDefinitionDto,
+                                                                      @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);
     final AuthorizedReportEvaluationResult reportEvaluationResult =

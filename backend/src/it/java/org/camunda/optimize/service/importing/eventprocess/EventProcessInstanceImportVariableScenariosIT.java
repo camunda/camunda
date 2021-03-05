@@ -9,8 +9,9 @@ import org.assertj.core.util.Maps;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -166,9 +167,9 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
                .build())
       .build());
 
-    EventSourceEntryDto camundaEventSource =
+    CamundaEventSourceEntryDto camundaEventSource =
       createCamundaEventSourceEntryForDeployedProcessTracedByBusinessKey(processInstanceEngineDto);
-    EventSourceEntryDto externalEventSource = createExternalEventSource();
+    ExternalEventSourceEntryDto externalEventSource = createExternalEventSource();
 
     createAndPublishEventMapping(mappingsForEventProcess, Arrays.asList(camundaEventSource, externalEventSource));
 

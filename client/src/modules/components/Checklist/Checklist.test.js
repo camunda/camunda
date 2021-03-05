@@ -89,3 +89,11 @@ it('should hide header if specified', () => {
 
   expect(node.find('.header')).not.toExist();
 });
+
+it('should prepend items to the checklist', () => {
+  const node = shallow(
+    <Checklist {...props} preItems={<input className="test" type="checkbox" />} />
+  );
+
+  expect(node.find('.itemsList').childAt(0).prop('className')).toBe('test');
+});

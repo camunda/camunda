@@ -11,7 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -56,7 +56,7 @@ public class EventProcessMappingWriter {
         .id(id)
         .source(
           objectMapper.writeValueAsString(
-            IndexableEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto)
+            EsEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto)
           ),
           XContentType.JSON
         )
@@ -113,7 +113,7 @@ public class EventProcessMappingWriter {
     try {
       final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
         fieldsToUpdate,
-        IndexableEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto),
+        EsEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto),
         objectMapper
       );
 

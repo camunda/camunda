@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.fr
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -14,9 +15,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -51,7 +51,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion()
     );
-    AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse = reportClient.evaluateNumberReport(
+    AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(
       reportData);
 
     // then
@@ -61,13 +61,13 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       .containsExactly(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
 
-    final NumberResultDto resultDto = evaluationResponse.getResult();
+    final ReportResultResponseDto<Double> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).isEqualTo(1.);
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData()).isEqualTo(1.);
   }
 
   @Test
@@ -81,10 +81,10 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     // when
     ProcessReportDataDto reportData =
       createReport(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
-    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isEqualTo(3.);
+    assertThat(result.getFirstMeasureData()).isEqualTo(3.);
   }
 
   @Test
@@ -100,10 +100,10 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       engineDto.getProcessDefinitionKey(),
       engineDto.getProcessDefinitionVersion()
     );
-    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isEqualTo(2.);
+    assertThat(result.getFirstMeasureData()).isEqualTo(2.);
   }
 
   @Test
@@ -121,10 +121,10 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isEqualTo((double) selectedTenants.size());
+    assertThat(result.getFirstMeasureData()).isEqualTo((double) selectedTenants.size());
   }
 
   @Test
@@ -145,11 +145,11 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
                            .end(past.minusSeconds(1L))
                            .add()
                            .buildList());
-    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).isEqualTo(0.);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).isEqualTo(0.);
 
     // when
     reportData = createReport(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
@@ -157,8 +157,8 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).isEqualTo(1.);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).isEqualTo(1.);
   }
 
   @Test
@@ -182,7 +182,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       .add()
       .buildList();
     reportData.getFilter().addAll(flowNodeFilter);
-    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -201,7 +201,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     ProcessReportDataDto reportData =
       createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
     reportData.getFilter().addAll(filtersToApply);
-    NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isZero();
@@ -214,7 +214,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     // given
     ProcessReportDataDto dataDto =
       createReport(PROCESS_DEFINITION_KEY, "1");
-    dataDto.getView().setProperty(null);
+    dataDto.getView().setProperties((ViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
@@ -249,16 +249,16 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion()
     );
-    reportData.getConfiguration().setAggregationType(AggregationType.MAX);
-    reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-    AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
+    reportData.getConfiguration().setAggregationTypes(AggregationType.MAX);
+    reportData.getConfiguration().setUserTaskDurationTimes(UserTaskDurationTime.IDLE);
+    AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
       reportClient.evaluateNumberReport(reportData);
 
     // then
-    final NumberResultDto resultDto = evaluationResponse.getResult();
+    final ReportResultResponseDto<Double> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
-    assertThat(resultDto.getData()).isNotNull();
-    assertThat(resultDto.getData()).isEqualTo(1.);
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData()).isEqualTo(1.);
   }
 
   private ProcessReportDataDto createReport(String processDefinitionKey, String processDefinitionVersion) {

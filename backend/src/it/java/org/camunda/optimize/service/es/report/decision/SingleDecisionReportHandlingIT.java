@@ -5,14 +5,23 @@
  */
 package org.camunda.optimize.service.es.report.decision;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
@@ -51,6 +60,49 @@ public class SingleDecisionReportHandlingIT extends AbstractIT {
       reportFromApi.getData().getGroupBy().getValue();
     assertThat(value.getName().isPresent()).isEqualTo(true);
     assertThat(value.getName().get()).isEqualTo(variableName);
+  }
+
+  @ParameterizedTest
+  @EnumSource(DecisionReportDataType.class)
+  public void evaluateReport_missingInstancesReturnsEmptyResult(DecisionReportDataType reportType) {
+    // given
+    final String reportId = deployDefinitionAndCreateReport(reportType);
+
+    // when
+    final ReportResultResponseDto<?> result = embeddedOptimizeExtension.getRequestExecutor()
+      .buildEvaluateSavedReportRequest(reportId)
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<?>>() {
+      }).getResult();
+
+    // then
+    assertEmptyResult(result);
+  }
+
+  private void assertEmptyResult(final ReportResultResponseDto<?> result) {
+    if (result.getFirstMeasureData() instanceof List) {
+      assertThat((List<?>) result.getFirstMeasureData()).isEmpty();
+    } else if (result.getFirstMeasureData() instanceof Double) {
+      assertThat((Double) result.getFirstMeasureData()).isZero();
+    } else {
+      throw new OptimizeIntegrationTestException("Unexpected result type: " + result.getFirstMeasureData().getClass());
+    }
+  }
+
+  private String deployDefinitionAndCreateReport(final DecisionReportDataType reportType) {
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
+
+    final DecisionReportDataDto expectedReportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+      .setDecisionDefinitionVersion("1")
+      .setReportDataType(reportType)
+      .setVariableId("variableId")
+      .setVariableName("variableName")
+      .setVariableType(VariableType.STRING)
+      .setDateInterval(AggregateByDateUnit.DAY)
+      .build();
+    final SingleDecisionReportDefinitionRequestDto report = new SingleDecisionReportDefinitionRequestDto();
+    report.setData(expectedReportData);
+    return reportClient.createSingleDecisionReport(report);
   }
 
   private List<ReportDefinitionDto> getAllPrivateReports() {

@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME
 
@@ -101,9 +101,9 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
       assertThat(oldElasticClient.getDocumentCount(DECISION_DEFINITION_INDEX_NAME))
         .as("Decision Definition Document Count is not as expected")
         .isEqualTo(newElasticClient.getDocumentCount(DECISION_DEFINITION_INDEX_NAME))
-      assertThat(oldElasticClient.getDocumentCount(DECISION_INSTANCE_INDEX_NAME))
+      assertThat(oldElasticClient.getDocumentCount(DECISION_INSTANCE_MULTI_ALIAS))
         .as("Decision Instance Document Count is not as expected")
-        .isEqualTo(newElasticClient.getDocumentCount(DECISION_INSTANCE_INDEX_NAME))
+        .isEqualTo(newElasticClient.getDocumentCount(DECISION_INSTANCE_MULTI_ALIAS))
       log.info("Finished asserting expected instance data doc counts...")
 
       log.info("Asserting on startup and upgrade errors...")

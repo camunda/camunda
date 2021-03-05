@@ -13,9 +13,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,14 +50,14 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
     reportData.setFilter(flowNodeStatusTestValues.processFilter);
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(flowNodeStatusTestValues.expectedInstanceCount);
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), localDateTimeToString(startOfToday)))
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(flowNodeStatusTestValues.resultValue);
@@ -77,15 +78,15 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList());
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), localDateTimeToString(startOfToday)))
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);

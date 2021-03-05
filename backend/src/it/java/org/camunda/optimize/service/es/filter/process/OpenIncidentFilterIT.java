@@ -10,9 +10,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -59,7 +58,7 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
     reportData.setFilter(filter);
-    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then the result contains only the instance with an open incident
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -74,12 +73,12 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
       .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
       .build();
     reportData.setFilter(filter);
-    NumberResultDto numberResult = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> numberResult = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(numberResult.getInstanceCount()).isEqualTo(1L);
     assertThat(numberResult.getInstanceCountWithoutFilters()).isEqualTo(4L);
-    assertThat(numberResult.getData()).isEqualTo(1.);
+    assertThat(numberResult.getFirstMeasureData()).isEqualTo(1.);
   }
 
   @Test
@@ -109,13 +108,13 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
       .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     reportData.setFilter(filter);
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(4L);
     // both flow nodes are part of the response as the view filter does not apply to flow nodes
-    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getFirstMeasureData()).hasSize(2);
   }
 
   private static Stream<Arguments> filterLevelAndExpectedResult() {
@@ -152,11 +151,11 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
       .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
       .build();
     reportData.setFilter(openIncidentFilter(filterLevel));
-    NumberResultDto numberResult = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> numberResult = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(numberResult.getInstanceCount()).isEqualTo(2L);
-    assertThat(numberResult.getData()).isEqualTo(firstExpectedResult);
+    assertThat(numberResult.getFirstMeasureData()).isEqualTo(firstExpectedResult);
 
     // when I add the flow node filter as well
     reportData.setFilter(
@@ -173,7 +172,7 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
     // then
     assertThat(numberResult.getInstanceCount()).isEqualTo(1L);
     assertThat(numberResult.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(numberResult.getData()).isEqualTo(secondExpectedResult);
+    assertThat(numberResult.getFirstMeasureData()).isEqualTo(secondExpectedResult);
   }
 
   private List<ProcessFilterDto<?>> openIncidentFilter(final FilterApplicationLevel filterLevel) {

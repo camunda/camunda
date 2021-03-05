@@ -5,15 +5,17 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.process;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceConfigDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @FieldNameConstants
 @Builder
@@ -29,11 +31,8 @@ public class EventImportSourceDto {
   private OffsetDateTime lastImportedEventTimestamp;
   private OffsetDateTime lastImportExecutionTimestamp;
 
-  private EventSourceEntryDto eventSource;
-
-  @JsonIgnore
-  public String getId() {
-    return eventSource.getId();
-  }
+  private EventSourceType eventImportSourceType;
+  // If the source type is 'Camunda', there should be a single config in this list. If 'External', there can be multiple
+  private List<EventSourceConfigDto> eventSourceConfigurations;
 
 }

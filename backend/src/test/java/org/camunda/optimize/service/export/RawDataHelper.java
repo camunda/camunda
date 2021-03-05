@@ -25,7 +25,7 @@ public class RawDataHelper {
   public static final int NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS = 12;
   // Decision Columns: decisionDefinitionKey, decisionDefinitionId, decisionInstanceId, evaluationDateTime,
   // engineName, tenantId, 7 input fields, 14 output fields
-  public static final int NUMBER_OF_RAW_DECISION_REPORT_COLUMNS = 27;
+  public static final int NUMBER_OF_RAW_DECISION_REPORT_COLUMNS = 28;
 
 
   public static List<RawDataProcessInstanceDto> getRawDataProcessInstanceDtos() {

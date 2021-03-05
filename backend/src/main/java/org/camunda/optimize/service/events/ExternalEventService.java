@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.service.es.reader.ExternalEventReader;
@@ -41,6 +42,10 @@ public class ExternalEventService implements EventFetcherService<EventDto> {
     return externalEventReader.getEventsForRequest(eventSearchRequestDto);
   }
 
+  public List<String> getEventGroups(final EventGroupRequestDto eventGroupRequestDto) {
+    return externalEventReader.getEventGroups(eventGroupRequestDto);
+  }
+
   public void saveEventBatch(final List<EventDto> eventDtos) {
     externalEventWriter.upsertEvents(eventDtos);
   }
@@ -55,8 +60,13 @@ public class ExternalEventService implements EventFetcherService<EventDto> {
     return externalEventReader.getEventsIngestedAt(ingestTimestamp);
   }
 
-  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestamps() {
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForAllEvents() {
     return externalEventReader.getMinAndMaxIngestedTimestamps();
+  }
+
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForGroups(
+    final List<String> eventGroups) {
+    return externalEventReader.getMinAndMaxIngestedTimestampsForGroups(eventGroups);
   }
 
   public void deleteEvents(final List<String> eventIdsToDelete) {

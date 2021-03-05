@@ -8,6 +8,7 @@ package org.camunda.optimize.upgrade.plan;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
 import org.camunda.optimize.upgrade.plan.factories.UpgradePlanFactory;
@@ -21,7 +22,7 @@ public class UpgradePlanRegistry {
 
   private final Map<String, UpgradePlan> upgradePlans = new HashMap<>();
 
-  public UpgradePlanRegistry() {
+  public UpgradePlanRegistry(final OptimizeElasticsearchClient esClient) {
     try (ScanResult scanResult = new ClassGraph()
       .enableClassInfo()
       .acceptPackages(UpgradePlanFactory.class.getPackage().getName())
@@ -31,7 +32,7 @@ public class UpgradePlanRegistry {
           try {
             final UpgradePlanFactory planFactory = (UpgradePlanFactory) upgradePlanFactoryClass.loadClass()
               .getConstructor().newInstance();
-            final UpgradePlan upgradePlan = planFactory.createUpgradePlan();
+            final UpgradePlan upgradePlan = planFactory.createUpgradePlan(esClient);
             if (planFactory instanceof CurrentVersionNoOperationUpgradePlanFactory) {
               // The no operation  upgrade plan will only get added if there is not a custom plan yet
               upgradePlans.putIfAbsent(upgradePlan.getToVersion(), upgradePlan);

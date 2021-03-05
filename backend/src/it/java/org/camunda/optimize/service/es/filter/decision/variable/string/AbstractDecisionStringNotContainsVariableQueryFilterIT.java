@@ -9,8 +9,9 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -69,7 +70,7 @@ public abstract class AbstractDecisionStringNotContainsVariableQueryFilterIT ext
 
     // when
     final List<DecisionFilterDto<?>> notContainsFilter = createNotContainsFilterForValues("ketchup");
-    RawDataDecisionReportResultDto result = evaluateReportWithFilter(decisionDefinitionDto, notContainsFilter);
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateReportWithFilter(decisionDefinitionDto, notContainsFilter);
 
     // then
     assertThatResultDoesNotContainVariables(result, noMatch, "");
@@ -93,7 +94,7 @@ public abstract class AbstractDecisionStringNotContainsVariableQueryFilterIT ext
 
     // when
     final List<DecisionFilterDto<?>> filter = createNotContainsFilterForValues("ketchup");
-    RawDataDecisionReportResultDto result = evaluateReportWithFilter(decisionDefinitionDto, filter);
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateReportWithFilter(decisionDefinitionDto, filter);
 
     // then
     assertThatResultDoesNotContainVariables(result, noMatch1, noMatch2);
@@ -118,7 +119,7 @@ public abstract class AbstractDecisionStringNotContainsVariableQueryFilterIT ext
 
     // when
     final List<DecisionFilterDto<?>> filter = createNotContainsFilterForValues("ketchup");
-    RawDataDecisionReportResultDto result = evaluateReportWithFilter(decisionDefinitionDto, filter);
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateReportWithFilter(decisionDefinitionDto, filter);
 
     // then
     assertThatResultDoesNotContainVariables(result, shouldNotMatch);
@@ -142,7 +143,7 @@ public abstract class AbstractDecisionStringNotContainsVariableQueryFilterIT ext
 
     // when
     final List<DecisionFilterDto<?>> filter = createNotContainsFilterForValues((String) null);
-    RawDataDecisionReportResultDto result = evaluateReportWithFilter(decisionDefinitionDto, filter);
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateReportWithFilter(decisionDefinitionDto, filter);
 
     // then
     assertThatResultDoesNotContainVariables(result, shouldNotMatch);
@@ -175,7 +176,7 @@ public abstract class AbstractDecisionStringNotContainsVariableQueryFilterIT ext
 
     // when
     final List<DecisionFilterDto<?>> filter = createNotContainsFilterForValues("ketchup", null, "must");
-    RawDataDecisionReportResultDto result = evaluateReportWithFilter(decisionDefinitionDto, filter);
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateReportWithFilter(decisionDefinitionDto, filter);
 
     // then
     assertThatResultDoesNotContainVariables(result, shouldNotMatch);
@@ -199,7 +200,7 @@ public abstract class AbstractDecisionStringNotContainsVariableQueryFilterIT ext
 
     // when
     final List<DecisionFilterDto<?>> filter = createNotContainsFilterForValues("1234567891011");
-    RawDataDecisionReportResultDto result = evaluateReportWithFilter(decisionDefinitionDto, filter);
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateReportWithFilter(decisionDefinitionDto, filter);
 
     // then
     assertThatResultDoesNotContainVariables(result, shouldNotMatch);
@@ -255,13 +256,13 @@ public abstract class AbstractDecisionStringNotContainsVariableQueryFilterIT ext
 
     // when
     final List<DecisionFilterDto<?>> filter = createNotContainsFilterForValues("100");
-    RawDataDecisionReportResultDto result = evaluateReportWithFilter(decisionDefinitionDto, filter);
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateReportWithFilter(decisionDefinitionDto, filter);
 
     // then
     assertThatResultDoesNotContainVariables(result, shouldNotMatch);
   }
 
-  protected abstract void assertThatResultDoesNotContainVariables(final RawDataDecisionReportResultDto result,
+  protected abstract void assertThatResultDoesNotContainVariables(final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result,
                                                                   final String... shouldMatch);
 
   protected abstract List<DecisionFilterDto<?>> createNotContainsFilterForValues(final String... variableValues);

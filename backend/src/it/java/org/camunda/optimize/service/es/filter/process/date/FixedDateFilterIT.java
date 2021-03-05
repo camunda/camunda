@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.filter.process.AbstractFilterIT;
 import org.junit.jupiter.api.Test;
@@ -42,16 +42,16 @@ public class FixedDateFilterIT extends AbstractFilterIT {
         .add()
         .buildList();
     reportData.setFilter(fixedStartDateFilter);
-    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
 
     // then
-    assertThat(result.getData()).isEmpty();
+    assertThat(resultData).isEmpty();
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(start).end(null).add().buildList());
-    result = reportClient.evaluateRawReport(reportData).getResult();
+    resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
     // then
-    assertThat(result.getData()).hasSize(1);
+    assertThat(resultData).hasSize(1);
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter()
@@ -60,9 +60,9 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    result = reportClient.evaluateRawReport(reportData).getResult();
+    resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
     // then
-    assertThat(result.getData()).hasSize(1);
+    assertThat(resultData).hasSize(1);
   }
 
   @Test
@@ -81,10 +81,10 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .end(start.plus(1, ChronoUnit.DAYS))
                            .add()
                            .buildList());
-    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
 
     // then
-    assertThat(result.getData()).hasSize(1);
+    assertThat(resultData).hasSize(1);
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter()
@@ -93,9 +93,9 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .end(start.plusDays(1))
                            .add()
                            .buildList());
-    result = reportClient.evaluateRawReport(reportData).getResult();
+    resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
     // then
-    assertThat(result.getData()).hasSize(1);
+    assertThat(resultData).hasSize(1);
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter()
@@ -104,9 +104,9 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .end(start.minus(1, ChronoUnit.DAYS))
                            .add()
                            .buildList());
-    result = reportClient.evaluateRawReport(reportData).getResult();
+    resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
     // then
-    assertThat(result.getData()).isEmpty();
+    assertThat(resultData).isEmpty();
   }
 
   @Test
@@ -126,10 +126,10 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .end(end.plus(1, ChronoUnit.DAYS))
                            .add()
                            .buildList());
-    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
 
     // then
-    assertThat(result.getData()).hasSize(1);
+    assertThat(resultData).hasSize(1);
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter()
@@ -138,9 +138,9 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    result = reportClient.evaluateRawReport(reportData).getResult();
+    resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
     // then
-    assertThat(result.getData()).hasSize(1);
+    assertThat(resultData).hasSize(1);
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter()
@@ -149,9 +149,9 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    result = reportClient.evaluateRawReport(reportData).getResult();
+    resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
     // then
-    assertThat(result.getData()).isEmpty();
+    assertThat(resultData).isEmpty();
   }
 
   @Test
@@ -170,10 +170,10 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
 
     // then
-    assertThat(result.getData()).hasSize(1);
+    assertThat(resultData).hasSize(1);
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter()
@@ -182,9 +182,9 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    result = reportClient.evaluateRawReport(reportData).getResult();
+    resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
     // then
-    assertThat(result.getData()).isEmpty();
+    assertThat(resultData).isEmpty();
   }
 
   @Test
@@ -205,10 +205,10 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .buildList());
 
     // when
-    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
 
     // then
-    assertThat(result.getData()).hasSize(1);
+    assertThat(resultData).hasSize(1);
 
     // given
     reportData.setFilter(ProcessFilterBuilder.filter()
@@ -219,10 +219,10 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .buildList());
 
     // when
-    result = reportClient.evaluateRawReport(reportData).getResult();
+    resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
 
     // then
-    assertThat(result.getData()).hasSize(1);
+    assertThat(resultData).hasSize(1);
 
     // given
     reportData.setFilter(ProcessFilterBuilder.filter()
@@ -233,10 +233,10 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .buildList());
 
     // when
-    result = reportClient.evaluateRawReport(reportData).getResult();
+    resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
 
     // then
-    assertThat(result.getData()).isEmpty();
+    assertThat(resultData).isEmpty();
   }
 
   private ProcessInstanceEngineDto startAndImportSimpleProcess() {

@@ -4,7 +4,7 @@
 @Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
-def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
+def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 
 String basePodSpec() {
   return """
@@ -159,7 +159,7 @@ pipeline {
     timestamps()
     timeout(time: 60, unit: 'MINUTES')
   }
-  
+
   stages {
     stage("Prepare") {
       agent {
@@ -173,11 +173,11 @@ pipeline {
       steps {
         optimizeCloneGitRepo(params.BRANCH)
         setBuildEnvVars()
+        setCamBpmSnapshotVersion()
         script {
           env.CAMBPM_7_12_VERSION = getCamBpmVersion('engine-7.12')
           env.CAMBPM_7_13_VERSION = getCamBpmVersion('engine-7.13')
           env.CAMBPM_7_14_VERSION = getCamBpmVersion('engine-7.14')
-          env.CAMBPM_SNAPSHOT_VERSION = getCamBpmVersion('engine-snapshot')
         }
       }
     }
@@ -257,7 +257,7 @@ pipeline {
           }
         }
       }
-      
+
     }
   }
 
@@ -285,4 +285,3 @@ private void getCamBpmVersion(String profileId) {
   def profile = readMavenPom().getProfiles().find { it.getId().equals(profileId) }
   return profile.getProperties().getProperty("camunda.engine.version")
 }
-

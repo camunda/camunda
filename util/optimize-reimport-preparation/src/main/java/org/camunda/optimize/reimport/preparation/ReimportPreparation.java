@@ -55,7 +55,6 @@ public class ReimportPreparation {
     new EventProcessDefinitionIndex(),
     new ProcessInstanceIndex(),
     new DecisionDefinitionIndex(),
-    new DecisionInstanceIndex(),
     new TenantIndex(),
     new BusinessKeyIndex(),
     new VariableUpdateInstanceIndex(),
@@ -69,6 +68,7 @@ public class ReimportPreparation {
     new EventSequenceCountIndex("*"),
     new EventTraceStateIndex("*")
   );
+  private static final IndexMappingCreator DYNAMIC_DECISION_INSTANCE_INDEX_TO_DELETE = new DecisionInstanceIndex("*");
 
   public static void main(String[] args) {
     log.info("Start to prepare Elasticsearch such that Optimize reimports engine data!");
@@ -107,6 +107,10 @@ public class ReimportPreparation {
     log.info("Deleting event process indices and Camunda event data from Elasticsearch...");
     DYNAMIC_EVENT_INDICES_TO_DELETE.forEach(prefixAwareClient::deleteIndex);
     log.info("Finished deleting event process indices and Camunda event data from Elasticsearch.");
+
+    log.info("Deleting decision instance indices from Elasticsearch...");
+    prefixAwareClient.deleteIndex(DYNAMIC_DECISION_INSTANCE_INDEX_TO_DELETE);
+    log.info("Finished deleting decision instance indices from Elasticsearch.");
 
     log.info("Deleting Camunda event count/trace indices from Elasticsearch...");
     DYNAMIC_EVENT_TRACE_INDICES_TO_DELETE.forEach(index -> prefixAwareClient.deleteIndexByRawIndexNames(

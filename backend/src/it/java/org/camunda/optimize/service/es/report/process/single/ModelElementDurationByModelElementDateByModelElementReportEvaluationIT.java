@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -53,7 +53,8 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
     // when
     final ProcessReportDataDto reportData = createReportData(processKey, "1", AggregateByDateUnit.DAY);
     reportData.setTenantIds(selectedTenants);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -67,10 +68,11 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
-    final List<HyperMapResultEntryDto> resultData = result.getData();
+    final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isEmpty();
   }
 
@@ -110,12 +112,13 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
       .isEqualTo(expected);
   }
 
-  protected Map<AggregationType, ReportHyperMapResultDto> evaluateHyperMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
+  protected Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> evaluateHyperMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
 
-    Map<AggregationType, ReportHyperMapResultDto> resultsMap = new HashMap<>();
+    Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> resultsMap = new HashMap<>();
     getAggregationTypesAsListWithoutSum().forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationType(aggType);
-      final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+      reportData.getConfiguration().setAggregationTypes(aggType);
+      final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient
+        .evaluateHyperMapReport(reportData).getResult();
       resultsMap.put(aggType, result);
     });
     return resultsMap;

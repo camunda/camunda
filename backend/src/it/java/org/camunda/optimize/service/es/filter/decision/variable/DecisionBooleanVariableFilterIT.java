@@ -9,7 +9,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
@@ -54,7 +55,7 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
     reportData.setFilter(Lists.newArrayList(createBooleanOutputVariableFilter(
       outputVariableIdToFilterOn, Collections.singletonList(outputAuditValueToFilterFor)
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -117,7 +118,7 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
     reportData.setFilter(Lists.newArrayList(createBooleanInputVariableFilter(
       inputClauseId, filterValues
     )));
-    RawDataDecisionReportResultDto result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = reportClient.evaluateDecisionRawReport(reportData).getResult();
 
     // then
     assertThat(result.getData()).hasSize(expectedInstanceCount);

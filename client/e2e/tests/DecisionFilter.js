@@ -25,7 +25,7 @@ test('should apply a filter to the report result', async (t) => {
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
 
-  const unfiltered = +(await Report.reportRenderer.textContent);
+  const unfiltered = +(await Report.reportNumber.textContent);
 
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Input Variable'));
@@ -37,7 +37,7 @@ test('should apply a filter to the report result', async (t) => {
 
   await t.click(Report.primaryModalButton);
 
-  const filtered = +(await Report.reportRenderer.textContent);
+  const filtered = +(await Report.reportNumber.textContent);
 
   await t.expect(unfiltered).gt(filtered);
 });

@@ -12,8 +12,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterO
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.es.filter.process.AbstractFilterIT;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -71,7 +72,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(1);
@@ -122,7 +123,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(expectedInstanceCount);
@@ -154,7 +155,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(2);
@@ -191,7 +192,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(2);
@@ -228,7 +229,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(1);
@@ -261,7 +262,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(2);
@@ -294,7 +295,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(2);
@@ -326,7 +327,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(2);
@@ -358,7 +359,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(2);
@@ -397,7 +398,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
       .buildList();
 
 
-    RawDataProcessReportResultDto result =
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
       evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
 
     // then
@@ -436,7 +437,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    RawDataProcessReportResultDto result =
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
       evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
     // then
     assertThat(result.getData()).isEmpty();

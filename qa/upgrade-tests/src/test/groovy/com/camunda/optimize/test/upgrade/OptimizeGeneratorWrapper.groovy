@@ -5,7 +5,6 @@
  */
 package com.camunda.optimize.test.upgrade
 
-
 class OptimizeGeneratorWrapper {
   String generatorVersion
   String generatorDirectory

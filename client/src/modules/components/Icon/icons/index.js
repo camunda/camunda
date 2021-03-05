@@ -54,6 +54,9 @@ import {ReactComponent as process} from './process.svg';
 import {ReactComponent as filter} from './filter.svg';
 import {ReactComponent as sortArrow} from './sort-arrow.svg';
 import {ReactComponent as sortMenu} from './sort-menu.svg';
+import {ReactComponent as info} from './info.svg';
+import {ReactComponent as show} from './show.svg';
+import {ReactComponent as hide} from './hide.svg';
 
 const icons = {
   autorefresh,
@@ -106,6 +109,9 @@ const icons = {
   'camunda-source': camundaSource,
   'sort-arrow': sortArrow,
   'sort-menu': sortMenu,
+  info,
+  hide,
+  show,
 };
 
 export default icons;

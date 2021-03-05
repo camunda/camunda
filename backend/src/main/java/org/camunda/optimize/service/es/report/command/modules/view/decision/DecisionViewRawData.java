@@ -9,13 +9,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -70,6 +70,11 @@ public class DecisionViewRawData extends DecisionViewPart {
 
   private final RawDecisionDataResultDtoMapper rawDataSingleReportResultDtoMapper =
     new RawDecisionDataResultDtoMapper();
+
+  @Override
+  public ViewProperty getViewProperty(final ExecutionContext<DecisionReportDataDto> context) {
+    return ViewProperty.RAW_DATA;
+  }
 
   @Override
   public void adjustSearchRequest(final SearchRequest searchRequest,
@@ -196,29 +201,26 @@ public class DecisionViewRawData extends DecisionViewPart {
       );
     }
 
-    final RawDataDecisionReportResultDto rawDataSingleReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
-      rawDataDecisionInstanceDtos, response.getHits().getTotalHits().value, context
-    );
-    addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawDataSingleReportResultDto);
-    return new ViewResult().setDecisionRawData(rawDataSingleReportResultDto);
+    final List<RawDataDecisionInstanceDto> rawData = rawDataSingleReportResultDtoMapper
+      .mapFrom(rawDataDecisionInstanceDtos);
+    addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawData);
+    return new ViewResult().setRawData(rawData);
   }
 
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto dataForCommandKey) {
-    final DecisionViewDto view = new DecisionViewDto();
-    view.setProperty(DecisionViewProperty.RAW_DATA);
-    dataForCommandKey.setView(view);
+    dataForCommandKey.setView(new DecisionViewDto(ViewProperty.RAW_DATA));
   }
 
   private void addNewVariablesAndDtoFieldsToTableColumnConfig(final ExecutionContext<DecisionReportDataDto> context,
-                                                              final RawDataDecisionReportResultDto result) {
-    final List<String> variableNames = result.getData()
+                                                              final List<RawDataDecisionInstanceDto> rawData) {
+    final List<String> variableNames = rawData
       .stream()
       .flatMap(rawDataDecisionInstanceDto -> rawDataDecisionInstanceDto.getInputVariables().values().stream())
       .map(this::getPrefixedInputVariableId)
       .collect(toList());
     variableNames.addAll(
-      result.getData()
+      rawData
         .stream()
         .flatMap(rawDataDecisionInstanceDto -> rawDataDecisionInstanceDto.getOutputVariables().values().stream())
         .map(this::getPrefixedOutputVariableId)

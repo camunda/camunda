@@ -40,6 +40,7 @@ fi
 # and the optimize jar
 OPTIMIZE_CLASSPATH="${BASEDIR}/config:${BASEDIR}/lib/*:${BASEDIR}/optimize-backend-${project.version}.jar"
 
+JAVA_SYSTEM_PROPERTIES=""
 RUN_UPGRADE=false
 for argument in "$@"
 do

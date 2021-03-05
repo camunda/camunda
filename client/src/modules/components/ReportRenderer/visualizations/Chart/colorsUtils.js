@@ -5,6 +5,7 @@
  */
 
 import {formatters} from 'services';
+
 const {convertToMilliseconds} = formatters;
 
 const darkColors = {
@@ -31,19 +32,6 @@ export function getColorFor(type, isDark) {
   } else {
     return lightColors[type];
   }
-}
-
-export function createColors(amount, isDark) {
-  const colors = [];
-  // added an offset of 50 to avoid red colors
-  const offset = 50;
-  const startValue = offset;
-  const stopValue = 360 - offset;
-  const stepSize = ~~((stopValue - startValue) / amount);
-  for (let i = 0; i < amount; i++) {
-    colors.push(`hsl(${i * stepSize + offset}, 65%, ${isDark ? 40 : 50}%)`);
-  }
-  return colors;
 }
 
 export function determineBarColor({unit, value, isBelow}, data, datasetColor, isStriped, isDark) {

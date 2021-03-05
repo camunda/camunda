@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +36,7 @@ public class EventProcessMappingCreateRequestDto extends EventProcessMappingRequ
   public EventProcessMappingCreateRequestDto(String name,
                                              String xml,
                                              Map<String, EventMappingDto> mappings,
-                                             List<EventSourceEntryDto> eventSources,
+                                             List<EventSourceEntryDto<?>> eventSources,
                                              boolean autogenerate) {
     super(name, xml, mappings, eventSources);
     this.autogenerate = autogenerate;

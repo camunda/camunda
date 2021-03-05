@@ -29,7 +29,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.ScriptQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
@@ -42,6 +41,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
+import static org.camunda.optimize.es.aggregations.NumberHistogramAggregationUtil.generateHistogramFromScript;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_START_DATE;
@@ -53,6 +53,7 @@ import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestP
 import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+
 
 @Component
 @AllArgsConstructor
@@ -141,7 +142,8 @@ public class DurationAggregationService {
   private Optional<AggregationBuilder> createLimitedGroupByScriptedDurationAggregation(
     final ExecutionContext<ProcessReportDataDto> context,
     final DistributedByPart<ProcessReportDataDto> distributedByPart,
-    final Script durationCalculationScript,
+    final Script
+      durationCalculationScript,
     final MinMaxStatDto minMaxStats,
     final BiFunction<FilterOperator, Double, QueryBuilder> limitingFilterCreator) {
 
@@ -163,13 +165,14 @@ public class DurationAggregationService {
     final BoolQueryBuilder limitingFilter = QueryBuilders.boolQuery()
       .filter(limitingFilterCreator.apply(FilterOperator.GREATER_THAN_EQUALS, minValueInMillis));
 
-    final HistogramAggregationBuilder histogramAggregation = AggregationBuilders
-      .histogram(DURATION_HISTOGRAM_AGGREGATION)
-      .interval(intervalInMillis)
-      .offset(minValueInMillis)
-      .script(durationCalculationScript)
-      .extendedBounds(minValueInMillis, maxValueInMillis)
-      .subAggregation(distributedByPart.createAggregation(context));
+    final HistogramAggregationBuilder histogramAggregation = generateHistogramFromScript(
+      DURATION_HISTOGRAM_AGGREGATION,
+      intervalInMillis,
+      minValueInMillis,
+      durationCalculationScript,
+      maxValueInMillis,
+      distributedByPart.createAggregation(context)
+    );
 
     return Optional.of(wrapWithFilterLimitedParentAggregation(limitingFilter, histogramAggregation));
   }

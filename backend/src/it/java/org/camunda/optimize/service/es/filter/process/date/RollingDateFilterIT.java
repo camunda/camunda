@@ -10,10 +10,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -43,7 +42,7 @@ public class RollingDateFilterIT extends AbstractDateFilterIT {
 
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
-    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
+    AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> result =
       createAndEvaluateReportWithStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
@@ -86,7 +85,7 @@ public class RollingDateFilterIT extends AbstractDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceEndTime);
 
     //token has to be refreshed, as the old one expired already after moving the date
-    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
+    AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> result =
       createAndEvaluateReportWithRollingEndDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
@@ -130,10 +129,9 @@ public class RollingDateFilterIT extends AbstractDateFilterIT {
                            .start(1L, DateFilterUnit.DAYS)
                            .add()
                            .buildList());
-    ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
+    List<MapResultEntryDto> resultData = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isEmpty();
   }
 

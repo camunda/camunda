@@ -5,27 +5,25 @@
  */
 package org.camunda.optimize.service.es.report.command.process.flownode.frequency.groupby.flownode;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
-import org.camunda.optimize.service.es.report.command.CommandContext;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByFlowNode;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.flownode.ProcessGroupByFlowNodeDuration;
 import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountFlowNodeFrequency;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessHyperMapReportResult;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
-public class FlowNodeFrequencyGroupByFlowNodeDurationByFlowNodeCmd extends ProcessCmd<ReportHyperMapResultDto> {
+public class FlowNodeFrequencyGroupByFlowNodeDurationByFlowNodeCmd extends ProcessCmd<List<HyperMapResultEntryDto>> {
   public FlowNodeFrequencyGroupByFlowNodeDurationByFlowNodeCmd(final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
   @Override
-  protected ProcessReportCmdExecutionPlan<ReportHyperMapResultDto> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
+  protected ProcessReportCmdExecutionPlan<List<HyperMapResultEntryDto>> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
     return builder.createExecutionPlan()
       .processCommand()
       .view(ProcessViewCountFlowNodeFrequency.class)
@@ -35,15 +33,4 @@ public class FlowNodeFrequencyGroupByFlowNodeDurationByFlowNodeCmd extends Proce
       .build();
   }
 
-  @Override
-  public ReportEvaluationResult<ReportHyperMapResultDto, SingleProcessReportDefinitionRequestDto> evaluate(
-    final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext) {
-    final ReportHyperMapResultDto evaluate = executionPlan.evaluate(commandContext);
-    return new SingleProcessHyperMapReportResult(evaluate, commandContext.getReportDefinition());
-  }
-
-  @Override
-  public String createCommandKey() {
-    return executionPlan.generateCommandKey();
-  }
 }

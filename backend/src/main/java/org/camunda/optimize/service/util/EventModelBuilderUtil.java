@@ -25,11 +25,11 @@ import org.camunda.bpm.model.bpmn.instance.IntermediateCatchEvent;
 import org.camunda.bpm.model.bpmn.instance.ParallelGateway;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.bpmn.instance.dc.Bounds;
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.autogeneration.AutogenerationAdjacentEventTypesDto;
 import org.camunda.optimize.dto.optimize.query.event.autogeneration.AutogenerationEventGraphDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -113,11 +113,14 @@ public class EventModelBuilderUtil {
     return removeIllegalCharacters(generateId(gatewayDirection.toString().toLowerCase(), eventTypeDto));
   }
 
-  public static String generateModelGatewayIdForSource(final EventSourceEntryDto eventSourceEntryDto,
+  public static String generateModelGatewayIdForSource(final CamundaEventSourceEntryDto camundaEventSourceEntryDto,
                                                        final GatewayDirection gatewayDirection) {
     return String.join(
       "_",
-      Arrays.asList(gatewayDirection.toString().toLowerCase(), eventSourceEntryDto.getProcessDefinitionKey())
+      Arrays.asList(
+        gatewayDirection.toString().toLowerCase(),
+        camundaEventSourceEntryDto.getConfiguration().getProcessDefinitionKey()
+      )
     );
   }
 
@@ -286,7 +289,8 @@ public class EventModelBuilderUtil {
     );
   }
 
-  private static List<EventTypeDto> identifyAndPromoteBestFitStartEvents(final Map<EventTypeDto, AutogenerationAdjacentEventTypesDto> adjacentEventTypesDtoMap) {
+  private static List<EventTypeDto> identifyAndPromoteBestFitStartEvents(
+    final Map<EventTypeDto, AutogenerationAdjacentEventTypesDto> adjacentEventTypesDtoMap) {
     final Map<Integer, List<Map.Entry<EventTypeDto, AutogenerationAdjacentEventTypesDto>>> adjacentEventsByPrecedingEventCount =
       adjacentEventTypesDtoMap.entrySet()
         .stream()
@@ -308,8 +312,9 @@ public class EventModelBuilderUtil {
     return startEvents;
   }
 
-  private static List<EventTypeDto> identifyAndPromoteBestFitEndEvents(final Map<EventTypeDto, AutogenerationAdjacentEventTypesDto> adjacentEventTypesDtoMap,
-                                                                       final List<EventTypeDto> startEvents) {
+  private static List<EventTypeDto> identifyAndPromoteBestFitEndEvents(
+    final Map<EventTypeDto, AutogenerationAdjacentEventTypesDto> adjacentEventTypesDtoMap,
+    final List<EventTypeDto> startEvents) {
     final Map<Integer, List<Map.Entry<EventTypeDto, AutogenerationAdjacentEventTypesDto>>> adjacentEventsBySucceedingEventCount =
       adjacentEventTypesDtoMap.entrySet()
         .stream()

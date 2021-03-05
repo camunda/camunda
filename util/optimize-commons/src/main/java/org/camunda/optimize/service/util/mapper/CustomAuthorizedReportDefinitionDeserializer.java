@@ -10,8 +10,8 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import org.camunda.optimize.dto.optimize.AuthorizedEntityDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedEntityDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 
 import java.io.IOException;

@@ -9,7 +9,7 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 
 import java.util.Arrays;
 import java.util.List;
@@ -25,7 +25,7 @@ public class DecisionStringContainsInputVariableQueryFilterIT extends AbstractDe
   private static final String INPUT_VARIABLE_ID_TO_FILTER_ON = STRING_INPUT_ID;
 
   @Override
-  protected void assertThatResultContainsVariables(final RawDataDecisionReportResultDto result,
+  protected void assertThatResultContainsVariables(final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result,
                                                    final String... shouldMatch) {
     assertThat(result.getData())
       .hasSize(shouldMatch.length)

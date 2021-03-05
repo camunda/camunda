@@ -7,17 +7,18 @@ package org.camunda.optimize.rest.eventprocess;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
@@ -38,7 +39,6 @@ import org.slf4j.event.Level;
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -57,7 +57,10 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamunda
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
-import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntryForGroup;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
@@ -76,7 +79,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
   @Test
   public void getEventCounts_noAuthentication() {
     // when
-    Response response = createPostEventCountsRequestExternalEventsOnly()
+    Response response = createPostEventCountsRequestAllExternalEvents()
       .withoutAuthentication()
       .execute();
 
@@ -95,9 +98,9 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void getEventCounts_externalOnly() {
+  public void getEventCounts_allExternalEventsOnly() {
     // when
-    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly()
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestAllExternalEvents()
       .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then all events are sorted using default group case-insensitive ordering
@@ -115,13 +118,110 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
+  public void getEventCounts_singleExternalEventsGroupOnly() {
+    // when
+    final ExternalEventSourceEntryDto externalEventSourceEntryForGroup =
+      createExternalEventSourceEntryForGroup(managementBbqEvent.getGroup().get());
+    final List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(Collections.singletonList(
+      externalEventSourceEntryForGroup))
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
+
+    // then only external events of specified group are included
+    assertThat(eventCountDtos)
+      .isNotNull()
+      .hasSize(1)
+      .containsExactly(createManagementBbqCountDto(false));
+  }
+
+  @Test
+  public void getEventCounts_singleExternalEventsGroupOnly_noGroupValue() {
+    // when
+    final ExternalEventSourceEntryDto externalEventSourceEntryForGroup = createExternalEventSourceEntryForGroup(null);
+    final List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(Collections.singletonList(
+      externalEventSourceEntryForGroup))
+      .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
+
+    // then only external events of specified group are included
+    assertThat(eventCountDtos)
+      .isNotNull()
+      .hasSize(1)
+      .containsExactly(createNullGroupCountDto(false));
+  }
+
+  @Test
+  public void getEventCounts_multipleExternalEventsGroups() {
+    // when
+    final List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(Arrays.asList(
+      createExternalEventSourceEntryForGroup("management"),
+      createExternalEventSourceEntryForGroup("backend"),
+      createExternalEventSourceEntryForGroup(null)
+    )).executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
+
+    // then only external events of the specified groups are included
+    assertThat(eventCountDtos)
+      .isNotNull()
+      .hasSize(3)
+      .containsExactly(
+        createNullGroupCountDto(false),
+        // Only the "backend" event that matches with the same case is returned
+        createBackendKetchupCountDto(false),
+        createManagementBbqCountDto(false)
+      );
+  }
+
+  @Test
+  public void getEventCounts_multipleExternalEventsGroupsAndCamundaSource() {
+    // given
+    final String definitionKey = "myProcess";
+    deployAndStartUserTaskProcess(definitionKey);
+    importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
+
+    // when
+    final List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequest(Arrays.asList(
+      createExternalEventSourceEntryForGroup("management"),
+      createExternalEventSourceEntryForGroup(null),
+      createCamundaEventSourceEntryDto(
+        definitionKey,
+        Collections.singletonList(EventScopeType.ALL),
+        ImmutableList.of("1")
+      )
+    )).executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(eventCountDtos)
+      .isNotNull()
+      .hasSize(6)
+      .containsExactly(
+        createNullGroupCountDto(false),
+        createManagementBbqCountDto(false),
+        createEndEventCountDto(definitionKey, 0L),
+        createStartEventCountDto(definitionKey, 1L),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK, 0L),
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK, 1L)
+      );
+  }
+
+  @Test
+  public void getEventCounts_multipleExternalEventsGroupsIncludingAllEvents() {
+    // when
+    final Response response = createPostEventCountsRequest(Arrays.asList(
+      createExternalEventSourceEntryForGroup("management"),
+      createExternalEventAllGroupsSourceEntry()
+    )).execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
   public void getEventCounts_correctCountEventIfBucketLimitIsBeingHit() {
     // given
     final int bucketLimit = 3;
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
 
     // when
-    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly()
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestAllExternalEvents()
       .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then all events are sorted using default group case-insensitive ordering
@@ -379,6 +479,8 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     // V1 for tenant1
     deployAndStartUserTaskProcess(definitionKey, tenantId1);
     // V1 for tenant2
+    engineIntegrationExtension.createTenant(tenantId2);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(DEFAULT_USERNAME, tenantId2, RESOURCE_TYPE_TENANT);
     deployAndStartServiceTaskProcess(definitionKey, tenantId2);
 
     importAllEngineEntitiesFromScratch();
@@ -386,14 +488,17 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
 
     // when
     List<EventCountResponseDto> eventCountDtos =
-      createPostEventCountsRequest(Lists.newArrayList(
-        EventSourceEntryDto.builder()
-          .type(EventSourceType.CAMUNDA)
-          .processDefinitionKey(definitionKey)
-          .versions(ImmutableList.of("1"))
-          .eventScope(Collections.singletonList(EventScopeType.ALL))
-          .tenants(ImmutableList.of(tenantId2))
-          .build()
+      createPostEventCountsRequest(Arrays.asList(
+        CamundaEventSourceEntryDto.builder()
+          .configuration(
+            CamundaEventSourceConfigDto.builder()
+              .eventScope(Collections.singletonList(EventScopeType.ALL))
+              .processDefinitionKey(definitionKey)
+              .tracedByBusinessKey(true)
+              .versions(ImmutableList.of("1"))
+              .tenants(ImmutableList.of(tenantId2))
+              .build()
+          ).build()
       )).executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
@@ -451,7 +556,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void getEventCounts_camundaAndExternal_allEvents() {
+  public void getEventCounts_camundaAndAllExternal_allEvents() {
     // given
     final String definitionKey = "myProcess";
     deployAndStartUserTaskProcess(definitionKey);
@@ -463,7 +568,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     List<EventCountResponseDto> eventCountDtos =
       createPostEventCountsRequest(
         ImmutableList.of(
-          createExternalEventSourceEntry(),
+          createExternalEventAllGroupsSourceEntry(),
           createCamundaEventSourceEntryDto(
             definitionKey,
             Collections.singletonList(EventScopeType.ALL),
@@ -489,7 +594,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
   }
 
   @Test
-  public void getEventCounts_camundaAndExternalEvents_usingSearchTerm() {
+  public void getEventCounts_camundaAndAllExternalEvents_usingSearchTerm() {
     // given
     final String definitionKey = "myProcessEtch";
     deployAndStartUserTaskProcess(definitionKey);
@@ -501,7 +606,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     final EventCountRequestDto countRequestDto = EventCountRequestDto.builder()
       .eventSources(
         ImmutableList.of(
-          createExternalEventSourceEntry(),
+          createExternalEventAllGroupsSourceEntry(),
           createCamundaEventSourceEntryDto(
             definitionKey,
             Collections.singletonList(EventScopeType.ALL),
@@ -533,7 +638,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
   @ValueSource(strings = {"registered_ev", "registered_event", "regISTERED_event"})
   public void getEventCounts_usingSearchTermLongerThanNGramMax(String searchTerm) {
     // when
-    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(searchTerm)
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestAllExternalEvents(searchTerm)
       .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then matching event counts are return using default group case-insensitive ordering
@@ -549,7 +654,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     EventCountSorter eventCountSorter = new EventCountSorter("source", SortOrder.DESC);
 
     // when
-    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountSorter)
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestAllExternalEvents(eventCountSorter)
       .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then all matching event counts are return using sort and ordering provided
@@ -574,8 +679,8 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     importAllEngineEntitiesFromScratch();
     processEventTracesAndSequences();
 
-    final List<EventSourceEntryDto> sources = ImmutableList.of(
-      createExternalEventSourceEntry(),
+    final List<EventSourceEntryDto<?>> sources = ImmutableList.of(
+      createExternalEventAllGroupsSourceEntry(),
       createCamundaEventSourceEntryDto(
         definitionKey,
         Collections.singletonList(EventScopeType.ALL),
@@ -627,7 +732,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     importAllEngineEntitiesFromScratch();
     processEventTracesAndSequences();
 
-    final List<EventSourceEntryDto> sources = Collections.singletonList(
+    final List<EventSourceEntryDto<?>> sources = Collections.singletonList(
       createCamundaEventSourceEntryDto(
         definitionKey,
         Collections.singletonList(EventScopeType.ALL),
@@ -686,7 +791,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     EventCountSorter eventCountSorter = new EventCountSorter("group", SortOrder.ASC);
 
     // when
-    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountSorter, null)
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestAllExternalEvents(eventCountSorter, null)
       .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then all matching event counts are return using sort and ordering provided
@@ -709,7 +814,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     EventCountSorter eventCountSorter = new EventCountSorter("notAField", null);
 
     // when
-    Response response = createPostEventCountsRequestExternalEventsOnly(eventCountSorter, null).execute();
+    Response response = createPostEventCountsRequestAllExternalEvents(eventCountSorter, null).execute();
 
     // then validation exception is thrown
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -721,7 +826,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     EventCountSorter eventCountSorter = new EventCountSorter("eventName", SortOrder.DESC);
 
     // when
-    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestAllExternalEvents(
       eventCountSorter,
       "etch"
     )
@@ -753,7 +858,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
         FIRST_TASK_ID, createEventMappingDto(null, previousMappedEvent),
         THIRD_TASK_ID, createEventMappingDto(nextMappedEvent, null)
       ))
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
     // when
@@ -786,7 +891,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
         FIRST_TASK_ID, createEventMappingDto(null, previousMappedEvent),
         THIRD_TASK_ID, createEventMappingDto(nextMappedEvent, null)
       ))
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
     // when
@@ -807,7 +912,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
       .targetFlowNodeId(SECOND_TASK_ID)
       .xml(simpleDiagramXml)
       .mappings(ImmutableMap.of(THIRD_TASK_ID, createEventMappingDto(null, nextMappedEventWithNullProperties)))
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
     // when
@@ -840,7 +945,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
         SECOND_TASK_ID, createEventMappingDto(nearestNextMappedEvent, null),
         THIRD_TASK_ID, createEventMappingDto(furthestNextMappedEvent, null)
       ))
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
     // when
@@ -873,7 +978,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
         FIRST_TASK_ID, createEventMappingDto(firstMappedEvent, null),
         THIRD_TASK_ID, createEventMappingDto(thirdMappedEvent, null)
       ))
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
     // when
@@ -906,7 +1011,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
         FIRST_TASK_ID, createEventMappingDto(mappedEvent, null),
         SECOND_TASK_ID, createEventMappingDto(otherMappedEvent, null)
       ))
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
     // when
@@ -935,7 +1040,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
       .targetFlowNodeId(SECOND_TASK_ID)
       .xml(simpleDiagramXml)
       .mappings(ImmutableMap.of(FIRST_TASK_ID, createEventMappingDto(previousMappedEvent, null)))
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
     EventCountSorter eventCountSorter = new EventCountSorter("source", SortOrder.DESC);
 
@@ -966,7 +1071,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
       .targetFlowNodeId(SECOND_TASK_ID)
       .xml(simpleDiagramXml)
       .mappings(ImmutableMap.of(FIRST_TASK_ID, createEventMappingDto(previousMappedEvent, null)))
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
     // when
@@ -994,7 +1099,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
       .targetFlowNodeId(SECOND_TASK_ID)
       .xml(simpleDiagramXml)
       .mappings(ImmutableMap.of(FIRST_TASK_ID, createEventMappingDto(previousMappedEvent, null)))
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
     // when
@@ -1018,7 +1123,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     EventCountRequestDto eventCountRequestDto = EventCountRequestDto.builder()
       .targetFlowNodeId(SECOND_TASK_ID)
       .xml(simpleDiagramXml)
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
     // when
@@ -1049,7 +1154,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
       .targetFlowNodeId(FOURTH_TASK_ID)
       .xml(simpleDiagramXml)
       .mappings(ImmutableMap.of(FIRST_TASK_ID, createEventMappingDto(previousMappedEvent, null)))
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
     // when
@@ -1082,7 +1187,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
         SECOND_TASK_ID,
         createEventMappingDto(previousMappedStartEvent, previousMappedEndEvent)
       ))
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
     // when
@@ -1108,12 +1213,14 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
       .targetFlowNodeId("some_unknown_id")
       .xml(simpleDiagramXml)
       .mappings(ImmutableMap.of(FIRST_TASK_ID, createEventMappingDto(eventTypeFromEvent(backendKetchupEvent), null)))
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
-    // then the correct status code is returned
-    createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
+    // when
+    final Response response = createPostEventCountsRequest(eventCountRequestDto).execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -1126,12 +1233,14 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
         "some_unknown_id",
         createEventMappingDto(eventTypeFromEvent(backendKetchupEvent), null)
       ))
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
-    // then the correct status code is returned
-    createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
+    // when
+    final Response response = createPostEventCountsRequest(eventCountRequestDto).execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -1141,12 +1250,14 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
       .targetFlowNodeId(SECOND_TASK_ID)
       .xml("")
       .mappings(Collections.emptyMap())
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
-    // then the correct status code is returned
-    createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
+    // when
+    final Response response = createPostEventCountsRequest(eventCountRequestDto).execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -1156,12 +1267,14 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
       .targetFlowNodeId("")
       .xml(simpleDiagramXml)
       .mappings(Collections.emptyMap())
-      .eventSources(createEventSourcesWithExternalEventsOnly())
+      .eventSources(createEventSourcesWithAllExternalEventsOnly())
       .build();
 
-    // then the correct status code is returned
-    createPostEventCountsRequest(eventCountRequestDto)
-      .executeAndReturnList(EventCountResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
+    // when
+    final Response response = createPostEventCountsRequest(eventCountRequestDto).execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -1203,7 +1316,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     elasticSearchIntegrationTestExtension.deleteIndexOfMapping(new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX));
 
     // when
-    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly()
+    List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestAllExternalEvents()
       .executeAndReturnList(EventCountResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
@@ -1283,30 +1396,30 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     return createPostEventCountsRequest(null, null, eventCountRequestDto);
   }
 
-  private OptimizeRequestExecutor createPostEventCountsRequestExternalEventsOnly() {
-    return createPostEventCountsRequestExternalEventsOnly(null, null);
+  private OptimizeRequestExecutor createPostEventCountsRequestAllExternalEvents() {
+    return createPostEventCountsRequestAllExternalEvents(null, null);
   }
 
-  private OptimizeRequestExecutor createPostEventCountsRequestExternalEventsOnly(String searchTerm) {
-    return createPostEventCountsRequestExternalEventsOnly(null, searchTerm);
+  private OptimizeRequestExecutor createPostEventCountsRequestAllExternalEvents(String searchTerm) {
+    return createPostEventCountsRequestAllExternalEvents(null, searchTerm);
   }
 
-  private OptimizeRequestExecutor createPostEventCountsRequestExternalEventsOnly(EventCountSorter eventCountSorter) {
-    return createPostEventCountsRequestExternalEventsOnly(eventCountSorter, null);
+  private OptimizeRequestExecutor createPostEventCountsRequestAllExternalEvents(EventCountSorter eventCountSorter) {
+    return createPostEventCountsRequestAllExternalEvents(eventCountSorter, null);
   }
 
-  private OptimizeRequestExecutor createPostEventCountsRequestExternalEventsOnly(
+  private OptimizeRequestExecutor createPostEventCountsRequestAllExternalEvents(
     final EventCountSorter eventCountSorter, final String searchTerm) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildPostEventCountRequest(
         eventCountSorter,
         searchTerm,
-        EventCountRequestDto.builder().eventSources(createEventSourcesWithExternalEventsOnly()).build()
+        EventCountRequestDto.builder().eventSources(createEventSourcesWithAllExternalEventsOnly()).build()
       );
   }
 
-  private List<EventSourceEntryDto> createEventSourcesWithExternalEventsOnly() {
-    return Collections.singletonList(createExternalEventSourceEntry());
+  private List<EventSourceEntryDto<?>> createEventSourcesWithAllExternalEventsOnly() {
+    return Collections.singletonList(createExternalEventAllGroupsSourceEntry());
   }
 
   private OptimizeRequestExecutor createPostEventCountsRequestCamundaSourceOnly(final String definitionKey,
@@ -1322,13 +1435,13 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
   private OptimizeRequestExecutor createPostEventCountsRequestCamundaSourceOnly(final String definitionKey,
                                                                                 final List<EventScopeType> eventScope,
                                                                                 final List<String> versions) {
-    final ArrayList<EventSourceEntryDto> eventSources = Lists.newArrayList(
+    final List<EventSourceEntryDto<?>> eventSources = Arrays.asList(
       createCamundaEventSourceEntryDto(definitionKey, eventScope, versions)
     );
     return createPostEventCountsRequest(eventSources);
   }
 
-  private OptimizeRequestExecutor createPostEventCountsRequest(final List<EventSourceEntryDto> eventSources) {
+  private OptimizeRequestExecutor createPostEventCountsRequest(final List<EventSourceEntryDto<?>> eventSources) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildPostEventCountRequest(EventCountRequestDto.builder().eventSources(eventSources).build());
   }
@@ -1350,14 +1463,16 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
       .buildPostEventCountRequest(eventCountSorter, searchTerm, eventCountSuggestionsRequestDto);
   }
 
-  private EventSourceEntryDto createCamundaEventSourceEntryDto(final String definitionKey,
-                                                               final List<EventScopeType> eventScope,
-                                                               final List<String> versions) {
-    return EventSourceEntryDto.builder()
-      .type(EventSourceType.CAMUNDA)
-      .processDefinitionKey(definitionKey)
-      .versions(versions)
-      .eventScope(eventScope)
+  private CamundaEventSourceEntryDto createCamundaEventSourceEntryDto(final String definitionKey,
+                                                                      final List<EventScopeType> eventScope,
+                                                                      final List<String> versions) {
+    return CamundaEventSourceEntryDto.builder()
+      .configuration(CamundaEventSourceConfigDto.builder()
+                       .eventScope(eventScope)
+                       .tracedByBusinessKey(true)
+                       .processDefinitionKey(definitionKey)
+                       .versions(versions)
+                       .build())
       .build();
   }
 

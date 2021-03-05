@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.eventprocess;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediator;
@@ -23,9 +24,12 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+
+import static org.camunda.optimize.dto.optimize.query.event.process.EventProcessState.PUBLISH_PENDING;
 
 @AllArgsConstructor
 @Slf4j
@@ -78,7 +82,7 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
       log.debug(
         "Scheduling import round for {}",
         currentImportRound.stream()
-          .map(mediator1 -> mediator1.getClass().getSimpleName())
+          .map(mediator -> mediator.getClass().getSimpleName())
           .collect(Collectors.joining(","))
       );
     }
@@ -94,7 +98,12 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
       })
       .toArray(CompletableFuture[]::new);
 
-    if (importTaskFutures.length == 0 && !forceImport) {
+    Optional<EventProcessPublishStateDto> pendingPublish = eventBasedProcessIndexManager.getPublishedInstanceStates()
+      .stream()
+      .filter(s -> s.getState().equals(PUBLISH_PENDING))
+      .findFirst();
+
+    if (importTaskFutures.length == 0 && !forceImport && !pendingPublish.isPresent()) {
       doBackoff(allInstanceMediators);
     }
 

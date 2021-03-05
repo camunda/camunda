@@ -10,13 +10,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
-import org.camunda.optimize.service.es.report.result.NumberResult;
 import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -69,9 +69,11 @@ public class AlertJob implements Job {
                                                           + "[" + alert.getReportId() + "]"
                                                           + "from Elasticsearch. Report does not exist."));
       final ReportEvaluationInfo reportEvaluationInfo = ReportEvaluationInfo.builder(reportDefinition).build();
-      NumberResult reportResult = (NumberResult) reportEvaluator
-        .evaluateReport(reportEvaluationInfo)
-        .getEvaluationResult();
+      final SingleReportEvaluationResult<Double> evaluationResult =
+        (SingleReportEvaluationResult<Double>) reportEvaluator
+          .evaluateReport(reportEvaluationInfo)
+          .getEvaluationResult();
+      Double reportResult = evaluationResult.getFirstCommandResult().getFirstMeasureData();
 
       AlertJobResult alertJobResult = null;
       if (thresholdExceeded(alert, reportResult)) {
@@ -108,7 +110,7 @@ public class AlertJob implements Job {
     JobKey key, String alertId,
     AlertDefinitionDto alert,
     ReportDefinitionDto reportDefinition,
-    NumberResult result
+    Double result
   ) {
     boolean haveToSendReminder = isReminder(key) && alert.isTriggered();
     boolean haveToNotify = haveToSendReminder || !alert.isTriggered();
@@ -153,7 +155,7 @@ public class AlertJob implements Job {
   private String composeAlertText(
     AlertDefinitionDto alert,
     ReportDefinitionDto reportDefinition,
-    NumberResult result
+    Double result
   ) {
     String statusText = AlertThresholdOperator.LESS.equals(alert.getThresholdOperator())
       ? "is not reached" : "was exceeded";
@@ -163,7 +165,7 @@ public class AlertJob implements Job {
   private String composeFixText(
     AlertDefinitionDto alert,
     ReportDefinitionDto reportDefinition,
-    NumberResult result) {
+    Double result) {
     String statusText = AlertThresholdOperator.LESS.equals(alert.getThresholdOperator())
       ? "has been reached" : "is not exceeded anymore";
     return composeAlertText(alert, reportDefinition, result, statusText);
@@ -171,7 +173,7 @@ public class AlertJob implements Job {
 
   private String composeAlertText(final AlertDefinitionDto alert,
                                   final ReportDefinitionDto reportDefinition,
-                                  final NumberResult result,
+                                  final Double result,
                                   final String statusText) {
     return "Camunda Optimize - Report Status\n" +
       "Alert name: " + alert.getName() + "\n" +
@@ -180,18 +182,18 @@ public class AlertJob implements Job {
       formatValueToHumanReadableString(alert.getThreshold(), reportDefinition) +
       "] " + statusText +
       ". Current value: " +
-      formatValueToHumanReadableString(result.getResultAsNumber(), reportDefinition) +
+      formatValueToHumanReadableString(result, reportDefinition) +
       ". Please check your Optimize report for more information! \n" +
       createViewLink(alert);
   }
 
-  private boolean thresholdExceeded(AlertDefinitionDto alert, NumberResult result) {
+  private boolean thresholdExceeded(AlertDefinitionDto alert, Double result) {
     boolean exceeded = false;
-    if (result.getResultAsNumber() != null) {
+    if (result != null) {
       if (AlertThresholdOperator.GREATER.equals(alert.getThresholdOperator())) {
-        exceeded = result.getResultAsNumber() > alert.getThreshold();
+        exceeded = result > alert.getThreshold();
       } else if (AlertThresholdOperator.LESS.equals(alert.getThresholdOperator())) {
-        exceeded = result.getResultAsNumber() < alert.getThreshold();
+        exceeded = result < alert.getThreshold();
       }
     }
     return exceeded;
@@ -206,7 +208,7 @@ public class AlertJob implements Job {
   private boolean isDurationReport(ReportDefinitionDto reportDefinition) {
     if (reportDefinition.getData() instanceof ProcessReportDataDto) {
       ProcessReportDataDto data = (ProcessReportDataDto) reportDefinition.getData();
-      return data.getView().getProperty().equals(ProcessViewProperty.DURATION);
+      return data.getView().getProperty().equals(ViewProperty.DURATION);
     }
     return false;
   }

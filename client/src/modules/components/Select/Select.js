@@ -11,65 +11,46 @@ import {ignoreFragments} from './service';
 import {t} from 'translation';
 
 export default class Select extends React.Component {
-  state = {
-    selected: this.props.value,
-    selectedLabel: t('common.select'),
-  };
-
-  componentDidMount() {
-    this.updateLabel();
-  }
-
-  componentDidUpdate({value}) {
-    if (value !== this.props.value) {
-      this.label = t('common.select');
-      this.setState({selected: this.props.value}, this.updateLabel);
-    }
-  }
-
-  updateLabel = () => {
-    if (this.label) {
-      this.setState({selectedLabel: this.label});
-    }
-  };
-
-  renderChildrenWithProps = (children, label) => {
+  renderChildrenWithProps = (children) => {
     return React.Children.map(children, (child) => {
       const props = {};
 
       if (child && child.type === Select.Submenu) {
         props.checked = React.Children.toArray(child.props.children).some(
-          (child) => child && child.props.value === this.state.selected
+          (child) => child && child.props.value === this.props.value
         );
 
-        props.children = this.renderChildrenWithProps(child.props.children, child.props.label);
+        props.children = this.renderChildrenWithProps(child.props.children);
       } else {
         props.onClick = this.onChange;
-        props.checked = child && child.props.value === this.state.selected;
-        if (props.checked) {
-          this.storeLabel(label, child.props.children);
-        }
+        props.checked = child && child.props.value === this.props.value;
       }
 
       return child && React.cloneElement(child, props);
     });
   };
 
-  storeLabel = (label, subLabel) => {
-    if (label) {
-      this.label = label + ' : ' + subLabel;
-    } else {
-      this.label = subLabel;
-    }
+  getLabel = (children = this.props.children) => {
+    let label;
+
+    React.Children.forEach(ignoreFragments(children), (child) => {
+      if (child?.props.value === this.props.value) {
+        label = child.props.children;
+      } else if (child?.type === Select.Submenu) {
+        const sublabel = this.getLabel(child.props.children);
+        if (sublabel) {
+          label = child.props.label + ' : ' + sublabel;
+        }
+      }
+    });
+
+    return label;
   };
 
   onChange = (evt) => {
     const value = evt.target.getAttribute('value');
-    if (value) {
-      this.setState({selected: value});
-      if (this.props.onChange) {
-        this.props.onChange(value);
-      }
+    if (value && this.props.onChange) {
+      this.props.onChange(value);
     }
   };
 
@@ -79,7 +60,7 @@ export default class Select extends React.Component {
     return (
       <Dropdown
         {...this.props}
-        label={this.state.selectedLabel}
+        label={this.getLabel() || t('common.select')}
         className={classnames('Select', this.props.className)}
       >
         {this.renderChildrenWithProps(children)}

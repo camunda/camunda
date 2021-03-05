@@ -7,20 +7,23 @@ package org.camunda.optimize.service.es.report.process.single.flownode.duration.
 
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
+import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -69,9 +72,9 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
 
     // then
@@ -79,7 +82,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.FLOW_NODE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(DistributedByType.FLOW_NODE);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     final VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
@@ -90,11 +93,12 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, 10., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 10., START_EVENT)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("aStringValue")
+          .distributedByContains(END_EVENT, 10., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 10., START_EVENT)
       .doAssert(result);
     //@formatter:on
   }
@@ -114,18 +118,19 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "doubleVar",
       VariableType.DOUBLE
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     //@formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains("1.00")
-        .distributedByContains(END_EVENT, 10., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 10., START_EVENT)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("1.00")
+          .distributedByContains(END_EVENT, 10., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 10., START_EVENT)
       .doAssert(result);
     //@formatter:on
   }
@@ -166,28 +171,29 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
     reportData.getConfiguration().getCustomBucket().setActive(true);
     reportData.getConfiguration().getCustomBucket().setBaseline(10.0);
     reportData.getConfiguration().getCustomBucket().setBucketSize(100.0);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     //@formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
-      .groupByContains("10.00")
-        .distributedByContains(END_EVENT, 10., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 10., START_EVENT)
-      .groupByContains("110.00")
-        .distributedByContains(END_EVENT, 10., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 10., START_EVENT)
-      .groupByContains("210.00")
-        .distributedByContains(END_EVENT, 10., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 10., START_EVENT)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("10.00")
+          .distributedByContains(END_EVENT, 10., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 10., START_EVENT)
+        .groupByContains("110.00")
+          .distributedByContains(END_EVENT, 10., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 10., START_EVENT)
+        .groupByContains("210.00")
+          .distributedByContains(END_EVENT, 10., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 10., START_EVENT)
       .doAssert(result);
     //@formatter:on
   }
@@ -225,12 +231,13 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       VariableType.DATE
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(unit);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    HyperMapAsserter asserter = HyperMapAsserter.asserter()
+    HyperMapAsserter.MeasureAdder asserter = HyperMapAsserter.asserter()
       .processInstanceCount(numberOfInstances)
-      .processInstanceCountWithoutFilters(numberOfInstances);
+      .processInstanceCountWithoutFilters(numberOfInstances)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE);
 
     dateVarValues
       .forEach(date -> {
@@ -273,24 +280,24 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       VariableType.DATE
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(AggregateByDateUnit.AUTOMATIC);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(numberOfInstances);
-    assertThat(result.getData()).isNotNull().hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
 
     // the bucket span covers the earliest and the latest date variable value
     final DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
-    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(result.getData().get(0).getKey()));
+    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(result.getFirstMeasureData().get(0).getKey()));
     final OffsetDateTime startOfLastBucket = OffsetDateTime
-      .from(formatter.parse(result.getData().get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1).getKey()));
+      .from(formatter.parse(result.getFirstMeasureData().get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1).getKey()));
     final OffsetDateTime firstTruncatedDateVariableValue =
       dateVarValue.plusMinutes(numberOfInstances).truncatedTo(ChronoUnit.MILLIS);
     final OffsetDateTime lastTruncatedDateVariableValue = dateVarValue.truncatedTo(ChronoUnit.MILLIS);
 
     assertThat(startOfFirstBucket).isBeforeOrEqualTo(firstTruncatedDateVariableValue);
     assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
-    assertThat(result.getData()
+    assertThat(result.getFirstMeasureData()
                  .stream()
                  .flatMap(hyperEntry -> hyperEntry.getValue().stream())
                  .filter(mapEntry -> mapEntry.getValue() != null)
@@ -336,23 +343,24 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "testVar",
       VariableType.STRING
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     //@formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(5L)
       .processInstanceCountWithoutFilters(5L)
-      .groupByContains("withValue")
-        .distributedByContains(END_EVENT, 10., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 10., START_EVENT)
-      .groupByContains("missing")
-        .distributedByContains(END_EVENT, 20., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 20., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 20., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 20., START_EVENT)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("withValue")
+          .distributedByContains(END_EVENT, 10., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 10., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 10., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 10., START_EVENT)
+        .groupByContains("missing")
+          .distributedByContains(END_EVENT, 20., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 20., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 20., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 20., START_EVENT)
       .doAssert(result);
     //@formatter:on
   }
@@ -373,10 +381,10 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result includes the not executed node (endEvent)
-    assertThat(result.getDataEntryForKey("aStringValue"))
+    assertThat(MapResultUtil.getDataEntryForKey(result.getFirstMeasureData(), "aStringValue"))
       .isPresent()
       .get()
       .satisfies(
@@ -415,19 +423,20 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result takes the multi instance process durations into account correctly
     //@formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains("aStringValue")
-        .distributedByContains(CALL_ACTIVITY, 10., CALL_ACTIVITY)
-        .distributedByContains(END_EVENT, 10., END_EVENT)
-        .distributedByContains(MULTI_INSTANCE_END, 10., MULTI_INSTANCE_END)
-        .distributedByContains(MULTI_INSTANCE_START, 10., MULTI_INSTANCE_START)
-        .distributedByContains(PARALLEL_GATEWAY, 10., PARALLEL_GATEWAY)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("aStringValue")
+          .distributedByContains(CALL_ACTIVITY, 10., CALL_ACTIVITY)
+          .distributedByContains(END_EVENT, 10., END_EVENT)
+          .distributedByContains(MULTI_INSTANCE_END, 10., MULTI_INSTANCE_END)
+          .distributedByContains(MULTI_INSTANCE_START, 10., MULTI_INSTANCE_START)
+          .distributedByContains(PARALLEL_GATEWAY, 10., PARALLEL_GATEWAY)
       .doAssert(result);
     //@formatter:on
   }
@@ -453,18 +462,19 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result includes all flownodes of the latest version with instance durations from all versions
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, 15., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 20., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 20., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 15., START_EVENT)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("aStringValue")
+          .distributedByContains(END_EVENT, 15., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 20., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 20., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 15., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -490,16 +500,17 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result includes all flownodes of the latest version with instance durations from all versions
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, 15., END_EVENT)
-        .distributedByContains(START_EVENT, 15., START_EVENT)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("aStringValue")
+          .distributedByContains(END_EVENT, 15., END_EVENT)
+          .distributedByContains(START_EVENT, 15., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -527,7 +538,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result includes all flownodes of the latest version specified in the report (2)
     // with instance durations from all specified versions (1 and 2)
@@ -535,11 +546,12 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, 15., END_EVENT)
-        .distributedByContains(SERVICE_TASK_ID_1, 20., SERVICE_TASK_ID_1)
-        .distributedByContains(SERVICE_TASK_ID_2, 20., SERVICE_TASK_ID_2)
-        .distributedByContains(START_EVENT, 15., START_EVENT)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("aStringValue")
+          .distributedByContains(END_EVENT, 15., END_EVENT)
+          .distributedByContains(SERVICE_TASK_ID_1, 20., SERVICE_TASK_ID_1)
+          .distributedByContains(SERVICE_TASK_ID_2, 20., SERVICE_TASK_ID_2)
+          .distributedByContains(START_EVENT, 15., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -567,7 +579,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the result includes all flownodes of the latest version specified in the report (2)
     // with instance durations from all specified versions (1 and 2)
@@ -575,9 +587,10 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains("aStringValue")
-        .distributedByContains(END_EVENT, 15., END_EVENT)
-        .distributedByContains(START_EVENT, 15., START_EVENT)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains("aStringValue")
+          .distributedByContains(END_EVENT, 15., END_EVENT)
+          .distributedByContains(START_EVENT, 15., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }

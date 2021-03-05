@@ -31,7 +31,7 @@ spec:
           image: gcr.io/ci-30-162810/camunda-optimize:latest
           imagePullPolicy: Always
           env:
-            - name: JAVA_OPTS
+            - name: OPTIMIZE_JAVA_OPTS
               value: |
                 -Xms512m
                 -Xmx512m

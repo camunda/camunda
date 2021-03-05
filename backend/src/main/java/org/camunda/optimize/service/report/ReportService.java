@@ -24,7 +24,6 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessRe
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
@@ -673,7 +672,7 @@ public class ReportService implements CollectionReferencingService {
     boolean result = false;
     if (firstReport.getData() != null) {
       ProcessReportDataDto oldData = firstReport.getData();
-      SingleReportDataDto newData = secondReport.getData();
+      ProcessReportDataDto newData = secondReport.getData();
       result = !newData.isCombinable(oldData);
     }
     return result;

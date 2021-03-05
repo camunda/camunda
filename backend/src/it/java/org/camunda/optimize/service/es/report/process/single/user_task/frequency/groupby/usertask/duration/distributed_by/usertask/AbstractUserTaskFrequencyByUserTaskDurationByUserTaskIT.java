@@ -7,12 +7,14 @@ package org.camunda.optimize.service.es.report.process.single.user_task.frequenc
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.ModelElementFrequencyByModelElementDurationByModelElementIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
@@ -25,7 +27,6 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION_BY_USER_TASK;
 
 public abstract class AbstractUserTaskFrequencyByUserTaskDurationByUserTaskIT
@@ -83,18 +84,20 @@ public abstract class AbstractUserTaskFrequencyByUserTaskDurationByUserTaskIT
       .dateFreezer(startTime.plus(completedModelElementInstanceDuration + 1, ChronoUnit.MILLIS))
       .freezeDateAndReturn();
     final ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
-    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportHyperMapResultDto resultDto = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> resultDto = evaluationResponse.getResult();
+    // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(createDurationBucketKey(completedModelElementInstanceDuration))
-      .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
-      .groupByContains(createDurationBucketKey((int) Duration.between(startTime, currentTime).toMillis()))
-      .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(createDurationBucketKey(completedModelElementInstanceDuration))
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
+        .groupByContains(createDurationBucketKey((int) Duration.between(startTime, currentTime).toMillis()))
+          .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
       .doAssert(resultDto);
     // @formatter:on
   }

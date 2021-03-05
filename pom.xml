@@ -44,8 +44,8 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.14.0</elasticsearch.log4j.version>
     <guava.version>30.1-jre</guava.version>
-    <spring.version>5.3.3</spring.version>
-    <mockito.version>3.7.7</mockito.version>
+    <spring.version>5.3.4</spring.version>
+    <mockito.version>3.8.0</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
     <hamcrest.version>1.3</hamcrest.version>
     <junit.jupiter.version>5.7.1</junit.jupiter.version>
@@ -105,7 +105,12 @@
     <profile>
       <id>engine-snapshot</id>
       <properties>
-        <camunda.engine.version>7.15.0-SNAPSHOT</camunda.engine.version>
+        <!--
+        Note: the below is intended for CI usage only, as part of
+        engine_compatibility job.
+        See also setCamBpmSnapshotVersion() in optimize-jenkins-shared-library.
+        -->
+        <camunda.engine.version>${env.CAMBPM_SNAPSHOT_VERSION}</camunda.engine.version>
       </properties>
     </profile>
 
@@ -393,11 +398,6 @@
           </configuration>
         </plugin>
         <plugin>
-          <groupId>com.webcohesion.enunciate</groupId>
-          <artifactId>enunciate-maven-plugin</artifactId>
-          <version>2.13.2</version>
-        </plugin>
-        <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
           <version>3.0.0</version>
@@ -431,7 +431,7 @@
         <plugin>
           <groupId>com.github.eirslett</groupId>
           <artifactId>frontend-maven-plugin</artifactId>
-          <version>1.11.0</version>
+          <version>1.11.2</version>
         </plugin>
         <plugin>
           <groupId>com.mycila</groupId>

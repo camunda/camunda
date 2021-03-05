@@ -16,7 +16,6 @@ import org.camunda.optimize.service.es.schema.index.CollectionIndex;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DashboardShareIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.LicenseIndex;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.schema.index.OnboardingStateIndex;
@@ -66,6 +65,7 @@ import java.util.stream.StreamSupport;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
 
 @Component
 @Slf4j
@@ -133,10 +133,24 @@ public class ElasticSearchSchemaManager {
     return indicesExist(esClient, Collections.singletonList(mapping));
   }
 
+  public boolean indexExists(final OptimizeElasticsearchClient esClient,
+                             final String indexName) {
+    return indicesExist(Collections.singletonList(indexName), esClient);
+  }
+
   public boolean indicesExist(final OptimizeElasticsearchClient esClient,
                               final List<IndexMappingCreator> mappings) {
-    return StreamSupport.stream(Iterables.partition(mappings, INDEX_EXIST_BATCH_SIZE).spliterator(), true)
-      .map(mappingBatch -> mappingBatch.stream().map(IndexMappingCreator::getIndexName).collect(toList()))
+    return indicesExist(
+      mappings.stream()
+        .map(IndexMappingCreator::getIndexName)
+        .collect(toList()),
+      esClient
+    );
+  }
+
+  public boolean indicesExist(final List<String> indexNames,
+                              final OptimizeElasticsearchClient esClient) {
+    return StreamSupport.stream(Iterables.partition(indexNames, INDEX_EXIST_BATCH_SIZE).spliterator(), true)
       .allMatch(indices -> {
         final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[]{}));
         try {
@@ -204,7 +218,7 @@ public class ElasticSearchSchemaManager {
         );
       }
     } catch (ElasticsearchStatusException e) {
-      if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains("resource_already_exists_exception")) {
+      if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains(INDEX_ALREADY_EXISTS_EXCEPTION_TYPE)) {
         log.debug("index {} already exists, updating mapping and dynamic settings.", suffixedIndexName);
         updateDynamicSettingsAndMappings(esClient, mapping);
       } else {
@@ -414,7 +428,6 @@ public class ElasticSearchSchemaManager {
       new DashboardIndex(),
       new DashboardShareIndex(),
       new DecisionDefinitionIndex(),
-      new DecisionInstanceIndex(),
       new LicenseIndex(),
       new MetadataIndex(),
       new OnboardingStateIndex(),

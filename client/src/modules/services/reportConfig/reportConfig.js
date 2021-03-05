@@ -17,6 +17,11 @@ export default function reportConfig({view, groupBy, visualization, combinations
    * @param subOption defines whethet the data entry we are searching for is a sub option or not
    */
   const getLabelFor = (type, menu, data, subOption = false) => {
+    // TODO remove this temporary hack done for OPT-4825 that allows to ignore the new `properties` property
+    if (data) {
+      delete data.properties;
+    }
+
     // special case: variables
     if (data && data.type && data.type.toLowerCase().includes('variable')) {
       return t(`report.${type}.${data.type}`) + ': ' + data.value.name;
@@ -49,6 +54,11 @@ export default function reportConfig({view, groupBy, visualization, combinations
    * Checks whether a certain combination of view, groupby and visualization is allowed.
    */
   const isAllowed = (report, targetView, targetGroupBy, targetVisualization) => {
+    // TODO remove this temporary hack done for OPT-4825 that allows to ignore the new `properties` property
+    if (targetView) {
+      delete targetView.properties;
+    }
+
     const viewGroup = getGroupFor(view, targetView);
     const groupGroup = getGroupFor(groupBy, targetGroupBy);
     const visualizationGroup = getGroupFor(visualization, targetVisualization);
@@ -197,6 +207,10 @@ export default function reportConfig({view, groupBy, visualization, combinations
   }
 
   function findSelectedOption(options, compareProp, compareValue) {
+    // TODO remove this temporary hack done for OPT-4825 that allows to ignore the new `properties` property
+    if (compareValue) {
+      delete compareValue.properties;
+    }
     for (let i = 0; i < options.length; i++) {
       const option = options[i];
       if (option.options) {

@@ -4,13 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {createColors, determineBarColor} from './colorsUtils';
-
-it('should generate colors', () => {
-  const colors = createColors(7);
-  expect(colors).toHaveLength(7);
-  expect(colors[5]).not.toEqual(colors[6]);
-});
+import {determineBarColor} from './colorsUtils';
 
 it('should return red color for all bars below a target value', () => {
   const data = [

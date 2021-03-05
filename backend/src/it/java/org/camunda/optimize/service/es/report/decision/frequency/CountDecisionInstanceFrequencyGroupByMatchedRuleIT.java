@@ -8,16 +8,18 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
+import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
@@ -84,19 +86,19 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByMatchedRule(
       decisionDefinitionDto1, decisionDefinitionVersion1
     ).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(6L));
 
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(4));
-    assertThat(result.getEntryForKey(INVOICE_RULE_1_ID).get().getValue(), is(2.));
-    assertThat(result.getEntryForKey(INVOICE_RULE_2_ID).get().getValue(), is(1.));
-    assertThat(result.getEntryForKey(INVOICE_RULE_3_ID).get().getValue(), is(2.));
-    assertThat(result.getEntryForKey(INVOICE_RULE_4_ID).get().getValue(), is(1.));
+    assertThat(result.getFirstMeasureData(), is(notNullValue()));
+    assertThat(result.getFirstMeasureData().size(), is(4));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_1_ID).get().getValue(), is(2.));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_2_ID).get().getValue(), is(1.));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_3_ID).get().getValue(), is(2.));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_4_ID).get().getValue(), is(1.));
   }
 
   @Test
@@ -136,10 +138,10 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData.size(), is(4));
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
@@ -186,10 +188,10 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData.size(), is(4));
     final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
@@ -239,18 +241,18 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByMatchedRule(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS
     ).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(8L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(4));
-    assertThat(result.getEntryForKey(INVOICE_RULE_1_ID).get().getValue(), is(4.));
-    assertThat(result.getEntryForKey(INVOICE_RULE_2_ID).get().getValue(), is(1.));
-    assertThat(result.getEntryForKey(INVOICE_RULE_3_ID).get().getValue(), is(2.));
-    assertThat(result.getEntryForKey(INVOICE_RULE_4_ID).get().getValue(), is(1.));
+    assertThat(result.getFirstMeasureData(), is(notNullValue()));
+    assertThat(result.getFirstMeasureData().size(), is(4));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_1_ID).get().getValue(), is(4.));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_2_ID).get().getValue(), is(1.));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_3_ID).get().getValue(), is(2.));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_4_ID).get().getValue(), is(1.));
   }
 
   @Test
@@ -281,11 +283,11 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
         INPUT_AMOUNT_ID, FilterOperator.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(1L));
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(resultData.get(0).getKey(), is(INVOICE_RULE_2_ID));
@@ -312,16 +314,16 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByMatchedRule(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS
     ).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(3L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(2));
-    assertThat(result.getEntryForKey(BEVERAGES_RULE_1_ID).get().getValue(), is(2.));
-    assertThat(result.getEntryForKey(BEVERAGES_RULE_2_ID).get().getValue(), is(1.));
+    assertThat(result.getFirstMeasureData(), is(notNullValue()));
+    assertThat(result.getFirstMeasureData().size(), is(2));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), BEVERAGES_RULE_1_ID).get().getValue(), is(2.));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), BEVERAGES_RULE_2_ID).get().getValue(), is(1.));
   }
 
   @Test
@@ -344,13 +346,13 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByMatchedRule(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS
     ).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(2L));
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(resultData.get(0).getValue(), is(2.));
@@ -375,7 +377,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .setTenantIds(selectedTenants)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
       .build();
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -389,7 +391,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
       .build();
-    reportData.getView().setProperty(null);
+    reportData.getView().setProperties((ViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
@@ -445,7 +447,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     }};
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByMatchedRule(
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByMatchedRule(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion) {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()

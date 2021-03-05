@@ -9,6 +9,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -16,12 +17,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -92,7 +92,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setReportDataType(getTestReportDataType())
       .build();
 
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse = reportClient.evaluateMapReport(
       reportData);
 
     // then
@@ -101,12 +101,12 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(resultReportDataDto.getConfiguration().getProcessPart()).isPresent();
 
     assertThat(evaluationResponse.getResult().getInstanceCount()).isEqualTo(1L);
-    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getFirstMeasureData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
     assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
@@ -142,7 +142,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     String reportId = createNewReport(reportDataDto);
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReportById(reportId);
 
     // then
@@ -151,11 +151,11 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(resultReportDataDto.getConfiguration().getProcessPart()).isPresent();
-    assertThat(evaluationResponse.getResult().getData()).isNotNull();
-    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
+    assertThat(evaluationResponse.getResult().getFirstMeasureData()).isNotNull();
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getFirstMeasureData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
     assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
@@ -179,10 +179,10 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(getTestReportDataType())
       .build();
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
@@ -212,7 +212,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setReportDataType(getTestReportDataType())
       .build();
 
-    final Map<AggregationType, ReportMapResultDto> results =
+    final Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> results =
       evaluateMapReportForAllAggTypes(reportData);
 
     // then
@@ -240,10 +240,10 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setReportDataType(getTestReportDataType())
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData)
       .isNotNull()
       .hasSize(2);
@@ -278,11 +278,11 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
 
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    final List<MapResultEntryDto> resultData = result.getData();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
     assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(2000.));
@@ -311,11 +311,11 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
 
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   @Test
@@ -341,11 +341,11 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
 
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   @Test
@@ -360,11 +360,11 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setReportDataType(getTestReportDataType())
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).isEmpty();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   @Test
@@ -401,11 +401,11 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setReportDataType(getTestReportDataType())
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    final List<MapResultEntryDto> resultData = result.getData();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
     assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(
@@ -439,7 +439,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .build();
 
     reportData.setTenantIds(selectedTenants);
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -472,10 +472,10 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setFilter(createVariableFilter("true"))
       .build();
 
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
     assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
@@ -485,8 +485,8 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    resultData = result.getData();
-    assertThat(result.getData()).isEmpty();
+    resultData = result.getFirstMeasureData();
+    assertThat(result.getFirstMeasureData()).isEmpty();
   }
 
   @Test
@@ -531,10 +531,10 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setReportDataType(getTestReportDataType())
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.DESC));
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(2);
     ZonedDateTime startOfToday = truncateToStartOfUnit(procInstRefDate, ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
@@ -576,10 +576,10 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setReportDataType(getTestReportDataType())
       .build();
 
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(resultKeys).isSortedAccordingTo(Comparator.naturalOrder());
@@ -613,10 +613,10 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setReportDataType(getTestReportDataType())
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(resultKeys)
@@ -667,11 +667,11 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
         .setReportDataType(getTestReportDataType())
         .build();
       reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-      reportData.getConfiguration().setAggregationType(aggType);
-      final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+      reportData.getConfiguration().setAggregationTypes(aggType);
+      final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
-      final List<MapResultEntryDto> resultData = result.getData();
+      final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
       assertThat(resultData).hasSize(3);
       final List<Double> bucketValues = resultData.stream()
         .map(MapResultEntryDto::getValue)
@@ -710,10 +710,10 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setReportDataType(getTestReportDataType())
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.DESC));
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(3);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
@@ -749,11 +749,11 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setReportDataType(getTestReportDataType())
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.DESC));
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).isNotNull();
-    assertDateResultMap(result.getData(), 5, now, mapToChronoUnit(unit));
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertDateResultMap(result.getFirstMeasureData(), 5, now, mapToChronoUnit(unit));
   }
 
   private void assertDateResultMap(List<MapResultEntryDto> resultData,
@@ -855,22 +855,22 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     engineDatabaseExtension.updateActivityInstanceEndDates(endDatesToUpdate);
   }
 
-  private Map<AggregationType, ReportMapResultDto> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
+  private Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
 
-    Map<AggregationType, ReportMapResultDto> resultsMap = new HashMap<>();
+    Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> resultsMap = new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationType(aggType);
-      ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+      reportData.getConfiguration().setAggregationTypes(aggType);
+      ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
       resultsMap.put(aggType, result);
     });
     return resultsMap;
   }
 
-  private void assertDurationMapReportResults(Map<AggregationType, ReportMapResultDto> results,
+  private void assertDurationMapReportResults(Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> results,
                                               Double[] expectedDurations) {
 
     aggregationTypes.forEach((AggregationType aggType) -> {
-      final List<MapResultEntryDto> resultData = results.get(aggType).getData();
+      final List<MapResultEntryDto> resultData = results.get(aggType).getFirstMeasureData();
       assertThat(resultData).isNotNull();
       assertThat(resultData.get(0).getValue())
         .isEqualTo(calculateExpectedValueGivenDurations(expectedDurations).get(aggType));

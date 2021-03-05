@@ -34,7 +34,7 @@ import org.camunda.optimize.service.identity.UserIdentityCacheService;
 import org.camunda.optimize.service.identity.UserTaskIdentityCacheService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
-import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
+import org.camunda.optimize.service.importing.DefinitionXmlImportMediator;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.EngineImportSchedulerManagerService;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
@@ -280,16 +280,11 @@ public class EmbeddedOptimizeExtension
 
   @SneakyThrows
   private void runOnlyScrollBasedMediators(EngineImportScheduler scheduler) {
-    final List<EngineImportMediator> scrollBasedMediators = scheduler.getImportMediators()
+    final List<EngineImportMediator> definitionXmlMediators = scheduler.getImportMediators()
       .stream()
-      .filter(mediator -> mediator instanceof ScrollBasedImportMediator)
+      .filter(mediator -> mediator instanceof DefinitionXmlImportMediator)
       .collect(Collectors.toList());
-    scheduler.executeImportRound(scrollBasedMediators).get();
-    // after each scroll import round, we need to reset the scrolls, since otherwise
-    // we will have a lot of dangling scroll contexts in ElasticSearch in our integration tests.
-    scrollBasedMediators.stream()
-      .map(mediator -> (ScrollBasedImportMediator<?, ?>) mediator)
-      .forEach(ScrollBasedImportMediator::reset);
+    scheduler.executeImportRound(definitionXmlMediators).get();
   }
 
   public void storeImportIndexesToElasticsearch() {

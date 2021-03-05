@@ -7,8 +7,8 @@ package org.camunda.optimize.service.export;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;

@@ -7,12 +7,14 @@ package org.camunda.optimize.dto.optimize.query.sorting;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Optional;
 
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
+@Data
 public class ReportSortingDto {
   public static final String SORT_BY_KEY = "key";
   public static final String SORT_BY_VALUE = "value";
@@ -29,11 +31,4 @@ public class ReportSortingDto {
     return Optional.ofNullable(order);
   }
 
-  @Override
-  public String toString() {
-    return "SortingDto{" +
-      "by='" + by + '\'' +
-      ", order=" + order +
-      '}';
-  }
 }

@@ -312,16 +312,11 @@ pipeline {
       }
       steps {
         container('maven') {
-          runMaven('install -Pdocs,engine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
+          runMaven('install -Pengine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
         }
         stash name: "optimize-stash-client", includes: "client/build/**,client/src/**/*.css"
         stash name: "optimize-stash-backend", includes: "backend/target/*.jar,backend/target/lib/*"
         stash name: "optimize-stash-distro", includes: "m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*-production.tar.gz,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.xml,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.pom"
-      }
-      post {
-        success {
-          archiveArtifacts artifacts: 'backend/target/docs/**/*.*'
-        }
       }
     }
     stage('Unit tests') {
@@ -499,7 +494,7 @@ pipeline {
             expression {
               // first part of the expression covers pure branch builds,
               // the second covers PR builds where BRANCH_NAME is not available
-              BRANCH_NAME ==~ /master/ || CHANGE_BRANCH ==~ /master/ }
+              BRANCH_NAME ==~ /master|prototype_zeebeint/ || CHANGE_BRANCH ==~ /master|prototype_zeebeint/ }
           }
           environment {
             VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
@@ -535,6 +530,18 @@ pipeline {
         }
       }
     }
+    stage('Deploy to K8s') {
+      when {
+        expression {
+          getBranchName() ==~ /prototype_zeebeint/
+        }
+      }
+      steps {
+        build job: '/deploy-optimize-zeebeint-to-k8s', parameters: [
+          string(name: 'BRANCH', value: getBranchName()),
+        ]
+      }
+    }
   }
 
   post {
@@ -564,7 +571,7 @@ String getGitCommitHash() {
 }
 
 String getBranchSlug() {
-  return env.CHANGE_BRANCH.toLowerCase().replaceAll(/[^a-z0-9-]/, '-')
+  return getBranchName().toLowerCase().replaceAll(/[^a-z0-9-]/, '-')
 }
 
 String getImageTag() {
@@ -572,7 +579,7 @@ String getImageTag() {
 }
 
 String getBranchName() {
-  return env.BRANCH_NAME == 'master' ? 'master' : env.CHANGE_BRANCH
+  return (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'prototype_zeebeint') ? env.BRANCH_NAME : env.CHANGE_BRANCH
 }
 
 void integrationTestSteps(String engineVersion = 'latest') {

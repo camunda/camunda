@@ -16,11 +16,11 @@ exports[`should convert a hypermap to a combined report 1`] = `
         },
         "reports": Array [
           Object {
-            "color": "#1991c8",
+            "color": "#aec7e9",
             "id": "taskId1",
           },
           Object {
-            "color": "#00bcd4",
+            "color": "#f68077",
             "id": "taskId2",
           },
         ],

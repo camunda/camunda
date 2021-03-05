@@ -98,9 +98,10 @@ export default class FilterList extends React.Component {
           ['executedFlowNodes', 'executingFlowNodes', 'canceledFlowNodes'].includes(filter.type)
         ) {
           const {values, operator} = filter.data;
-          const flowNodeNames = this.props.flowNodeNames || {};
+
+          const flowNodeNames = this.props.flowNodeNames;
           const allFlowNodesExist = checkAllFlowNodesExist(flowNodeNames, values);
-          const selectedNodes = values.map((id) => ({name: flowNodeNames[id], id}));
+          const selectedNodes = values.map((id) => ({name: flowNodeNames?.[id], id}));
 
           list.push(
             <li key={i} className="listItem">
@@ -144,7 +145,7 @@ export default class FilterList extends React.Component {
           );
         } else if (filter.type === 'flowNodeDuration') {
           const filters = filter.data;
-          const flowNodeNames = this.props.flowNodeNames || {};
+          const flowNodeNames = this.props.flowNodeNames;
           const allFlowNodesExist = checkAllFlowNodesExist(flowNodeNames, Object.keys(filters));
 
           const filterValues = (
@@ -154,7 +155,7 @@ export default class FilterList extends React.Component {
                 return (
                   <div key={key} className="flowNode">
                     {i !== 0 && <span>{t('common.filter.list.operators.or')} </span>}
-                    <b>{flowNodeNames[key] || key}</b>
+                    <b>{flowNodeNames?.[key] || key}</b>
                     {operator === '<' &&
                       this.createOperator(t('common.filter.list.operators.less'))}
                     {operator === '>' &&
@@ -245,6 +246,9 @@ function checkVariableExistence(type, name, variables) {
 }
 
 function checkAllFlowNodesExist(availableFlowNodeNames, flowNodeIds) {
+  if (!availableFlowNodeNames) {
+    return true;
+  }
   const availableFlowNodesIds = Object.keys(availableFlowNodeNames);
   return flowNodeIds.every((id) => availableFlowNodesIds.includes(id));
 }

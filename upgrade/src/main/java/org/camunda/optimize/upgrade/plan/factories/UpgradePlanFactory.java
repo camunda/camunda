@@ -5,8 +5,9 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 
 public interface UpgradePlanFactory {
-  UpgradePlan createUpgradePlan();
+  UpgradePlan createUpgradePlan(final OptimizeElasticsearchClient esClient);
 }

@@ -145,7 +145,7 @@ spec:
     image: ${PUBLIC_DOCKER_IMAGE(params.PUSH_CHANGES)}:${params.RELEASE_VERSION}
     imagePullPolicy: Always
     env:
-    - name: JAVA_OPTS
+    - name: OPTIMIZE_JAVA_OPTS
       value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
     - name: OPTIMIZE_CAMUNDABPM_REST_URL
       value: http://cambpm:8080/engine-rest

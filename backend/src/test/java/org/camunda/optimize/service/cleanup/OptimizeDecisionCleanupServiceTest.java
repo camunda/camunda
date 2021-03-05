@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.service.cleanup;
 
-import org.apache.commons.collections.ListUtils;
-import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
+import org.apache.commons.collections4.SetUtils;
+import org.camunda.optimize.service.es.reader.DecisionInstanceReader;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -24,14 +23,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.OffsetDateTime;
 import java.time.Period;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -45,7 +43,7 @@ import static org.mockito.Mockito.when;
 public class OptimizeDecisionCleanupServiceTest {
 
   @Mock
-  private DecisionDefinitionReader decisionDefinitionReader;
+  private DecisionInstanceReader decisionInstanceReader;
   @Mock
   private DecisionInstanceWriter decisionInstanceWriter;
 
@@ -59,7 +57,7 @@ public class OptimizeDecisionCleanupServiceTest {
   @Test
   public void testCleanupRunForMultipleDecisionDefinitionsDefaultConfig() {
     // given
-    final List<String> decisionDefinitionKeys = generateRandomDefinitionsKeys(3);
+    final Set<String> decisionDefinitionKeys = generateRandomDefinitionsKeys(3);
     mockDecisionDefinitions(decisionDefinitionKeys);
 
     // when
@@ -75,7 +73,7 @@ public class OptimizeDecisionCleanupServiceTest {
     // given
     final Period customTtl = Period.parse("P2M");
     getCleanupConfiguration().setTtl(customTtl);
-    final List<String> decisionDefinitionKeys = generateRandomDefinitionsKeys(3);
+    final Set<String> decisionDefinitionKeys = generateRandomDefinitionsKeys(3);
 
     // when
     mockDecisionDefinitions(decisionDefinitionKeys);
@@ -90,14 +88,14 @@ public class OptimizeDecisionCleanupServiceTest {
   public void testCleanupRunForMultipleDecisionDefinitionsSpecificTtlsOverrideDefault() {
     // given
     final Period customTtl = Period.parse("P2M");
-    final List<String> decisionDefinitionKeysWithSpecificTtl = generateRandomDefinitionsKeys(3);
+    final Set<String> decisionDefinitionKeysWithSpecificTtl = generateRandomDefinitionsKeys(3);
     final Map<String, DecisionDefinitionCleanupConfiguration> decisionDefinitionSpecificConfiguration =
       getCleanupConfiguration().getDecisionCleanupConfiguration().getDecisionDefinitionSpecificConfiguration();
     decisionDefinitionKeysWithSpecificTtl.forEach(decisionDefinitionKey -> decisionDefinitionSpecificConfiguration.put(
       decisionDefinitionKey, new DecisionDefinitionCleanupConfiguration(customTtl)
     ));
-    final List<String> decisionDefinitionKeysWithDefaultTtl = generateRandomDefinitionsKeys(3);
-    final List<String> allDecisionDefinitionKeys = ListUtils.union(
+    final Set<String> decisionDefinitionKeysWithDefaultTtl = generateRandomDefinitionsKeys(3);
+    final Set<String> allDecisionDefinitionKeys = SetUtils.union(
       decisionDefinitionKeysWithSpecificTtl,
       decisionDefinitionKeysWithDefaultTtl
     );
@@ -120,9 +118,9 @@ public class OptimizeDecisionCleanupServiceTest {
   @Test
   public void testCleanupRunOnceForEveryDecisionDefinitionKey() {
     // given
-    final List<String> decisionDefinitionKeys = generateRandomDefinitionsKeys(3);
+    final Set<String> decisionDefinitionKeys = generateRandomDefinitionsKeys(3);
     // mock returns keys twice (in reality they have different versions but that doesn't matter for the test)
-    mockDecisionDefinitions(ListUtils.union(decisionDefinitionKeys, decisionDefinitionKeys));
+    mockDecisionDefinitions(SetUtils.union(decisionDefinitionKeys, decisionDefinitionKeys));
 
     // when
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
@@ -161,7 +159,7 @@ public class OptimizeDecisionCleanupServiceTest {
   }
 
   private void assertKeysWereCalledWithExpectedTtl(Map<String, OffsetDateTime> capturedInvocationArguments,
-                                                   List<String> expectedDefinitionKeys,
+                                                   Set<String> expectedDefinitionKeys,
                                                    Period expectedTtl) {
     final Map<String, OffsetDateTime> filteredInvocationArguments = capturedInvocationArguments.entrySet().stream()
       .filter(entry -> expectedDefinitionKeys.contains(entry.getKey()))
@@ -173,7 +171,7 @@ public class OptimizeDecisionCleanupServiceTest {
     filteredInvocationArguments.values().forEach(instant -> assertThat(instant, is(dateFilterValue)));
   }
 
-  private void assertDeleteDecisionInstancesExecutedFor(List<String> expectedDecisionDefinitionKeys,
+  private void assertDeleteDecisionInstancesExecutedFor(Set<String> expectedDecisionDefinitionKeys,
                                                         Period expectedTtl) {
     final Map<String, OffsetDateTime> decisionInstanceKeysWithDateFilter =
       verifyDeleteDecisionInstanceExecutionReturnCapturedArguments(expectedDecisionDefinitionKeys);
@@ -186,7 +184,7 @@ public class OptimizeDecisionCleanupServiceTest {
   }
 
   private Map<String, OffsetDateTime> verifyDeleteDecisionInstanceExecutionReturnCapturedArguments(
-    List<String> expectedDecisionDefinitionKeys) {
+    Set<String> expectedDecisionDefinitionKeys) {
     ArgumentCaptor<String> decisionInstanceCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<OffsetDateTime> evaluationDateFilterCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
     verify(
@@ -205,32 +203,22 @@ public class OptimizeDecisionCleanupServiceTest {
     return filteredDecisionInstancesWithDateFilter;
   }
 
-  private List<String> mockDecisionDefinitions(List<String> decisionDefinitionIds) {
-    final List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos = decisionDefinitionIds.stream()
-      .map(this::createDecisionDefinitionDto)
-      .collect(Collectors.toList());
-    when(decisionDefinitionReader.getAllDecisionDefinitions())
-      .thenReturn(decisionDefinitionOptimizeDtos);
-    return decisionDefinitionIds;
+  private Set<String> mockDecisionDefinitions(Set<String> decisionDefinitionKeys) {
+    when(decisionInstanceReader.getExistingDecisionDefinitionKeysFromInstances())
+      .thenReturn(decisionDefinitionKeys);
+    return decisionDefinitionKeys;
   }
 
-  private List<String> generateRandomDefinitionsKeys(Integer amount) {
+  private Set<String> generateRandomDefinitionsKeys(Integer amount) {
     return IntStream.range(0, amount)
       .mapToObj(i -> UUID.randomUUID().toString())
-      .collect(toList());
-  }
-
-  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key) {
-    final DecisionDefinitionOptimizeDto decisionDefinitionOptimizeDto = DecisionDefinitionOptimizeDto.builder()
-      .key(key)
-      .build();
-    return decisionDefinitionOptimizeDto;
+      .collect(toSet());
   }
 
   private EngineDataDecisionCleanupService createOptimizeCleanupServiceToTest() {
     return new EngineDataDecisionCleanupService(
       configurationService,
-      decisionDefinitionReader,
+      decisionInstanceReader,
       decisionInstanceWriter
     );
   }

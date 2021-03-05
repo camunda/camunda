@@ -57,7 +57,11 @@ export function GenerationModal({onClose, mightFail}) {
           name={t('events.addedSources')}
           empty={t('home.sources.notCreated')}
           data={sources.map((source) => {
-            const {processDefinitionKey, processDefinitionName, type} = source;
+            const {
+              configuration: {processDefinitionKey, processDefinitionName},
+              type,
+            } = source;
+
             const actions = [
               {
                 icon: 'delete',

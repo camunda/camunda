@@ -33,8 +33,8 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
       .withoutAuthentication()
       .execute();
 
-    // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test

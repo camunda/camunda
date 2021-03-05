@@ -12,15 +12,16 @@ exports[`should match snapshot 1`] = `
     </b>
     <Switch
       checked={true}
-      disabled={false}
       label="Show suggested Events"
       onChange={[Function]}
-      title=""
     />
     <EventSources
       sources={
         Array [
           Object {
+            "configuration": Object {
+              "includeAllGroups": true,
+            },
             "type": "external",
           },
         ]

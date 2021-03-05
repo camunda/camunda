@@ -164,8 +164,7 @@
       "allMapped": "No Events available.",
       "seeDocs": "No Events available. To add events, see ",
       "documentation": "Documentation",
-      "showSuggestions": "Show suggested Events",
-      "noSuggestionsMessage": "Available for External events only"
+      "showSuggestions": "Show suggested Events"
     },
     "deleteWarning": "The '{name}' Process will be permanently deleted. This will result in the deletion of any associated Reports, inside and outside of Collections.",
     "publishModal": {
@@ -216,7 +215,13 @@
       "definitionChangeWarning": "Changing the process definition may add or remove events. Existing event mappings may be removed.",
       "eventListChangeWarning": "Changing the event list may add or remove events. Existing event mappings may be removed.",
       "remove": "Remove Source",
-      "camundaProcess": "Camunda Process"
+      "camundaProcess": "Camunda Process",
+      "allInOne": "All events in a single group",
+      "eventGroups": "Event groups",
+      "ungrouped": "Ungrouped",
+      "search": "search for event groups",
+      "noGroups": "No event groups found",
+      "addExternalInfo": "All ingested External Events will be added."
     },
     "ingested": {
       "label": "Ingested External Events",
@@ -242,6 +247,7 @@
     "addName": "Report Name",
     "reportSetup": "Report Setup",
     "downloadCSV": "Download CSV",
+    "measure": "Measure",
     "templates": {
       "blank": "Blank report",
       "heatmap": "Heatmap: Flownode count",
@@ -260,12 +266,12 @@
       "reportFilters": "Displaying {count} of {totalCount} instance",
       "reportFilters-plural": "Displaying {count} of {totalCount} instances",
       "process": {
-        "label": "{count} instance in current filter",
-        "label-plural": "{count} instances in current filter"
+        "label": "Displaying {count} of {totalCount} instance",
+        "label-plural": "Displaying {count} of {totalCount} instances"
       },
       "decision": {
-        "label": "{count} evaluation in current filter",
-        "label-plural": "{count} evaluations in current filter"
+        "label": "Displaying {count} of {totalCount} evaluation",
+        "label-plural": "Displaying {count} of {totalCount} evaluations"
       }
     },
     "view": {
@@ -437,6 +443,13 @@
         "average": "Average",
         "median": "Median",
         "maximum": "Maximum"
+      },
+      "aggregationShort": {
+        "sum": "Sum",
+        "min": "Min",
+        "avg": "Avg",
+        "median": "Med",
+        "max": "Max"
       },
       "userTaskDuration": {
         "legend": "User Task Duration Time",
@@ -818,6 +831,11 @@
       "openInOptimize": "Open in Optimize"
     },
     "filter": {
+      "label": "Filters",
+      "tooltip": {
+        "instance": "Process instance Filters return data from process instances matching the filter requirement. If the filter is based on a Flow Node, the returned data will show all instances where this Flow Node was triggered.",
+        "view": "Flow Node filters return data from Flow Nodes only, where the Flow Node or its property matches the filter requirement. Most useful in Flow Node and User Task views."
+      },
       "types": {
         "instanceState": "Instance state",
         "runningInstancesOnly": "Running Instances Only",
@@ -964,9 +982,9 @@
         "selectValue": "Filter for ID"
       },
       "dropdownLabel": {
-        "instance": "Filter Process instances",
-        "view": "Filter Flow Node Data",
-        "decision": "Filter Decision instances"
+        "instance": "Filter Process Instances",
+        "view": "Filter Flow Nodes",
+        "decision": "Filter Decision Instances"
       },
       "allVisible": {
         "instance": "All instances visible",

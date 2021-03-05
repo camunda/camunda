@@ -9,8 +9,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -45,12 +46,16 @@ public class CorrelatableExternalEventsTraceDto extends CorrelatableInstanceDto 
 
   @Override
   public String getSourceIdentifier() {
-    return EventSourceType.EXTERNAL.getId();
+    // Autogeneration is only supported for external groups when they are a single bucket of events without group
+    return EventSourceType.EXTERNAL.getId() + ":" + "optimize_allExternalEventGroups";
   }
 
   @Override
-  public String getCorrelationValueForEventSource(final EventSourceEntryDto eventSourceEntryDto) {
-    return tracingId;
+  public String getCorrelationValueForEventSource(final EventSourceEntryDto<?> eventSourceEntryDto) {
+    if (eventSourceEntryDto instanceof ExternalEventSourceEntryDto) {
+      return tracingId;
+    }
+    throw new IllegalArgumentException("Cannot get correlation value from non-external sources");
   }
 
 }

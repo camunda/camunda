@@ -45,7 +45,7 @@ services:
     container_name: optimize-import
     environment:
       - TZ=Europe/Berlin
-      - JAVA_OPTS=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
+      - OPTIMIZE_JAVA_OPTS=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
     ports:
       - 8090:8090
     volumes:
@@ -59,7 +59,7 @@ services:
     container_name: optimize-no-import
     environment:
       - TZ=Europe/Berlin
-      - JAVA_OPTS=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
+      - OPTIMIZE_JAVA_OPTS=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
     ports:
       - 8190:8090
     volumes:

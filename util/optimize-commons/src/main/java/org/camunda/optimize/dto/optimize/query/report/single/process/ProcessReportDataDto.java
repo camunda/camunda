@@ -16,6 +16,7 @@ import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -25,7 +26,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.Objects.nonNull;
 
@@ -46,6 +45,9 @@ import static java.util.Objects.nonNull;
 @SuperBuilder
 @FieldNameConstants
 public class ProcessReportDataDto extends SingleReportDataDto implements Combinable {
+
+  private static final String COMMAND_KEY_SEPARATOR = "_";
+  private static final String MISSING_COMMAND_PART_PLACEHOLDER = "null";
 
   protected String processDefinitionKey;
   @Builder.Default
@@ -84,28 +86,40 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     this.processDefinitionVersions = Lists.newArrayList(processDefinitionVersion);
   }
 
+  @Override
+  public List<ViewProperty> getViewProperties() {
+    return view.getProperties();
+  }
+
   @JsonIgnore
   public boolean isFrequencyReport() {
     return Optional.ofNullable(view)
       .map(ProcessViewDto::getProperty)
-      .map(p -> p.equals(ProcessViewProperty.FREQUENCY))
+      .map(p -> p.equals(ViewProperty.FREQUENCY))
       .orElse(false);
+  }
+
+  @Override
+  public List<String> createCommandKeys() {
+    final String groupByCommandKey = groupBy == null ? MISSING_COMMAND_PART_PLACEHOLDER : groupBy.createCommandKey();
+    String distributedByCommandKey = createDistributedByCommandKey();
+    String configurationCommandKey = Optional.ofNullable(getConfiguration())
+      .map(SingleReportConfigurationDto::createCommandKey)
+      .orElse(MISSING_COMMAND_PART_PLACEHOLDER);
+    return Optional.ofNullable(view)
+      .map(ProcessViewDto::createCommandKeys)
+      .orElse(Collections.singletonList(MISSING_COMMAND_PART_PLACEHOLDER))
+      .stream()
+      .map(viewKey -> String.join(
+        COMMAND_KEY_SEPARATOR, viewKey, groupByCommandKey, distributedByCommandKey, configurationCommandKey
+      ))
+      .collect(Collectors.toList());
   }
 
   @JsonIgnore
   @Override
   public String createCommandKey() {
-    String viewCommandKey = view == null ? "null" : view.createCommandKey();
-    String groupByCommandKey = groupBy == null ? "null" : groupBy.createCommandKey();
-    String distributedByCommandKey = createDistributedByCommandKey();
-    String configurationCommandKey = Optional.ofNullable(getConfiguration())
-      .map(SingleReportConfigurationDto::createCommandKey)
-      .orElse("null");
-    return viewCommandKey + "_" +
-      groupByCommandKey + "_" +
-      Stream.of(distributedByCommandKey, configurationCommandKey)
-        .filter(Objects::nonNull)
-        .collect(Collectors.joining("-"));
+    return createCommandKeys().get(0);
   }
 
   public String createDistributedByCommandKey() {

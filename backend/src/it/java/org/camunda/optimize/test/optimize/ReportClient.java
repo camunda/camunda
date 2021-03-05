@@ -13,29 +13,25 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -533,57 +529,57 @@ public class ReportClient {
     return requestExecutorSupplier.get();
   }
 
-  public AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateMapReport(DecisionReportDataDto reportData) {
+  public AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateMapReport(DecisionReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>>>() {});
       // @formatter:on
   }
 
-  public AuthorizedDecisionReportEvaluationResultDto<NumberResultDto> evaluateNumberReport(DecisionReportDataDto reportData) {
+  public AuthorizedDecisionReportEvaluationResponseDto<Double> evaluateNumberReport(DecisionReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<NumberResultDto>>() {});
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<Double>>() {});
       // @formatter:on
   }
 
-  public AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateDecisionRawReport(
+  public AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluateDecisionRawReport(
     DecisionReportDataDto reportData,
     PaginationRequestDto paginationDto) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequestWithPagination(reportData, paginationDto)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>>>() {});
       // @formatter:on
   }
 
-  public AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawReport(
+  public AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateRawReport(
     ProcessReportDataDto reportData,
     PaginationRequestDto paginationDto) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequestWithPagination(reportData, paginationDto)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>>() {});
       // @formatter:on
   }
 
-  public AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateDecisionRawReport(
+  public AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluateDecisionRawReport(
     final DecisionReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>>>() {});
       // @formatter:on
   }
 
-  public AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateDecisionRawReportById(
+  public AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluateDecisionRawReportById(
     final String id) {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>>>() {});
     // @formatter:on
   }
 
@@ -593,77 +589,77 @@ public class ReportClient {
       .execute();
   }
 
-  public AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluateHyperMapReportById(String id) {
+  public AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluateHyperMapReportById(String id) {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>>>() {});
       // @formatter:on
   }
 
-  public AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateMapReportById(String id) {
+  public AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateMapReportById(String id) {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {});
       // @formatter:on
   }
 
-  public AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluateNumberReportById(String id) {
+  public AuthorizedProcessReportEvaluationResponseDto<Double> evaluateNumberReportById(String id) {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<NumberResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<Double>>() {});
       // @formatter:on
   }
 
-  public AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawReportById(final String reportId) {
+  public AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateRawReportById(final String reportId) {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>>() {});
       // @formatter:on
   }
 
-  public AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateMapReport(ProcessReportDataDto reportData) {
+  public AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateMapReport(ProcessReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {});
       // @formatter:on
   }
 
-  public AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateMapReport(
+  public AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateMapReport(
     final String reportId,
     final AdditionalProcessReportEvaluationFilterDto filters) {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId, filters)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {});
     // @formatter:on
   }
 
-  public AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluateHyperMapReport(ProcessReportDataDto reportData) {
+  public AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluateHyperMapReport(ProcessReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>>>() {});
       // @formatter:on
   }
 
-  public AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluateNumberReport(ProcessReportDataDto reportData) {
+  public AuthorizedProcessReportEvaluationResponseDto<Double> evaluateNumberReport(ProcessReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<NumberResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<Double>>() {});
       // @formatter:on
   }
 
-  public AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawReport(ProcessReportDataDto reportData) {
+  public AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateRawReport(ProcessReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>>() {});
       // @formatter:on
   }
 
@@ -687,30 +683,30 @@ public class ReportClient {
       .execute();
   }
 
-  public <T extends SingleReportResultDto> AuthorizedCombinedReportEvaluationResultDto<T> evaluateCombinedReportById(String reportId) {
+  public <T> AuthorizedCombinedReportEvaluationResponseDto<T> evaluateCombinedReportById(String reportId) {
     return evaluateCombinedReportByIdWithAdditionalFilters(reportId, null);
   }
 
-  public <T extends SingleReportResultDto> AuthorizedCombinedReportEvaluationResultDto<T> evaluateCombinedReportByIdWithAdditionalFilters(
+  public <T> AuthorizedCombinedReportEvaluationResponseDto<T> evaluateCombinedReportByIdWithAdditionalFilters(
     final String reportId,
     final AdditionalProcessReportEvaluationFilterDto filters) {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId, filters)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<T>>() {});
+      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResponseDto<T>>() {});
       // @formatter:on
   }
 
-  public <T extends SingleReportResultDto> CombinedProcessReportResultDataDto<T> evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
+  public <T> CombinedProcessReportResultDataDto<T> evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
     return getRequestExecutor()
       .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<T>>() {})
+      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResponseDto<T>>() {})
       // @formatter:on
       .getResult();
   }
 
-  public CombinedProcessReportResultDataDto<SingleReportResultDto> saveAndEvaluateCombinedReport(
+  public <T> CombinedProcessReportResultDataDto<T> saveAndEvaluateCombinedReport(
     final List<String> reportIds) {
     final List<CombinedReportItemDto> reportItems = reportIds.stream()
       .map(CombinedReportItemDto::new)
@@ -725,53 +721,56 @@ public class ReportClient {
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
-    return evaluateCombinedReportById(response.getId()).getResult();
+    final AuthorizedCombinedReportEvaluationResponseDto<T> evaluationResultDto =
+      evaluateCombinedReportById(response.getId());
+    return evaluationResultDto.getResult();
   }
 
-  public AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto> evaluateReport(
+  public <T> AuthorizedSingleReportEvaluationResponseDto<T, SingleProcessReportDefinitionRequestDto> evaluateReport(
     final ProcessReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
       .execute(
-        new TypeReference<AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionRequestDto>>() {}
+        new TypeReference<AuthorizedSingleReportEvaluationResponseDto<T, SingleProcessReportDefinitionRequestDto>>() {}
       );
       // @formatter:on
   }
 
-  public AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionRequestDto> evaluateReport(
+  public <T> AuthorizedSingleReportEvaluationResponseDto<T, SingleDecisionReportDefinitionRequestDto> evaluateReport(
     final DecisionReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
       .execute(
-        new TypeReference<AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionRequestDto>>() {}
+        new TypeReference<AuthorizedSingleReportEvaluationResponseDto<T, SingleDecisionReportDefinitionRequestDto>>() {}
       );
       // @formatter:off
   }
 
-  public ReportMapResultDto evaluateReportAndReturnMapResult(final ProcessReportDataDto reportData) {
+  public List<MapResultEntryDto> evaluateReportAndReturnMapResult(final ProcessReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {})
       // @formatter:on
-      .getResult();
+      .getResult()
+      .getFirstMeasureData();
   }
 
-  public <RD extends ProcessReportResultDto, DD extends SingleReportDefinitionDto<?>> AuthorizedProcessReportEvaluationResultDto<RD> evaluateProcessReport(final DD reportDefinition) {
+  public <T, DD extends SingleReportDefinitionDto<?>> AuthorizedProcessReportEvaluationResponseDto<T> evaluateProcessReport(final DD reportDefinition) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportDefinition)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RD>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<T>>() {});
       // @formatter:on
   }
 
-  public <RD extends DecisionReportResultDto, DD extends SingleReportDefinitionDto<?>> AuthorizedDecisionReportEvaluationResultDto<RD> evaluateDecisionReport(final DD reportDefinition) {
+  public <T, DD extends SingleReportDefinitionDto<?>> AuthorizedDecisionReportEvaluationResponseDto<T> evaluateDecisionReport(final DD reportDefinition) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportDefinition)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RD>>() {});
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<T>>() {});
     // @formatter:on
   }
 }

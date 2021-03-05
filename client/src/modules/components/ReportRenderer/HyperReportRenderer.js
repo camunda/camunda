@@ -7,7 +7,7 @@
 import React from 'react';
 
 import {ColorPicker} from 'components';
-import {formatters} from 'services';
+import {formatters, getReportResult} from 'services';
 
 import CombinedReportRenderer from './CombinedReportRenderer';
 
@@ -18,9 +18,11 @@ export default function HyperReportRenderer({report, ...rest}) {
     ...report,
   };
 
-  const firstEntryResult = report.result.data[0].value.filter(isVisible(report));
+  const result = getReportResult(report);
 
-  const colors = ColorPicker.getColors(firstEntryResult.length);
+  const firstEntryResult = result.data[0].value.filter(isVisible(report));
+
+  const colors = ColorPicker.getGeneratedColors(firstEntryResult.length);
 
   convertedReport.combined = true;
   convertedReport.data = {
@@ -39,18 +41,19 @@ export default function HyperReportRenderer({report, ...rest}) {
       reportType: 'process',
       data: report.data,
       result: {
-        ...report.result,
+        ...result,
         type: 'map',
-        data: report.result.data.map((entry) => ({
+        data: result.data.map((entry) => ({
           ...entry,
           value: entry.value.find((data) => data.key === key).value,
         })),
       },
     };
+    delete newResultData[key].result.measures;
   });
 
   convertedReport.result = {
-    ...report.result,
+    ...result,
     type: null,
     data: newResultData,
   };

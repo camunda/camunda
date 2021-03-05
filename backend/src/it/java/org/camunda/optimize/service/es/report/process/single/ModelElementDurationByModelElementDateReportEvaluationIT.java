@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.process.single;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -16,13 +17,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
@@ -69,7 +70,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
 
     // when
-    final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
     // then
@@ -78,7 +79,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(getViewEntity());
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy()).isNotNull();
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(resultReportDataDto.getGroupBy().getValue())
@@ -86,13 +87,13 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
       .extracting(DateGroupByValueDto::getUnit)
       .isEqualTo(AggregateByDateUnit.DAY);
 
-    final ReportMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), localDateTimeToString(startOfToday)))
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(expectedDuration);
@@ -118,17 +119,17 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     final String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
       reportClient.evaluateMapReportById(reportId);
 
     // then
-    final ReportMapResultDto result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), localDateTimeToString(startOfToday)))
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(expectedDuration);
@@ -160,10 +161,10 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, groupByDateUnit);
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(groupingCount);
     // startDate is groupingCount - 1 in the past from now
     OffsetDateTime startDate = now.minus(groupingCount - 1, groupByUnitAsChrono);
@@ -191,7 +192,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     // when
     final ProcessReportDataDto reportData = createReportData(processKey, "1", AggregateByDateUnit.DAY);
     reportData.setTenantIds(selectedTenants);
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -214,12 +215,12 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     final List<ProcessFilterDto<?>> processFilterDtoList = ProcessFilterBuilder.filter()
       .completedInstancesOnly().add().buildList();
     reportData.setFilter(processFilterDtoList);
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).hasSize(1);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData()).hasSize(1);
+    assertThat(result.getFirstMeasureData())
       .extracting(MapResultEntryDto::getValue)
       .containsExactly(10.);
   }
@@ -232,10 +233,10 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isEmpty();
   }
 
@@ -259,11 +260,11 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     final String singleReportId2 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
     // when
-    CombinedProcessReportResultDataDto<ReportMapResultDto> result =
+    CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
       reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId1, singleReportId2));
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
+    Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> resultMap = result.getData();
     assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
   }
 
@@ -287,11 +288,11 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     final String singleReportId2 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
     // when
-    CombinedProcessReportResultDataDto<ReportMapResultDto> result =
+    CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
       reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId1, singleReportId2));
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
+    Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> resultMap = result.getData();
     assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
   }
 
@@ -315,22 +316,22 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     final String singleReportId2 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
     // when
-    CombinedProcessReportResultDataDto<ReportMapResultDto> result =
+    CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
       reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId1, singleReportId2));
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
+    Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> resultMap = result.getData();
     assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
   }
 
   protected void assertResultIsInCorrectRanges(
     ZonedDateTime startRange,
     ZonedDateTime endRange,
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap,
+    Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> resultMap,
     int resultSize) {
     assertThat(resultMap).hasSize(resultSize);
-    for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
-      final List<MapResultEntryDto> resultData = result.getResult().getData();
+    for (AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> result : resultMap.values()) {
+      final List<MapResultEntryDto> resultData = result.getResult().getFirstMeasureData();
       assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
       assertThat(resultData).first().extracting(MapResultEntryDto::getKey).isEqualTo(localDateTimeToString(startRange));
       assertIsInRangeOfLastInterval(resultData.get(resultData.size() - 1).getKey(), startRange, endRange);
@@ -427,19 +428,19 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
   }
 
-  protected Map<AggregationType, ReportMapResultDto> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
+  protected Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
 
-    Map<AggregationType, ReportMapResultDto> resultsMap = new HashMap<>();
+    Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> resultsMap = new HashMap<>();
     getAggregationTypesAsListWithoutSum().forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationType(aggType);
-      final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+      reportData.getConfiguration().setAggregationTypes(aggType);
+      final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
       resultsMap.put(aggType, result);
     });
     return resultsMap;
   }
 
-  private long getExecutedFlowNodeCount(ReportMapResultDto resultList) {
-    return resultList.getData()
+  private long getExecutedFlowNodeCount(ReportResultResponseDto<List<MapResultEntryDto>> resultList) {
+    return resultList.getFirstMeasureData()
       .stream()
       .map(MapResultEntryDto::getValue)
       .filter(Objects::nonNull)

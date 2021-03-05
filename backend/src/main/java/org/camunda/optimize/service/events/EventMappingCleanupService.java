@@ -8,9 +8,9 @@ package org.camunda.optimize.service.events;
 import lombok.AllArgsConstructor;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.xml.ModelParseException;
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.EventDtoBuilderUtil;
@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 @Component
 @AllArgsConstructor
 public class EventMappingCleanupService {
+
   private final EventCountService eventCountService;
 
   public Map<String, EventMappingDto> doMappingCleanup(final String userId,
@@ -37,7 +38,7 @@ public class EventMappingCleanupService {
 
     final Set<String> currentModelFlowNodeIds =
       BpmnModelUtil.extractFlowNodeNames(parseXmlIntoBpmnModel(requestDto.getXml()))
-      .keySet();
+        .keySet();
     return requestDto.getMappings().entrySet()
       .stream()
       .filter(mappingEntry -> currentModelFlowNodeIds.contains(mappingEntry.getKey()))

@@ -37,37 +37,10 @@ export default class ColumnRearrangement extends React.Component {
         .do(({classList}) => classList.add('ColumnRearrangement__draggedColumn'))
         .usingEvent(evt);
 
-      const {reportType} = this.props.report;
-      const currentHead = processRawData[reportType](this.props).head;
-
-      this.columnGroups = currentHead.map((column) => column.type);
-      this.dragGroup = this.columnGroups[this.dragIdx];
-
       this.preview = createDragPreview(this.dragIdx, evt);
 
       document.addEventListener('mousemove', this.handleMouseMove);
       document.addEventListener('mouseup', this.handleMouseUp);
-    }
-  };
-
-  processDrag = ({evt, validTarget = () => {}, invalidTarget = () => {}}) => {
-    const elem = evt.target.closest('.Table td, .Table .tableHeader');
-
-    if (elem) {
-      let idx = Array.from(elem.parentNode.childNodes).indexOf(elem);
-
-      if (evt.offsetX < elem.clientWidth / 2) {
-        idx--;
-      }
-
-      if (
-        this.dragGroup === this.columnGroups[idx] ||
-        this.dragGroup === this.columnGroups[idx + 1]
-      ) {
-        validTarget(idx, elem);
-      } else {
-        invalidTarget(idx, elem);
-      }
     }
   };
 
@@ -78,55 +51,52 @@ export default class ColumnRearrangement extends React.Component {
 
     removeHighlights();
 
-    const applyClass = (modifier = '') => (idx) => {
-      forColumn(idx)
-        .do(({classList}) => classList.add(`ColumnRearrangement__dropTarget--${modifier}left`))
-        .usingEvent(evt);
-      forColumn(idx + 1)
-        .do(({classList}) => classList.add(`ColumnRearrangement__dropTarget--${modifier}right`))
-        .usingEvent(evt);
-    };
+    const targetIdx = this.processDrag(evt);
 
-    this.processDrag({
-      evt,
-      validTarget: applyClass(),
-      invalidTarget: applyClass('invalid-'),
-    });
+    if (typeof targetIdx !== 'undefined') {
+      forColumn(targetIdx)
+        .do(({classList}) => classList.add(`ColumnRearrangement__dropTarget--left`))
+        .usingEvent(evt);
+      forColumn(targetIdx + 1)
+        .do(({classList}) => classList.add(`ColumnRearrangement__dropTarget--right`))
+        .usingEvent(evt);
+    }
   };
 
   handleMouseUp = (evt) => {
     removeHighlights(true);
 
-    this.processDrag({
-      evt,
-      validTarget: (idx) => {
-        const {reportType} = this.props.report;
-        const list = processRawData[reportType](this.props).head.map((el) => el.id);
+    const targetIdx = this.processDrag(evt);
 
-        // add the column at the specified position
-        list.splice(idx + 1, 0, list[this.dragIdx]);
+    if (typeof targetIdx !== 'undefined') {
+      const {reportType} = this.props.report;
+      const list = processRawData[reportType](this.props).head.map((el) => el.id);
 
-        // remove the original column
-        list.splice(this.dragIdx + (this.dragIdx > idx), 1);
+      // add the column at the specified position
+      list.splice(targetIdx + 1, 0, list[this.dragIdx]);
 
-        this.props.updateReport({
-          configuration: {
-            columnOrder: {
-              $set: list.reduce(
-                (orders, entry, idx) => {
-                  orders[this.columnGroups[idx] || 'instanceProps'].push(entry);
-                  return orders;
-                },
-                {instanceProps: [], variables: [], inputVariables: [], outputVariables: []}
-              ),
-            },
-          },
-        });
-      },
-    });
+      // remove the original column
+      list.splice(this.dragIdx + (this.dragIdx > targetIdx), 1);
+
+      this.props.updateReport({configuration: {tableColumns: {columnOrder: {$set: list}}}});
+    }
 
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('mouseup', this.handleMouseUp);
+  };
+
+  processDrag = (evt) => {
+    const elem = evt.target.closest('.Table td, .Table .tableHeader');
+
+    if (elem) {
+      let idx = Array.from(elem.parentNode.childNodes).indexOf(elem);
+
+      if (evt.offsetX < elem.clientWidth / 2) {
+        idx--;
+      }
+
+      return idx;
+    }
   };
 }
 
@@ -161,8 +131,6 @@ function removeHighlights(alsoRemoveDraggedColumnStyle) {
     [
       'ColumnRearrangement__dropTarget--left',
       'ColumnRearrangement__dropTarget--right',
-      'ColumnRearrangement__dropTarget--invalid-left',
-      'ColumnRearrangement__dropTarget--invalid-right',
       alsoRemoveDraggedColumnStyle && 'ColumnRearrangement__draggedColumn',
     ].forEach((cssClass) => classList.remove(cssClass))
   );

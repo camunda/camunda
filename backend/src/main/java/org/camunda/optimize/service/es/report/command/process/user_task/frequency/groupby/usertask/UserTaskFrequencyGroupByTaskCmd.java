@@ -5,28 +5,26 @@
  */
 package org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby.usertask;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
-import org.camunda.optimize.service.es.report.command.CommandContext;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.usertask.ProcessGroupByUserTask;
 import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountUserTaskFrequency;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
-public class UserTaskFrequencyGroupByTaskCmd extends ProcessCmd<ReportMapResultDto> {
+public class UserTaskFrequencyGroupByTaskCmd extends ProcessCmd<List<MapResultEntryDto>> {
 
   public UserTaskFrequencyGroupByTaskCmd(final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
   @Override
-  protected ProcessReportCmdExecutionPlan<ReportMapResultDto> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
+  protected ProcessReportCmdExecutionPlan<List<MapResultEntryDto>> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
     return builder.createExecutionPlan()
       .processCommand()
       .view(ProcessViewCountUserTaskFrequency.class)
@@ -36,9 +34,4 @@ public class UserTaskFrequencyGroupByTaskCmd extends ProcessCmd<ReportMapResultD
       .build();
   }
 
-  @Override
-  public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext) {
-    final ReportMapResultDto evaluate = executionPlan.evaluate(commandContext);
-    return new SingleProcessMapReportResult(evaluate, commandContext.getReportDefinition());
-  }
 }

@@ -7,10 +7,8 @@ package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 
 import java.util.ArrayList;
@@ -19,13 +17,11 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 
-@Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldNameConstants(asEnum = true)
-@EqualsAndHashCode
+@FieldNameConstants
 @Builder
+@Data
 public class TableColumnDto {
   public static final String VARIABLE_PREFIX = "variable:";
   public static final String INPUT_PREFIX = "input:";
@@ -37,6 +33,8 @@ public class TableColumnDto {
   private List<String> excludedColumns = new ArrayList<>();
   @Builder.Default
   private List<String> includedColumns = new ArrayList<>();
+  @Builder.Default
+  private List<String> columnOrder = new ArrayList<>();
 
   public void addNewAndRemoveUnexpectedVariableColumns(final List<String> allVariableColumns) {
     addNewVariableColumns(allVariableColumns);

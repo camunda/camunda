@@ -17,8 +17,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Ro
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.filter.process.AbstractFilterIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -123,7 +124,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList();
 
-    final RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -151,7 +152,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList();
 
-    final RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -179,7 +180,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList();
 
-    final RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -207,7 +208,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList();
 
-    final RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -234,7 +235,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList();
 
-    final RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -267,7 +268,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList();
 
-    final RawDataProcessReportResultDto result =
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
       evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
 
     // then
@@ -301,7 +302,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .add()
         .buildList();
 
-    final RawDataProcessReportResultDto result =
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
       evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
 
     // then
@@ -329,7 +330,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .rollingDate(1L, DateFilterUnit.DAYS)
         .add()
         .buildList();
-    final RawDataProcessReportResultDto result1 = evaluateReportWithFilter(
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result1 = evaluateReportWithFilter(
       processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters1
     );
 
@@ -342,7 +343,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .rollingDate(3L, DateFilterUnit.DAYS)
         .add()
         .buildList();
-    final RawDataProcessReportResultDto result2 = evaluateReportWithFilter(
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result2 = evaluateReportWithFilter(
       processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters2
     );
 
@@ -370,13 +371,13 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .relativeDate(0L, DateFilterUnit.DAYS)
         .add()
         .buildList();
-    final RawDataProcessReportResultDto result1 = evaluateReportWithFilter(
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result1 = evaluateReportWithFilter(
       processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filterToday
     );
 
     // now move the current day
     LocalDateUtil.setCurrentTime(now.plusDays(1L));
-    final RawDataProcessReportResultDto result2 = evaluateReportWithFilter(
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result2 = evaluateReportWithFilter(
       processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filterToday
     );
 
@@ -389,7 +390,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .relativeDate(1L, DateFilterUnit.DAYS)
         .add()
         .buildList();
-    final RawDataProcessReportResultDto result3 = evaluateReportWithFilter(
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result3 = evaluateReportWithFilter(
       processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filterPreviousDay
     );
 

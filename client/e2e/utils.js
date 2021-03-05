@@ -76,12 +76,17 @@ export async function selectDefinition(t, name, version = 'Specific version') {
 }
 
 const selectControlPanelOption = (type) => async (t, name, subname) => {
-  const dropdown = Selector('.label').withText(type).nextSibling();
+  if (type === 'View' && name !== 'Variable' && subname) {
+    await selectView(t, name);
+    await selectControlPanelOption('Measure')(t, subname);
+  } else {
+    const dropdown = Selector('.label').withText(type).nextSibling();
 
-  await t.click(dropdown.find('button')).click(dropdown.find('.DropdownOption').withText(name));
+    await t.click(dropdown.find('button')).click(dropdown.find('.DropdownOption').withText(name));
 
-  if (subname) {
-    await t.click(dropdown.find('.Submenu .DropdownOption').withText(subname));
+    if (subname) {
+      await t.click(dropdown.find('.Submenu .DropdownOption').withText(subname));
+    }
   }
 };
 

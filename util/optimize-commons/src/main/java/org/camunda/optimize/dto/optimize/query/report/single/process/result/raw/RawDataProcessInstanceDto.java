@@ -9,8 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
@@ -18,7 +18,7 @@ import java.util.Map;
 @NoArgsConstructor
 @Data
 @FieldNameConstants(asEnum = true)
-public class RawDataProcessInstanceDto {
+public class RawDataProcessInstanceDto implements RawDataInstanceDto {
   protected String processDefinitionKey;
   protected String processDefinitionId;
   protected String processInstanceId;

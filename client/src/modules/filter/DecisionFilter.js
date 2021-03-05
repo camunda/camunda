@@ -7,7 +7,7 @@
 import React from 'react';
 import update from 'immutability-helper';
 
-import {Dropdown, Icon} from 'components';
+import {Dropdown} from 'components';
 
 import {DateFilter, VariableFilter} from './modals';
 
@@ -16,6 +16,8 @@ import './Filter.scss';
 
 import {loadDecisionValues, filterSameTypeExistingFilters} from './service';
 import {t} from 'translation';
+
+import './DecisionFilter.scss';
 
 export default class DecisionFilter extends React.Component {
   state = {
@@ -128,9 +130,8 @@ export default class DecisionFilter extends React.Component {
     const filters = this.props.data;
 
     return (
-      <div className="Filter">
+      <div className="DecisionFilter Filter">
         <div className="filterHeader">
-          <Icon type="filter" />
           <span className="dropdownLabel">{t('common.filter.dropdownLabel.decision')}</span>
           <Dropdown label={t('common.add')} id="ControlPanel__filters" className="Filter__dropdown">
             <Dropdown.Option onClick={this.openNewFilterModal('evaluationDateTime')}>

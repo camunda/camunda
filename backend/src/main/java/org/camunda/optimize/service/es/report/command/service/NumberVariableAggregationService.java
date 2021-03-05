@@ -10,17 +10,13 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.util.VariableAggregationContext;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.range.RangeAggregator;
+import org.elasticsearch.search.aggregations.bucket.histogram.HistogramAggregationBuilder;
 import org.springframework.stereotype.Component;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.RANGE_AGGREGATION;
+import static org.camunda.optimize.es.aggregations.NumberHistogramAggregationUtil.generateHistogramWithField;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLE_HISTOGRAM_AGGREGATION;
 import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
 import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -28,7 +24,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_D
 @RequiredArgsConstructor
 @Component
 public class NumberVariableAggregationService {
-
   public Optional<AggregationBuilder> createNumberVariableAggregation(final VariableAggregationContext context) {
     if (context.getVariableRangeMinMaxStats().isEmpty()) {
       return Optional.empty();
@@ -43,20 +38,19 @@ public class NumberVariableAggregationService {
     final double intervalSize = getIntervalSize(context, min.get());
     final double max = context.getMaxVariableValue();
 
-    RangeAggregationBuilder rangeAgg = AggregationBuilders
-      .range(RANGE_AGGREGATION)
-      .field(context.getNestedVariableValueFieldLabel());
+    final String digitFormat = VariableType.DOUBLE.equals(context.getVariableType()) ? "0.00" : "0";
 
-    for (double start = min.get(); start <= max; start += intervalSize) {
-      RangeAggregator.Range range =
-        new RangeAggregator.Range(
-          getKeyForNumberBucket(context.getVariableType(), start),
-          start,
-          start + intervalSize
-        );
-      rangeAgg.addRange(range);
-    }
-    return Optional.of(rangeAgg.subAggregation(context.getSubAggregation()));
+    final HistogramAggregationBuilder histogramAggregation = generateHistogramWithField(
+      VARIABLE_HISTOGRAM_AGGREGATION,
+      intervalSize,
+      min.get(),
+      max,
+      context.getNestedVariableValueFieldLabel(),
+      digitFormat,
+      context.getSubAggregation()
+    );
+
+    return Optional.of(histogramAggregation);
   }
 
   private Double getIntervalSize(final VariableAggregationContext context,
@@ -99,16 +93,4 @@ public class NumberVariableAggregationService {
       roundDownToNearestPowerOfTen(combinedMinMaxStats.orElse(context.getVariableRangeMinMaxStats()).getMin())
     );
   }
-
-  private String getKeyForNumberBucket(final VariableType varType,
-                                       final double bucketStart) {
-    if (!VariableType.DOUBLE.equals(varType)) {
-      // truncate decimal point for non-double variable aggregations
-      return String.valueOf((long) bucketStart);
-    }
-    DecimalFormatSymbols decimalSymbols = new DecimalFormatSymbols(Locale.US);
-    final DecimalFormat decimalFormat = new DecimalFormat("0.00", decimalSymbols);
-    return decimalFormat.format(bucketStart);
-  }
-
 }

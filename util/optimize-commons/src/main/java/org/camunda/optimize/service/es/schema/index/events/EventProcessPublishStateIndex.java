@@ -6,10 +6,9 @@
 package org.camunda.optimize.service.es.schema.index.events;
 
 import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
@@ -20,22 +19,22 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 
 public class EventProcessPublishStateIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 4;
 
-  public static final String ID = IndexableEventProcessPublishStateDto.Fields.id;
-  public static final String PROCESS_MAPPING_ID = IndexableEventProcessPublishStateDto.Fields.processMappingId;
-  public static final String NAME = IndexableEventProcessPublishStateDto.Fields.name;
-  public static final String PUBLISH_DATE_TIME = IndexableEventProcessPublishStateDto.Fields.publishDateTime;
-  public static final String STATE = IndexableEventProcessPublishStateDto.Fields.state;
-  public static final String PUBLISH_PROGRESS = IndexableEventProcessPublishStateDto.Fields.publishProgress;
-  public static final String DELETED = IndexableEventProcessPublishStateDto.Fields.deleted;
-  public static final String XML = IndexableEventProcessPublishStateDto.Fields.xml;
-  public static final String MAPPINGS = IndexableEventProcessPublishStateDto.Fields.mappings;
-  public static final String EVENT_IMPORT_SOURCES = IndexableEventProcessPublishStateDto.Fields.eventImportSources;
+  public static final String ID = EsEventProcessPublishStateDto.Fields.id;
+  public static final String PROCESS_MAPPING_ID = EsEventProcessPublishStateDto.Fields.processMappingId;
+  public static final String NAME = EsEventProcessPublishStateDto.Fields.name;
+  public static final String PUBLISH_DATE_TIME = EsEventProcessPublishStateDto.Fields.publishDateTime;
+  public static final String STATE = EsEventProcessPublishStateDto.Fields.state;
+  public static final String PUBLISH_PROGRESS = EsEventProcessPublishStateDto.Fields.publishProgress;
+  public static final String DELETED = EsEventProcessPublishStateDto.Fields.deleted;
+  public static final String XML = EsEventProcessPublishStateDto.Fields.xml;
+  public static final String MAPPINGS = EsEventProcessPublishStateDto.Fields.mappings;
+  public static final String EVENT_IMPORT_SOURCES = EsEventProcessPublishStateDto.Fields.eventImportSources;
 
-  public static final String FLOWNODE_ID = IndexableEventMappingDto.Fields.flowNodeId;
-  public static final String START = IndexableEventMappingDto.Fields.start;
-  public static final String END = IndexableEventMappingDto.Fields.end;
+  public static final String FLOWNODE_ID = EsEventMappingDto.Fields.flowNodeId;
+  public static final String START = EsEventMappingDto.Fields.start;
+  public static final String END = EsEventMappingDto.Fields.end;
 
   public static final String GROUP = EventTypeDto.Fields.group;
   public static final String SOURCE = EventTypeDto.Fields.source;
@@ -48,16 +47,8 @@ public class EventProcessPublishStateIndex extends DefaultIndexMappingCreator {
     EventImportSourceDto.Fields.lastEventForSourceAtTimeOfPublishTimestamp;
   public static final String LAST_IMPORT_EXECUTION_TIMESTAMP = EventImportSourceDto.Fields.lastImportExecutionTimestamp;
   public static final String LAST_IMPORTED_EVENT_TIMESTAMP = EventImportSourceDto.Fields.lastImportedEventTimestamp;
-  public static final String EVENT_SOURCE = EventImportSourceDto.Fields.eventSource;
-
-  public static final String EVENT_SOURCE_ID = EventSourceEntryDto.Fields.id;
-  public static final String EVENT_SOURCE_TYPE = EventSourceEntryDto.Fields.type;
-  public static final String EVENT_SOURCE_EVENT_SCOPE = EventSourceEntryDto.Fields.eventScope;
-  public static final String EVENT_SOURCE_PROC_DEF_KEY = EventSourceEntryDto.Fields.processDefinitionKey;
-  public static final String EVENT_SOURCE_VERSIONS = EventSourceEntryDto.Fields.versions;
-  public static final String EVENT_SOURCE_TENANTS = EventSourceEntryDto.Fields.tenants;
-  public static final String EVENT_SOURCE_TRACED_BY_BUSINESS_KEY = EventSourceEntryDto.Fields.tracedByBusinessKey;
-  public static final String EVENT_SOURCE_TRACE_VARIABLE = EventSourceEntryDto.Fields.traceVariable;
+  public static final String EVENT_IMPORT_SOURCE_TYPE = EventImportSourceDto.Fields.eventImportSourceType;
+  public static final String EVENT_IMPORT_SOURCE_CONFIGS = EventImportSourceDto.Fields.eventSourceConfigurations;
 
   @Override
   public String getIndexName() {
@@ -151,15 +142,14 @@ public class EventProcessPublishStateIndex extends DefaultIndexMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(EVENT_LABEL)
-      .field("type", "keyword")
+        .field("type", "keyword")
       .endObject();
     // @formatter:on
   }
 
   private XContentBuilder addEventImportSourcesField(final XContentBuilder xContentBuilder) throws IOException {
-    XContentBuilder newXContentBuilder =
-      // @formatter:off
-    xContentBuilder
+    // @formatter:off
+    return xContentBuilder
       .startObject(FIRST_EVENT_FOR_IMPORT_SOURCE_TIMESTAMP)
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
@@ -176,42 +166,12 @@ public class EventProcessPublishStateIndex extends DefaultIndexMappingCreator {
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
-      .startObject(EVENT_SOURCE)
+      .startObject(EVENT_IMPORT_SOURCE_TYPE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(EVENT_IMPORT_SOURCE_CONFIGS)
         .field("type", "object")
-        .startObject("properties");
-          addEventSourcesField(newXContentBuilder)
-        .endObject()
-      .endObject();
-    // @formatter:on
-    return newXContentBuilder;
-  }
-
-  private XContentBuilder addEventSourcesField(final XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
-    return xContentBuilder
-      .startObject(EVENT_SOURCE_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_SOURCE_TYPE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_SOURCE_EVENT_SCOPE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_SOURCE_PROC_DEF_KEY)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_SOURCE_VERSIONS)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_SOURCE_TENANTS)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_SOURCE_TRACED_BY_BUSINESS_KEY)
-        .field("type", "boolean")
-      .endObject()
-      .startObject(EVENT_SOURCE_TRACE_VARIABLE)
-        .field("type", "keyword")
+        .field("dynamic", true)
       .endObject();
     // @formatter:on
   }

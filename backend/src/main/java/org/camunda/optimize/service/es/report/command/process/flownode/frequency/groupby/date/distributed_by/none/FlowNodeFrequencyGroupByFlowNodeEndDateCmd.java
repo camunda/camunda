@@ -5,28 +5,26 @@
  */
 package org.camunda.optimize.service.es.report.command.process.flownode.frequency.groupby.date.distributed_by.none;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
-import org.camunda.optimize.service.es.report.command.CommandContext;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.date.ProcessGroupByFlowNodeEndDate;
 import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountFlowNodeFrequency;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
-public class FlowNodeFrequencyGroupByFlowNodeEndDateCmd extends ProcessCmd<ReportMapResultDto> {
+public class FlowNodeFrequencyGroupByFlowNodeEndDateCmd extends ProcessCmd<List<MapResultEntryDto>> {
 
   public FlowNodeFrequencyGroupByFlowNodeEndDateCmd(final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
   @Override
-  protected ProcessReportCmdExecutionPlan<ReportMapResultDto> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
+  protected ProcessReportCmdExecutionPlan<List<MapResultEntryDto>> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
     return builder.createExecutionPlan()
       .processCommand()
       .view(ProcessViewCountFlowNodeFrequency.class)
@@ -34,17 +32,6 @@ public class FlowNodeFrequencyGroupByFlowNodeEndDateCmd extends ProcessCmd<Repor
       .distributedBy(ProcessDistributedByNone.class)
       .resultAsMap()
       .build();
-  }
-
-  @Override
-  public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext) {
-    final ReportMapResultDto evaluate = executionPlan.evaluate(commandContext);
-    return new SingleProcessMapReportResult(evaluate, commandContext.getReportDefinition());
-  }
-
-  @Override
-  public String createCommandKey() {
-    return executionPlan.generateCommandKey();
   }
 
 }

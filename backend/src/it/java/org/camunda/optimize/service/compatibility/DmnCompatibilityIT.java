@@ -11,11 +11,11 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -163,13 +163,13 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto, INPUT_CUSTOMER_STATUS_ID
     ).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .isNotNull()
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
@@ -188,13 +188,13 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
       decisionDefinitionDto, OUTPUT_CHECK_RESULT_ID
     ).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getData())
+    assertThat(result.getFirstMeasureData())
       .isNotNull()
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
@@ -223,7 +223,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
       .containsExactly(decisionDefinitionDto.getKey());
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByInputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String variableId) {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -237,7 +237,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     return reportClient.evaluateMapReport(reportData);
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByOutputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String variableId) {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()

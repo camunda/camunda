@@ -6,43 +6,57 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.view;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.camunda.optimize.dto.optimize.query.report.Combinable;
+import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
-public class DecisionViewDto implements Combinable {
+@FieldNameConstants
+public class DecisionViewDto  {
 
-  protected DecisionViewProperty property;
+  protected List<ViewProperty> properties = new ArrayList<>();
 
-  public DecisionViewDto() {
-    super();
-  }
-
-  @Override
-  public boolean isCombinable(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof DecisionViewDto)) {
-      return false;
-    }
-    DecisionViewDto viewDto = (DecisionViewDto) o;
-    // note: different view operations are okay, since users might want to
-    // compare the results of those in a combined report.
-    return Objects.equals(property, viewDto.property);
+  public DecisionViewDto(final ViewProperty property) {
+    this.getProperties().add(property);
   }
 
   @JsonIgnore
   public String createCommandKey() {
-    return property.toString();
+    return getProperty().toString();
   }
 
-  @Override
-  public String toString() {
-    return "DecisionViewDto{" +
-      "property='" + property + '\'' +
-      '}';
+  // to be removed with OPT-4872, just here for jackson and API backwards compatibility thus protected
+  @Deprecated
+  public ViewProperty getProperty() {
+    return this.properties != null && !this.properties.isEmpty() ? properties.get(0) : null;
   }
+
+  // to be removed with OPT-4872, just here for jackson and API backwards compatibility thus protected
+  @Deprecated
+  public void setProperty(final ViewProperty property) {
+    if (this.properties == null || this.properties.isEmpty()) {
+      this.properties = Arrays.asList(property);
+    } else {
+      this.properties.set(0, property);
+    }
+  }
+
+  @JsonSetter
+  public void setProperties(final List<ViewProperty> properties) {
+    this.properties = new ArrayList<>(properties);
+  }
+
+  public void setProperties(final ViewProperty... properties) {
+    this.properties = Arrays.asList(properties);
+  }
+
 }

@@ -15,11 +15,11 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto
 import org.camunda.optimize.dto.optimize.query.entity.EntityType
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState
+import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService
 import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException
@@ -126,7 +126,7 @@ class PostMigrationTest {
         if (response != null) {
           final JsonNode jsonResponse = response.readEntity(JsonNode.class);
           if (Response.Status.OK.getStatusCode().equals(response.getStatus())) {
-            assertThat(jsonResponse.hasNonNull(AuthorizedEvaluationResultDto.Fields.result.name())).isTrue();
+            assertThat(jsonResponse.hasNonNull(AuthorizedSingleReportEvaluationResponseDto.Fields.result.name())).isTrue();
           } else if (Response.Status.BAD_REQUEST.getStatusCode().equals(response.getStatus())
             && jsonResponse.get(ErrorResponseDto.Fields.errorCode).asText().equals(TooManyBucketsException.ERROR_CODE)) {
             assertThat(jsonResponse.get(ErrorResponseDto.Fields.errorCode).asText())
@@ -213,7 +213,7 @@ class PostMigrationTest {
       .allSatisfy(eventProcessState -> assertThat(eventProcessState).isEqualTo(EventProcessState.PUBLISHED));
   }
 
-  private static AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawDataReportForProcessKey(
+  private static AuthorizedProcessReportEvaluationResponseDto<List<RawDataInstanceDto>> evaluateRawDataReportForProcessKey(
     final String eventProcessKey) {
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()

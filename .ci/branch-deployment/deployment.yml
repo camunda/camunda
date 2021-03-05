@@ -5,10 +5,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: @BRANCH@-optimize-camunda-cloud
+  name: "@BRANCH@-optimize-camunda-cloud"
   labels:
-    app: @BRANCH@-optimize-camunda-cloud
-    branch: @BRANCH@
+    app: "@BRANCH@-optimize-camunda-cloud"
+    branch: "@BRANCH@"
     changed: "@CHANGED@"
 spec:
   replicas: 1
@@ -18,20 +18,20 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: @BRANCH@-optimize-camunda-cloud
+      app: "@BRANCH@-optimize-camunda-cloud"
   template:
     metadata:
       labels:
-        app: @BRANCH@-optimize-camunda-cloud
-        branch: @BRANCH@
+        app: "@BRANCH@-optimize-camunda-cloud"
+        branch: "@BRANCH@"
         changed: "@CHANGED@"
     spec:
       imagePullSecrets:
-        - name: registry-camunda-cloud
+      - name: registry-camunda-cloud
       volumes:
       - name: configuration
         configMap:
-          name: @BRANCH@-optimize-camunda-cloud
+          name: "@BRANCH@-optimize-camunda-cloud"
           defaultMode: 0555
       initContainers:
       - name: init-sysctl
@@ -42,10 +42,10 @@ spec:
           privileged: true
       containers:
       - name: optimize
-        image: gcr.io/ci-30-162810/camunda-optimize:@VERSION@
+        image: "gcr.io/ci-30-162810/camunda-optimize:@VERSION@"
         imagePullPolicy: Always
         env:
-        - name: JAVA_OPTS
+        - name: OPTIMIZE_JAVA_OPTS
           value: |
             -Xms2g
             -Xmx2g
@@ -57,7 +57,6 @@ spec:
         ports:
         - containerPort: 8090
           name: optimize-http
-        tty: true
         livenessProbe:
           initialDelaySeconds: 60
           periodSeconds: 30
@@ -78,14 +77,14 @@ spec:
             cpu: 4
             memory: 3Gi
         volumeMounts:
-          - name: configuration
-            mountPath: /optimize/config/environment-config.yaml
-            subPath: environment-config.yaml
-          - name: configuration
-            mountPath: /optimize/config/OptimizeLicense.txt
-            subPath: OptimizeLicense.txt
+        - name: configuration
+          mountPath: /optimize/config/environment-config.yaml
+          subPath: environment-config.yaml
+        - name: configuration
+          mountPath: /optimize/config/OptimizeLicense.txt
+          subPath: OptimizeLicense.txt
       - name: cambpm
-        image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:@CAMBPM_VERSION@
+        image: "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:@CAMBPM_VERSION@"
         command: ["/camunda/configure-and-run.sh"]
         env:
         - name: JAVA_OPTS
@@ -97,7 +96,6 @@ spec:
         ports:
         - containerPort: 8080
           name: cambpm-http
-        tty: true
         livenessProbe:
           initialDelaySeconds: 30
           periodSeconds: 30
@@ -120,17 +118,17 @@ spec:
             cpu: 2
             memory: 2Gi
         volumeMounts:
-          - name: configuration
-            mountPath: /camunda/conf/bpm-platform.xml
-            subPath: bpm-platform.xml
-          - name: configuration
-            mountPath: /camunda/conf/server.xml
-            subPath: server.xml
-          - name: configuration
-            mountPath: /camunda/configure-and-run.sh
-            subPath: configure-and-run.sh
+        - name: configuration
+          mountPath: /camunda/conf/bpm-platform.xml
+          subPath: bpm-platform.xml
+        - name: configuration
+          mountPath: /camunda/conf/server.xml
+          subPath: server.xml
+        - name: configuration
+          mountPath: /camunda/configure-and-run.sh
+          subPath: configure-and-run.sh
       - name: elasticsearch
-        image: docker.elastic.co/elasticsearch/elasticsearch-oss:@ES_VERSION@
+        image: "docker.elastic.co/elasticsearch/elasticsearch-oss:@ES_VERSION@"
         env:
         - name: ES_JAVA_OPTS
           value: "-Xms4g -Xmx4g"
@@ -145,14 +143,12 @@ spec:
         securityContext:
           capabilities:
             add:
-              - IPC_LOCK
+            - IPC_LOCK
         ports:
         - containerPort: 9200
           name: es-http
-          protocol: TCP
         - containerPort: 9300
           name: es-transport
-          protocol: TCP
         livenessProbe:
           tcpSocket:
             port: es-transport
@@ -171,6 +167,6 @@ spec:
             cpu: 4
             memory: 8Gi
         volumeMounts:
-          - name: configuration
-            mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
-            subPath: elasticsearch.yml
+        - name: configuration
+          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          subPath: elasticsearch.yml

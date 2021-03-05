@@ -15,6 +15,7 @@ public enum UpgradeStepType {
   SCHEMA_UPDATE_INDEX,
   SCHEMA_UPDATE_MAPPING,
   SCHEMA_DELETE_INDEX,
+  REINDEX
   ;
 
   @JsonValue

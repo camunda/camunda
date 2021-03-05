@@ -5,9 +5,10 @@
  */
 package org.camunda.optimize.service.es.report.command;
 
+import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
+import org.camunda.optimize.service.es.report.ReportEvaluationContext;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
@@ -15,24 +16,28 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import java.util.Optional;
 
-public abstract class ProcessCmd<R extends ProcessReportResultDto>
-  implements Command<SingleProcessReportDefinitionRequestDto> {
+public abstract class ProcessCmd<T> implements Command<T, SingleProcessReportDefinitionRequestDto> {
 
-  protected final ProcessReportCmdExecutionPlan<R> executionPlan;
+  protected final ProcessReportCmdExecutionPlan<T> executionPlan;
 
-  public ProcessCmd(final ReportCmdExecutionPlanBuilder builder) {
+  protected ProcessCmd(final ReportCmdExecutionPlanBuilder builder) {
     this.executionPlan = buildExecutionPlan(builder);
   }
 
-  protected abstract ProcessReportCmdExecutionPlan<R> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder);
+  @Override
+  public CommandEvaluationResult<T> evaluate(final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto> reportEvaluationContext) {
+    return executionPlan.evaluate(reportEvaluationContext);
+  }
 
-  public BoolQueryBuilder getBaseQuery(final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext) {
-    return executionPlan.setupBaseQuery(new ExecutionContext<>(commandContext));
+  protected abstract ProcessReportCmdExecutionPlan<T> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder);
+
+  public BoolQueryBuilder getBaseQuery(final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto> reportEvaluationContext) {
+    return executionPlan.setupBaseQuery(new ExecutionContext<>(reportEvaluationContext));
   }
 
   @Override
-  public Optional<MinMaxStatDto> getGroupByMinMaxStats(final CommandContext<SingleProcessReportDefinitionRequestDto> commandContext) {
-    return executionPlan.getGroupByMinMaxStats(new ExecutionContext<>(commandContext));
+  public Optional<MinMaxStatDto> getGroupByMinMaxStats(final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto> reportEvaluationContext) {
+    return executionPlan.getGroupByMinMaxStats(new ExecutionContext<>(reportEvaluationContext));
   }
 
   @Override

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {formatters} from 'services';
+import {formatters, getReportResult} from 'services';
 import {t} from 'translation';
 
 export function isEmpty(str) {
@@ -27,7 +27,10 @@ export function getFormatter(viewProperty) {
   }
 }
 
-export function processResult({data, result}) {
+export function processResult(report) {
+  const data = report.data;
+  const result = getReportResult(report);
+
   const filteredResult = filterResult(result, data);
   const formattedResult = formatResult(filteredResult, data);
   if (data.view.property.toLowerCase?.().includes('duration')) {

@@ -12,9 +12,10 @@ import org.camunda.bpm.model.bpmn.instance.Gateway;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
-import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -47,7 +48,7 @@ import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateGa
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateModelGatewayIdForSource;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateNodeId;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateTaskIdForDefinitionKey;
-import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 // The tests in this class relate to the connections between sources
@@ -73,14 +74,17 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     ));
 
     BpmnModelInstance modelInstance = singleStartSingleEndModel();
-    final EventSourceEntryDto camundaSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto camundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
       EventScopeType.START_END
     );
     final EventTypeDto camundaStart = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
     final EventTypeDto camundaEnd = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
 
-    final List<EventSourceEntryDto> sources = Arrays.asList(createExternalEventSourceEntry(), camundaSource);
+    final List<EventSourceEntryDto<?>> sources = Arrays.asList(
+      createExternalEventAllGroupsSourceEntry(),
+      camundaSource
+    );
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
     // when
@@ -127,14 +131,17 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     ));
 
     BpmnModelInstance modelInstance = singleStartSingleEndModel();
-    final EventSourceEntryDto camundaSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto camundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
       EventScopeType.START_END
     );
     final EventTypeDto camundaStart = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
     final EventTypeDto camundaEnd = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
 
-    final List<EventSourceEntryDto> sources = Arrays.asList(createExternalEventSourceEntry(), camundaSource);
+    final List<EventSourceEntryDto<?>> sources = Arrays.asList(
+      createExternalEventAllGroupsSourceEntry(),
+      camundaSource
+    );
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
     // when
@@ -179,7 +186,7 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     ));
 
     BpmnModelInstance modelInstance = multipleStartSingleEndModel();
-    final EventSourceEntryDto camundaSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto camundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
       EventScopeType.START_END
     );
@@ -187,7 +194,10 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     final EventTypeDto camundaStart2 = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_2, START_EVENT_ID_2);
     final EventTypeDto camundaEnd = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
 
-    final List<EventSourceEntryDto> sources = Arrays.asList(createExternalEventSourceEntry(), camundaSource);
+    final List<EventSourceEntryDto<?>> sources = Arrays.asList(
+      createExternalEventAllGroupsSourceEntry(),
+      camundaSource
+    );
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
     // when
@@ -212,7 +222,7 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     final String convergingId = generateModelGatewayIdForSource(camundaSource, Converging);
     final String connectingId = generateConnectionGatewayIdForDefinitionKey(
       Diverging,
-      camundaSource.getProcessDefinitionKey()
+      camundaSource.getConfiguration().getProcessDefinitionKey()
     );
     // We cannot assert on the actual connections between the models as we don't know which start event will be
     // connected to the camunda start events
@@ -254,14 +264,17 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     ));
 
     BpmnModelInstance modelInstance = singleStartSingleEndModel();
-    final EventSourceEntryDto camundaSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto camundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       modelInstance,
       EventScopeType.START_END
     );
     final EventTypeDto camundaStart = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
     final EventTypeDto camundaEnd = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
 
-    final List<EventSourceEntryDto> sources = Arrays.asList(createExternalEventSourceEntry(), camundaSource);
+    final List<EventSourceEntryDto<?>> sources = Arrays.asList(
+      createExternalEventAllGroupsSourceEntry(),
+      camundaSource
+    );
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
     // when
@@ -317,7 +330,7 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
   @Test
   public void createFromTwoCamundaStartEndEventSources_singleStartEndEvents() {
     BpmnModelInstance firstModelInstance = singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1);
-    final EventSourceEntryDto firstCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto firstCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       firstModelInstance,
       EventScopeType.START_END
     );
@@ -325,14 +338,14 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     final EventTypeDto firstEnd = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
 
     BpmnModelInstance secondModelInstance = singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2);
-    final EventSourceEntryDto secondCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto secondCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       secondModelInstance,
       EventScopeType.START_END
     );
     final EventTypeDto secondStart = createCamundaEventTypeDto(PROCESS_ID_2, START_EVENT_ID_2, START_EVENT_ID_2);
     final EventTypeDto secondEnd = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_2, END_EVENT_ID_2);
 
-    final List<EventSourceEntryDto> sources = Arrays.asList(firstCamundaSource, secondCamundaSource);
+    final List<EventSourceEntryDto<?>> sources = Arrays.asList(firstCamundaSource, secondCamundaSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
     // when
@@ -365,7 +378,7 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
   @Test
   public void createFromTwoCamundaStartEndEventSources_multipleStartEndEvents() {
     BpmnModelInstance firstModelInstance = multipleStartMultipleEndModel(PROCESS_ID_1);
-    final EventSourceEntryDto firstCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto firstCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       firstModelInstance,
       EventScopeType.START_END
     );
@@ -375,7 +388,7 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     final EventTypeDto firstEnd2 = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_2, END_EVENT_ID_2);
 
     BpmnModelInstance secondModelInstance = multipleStartMultipleEndModel(PROCESS_ID_2);
-    final EventSourceEntryDto secondCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto secondCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       secondModelInstance,
       EventScopeType.START_END
     );
@@ -384,7 +397,7 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     final EventTypeDto secondEnd1 = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_1, END_EVENT_ID_1);
     final EventTypeDto secondEnd2 = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_2, END_EVENT_ID_2);
 
-    final List<EventSourceEntryDto> sources = Arrays.asList(firstCamundaSource, secondCamundaSource);
+    final List<EventSourceEntryDto<?>> sources = Arrays.asList(firstCamundaSource, secondCamundaSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
     // when
@@ -415,12 +428,12 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     // definition key
     final String connectingId1 = generateConnectionGatewayIdForDefinitionKey(
       Converging,
-      firstCamundaSource.getProcessDefinitionKey()
+      firstCamundaSource.getConfiguration().getProcessDefinitionKey()
     );
     // The next source is responsible for creating the diverging connecting gateway so the ID uses its definition key
     final String connectingId2 = generateConnectionGatewayIdForDefinitionKey(
       Diverging,
-      secondCamundaSource.getProcessDefinitionKey()
+      secondCamundaSource.getConfiguration().getProcessDefinitionKey()
     );
     assertNodeConnection(idOf(firstStart1), START_EVENT, convergingId1, EXCLUSIVE_GATEWAY, generatedInstance);
     assertNodeConnection(idOf(firstStart2), START_EVENT, convergingId1, EXCLUSIVE_GATEWAY, generatedInstance);
@@ -482,21 +495,21 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
   @MethodSource("processStartEventModelCombinations")
   public void createFromTwoCamundaProcessStartEndSources_singleStartEndEvents(final BpmnModelInstance firstInstance,
                                                                               final BpmnModelInstance secondInstance) {
-    final EventSourceEntryDto firstCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto firstCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       firstInstance,
       EventScopeType.PROCESS_INSTANCE
     );
     final EventTypeDto firstStart = createCamundaProcessStartEventTypeDto(PROCESS_ID_1);
     final EventTypeDto firstEnd = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
 
-    final EventSourceEntryDto secondCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto secondCamundaSource = deployDefinitionWithInstanceAndCreateEventSource(
       secondInstance,
       EventScopeType.PROCESS_INSTANCE
     );
     final EventTypeDto secondStart = createCamundaProcessStartEventTypeDto(PROCESS_ID_2);
     final EventTypeDto secondEnd = createCamundaProcessEndEventTypeDto(PROCESS_ID_2);
 
-    final List<EventSourceEntryDto> sources = Arrays.asList(firstCamundaSource, secondCamundaSource);
+    final List<EventSourceEntryDto<?>> sources = Arrays.asList(firstCamundaSource, secondCamundaSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
     // when
@@ -537,16 +550,17 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
       createCloudEventOfType(EVENT_D, traceId, now)
     ));
 
-    final EventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1),
       EventScopeType.PROCESS_INSTANCE,
       traceId
     );
     final EventTypeDto processStart = createCamundaProcessStartEventTypeDto(PROCESS_ID_1);
     final EventTypeDto processEnd = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
-    final String processNodeId = generateTaskIdForDefinitionKey(camundaProcessSource.getProcessDefinitionKey());
+    final String processNodeId = generateTaskIdForDefinitionKey(
+      camundaProcessSource.getConfiguration().getProcessDefinitionKey());
 
-    final EventSourceEntryDto startEndSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto startEndSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2),
       EventScopeType.START_END,
       traceId
@@ -554,8 +568,8 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     final EventTypeDto camundaStart = createCamundaEventTypeDto(PROCESS_ID_2, START_EVENT_ID_2, START_EVENT_ID_2);
     final EventTypeDto camundaEnd = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_2, END_EVENT_ID_2);
 
-    final List<EventSourceEntryDto> sources = Arrays.asList(
-      createExternalEventSourceEntry(),
+    final List<EventSourceEntryDto<?>> sources = Arrays.asList(
+      createExternalEventAllGroupsSourceEntry(),
       camundaProcessSource,
       startEndSource
     );
@@ -603,7 +617,7 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
   @Test
   public void createFromThreeSourcesWithOrder_processStartEnd_startEndEvents_external() {
     final String traceId = "tracingId";
-    final EventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1),
       EventScopeType.PROCESS_INSTANCE,
       traceId
@@ -612,7 +626,7 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     final EventTypeDto processStart = createCamundaProcessStartEventTypeDto(PROCESS_ID_1);
     final EventTypeDto processEnd = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
 
-    final EventSourceEntryDto startEndSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto startEndSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2),
       EventScopeType.START_END,
       traceId
@@ -628,10 +642,10 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
       createCloudEventOfType(EVENT_D, traceId, now.plusSeconds(30))
     ));
 
-    final List<EventSourceEntryDto> sources = Arrays.asList(
+    final List<EventSourceEntryDto<?>> sources = Arrays.asList(
       camundaProcessSource,
       startEndSource,
-      createExternalEventSourceEntry()
+      createExternalEventAllGroupsSourceEntry()
     );
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
@@ -696,7 +710,7 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
       OffsetDateTime.ofInstant(now.minusSeconds(50), ZoneId.systemDefault())
     );
     importEngineEntities();
-    final EventSourceEntryDto startEndSource = createCamundaSourceEntry(
+    final CamundaEventSourceEntryDto startEndSource = createCamundaSourceEntry(
       startEndInstance.getProcessDefinitionKey(),
       EventScopeType.START_END
     );
@@ -711,7 +725,7 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
       createCloudEventOfType(EVENT_D, traceId, now)
     ));
 
-    final EventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1),
       EventScopeType.PROCESS_INSTANCE,
       traceId
@@ -720,9 +734,9 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     final EventTypeDto processStart = createCamundaProcessStartEventTypeDto(PROCESS_ID_1);
     final EventTypeDto processEnd = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
 
-    final List<EventSourceEntryDto> sources = Arrays.asList(
+    final List<EventSourceEntryDto<?>> sources = Arrays.asList(
       startEndSource,
-      createExternalEventSourceEntry(),
+      createExternalEventAllGroupsSourceEntry(),
       camundaProcessSource
     );
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
@@ -777,15 +791,16 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
       createCloudEventOfType(EVENT_D, secondTraceId, now)
     ));
 
-    final EventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1),
       EventScopeType.PROCESS_INSTANCE
     );
     final EventTypeDto processStart = createCamundaProcessStartEventTypeDto(PROCESS_ID_1);
     final EventTypeDto processEnd = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
-    final String processNodeId = generateTaskIdForDefinitionKey(camundaProcessSource.getProcessDefinitionKey());
+    final String processNodeId = generateTaskIdForDefinitionKey(
+      camundaProcessSource.getConfiguration().getProcessDefinitionKey());
 
-    final EventSourceEntryDto startEndSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto startEndSource = deployDefinitionWithInstanceAndCreateEventSource(
       multipleStartMultipleEndModel(PROCESS_ID_2),
       EventScopeType.START_END
     );
@@ -795,8 +810,8 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     final EventTypeDto camundaEnd1 = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_1, END_EVENT_ID_1);
     final EventTypeDto camundaEnd2 = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_2, END_EVENT_ID_2);
 
-    final List<EventSourceEntryDto> sources = Arrays.asList(
-      createExternalEventSourceEntry(),
+    final List<EventSourceEntryDto<?>> sources = Arrays.asList(
+      createExternalEventAllGroupsSourceEntry(),
       camundaProcessSource,
       startEndSource
     );
@@ -839,7 +854,7 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     // The next source is responsible for creating the diverging connecting gateway so the ID uses its definition key
     final String connectingId = generateConnectionGatewayIdForDefinitionKey(
       Diverging,
-      startEndSource.getProcessDefinitionKey()
+      startEndSource.getConfiguration().getProcessDefinitionKey()
     );
 
 
@@ -901,21 +916,21 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
   @Test
   public void createFromTwoCamundaSources_camundaSourceHasNoEndEvents_canStillConnectToNextSource() {
     BpmnModelInstance firstModelInstance = singleStartNoEndModel();
-    final EventSourceEntryDto noEndEventSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto noEndEventSource = deployDefinitionWithInstanceAndCreateEventSource(
       firstModelInstance,
       EventScopeType.START_END
     );
     final EventTypeDto firstStart = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
 
     BpmnModelInstance secondModelInstance = singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2);
-    final EventSourceEntryDto endEventSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto endEventSource = deployDefinitionWithInstanceAndCreateEventSource(
       secondModelInstance,
       EventScopeType.START_END
     );
     final EventTypeDto secondStart = createCamundaEventTypeDto(PROCESS_ID_2, START_EVENT_ID_2, START_EVENT_ID_2);
     final EventTypeDto secondEnd = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_2, END_EVENT_ID_2);
 
-    final List<EventSourceEntryDto> sources = Arrays.asList(noEndEventSource, endEventSource);
+    final List<EventSourceEntryDto<?>> sources = Arrays.asList(noEndEventSource, endEventSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
     // when
@@ -947,7 +962,7 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
   @Test
   public void createFromTwoCamundaSources_camundaSourceHasNoEndEvents_canStillExistAtEndOfGeneratedModel() {
     BpmnModelInstance firstModelInstance = singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2);
-    final EventSourceEntryDto endEventSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto endEventSource = deployDefinitionWithInstanceAndCreateEventSource(
       firstModelInstance,
       EventScopeType.START_END
     );
@@ -955,13 +970,13 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
     final EventTypeDto firstEnd = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_2, END_EVENT_ID_2);
 
     BpmnModelInstance secondModelInstance = singleStartNoEndModel();
-    final EventSourceEntryDto noEndEventSource = deployDefinitionWithInstanceAndCreateEventSource(
+    final CamundaEventSourceEntryDto noEndEventSource = deployDefinitionWithInstanceAndCreateEventSource(
       secondModelInstance,
       EventScopeType.START_END
     );
     final EventTypeDto secondStart = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
 
-    final List<EventSourceEntryDto> sources = Arrays.asList(endEventSource, noEndEventSource);
+    final List<EventSourceEntryDto<?>> sources = Arrays.asList(endEventSource, noEndEventSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
     // when

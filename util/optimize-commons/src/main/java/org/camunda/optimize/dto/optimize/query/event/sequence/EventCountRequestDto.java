@@ -12,7 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 
 import javax.validation.constraints.Size;
 import java.util.ArrayList;
@@ -38,6 +38,6 @@ public class EventCountRequestDto {
 
   @Builder.Default
   @NonNull
-  private List<EventSourceEntryDto> eventSources = new ArrayList<>();
+  private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
 
 }
