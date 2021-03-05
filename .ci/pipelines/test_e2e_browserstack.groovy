@@ -198,9 +198,9 @@ pipeline {
     stage('Prepare') {
       steps {
         container('node'){
-          git url: 'git@github.com:camunda/camunda-operate',
+          git url: 'https://github.com/camunda-cloud/operate.git',
             branch: "${params.OPERATE_BRANCH}",
-            credentialsId: 'camunda-jenkins-github-ssh',
+            credentialsId: 'github-cloud-operate-app',
             poll: false
           dir('client') {
             sh '''

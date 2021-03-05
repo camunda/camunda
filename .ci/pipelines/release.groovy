@@ -136,16 +136,17 @@ pipeline {
     timeout(time: 45, unit: 'MINUTES')
     withCredentials([
       usernamePassword(passwordVariable: 'NEXUS_PSW', usernameVariable: 'NEXUS_USR', credentialsId: 'camunda-nexus'),
-      usernamePassword(passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME', credentialsId: 'camunda-jenkins-github'),
+      usernamePassword(passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME', credentialsId: 'camunda-jenkins-github'), // used for github release to zeebe repo
+      usernamePassword(passwordVariable: 'GITHUB_CLOUD_TOKEN', usernameVariable: 'GITHUB_CLOUD_USERNAME', credentialsId: 'github-cloud-operate-app'), // used for maven release tags + commits
     ])
   }
 
   stages {
     stage('Prepare') {
       steps {
-        git url: 'git@github.com:camunda/camunda-operate',
+        git url: 'https://github.com/camunda-cloud/operate.git',
             branch: "${params.BRANCH}",
-            credentialsId: 'camunda-jenkins-github-ssh',
+            credentialsId: 'github-cloud-operate-app',
             poll: false
 
         container('maven') {
@@ -166,9 +167,7 @@ pipeline {
     stage('Maven Release') {
       steps {
         container('maven') {
-          sshagent(['camunda-jenkins-github-ssh']) {
-            runRelease(params)
-          }
+          runRelease(params)
         }
       }
     }

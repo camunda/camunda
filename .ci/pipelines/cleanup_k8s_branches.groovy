@@ -87,7 +87,7 @@ pipeline {
           sshagent(['camunda-jenkins-github-ssh']) {
             sh("""
               ./cmd/k8s/cleanup-branch-deployment \
-              camunda/camunda-operate \
+              camunda-cloud/operate \
               operate \
               gcr.io/ci-30-162810/camunda-operate
             """)

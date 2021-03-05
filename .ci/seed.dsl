@@ -1,5 +1,5 @@
-def githubOrga = 'camunda'
-def gitRepository = 'camunda-operate'
+def githubOrga = 'camunda-cloud'
+def gitRepository = 'operate'
 def gitBranch = 'master'
 
 def dslScriptsToExecute = '''\
@@ -31,8 +31,8 @@ def seedJob = job('seed-job-operate') {
   scm {
     git {
       remote {
-        github "${githubOrga}/${gitRepository}", 'ssh'
-        credentials 'camunda-jenkins-github-ssh'
+        github "${githubOrga}/${gitRepository}", 'https'
+        credentials 'github-cloud-operate-app'
       }
       branch gitBranch
       extensions {
@@ -104,7 +104,7 @@ multibranchPipelineJob('camunda-operate') {
       id 'camunda-operate'
       repoOwner githubOrga
       repository gitRepository
-      scanCredentialsId 'github-operate-app'
+      scanCredentialsId 'github-cloud-operate-app'
     }
   }
 
