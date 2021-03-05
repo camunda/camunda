@@ -32,23 +32,12 @@ export const getLatestOperation = (
   return operations.length > 0 ? operations[0] : null;
 };
 
-export const getActiveIncident = (incidents = []) => {
-  let activeIncident = null;
-
-  if (incidents.length > 0) {
-    activeIncident = incidents.filter(({state}) => state === STATE.ACTIVE)[0];
+export function getWorkflowName(instance: WorkflowInstanceEntity | null) {
+  if (instance === null) {
+    return '';
   }
 
-  return activeIncident;
-};
-
-export function getWorkflowName({
-  workflowName,
-  bpmnProcessId,
-}: {
-  workflowName: string;
-  bpmnProcessId: string;
-}) {
+  const {workflowName, bpmnProcessId} = instance;
   return workflowName || bpmnProcessId || '';
 }
 

@@ -9,8 +9,11 @@ import * as Styled from './styled';
 import IconButton from 'modules/components/IconButton';
 
 type Props = {
-  isExpanded?: boolean;
+  isExpanded: boolean;
   children?: React.ReactNode;
+  onClick: () => void;
+  title?: string;
+  iconButtonTheme: string;
 };
 
 const ExpandButton = React.forwardRef<any, Props>(function ExpandButton(

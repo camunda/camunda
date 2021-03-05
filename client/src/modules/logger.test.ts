@@ -9,8 +9,7 @@ import {logger} from './logger';
 const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
 
 function setNodeEnv(newValue: typeof process.env.NODE_ENV) {
-  // @ts-expect-error
-  process.env.NODE_ENV = newValue;
+  Object.defineProperty(process.env, 'NODE_ENV', {value: newValue});
 }
 
 const mockConsoleError = jest

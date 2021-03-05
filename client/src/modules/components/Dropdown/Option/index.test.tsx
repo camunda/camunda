@@ -8,7 +8,6 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import Option from './index';
-import Dropdown from '../index';
 
 import * as Styled from './styled';
 
@@ -37,26 +36,6 @@ describe('Option', () => {
 
   it('should render passed children', () => {
     expect(node.find(Child)).toExist();
-  });
-
-  it('should render child with props', () => {
-    node = shallow(
-      <Option
-        isSubMenuOpen={true}
-        isSubmenuFixed={false}
-        onStateChange={mockOnStateChange}
-        onClick={onClickMock}
-      >
-        <Dropdown.SubMenu onStateChange={mockOnStateChange}>
-          <Dropdown.SubOption>'foo'</Dropdown.SubOption>
-        </Dropdown.SubMenu>
-      </Option>
-    );
-
-    const SubMenuProps = node.find(Dropdown.SubMenu).props();
-
-    expect(SubMenuProps.isOpen).toBe(true);
-    expect(SubMenuProps.isFixed).toBe(false);
   });
 
   it('should handle click event', () => {

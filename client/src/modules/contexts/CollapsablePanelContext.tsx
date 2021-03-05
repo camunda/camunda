@@ -7,10 +7,8 @@
 import React from 'react';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
-// @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.
-const CollapsablePanelContext = React.createContext();
+const CollapsablePanelContext = React.createContext({});
 
-// Wrapper that passes the theme as a prop
 const CollapsablePanelConsumer = CollapsablePanelContext.Consumer;
 
 type State = {
@@ -18,19 +16,17 @@ type State = {
   isOperationsCollapsed: boolean;
 };
 
-// Top level component to pass down theme in the App
 class CollapsablePanelProvider extends React.Component<{}, State> {
-  // we start with both panels not collapsed
   state = {isFiltersCollapsed: false, isOperationsCollapsed: true};
 
-  toggle = function (target: any) {
-    // @ts-expect-error ts-migrate(2683) FIXME: 'this' implicitly has type 'any' because it does n... Remove this comment to see the full error message
+  toggle = (target: 'isFiltersCollapsed' | 'isOperationsCollapsed') => {
     const currentPanelState = this.getCurrentPanelState();
-    const expandState = {[target]: !currentPanelState[target]};
+    const expandState = {
+      [target]: !currentPanelState[target],
+    } as Pick<State, keyof State>;
 
     storeStateLocally(expandState, 'panelStates');
-    // components should be rerendered after panel states changed
-    // @ts-expect-error ts-migrate(2683) FIXME: 'this' implicitly has type 'any' because it does n... Remove this comment to see the full error message
+
     this.setState(expandState);
   };
 
@@ -38,11 +34,10 @@ class CollapsablePanelProvider extends React.Component<{}, State> {
 
   toggleOperations = () => this.toggle('isOperationsCollapsed');
 
-  expand = function (target: any) {
-    const expandState = {[target]: false};
+  expand = (target: 'isFiltersCollapsed' | 'isOperationsCollapsed') => {
+    const expandState = {[target]: false} as Pick<State, keyof State>;
     storeStateLocally(expandState, 'panelStates');
-    // components should be rerendered after panel states changed
-    // @ts-expect-error ts-migrate(2683) FIXME: 'this' implicitly has type 'any' because it does n... Remove this comment to see the full error message
+
     this.setState(expandState);
   };
 

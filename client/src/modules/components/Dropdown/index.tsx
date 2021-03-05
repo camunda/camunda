@@ -11,9 +11,7 @@ import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
 
 import {DROPDOWN_PLACEMENT} from 'modules/constants';
 
-import SubMenu from './SubMenu';
 import Option from './Option';
-import SubOption from './SubOption';
 
 import * as Styled from './styled';
 
@@ -38,16 +36,10 @@ export default class Dropdown extends React.Component<Props, State> {
 
   static Option = Option;
 
-  static SubMenu = SubMenu;
-
-  static SubOption = SubOption;
-
   container: any;
 
   state = {
     isOpen: false,
-    isSubMenuOpen: false,
-    isSubmenuFixed: false,
     isFocused: false,
   };
 
@@ -81,8 +73,6 @@ export default class Dropdown extends React.Component<Props, State> {
   resetState = () => {
     this.setState({
       isOpen: false,
-      isSubMenuOpen: false,
-      isSubmenuFixed: false,
     });
   };
 
@@ -112,8 +102,6 @@ export default class Dropdown extends React.Component<Props, State> {
         child != null &&
         // @ts-expect-error ts-migrate(2769) FIXME: Type 'string' is not assignable to type 'ReactElem... Remove this comment to see the full error message
         React.cloneElement(child, {
-          isSubMenuOpen: this.state.isSubMenuOpen,
-          isSubmenuFixed: this.state.isSubmenuFixed,
           onStateChange: this.handleStateChange,
           placement: this.props.placement,
         })

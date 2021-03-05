@@ -12,8 +12,8 @@ export function isFlowNode(bpmnElement: any) {
   return bpmnElement.$instanceOf('bpmn:FlowNode');
 }
 
-export function getFlowNodes(bpmnElements: any) {
-  if (!bpmnElements) {
+export function getFlowNodes(bpmnElements?: any) {
+  if (bpmnElements === undefined) {
     return [];
   }
 

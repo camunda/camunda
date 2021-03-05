@@ -53,7 +53,7 @@ describe('User', () => {
   it('should handle a previously logged in user', async () => {
     storeStateLocally(previouslyLoggedInUser);
 
-    render(<User />, {
+    render(<User handleRedirect={() => {}} />, {
       wrapper: ThemeProvider,
     });
 
@@ -67,7 +67,7 @@ describe('User', () => {
       )
     );
 
-    render(<User />, {
+    render(<User handleRedirect={() => {}} />, {
       wrapper: ThemeProvider,
     });
 
@@ -81,7 +81,7 @@ describe('User', () => {
       )
     );
 
-    render(<User />, {
+    render(<User handleRedirect={() => {}} />, {
       wrapper: ThemeProvider,
     });
 
@@ -95,7 +95,7 @@ describe('User', () => {
       )
     );
 
-    render(<User />, {
+    render(<User handleRedirect={() => {}} />, {
       wrapper: ThemeProvider,
     });
 
@@ -110,7 +110,7 @@ describe('User', () => {
       )
     );
 
-    render(<User />, {
+    render(<User handleRedirect={() => {}} />, {
       wrapper: ThemeProvider,
     });
 

@@ -23,8 +23,7 @@ import {useParams} from 'react-router-dom';
 
 import * as Styled from './styled';
 const Instance = observer(() => {
-  // @ts-expect-error ts-migrate(2339) FIXME: Property 'id' does not exist on type '{}'.
-  const {id} = useParams();
+  const {id} = useParams<{id: string}>();
   useEffect(() => {
     currentInstanceStore.init(id);
     flowNodeInstanceStore.init();

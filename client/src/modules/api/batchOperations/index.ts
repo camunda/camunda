@@ -13,7 +13,7 @@ export async function fetchOperations({
   searchAfter,
 }: {
   pageSize: number;
-  searchAfter?: string;
+  searchAfter?: [string, string];
 }) {
   return post(URL, {
     pageSize,

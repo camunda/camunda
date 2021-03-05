@@ -107,7 +107,7 @@ const Header = observer(
       return queryParams;
     };
 
-    selectActiveCondition(type: any) {
+    selectActiveCondition(type: 'instances' | 'incidents' | 'filters') {
       const currentView = this.currentView();
       const {filter} = this.state;
       const {location} = this.props;
@@ -125,13 +125,12 @@ const Header = observer(
             !isRunningInstanceFilter &&
             isEqual(filter, {incidents: true}),
         };
-        // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
+
         return conditions[type];
       }
 
       // Is 'dashboard' or 'filters' active;
       const conditions = {
-        dashboard: currentView.isDashboard(),
         filters: currentView.isInstances() && !this.props.isFiltersCollapsed,
         instances:
           Locations.runningInstances(location).search ===
@@ -141,11 +140,10 @@ const Header = observer(
           location.search.replace('?', ''),
       };
 
-      // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
       return conditions[type];
     }
 
-    selectCount(type: any) {
+    getCount(type: 'instances' | 'incidents' | 'filters') {
       const {running, withIncidents, status} = statisticsStore.state;
       const {filteredInstancesCount} = instancesStore.state;
 
@@ -160,31 +158,15 @@ const Header = observer(
         incidents: withIncidents,
       };
 
-      // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
       return conditions[type];
     }
 
-    getLinkProperties(
-      type: 'brand' | 'dashboard' | 'instances' | 'incidents' | 'filters'
-    ) {
-      const count = this.selectCount(type);
-
-      if (type === 'brand' || type === 'dashboard') {
-        return {
-          count,
-          isActive: this.selectActiveCondition(type),
-          title: createTitle(type, count),
-          dataTest: 'header-link-' + type,
-        };
-      }
+    getLinkProperties(type: 'instances' | 'incidents' | 'filters') {
+      const count = this.getCount(type);
 
       return {
-        count,
-        isActive: this.selectActiveCondition(type),
-        title: createTitle(type, count),
-        dataTest: 'header-link-' + type,
-        linkProps: {onClick: this.props.expandFilters},
-        queryParams: this.getQueryParams(type),
+        count: count,
+        title: createTitle(type, count.toString()),
       };
     }
 
@@ -228,8 +210,6 @@ const Header = observer(
         );
       }
 
-      const brand = this.getLinkProperties('brand');
-      const dashboard = this.getLinkProperties('dashboard');
       const instances = this.getLinkProperties('instances');
       const incidents = this.getLinkProperties('incidents');
       const filters = this.getLinkProperties('filters');
@@ -244,41 +224,35 @@ const Header = observer(
                   : (location: Location) => ({
                       ...location,
                       pathname: '/',
-                      search: mergeQueryParams({
-                        newParams: brand.queryParams,
-                        prevParams: getPersistentQueryParams(location.search),
-                      }),
+                      search: getPersistentQueryParams(location.search),
                     })
               }
-              dataTest={brand.dataTest}
-              title={brand.title}
+              dataTest="header-link-brand"
+              title="View Dashboard"
               label={labels.brand}
             />
             <LinkElement
-              dataTest={dashboard.dataTest}
+              dataTest="header-link-dashboard"
               to={
                 IS_FILTERS_V2
                   ? (location: Location) => Locations.dashboard(location)
                   : (location: Location) => ({
                       ...location,
                       pathname: '/',
-                      search: mergeQueryParams({
-                        newParams: dashboard.queryParams,
-                        prevParams: getPersistentQueryParams(location.search),
-                      }),
+                      search: getPersistentQueryParams(location.search),
                     })
               }
-              isActive={dashboard.isActive}
-              title={dashboard.title}
+              isActive={this.currentView().isDashboard()}
+              title="View Dashboard"
               label={labels.dashboard}
             />
             <NavElement
-              dataTest={instances.dataTest}
-              isActive={instances.isActive}
+              dataTest="header-link-instances"
+              isActive={this.selectActiveCondition('instances')}
               title={instances.title}
               label={labels.instances}
               count={instances.count}
-              linkProps={instances.linkProps}
+              linkProps={{onClick: this.props.expandFilters}}
               type={BADGE_TYPE.RUNNING_INSTANCES}
               to={
                 IS_FILTERS_V2
@@ -287,19 +261,19 @@ const Header = observer(
                       ...location,
                       pathname: '/instances',
                       search: mergeQueryParams({
-                        newParams: instances.queryParams,
+                        newParams: this.getQueryParams('instances'),
                         prevParams: getPersistentQueryParams(location.search),
                       }),
                     })
               }
             />
             <Styled.FilterNavElement
-              dataTest={filters.dataTest}
-              isActive={filters.isActive}
+              dataTest="header-link-filters"
+              isActive={this.selectActiveCondition('filters')}
               title={filters.title}
               label={labels.filters}
               count={filters.count}
-              linkProps={filters.linkProps}
+              linkProps={{onClick: this.props.expandFilters}}
               type={BADGE_TYPE.FILTERS}
               to={
                 IS_FILTERS_V2
@@ -308,19 +282,19 @@ const Header = observer(
                       ...location,
                       pathname: '/instances',
                       search: mergeQueryParams({
-                        newParams: filters.queryParams,
+                        newParams: this.getQueryParams('filters'),
                         prevParams: getPersistentQueryParams(location.search),
                       }),
                     })
               }
             />
             <NavElement
-              dataTest={incidents.dataTest}
-              isActive={incidents.isActive}
+              dataTest="header-link-incidents"
+              isActive={this.selectActiveCondition('incidents')}
               title={incidents.title}
               label={labels.incidents}
               count={incidents.count}
-              linkProps={incidents.linkProps}
+              linkProps={{onClick: this.props.expandFilters}}
               type={BADGE_TYPE.INCIDENTS}
               to={
                 IS_FILTERS_V2
@@ -329,7 +303,7 @@ const Header = observer(
                       ...location,
                       pathname: '/instances',
                       search: mergeQueryParams({
-                        newParams: incidents.queryParams,
+                        newParams: this.getQueryParams('incidents'),
                         prevParams: getPersistentQueryParams(location.search),
                       }),
                     })

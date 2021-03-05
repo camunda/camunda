@@ -51,7 +51,7 @@ class Diagram extends React.PureComponent<Props, State> {
   containerNode: any;
 
   Viewer = null;
-  myRef = React.createRef();
+  myRef = React.createRef<HTMLDivElement>();
 
   state = {
     isViewerLoaded: false,
@@ -405,9 +405,9 @@ class Diagram extends React.PureComponent<Props, State> {
       onFlowNodeSelection,
       selectedFlowNodeName,
     } = this.props;
+
     return (
       <Styled.Diagram data-testid="diagram">
-        {/* @ts-expect-error ts-migrate(2769) FIXME: Type 'RefObject<unknown>' is not assignable to typ... Remove this comment to see the full error message */}
         <Styled.DiagramCanvas ref={this.myRef} />
         <DiagramControls
           handleZoomIn={this.handleZoomIn}

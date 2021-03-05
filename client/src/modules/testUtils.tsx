@@ -58,7 +58,7 @@ export const xTimes = (x: any) => (method: any) => {
   }
 };
 
-const createRandomId = function* createRandomId(type: any) {
+const createRandomId = function* createRandomId(type: string) {
   let idx = 0;
   while (true) {
     yield `${type}_${idx}`;
@@ -131,8 +131,7 @@ export const createIncident = (options = {}) => {
     jobId: randomJobIdIterator.next().value,
     state: 'ACTIVE',
     flowNodeId: 'flowNodeId_alwaysFailingTask',
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.
-    flowNodeInstanceId: createRandomId(),
+    flowNodeInstanceId: createRandomId('incident'),
     flowNodeName: 'flowNodeName_alwaysFailingTask',
     creationTime: '2019-03-01T14:26:19',
     hasActiveOperation: false,
@@ -144,12 +143,11 @@ export const createIncident = (options = {}) => {
  * @returns a mocked incident Object
  * @param {*} customProps Obj with any type of custom property
  */
-export const createOperation = (options = {}) => {
+export const createOperation = (options = {}): InstanceOperationEntity => {
   return {
-    endDate: '2018-10-10T09:20:38.661Z',
+    id: 'randomIdIterator.next().value',
     errorMessage: 'string',
-    startDate: '2018-10-10T09:20:38.661Z',
-    state: 'SCHEDULED',
+    state: 'SENT',
     type: 'RESOLVE_INCIDENT',
     ...options,
   };
@@ -176,17 +174,17 @@ export const createActivity = (options = {}) => {
  */
 export const createInstance = (options = {}) => {
   return {
-    activities: [createActivity()],
-    bpmnProcessId: 'someKey',
-    endDate: null,
     id: randomIdIterator.next().value,
-    operations: [createOperation()],
-    sequenceFlows: [],
-    startDate: '2018-06-21',
-    state: 'ACTIVE',
     workflowId: '2',
     workflowName: 'someWorkflowName',
     workflowVersion: 1,
+    startDate: '2018-06-21',
+    endDate: null,
+    state: 'ACTIVE',
+    bpmnProcessId: 'someKey',
+    hasActiveOperation: false,
+    operations: [createOperation()],
+    sortValues: [],
     ...options,
   } as const;
 };

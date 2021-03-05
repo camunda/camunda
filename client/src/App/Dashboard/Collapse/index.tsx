@@ -19,7 +19,6 @@ function Collapse({buttonTitle, content, header}: Props) {
   return (
     <Container>
       <ExpandButton
-        // @ts-expect-error ts-migrate(2769) FIXME: Property 'onClick' does not exist on type 'Intrins... Remove this comment to see the full error message
         onClick={() => {
           setIsCollapsed((isCollapsed) => !isCollapsed);
         }}

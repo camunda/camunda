@@ -6,7 +6,7 @@
 
 import {isFlowNode, getFlowNodes} from './index';
 
-const createElement = (type: any, isFlowNode: any, id: any) => {
+const createElement = (type: string, isFlowNode: boolean, id?: string) => {
   return {
     id,
     businessObject: {
@@ -19,14 +19,12 @@ const createElement = (type: any, isFlowNode: any, id: any) => {
 describe('flowNodes', () => {
   describe('isFlowNode', () => {
     it('should return true for tasks', () => {
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 3 arguments, but got 2.
       const element = createElement('bpmn:Task', true);
 
       expect(isFlowNode(element)).toBeTruthy();
     });
 
     it('should return false for Processes', () => {
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 3 arguments, but got 2.
       const element = createElement('bpmn:Process', false);
 
       expect(isFlowNode(element)).toBeFalsy();
@@ -50,7 +48,6 @@ describe('flowNodes', () => {
 
     it('sould get empty objects', () => {
       expect(getFlowNodes([])).toEqual([]);
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.
       expect(getFlowNodes()).toEqual([]);
     });
   });

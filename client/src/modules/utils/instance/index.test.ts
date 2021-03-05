@@ -11,22 +11,6 @@ import * as instanceUtils from './index';
 import {xTimes, createOperation} from 'modules/testUtils';
 import {isWithIncident, isRunning} from 'modules/utils/instance';
 
-const {ACTIVE} = STATE;
-
-const activeWithIncidents = {
-  state: ACTIVE,
-  incidents: [
-    {
-      id: '4295776400',
-      errorType: 'IO_MAPPING_ERROR',
-      errorMessage:
-        'Could not apply output mappings: Task was completed without payload',
-      state: ACTIVE,
-      activityId: 'taskA',
-    },
-  ],
-};
-
 const mockIncidentInstance = {
   id: '8590375632-2',
   state: 'INCIDENT',
@@ -64,19 +48,6 @@ describe('instance utils', () => {
 
       expect(isRunning(mockCompletedInstance)).toBe(false);
       expect(isRunning(mockCanceldInstance)).toBe(false);
-    });
-  });
-
-  describe('getActiveIncident', () => {
-    it('should return null if there is no incident', () => {
-      expect(instanceUtils.getActiveIncident([])).toBe(null);
-    });
-
-    it('should return an object if an instance has incidents', () => {
-      expect(
-        // @ts-expect-error ts-migrate(2345) FIXME: Type '{ id: string; errorType: string; errorMessag... Remove this comment to see the full error message
-        instanceUtils.getActiveIncident(activeWithIncidents.incidents)
-      ).toBe(activeWithIncidents.incidents[0]);
     });
   });
 

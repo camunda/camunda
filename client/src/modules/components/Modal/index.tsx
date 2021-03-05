@@ -31,7 +31,7 @@ function withModal(Component: any) {
 }
 
 type ModalProps = {
-  onModalClose: (...args: any[]) => any;
+  onModalClose: () => void;
   isVisible: boolean;
   className?: string;
   size: 'SMALL' | 'BIG';
@@ -83,10 +83,9 @@ export default class Modal extends React.Component<ModalProps> {
 
   addEventListener() {
     this.eventListenerAdded = true;
-    this.prevActiveElement = document.activeElement;
+    this.prevActiveElement = document.activeElement as HTMLElement;
 
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'blur' does not exist on type 'Element'.
-    document.activeElement && document.activeElement.blur();
+    this.prevActiveElement && this.prevActiveElement.blur();
     document.addEventListener('keydown', this.handleKeyDown);
   }
 

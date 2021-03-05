@@ -15,7 +15,7 @@ type Props = {
   icon?: React.ReactNode;
 };
 
-const IconButton = React.forwardRef<any, Props>(function ExpandButton(
+const IconButton = React.forwardRef<any, Props>(function IconButton(
   {children, iconButtonTheme, icon, size, ...props},
   ref
 ) {

@@ -33,7 +33,6 @@ export default function useOperationApply() {
       const query = parseFilterForRequest(
         getFilterWithWorkflowIds(filter, groupedWorkflows)
       );
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'ids' does not exist on type '{}'.
       const filterIds = query.ids || [];
 
       // if ids are selected, ignore ids from filter

@@ -9,22 +9,26 @@ import React from 'react';
 import Modal, {SIZES} from 'modules/components/Modal';
 
 type Props = {
-  isVisible?: boolean;
-  title?: string;
-  content?: string;
-  toggleModal?: (...args: any[]) => any;
+  isVisible: boolean;
+  title: string | null;
+  content: string | null;
+  onModalClose: () => void;
 };
 
-const ErrorMessageModal = ({content, title, isVisible, toggleModal}: Props) => {
+const ErrorMessageModal = ({
+  content,
+  title,
+  isVisible,
+  onModalClose,
+}: Props) => {
   return (
-    // @ts-expect-error ts-migrate(2322) FIXME: Type 'undefined' is not assignable to type '(...ar... Remove this comment to see the full error message
-    <Modal onModalClose={toggleModal} isVisible={isVisible} size={SIZES.BIG}>
+    <Modal onModalClose={onModalClose} isVisible={isVisible} size={SIZES.BIG}>
       <Modal.Header>{title}</Modal.Header>
       <Modal.Body>
         <Modal.BodyText>{content}</Modal.BodyText>
       </Modal.Body>
       <Modal.Footer>
-        <Modal.PrimaryButton title="Close Modal" onClick={toggleModal}>
+        <Modal.PrimaryButton title="Close Modal" onClick={onModalClose}>
           Close
         </Modal.PrimaryButton>
       </Modal.Footer>

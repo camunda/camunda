@@ -27,8 +27,8 @@ const IncidentsWrapper: React.FC<Props> = observer(function (props) {
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const [selectedFlowNodes, setSelectedFlowNodes] = useState([]);
-  const [selectedErrorTypes, setSelectedErrorTypes] = useState([]);
+  const [selectedFlowNodes, setSelectedFlowNodes] = useState<string[]>([]);
+  const [selectedErrorTypes, setSelectedErrorTypes] = useState<string[]>([]);
   const [isInTransition, setIsInTransition] = useState(false);
 
   const prevErrorTypes = usePrevious(errorTypes);
@@ -108,19 +108,15 @@ const IncidentsWrapper: React.FC<Props> = observer(function (props) {
     const isSelected = (item: any) => {
       if (hasSelectedErrorTypes && hasSelectedFlowNodes) {
         return (
-          // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any' is not assignable to parame... Remove this comment to see the full error message
           selectedFlowNodes.includes(item.flowNodeId) &&
-          // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any' is not assignable to parame... Remove this comment to see the full error message
           selectedErrorTypes.includes(item.errorType)
         );
       }
       if (hasSelectedErrorTypes) {
-        // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any' is not assignable to parame... Remove this comment to see the full error message
         return selectedErrorTypes.includes(item.errorType);
       }
 
       if (hasSelectedFlowNodes) {
-        // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any' is not assignable to parame... Remove this comment to see the full error message
         return selectedFlowNodes.includes(item.flowNodeId);
       }
     };

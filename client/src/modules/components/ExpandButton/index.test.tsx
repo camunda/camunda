@@ -12,9 +12,14 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 describe('ExpandButton', () => {
   it('should render arrow icon', () => {
     render(
-      // @ts-expect-error ts-migrate(2322) FIXME: Property 'iconButtonTheme' does not exist on type ... Remove this comment to see the full error message
-      <ExpandButton isExpanded={false} iconButtonTheme="default" />,
-      {wrapper: ThemeProvider}
+      <ExpandButton
+        isExpanded={false}
+        iconButtonTheme="default"
+        onClick={() => {}}
+      />,
+      {
+        wrapper: ThemeProvider,
+      }
     );
 
     expect(screen.getByTestId('arrow-icon')).toBeInTheDocument();
@@ -22,8 +27,11 @@ describe('ExpandButton', () => {
 
   it('should render provided children inside the button', () => {
     render(
-      // @ts-expect-error ts-migrate(2322) FIXME: Property 'iconButtonTheme' does not exist on type ... Remove this comment to see the full error message
-      <ExpandButton iconButtonTheme="default">
+      <ExpandButton
+        isExpanded={false}
+        iconButtonTheme="default"
+        onClick={() => {}}
+      >
         <div id="child1">child node 1</div>
         <div id="child2">child node 2</div>
       </ExpandButton>,

@@ -7,7 +7,7 @@
 import {DEFAULT_FILTER} from 'modules/constants';
 import {getWorkflowByVersion} from 'modules/utils/filter';
 
-const sanitizeFilter = (filter: any, groupedWorkflows: any) => {
+const sanitizeFilter = (filter: any, groupedWorkflows?: any) => {
   if (!filter) {
     return DEFAULT_FILTER;
   }

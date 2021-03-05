@@ -8,7 +8,6 @@ import {mockResolvedAsyncFn} from 'modules/testUtils';
 
 export const mocks = {
   onChange: jest.fn(),
-  // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.
-  onFilterChange: mockResolvedAsyncFn(),
+  onFilterChange: mockResolvedAsyncFn(''),
   checkIsComplete: jest.fn(),
 };

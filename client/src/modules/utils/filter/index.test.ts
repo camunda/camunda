@@ -183,40 +183,21 @@ describe('modules/utils/filter', () => {
       // when
       const parsedFilter = parseFilterForRequest(filter);
 
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'workflowIds' does not exist on type '{}'... Remove this comment to see the full error message
       expect(parsedFilter.workflowIds).toEqual(['4']);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'ids' does not exist on type '{}'.
       expect(parsedFilter.ids).toEqual(['id1', 'id2', 'id3']);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'errorMessage' does not exist on type '{}... Remove this comment to see the full error message
       expect(parsedFilter.errorMessage).toEqual('this is an error message');
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'startDate' does not exist on type '{}'.
-      expect(parsedFilter.startDate).toBe(undefined);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'endDate' does not exist on type '{}'.
-      expect(parsedFilter.endDate).toBe(undefined);
       //ci has diffrent timezone, so we ommit the timezone +0200 at the end
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'startDateBefore' does not exist on type ... Remove this comment to see the full error message
       expect(parsedFilter.startDateBefore).toContain('2018-10-09T00:00:00.000');
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'startDateAfter' does not exist on type '... Remove this comment to see the full error message
       expect(parsedFilter.startDateAfter).toContain('2018-10-08T00:00:00.000');
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'endDateBefore' does not exist on type '{... Remove this comment to see the full error message
       expect(parsedFilter.endDateBefore).toContain('2018-10-11T00:00:00.000');
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'endDateAfter' does not exist on type '{}... Remove this comment to see the full error message
       expect(parsedFilter.endDateAfter).toContain('2018-10-10T00:00:00.000');
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'activityId' does not exist on type '{}'.
       expect(parsedFilter.activityId).toBe('5');
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'variable' does not exist on type '{}'.
       expect(parsedFilter.variable).toEqual(filter.variable);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'active' does not exist on type '{}'.
       expect(parsedFilter.active).toBe(true);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'incidents' does not exist on type '{}'.
       expect(parsedFilter.incidents).toBe(false);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'completed' does not exist on type '{}'.
       expect(parsedFilter.completed).toBe(true);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'canceled' does not exist on type '{}'.
       expect(parsedFilter.canceled).toBe(false);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'running' does not exist on type '{}'.
       expect(parsedFilter.running).toBe(true);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'finished' does not exist on type '{}'.
       expect(parsedFilter.finished).toBe(true);
     });
 
@@ -241,25 +222,17 @@ describe('modules/utils/filter', () => {
       // when
       const parsedFilter = parseFilterForRequest(filter);
 
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'ids' does not exist on type '{}'.
       expect(parsedFilter.ids).toEqual(['id1', 'id2', 'id3']);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'errorMessage' does not exist on type '{}... Remove this comment to see the full error message
       expect(parsedFilter.errorMessage).toEqual('this is an error message');
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'active' does not exist on type '{}'.
       expect(parsedFilter.active).toBe(true);
 
       // expect date values to not contain whitespace characters
       const re = /^\S*$/;
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'startDateBefore' does not exist on type ... Remove this comment to see the full error message
       expect(parsedFilter.startDateBefore).toMatch(re);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'startDateAfter' does not exist on type '... Remove this comment to see the full error message
       expect(parsedFilter.startDateAfter).toMatch(re);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'endDateBefore' does not exist on type '{... Remove this comment to see the full error message
       expect(parsedFilter.endDateBefore).toMatch(re);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'endDateAfter' does not exist on type '{}... Remove this comment to see the full error message
       expect(parsedFilter.endDateAfter).toMatch(re);
 
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'variable' does not exist on type '{}'.
       expect(parsedFilter.variable).toEqual({
         name: 'myVar',
         value: '"1, 2\r \n "',
@@ -291,7 +264,6 @@ describe('modules/utils/filter', () => {
       const value = '1 2 3';
       const output = fieldParser.ids('ids', value);
 
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'ids' does not exist on type '{ [x: numbe... Remove this comment to see the full error message
       expect(output.ids).toEqual(['1', '2', '3']);
     });
 
@@ -299,7 +271,6 @@ describe('modules/utils/filter', () => {
       const value = ' 1, 2 , 3,';
       const output = fieldParser.ids('ids', value);
 
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'ids' does not exist on type '{ [x: numbe... Remove this comment to see the full error message
       expect(output.ids).toEqual(['1', '2', '3']);
     });
     it('should separate the values by enter and tab', () => {
@@ -308,7 +279,6 @@ describe('modules/utils/filter', () => {
 3	4`;
       const output = fieldParser.ids('ids', value);
 
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'ids' does not exist on type '{ [x: numbe... Remove this comment to see the full error message
       expect(output.ids).toEqual(['1', '2', '3', '4']);
     });
   });
@@ -318,14 +288,10 @@ describe('modules/utils/filter', () => {
       const value = 'July 05 2018';
       const output = fieldParser.startDate('startDate', value);
 
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      expect(output.startDateAfter).toBeDefined();
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      expect(output.startDateBefore).toBeDefined();
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      expect(output.startDateAfter.length).toBe(28);
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      expect(output.startDateBefore.length).toBe(28);
+      expect(output?.startDateAfter).toBeDefined();
+      expect(output?.startDateBefore).toBeDefined();
+      expect(output?.startDateAfter?.length).toBe(28);
+      expect(output?.startDateBefore?.length).toBe(28);
     });
 
     it('should return the same date for startDateAfter', () => {
@@ -333,32 +299,28 @@ describe('modules/utils/filter', () => {
       const output = fieldParser.startDate('startDate', value);
 
       // no timezone tested, it differs on environments
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      expect(output.startDateAfter).toContain('2018-07-05T00:00:00.000');
+      expect(output?.startDateAfter).toContain('2018-07-05T00:00:00.000');
     });
     it('should return startDateBefore = date + 1 day, when no time is provided', () => {
       const value = 'July 05 2018';
       const output = fieldParser.startDate('startDate', value);
 
       // no timezone tested, it differs on environments
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      expect(output.startDateBefore).toContain('2018-07-06T00:00:00.000');
+      expect(output?.startDateBefore).toContain('2018-07-06T00:00:00.000');
     });
     it('should return startDateBefore = date + 1 minute, when time is provided', () => {
       const value = 'July 05 2018 15:18';
       const output = fieldParser.startDate('startDate', value);
 
       // no timezone tested, it differs on environments
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      expect(output.startDateBefore).toContain('2018-07-05T15:19:00.000');
+      expect(output?.startDateBefore).toContain('2018-07-05T15:19:00.000');
     });
     it('should return date for string containing spaces', () => {
       const value = '  2019-10-17 12:30:00   ';
       const output = fieldParser.startDate('startDate', value);
 
       // no timezone tested, it differs on environments
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      expect(output.startDateBefore).toContain('2019-10-17T12:31:00.000');
+      expect(output?.startDateBefore).toContain('2019-10-17T12:31:00.000');
     });
   });
 
@@ -367,14 +329,10 @@ describe('modules/utils/filter', () => {
       const value = 'July 05 2018';
       const output = fieldParser.endDate('endDate', value);
 
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      expect(output.endDateAfter).toBeDefined();
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      expect(output.endDateBefore).toBeDefined();
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      expect(output.endDateAfter.length).toBe(28);
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      expect(output.endDateBefore.length).toBe(28);
+      expect(output?.endDateAfter).toBeDefined();
+      expect(output?.endDateBefore).toBeDefined();
+      expect(output?.endDateAfter?.length).toBe(28);
+      expect(output?.endDateBefore?.length).toBe(28);
     });
   });
 

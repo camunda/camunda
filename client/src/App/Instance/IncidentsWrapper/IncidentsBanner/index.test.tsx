@@ -18,6 +18,7 @@ const mockProps = {
   onClick: jest.fn(),
   isArrowFlipped: false,
   expandState: 'DEFAULT',
+  isOpen: false,
 };
 
 type Props = {

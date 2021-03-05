@@ -10,6 +10,8 @@ import * as Styled from './styled';
 
 type Props = {
   children?: React.ReactNode;
+  scrollable?: boolean;
+  onScroll?: (event: React.UIEvent<HTMLDivElement, UIEvent>) => void;
 };
 
 const PanelBody = React.forwardRef<any, Props>(function PanelBody(props, ref) {

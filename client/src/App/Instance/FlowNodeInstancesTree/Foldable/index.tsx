@@ -67,9 +67,8 @@ const Summary: React.FC<SummaryProps> = ({
 }) => {
   return (
     <SummaryContainer {...props}>
-      {isFoldable ? (
+      {isFoldable && onToggle !== undefined ? (
         <ExpandButton
-          // @ts-expect-error ts-migrate(2769) FIXME: Property 'onClick' does not exist on type 'Intrins... Remove this comment to see the full error message
           onClick={onToggle}
           isExpanded={!isFolded}
           iconButtonTheme="foldable"

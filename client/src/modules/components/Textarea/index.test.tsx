@@ -19,8 +19,7 @@ describe('Textarea', () => {
   });
 
   it('should render autosize textarea', () => {
-    // @ts-expect-error ts-migrate(2322) FIXME: Property 'hasAutosize' does not exist on type 'Int... Remove this comment to see the full error message
-    render(<Textarea placeholder="someLabel" hasAutosize />, {
+    render(<Textarea placeholder="someLabel" hasAutoSize />, {
       wrapper: ThemeProvider,
     });
 

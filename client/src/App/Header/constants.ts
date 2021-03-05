@@ -15,15 +15,15 @@ export const labels = {
   brand: 'Camunda Operate',
 };
 
-export const createTitle = (type: any, count: any) => {
+export const createTitle = (
+  type: 'instances' | 'incidents' | 'filters',
+  count: string
+) => {
   const titles = {
-    brand: 'View Dashboard',
-    dashboard: 'View Dashboard',
     instances: `View ${count} Running Instances`,
     filters: `View ${count} Instances in Filters`,
     incidents: `View ${count} Incidents`,
   };
-  // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
   return titles[type];
 };
 

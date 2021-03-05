@@ -7,7 +7,7 @@
 import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 
 type Props = {
-  size: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'large';
   color?: 'main' | 'primary' | 'secondary';
 };
 

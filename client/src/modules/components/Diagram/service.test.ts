@@ -51,7 +51,6 @@ describe('diagram service', () => {
       };
 
       // when
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
       const position = getPopoverPosition({
         diagramContainer,
         flowNode,
@@ -96,7 +95,6 @@ describe('diagram service', () => {
       };
 
       // when
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
       const position = getPopoverPosition({
         diagramContainer,
         flowNode,
@@ -141,7 +139,6 @@ describe('diagram service', () => {
       };
 
       // when
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
       const position = getPopoverPosition({
         diagramContainer,
         flowNode,
@@ -186,7 +183,6 @@ describe('diagram service', () => {
       };
 
       // when
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
       const position = getPopoverPosition({
         diagramContainer,
         flowNode,
@@ -231,7 +227,6 @@ describe('diagram service', () => {
       };
 
       // when
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
       const position = getPopoverPosition({
         diagramContainer,
         flowNode,

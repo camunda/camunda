@@ -29,12 +29,12 @@ it('should close modal on modal close click', () => {
   render(<ErrorMessageModal {...mockProps} />, {wrapper: ThemeProvider});
 
   fireEvent.click(screen.getByText('Close'));
-  expect(mockProps.toggleModal).toBeCalled();
+  expect(mockProps.onModalClose).toBeCalled();
 });
 
 it('should close modal on close button click', () => {
   render(<ErrorMessageModal {...mockProps} />, {wrapper: ThemeProvider});
 
   fireEvent.click(screen.getByTestId('cross-button'));
-  expect(mockProps.toggleModal).toBeCalled();
+  expect(mockProps.onModalClose).toBeCalled();
 });

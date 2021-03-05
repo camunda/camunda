@@ -46,7 +46,7 @@ describe('stores/operations', () => {
     );
 
     expect(operationsStore.state.page).toBe(1);
-    await operationsStore.fetchNextOperations('20');
+    await operationsStore.fetchNextOperations(['20', '20']);
 
     expect(operationsStore.state.page).toBe(2);
   });

@@ -14,7 +14,7 @@ import {getDisplayName} from './getDisplayName';
 import {currentTheme} from 'modules/stores/currentTheme';
 
 type Props = {
-  handleRedirect?: (...args: any[]) => any;
+  handleRedirect: () => void;
 };
 
 function User({handleRedirect}: Props) {
@@ -55,8 +55,7 @@ function User({handleRedirect}: Props) {
               data-testid="logout-button"
               onClick={async () => {
                 await api.logout();
-                // @ts-expect-error ts-migrate(2722) FIXME: Cannot invoke an object which is possibly 'undefin... Remove this comment to see the full error message
-                handleRedirect({forceRedirect: true});
+                handleRedirect();
               }}
             />
           )}

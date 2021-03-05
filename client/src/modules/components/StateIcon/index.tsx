@@ -23,10 +23,11 @@ type Props = {
 };
 
 function StateIcon({state, ...props}: Props) {
-  const TargetComponent =
-    state === undefined ? Styled.AliasIcon : stateIconsMap[state];
+  if (state === undefined) {
+    return <Styled.AliasIcon data-testid="alias-icon" {...props} />;
+  }
 
-  // @ts-expect-error
+  const TargetComponent = stateIconsMap[state];
   return <TargetComponent data-testid={`${state}-icon`} {...props} />;
 }
 

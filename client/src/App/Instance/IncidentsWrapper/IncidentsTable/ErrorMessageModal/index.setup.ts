@@ -8,7 +8,7 @@ const mockProps = {
   content: 'some modal content',
   title: 'modal title',
   isVisible: true,
-  toggleModal: jest.fn(),
+  onModalClose: jest.fn(),
 };
 
 const mockHiddenModalProps = {

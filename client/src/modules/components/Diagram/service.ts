@@ -11,7 +11,7 @@ const POPOVER_TO_FLOWNODE_SPACE = 16;
 
 function getPopoverPosition(
   {diagramContainer, flowNode}: any,
-  isSummaryPopover: any
+  isSummaryPopover?: boolean
 ) {
   // we only know the popover dimensions after it's render, so we approximate
   const POPOVER_APROXIMATE_HEIGHT = isSummaryPopover

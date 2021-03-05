@@ -25,15 +25,12 @@ export default function DiagramControls({
 }: Props) {
   return (
     <Styled.DiagramControls>
-      {/* @ts-expect-error ts-migrate(2769) FIXME: Property 'children' does not exist on type 'Intrin... Remove this comment to see the full error message */}
       <Styled.ZoomReset onClick={handleZoomReset}>
         <DiagramReset />
       </Styled.ZoomReset>
-      {/* @ts-expect-error ts-migrate(2769) FIXME: Property 'children' does not exist on type 'Intrin... Remove this comment to see the full error message */}
       <Styled.ZoomIn onClick={handleZoomIn}>
         <Plus />
       </Styled.ZoomIn>
-      {/* @ts-expect-error ts-migrate(2769) FIXME: Property 'children' does not exist on type 'Intrin... Remove this comment to see the full error message */}
       <Styled.ZoomOut onClick={handleZoomOut}>
         <Minus />
       </Styled.ZoomOut>

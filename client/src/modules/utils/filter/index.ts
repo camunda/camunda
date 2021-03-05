@@ -50,6 +50,28 @@ type FiltersType = {
   canceled?: boolean;
 };
 
+type RequestFilters = {
+  running?: boolean;
+  active?: boolean;
+  incidents?: boolean;
+  finished?: boolean;
+  canceled?: boolean;
+  completed?: boolean;
+  activityId?: string;
+  batchOperationId?: string;
+  endDateAfter?: string;
+  endDateBefore?: string;
+  errorMessage?: string;
+  ids?: string[];
+  startDateAfter?: string;
+  startDateBefore?: string;
+  variable?: {
+    name: string;
+    value: string;
+  };
+  workflowIds?: string[];
+};
+
 /**
  * Returns a query string for the filter objects
  * removes keys with empty values (null, "", []) so that they don't appear in URL
@@ -115,7 +137,7 @@ const parseDate = (value: any, name: any) => {
  * we used this parser before making a call to backend with the current filters
  */
 export const fieldParser = {
-  ids: (name: any, value: any) => {
+  ids: (name: string, value: string): {[key: string]: string[]} => {
     // split by space, comma, tab or return key
     return {[name]: value.split(/[ ,\t\n]+/).filter(Boolean)};
   },
@@ -164,7 +186,7 @@ export function getInstanceStatePayload(filter: any) {
  * @param {Object} filter
  * @return {Object}
  */
-export function parseFilterForRequest(filter: any) {
+export function parseFilterForRequest(filter: any): RequestFilters {
   let parsedFilter = {...getInstanceStatePayload(filter)};
 
   for (let key in filter) {
@@ -184,7 +206,6 @@ export function parseFilterForRequest(filter: any) {
       ...parsedField,
     };
   }
-
   return {
     ...trimmFilter(parsedFilter),
   };
@@ -362,28 +383,6 @@ function getRequestDatePair(
     endDateAfter: dateAfter,
   };
 }
-
-type RequestFilters = {
-  running?: boolean;
-  active?: boolean;
-  incidents?: boolean;
-  finished?: boolean;
-  canceled?: boolean;
-  completed?: boolean;
-  activityId?: string;
-  batchOperationId?: string;
-  endDateAfter?: string;
-  endDateBefore?: string;
-  errorMessage?: string;
-  ids?: string[];
-  startDateAfter?: string;
-  startDateBefore?: string;
-  variable?: {
-    name: string;
-    value: string;
-  };
-  workflowIds?: string[];
-};
 
 function parseIds(value: string) {
   return value

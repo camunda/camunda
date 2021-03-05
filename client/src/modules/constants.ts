@@ -41,7 +41,7 @@ export const TYPE = {
 
   WORKFLOW: 'WORKFLOW',
   MULTI_INSTANCE_BODY: 'MULTI_INSTANCE_BODY',
-};
+} as const;
 
 export const MULTI_INSTANCE_TYPE = {
   PARALLEL: 'MULTI_PARALLEL',
@@ -56,8 +56,6 @@ export const FLOWNODE_TYPE_HANDLE = {
   'bpmn:MessageEventDefinition': TYPE.EVENT_MESSAGE,
   'bpmn:ErrorEventDefinition': TYPE.EVENT_ERROR,
   'bpmn:TimerEventDefinition': TYPE.EVENT_TIMER,
-  // @ts-expect-error ts-migrate(2339) FIXME: Property 'EVENT_BOUNDARY' does not exist on type '... Remove this comment to see the full error message
-  'bpmn:BoundaryEvent': TYPE.EVENT_BOUNDARY,
   'bpmn:EventBasedGateway': TYPE.GATEWAY_EVENT_BASED,
   'bpmn:ParallelGateway': TYPE.GATEWAY_PARALLEL,
   'bpmn:ExclusiveGateway': TYPE.GATEWAY_EXCLUSIVE,

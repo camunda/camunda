@@ -41,8 +41,6 @@ export const LinkElement: React.FC<LinkElementProps> = memo((props) => (
   <Styled.ListItem aria-label={props.label}>
     <Styled.DashboardLink
       to={props.to}
-      // @ts-expect-error ts-migrate(2769) FIXME: Property '$isActive' does not exist on type 'Intri... Remove this comment to see the full error message
-      $isActive={props.isActive}
       title={props.title}
       data-testid={props.dataTest}
     >
@@ -71,8 +69,6 @@ type NavElementProps = {
 export const NavElement: React.FC<NavElementProps> = memo((props) => (
   <Styled.ListItem className={props.className} aria-label={props.label}>
     <Styled.ListLink
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'isActive' does not exist on type 'PropsW... Remove this comment to see the full error message
-      $isActive={props.isActive}
       title={props.title}
       data-testid={props.dataTest}
       to={props.to}

@@ -11,8 +11,6 @@ import * as Styled from './styled';
 type Props = {
   label?: React.ReactNode;
   disabled?: boolean;
-  isSubMenuOpen?: boolean;
-  isSubmenuFixed?: boolean;
   onStateChange?: (...args: any[]) => any;
   onClick?: (...args: any[]) => any;
   className?: string;
@@ -31,8 +29,6 @@ export default class Option extends React.Component<Props> {
     React.Children.map(this.props.children, (child, idx) =>
       // @ts-expect-error ts-migrate(2769) FIXME: Type 'undefined' is not assignable to type 'ReactE... Remove this comment to see the full error message
       React.cloneElement(child, {
-        isOpen: this.props.isSubMenuOpen,
-        isFixed: this.props.isSubmenuFixed,
         onStateChange: this.props.onStateChange,
       })
     );

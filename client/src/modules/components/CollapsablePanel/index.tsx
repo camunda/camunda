@@ -49,19 +49,17 @@ function CollapsablePanel({
   const buttonDirection =
     panelPosition === PANEL_POSITION.RIGHT ? DIRECTION.RIGHT : DIRECTION.LEFT;
 
-  const expandButtonRef = useRef(null);
-  const collapseButtonRef = useRef(null);
+  const expandButtonRef = useRef<HTMLButtonElement>(null);
+  const collapseButtonRef = useRef<HTMLButtonElement>(null);
 
   const prevIsCollapsed = usePrevious(isCollapsed);
 
   useEffect(() => {
     if (prevIsCollapsed !== isCollapsed) {
       if (isCollapsed) {
-        // @ts-expect-error ts-migrate(2339) FIXME: Property 'focus' does not exist on type 'never'.
         setTimeout(() => expandButtonRef.current?.focus(), TRANSITION_TIMEOUT);
       } else {
         setTimeout(
-          // @ts-expect-error ts-migrate(2339) FIXME: Property 'focus' does not exist on type 'never'.
           () => collapseButtonRef.current?.focus(),
           TRANSITION_TIMEOUT
         );
@@ -84,8 +82,6 @@ function CollapsablePanel({
           ref={expandButtonRef}
           title={`Expand ${label}`}
           onClick={toggle}
-          // @ts-expect-error ts-migrate(2769) FIXME: Property 'panelPosition' does not exist on type 'I... Remove this comment to see the full error message
-          panelPosition={panelPosition}
           data-testid="expand-button"
         >
           <Styled.Vertical offset={verticalLabelOffset}>
@@ -106,8 +102,6 @@ function CollapsablePanel({
           <Styled.CollapseButton
             ref={collapseButtonRef}
             direction={buttonDirection}
-            // @ts-expect-error ts-migrate(2769) FIXME: Property 'isExpanded' does not exist on type 'Intr... Remove this comment to see the full error message
-            isExpanded={true}
             title={`Collapse ${label}`}
             onClick={toggle}
             data-testid="collapse-button"
@@ -115,7 +109,6 @@ function CollapsablePanel({
           {label}
           {header}
         </Styled.Header>
-        {/* @ts-expect-error ts-migrate(2322) FIXME: Property 'scrollable' does not exist on type 'Intr... Remove this comment to see the full error message */}
         <Panel.Body scrollable={scrollable} onScroll={onScroll}>
           {children}
         </Panel.Body>

@@ -6,7 +6,7 @@
 
 import {request} from './request';
 
-export function get(url: any, query?: any, options = {}) {
+export function get(url: string, query?: any, options = {}) {
   return request({
     url,
     query,
@@ -15,7 +15,7 @@ export function get(url: any, query?: any, options = {}) {
   });
 }
 
-export function post(url: any, body: any, options = {}) {
+export function post(url: string, body?: any, options = {}) {
   return request({
     url,
     body,
@@ -24,7 +24,7 @@ export function post(url: any, body: any, options = {}) {
   });
 }
 
-export function put(url: any, body: any, options = {}) {
+export function put(url: string, body: any, options = {}) {
   return request({
     url,
     body,
@@ -33,7 +33,7 @@ export function put(url: any, body: any, options = {}) {
   });
 }
 
-export function del(url: any, query: any, options = {}) {
+export function del(url: string, query: any, options = {}) {
   return request({
     url,
     query,

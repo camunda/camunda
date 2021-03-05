@@ -52,7 +52,6 @@ const OperationsPanel: React.FC<Props> = observer(
             status !== 'fetching'
           ) {
             operationsStore.fetchNextOperations(
-              // @ts-expect-error ts-migrate(2339) FIXME: Property 'sortValues' does not exist on type 'neve... Remove this comment to see the full error message
               operations[operations.length - 1].sortValues
             );
           }

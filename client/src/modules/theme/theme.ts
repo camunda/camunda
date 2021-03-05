@@ -579,30 +579,7 @@ const theme = Object.freeze({
               },
             },
           },
-          subMenu: {
-            subMenuButton: {
-              color: rgba(SEMANTIC_COLORS.white, 0.9),
-              hover: {
-                backgroundColor: DARK_COLORS.ui06,
-              },
-            },
-            ul: {
-              backgroundColor: DARK_COLORS.ui04,
-              color: SEMANTIC_COLORS.white,
-              borderColor: DARK_COLORS.ui06,
-            },
-            li: {
-              borderColor: DARK_COLORS.ui06,
-            },
-          },
-          subOption: {
-            optionButton: {
-              color: rgba(SEMANTIC_COLORS.white, 0.9),
-              hover: {
-                backgroundColor: DARK_COLORS.ui06,
-              },
-            },
-          },
+
           button: {
             default: {
               color: rgba(SEMANTIC_COLORS.white, 0.9),
@@ -1066,9 +1043,6 @@ const theme = Object.freeze({
         },
         dropdown: {
           menu: {
-            ul: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.6)}`,
-          },
-          subMenu: {
             ul: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.6)}`,
           },
         },
@@ -1576,30 +1550,6 @@ const theme = Object.freeze({
               },
             },
           },
-          subMenu: {
-            subMenuButton: {
-              color: rgba(LIGHT_COLORS.ui06, 0.9),
-              hover: {
-                backgroundColor: LIGHT_COLORS.ui05,
-              },
-            },
-            ul: {
-              backgroundColor: LIGHT_COLORS.ui02,
-              color: LIGHT_COLORS.ui06,
-              borderColor: LIGHT_COLORS.ui05,
-            },
-            li: {
-              borderColor: LIGHT_COLORS.ui05,
-            },
-          },
-          subOption: {
-            optionButton: {
-              color: rgba(LIGHT_COLORS.ui06, 0.9),
-              hover: {
-                backgroundColor: LIGHT_COLORS.ui05,
-              },
-            },
-          },
           button: {
             default: {
               color: rgba(LIGHT_COLORS.ui06, 0.9),
@@ -2063,9 +2013,6 @@ const theme = Object.freeze({
         },
         dropdown: {
           menu: {
-            ul: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
-          },
-          subMenu: {
             ul: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
           },
         },

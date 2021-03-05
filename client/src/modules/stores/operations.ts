@@ -70,7 +70,7 @@ class Operations {
     });
   }
 
-  fetchOperations = async (searchAfter?: string) => {
+  fetchOperations = async (searchAfter?: [string, string]) => {
     this.startFetching();
 
     try {
@@ -92,7 +92,7 @@ class Operations {
     }
   };
 
-  fetchNextOperations = async (searchAfter: string) => {
+  fetchNextOperations = async (searchAfter: [string, string]) => {
     this.increasePage();
     this.fetchOperations(searchAfter);
   };

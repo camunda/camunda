@@ -31,8 +31,8 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
   incidents,
 }) {
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [modalContent, setModalContent] = useState(null);
-  const [modalTitle, setModalTitle] = useState(null);
+  const [modalContent, setModalContent] = useState<string | null>(null);
+  const [modalTitle, setModalTitle] = useState<string | null>(null);
   const [sorting, setSorting] = useState<{
     sortBy: string;
     sortOrder: 'desc' | 'asc';
@@ -45,18 +45,18 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
     state: {selection},
   } = flowNodeInstanceStore;
 
-  const toggleModal = ({content, title}: any) => {
-    setIsModalVisible(!isModalVisible);
-    setModalContent(content ? content : null);
-    setModalTitle(title ? title : null);
+  const handleModalClose = () => {
+    setIsModalVisible(false);
+    setModalContent(null);
+    setModalTitle(null);
   };
 
   const handleMoreButtonClick = (incident: any, e: any) => {
     e.stopPropagation();
-    toggleModal({
-      content: incident.errorMessage,
-      title: `Flow Node "${incident.flowNodeName}" Error`,
-    });
+
+    setIsModalVisible(true);
+    setModalContent(incident.errorMessage);
+    setModalTitle(`Flow Node "${incident.flowNodeName}" Error`);
   };
 
   const handleIncidentSelection = ({flowNodeInstanceId, flowNodeId}: any) => {
@@ -206,11 +206,9 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
       </Table>
       <ErrorMessageModal
         isVisible={isModalVisible}
-        // @ts-expect-error ts-migrate(2322) FIXME: Type 'null' is not assignable to type 'string | un... Remove this comment to see the full error message
         title={modalTitle}
-        // @ts-expect-error ts-migrate(2322) FIXME: Type 'null' is not assignable to type 'string | un... Remove this comment to see the full error message
         content={modalContent}
-        toggleModal={toggleModal}
+        onModalClose={handleModalClose}
       />
     </>
   );

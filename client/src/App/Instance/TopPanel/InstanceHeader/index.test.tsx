@@ -73,21 +73,24 @@ describe('InstanceHeader', () => {
       screen.getByTestId('instance-header-skeleton')
     );
     const {instance} = currentInstanceStore.state;
-    // @ts-expect-error
+
     const workflowName = getWorkflowName(instance);
-    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-    const instanceState = instance.state;
-    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-    const formattedStartDate = formatDate(instance.startDate);
-    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-    const formattedEndDate = formatDate(instance.endDate);
+    const instanceState = mockInstanceWithActiveOperation.state;
+    const formattedStartDate = formatDate(
+      mockInstanceWithActiveOperation.startDate
+    );
+    const formattedEndDate = formatDate(
+      mockInstanceWithActiveOperation.endDate
+    );
 
     expect(screen.getByText(workflowName)).toBeInTheDocument();
-    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-    expect(screen.getByText(instance.id)).toBeInTheDocument();
     expect(
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      screen.getByText(`Version ${instance.workflowVersion}`)
+      screen.getByText(mockInstanceWithActiveOperation.id)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        `Version ${mockInstanceWithActiveOperation.workflowVersion}`
+      )
     ).toBeInTheDocument();
     expect(screen.getByText(formattedStartDate)).toBeInTheDocument();
     expect(screen.getByText(formattedEndDate)).toBeInTheDocument();

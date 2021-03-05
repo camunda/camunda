@@ -33,9 +33,7 @@ describe('sanitizeFilter', () => {
   };
 
   it('should return default filter if filter is not provided', () => {
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
     expect(sanitizeFilter(null)).toEqual(DEFAULT_FILTER);
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
     expect(sanitizeFilter(undefined)).toEqual(DEFAULT_FILTER);
   });
 
