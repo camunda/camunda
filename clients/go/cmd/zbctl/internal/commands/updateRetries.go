@@ -52,7 +52,7 @@ var updateRetriesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		err = logHumanAndPrintJSON(UpdateJobRetriesResponseWrapper{resp})
+		err = printOutput(UpdateJobRetriesResponseWrapper{resp})
 
 		return err
 	},

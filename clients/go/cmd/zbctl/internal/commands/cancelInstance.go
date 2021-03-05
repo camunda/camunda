@@ -51,7 +51,7 @@ var cancelInstanceCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		err = logHumanAndPrintJSON(CancelInstanceResponseWrapper{resp})
+		err = printOutput(CancelInstanceResponseWrapper{resp})
 		return err
 	},
 }

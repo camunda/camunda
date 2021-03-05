@@ -32,7 +32,7 @@ type ThrowErrorResponseWrapper struct {
 }
 
 func (t ThrowErrorResponseWrapper) human() (string, error) {
-	return fmt.Sprintf("Threw error with code '%s' on job with key %d\n", errorCode, jobKey), nil
+	return fmt.Sprintf("Threw error with code '%s' on job with key %d", errorCode, jobKey), nil
 }
 
 func (t ThrowErrorResponseWrapper) json() (string, error) {
@@ -53,7 +53,7 @@ var throwErrorJobCmd = &cobra.Command{
 			return err
 		}
 
-		err = logHumanAndPrintJSON(ThrowErrorResponseWrapper{resp})
+		err = printOutput(ThrowErrorResponseWrapper{resp})
 		return err
 	},
 }

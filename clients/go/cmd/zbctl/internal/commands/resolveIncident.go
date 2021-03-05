@@ -50,7 +50,7 @@ var resolveIncidentCommand = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		err = logHumanAndPrintJSON(ResolveIncidentResponseWrapper{resp})
+		err = printOutput(ResolveIncidentResponseWrapper{resp})
 		return err
 	},
 }
