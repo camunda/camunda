@@ -54,7 +54,6 @@ public class ProcessTest {
     client = testRule.getClient();
 
     client
-        .processClient()
         .newDeployCommand()
         .addResourceFromClasspath("process.bpmn")
         .send()
@@ -65,7 +64,6 @@ public class ProcessTest {
   public void shouldCompleteProcessInstance() {
     final ProcessInstanceEvent processInstance =
         client
-            .processClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
@@ -73,7 +71,6 @@ public class ProcessTest {
             .join();
 
     client
-        .jobClient()
         .newWorker()
         .jobType("task")
         .handler((c, j) -> c.newCompleteCommand(j.getKey()).send().join())
