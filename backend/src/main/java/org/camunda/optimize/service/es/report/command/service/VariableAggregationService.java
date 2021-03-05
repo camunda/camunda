@@ -14,6 +14,7 @@ import org.camunda.optimize.service.es.report.command.util.VariableAggregationCo
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -47,7 +48,6 @@ public class VariableAggregationService {
   public static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
   public static final String VARIABLE_HISTOGRAM_AGGREGATION = "numberVariableHistogram";
 
-
   private final ConfigurationService configurationService;
   private final NumberVariableAggregationService numberVariableAggregationService;
   private final DateAggregationService dateAggregationService;
@@ -72,6 +72,20 @@ public class VariableAggregationService {
         }
 
         return Optional.empty();
+    }
+  }
+
+  public Optional<QueryBuilder> createVariableFilterQuery(final VariableAggregationContext context) {
+    if (VariableType.getNumericTypes().contains(context.getVariableType())) {
+      return numberVariableAggregationService.getBaselineForNumberVariableAggregation(context)
+        .filter(baseLineValue -> !baseLineValue.isNaN())
+        .map(baseLineValue -> QueryBuilders
+          .rangeQuery(context.getNestedVariableValueFieldLabel())
+          .lte(context.getMaxVariableValue())
+          .gte(baseLineValue)
+        );
+    } else {
+      return Optional.empty();
     }
   }
 

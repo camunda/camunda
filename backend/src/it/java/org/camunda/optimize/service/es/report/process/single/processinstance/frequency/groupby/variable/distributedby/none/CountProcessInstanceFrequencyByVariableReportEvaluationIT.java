@@ -513,6 +513,163 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
   }
 
   @Test
+  public void shortVariable_valuesSmallerThanBaseline() {
+    // given
+    final String varName = "shortVar";
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(varName, (short) -10);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+
+    variables.put(varName, (short) 8);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    variables.put(varName, (short) 20);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when there is a baseline set
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      varName,
+      VariableType.SHORT,
+      -1.0,
+      10.0
+    );
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then buckets start from the baseline and values below it are not included
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getFirstMeasureData();
+    assertThat(resultData).isNotNull();
+    assertThat(resultData.get(0).getKey()).isEqualTo("-1");
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.0);
+    assertThat(resultData.get(1).getKey()).isEqualTo("9");
+    assertThat(resultData.get(1).getValue()).isEqualTo(0.0);
+    assertThat(resultData.get(2).getKey()).isEqualTo("19");
+    assertThat(resultData.get(2).getValue()).isEqualTo(1.0);
+  }
+
+  @Test
+  public void intVariable_valuesSmallerThanBaseline() {
+    // given
+    final String varName = "intVar";
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(varName, -10);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+
+    variables.put(varName, 8);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    variables.put(varName, 20);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when there is a baseline set
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      varName,
+      VariableType.INTEGER,
+      -1.0,
+      10.0
+    );
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then buckets start from the baseline and values below it are not included
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getFirstMeasureData();
+    assertThat(resultData).isNotNull();
+    assertThat(resultData.get(0).getKey()).isEqualTo("-1");
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.0);
+    assertThat(resultData.get(1).getKey()).isEqualTo("9");
+    assertThat(resultData.get(1).getValue()).isEqualTo(0.0);
+    assertThat(resultData.get(2).getKey()).isEqualTo("19");
+    assertThat(resultData.get(2).getValue()).isEqualTo(1.0);
+  }
+
+  @Test
+  public void doubleVariable_valuesSmallerThanBaseline() {
+    // given
+    final String varName = "doubleVar";
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(varName, -10.0);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+
+    variables.put(varName,  8.0);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    variables.put(varName, 20.0);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when there is a baseline set
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      varName,
+      VariableType.DOUBLE,
+      -1.0,
+      10.0
+    );
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then buckets start from the baseline and values below it are not included
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getFirstMeasureData();
+    assertThat(resultData).isNotNull();
+    assertThat(resultData.get(0).getKey()).isEqualTo("-1.00");
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.0);
+    assertThat(resultData.get(1).getKey()).isEqualTo("9.00");
+    assertThat(resultData.get(1).getValue()).isEqualTo(0.0);
+    assertThat(resultData.get(2).getKey()).isEqualTo("19.00");
+    assertThat(resultData.get(2).getValue()).isEqualTo(1.0);
+  }
+
+
+  @Test
+  public void longVariable_valuesSmallerThanBaseline() {
+    // given
+    final String varName = "longVar";
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(varName, (long) -10);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+
+    variables.put(varName, (long) 8);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    variables.put(varName, (long) 20);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when there is a baseline set
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      varName,
+      VariableType.LONG,
+      -1.0,
+      10.0
+    );
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then buckets start from the baseline and values below it are not included
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getFirstMeasureData();
+    assertThat(resultData).isNotNull();
+    assertThat(resultData.get(0).getKey()).isEqualTo("-1");
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.0);
+    assertThat(resultData.get(1).getKey()).isEqualTo("9");
+    assertThat(resultData.get(1).getValue()).isEqualTo(0.0);
+    assertThat(resultData.get(2).getKey()).isEqualTo("19");
+    assertThat(resultData.get(2).getValue()).isEqualTo(1.0);
+  }
+
+  @Test
   public void numberVariable_negativeValues_negativeBaseline() {
     // given
     final String varName = "intVar";
@@ -584,10 +741,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     // given
     final String varName = "longVar";
     Map<String, Object> variables = new HashMap<>();
-    variables.put(varName, 9100000000000000000L);
+    variables.put(varName, 9_100_000_000_000_000_000L);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
 
-    variables.put(varName, -9200000000000000000L);
+    variables.put(varName, -920_000_000_000_000_000L);
     engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
 
     importAllEngineEntitiesFromScratch();
@@ -599,7 +756,9 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       varName,
       VariableType.LONG
     );
-    final List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getFirstMeasureData();
+    final List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData)
+      .getResult()
+      .getFirstMeasureData();
 
     // then the amount of buckets does not exceed NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION
     // (a precaution to avoid too many buckets for distributed reports)
@@ -633,7 +792,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.STRING
     );
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -666,7 +826,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       VariableType.STRING
     );
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -700,7 +861,9 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "1").get().getValue()).isEqualTo(1.);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), MISSING_VARIABLE_KEY).get().getValue()).isEqualTo(1.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), MISSING_VARIABLE_KEY)
+                 .get()
+                 .getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -1095,7 +1258,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       dateVarName,
       VariableType.DATE
     );
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -1130,7 +1294,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       dateVarName,
       VariableType.DATE
     );
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     List<MapResultEntryDto> resultData = result.getFirstMeasureData();

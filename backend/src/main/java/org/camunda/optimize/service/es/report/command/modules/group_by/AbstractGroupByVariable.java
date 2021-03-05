@@ -20,6 +20,8 @@ import org.camunda.optimize.service.es.report.command.service.VariableAggregatio
 import org.camunda.optimize.service.es.report.command.util.VariableAggregationContext;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
@@ -126,6 +128,9 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     final Optional<AggregationBuilder> variableSubAggregation =
       variableAggregationService.createVariableSubAggregation(varAggContext);
 
+    final Optional<QueryBuilder> variableFilterQueryBuilder =
+      variableAggregationService.createVariableFilterQuery(varAggContext);
+
     if (!variableSubAggregation.isPresent()) {
       // if the report contains no instances and is grouped by date variable, this agg will not be present
       // as it is based on instance data
@@ -140,6 +145,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
             .must(termQuery(getNestedVariableNameFieldLabel(), getVariableName(context)))
             .must(termQuery(getNestedVariableTypeField(), getVariableType(context).getId()))
             .must(existsQuery(getNestedVariableValueFieldLabel(VariableType.STRING)))
+            .must(variableFilterQueryBuilder.orElseGet(QueryBuilders::matchAllQuery))
         )
           .subAggregation(variableSubAggregation.get())
           .subAggregation(reverseNested(FILTERED_INSTANCE_COUNT_AGGREGATION))
