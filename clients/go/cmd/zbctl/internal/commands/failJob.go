@@ -57,7 +57,7 @@ var failJobCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		err = logHumanAndPrintJSON(FailJobResponseWrapper{resp})
+		err = printOutput(FailJobResponseWrapper{resp})
 		return err
 	},
 }

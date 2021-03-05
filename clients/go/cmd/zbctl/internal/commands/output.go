@@ -16,7 +16,6 @@ package commands
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 const humanOutput = "human"
@@ -39,38 +38,21 @@ func addOutputFlag(c *cobra.Command) {
 	)
 }
 
-func printHumanAndJSON(p Printable) error {
-	var responseAsString string
-	if outputFlag == humanOutput {
-		human, err := p.human()
-		if err != nil {
-			return err
-		}
-		responseAsString = human
-	} else if outputFlag == jsonOutput {
-		json, err := p.json()
-		if err != nil {
-			return err
-		}
-		responseAsString = json
-	}
-	fmt.Print(responseAsString)
-	return nil
-}
+func printOutput(p Printable) error {
+	var output string
+	var err error
 
-func logHumanAndPrintJSON(p Printable) error {
 	if outputFlag == humanOutput {
-		human, err := p.human()
-		if err != nil {
-			return err
-		}
-		log.Println(human)
+		output, err = p.human()
 	} else if outputFlag == jsonOutput {
-		json, err := p.json()
-		if err != nil {
-			return err
-		}
-		fmt.Println(json)
+		output, err = p.json()
+
 	}
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(output)
 	return nil
 }

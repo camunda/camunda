@@ -58,11 +58,15 @@ func (s StatusResponseWrapper) human() (string, error) {
 		stringBuilder.WriteString(fmt.Sprintf("    Version: %s\n", version))
 
 		sort.Sort(ByPartitionID(broker.Partitions))
-		for _, partition := range broker.Partitions {
-			stringBuilder.WriteString(fmt.Sprintf("    Partition %d : %s, %s\n",
+		for i, partition := range broker.Partitions {
+			stringBuilder.WriteString(fmt.Sprintf("    Partition %d : %s, %s",
 				partition.PartitionId,
 				roleToString(partition.Role),
 				healthToString(partition.Health)))
+
+			if i < len(broker.Partitions)-1 {
+				stringBuilder.WriteRune('\n')
+			}
 		}
 	}
 	return stringBuilder.String(), nil
@@ -94,7 +98,7 @@ var statusCmd = &cobra.Command{
 			return err
 		}
 
-		err = printHumanAndJSON(StatusResponseWrapper{resp})
+		err = printOutput(StatusResponseWrapper{resp})
 		if err != nil {
 			return err
 		}

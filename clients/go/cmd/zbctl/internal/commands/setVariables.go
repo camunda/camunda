@@ -32,7 +32,7 @@ func (s SetVariablesResponseWrapper) human() (string, error) {
 		"' to '",
 		setVariablesVariablesFlag,
 		"' with command '",
-		s.resp.GetKey(),
+		s.resp.GetKey(), "'",
 	), nil
 }
 
@@ -65,7 +65,7 @@ var setVariablesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		err = logHumanAndPrintJSON(SetVariablesResponseWrapper{response})
+		err = printOutput(SetVariablesResponseWrapper{response})
 		return err
 	},
 }
