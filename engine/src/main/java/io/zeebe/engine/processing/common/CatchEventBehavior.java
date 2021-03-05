@@ -19,6 +19,7 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.zeebe.engine.processing.message.MessageCorrelationKeyException;
 import io.zeebe.engine.processing.message.MessageNameException;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
@@ -120,7 +121,8 @@ public final class CatchEventBehavior {
       }
     }
 
-    if (!events.isEmpty()) {
+    // todo: remove after all are migrated
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType()) && !events.isEmpty()) {
       eventScopeInstanceState.createIfNotExists(
           context.getElementInstanceKey(), supplier.getInterruptingElementIds());
     }
@@ -189,6 +191,7 @@ public final class CatchEventBehavior {
     subscription.setCorrelationKey(correlationKey);
     subscription.setTargetElementId(handler.getId());
     subscription.setCloseOnCorrelate(closeOnCorrelate);
+    // todo(zell): phil will migrate this via writing the open subscription
     workflowInstanceSubscriptionState.put(subscription);
 
     sideEffects.add(

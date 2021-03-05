@@ -87,12 +87,14 @@ public final class EventAppliers implements EventApplier {
   private void registerWorkflowInstanceEventAppliers(final ZeebeState state) {
     final var elementInstanceState = state.getElementInstanceState();
     final var eventScopeInstanceState = state.getEventScopeInstanceState();
+    final var workflowState = state.getWorkflowState();
     register(
         WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         new WorkflowInstanceElementActivatingApplier(elementInstanceState));
     register(
         WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-        new WorkflowInstanceElementActivatedApplier(elementInstanceState));
+        new WorkflowInstanceElementActivatedApplier(
+            elementInstanceState, workflowState, eventScopeInstanceState));
     register(
         WorkflowInstanceIntent.ELEMENT_COMPLETING,
         new WorkflowInstanceElementCompletingApplier(elementInstanceState));
