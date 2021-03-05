@@ -97,6 +97,11 @@ export default withErrorHandling(
         col.startsWith('variable:') ? this.variableExists(col.split(':')[1]) : true
       );
 
+    getNewVariables = (columns) =>
+      this.state.variables
+        .map((col) => 'variable:' + col.name)
+        .filter((col) => !columns.includes(col));
+
     getVariableConfig = () => {
       const {view, groupBy, distributedBy} = this.props.report.data;
 
@@ -129,7 +134,7 @@ export default withErrorHandling(
 
     changeDefinition = async ({key, versions, tenantIds, name}) => {
       const {
-        tableColumns: {columnOrder},
+        tableColumns: {columnOrder, includedColumns, excludedColumns},
         processPart,
         heatmapTargetValue: {values},
       } = this.props.report.data.configuration;
@@ -164,6 +169,17 @@ export default withErrorHandling(
       if (columnOrder.length) {
         change.configuration.tableColumns = {
           columnOrder: {$set: this.filterNonExistingVariables(columnOrder)},
+        };
+      }
+
+      if (includedColumns.length) {
+        change.configuration.tableColumns = {
+          ...change.configuration.tableColumns,
+          includedColumns: {
+            $set: includedColumns.concat(
+              this.getNewVariables(includedColumns.concat(excludedColumns))
+            ),
+          },
         };
       }
 

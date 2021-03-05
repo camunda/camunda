@@ -57,7 +57,7 @@ const report = {
     filter: [],
     configuration: {
       xml: 'fooXml',
-      tableColumns: {columnOrder: []},
+      tableColumns: {columnOrder: [], includedColumns: [], excludedColumns: []},
       heatmapTargetValue: {values: {}},
     },
   },
@@ -468,5 +468,29 @@ it('should filter non existing variables from columnOrder configuration', async 
 
   expect(spy.mock.calls[0][0].configuration.tableColumns).toEqual({
     columnOrder: {$set: ['variable:existingVariable']},
+  });
+});
+
+it('should add new variables to includedColumns when switching definition/version', async () => {
+  loadVariables.mockReturnValueOnce([{name: 'existingVariable'}, {name: 'newVariable'}]);
+  const reportWithConfig = update(report, {
+    data: {
+      configuration: {
+        tableColumns: {
+          includedColumns: {$set: ['variable:existingVariable']},
+        },
+      },
+    },
+  });
+
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
+  );
+
+  await node.find(DefinitionSelection).prop('onChange')({});
+
+  expect(spy.mock.calls[0][0].configuration.tableColumns.includedColumns).toEqual({
+    $set: ['variable:existingVariable', 'variable:newVariable'],
   });
 });
