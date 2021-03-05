@@ -6,11 +6,13 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import update from 'immutability-helper';
+
+import {Button, HeatmapOverlay} from 'components';
+import {formatters, loadRawData, getTooltipText} from 'services';
 
 import {Heatmap} from './Heatmap';
-import {Button, HeatmapOverlay} from 'components';
 import {calculateTargetValueHeat} from './service';
-import {formatters, loadRawData} from 'services';
 
 const {convertToMilliseconds} = formatters;
 
@@ -52,9 +54,14 @@ const report = {
     visualization: 'heat',
   },
   result: {
-    data: [
-      {key: 'a', value: 1},
-      {key: 'b', value: 2},
+    measures: [
+      {
+        property: 'frequency',
+        data: [
+          {key: 'a', value: 1},
+          {key: 'b', value: 2},
+        ],
+      },
     ],
     instanceCount: 5,
   },
@@ -83,7 +90,22 @@ it('should display a loading indication while loading', () => {
 });
 
 it('should display an error message if visualization is incompatible with data', () => {
-  const node = shallow(<Heatmap report={{...report, result: {data: 1234}}} errorMessage="Error" />);
+  const node = shallow(
+    <Heatmap
+      report={{
+        ...report,
+        result: {
+          measures: [
+            {
+              property: 'frequency',
+              data: 1234,
+            },
+          ],
+        },
+      }}
+      errorMessage="Error"
+    />
+  );
 
   expect(node).toIncludeText('Error');
 });
@@ -193,7 +215,15 @@ it('should show a tooltip with information if no actual value is available', () 
     <Heatmap
       report={{
         ...report,
-        result: {data: []},
+        result: {
+          measures: [
+            {
+              property: 'frequency',
+              data: [],
+            },
+          ],
+          instanceCount: 5,
+        },
         data: {
           ...report.data,
           configuration: {xml: 'test', heatmapTargetValue, aggregationType: 'avg'},
@@ -236,4 +266,51 @@ it('should invoke report evaluation when clicking the download instances button'
   await tooltip.find(Button).props().onClick();
 
   expect(loadRawData).toHaveBeenCalledWith('config');
+});
+
+describe('multi-measure reports', () => {
+  const multiMeasureReport = update(report, {
+    data: {view: {properties: {$set: ['frequency', 'duration']}}},
+    result: {
+      measures: {
+        $push: [
+          {
+            property: 'duration',
+            data: [
+              {key: 'a', value: 1234},
+              {key: 'b', value: 5678},
+            ],
+          },
+        ],
+      },
+    },
+  });
+
+  it('should show a tooltip with information about multi-measure reports', () => {
+    const node = shallow(<Heatmap report={multiMeasureReport} />);
+
+    getTooltipText.mockReturnValueOnce('12');
+    getTooltipText.mockReturnValueOnce('2d 15s');
+
+    const tooltip = node.find('HeatmapOverlay').renderProp('formatter')('', 'b');
+
+    expect(tooltip).toMatchSnapshot();
+  });
+
+  it('should allow switching between heat visualizations for multi-measure reports', () => {
+    const node = shallow(<Heatmap report={multiMeasureReport} />);
+
+    expect(formatters.objectifyResult).toHaveBeenCalledWith(
+      multiMeasureReport.result.measures[0].data
+    );
+    expect(formatters.objectifyResult).not.toHaveBeenCalledWith(
+      multiMeasureReport.result.measures[1].data
+    );
+
+    node.find('Select').simulate('change', 1);
+
+    expect(formatters.objectifyResult).toHaveBeenCalledWith(
+      multiMeasureReport.result.measures[1].data
+    );
+  });
 });

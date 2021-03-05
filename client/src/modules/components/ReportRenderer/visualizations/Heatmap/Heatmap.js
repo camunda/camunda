@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 
 import {
   Icon,
@@ -13,17 +13,20 @@ import {
   Button,
   LoadingIndicator,
   HeatmapOverlay,
+  Select,
 } from 'components';
-
-import {getConfig, calculateTargetValueHeat} from './service';
 import {loadRawData, formatters, getTooltipText} from 'services';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
 
+import {getConfig, calculateTargetValueHeat} from './service';
+
 import './Heatmap.scss';
 
-export function Heatmap({report, formatter, mightFail, context}) {
+export function Heatmap({report, mightFail, context}) {
+  const [selectedMeasure, setSelectedMeasure] = useState(0);
+
   const {
     name,
     result,
@@ -46,7 +49,7 @@ export function Heatmap({report, formatter, mightFail, context}) {
     return <LoadingIndicator />;
   }
 
-  const resultObj = formatters.objectifyResult(result.data);
+  const resultObj = formatters.objectifyResult(result.measures[selectedMeasure].data);
 
   let heatmapComponent;
   if (targetValue && targetValue.active && !targetValue.values.target) {
@@ -121,16 +124,42 @@ export function Heatmap({report, formatter, mightFail, context}) {
       <HeatmapOverlay
         data={resultObj}
         tooltipOptions={{alwaysShow}}
-        formatter={(data) =>
-          getTooltipText(
-            data,
-            formatter,
-            result.instanceCount,
-            alwaysShowAbsolute,
-            alwaysShowRelative,
-            isDuration
-          )
-        }
+        formatter={(data, id) => {
+          if (
+            result.measures.every(
+              (measure) => measure.data.find((entry) => entry.key === id)?.value === null
+            )
+          ) {
+            // do not show tooltip for elements that have no data in all included measures
+            return;
+          }
+
+          return (
+            <table>
+              <tbody>
+                {result.measures.map((measure, idx) => {
+                  return (
+                    <tr key={idx}>
+                      <td>
+                        <b>{getMeasureString(measure)}:</b>
+                      </td>
+                      <td>
+                        {getTooltipText(
+                          measure.data.find((entry) => entry.key === id)?.value,
+                          formatters[measure.property],
+                          result.instanceCount,
+                          alwaysShowAbsolute,
+                          alwaysShowRelative,
+                          measure.property === 'duration'
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          );
+        }}
       />
     );
   }
@@ -138,8 +167,32 @@ export function Heatmap({report, formatter, mightFail, context}) {
   return (
     <div className="Heatmap">
       <BPMNDiagram xml={xml}>{heatmapComponent}</BPMNDiagram>
+      {result.measures.length > 1 && (
+        <Select value={selectedMeasure} onChange={(measure) => setSelectedMeasure(+measure)}>
+          {result.measures.map((measure, idx) => {
+            return (
+              <Select.Option value={idx} key={idx}>
+                Heat: {getMeasureString(measure)}
+              </Select.Option>
+            );
+          })}
+        </Select>
+      )}
     </div>
   );
 }
 
 export default withErrorHandling(Heatmap);
+
+function getMeasureString(measure) {
+  let property = measure.property;
+  if (property === 'frequency') {
+    property = 'count';
+  }
+  const aggregation = measure.aggregationType;
+
+  return (
+    t('report.view.' + property) +
+    (aggregation ? ` - ${t('report.config.aggregationShort.' + aggregation)}` : '')
+  );
+}

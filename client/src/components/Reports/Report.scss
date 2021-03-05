@@ -16,6 +16,10 @@
   &.ReportEdit .Report__view {
     margin-top: 10px;
     border-top: 1px solid var(--silver-darken-87);
+
+    .Heatmap > .Select {
+      transform: translateY(-42px);
+    }
   }
 }
 

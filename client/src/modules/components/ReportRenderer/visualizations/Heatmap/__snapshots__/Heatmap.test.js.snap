@@ -1,5 +1,38 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`multi-measure reports should show a tooltip with information about multi-measure reports 1`] = `
+<table>
+  <tbody>
+    <tr
+      key="0"
+    >
+      <td>
+        <b>
+          Count
+          :
+        </b>
+      </td>
+      <td>
+        12
+      </td>
+    </tr>
+    <tr
+      key="1"
+    >
+      <td>
+        <b>
+          Duration
+          :
+        </b>
+      </td>
+      <td>
+        2d 15s
+      </td>
+    </tr>
+  </tbody>
+</table>
+`;
+
 exports[`should inform if the actual value is less than 1% of the target value 1`] = `
 <div>
   <span

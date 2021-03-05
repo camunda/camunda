@@ -190,7 +190,7 @@ export const combinations = {
   },
   in_multi: {
     none: ['number'],
-    fn: ['table', 'chart'],
+    fn: ['table', 'chart', 'heat'],
   },
   fn_duration: {
     fn: ['table', 'chart', 'heat'],
@@ -204,7 +204,7 @@ export const combinations = {
     variable: ['table', 'chart'],
   },
   fn_multi: {
-    fn: ['table', 'chart'],
+    fn: ['table', 'chart', 'heat'],
     date: ['table', 'chart'],
     variable: ['table', 'chart'],
   },
@@ -220,7 +220,7 @@ export const combinations = {
     duration: ['table', 'chart'],
   },
   userTask_multi: {
-    task: ['table', 'chart'],
+    task: ['table', 'chart', 'heat'],
     date: ['table', 'chart'],
     user: ['table', 'chart'],
   },
