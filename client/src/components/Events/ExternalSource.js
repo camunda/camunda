@@ -75,7 +75,9 @@ export function ExternalSource({
 
   const toggleAllEventsGroup = ({target: {checked}}) => onChange(checked ? [externalSource] : []);
 
-  const selectAll = externalSources.some((src) => src.configuration.includeAllGroups);
+  const selectAllExists = existingExternalSources.some((src) => src.configuration.includeAllGroups);
+  const selectAll =
+    externalSources.some((src) => src.configuration.includeAllGroups) || selectAllExists;
   const selectedGroups = externalSources
     .filter((src) => !src.configuration.includeAllGroups)
     .map((src) => src.configuration.group);
@@ -88,8 +90,9 @@ export function ExternalSource({
           !loading &&
           !query && (
             <LabeledInput
-              className={classnames({highlight: selectAll})}
+              className={classnames({highlight: selectAll && !selectAllExists})}
               checked={selectAll}
+              disabled={selectAllExists}
               type="checkbox"
               label={t('events.sources.allInOne')}
               onChange={toggleAllEventsGroup}

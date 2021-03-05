@@ -50,7 +50,7 @@ export default withErrorHandling(
       variables: null,
       type: 'camunda',
       externalExist: false,
-      externalSources: includeAllGroups(this.props.existingSources) ? allExternalGroups : [],
+      externalSources: [],
     };
 
     componentDidMount = async () => {

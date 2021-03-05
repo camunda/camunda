@@ -216,7 +216,7 @@
       "eventListChangeWarning": "Changing the event list may add or remove events. Existing event mappings may be removed.",
       "remove": "Remove Source",
       "camundaProcess": "Camunda Process",
-      "allInOne": "All events in a single group",
+      "allInOne": "Combine all events in a single group",
       "eventGroups": "Event groups",
       "ungrouped": "Ungrouped",
       "search": "search for event groups",

@@ -134,3 +134,23 @@ it('should disable deselection of existing groups', () => {
     },
   ]);
 });
+
+it('should disable deselection of all events group if it exists', () => {
+  const node = shallow(
+    <ExternalSource
+      {...props}
+      existingExternalSources={[{configuration: {includeAllGroups: true}}]}
+    />
+  );
+  const preItems = node.find('Checklist').prop('preItems');
+  expect(preItems.props.checked).toBe(true);
+  expect(preItems.props.disabled).toBe(true);
+  expect(node.find('Checklist').prop('formatter')(['group 1'], ['group 1'])).toEqual([
+    {
+      id: 'group 1',
+      label: 'group 1',
+      checked: true,
+      disabled: true,
+    },
+  ]);
+});
