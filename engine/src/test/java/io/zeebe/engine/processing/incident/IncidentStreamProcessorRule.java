@@ -84,6 +84,7 @@ public final class IncidentStreamProcessorRule extends ExternalResource {
                   ExpressionLanguageFactory.createExpressionLanguage(),
                   variablesState::getVariable);
 
+          final var writers = processingContext.getWriters();
           final var stepProcessor =
               WorkflowEventProcessors.addWorkflowProcessors(
                   zeebeState,
@@ -93,10 +94,10 @@ public final class IncidentStreamProcessorRule extends ExternalResource {
                   new CatchEventBehavior(
                       zeebeState, expressionProcessor, mockSubscriptionCommandSender, 1),
                   mockTimerEventScheduler,
-                  processingContext.getWriters());
+                  writers);
 
           JobEventProcessors.addJobProcessors(
-              typedRecordProcessors, zeebeState, type -> {}, Integer.MAX_VALUE);
+              typedRecordProcessors, zeebeState, type -> {}, Integer.MAX_VALUE, writers);
 
           IncidentEventProcessors.addProcessors(typedRecordProcessors, zeebeState, stepProcessor);
 

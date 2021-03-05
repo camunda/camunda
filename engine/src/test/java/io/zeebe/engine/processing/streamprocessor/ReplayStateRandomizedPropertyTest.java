@@ -47,19 +47,17 @@ public class ReplayStateRandomizedPropertyTest {
   private static final int WORKFLOW_COUNT = 5;
   private static final int EXECUTION_PATH_COUNT = 5;
 
+  @Rule public TestWatcher failedTestDataPrinter = new FailedTestDataPrinter();
+  @Parameter public TestDataRecord record;
+  private long lastProcessedPosition = -1L;
+
   @Rule
   public final EngineRule engineRule =
       EngineRule.singlePartition()
           .withOnProcessedCallback(record -> lastProcessedPosition = record.getPosition())
           .withOnSkippedCallback(record -> lastProcessedPosition = record.getPosition());
 
-  @Rule public TestWatcher failedTestDataPrinter = new FailedTestDataPrinter();
-
-  @Parameter public TestDataRecord record;
-
   private final WorkflowExecutor workflowExecutor = new WorkflowExecutor(engineRule);
-
-  private long lastProcessedPosition = -1L;
 
   @Before
   public void init() {
@@ -169,8 +167,8 @@ public class ReplayStateRandomizedPropertyTest {
   @Parameters(name = "{0}")
   public static Collection<TestDataRecord> getTestRecords() {
     // use the following code to rerun a specific test case:
-    //    final var workflowSeed = 4151337193744273092L;
-    //    final var executionPathSeed = 8078198989481167852L;
+    //    final var workflowSeed = 3499044774323385558L;
+    //    final var executionPathSeed = 3627169465144620203L;
     //    return List.of(TestDataGenerator.regenerateTestRecord(workflowSeed, executionPathSeed));
     return TestDataGenerator.generateTestRecords(WORKFLOW_COUNT, EXECUTION_PATH_COUNT);
   }

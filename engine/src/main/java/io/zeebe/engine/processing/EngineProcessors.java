@@ -175,7 +175,7 @@ public final class EngineProcessors {
       final int maxFragmentSize,
       final Writers writers) {
     JobEventProcessors.addJobProcessors(
-        typedRecordProcessors, zeebeState, onJobsAvailableCallback, maxFragmentSize);
+        typedRecordProcessors, zeebeState, onJobsAvailableCallback, maxFragmentSize, writers);
   }
 
   private static void addMessageProcessors(

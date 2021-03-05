@@ -111,6 +111,7 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
                   ExpressionLanguageFactory.createExpressionLanguage(),
                   variablesState::getVariable);
 
+          final var writers = processingContext.getWriters();
           WorkflowEventProcessors.addWorkflowProcessors(
               zeebeState,
               expressionProcessor,
@@ -119,10 +120,10 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
               new CatchEventBehavior(
                   zeebeState, expressionProcessor, mockSubscriptionCommandSender, 1),
               new DueDateTimerChecker(zeebeState.getTimerState()),
-              processingContext.getWriters());
+              writers);
 
           JobEventProcessors.addJobProcessors(
-              typedRecordProcessors, zeebeState, type -> {}, Integer.MAX_VALUE);
+              typedRecordProcessors, zeebeState, type -> {}, Integer.MAX_VALUE, writers);
           typedRecordProcessors.withListener(this);
           return typedRecordProcessors;
         });
