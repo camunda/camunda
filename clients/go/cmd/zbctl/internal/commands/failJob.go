@@ -16,10 +16,23 @@ package commands
 
 import (
 	"context"
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"log"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 )
+
+type FailJobResponseWrapper struct {
+	resp *pb.FailJobResponse
+}
+
+func (f FailJobResponseWrapper) human() (string, error) {
+	return fmt.Sprint("Failed job with key '", failJobKey, "' and set remaining retries to '", failJobRetriesFlag, "'"), nil
+}
+
+func (f FailJobResponseWrapper) json() (string, error) {
+	return toJSON(f.resp)
+}
 
 var (
 	failJobKey          int64
@@ -36,20 +49,21 @@ var failJobCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()
 
-		_, err := client.NewFailJobCommand().
+		resp, err := client.NewFailJobCommand().
 			JobKey(failJobKey).
 			Retries(failJobRetriesFlag).
 			ErrorMessage(failJobErrorMessage).
 			Send(ctx)
-		if err == nil {
-			log.Println("Failed job with key", failJobKey, "and set remaining retries to", failJobRetriesFlag)
+		if err != nil {
+			return err
 		}
-
+		err = logHumanAndPrintJSON(FailJobResponseWrapper{resp})
 		return err
 	},
 }
 
 func init() {
+	addOutputFlag(failJobCmd)
 	failCmd.AddCommand(failJobCmd)
 	failJobCmd.Flags().Int32Var(&failJobRetriesFlag, "retries", commands.DefaultJobRetries, "Specify remaining retries of job")
 	if err := failJobCmd.MarkFlagRequired("retries"); err != nil {

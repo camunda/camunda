@@ -16,9 +16,9 @@ package commands
 
 import (
 	"context"
-	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"time"
 )
 
@@ -61,16 +61,14 @@ var activateJobsCmd = &cobra.Command{
 			return err
 		}
 
-		jobsCount := len(jobs)
-		if jobsCount > 0 {
-			if err := printJSON(jobs); err != nil {
-				return err
-			}
-		} else {
-			fmt.Println("[]")
+		var activatedJobs []*pb.ActivatedJob
+		for _, job := range jobs {
+			activatedJobs = append(activatedJobs, job.ActivatedJob)
 		}
 
-		return nil
+		return printJSON(&pb.ActivateJobsResponse{
+			Jobs: activatedJobs,
+		})
 	},
 }
 
