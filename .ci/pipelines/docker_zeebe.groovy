@@ -63,9 +63,9 @@ spec:
   stages {
     stage('Prepare') {
       steps {
-        git url: 'git@github.com:zeebe-io/zeebe',
+        git url: 'https://github.com/camunda-cloud/zeebe.git',
             branch: "${params.BRANCH}",
-            credentialsId: 'camunda-jenkins-github-ssh',
+            credentialsId: 'github-cloud-zeebe-app',
             poll: false
 
         container('maven') {

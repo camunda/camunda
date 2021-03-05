@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd ${GOPATH}/src/github.com/zeebe-io/zeebe/clients/go/internal/embedded
+cd ${GOPATH}/src/github.com/camunda-cloud/zeebe/clients/go/internal/embedded
 
 echo ${DEVELOPMENT_VERSION} > data/VERSION
 go-bindata -pkg embedded -o embedded.go -prefix data/ data/
