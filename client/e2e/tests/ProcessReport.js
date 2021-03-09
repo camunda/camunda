@@ -728,6 +728,7 @@ test('deleting', async (t) => {
 
 test('show raw data and process model', async (t) => {
   await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.save(t);
 
   await t.click(e.detailsPopoverButton);

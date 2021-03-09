@@ -106,6 +106,7 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.primaryModalButton);
   await t.expect(e.notification.exists).ok({timeout: 5000});
   await t.click(e.notificationCloseButton(e.notification));
+  await t.expect(e.notification.exists).notOk({timeout: 5000});
 
   // Listing
   await t.click(e.navItem);
