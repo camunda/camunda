@@ -8,8 +8,8 @@
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableJobState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -20,7 +20,7 @@ public class JobBatchActivatedApplier implements TypedEventApplier<JobBatchInten
 
   private final MutableJobState jobState;
 
-  public JobBatchActivatedApplier(final ZeebeState state) {
+  public JobBatchActivatedApplier(final MutableZeebeState state) {
     jobState = state.getJobState();
   }
 

@@ -17,11 +17,11 @@ import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.message.ProcessInstanceSubscription;
 import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
@@ -62,7 +62,7 @@ public final class CorrelateProcessInstanceSubscription
   public CorrelateProcessInstanceSubscription(
       final MutableProcessInstanceSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final ZeebeState zeebeState) {
+      final MutableZeebeState zeebeState) {
     this.subscriptionState = subscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
     processState = zeebeState.getProcessState();

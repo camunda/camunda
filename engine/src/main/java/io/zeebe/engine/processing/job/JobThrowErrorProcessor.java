@@ -16,12 +16,12 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.engine.state.instance.ElementInstance;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -53,7 +53,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   private final KeyGenerator keyGenerator;
   private final EventScopeInstanceState eventScopeInstanceState;
 
-  public JobThrowErrorProcessor(final ZeebeState state) {
+  public JobThrowErrorProcessor(final MutableZeebeState state) {
     keyGenerator = state.getKeyGenerator();
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
@@ -70,6 +70,29 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   public boolean onCommand(
       final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     return defaultProcessor.onCommand(command, commandControl);
+  }
+
+  @Override
+  public void afterAccept(
+      final TypedCommandWriter commandWriter,
+      final StateWriter stateWriter,
+      final long jobKey,
+      final Intent intent,
+      final JobRecord job) {
+
+    final var serviceTaskInstanceKey = job.getElementId();
+
+    if (NO_CATCH_EVENT_FOUND.equals(serviceTaskInstanceKey)) {
+      raiseIncident(jobKey, job, commandWriter);
+      return;
+    }
+
+    final var serviceTaskInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
+    final var errorCode = job.getErrorCodeBuffer();
+
+    final var foundCatchEvent = stateAnalyzer.findCatchEvent(errorCode, serviceTaskInstance);
+    // TODO (#6472) send TERMINATE_ELEMENT command instead
+    writeEventOccurredRecord(stateWriter, foundCatchEvent);
   }
 
   private void acceptCommand(
@@ -107,29 +130,6 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
   private boolean serviceTaskInstanceIsActive(final ElementInstance serviceTaskInstance) {
     return serviceTaskInstance != null && serviceTaskInstance.isActive();
-  }
-
-  @Override
-  public void afterAccept(
-      final TypedCommandWriter commandWriter,
-      final StateWriter stateWriter,
-      final long jobKey,
-      final Intent intent,
-      final JobRecord job) {
-
-    final var serviceTaskInstanceKey = job.getElementId();
-
-    if (NO_CATCH_EVENT_FOUND.equals(serviceTaskInstanceKey)) {
-      raiseIncident(jobKey, job, commandWriter);
-      return;
-    }
-
-    final var serviceTaskInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
-    final var errorCode = job.getErrorCodeBuffer();
-
-    final var foundCatchEvent = stateAnalyzer.findCatchEvent(errorCode, serviceTaskInstance);
-    // TODO (#6472) send TERMINATE_ELEMENT command instead
-    writeEventOccurredRecord(stateWriter, foundCatchEvent);
   }
 
   private void writeEventOccurredRecord(

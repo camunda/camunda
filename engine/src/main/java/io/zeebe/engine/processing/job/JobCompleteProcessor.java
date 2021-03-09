@@ -14,10 +14,10 @@ import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.engine.state.instance.ElementInstance;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.Intent;
@@ -32,7 +32,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   private final DefaultJobCommandPreconditionGuard<JobRecord> defaultProcessor;
   private final TypedEventWriter eventWriter;
 
-  public JobCompleteProcessor(final ZeebeState state, final Writers writers) {
+  public JobCompleteProcessor(final MutableZeebeState state, final Writers writers) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     defaultProcessor =

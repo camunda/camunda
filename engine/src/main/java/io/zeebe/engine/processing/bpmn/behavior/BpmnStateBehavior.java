@@ -11,7 +11,6 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.processing.variable.VariableBehavior;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedProcess;
 import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.engine.state.immutable.ProcessState;
@@ -19,6 +18,7 @@ import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.List;
@@ -36,7 +36,8 @@ public final class BpmnStateBehavior {
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
 
-  public BpmnStateBehavior(final ZeebeState zeebeState, final VariableBehavior variableBehavior) {
+  public BpmnStateBehavior(
+      final MutableZeebeState zeebeState, final VariableBehavior variableBehavior) {
     this.variableBehavior = variableBehavior;
 
     processState = zeebeState.getProcessState();

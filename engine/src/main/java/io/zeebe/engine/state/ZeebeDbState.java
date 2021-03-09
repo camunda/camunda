@@ -36,6 +36,7 @@ import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableProcessState;
 import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.state.processing.DbBlackListState;
 import io.zeebe.engine.state.processing.DbKeyGenerator;
 import io.zeebe.engine.state.processing.DbLastProcessedPositionState;
@@ -43,7 +44,7 @@ import io.zeebe.engine.state.variable.DbVariableState;
 import io.zeebe.protocol.Protocol;
 import java.util.function.BiConsumer;
 
-public class ZeebeDbState implements ZeebeState {
+public class ZeebeDbState implements MutableZeebeState {
 
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
   private final DbKeyGenerator keyGenerator;
@@ -139,11 +140,6 @@ public class ZeebeDbState implements ZeebeState {
   }
 
   @Override
-  public KeyGenerator getKeyGenerator() {
-    return keyGenerator;
-  }
-
-  @Override
   public MutableBlackListState getBlackListState() {
     return blackListState;
   }
@@ -169,14 +165,8 @@ public class ZeebeDbState implements ZeebeState {
   }
 
   @Override
-  public int getPartitionId() {
-    return partitionId;
-  }
-
-  @Override
-  public boolean isEmpty(final ZbColumnFamilies column) {
-    final var newContext = zeebeDb.createContext();
-    return zeebeDb.isEmpty(column, newContext);
+  public KeyGenerator getKeyGenerator() {
+    return keyGenerator;
   }
 
   @Override
@@ -191,6 +181,17 @@ public class ZeebeDbState implements ZeebeState {
     zeebeDb
         .createColumnFamily(columnFamily, newContext, keyInstance, valueInstance)
         .forEach(visitor);
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public boolean isEmpty(final ZbColumnFamilies column) {
+    final var newContext = zeebeDb.createContext();
+    return zeebeDb.isEmpty(column, newContext);
   }
 
   public KeyGeneratorControls getKeyGeneratorControls() {

@@ -11,6 +11,7 @@ import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.processing.message.MessageObserver;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.intent.IncidentIntent;
@@ -44,7 +45,7 @@ public final class ProcessExecutionCleanStateTest {
 
   @Rule public EngineRule engineRule = EngineRule.singlePartition();
 
-  private ZeebeState zeebeState;
+  private MutableZeebeState zeebeState;
 
   @Before
   public void init() {

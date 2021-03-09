@@ -15,12 +15,12 @@ import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.engine.state.immutable.JobState.State;
 import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.engine.state.mutable.MutableIncidentState;
 import io.zeebe.engine.state.mutable.MutableJobState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -36,14 +36,14 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private final SideEffectQueue sideEffects = new SideEffectQueue();
   private final TypedResponseWriter noopResponseWriter = new NoopResponseWriter();
 
-  private final ZeebeState zeebeState;
+  private final MutableZeebeState zeebeState;
   private final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor;
 
   private final IncidentRecordWrapper incidentRecordWrapper = new IncidentRecordWrapper();
   private final JobErrorThrownProcessor jobErrorThrownProcessor;
 
   public ResolveIncidentProcessor(
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     this.zeebeState = zeebeState;

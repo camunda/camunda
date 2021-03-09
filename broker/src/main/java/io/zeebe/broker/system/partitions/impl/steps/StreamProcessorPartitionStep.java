@@ -10,8 +10,8 @@ package io.zeebe.broker.system.partitions.impl.steps;
 import io.zeebe.broker.system.partitions.PartitionContext;
 import io.zeebe.broker.system.partitions.PartitionStep;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.appliers.EventAppliers;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -78,7 +78,7 @@ public class StreamProcessorPartitionStep implements PartitionStep {
         .streamProcessorFactory(
             processingContext -> {
               final ActorControl actor = processingContext.getActor();
-              final ZeebeState zeebeState = processingContext.getZeebeState();
+              final MutableZeebeState zeebeState = processingContext.getZeebeState();
               return state
                   .getTypedRecordProcessorsFactory()
                   .createTypedStreamProcessor(actor, zeebeState, processingContext);

@@ -12,9 +12,9 @@ import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -37,7 +37,7 @@ public final class ElementInstanceStateTest {
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private MutableElementInstanceState elementInstanceState;
-  private ZeebeState zeebeState;
+  private MutableZeebeState zeebeState;
 
   @Before
   public void setUp() {

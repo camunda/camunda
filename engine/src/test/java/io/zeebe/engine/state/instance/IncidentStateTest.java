@@ -10,9 +10,9 @@ package io.zeebe.engine.state.instance;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.IncidentState;
 import io.zeebe.engine.state.mutable.MutableIncidentState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.record.value.ErrorType;
@@ -25,7 +25,7 @@ public final class IncidentStateTest {
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private MutableIncidentState incidentState;
-  private ZeebeState zeebeState;
+  private MutableZeebeState zeebeState;
 
   @Before
   public void setUp() {

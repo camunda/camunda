@@ -11,11 +11,11 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.common.EventHandle;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedProcess;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.message.StoredMessage;
 import io.zeebe.engine.state.mutable.MutableMessageState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.Optional;
@@ -30,7 +30,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
   private final EventHandle eventHandle;
 
   public BpmnBufferedMessageStartEventBehavior(
-      final ZeebeState zeebeState, final TypedStreamWriter streamWriter) {
+      final MutableZeebeState zeebeState, final TypedStreamWriter streamWriter) {
     messageState = zeebeState.getMessageState();
     processState = zeebeState.getProcessState();
     this.streamWriter = streamWriter;

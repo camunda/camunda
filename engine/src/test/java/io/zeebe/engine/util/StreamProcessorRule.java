@@ -16,7 +16,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.EventApplier;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
 import io.zeebe.engine.util.TestStreams.FluentLogWriter;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -117,7 +117,7 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessorRule withEventApplierFactory(
-      final Function<ZeebeState, EventApplier> eventApplierFactory) {
+      final Function<MutableZeebeState, EventApplier> eventApplierFactory) {
     streams.withEventApplierFactory(eventApplierFactory);
     return this;
   }
@@ -179,7 +179,7 @@ public final class StreamProcessorRule implements TestRule {
     return clock;
   }
 
-  public ZeebeState getZeebeState() {
+  public MutableZeebeState getZeebeState() {
     return streamProcessingComposite.getZeebeState();
   }
 

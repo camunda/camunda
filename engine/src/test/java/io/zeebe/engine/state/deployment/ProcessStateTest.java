@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableProcessState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -34,7 +34,7 @@ public final class ProcessStateTest {
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private MutableProcessState processState;
-  private ZeebeState zeebeState;
+  private MutableZeebeState zeebeState;
 
   @Before
   public void setUp() {
@@ -515,19 +515,19 @@ public final class ProcessStateTest {
     Assertions.assertThat(latestProcess.getVersion()).isEqualTo(2);
   }
 
-  public static DeploymentRecord creatingDeploymentRecord(final ZeebeState zeebeState) {
+  public static DeploymentRecord creatingDeploymentRecord(final MutableZeebeState zeebeState) {
     return creatingDeploymentRecord(zeebeState, "processId");
   }
 
   public static DeploymentRecord creatingDeploymentRecord(
-      final ZeebeState zeebeState, final String processId) {
+      final MutableZeebeState zeebeState, final String processId) {
     final MutableProcessState processState = zeebeState.getProcessState();
     final int version = processState.getProcessVersion(processId) + 1;
     return creatingDeploymentRecord(zeebeState, processId, version);
   }
 
   public static DeploymentRecord creatingDeploymentRecord(
-      final ZeebeState zeebeState, final String processId, final int version) {
+      final MutableZeebeState zeebeState, final String processId, final int version) {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess(processId)
             .startEvent()

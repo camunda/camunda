@@ -13,8 +13,8 @@ import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.JobState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.IncidentIntent;
@@ -31,7 +31,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
   private final JobState jobState;
   private final DefaultJobCommandPreconditionGuard<JobRecord> defaultProcessor;
 
-  public JobFailProcessor(final ZeebeState state) {
+  public JobFailProcessor(final MutableZeebeState state) {
     jobState = state.getJobState();
     defaultProcessor =
         new DefaultJobCommandPreconditionGuard<>("fail", jobState, this::acceptCommand);
@@ -41,15 +41,6 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
   public boolean onCommand(
       final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     return defaultProcessor.onCommand(command, commandControl);
-  }
-
-  private void acceptCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-    final long key = command.getKey();
-    final JobRecord failedJob = jobState.getJob(key);
-    failedJob.setRetries(command.getValue().getRetries());
-    failedJob.setErrorMessage(command.getValue().getErrorMessageBuffer());
-    commandControl.accept(JobIntent.FAILED, failedJob);
   }
 
   @Override
@@ -80,5 +71,14 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
 
       commandWriter.appendNewCommand(IncidentIntent.CREATE, incidentEvent);
     }
+  }
+
+  private void acceptCommand(
+      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
+    final long key = command.getKey();
+    final JobRecord failedJob = jobState.getJob(key);
+    failedJob.setRetries(command.getValue().getRetries());
+    failedJob.setErrorMessage(command.getValue().getErrorMessageBuffer());
+    commandControl.accept(JobIntent.FAILED, failedJob);
   }
 }

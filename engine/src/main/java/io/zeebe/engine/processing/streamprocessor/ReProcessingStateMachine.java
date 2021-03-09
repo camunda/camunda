@@ -16,9 +16,9 @@ import io.zeebe.engine.processing.streamprocessor.writers.ReprocessingStreamWrit
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.KeyGeneratorControls;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.zeebe.engine.state.mutable.MutableProcessState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -106,7 +106,7 @@ public final class ReProcessingStateMachine {
               || !MigratedStreamProcessors.isMigrated(recordMetadata.getValueType());
 
   private final RecordMetadata metadata = new RecordMetadata();
-  private final ZeebeState zeebeState;
+  private final MutableZeebeState zeebeState;
   private final KeyGeneratorControls keyGeneratorControls;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final ActorControl actor;

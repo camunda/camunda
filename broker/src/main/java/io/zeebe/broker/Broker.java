@@ -68,7 +68,7 @@ import io.zeebe.broker.transport.commandapi.CommandApiService;
 import io.zeebe.engine.processing.EngineProcessors;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.ProcessingContext;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.snapshots.broker.SnapshotStoreSupplier;
@@ -446,7 +446,9 @@ public final class Broker implements AutoCloseable {
       final ClusterCfg clusterCfg,
       final Atomix atomix,
       final LeaderManagementRequestHandler requestHandler) {
-    return (ActorControl actor, ZeebeState zeebeState, ProcessingContext processingContext) -> {
+    return (ActorControl actor,
+        MutableZeebeState zeebeState,
+        ProcessingContext processingContext) -> {
       final LogStream stream = processingContext.getLogStream();
 
       final TopologyPartitionListenerImpl partitionListener =

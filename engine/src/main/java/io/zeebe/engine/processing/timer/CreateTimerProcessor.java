@@ -13,9 +13,9 @@ import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import java.util.function.Consumer;
@@ -28,7 +28,8 @@ public final class CreateTimerProcessor implements TypedRecordProcessor<TimerRec
   private final TimerInstance timerInstance = new TimerInstance();
   private final KeyGenerator keyGenerator;
 
-  public CreateTimerProcessor(final ZeebeState zeebeState, final DueDateTimerChecker timerChecker) {
+  public CreateTimerProcessor(
+      final MutableZeebeState zeebeState, final DueDateTimerChecker timerChecker) {
     this.timerChecker = timerChecker;
     timerInstanceState = zeebeState.getTimerState();
     keyGenerator = zeebeState.getKeyGenerator();

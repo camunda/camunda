@@ -8,10 +8,10 @@
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableJobState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
 
@@ -20,7 +20,7 @@ final class JobCreatedApplier implements TypedEventApplier<JobIntent, JobRecord>
   private final MutableElementInstanceState elementInstanceState;
   private final MutableJobState jobState;
 
-  JobCreatedApplier(final ZeebeState state) {
+  JobCreatedApplier(final MutableZeebeState state) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
   }

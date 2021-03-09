@@ -27,7 +27,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.ValueType;
@@ -47,7 +47,7 @@ public final class EngineProcessors {
       final Consumer<String> onJobsAvailableCallback) {
 
     final var actor = processingContext.getActor();
-    final ZeebeState zeebeState = processingContext.getZeebeState();
+    final MutableZeebeState zeebeState = processingContext.getZeebeState();
     final var writers = processingContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
         TypedRecordProcessors.processors(zeebeState.getKeyGenerator(), writers);
@@ -96,7 +96,7 @@ public final class EngineProcessors {
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final ExpressionProcessor expressionProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
@@ -116,7 +116,7 @@ public final class EngineProcessors {
   private static void addDeploymentRelatedProcessorAndServices(
       final CatchEventBehavior catchEventBehavior,
       final int partitionId,
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
       final DeploymentResponder deploymentResponder,
       final ExpressionProcessor expressionProcessor,
@@ -161,7 +161,7 @@ public final class EngineProcessors {
   }
 
   private static void addIncidentProcessors(
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers) {
@@ -169,7 +169,7 @@ public final class EngineProcessors {
   }
 
   private static void addJobProcessors(
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
       final Consumer<String> onJobsAvailableCallback,
       final int maxFragmentSize,
@@ -180,7 +180,7 @@ public final class EngineProcessors {
 
   private static void addMessageProcessors(
       final SubscriptionCommandSender subscriptionCommandSender,
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers) {
     MessageEventProcessors.addMessageProcessors(

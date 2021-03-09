@@ -16,11 +16,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.VariableState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -50,7 +50,7 @@ public final class VariableStateTest {
 
   @BeforeClass
   public static void setUp() {
-    final ZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
+    final MutableZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
     elementInstanceState = zeebeState.getElementInstanceState();
     variableState = zeebeState.getVariableState();
   }

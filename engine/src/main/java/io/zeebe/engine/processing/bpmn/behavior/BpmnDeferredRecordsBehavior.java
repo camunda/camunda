@@ -8,10 +8,10 @@
 package io.zeebe.engine.processing.bpmn.behavior;
 
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.List;
@@ -20,7 +20,7 @@ public final class BpmnDeferredRecordsBehavior {
 
   private final MutableElementInstanceState elementInstanceState;
 
-  public BpmnDeferredRecordsBehavior(final ZeebeState zeebeState) {
+  public BpmnDeferredRecordsBehavior(final MutableZeebeState zeebeState) {
     elementInstanceState = zeebeState.getElementInstanceState();
   }
 

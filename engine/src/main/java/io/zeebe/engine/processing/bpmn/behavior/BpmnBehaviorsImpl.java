@@ -19,7 +19,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.variable.VariableBehavior;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.function.Function;
 
@@ -43,7 +43,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final TypedStreamWriter streamWriter,
       final TypedResponseWriter responseWriter,
       final SideEffects sideEffects,
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
       final VariableBehavior variableBehavior,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>

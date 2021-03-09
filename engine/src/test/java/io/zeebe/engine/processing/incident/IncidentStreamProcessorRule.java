@@ -23,8 +23,8 @@ import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.job.JobEventProcessors;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableProcessState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -52,7 +52,7 @@ public final class IncidentStreamProcessorRule extends ExternalResource {
   private DueDateTimerChecker mockTimerEventScheduler;
 
   private MutableProcessState processState;
-  private ZeebeState zeebeState;
+  private MutableZeebeState zeebeState;
 
   public IncidentStreamProcessorRule(final StreamProcessorRule streamProcessorRule) {
     environmentRule = streamProcessorRule;
@@ -109,7 +109,7 @@ public final class IncidentStreamProcessorRule extends ExternalResource {
         });
   }
 
-  public ZeebeState getZeebeState() {
+  public MutableZeebeState getZeebeState() {
     return zeebeState;
   }
 

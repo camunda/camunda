@@ -13,7 +13,7 @@ import io.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriterImpl;
 import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.ZeebeDbState;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
@@ -44,7 +44,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   private final ActorScheduler actorScheduler;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   private final List<StreamProcessorLifecycleAware> lifecycleAwareListeners;
-  private final Function<ZeebeState, EventApplier> eventApplierFactory;
+  private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
 
   // log stream
   private final LogStream logStream;

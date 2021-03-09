@@ -26,10 +26,10 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.immutable.TimerInstanceState;
 import io.zeebe.engine.state.instance.TimerInstance;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -57,7 +57,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private final DeploymentDistributionBehavior deploymentDistributionBehavior;
 
   public DeploymentCreateProcessor(
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
       final ExpressionProcessor expressionProcessor,
       final int partitionsCount,

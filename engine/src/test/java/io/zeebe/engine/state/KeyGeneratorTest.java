@@ -10,6 +10,7 @@ package io.zeebe.engine.state;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.Protocol;
 import org.junit.Before;
@@ -55,7 +56,7 @@ public final class KeyGeneratorTest {
     // given
     final ZeebeDb<ZbColumnFamilies> newDb = stateRule.createNewDb();
     final int secondPartitionId = Protocol.DEPLOYMENT_PARTITION + 1;
-    final ZeebeState otherZeebeState =
+    final MutableZeebeState otherZeebeState =
         new ZeebeDbState(secondPartitionId, newDb, newDb.createContext());
 
     final KeyGenerator keyGenerator2 = otherZeebeState.getKeyGenerator();

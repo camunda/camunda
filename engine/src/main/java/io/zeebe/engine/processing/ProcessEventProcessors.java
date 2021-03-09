@@ -28,10 +28,10 @@ import io.zeebe.engine.processing.timer.TriggerTimerProcessor;
 import io.zeebe.engine.processing.variable.UpdateVariableDocumentProcessor;
 import io.zeebe.engine.processing.variable.VariableBehavior;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -44,7 +44,7 @@ import java.util.Arrays;
 public final class ProcessEventProcessors {
 
   public static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final ExpressionProcessor expressionProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
@@ -117,7 +117,7 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessInstanceSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final Writers writers) {
     typedRecordProcessors
         .onCommand(
@@ -139,7 +139,7 @@ public final class ProcessEventProcessors {
   private static void addTimerStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final DueDateTimerChecker timerChecker,
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final CatchEventBehavior catchEventOutput,
       final ExpressionProcessor expressionProcessor) {
 
@@ -170,7 +170,7 @@ public final class ProcessEventProcessors {
 
   private static void addProcessInstanceCreationStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final Writers writers,
       final VariableBehavior variableBehavior) {
     final MutableElementInstanceState elementInstanceState = zeebeState.getElementInstanceState();
