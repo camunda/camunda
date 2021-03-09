@@ -11,10 +11,10 @@ import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
+import io.zeebe.engine.state.immutable.IncidentState;
 import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.engine.state.immutable.JobState.State;
 import io.zeebe.engine.state.instance.IndexedRecord;
-import io.zeebe.engine.state.mutable.MutableIncidentState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
@@ -31,7 +31,7 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
 
   private final ElementInstanceState elementInstanceState;
   private final JobState jobState;
-  private final MutableIncidentState incidentState;
+  private final IncidentState incidentState;
 
   public CreateIncidentProcessor(final ZeebeState zeebeState) {
     jobState = zeebeState.getJobState();
@@ -48,8 +48,7 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
     final boolean incidentIsNotRejected = !tryRejectIncidentCreation(incidentEvent, commandControl);
 
     if (incidentIsNotRejected) {
-      final long incidentKey = commandControl.accept(IncidentIntent.CREATED, incidentEvent);
-      incidentState.createIncident(incidentKey, incidentEvent);
+      commandControl.accept(IncidentIntent.CREATED, incidentEvent);
     }
 
     return true;
