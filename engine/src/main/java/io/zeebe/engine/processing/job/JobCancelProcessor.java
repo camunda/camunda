@@ -9,8 +9,8 @@ package io.zeebe.engine.processing.job;
 
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.JobState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
@@ -21,7 +21,7 @@ public final class JobCancelProcessor implements CommandProcessor<JobRecord> {
       "Expected to cancel job with key '%d', but no such job was found";
   private final JobState jobState;
 
-  public JobCancelProcessor(final MutableZeebeState state) {
+  public JobCancelProcessor(final ZeebeState state) {
     jobState = state.getJobState();
   }
 

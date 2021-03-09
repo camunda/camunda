@@ -14,9 +14,9 @@ import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.state.KeyGenerator;
+import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedProcess;
 import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
@@ -53,11 +53,12 @@ public final class DeploymentTransformer {
 
   public DeploymentTransformer(
       final StateWriter stateWriter,
-      final MutableZeebeState zeebeState,
-      final ExpressionProcessor expressionProcessor) {
+      final ZeebeState zeebeState,
+      final ExpressionProcessor expressionProcessor,
+      final KeyGenerator keyGenerator) {
     this.stateWriter = stateWriter;
     processState = zeebeState.getProcessState();
-    keyGenerator = zeebeState.getKeyGenerator();
+    this.keyGenerator = keyGenerator;
     validator = BpmnFactory.createValidator(expressionProcessor);
 
     try {

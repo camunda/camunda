@@ -16,10 +16,10 @@ import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.zeebe.engine.state.immutable.MessageState;
 import io.zeebe.engine.state.immutable.MessageSubscriptionState;
+import io.zeebe.engine.state.immutable.ProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.immutable.TimerInstanceState;
 import io.zeebe.engine.state.immutable.VariableState;
-import io.zeebe.engine.state.immutable.WorkflowInstanceSubscriptionState;
-import io.zeebe.engine.state.immutable.WorkflowState;
 
 public interface ZeebeState {
 

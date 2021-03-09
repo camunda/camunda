@@ -27,6 +27,8 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.zeebe.engine.state.KeyGenerator;
+import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -75,7 +77,8 @@ public final class EngineProcessors {
         writers,
         partitionsCount,
         actor,
-        deploymentDistributor);
+        deploymentDistributor,
+        zeebeState.getKeyGenerator());
     addMessageProcessors(subscriptionCommandSender, zeebeState, typedRecordProcessors, writers);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
@@ -116,14 +119,15 @@ public final class EngineProcessors {
   private static void addDeploymentRelatedProcessorAndServices(
       final CatchEventBehavior catchEventBehavior,
       final int partitionId,
-      final MutableZeebeState zeebeState,
+      final ZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
       final DeploymentResponder deploymentResponder,
       final ExpressionProcessor expressionProcessor,
       final Writers writers,
       final int partitionsCount,
       final ActorControl actor,
-      final DeploymentDistributor deploymentDistributor) {
+      final DeploymentDistributor deploymentDistributor,
+      final KeyGenerator keyGenerator) {
 
     // on deployment partition CREATE Command is received and processed
     // it will cause a distribution to other partitions
@@ -135,7 +139,8 @@ public final class EngineProcessors {
             partitionsCount,
             writers,
             actor,
-            deploymentDistributor);
+            deploymentDistributor,
+            keyGenerator);
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
 
     // redistributes deployments after recovery

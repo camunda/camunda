@@ -27,12 +27,16 @@ public final class JobEventProcessors {
       final Writers writers) {
 
     final var jobState = zeebeState.getJobState();
+    final var keyGenerator = zeebeState.getKeyGenerator();
 
     typedRecordProcessors
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor())
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new JobCompleteProcessor(zeebeState, writers))
         .onCommand(ValueType.JOB, JobIntent.FAIL, new JobFailProcessor(zeebeState))
-        .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, new JobThrowErrorProcessor(zeebeState))
+        .onCommand(
+            ValueType.JOB,
+            JobIntent.THROW_ERROR,
+            new JobThrowErrorProcessor(zeebeState, keyGenerator))
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new JobTimeOutProcessor(zeebeState))
         .onCommand(
             ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(zeebeState))
