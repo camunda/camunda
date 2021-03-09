@@ -7,7 +7,7 @@ if [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   mv /usr/bin/gocompat_linux_amd64 /usr/bin/gocompat
   chmod +x /usr/bin/gocompat
 
-  cd ${GOPATH}/src/github.com/zeebe-io/zeebe/clients/go
+  cd ${GOPATH}/src/github.com/camunda-cloud/zeebe/clients/go
   gocompat save ./...
 
   git commit -am "chore(project): update go versions"
