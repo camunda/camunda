@@ -17,9 +17,9 @@ package worker
 
 import (
 	"context"
-	"github.com/pkg/errors"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"io"

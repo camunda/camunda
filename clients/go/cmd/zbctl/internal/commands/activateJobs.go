@@ -16,9 +16,9 @@ package commands
 
 import (
 	"context"
-	"github.com/spf13/cobra"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/spf13/cobra"
 	"time"
 )
 

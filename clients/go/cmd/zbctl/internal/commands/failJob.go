@@ -17,9 +17,9 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/spf13/cobra"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/spf13/cobra"
 )
 
 type FailJobResponseWrapper struct {

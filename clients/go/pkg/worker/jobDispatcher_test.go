@@ -15,11 +15,11 @@
 package worker
 
 import (
-	"github.com/stretchr/testify/suite"
 	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/stretchr/testify/suite"
 	"sync"
 	"testing"
 	"time"

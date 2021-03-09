@@ -16,11 +16,11 @@
 package worker
 
 import (
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"github.com/camunda-cloud/zeebe/clients/go/internal/mock_pb"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )

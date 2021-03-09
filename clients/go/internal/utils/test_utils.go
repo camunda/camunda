@@ -16,9 +16,9 @@ package utils
 
 import (
 	"fmt"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"google.golang.org/protobuf/proto"
 	"time"
 )

@@ -16,11 +16,11 @@ package commands
 
 import (
 	"context"
-	"github.com/golang/mock/gomock"
 	"github.com/camunda-cloud/zeebe/clients/go/internal/mock_pb"
 	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/golang/mock/gomock"
 	"io"
 	"reflect"
 	"testing"

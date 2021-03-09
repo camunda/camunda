@@ -17,8 +17,8 @@ package entities
 import (
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/google/go-cmp/cmp"
 )
 
 type testType struct {
