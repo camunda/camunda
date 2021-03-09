@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"google.golang.org/protobuf/proto"
 	"time"
 )

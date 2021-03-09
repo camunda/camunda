@@ -8,12 +8,12 @@
 To regenerate the gateway mock `internal/mock_pb/mock_gateway.go` run [`mockgen`](https://github.com/golang/mock#installation):
 
 ```
-GO111MODULE=off mockgen github.com/zeebe-io/zeebe/clients/go/pkg/pb GatewayClient,Gateway_ActivateJobsClient > internal/mock_pb/mock_gateway.go
+GO111MODULE=off mockgen github.com/camunda-cloud/zeebe/clients/go/pkg/pb GatewayClient,Gateway_ActivateJobsClient > internal/mock_pb/mock_gateway.go
 ```
 
 ### Integration tests
 
-To run the integration tests, a Docker image for Zeebe must be built with the tag 'current-test'. To do that you can run (in the zeebe-io/zeebe dir):
+To run the integration tests, a Docker image for Zeebe must be built with the tag 'current-test'. To do that you can run (in the camunda-cloud/zeebe dir):
 
 ```
 docker build --build-arg DISTBALL=dist/target/zeebe-distribution*.tar.gz -t camunda/zeebe:current-test --target app .

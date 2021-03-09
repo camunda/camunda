@@ -16,10 +16,10 @@ package worker
 
 import (
 	"github.com/stretchr/testify/suite"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"sync"
 	"testing"
 	"time"

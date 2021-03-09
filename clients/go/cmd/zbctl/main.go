@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/zeebe-io/zeebe/clients/go/cmd/zbctl/internal/commands"
+	"github.com/camunda-cloud/zeebe/clients/go/cmd/zbctl/internal/commands"
 )
 
 func main() {

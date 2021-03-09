@@ -15,7 +15,7 @@ package commands
 
 import (
 	"context"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
 	"strings"
 
 	"github.com/spf13/cobra"

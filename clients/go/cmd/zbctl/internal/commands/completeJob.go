@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 )
 
 type CompleteJobResponseWrapper struct {

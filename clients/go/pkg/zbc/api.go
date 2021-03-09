@@ -16,8 +16,8 @@
 package zbc
 
 import (
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/worker"
 )
 
 type Client interface {
