@@ -55,6 +55,23 @@ public final class EventAppliers implements EventApplier {
     registerProcessInstanceEventAppliers(state);
 
     register(ProcessIntent.CREATED, new ProcessCreatedApplier(state));
+    registerDeploymentAppliers(state);
+
+    registerMessageAppliers(state);
+    registerMessageSubscriptionAppliers(state);
+    registerMessageStartEventSubscriptionAppliers(state);
+
+    register(
+        ProcessInstanceSubscriptionIntent.CREATED,
+        new ProcessInstanceSubscriptionCreatedApplier(state.getProcessInstanceSubscriptionState()));
+
+    registerJobIntentEventAppliers(state);
+    registerVariableEventAppliers(state);
+    register(JobBatchIntent.ACTIVATED, new JobBatchActivatedApplier(state));
+    registerIncidentEventAppliers(state);
+  }
+
+  private void registerDeploymentAppliers(final MutableZeebeState state) {
     register(DeploymentDistributionIntent.DISTRIBUTING, new DeploymentDistributionApplier(state));
     register(
         DeploymentDistributionIntent.COMPLETED,
@@ -66,25 +83,6 @@ public final class EventAppliers implements EventApplier {
     register(
         DeploymentIntent.FULLY_DISTRIBUTED,
         new DeploymentFullyDistributedApplier(state.getDeploymentState()));
-
-    register(MessageIntent.PUBLISHED, new MessagePublishedApplier(state.getMessageState()));
-    register(MessageIntent.EXPIRED, new MessageExpiredApplier(state.getMessageState()));
-
-    registerMessageSubscriptionAppliers(state);
-
-    register(
-        MessageStartEventSubscriptionIntent.CORRELATED,
-        new MessageStartEventSubscriptionCorrelatedApplier(
-            state.getMessageState(), state.getEventScopeInstanceState()));
-
-    register(
-        ProcessInstanceSubscriptionIntent.CREATED,
-        new ProcessInstanceSubscriptionCreatedApplier(state.getProcessInstanceSubscriptionState()));
-
-    registerJobIntentEventAppliers(state);
-    registerVariableEventAppliers(state);
-    register(JobBatchIntent.ACTIVATED, new JobBatchActivatedApplier(state));
-    registerIncidentEventAppliers(state);
   }
 
   private void registerVariableEventAppliers(final MutableZeebeState state) {
@@ -133,6 +131,11 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.TIMED_OUT, new JobTimedOutApplier(state));
   }
 
+  private void registerMessageAppliers(final MutableZeebeState state) {
+    register(MessageIntent.PUBLISHED, new MessagePublishedApplier(state.getMessageState()));
+    register(MessageIntent.EXPIRED, new MessageExpiredApplier(state.getMessageState()));
+  }
+
   private void registerMessageSubscriptionAppliers(final MutableZeebeState state) {
     register(
         MessageSubscriptionIntent.CREATED,
@@ -150,6 +153,21 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageSubscriptionIntent.DELETED,
         new MessageSubscriptionDeletedApplier(state.getMessageSubscriptionState()));
+  }
+
+  private void registerMessageStartEventSubscriptionAppliers(final MutableZeebeState state) {
+    register(
+        MessageStartEventSubscriptionIntent.CREATED,
+        new MessageStartEventSubscriptionCreatedApplier(
+            state.getMessageStartEventSubscriptionState(), state.getEventScopeInstanceState()));
+    register(
+        MessageStartEventSubscriptionIntent.CORRELATED,
+        new MessageStartEventSubscriptionCorrelatedApplier(
+            state.getMessageState(), state.getEventScopeInstanceState()));
+    register(
+        MessageStartEventSubscriptionIntent.DELETED,
+        new MessageStartEventSubscriptionDeletedApplier(
+            state.getMessageStartEventSubscriptionState(), state.getEventScopeInstanceState()));
   }
 
   private void registerIncidentEventAppliers(final MutableZeebeState state) {
