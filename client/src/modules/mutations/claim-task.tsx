@@ -8,7 +8,7 @@
 
 import gql from 'graphql-tag';
 import {Task} from 'modules/types';
-import {claimedTask} from 'modules/mock-schema/mocks/task-details';
+import {claimedTask} from 'modules/mock-schema/mocks/task';
 
 type ClaimTaskVariables = {
   id: Task['id'];

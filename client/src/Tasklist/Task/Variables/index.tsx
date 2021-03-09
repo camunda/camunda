@@ -4,17 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useQuery} from '@apollo/client';
 import React, {useEffect, useRef} from 'react';
 import {useParams} from 'react-router-dom';
 import {Field, useForm, useField} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 
-import {
-  GET_TASK_VARIABLES,
-  GetTaskVariables,
-  TaskVariablesQueryVariables,
-} from 'modules/queries/get-task-variables';
+import {useTask} from 'modules/queries/get-task';
 import {Table, TD, TR} from 'modules/components/Table';
 import {
   Container,
@@ -44,12 +39,7 @@ import {createVariableFieldName} from './createVariableFieldName';
 const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
   const tableContainer = useRef<HTMLDivElement>(null);
   const {id: taskId} = useParams<{id: string}>();
-  const {data, loading} = useQuery<
-    GetTaskVariables,
-    TaskVariablesQueryVariables
-  >(GET_TASK_VARIABLES, {
-    variables: {id: taskId},
-  });
+  const {data} = useTask(taskId);
   const form = useForm();
   const newVariablesFieldArray = useField('new-variables');
   const newVariableCount = useRef(newVariablesFieldArray.input.value.length);
@@ -78,7 +68,7 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
     };
   }, [taskId, form]);
 
-  if (loading || data === undefined) {
+  if (data === undefined) {
     return null;
   }
 

@@ -8,7 +8,10 @@
 
 import gql from 'graphql-tag';
 import {Task, Variable} from 'modules/types';
-import {completedTask} from 'modules/mock-schema/mocks/task-details';
+import {
+  completedTask,
+  completedTaskWithEditedVariables,
+} from 'modules/mock-schema/mocks/task';
 
 type Variables = ReadonlyArray<Variable>;
 
@@ -55,7 +58,7 @@ const mockCompleteTaskWithEditedVariable = {
   },
   result: {
     data: {
-      completeTask: completedTask,
+      completeTask: completedTaskWithEditedVariables,
     },
   },
 };

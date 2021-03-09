@@ -12,6 +12,6 @@ describe('getSortValues', () => {
     expect(getSortValues()).toBe(undefined);
     expect(getSortValues([])).toBe(undefined);
     expect(getSortValues(tasks)).toBe(undefined);
-    expect(getSortValues(tasks.slice(1))).toEqual(['1']);
+    expect(getSortValues(tasks.slice(1))).toEqual(['1', '2']);
   });
 });

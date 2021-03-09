@@ -27,7 +27,7 @@ const getWrapper = (mocks: MockedResponse[]) => {
   return Wrapper;
 };
 
-describe.only('<Dropdown />', () => {
+describe('<Dropdown />', () => {
   afterAll(() => {
     fetchMock.mockRestore();
   });

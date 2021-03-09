@@ -19,7 +19,7 @@ const tasks: ReadonlyArray<Task> = [
     assignee: currentUser,
     variables: [],
     taskState: TaskStates.Created,
-    sortValues: ['0'],
+    sortValues: ['0', '1'],
     isFirst: true,
   },
   {
@@ -39,7 +39,7 @@ const tasks: ReadonlyArray<Task> = [
       {name: 'isCool', value: '"yes"'},
     ],
     taskState: TaskStates.Created,
-    sortValues: ['1'],
+    sortValues: ['1', '2'],
     isFirst: false,
   },
   {
@@ -52,7 +52,7 @@ const tasks: ReadonlyArray<Task> = [
     assignee: null,
     variables: [],
     taskState: TaskStates.Created,
-    sortValues: ['2'],
+    sortValues: ['2', '3'],
     isFirst: false,
   },
 ];

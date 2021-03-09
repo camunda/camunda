@@ -20,17 +20,10 @@ import {MockedResponse} from '@apollo/client/testing';
 
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {
-  mockGetTaskCreated,
-  mockGetTaskCompleted,
+  mockGetTaskClaimedWithVariables,
+  mockGetTaskClaimed,
+  mockGetTaskCompletedWithVariables,
 } from 'modules/queries/get-task';
-import {
-  mockTaskWithVariables,
-  mockTaskWithoutVariables,
-} from 'modules/queries/get-task-variables';
-import {
-  mockGetTaskDetailsClaimed,
-  mockGetTaskDetailsUnclaimed,
-} from 'modules/queries/get-task-details';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {
@@ -77,12 +70,7 @@ describe('<Task />', () => {
     render(<Task />, {
       wrapper: getWrapper({
         history,
-        mocks: [
-          mockGetTaskCreated,
-          mockGetTaskDetailsClaimed,
-          mockTaskWithVariables,
-          mockGetCurrentUser,
-        ],
+        mocks: [mockGetTaskClaimedWithVariables, mockGetCurrentUser],
       }),
     });
 
@@ -101,12 +89,7 @@ describe('<Task />', () => {
     render(<Task />, {
       wrapper: getWrapper({
         history,
-        mocks: [
-          mockGetTaskCompleted,
-          mockGetTaskDetailsUnclaimed,
-          mockTaskWithVariables,
-          mockGetCurrentUser,
-        ],
+        mocks: [mockGetTaskCompletedWithVariables, mockGetCurrentUser],
       }),
     });
 
@@ -126,9 +109,7 @@ describe('<Task />', () => {
       wrapper: getWrapper({
         history,
         mocks: [
-          mockGetTaskCreated,
-          mockGetTaskDetailsClaimed,
-          mockTaskWithoutVariables('0'),
+          mockGetTaskClaimed,
           mockGetCurrentUser,
           mockCompleteTask,
           mockGetAllOpenTasks,
@@ -155,12 +136,7 @@ describe('<Task />', () => {
     render(<Task />, {
       wrapper: getWrapper({
         history,
-        mocks: [
-          mockGetTaskCreated,
-          mockGetTaskDetailsClaimed,
-          mockTaskWithoutVariables('0'),
-          mockGetCurrentUser,
-        ],
+        mocks: [mockGetTaskClaimedWithVariables, mockGetCurrentUser],
       }),
     });
 
@@ -183,9 +159,7 @@ describe('<Task />', () => {
       wrapper: getWrapper({
         history,
         mocks: [
-          mockGetTaskCreated,
-          mockGetTaskDetailsClaimed,
-          mockTaskWithoutVariables('0'),
+          mockGetTaskClaimed,
           mockGetCurrentUser,
           mockCompleteTask,
           mockGetAllOpenTasks,
@@ -218,9 +192,7 @@ describe('<Task />', () => {
       wrapper: getWrapper({
         history,
         mocks: [
-          mockGetTaskCreated,
-          mockGetTaskDetailsClaimed,
-          mockTaskWithVariables,
+          mockGetTaskClaimedWithVariables,
           mockGetCurrentUser,
           mockCompleteTaskWithEditedVariable,
           mockGetAllOpenTasks,
@@ -252,9 +224,7 @@ describe('<Task />', () => {
       wrapper: getWrapper({
         history,
         mocks: [
-          mockGetTaskCreated,
-          mockGetTaskDetailsClaimed,
-          mockTaskWithVariables,
+          mockGetTaskClaimed,
           mockGetCurrentUser,
           mockCompleteTaskWithAddedVariable,
           mockGetAllOpenTasks,
@@ -297,12 +267,7 @@ describe('<Task />', () => {
     render(<Task />, {
       wrapper: getWrapper({
         history,
-        mocks: [
-          mockGetTaskCreated,
-          mockGetTaskDetailsClaimed,
-          mockTaskWithVariables,
-          mockGetCurrentUser,
-        ],
+        mocks: [mockGetTaskClaimedWithVariables, mockGetCurrentUser],
       }),
     });
 
@@ -324,12 +289,7 @@ describe('<Task />', () => {
     render(<Task />, {
       wrapper: getWrapper({
         history,
-        mocks: [
-          mockGetTaskCreated,
-          mockGetTaskDetailsClaimed,
-          mockTaskWithVariables,
-          mockGetCurrentUser,
-        ],
+        mocks: [mockGetTaskClaimedWithVariables, mockGetCurrentUser],
       }),
     });
 
@@ -356,12 +316,7 @@ describe('<Task />', () => {
     render(<Task />, {
       wrapper: getWrapper({
         history,
-        mocks: [
-          mockGetTaskCreated,
-          mockGetTaskDetailsClaimed,
-          mockTaskWithVariables,
-          mockGetCurrentUser,
-        ],
+        mocks: [mockGetTaskClaimedWithVariables, mockGetCurrentUser],
       }),
     });
 
@@ -378,13 +333,12 @@ describe('<Task />', () => {
         }),
         mocks: [
           mockGetCurrentUser,
-          mockGetTaskCreated,
-          mockGetTaskDetailsClaimed,
-          mockTaskWithoutVariables('0'),
+          mockGetTaskClaimed,
           mockUnclaimTask,
           mockGetAllOpenTasks,
           mockClaimTask,
           mockGetAllOpenTasks,
+          mockGetTaskClaimed,
         ],
       }),
     });

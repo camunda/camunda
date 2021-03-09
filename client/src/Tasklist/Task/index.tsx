@@ -14,7 +14,7 @@ import arrayMutators from 'final-form-arrays';
 import {useHistory} from 'react-router-dom';
 
 import {TaskStates} from 'modules/constants/taskStates';
-import {GET_TASK, GetTask, TaskQueryVariables} from 'modules/queries/get-task';
+import {GetTask, useTask} from 'modules/queries/get-task';
 import {
   COMPLETE_TASK,
   CompleteTaskVariables,
@@ -56,12 +56,7 @@ const Task: React.FC = () => {
   });
   const currentTaskCount = dataFromCache?.tasks?.length ?? 0;
 
-  const {data, loading, fetchMore} = useQuery<GetTask, TaskQueryVariables>(
-    GET_TASK,
-    {
-      variables: {id},
-    },
-  );
+  const {data, loading, fetchMore} = useTask(id);
   const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
   const [completeTask] = useMutation<GetTask, CompleteTaskVariables>(
     COMPLETE_TASK,
@@ -84,112 +79,114 @@ const Task: React.FC = () => {
     },
   );
   const notifications = useNotifications();
+  const {taskState, assignee} = data?.task ?? {};
 
-  if (loading && id !== undefined) {
-    return <LoadingOverlay data-testid="details-overlay" />;
-  }
-
-  if (data === undefined) {
-    return null;
-  }
-
-  const {taskState, assignee} = data.task;
   const canCompleteTask =
     userData?.currentUser.username === assignee?.username &&
     taskState === TaskStates.Created;
 
   return (
     <Container>
-      <Details />
-      <Form
-        mutators={{...arrayMutators}}
-        onSubmit={async (values, form) => {
-          const {dirtyFields, initialValues = []} = form.getState();
+      {loading && id !== undefined && (
+        <LoadingOverlay data-testid="details-overlay" />
+      )}
+      {data !== undefined && (
+        <>
+          <Details />
+          <Form
+            mutators={{...arrayMutators}}
+            onSubmit={async (values, form) => {
+              const {dirtyFields, initialValues = []} = form.getState();
 
-          const existingVariables: ReadonlyArray<Variable> = intersection(
-            Object.keys(initialValues),
-            Object.keys(dirtyFields),
-          ).map((name) => ({
-            name,
-            value: values[name],
-          }));
+              const existingVariables: ReadonlyArray<Variable> = intersection(
+                Object.keys(initialValues),
+                Object.keys(dirtyFields),
+              ).map((name) => ({
+                name,
+                value: values[name],
+              }));
 
-          const newVariables: ReadonlyArray<Variable> =
-            get(values, 'new-variables') || [];
+              const newVariables: ReadonlyArray<Variable> =
+                get(values, 'new-variables') || [];
 
-          try {
-            await completeTask({
-              variables: {
-                id,
-                variables: [
-                  ...existingVariables.map((variable) => ({
-                    ...variable,
-                    name: getVariableFieldName(variable.name),
-                  })),
-                  ...newVariables,
-                ],
-              },
-            });
-
-            notifications.displayNotification('success', {
-              headline: 'Task completed',
-            });
-
-            const searchParams = new URLSearchParams(location.search);
-            const gseUrl = searchParams.get('gseUrl');
-
-            if (gseUrl !== null && !notifications.isGseNotificationVisible) {
-              notifications.displayNotification('info', {
-                headline: 'To continue to getting started, go back to',
-                isDismissable: false,
-                isGseNotification: true,
-                navigation: {
-                  label: 'Cloud',
-                  navigationHandler: () => {
-                    window.location.href = gseUrl;
+              try {
+                await completeTask({
+                  variables: {
+                    id,
+                    variables: [
+                      ...existingVariables.map((variable) => ({
+                        ...variable,
+                        name: getVariableFieldName(variable.name),
+                      })),
+                      ...newVariables,
+                    ],
                   },
-                },
-              });
-            }
+                });
 
-            history.push({
-              pathname: Pages.Initial(),
-              search: history.location.search,
-            });
-          } catch (error) {
-            notifications.displayNotification('error', {
-              headline: 'Task could not be completed',
-              description: getCompleteTaskErrorMessage(error.message),
-            });
+                notifications.displayNotification('success', {
+                  headline: 'Task completed',
+                });
 
-            // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getCompleteTaskErrorMessage
-            if (shouldFetchMore(error.message)) {
-              fetchMore({variables: {id}});
-            }
-          }
-        }}
-      >
-        {({form, handleSubmit}) => {
-          return (
-            <StyledForm onSubmit={handleSubmit} hasFooter={canCompleteTask}>
-              <Variables canEdit={canCompleteTask} />
-              {canCompleteTask && (
-                <Footer>
-                  <Button
-                    type="submit"
-                    disabled={
-                      form.getState().submitting ||
-                      form.getState().hasValidationErrors
-                    }
-                  >
-                    Complete Task
-                  </Button>
-                </Footer>
-              )}
-            </StyledForm>
-          );
-        }}
-      </Form>
+                const searchParams = new URLSearchParams(location.search);
+                const gseUrl = searchParams.get('gseUrl');
+
+                if (
+                  gseUrl !== null &&
+                  !notifications.isGseNotificationVisible
+                ) {
+                  notifications.displayNotification('info', {
+                    headline: 'To continue to getting started, go back to',
+                    isDismissable: false,
+                    isGseNotification: true,
+                    navigation: {
+                      label: 'Cloud',
+                      navigationHandler: () => {
+                        window.location.href = gseUrl;
+                      },
+                    },
+                  });
+                }
+
+                history.push({
+                  pathname: Pages.Initial(),
+                  search: history.location.search,
+                });
+              } catch (error) {
+                notifications.displayNotification('error', {
+                  headline: 'Task could not be completed',
+                  description: getCompleteTaskErrorMessage(error.message),
+                });
+
+                // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getCompleteTaskErrorMessage
+                if (shouldFetchMore(error.message)) {
+                  fetchMore({variables: {id}});
+                }
+              }
+            }}
+          >
+            {({form, handleSubmit}) => {
+              return (
+                <StyledForm onSubmit={handleSubmit} hasFooter={canCompleteTask}>
+                  <Variables canEdit={canCompleteTask} />
+                  {canCompleteTask && (
+                    <Footer>
+                      <Button
+                        type="submit"
+                        disabled={
+                          form.getState().submitting ||
+                          form.getState().hasValidationErrors
+                        }
+                      >
+                        Complete Task
+                      </Button>
+                    </Footer>
+                  )}
+                </StyledForm>
+              );
+            }}
+          </Form>
+        </>
+      )}
     </Container>
   );
 };

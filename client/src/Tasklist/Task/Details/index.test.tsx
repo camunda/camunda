@@ -12,10 +12,10 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {Route, MemoryRouter} from 'react-router-dom';
 import {
-  mockGetTaskDetailsUnclaimed,
-  mockGetTaskDetailsCompleted,
-  mockGetTaskDetailsClaimed,
-} from 'modules/queries/get-task-details';
+  mockGetTaskUnclaimed,
+  mockGetTaskCompleted,
+  mockGetTaskClaimed,
+} from 'modules/queries/get-task';
 import {
   mockGetAllOpenTasks,
   mockGetAllOpenTasksUnclaimed,
@@ -47,7 +47,7 @@ const getWrapper = ({id, mocks}: GetWrapperProps) => {
 describe('<Details />', () => {
   it('should render completed task details', async () => {
     render(<Details />, {
-      wrapper: getWrapper({id: '0', mocks: [mockGetTaskDetailsCompleted]}),
+      wrapper: getWrapper({id: '0', mocks: [mockGetTaskCompleted]}),
     });
 
     expect(await screen.findByText('My Task')).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe('<Details />', () => {
 
   it('should render unclaimed task details', async () => {
     render(<Details />, {
-      wrapper: getWrapper({id: '0', mocks: [mockGetTaskDetailsUnclaimed]}),
+      wrapper: getWrapper({id: '0', mocks: [mockGetTaskUnclaimed]}),
     });
 
     expect(await screen.findByText('My Task')).toBeInTheDocument();
@@ -91,11 +91,7 @@ describe('<Details />', () => {
     render(<Details />, {
       wrapper: getWrapper({
         id: '0',
-        mocks: [
-          mockGetTaskDetailsUnclaimed,
-          mockClaimTask,
-          mockGetAllOpenTasks,
-        ],
+        mocks: [mockGetTaskUnclaimed, mockClaimTask, mockGetAllOpenTasks],
       }),
     });
     expect(
@@ -127,7 +123,7 @@ describe('<Details />', () => {
       wrapper: getWrapper({
         id: '0',
         mocks: [
-          mockGetTaskDetailsClaimed,
+          mockGetTaskClaimed,
           mockUnclaimTask,
           mockGetAllOpenTasksUnclaimed,
         ],

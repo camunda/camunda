@@ -13,9 +13,9 @@ import arrayMutators from 'final-form-arrays';
 
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {
-  mockTaskWithVariables,
-  mockTaskWithoutVariables,
-} from 'modules/queries/get-task-variables';
+  mockGetTaskClaimed,
+  mockGetTaskClaimedWithVariables,
+} from 'modules/queries/get-task';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './';
@@ -45,7 +45,7 @@ const getWrapper = ({mocks}: {mocks: Array<MockedResponse>}) => {
 describe('<Variables />', () => {
   it('should render with variables (readonly)', async () => {
     render(<Variables />, {
-      wrapper: getWrapper({mocks: [mockTaskWithVariables]}),
+      wrapper: getWrapper({mocks: [mockGetTaskClaimedWithVariables]}),
     });
 
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
@@ -58,7 +58,7 @@ describe('<Variables />', () => {
 
   it('should render with empty message', async () => {
     render(<Variables />, {
-      wrapper: getWrapper({mocks: [mockTaskWithoutVariables('0')]}),
+      wrapper: getWrapper({mocks: [mockGetTaskClaimed]}),
     });
 
     expect(
@@ -69,7 +69,7 @@ describe('<Variables />', () => {
 
   it('should edit variable', async () => {
     render(<Variables canEdit />, {
-      wrapper: getWrapper({mocks: [mockTaskWithVariables]}),
+      wrapper: getWrapper({mocks: [mockGetTaskClaimedWithVariables]}),
     });
     const newVariableValue = '"changedValue"';
 
@@ -86,7 +86,7 @@ describe('<Variables />', () => {
 
   it('should add two variables and remove one', async () => {
     render(<Variables canEdit />, {
-      wrapper: getWrapper({mocks: [mockTaskWithVariables]}),
+      wrapper: getWrapper({mocks: [mockGetTaskClaimedWithVariables]}),
     });
 
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
@@ -139,7 +139,7 @@ describe('<Variables />', () => {
 
   it('should add variable on task without variables', async () => {
     render(<Variables canEdit />, {
-      wrapper: getWrapper({mocks: [mockTaskWithoutVariables('0')]}),
+      wrapper: getWrapper({mocks: [mockGetTaskClaimed]}),
     });
 
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
@@ -155,7 +155,7 @@ describe('<Variables />', () => {
 
   it('should add validation error on empty variable name', async () => {
     render(<Variables canEdit />, {
-      wrapper: getWrapper({mocks: [mockTaskWithoutVariables('0')]}),
+      wrapper: getWrapper({mocks: [mockGetTaskClaimed]}),
     });
 
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
@@ -172,7 +172,7 @@ describe('<Variables />', () => {
 
   it('should add validation error on empty variable value', async () => {
     render(<Variables canEdit />, {
-      wrapper: getWrapper({mocks: [mockTaskWithoutVariables('0')]}),
+      wrapper: getWrapper({mocks: [mockGetTaskClaimed]}),
     });
 
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
@@ -189,7 +189,7 @@ describe('<Variables />', () => {
 
   it('should add validation error on invalid variable name', async () => {
     render(<Variables canEdit />, {
-      wrapper: getWrapper({mocks: [mockTaskWithoutVariables('0')]}),
+      wrapper: getWrapper({mocks: [mockGetTaskClaimed]}),
     });
 
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
@@ -208,7 +208,7 @@ describe('<Variables />', () => {
 
   it('should show no validation error on valid name/value', async () => {
     render(<Variables canEdit />, {
-      wrapper: getWrapper({mocks: [mockTaskWithoutVariables('0')]}),
+      wrapper: getWrapper({mocks: [mockGetTaskClaimed]}),
     });
 
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
@@ -247,11 +247,7 @@ describe('<Variables />', () => {
       </>,
       {
         wrapper: getWrapper({
-          mocks: [
-            mockTaskWithoutVariables('0'),
-            mockGetCurrentUser,
-            mockTaskWithoutVariables('1'),
-          ],
+          mocks: [mockGetTaskClaimed, mockGetCurrentUser, mockGetTaskClaimed],
         }),
       },
     );

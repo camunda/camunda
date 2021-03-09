@@ -27,7 +27,7 @@ type Task = Readonly<{
   assignee: User | null;
   variables: ReadonlyArray<Variable>;
   taskState: TaskState;
-  sortValues: Array<string>;
+  sortValues: [string, string];
   isFirst: boolean;
 }>;
 

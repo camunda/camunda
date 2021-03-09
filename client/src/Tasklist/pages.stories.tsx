@@ -21,18 +21,10 @@ import {
   mockGetCompleted,
 } from 'modules/queries/get-tasks';
 import {
-  mockGetTaskDetailsUnclaimed,
-  mockGetTaskDetailsClaimed,
-  mockGetTaskDetailsCompleted,
-} from 'modules/queries/get-task-details';
-import {
-  mockGetTaskCreated,
+  mockGetTaskUnclaimed,
   mockGetTaskCompleted,
+  mockGetTaskUnclaimedWithVariables,
 } from 'modules/queries/get-task';
-import {
-  mockTaskWithoutVariables,
-  mockTaskWithVariables,
-} from 'modules/queries/get-task-variables';
 
 export default {
   title: 'Pages States/Tasklist',
@@ -115,9 +107,7 @@ const Unclaimed: React.FC = () => {
       mocks={[
         mockGetCurrentUser,
         mockGetUnclaimed,
-        mockGetTaskCreated,
-        mockGetTaskDetailsUnclaimed,
-        mockTaskWithoutVariables('0'),
+        mockGetTaskUnclaimed,
         mockGetUnclaimed,
         mockGetUnclaimed,
       ]}
@@ -134,9 +124,7 @@ const Claimed: React.FC = () => {
       mocks={[
         mockGetCurrentUser,
         mockGetAllOpenTasks,
-        mockGetTaskCreated,
-        mockGetTaskDetailsClaimed,
-        mockTaskWithoutVariables('0'),
+        mockGetTaskUnclaimed,
         mockGetAllOpenTasks,
       ]}
       initialEntries={['/0']}
@@ -153,8 +141,6 @@ const Completed: React.FC = () => {
         mockGetCurrentUser,
         mockGetCompleted,
         mockGetTaskCompleted,
-        mockGetTaskDetailsCompleted,
-        mockTaskWithoutVariables('0'),
         mockGetCompleted,
       ]}
       initialEntries={['/0?filter=completed']}
@@ -170,9 +156,7 @@ const UnclaimedWithVariables: React.FC = () => {
       mocks={[
         mockGetCurrentUser,
         mockGetUnclaimed,
-        mockGetTaskCreated,
-        mockGetTaskDetailsUnclaimed,
-        mockTaskWithVariables,
+        mockGetTaskUnclaimed,
         mockGetUnclaimed,
         mockGetUnclaimed,
       ]}
@@ -189,21 +173,11 @@ const ClaimedWithVariables: React.FC = () => {
       mocks={[
         mockGetCurrentUser,
         mockGetAllOpenTasks,
-        mockGetTaskCreated,
-        mockGetTaskDetailsClaimed,
-        mockTaskWithVariables,
+        mockGetTaskUnclaimedWithVariables,
         mockGetAllOpenTasks,
       ]}
       initialEntries={['/0']}
     >
-      <Tasklist />
-    </Wrapper>
-  );
-};
-
-const Loading: React.FC = () => {
-  return (
-    <Wrapper mocks={[]} initialEntries={['/0']}>
       <Tasklist />
     </Wrapper>
   );
@@ -220,5 +194,4 @@ export {
   Completed,
   UnclaimedWithVariables,
   ClaimedWithVariables,
-  Loading,
 };

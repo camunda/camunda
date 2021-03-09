@@ -7,7 +7,7 @@
 /* istanbul ignore file */
 
 import gql from 'graphql-tag';
-import {unclaimedTask} from 'modules/mock-schema/mocks/task-details';
+import {unclaimedTask} from 'modules/mock-schema/mocks/task';
 
 import {Task} from 'modules/types';
 

@@ -4,20 +4,32 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {gql} from '@apollo/client';
+import {gql, useQuery} from '@apollo/client';
 import {Task} from 'modules/types';
 
-import {taskCreated, taskCompleted} from 'modules/mock-schema/mocks/task';
+import {
+  unclaimedTask,
+  completedTask,
+  claimedTask,
+  unclaimedTaskWithVariables,
+  completedTaskWithVariables,
+  claimedTaskWithVariables,
+} from 'modules/mock-schema/mocks/task';
 
-type TaskQueryVariables = {
-  id: Task['id'];
-};
+type TaskQueryVariables = Pick<Task, 'id'>;
 
 interface GetTask {
-  task: {
-    assignee: Task['assignee'];
-    taskState: Task['taskState'];
-  };
+  task: Pick<
+    Task,
+    | 'id'
+    | 'assignee'
+    | 'name'
+    | 'taskState'
+    | 'workflowName'
+    | 'creationTime'
+    | 'completionTime'
+    | 'variables'
+  >;
 }
 
 const GET_TASK = gql`
@@ -29,19 +41,27 @@ const GET_TASK = gql`
         firstname
         lastname
       }
+      name
       taskState
+      workflowName
+      creationTime
+      completionTime
+      variables {
+        name
+        value
+      }
     }
   }
 `;
 
-const mockGetTaskCreated = {
+const mockGetTaskUnclaimed = {
   request: {
     query: GET_TASK,
     variables: {id: '0'},
   },
   result: {
     data: {
-      task: taskCreated,
+      task: unclaimedTask,
     },
   },
 };
@@ -53,10 +73,78 @@ const mockGetTaskCompleted = {
   },
   result: {
     data: {
-      task: taskCompleted,
+      task: completedTask,
     },
   },
 };
 
+const mockGetTaskClaimed = {
+  request: {
+    query: GET_TASK,
+    variables: {id: '0'},
+  },
+  result: {
+    data: {
+      task: claimedTask,
+    },
+  },
+};
+
+const mockGetTaskUnclaimedWithVariables = {
+  request: {
+    query: GET_TASK,
+    variables: {id: '0'},
+  },
+  result: {
+    data: {
+      task: unclaimedTaskWithVariables,
+    },
+  },
+};
+
+const mockGetTaskCompletedWithVariables = {
+  request: {
+    query: GET_TASK,
+    variables: {id: '0'},
+  },
+  result: {
+    data: {
+      task: completedTaskWithVariables,
+    },
+  },
+};
+
+const mockGetTaskClaimedWithVariables = {
+  request: {
+    query: GET_TASK,
+    variables: {id: '0'},
+  },
+  result: {
+    data: {
+      task: claimedTaskWithVariables,
+    },
+  },
+};
+
+function useTask(id: Task['id']) {
+  const result = useQuery<GetTask, TaskQueryVariables>(GET_TASK, {
+    variables: {id},
+  });
+
+  return {
+    ...result,
+    data: result.data ?? result.previousData,
+  };
+}
+
 export type {GetTask, TaskQueryVariables};
-export {GET_TASK, mockGetTaskCreated, mockGetTaskCompleted};
+export {
+  GET_TASK,
+  mockGetTaskUnclaimed,
+  mockGetTaskCompleted,
+  mockGetTaskClaimed,
+  mockGetTaskUnclaimedWithVariables,
+  mockGetTaskCompletedWithVariables,
+  mockGetTaskClaimedWithVariables,
+  useTask,
+};

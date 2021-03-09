@@ -31,11 +31,14 @@ const Container = styled.div`
   display: grid;
   height: 100%;
   grid-template-rows: auto 1fr;
+  position: relative;
 `;
 
 const LoadingOverlay = styled(OriginalLoadingOverlay)`
   align-items: flex-start;
   padding-top: 12.5%;
+  position: absolute;
+  z-index: 2; // TODO - Remove on issue #676
 `;
 
 export {Footer, Form, Container, LoadingOverlay};

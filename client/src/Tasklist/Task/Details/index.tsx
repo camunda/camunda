@@ -8,11 +8,7 @@ import {useQuery, useMutation} from '@apollo/client';
 import {useParams} from 'react-router-dom';
 import * as React from 'react';
 
-import {
-  GET_TASK_DETAILS,
-  GetTaskDetails,
-  TaskDetailsQueryVariables,
-} from 'modules/queries/get-task-details';
+import {GetTask, useTask} from 'modules/queries/get-task';
 import {CLAIM_TASK, ClaimTaskVariables} from 'modules/mutations/claim-task';
 import {
   UNCLAIM_TASK,
@@ -65,29 +61,26 @@ const Details: React.FC = () => {
   });
   const currentTaskCount = dataFromCache?.tasks?.length ?? 0;
 
-  const [claimTask] = useMutation<GetTaskDetails, ClaimTaskVariables>(
-    CLAIM_TASK,
-    {
-      variables: {id},
-      refetchQueries: [
-        {
-          query: GET_TASKS,
-          variables: {
-            ...getQueryVariables(filter, {
-              username: userData?.currentUser.username,
-              pageSize:
-                currentTaskCount <= MAX_TASKS_PER_REQUEST
-                  ? MAX_TASKS_PER_REQUEST
-                  : MAX_TASKS_DISPLAYED,
-              searchAfterOrEqual: getSortValues(dataFromCache?.tasks),
-            }),
-          },
+  const [claimTask] = useMutation<GetTask, ClaimTaskVariables>(CLAIM_TASK, {
+    variables: {id},
+    refetchQueries: [
+      {
+        query: GET_TASKS,
+        variables: {
+          ...getQueryVariables(filter, {
+            username: userData?.currentUser.username,
+            pageSize:
+              currentTaskCount <= MAX_TASKS_PER_REQUEST
+                ? MAX_TASKS_PER_REQUEST
+                : MAX_TASKS_DISPLAYED,
+            searchAfterOrEqual: getSortValues(dataFromCache?.tasks),
+          }),
         },
-      ],
-    },
-  );
+      },
+    ],
+  });
 
-  const [unclaimTask] = useMutation<GetTaskDetails, UnclaimTaskVariables>(
+  const [unclaimTask] = useMutation<GetTask, UnclaimTaskVariables>(
     UNCLAIM_TASK,
     {
       variables: {id},
@@ -109,16 +102,11 @@ const Details: React.FC = () => {
     },
   );
 
-  const {data, loading, fetchMore} = useQuery<
-    GetTaskDetails,
-    TaskDetailsQueryVariables
-  >(GET_TASK_DETAILS, {
-    variables: {id},
-  });
+  const {data, fetchMore} = useTask(id);
 
   const notifications = useNotifications();
 
-  if (loading || data === undefined) {
+  if (data === undefined) {
     return null;
   }
 
