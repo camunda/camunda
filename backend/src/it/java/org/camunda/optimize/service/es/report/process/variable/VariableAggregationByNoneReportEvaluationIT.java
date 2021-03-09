@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -194,6 +195,9 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
     // then
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(3L);
+    assertThat(evaluationResponse.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(aggregationType);
     assertThat(evaluationResponse.getFirstMeasureData()).isEqualTo(expectedResult);
   }
 
