@@ -156,6 +156,9 @@ public final class EventAppliers implements EventApplier {
     register(
         IncidentIntent.CREATED,
         new IncidentCreatedApplier(state.getIncidentState(), state.getJobState()));
+    register(
+        IncidentIntent.RESOLVED,
+        new IncidentResolvedApplier(state.getIncidentState(), state.getJobState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

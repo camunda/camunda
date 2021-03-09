@@ -11,7 +11,6 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -85,20 +84,6 @@ final class ProcessInstanceElementActivatingApplier
         }
       }
     }
-
-    // We store the record to use it on resolving the incident, which is no longer used after
-    // migrating the incident processor.
-    // In order to migrate the other processors we need to write the record in an event applier.
-    // The
-    // record is removed in the ACTIVATED again
-    // (which happens either after resolving or immediately)
-    // todo: we need to remove it later
-    elementInstanceState.storeRecord(
-        elementInstanceKey,
-        value.getFlowScopeKey(),
-        value,
-        ProcessInstanceIntent.ACTIVATE_ELEMENT,
-        Purpose.FAILED);
   }
 
   private boolean isNonInterruptingEventSubprocess(

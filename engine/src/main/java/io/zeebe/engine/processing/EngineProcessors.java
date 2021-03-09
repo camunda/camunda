@@ -170,7 +170,8 @@ public final class EngineProcessors {
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers) {
-    IncidentEventProcessors.addProcessors(typedRecordProcessors, zeebeState, bpmnStreamProcessor);
+    IncidentEventProcessors.addProcessors(
+        typedRecordProcessors, zeebeState, bpmnStreamProcessor, writers);
   }
 
   private static void addJobProcessors(

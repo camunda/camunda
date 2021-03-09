@@ -168,45 +168,6 @@ public final class ErrorEventIncidentTest {
   }
 
   @Test
-  public void shouldResolveIncident() {
-    // given
-    ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_PROCESS).deploy();
-
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    final var jobEvent =
-        ENGINE
-            .job()
-            .ofInstance(processInstanceKey)
-            .withType(JOB_TYPE)
-            .withErrorCode("other-error")
-            .throwError();
-
-    final Record<IncidentRecordValue> incidentEvent =
-        RecordingExporter.incidentRecords()
-            .withIntent(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    // when
-    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
-
-    // then
-    assertThat(ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys())
-        .doesNotContain(jobEvent.getKey());
-
-    assertThat(
-            RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(5))
-        .extracting(Record::getIntent)
-        .containsExactly(
-            IncidentIntent.CREATE,
-            IncidentIntent.CREATED,
-            IncidentIntent.RESOLVED,
-            IncidentIntent.CREATE,
-            IncidentIntent.CREATED);
-  }
-
-  @Test
   public void shouldResolveIncidentWhenTerminatingScope() {
     // given
     ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_PROCESS).deploy();

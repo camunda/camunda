@@ -11,7 +11,10 @@ import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.bpmn.random.AbstractExecutionStep;
+import io.zeebe.test.util.bpmn.random.blocks.ExclusiveGatewayBlockBuilder.StepExpressionIncidentCase;
 import io.zeebe.test.util.bpmn.random.blocks.ExclusiveGatewayBlockBuilder.StepPickConditionCase;
 import io.zeebe.test.util.bpmn.random.blocks.ExclusiveGatewayBlockBuilder.StepPickDefaultCase;
 import io.zeebe.test.util.bpmn.random.blocks.IntermediateMessageCatchEventBlockBuilder;
@@ -24,6 +27,7 @@ import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivat
 import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateJobAndThrowError;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.Map;
 
 /** This class executes individual {@link AbstractExecutionStep} for a given process */
 public class ProcessExecutor {
@@ -66,6 +70,9 @@ public class ProcessExecutor {
        *
        * One thing that might be a useful addition here is to wait until a certain path was taken to improve debugging
        */
+    } else if (step instanceof StepExpressionIncidentCase) {
+      final var expressionIncident = (StepExpressionIncidentCase) step;
+      resolveExpressionIncident(expressionIncident);
     } else {
       throw new IllegalStateException("Not yet implemented: " + step);
     }
@@ -211,5 +218,33 @@ public class ProcessExecutor {
         .ofBpmnProcessId(startProcess.getProcessId())
         .withVariables(startProcess.getVariables())
         .create();
+  }
+
+  private void resolveExpressionIncident(final StepExpressionIncidentCase expressionIncident) {
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withElementId(expressionIncident.getGatewayElementId())
+            .findFirst()
+            .get();
+
+    engineRule
+        .variables()
+        .ofScope(incident.getValue().getProcessInstanceKey())
+        .withDocument(
+            MsgPackUtil.asMsgPack(
+                Map.of(
+                    expressionIncident.getGatewayConditionVariable(),
+                    expressionIncident.getEdgeId())))
+        .withUpdateSemantic(VariableDocumentUpdateSemantic.LOCAL)
+        .update();
+
+    engineRule
+        .incident()
+        .ofInstance(incident.getValue().getProcessInstanceKey())
+        .withKey(incident.getKey())
+        .resolve();
+    RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
+        .withElementId(expressionIncident.getGatewayElementId())
+        .await();
   }
 }
