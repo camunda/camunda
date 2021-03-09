@@ -22,4 +22,9 @@
     <differenceType>7012</differenceType>
     <method>io.zeebe.client.api.worker.JobWorkerBuilderStep1$JobWorkerBuilderStep3 backoffSupplier(io.zeebe.client.api.worker.BackoffSupplier)</method>
   </difference>
+  <difference>
+    <className>io/zeebe/client/ZeebeClient</className>
+    <differenceType>7012</differenceType>
+    <method>io.zeebe.client.ZeebeClientCloudBuilderStep1 newCloudClientBuilder()</method>
+  </difference>
 </differences>
