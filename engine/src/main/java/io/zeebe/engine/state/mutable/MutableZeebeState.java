@@ -11,10 +11,10 @@ import io.zeebe.db.DbKey;
 import io.zeebe.db.DbValue;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.immutable.ImmutableZeebeState;
+import io.zeebe.engine.state.ZeebeState;
 import java.util.function.BiConsumer;
 
-public interface MutableZeebeState extends ImmutableZeebeState {
+public interface MutableZeebeState extends ZeebeState {
 
   @Override
   MutableDeploymentState getDeploymentState();
