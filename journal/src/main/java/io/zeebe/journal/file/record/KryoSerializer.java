@@ -15,34 +15,78 @@
  */
 package io.zeebe.journal.file.record;
 
-import com.esotericsoftware.kryo.KryoException;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
-import io.zeebe.journal.JournalRecord;
 import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class KryoSerializer implements JournalRecordBufferWriter, JournalRecordBufferReader {
+/**
+ * The serializer that writes and reads a journal record according to the SBE schema defined. A
+ * journal record consists of two parts - a metadata and an indexed record.
+ *
+ * <p>Metadata consists of the checksum and the length of the record. The record consists of index,
+ * asqn and the data.
+ */
+public final class KryoSerializer implements JournalRecordSerializer {
   private static final Namespace NAMESPACE =
       new Namespace.Builder()
           .register(Namespaces.BASIC)
           .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-          .register(PersistedJournalRecord.class)
+          .register(RecordData.class)
           .register(UnsafeBuffer.class)
           .name("Journal")
           .build();
 
-  public JournalRecord read(final ByteBuffer buffer) {
-    return NAMESPACE.deserialize(buffer);
-  }
-
-  public void write(final JournalRecord record, final ByteBuffer buffer) {
-    try {
-      NAMESPACE.serialize(record, buffer);
-    } catch (final KryoException e) {
-      // Happens when there is not enough space left in the buffer
+  @Override
+  public int writeData(
+      final RecordData record, final MutableDirectBuffer buffer, final int offset) {
+    final var serializedBytes = NAMESPACE.serialize(record);
+    if (offset + serializedBytes.length > buffer.capacity()) {
       throw new BufferOverflowException();
     }
+    buffer.putBytes(offset, serializedBytes);
+    return serializedBytes.length;
+  }
+
+  @Override
+  public int writeMetadata(
+      final RecordMetadata metadata, final MutableDirectBuffer buffer, final int offset) {
+    buffer.putLong(offset, metadata.checksum());
+    buffer.putInt(offset + Long.BYTES, metadata.length());
+    return Long.BYTES + Integer.BYTES;
+  }
+
+  @Override
+  public int getMetadataLength() {
+    return Long.BYTES + Integer.BYTES;
+  }
+
+  @Override
+  public boolean hasMetadata(final DirectBuffer buffer, final int offset) {
+    return buffer.getLong(offset) > 0 && buffer.getInt(offset + Long.BYTES) > 0;
+  }
+
+  @Override
+  public RecordMetadata readMetadata(final DirectBuffer buffer, final int offset) {
+    final long checksum = buffer.getLong(offset);
+    final int length = buffer.getInt(offset + Long.BYTES);
+    if (!(checksum > 0 && length > 0)) {
+      throw new InvalidRecordException("No valid metadata exists. Cannot read buffer.");
+    }
+    return new RecordMetadata(checksum, length);
+  }
+
+  @Override
+  public RecordData readData(final DirectBuffer buffer, final int offset, final int length) {
+    final byte[] bufferToRead = new byte[length];
+    buffer.getBytes(offset, bufferToRead);
+    return NAMESPACE.deserialize(bufferToRead);
+  }
+
+  @Override
+  public int getMetadataLength(final DirectBuffer buffer, final int offset) {
+    return getMetadataLength();
   }
 }

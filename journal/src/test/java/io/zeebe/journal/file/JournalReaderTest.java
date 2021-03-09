@@ -18,11 +18,8 @@ package io.zeebe.journal.file;
 import static io.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.utils.serializer.Namespace;
-import io.atomix.utils.serializer.Namespaces;
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
-import io.zeebe.journal.file.record.PersistedJournalRecord;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -35,18 +32,8 @@ import org.junit.jupiter.api.io.TempDir;
 class JournalReaderTest {
 
   private static final int ENTRIES = 4;
-  private final Namespace namespace =
-      new Namespace.Builder()
-          .register(Namespaces.BASIC)
-          .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-          .register(PersistedJournalRecord.class)
-          .register(UnsafeBuffer.class)
-          .name("Journal")
-          .build();
+
   private final DirectBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
-  private final int entrySize =
-      namespace.serialize(new PersistedJournalRecord(1, 1, Integer.MAX_VALUE, data)).length
-          + Integer.BYTES;
   private JournalReader reader;
   private SegmentedJournal journal;
 
@@ -55,12 +42,7 @@ class JournalReaderTest {
     final File directory = tempDir.resolve("data").toFile();
 
     journal =
-        SegmentedJournal.builder()
-            .withDirectory(directory)
-            .withMaxSegmentSize(entrySize * ENTRIES / 2 + JournalSegmentDescriptor.BYTES)
-            .withMaxEntrySize(entrySize)
-            .withJournalIndexDensity(5)
-            .build();
+        SegmentedJournal.builder().withDirectory(directory).withJournalIndexDensity(5).build();
     reader = journal.openReader();
   }
 
@@ -268,7 +250,7 @@ class JournalReaderTest {
 
     // when
     journal.deleteUntil(3);
-    final long nextIndex = reader.seek(1);
+    final long nextIndex = reader.seek(3);
 
     // then
     assertThat(nextIndex).isEqualTo(3);

@@ -34,7 +34,6 @@ class JournalSegment implements AutoCloseable {
 
   private final JournalSegmentFile file;
   private final JournalSegmentDescriptor descriptor;
-  private final int maxEntrySize;
   private final JournalIndex index;
   private final MappedJournalSegmentWriter writer;
   private final Set<MappedJournalSegmentReader> readers = Sets.newConcurrentHashSet();
@@ -47,7 +46,6 @@ class JournalSegment implements AutoCloseable {
       final JournalIndex journalIndex) {
     this.file = file;
     this.descriptor = descriptor;
-    this.maxEntrySize = maxEntrySize;
     index = journalIndex;
     writer = createWriter(file, maxEntrySize);
   }
@@ -141,7 +139,7 @@ class JournalSegment implements AutoCloseable {
    */
   MappedJournalSegmentReader createReader() {
     checkOpen();
-    return new MappedJournalSegmentReader(file, this, maxEntrySize, index);
+    return new MappedJournalSegmentReader(file, this, index);
   }
 
   private MappedJournalSegmentWriter createWriter(

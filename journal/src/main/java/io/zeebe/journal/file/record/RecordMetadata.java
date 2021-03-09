@@ -15,17 +15,26 @@
  */
 package io.zeebe.journal.file.record;
 
-import io.zeebe.journal.JournalRecord;
-import java.nio.ByteBuffer;
+public final class RecordMetadata {
 
-public interface JournalRecordBufferWriter {
+  private final long checksum;
+  private final int length;
 
-  /**
-   * Writes a {@link JournalRecord} to the buffer at it's current position ({@code
-   * buffer.position()})
-   *
-   * @param record to write
-   * @param buffer to which the record will be written
-   */
-  void write(JournalRecord record, ByteBuffer buffer);
+  public RecordMetadata(final long checksum, final int recordLength) {
+    this.checksum = checksum;
+    length = recordLength;
+  }
+
+  public long checksum() {
+    return checksum;
+  }
+
+  public int length() {
+    return length;
+  }
+
+  @Override
+  public String toString() {
+    return "RecordMetadata{" + "checksum=" + checksum + ", length=" + length + '}';
+  }
 }
