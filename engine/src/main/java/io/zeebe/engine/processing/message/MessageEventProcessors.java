@@ -70,8 +70,8 @@ public final class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.REJECT,
-            new RejectMessageCorrelationProcessor(
-                messageState, subscriptionState, subscriptionCommandSender))
+            new MessageSubscriptionRejectProcessor(
+                messageState, subscriptionState, subscriptionCommandSender, writers))
         .onCommand(
             ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
             MessageStartEventSubscriptionIntent.OPEN,
