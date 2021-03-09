@@ -9,6 +9,7 @@ package io.zeebe.engine.state;
 
 import io.zeebe.db.DbKey;
 import io.zeebe.db.DbValue;
+import io.zeebe.engine.state.immutable.ImmutableZeebeState;
 import io.zeebe.engine.state.mutable.MutableBlackListState;
 import io.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -24,39 +25,48 @@ import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
 import java.util.function.BiConsumer;
 
-public interface ZeebeState {
+public interface ZeebeState extends ImmutableZeebeState {
 
+  @Override
   MutableDeploymentState getDeploymentState();
 
+  @Override
   MutableProcessState getProcessState();
 
+  @Override
   MutableJobState getJobState();
 
+  @Override
   MutableMessageState getMessageState();
 
+  @Override
   MutableMessageSubscriptionState getMessageSubscriptionState();
 
+  @Override
   MutableMessageStartEventSubscriptionState getMessageStartEventSubscriptionState();
 
+  @Override
   MutableProcessInstanceSubscriptionState getProcessInstanceSubscriptionState();
 
+  @Override
   MutableIncidentState getIncidentState();
 
-  KeyGenerator getKeyGenerator();
-
+  @Override
   MutableBlackListState getBlackListState();
 
+  @Override
   MutableVariableState getVariableState();
 
+  @Override
   MutableTimerInstanceState getTimerState();
 
+  @Override
   MutableElementInstanceState getElementInstanceState();
 
+  @Override
   MutableEventScopeInstanceState getEventScopeInstanceState();
 
-  int getPartitionId();
-
-  boolean isEmpty(final ZbColumnFamilies column);
+  KeyGenerator getKeyGenerator();
 
   /**
    * Iterates over all entries for a given column family and presents each entry to the consumer.
