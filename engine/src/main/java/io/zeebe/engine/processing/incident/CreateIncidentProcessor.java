@@ -29,10 +29,14 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
   private static final String NO_FAILED_JOB_MESSAGE =
       "Expected to create incident for failed job with key '%d', but no such job was found";
 
-  private final ZeebeState zeebeState;
+  private final ElementInstanceState elementInstanceState;
+  private final JobState jobState;
+  private final IncidentState incidentState;
 
   public CreateIncidentProcessor(final ZeebeState zeebeState) {
-    this.zeebeState = zeebeState;
+    jobState = zeebeState.getJobState();
+    elementInstanceState = zeebeState.getElementInstanceState();
+    incidentState = zeebeState.getIncidentState();
   }
 
   @Override
@@ -41,51 +45,52 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
       final CommandControl<IncidentRecord> commandControl) {
     final IncidentRecord incidentEvent = command.getValue();
 
-    final boolean incidentIsNotRejected = !rejectIncidentCreation(incidentEvent, commandControl);
+    final boolean incidentIsNotRejected = !tryRejectIncidentCreation(incidentEvent, commandControl);
 
     if (incidentIsNotRejected) {
-      final long incidentKey = commandControl.accept(IncidentIntent.CREATED, incidentEvent);
-      zeebeState.getIncidentState().createIncident(incidentKey, incidentEvent);
+      commandControl.accept(IncidentIntent.CREATED, incidentEvent);
     }
 
     return true;
   }
 
-  public boolean rejectIncidentCreation(
+  /** @return true if rejected, otherwise false */
+  public boolean tryRejectIncidentCreation(
       final IncidentRecord incidentEvent, final CommandControl<IncidentRecord> commandControl) {
-    final IncidentState incidentState = zeebeState.getIncidentState();
 
     final boolean isJobIncident = incidentState.isJobIncident(incidentEvent);
 
     if (isJobIncident) {
-      return rejectJobIncident(incidentEvent.getJobKey(), commandControl);
+      return tryRejectJobIncident(incidentEvent.getJobKey(), commandControl);
     } else {
-      return rejectWorkflowInstanceIncident(incidentEvent.getElementInstanceKey(), commandControl);
+      return tryRejectWorkflowInstanceIncident(
+          incidentEvent.getElementInstanceKey(), commandControl);
     }
   }
 
-  private boolean rejectJobIncident(
+  /** @return true if rejected, otherwise false */
+  private boolean tryRejectJobIncident(
       final long jobKey, final CommandControl<IncidentRecord> commandControl) {
-    final JobState state = zeebeState.getJobState();
-    final JobState.State jobState = state.getState(jobKey);
 
-    if (jobState == State.NOT_FOUND) {
+    final JobState.State currentJobState = jobState.getState(jobKey);
+
+    if (currentJobState == State.NOT_FOUND) {
       commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_FAILED_JOB_MESSAGE, jobKey));
       return true;
 
-    } else if (jobState != State.FAILED && jobState != State.ERROR_THROWN) {
+    } else if (currentJobState != State.FAILED && currentJobState != State.ERROR_THROWN) {
       commandControl.reject(
-          RejectionType.INVALID_STATE, String.format(INVALID_JOB_STATE_MESSAGE, jobKey, jobState));
+          RejectionType.INVALID_STATE,
+          String.format(INVALID_JOB_STATE_MESSAGE, jobKey, currentJobState));
       return true;
     }
 
     return false;
   }
 
-  private boolean rejectWorkflowInstanceIncident(
+  /** @return true if rejected, otherwise false */
+  private boolean tryRejectWorkflowInstanceIncident(
       final long elementInstanceKey, final CommandControl<IncidentRecord> commandControl) {
-    final ElementInstanceState elementInstanceState = zeebeState.getElementInstanceState();
-
     final IndexedRecord failedRecord = elementInstanceState.getFailedRecord(elementInstanceKey);
     final boolean noFailedRecord = failedRecord == null;
     if (noFailedRecord) {
