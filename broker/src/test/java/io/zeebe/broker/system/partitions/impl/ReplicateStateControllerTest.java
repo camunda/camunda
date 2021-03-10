@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.zip.CRC32;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
@@ -71,7 +72,10 @@ public final class ReplicateStateControllerTest {
             senderFactory.getReceivableSnapshotStore(1),
             senderRoot.resolve("runtime"),
             replicator,
-            l -> Optional.of(new TestIndexedRaftLogEntry(l, 1, new ApplicationEntry(1, 10, null))),
+            l ->
+                Optional.of(
+                    new TestIndexedRaftLogEntry(
+                        l, 1, new ApplicationEntry(1, 10, new UnsafeBuffer()))),
             db -> Long.MAX_VALUE);
     senderStore.addSnapshotListener(replicatorSnapshotController);
 
@@ -83,7 +87,10 @@ public final class ReplicateStateControllerTest {
             receiverStore,
             receiverRoot.resolve("runtime"),
             replicator,
-            l -> Optional.of(new TestIndexedRaftLogEntry(l, 1, new ApplicationEntry(1, 10, null))),
+            l ->
+                Optional.of(
+                    new TestIndexedRaftLogEntry(
+                        l, 1, new ApplicationEntry(1, 10, new UnsafeBuffer()))),
             db -> Long.MAX_VALUE);
     receiverStore.addSnapshotListener(receiverSnapshotController);
 
