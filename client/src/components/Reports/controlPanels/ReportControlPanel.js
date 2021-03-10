@@ -280,8 +280,19 @@ export default withErrorHandling(
                   disabled={!data.processDefinitionKey}
                   onChange={(newValue) => this.updateReport('view', newValue)}
                 />
+                {data.view?.entity === 'variable' && (
+                  <AggregationType report={data} onChange={this.props.updateReport} />
+                )}
               </li>
-              {shouldDisplayMeasure && <Measure report={data} updateReport={this.updateReport} />}
+              {shouldDisplayMeasure && (
+                <Measure
+                  report={data}
+                  updateMeasure={(newMeasures) =>
+                    this.updateReport('view', {...data.view, properties: newMeasures})
+                  }
+                  updateAggregation={this.props.updateReport}
+                />
+              )}
               <li className="select">
                 <span className="label">{t(`report.groupBy.label`)}</span>
                 <ReportSelect
@@ -295,7 +306,6 @@ export default withErrorHandling(
                   previous={[data.view]}
                 />
               </li>
-              <AggregationType report={this.props.report} onChange={this.props.updateReport} />
               <UserTaskDurationTime report={this.props.report} onChange={this.props.updateReport} />
               <DistributedBy report={this.props.report} onChange={this.props.updateReport} />
               {isDurationHeatmap(data) && (

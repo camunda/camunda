@@ -1,41 +1,60 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should render an aggregation selection for duration reports 1`] = `
-<li
+<Popover
   className="AggregationType"
+  title={
+    <React.Fragment>
+      <span
+        className="content"
+      >
+        Med
+      </span>
+      <Icon
+        className="editIcon"
+        type="edit"
+      />
+    </React.Fragment>
+  }
 >
-  <span
-    className="label"
+  <h4>
+    Duration aggregations
+  </h4>
+  <Form
+    compact={true}
   >
-    Aggregation
-  </span>
-  <Select
-    className="ReportSelect"
-    onChange={[Function]}
-    value="median"
-  >
-    <Option
-      value="min"
-    >
-      Minimum
-    </Option>
-    <Option
-      value="avg"
-    >
-      Average
-    </Option>
-    <Option
-      value="median"
-    >
-      Median
-    </Option>
-    <Option
-      value="max"
-    >
-      Maximum
-    </Option>
-  </Select>
-</li>
+    <fieldset>
+      <Switch
+        checked={false}
+        disabled={false}
+        key="min"
+        label="Minimum"
+        onChange={[Function]}
+      />
+      <Switch
+        checked={false}
+        disabled={false}
+        key="avg"
+        label="Average"
+        onChange={[Function]}
+      />
+      <Switch
+        checked={true}
+        disabled={true}
+        key="median"
+        label="Median"
+        onChange={[Function]}
+      />
+      <Switch
+        checked={false}
+        disabled={false}
+        key="max"
+        label="Maximum"
+        onChange={[Function]}
+      />
+    </fieldset>
+  </Form>
+</Popover>
 `;
 
 exports[`should render nothing if the current result is no duration and the view is not variable 1`] = `""`;

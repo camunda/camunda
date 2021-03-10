@@ -2,9 +2,17 @@
   .SelectionPreview {
     border: 1px solid var(--silver-darken-80);
     background-color: var(--silver-base-97);
-    width: 180px;
+    flex: 0 1 187px;
     height: 32px;
     position: relative;
+
+    >span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: calc(100% - 32px);
+    }
+
 
     .Button {
       position: absolute;
@@ -15,5 +23,17 @@
         border-bottom: 1px solid var(--silver-darken-80);
       }
     }
+
+    &:not(:last-child) {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+  }
+
+  .Select .activateButton {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

@@ -20,7 +20,7 @@ export default function NumberConfig({report, onChange}) {
   const countOperation = view.properties.includes('frequency') || view.entity === 'variable';
   const goalSet = targetValue.active;
 
-  const isMultiMeasure = view.properties.length > 1;
+  const isMultiMeasure = view.properties.length > 1 || configuration.aggregationTypes.length > 1;
 
   return (
     <div className="NumberConfig">

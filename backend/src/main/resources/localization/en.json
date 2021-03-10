@@ -439,12 +439,13 @@
         "evaluation": "Show Evaluation Count"
       },
       "aggregation": {
-        "legend": "Aggregation",
+        "durationLegend": "Duration aggregations",
+        "variableLegend": "Variable aggregations",
         "sum": "Sum",
-        "minimum": "Minimum",
-        "average": "Average",
+        "min": "Minimum",
+        "avg": "Average",
         "median": "Median",
-        "maximum": "Maximum"
+        "max": "Maximum"
       },
       "aggregationShort": {
         "sum": "Sum",

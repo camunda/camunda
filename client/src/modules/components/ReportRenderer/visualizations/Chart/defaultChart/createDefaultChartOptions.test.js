@@ -63,7 +63,7 @@ it('should create bar options', () => {
   expect(
     createBarOptions({
       configuration: {},
-      isMultiMeasure: false,
+      measures: [{property: 'frequency', data: []}],
     })
   ).toMatchSnapshot();
 });

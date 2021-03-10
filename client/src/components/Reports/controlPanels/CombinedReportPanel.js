@@ -40,6 +40,7 @@ export default withRouter(
           acceptedVisualizations.includes(report.data.visualization) &&
           report.data.distributedBy.type === 'none' &&
           report.data.view.properties.length === 1 &&
+          report.data.configuration.aggregationTypes.length === 1 &&
           report.data.view.properties[0] !== 'rawData'
       );
 

@@ -22,6 +22,30 @@ export default function createDefaultChartData(props) {
   const selectedView = config.findSelectedOption(config.options.view, 'data', data.view);
   const viewString = t('report.view.' + selectedView.key.split('_')[0]);
 
+  function getAxisIdx({property}) {
+    if (measures.every(({property}) => property === measures[0].property)) {
+      // if every measure has the same prop, there is only one axis
+      return 0;
+    }
+    return property === 'frequency' ? 0 : 1;
+  }
+
+  function getLabel({property, aggregationType}) {
+    return (
+      viewString +
+      ' ' +
+      t('report.view.' + (property === 'frequency' ? 'count' : 'duration')) +
+      (aggregationType ? ` - ${t('report.config.aggregation.' + aggregationType)}` : '')
+    );
+  }
+
+  function getShortLabel({property, aggregationType}) {
+    return (
+      t('report.view.' + (property === 'frequency' ? 'count' : 'duration')) +
+      (aggregationType ? ` - ${t('report.config.aggregationShort.' + aggregationType)}` : '')
+    );
+  }
+
   measures.forEach((measure, idx) => {
     const {
       labels: measureLabels,
@@ -33,11 +57,11 @@ export default function createDefaultChartData(props) {
     } = extractDefaultChartData(props, idx);
 
     datasets.push({
-      yAxisID: 'axis-' + idx,
-      label: `${viewString} ${t(
-        'report.view.' + (measure.property === 'frequency' ? 'count' : 'duration')
-      )}`,
+      yAxisID: 'axis-' + getAxisIdx(measure),
+      label: getLabel(measure),
+      shortLabel: getShortLabel(measure),
       data: formattedResult.map(({value}) => value),
+      formatter: formatters[measure.property],
       ...createDatasetOptions({
         type: visualization,
         data: formattedResult,

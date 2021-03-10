@@ -6,35 +6,115 @@
 
 import React from 'react';
 
-import {Select} from 'components';
+import {Popover, Icon, Form, Switch} from 'components';
 import {t} from 'translation';
-import {isDurationReport} from 'services';
+
+import './AggregationType.scss';
+
+const aggregationOrder = ['sum', 'min', 'avg', 'median', 'max'];
 
 export default function AggregationType({report, onChange}) {
-  const {data} = report;
+  const {aggregationTypes} = report.configuration;
 
-  const isVariableReport = data?.view?.entity === 'variable';
+  const isDurationReport = report?.view?.properties.includes('duration');
+  const isVariableReport = report?.view?.entity === 'variable';
 
-  if (isDurationReport(report) || isVariableReport) {
+  function isLastAggregation(type) {
+    return aggregationTypes.length === 1 && aggregationTypes[0] === type;
+  }
+
+  function hasAggregation(type) {
+    return aggregationTypes.includes(type);
+  }
+
+  function addAggregation(type) {
+    const newAggregations = [...aggregationTypes, type].sort(
+      (a, b) => aggregationOrder.indexOf(a) - aggregationOrder.indexOf(b)
+    );
+
+    return onChange(
+      {
+        configuration: {
+          aggregationTypes: {
+            $set: newAggregations,
+          },
+          aggregationType: {$set: newAggregations[0]},
+          targetValue: {active: {$set: false}},
+        },
+        distributedBy: {$set: {type: 'none', value: null}},
+      },
+      true
+    );
+  }
+
+  function removeAggregation(type) {
+    const remainingAggregations = aggregationTypes.filter((existingType) => existingType !== type);
+    return onChange(
+      {
+        configuration: {
+          aggregationTypes: {
+            $set: remainingAggregations,
+          },
+          aggregationType: {$set: remainingAggregations[0]},
+        },
+      },
+      true
+    );
+  }
+
+  if (isDurationReport || isVariableReport) {
+    const availableAggregations = [];
+    if (isVariableReport) {
+      availableAggregations.push('sum');
+    }
+    availableAggregations.push('min', 'avg');
+    if (!report.configuration.processPart) {
+      availableAggregations.push('median');
+    }
+    availableAggregations.push('max');
+
+    let popoverTitle = t('report.config.aggregationShort.' + aggregationTypes[0]);
+    if (availableAggregations.every(hasAggregation)) {
+      popoverTitle = 'All';
+    } else if (aggregationTypes.length > 1) {
+      popoverTitle = 'Multi';
+    }
+
     return (
-      <li className="AggregationType">
-        <span className="label">{t('report.config.aggregation.legend')}</span>
-        <Select
-          className="ReportSelect"
-          value={data.configuration.aggregationType}
-          onChange={(value) => onChange({configuration: {aggregationType: {$set: value}}}, true)}
-        >
-          {isVariableReport && (
-            <Select.Option value="sum">{t('report.config.aggregation.sum')}</Select.Option>
+      <Popover
+        className="AggregationType"
+        title={
+          <>
+            <span className="content">{popoverTitle}</span>
+            <Icon className="editIcon" type="edit" />
+          </>
+        }
+      >
+        <h4>
+          {t(
+            'report.config.aggregation.' + (isVariableReport ? 'variableLegend' : 'durationLegend')
           )}
-          <Select.Option value="min">{t('report.config.aggregation.minimum')}</Select.Option>
-          <Select.Option value="avg">{t('report.config.aggregation.average')}</Select.Option>
-          {!data.configuration.processPart && (
-            <Select.Option value="median">{t('report.config.aggregation.median')}</Select.Option>
-          )}
-          <Select.Option value="max">{t('report.config.aggregation.maximum')}</Select.Option>
-        </Select>
-      </li>
+        </h4>
+        <Form compact>
+          <fieldset>
+            {availableAggregations.map((type) => (
+              <Switch
+                key={type}
+                label={t('report.config.aggregation.' + type)}
+                checked={hasAggregation(type)}
+                disabled={isLastAggregation(type)}
+                onChange={({target}) => {
+                  if (target.checked) {
+                    addAggregation(type);
+                  } else {
+                    removeAggregation(type);
+                  }
+                }}
+              />
+            ))}
+          </fieldset>
+        </Form>
+      </Popover>
     );
   }
   return null;

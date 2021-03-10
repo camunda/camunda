@@ -60,12 +60,10 @@ export default function processDefaultData({report}) {
         });
       }
     } else if (measure.property === 'duration') {
-      const title =
-        viewString +
-        ': ' +
-        (view.entity === 'incident'
-          ? t('report.view.resolutionDuration')
-          : t('report.view.duration'));
+      const title = `${viewString}: ${
+        view.entity === 'incident' ? t('report.view.resolutionDuration') : t('report.view.duration')
+      } - ${t('report.config.aggregation.' + measure.aggregationType)}`;
+
       head.push({label: title, id: title, sortable: !isMultiMeasure});
       formattedResult.forEach(({value}, idx) => {
         body[idx].push(duration(value));

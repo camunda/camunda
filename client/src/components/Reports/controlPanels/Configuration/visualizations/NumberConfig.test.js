@@ -30,6 +30,7 @@ const props = {
             },
           },
         },
+        aggregationTypes: ['avg'],
       },
     },
   },
@@ -83,8 +84,24 @@ it('should contain a target input for duration property', () => {
 });
 
 it('should not show target input for multi-measure reports', () => {
-  props.report.data.view.properties = ['frequency', 'duration'];
-  const node = shallow(<NumberConfig {...props} />);
+  const node = shallow(
+    <NumberConfig
+      report={update(props.report, {data: {view: {properties: {$set: ['frequency', 'duration']}}}})}
+    />
+  );
+
+  expect(node.find('CountTargetInput')).not.toExist();
+  expect(node.find('DurationTargetInput')).not.toExist();
+});
+
+it('should not show target input for multi-aggregation reports', () => {
+  const node = shallow(
+    <NumberConfig
+      report={update(props.report, {
+        data: {configuration: {aggregationTypes: {$set: ['avg', 'max']}}},
+      })}
+    />
+  );
 
   expect(node.find('CountTargetInput')).not.toExist();
   expect(node.find('DurationTargetInput')).not.toExist();

@@ -1,5 +1,31 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should return correct chart data object for a single report 1`] = `
+Object {
+  "datasets": Array [
+    Object {
+      "backgroundColor": "testColor",
+      "borderColor": "testColor",
+      "borderWidth": 2,
+      "data": Array [
+        123,
+        5,
+      ],
+      "fill": false,
+      "formatter": [Function],
+      "label": "Flow Node Duration - Average",
+      "legendColor": "testColor",
+      "shortLabel": "Duration - Avg",
+      "yAxisID": "axis-0",
+    },
+  ],
+  "labels": Array [
+    "foo",
+    "bar",
+  ],
+}
+`;
+
 exports[`should return correct chart data object for multi-measure report 1`] = `
 Object {
   "datasets": Array [
@@ -12,8 +38,10 @@ Object {
         5,
       ],
       "fill": false,
+      "formatter": [Function],
       "label": "Flow Node Count",
       "legendColor": "#aec7e9",
+      "shortLabel": "Count",
       "yAxisID": "axis-0",
     },
     Object {
@@ -25,8 +53,10 @@ Object {
         592754,
       ],
       "fill": false,
-      "label": "Flow Node Duration",
+      "formatter": [Function],
+      "label": "Flow Node Duration - Average",
       "legendColor": "#f68077",
+      "shortLabel": "Duration - Avg",
       "yAxisID": "axis-1",
     },
   ],

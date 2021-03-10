@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
 import {Button, HeatmapOverlay} from 'components';
-import {formatters, loadRawData, getTooltipText} from 'services';
+import {formatters, loadRawData, getTooltipText, processResult} from 'services';
 
 import {Heatmap} from './Heatmap';
 import {calculateTargetValueHeat} from './service';
@@ -37,6 +37,7 @@ jest.mock('services', () => {
     loadRawData: jest.fn().mockReturnValue({result: {data: [{processInstanceId: 'test'}]}}),
     isDurationReport: jest.fn().mockReturnValue(false),
     getTooltipText: jest.fn(),
+    processResult: jest.fn().mockReturnValue({data: {}}),
   };
 });
 
@@ -66,6 +67,10 @@ const report = {
     instanceCount: 5,
   },
 };
+
+beforeEach(() => {
+  processResult.mockClear();
+});
 
 it('should load the process definition xml', () => {
   const node = shallow(<Heatmap report={report} />);
@@ -300,17 +305,17 @@ describe('multi-measure reports', () => {
   it('should allow switching between heat visualizations for multi-measure reports', () => {
     const node = shallow(<Heatmap report={multiMeasureReport} />);
 
-    expect(formatters.objectifyResult).toHaveBeenCalledWith(
-      multiMeasureReport.result.measures[0].data
+    expect(processResult).toHaveBeenCalledWith(
+      update(multiMeasureReport, {result: {$set: multiMeasureReport.result.measures[0]}})
     );
-    expect(formatters.objectifyResult).not.toHaveBeenCalledWith(
-      multiMeasureReport.result.measures[1].data
+    expect(processResult).not.toHaveBeenCalledWith(
+      update(multiMeasureReport, {result: {$set: multiMeasureReport.result.measures[1]}})
     );
 
     node.find('Select').simulate('change', 1);
 
-    expect(formatters.objectifyResult).toHaveBeenCalledWith(
-      multiMeasureReport.result.measures[1].data
+    expect(processResult).toHaveBeenCalledWith(
+      update(multiMeasureReport, {result: {$set: multiMeasureReport.result.measures[1]}})
     );
   });
 });

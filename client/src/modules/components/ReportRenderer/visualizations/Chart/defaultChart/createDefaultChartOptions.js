@@ -25,8 +25,9 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
   const maxValue = isDuration
     ? Math.max(
         ...result.measures
-          .find(({property}) => property === 'duration')
-          .data.map(({value}) => value)
+          .filter(({property}) => property === 'duration')
+          .map((measure) => measure.data.map(({value}) => value))
+          .flat()
       )
     : 0;
   const isPersistedTooltips = isDuration
@@ -35,7 +36,6 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
 
   const groupedByDurationMaxValue =
     groupBy?.type === 'duration' && Math.max(...result.data.map(({label}) => +label));
-  const isMultiMeasure = result.measures.length > 1;
 
   let options;
   switch (visualization) {
@@ -52,7 +52,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         groupedByDurationMaxValue,
         isDark,
         isPersistedTooltips,
-        isMultiMeasure,
+        measures: result.measures,
         entity: view.entity,
         autoSkip: canBeInterpolated(groupBy, configuration.xml, decisionDefinitionKey),
       });
@@ -63,14 +63,11 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
 
   const tooltipCallbacks = {
     label: (tooltipItem, data) => {
-      return formatTooltip(
-        tooltipItem,
-        data,
-        configuration,
-        formatter,
-        result.instanceCount,
-        isDuration,
-        isMultiMeasure
+      const {shortLabel, formatter} = data.datasets[tooltipItem.datasetIndex];
+      return (
+        shortLabel +
+        ': ' +
+        formatTooltip(tooltipItem, data, configuration, formatter, result.instanceCount, isDuration)
       );
     },
     labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization),
@@ -138,11 +135,14 @@ export function createBarOptions({
   isDark,
   autoSkip,
   isPersistedTooltips,
-  isMultiMeasure,
+  measures = [],
   entity,
   groupedByDurationMaxValue = false,
 }) {
   const targetLine = targetValue && getFormattedTargetValue(targetValue);
+  const hasMultipleAxes = ['frequency', 'duration'].every((prop) =>
+    measures.some(({property}) => property === prop)
+  );
 
   const yAxes = [
     {
@@ -154,7 +154,7 @@ export function createBarOptions({
         labelString: configuration.yLabel,
       },
       ticks: {
-        ...(maxDuration && !isMultiMeasure
+        ...(maxDuration && !hasMultipleAxes
           ? createDurationFormattingOptions(targetLine, maxDuration)
           : {}),
         beginAtZero: true,
@@ -165,7 +165,7 @@ export function createBarOptions({
     },
   ];
 
-  if (isMultiMeasure) {
+  if (hasMultipleAxes) {
     yAxes[0].scaleLabel = {
       display: true,
       labelString: `${t('common.' + entity + '.label')} ${t('report.view.count')}`,
@@ -193,7 +193,7 @@ export function createBarOptions({
   return {
     ...(configuration.pointMarkers === false ? {elements: {point: {radius: 0}}} : {}),
     legend: {
-      display: isMultiMeasure,
+      display: measures.length > 1,
       onClick: (e) => e.stopPropagation(),
     },
     layout: {

@@ -100,25 +100,32 @@
 
     > li {
       margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+
+      > * {
+        width: 100%;
+      }
 
       &.select {
         min-width: 200px;
       }
 
       &.addMeasure {
-        text-align: right;
+        float: right;
       }
 
       > .label {
         color: var(--grey-base-40);
         font-size: 12px;
         display: inline-block;
-        width: 80px;
+        flex: 0 0 80px;
         vertical-align: middle;
       }
 
       > .Select {
-        width: 180px;
+        flex: 0 1 187px;
+        min-width: 0;
 
         .activateButton {
           padding-left: 10px;

@@ -101,11 +101,6 @@ export async function cancel(t) {
   await t.expect(Selector('.edit-button').visible).ok();
 }
 
-export async function selectAggregation(t, type) {
-  await t.click('.AggregationType .Select');
-  await t.click(Selector('.AggregationType .DropdownOption').withText(type));
-}
-
 export async function gotoOverview(t) {
   await t.click(Selector('a').withText('Home'));
 }

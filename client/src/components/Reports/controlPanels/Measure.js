@@ -9,29 +9,30 @@ import React from 'react';
 import {Select, SelectionPreview} from 'components';
 import {t} from 'translation';
 
+import AggregationType from './AggregationType';
+
 import './Measure.scss';
 
-export default function Measure({report, updateReport}) {
+export default function Measure({report, updateMeasure, updateAggregation}) {
   if (report.view.properties?.length === 2) {
     return (
       <>
         <li className="Measure select">
           <span className="label">{t('report.measure')}</span>
-          <SelectionPreview
-            onClick={() => updateReport('view', {...report.view, properties: ['duration']})}
-          >
-            {t('report.view.count')}
+          <SelectionPreview onClick={() => updateMeasure(['duration'])}>
+            <span>{t('report.view.count')}</span>
           </SelectionPreview>
         </li>
         <li className="Measure select">
           <span className="label"></span>
-          <SelectionPreview
-            onClick={() => updateReport('view', {...report.view, properties: ['frequency']})}
-          >
-            {report.view.entity === 'incident'
-              ? t('report.view.resolutionDuration')
-              : t('report.view.duration')}
+          <SelectionPreview onClick={() => updateMeasure(['frequency'])}>
+            <span>
+              {report.view.entity === 'incident'
+                ? t('report.view.resolutionDuration')
+                : t('report.view.duration')}
+            </span>
           </SelectionPreview>
+          <AggregationType report={report} onChange={updateAggregation} />
         </li>
       </>
     );
@@ -41,7 +42,7 @@ export default function Measure({report, updateReport}) {
         <span className="label">{t('report.measure')}</span>
         <Select
           value={report.view.properties[0]}
-          onChange={(property) => updateReport('view', {...report.view, properties: [property]})}
+          onChange={(property) => updateMeasure([property])}
         >
           <Select.Option value="frequency">{t('report.view.count')}</Select.Option>
           <Select.Option value="duration">
@@ -50,6 +51,7 @@ export default function Measure({report, updateReport}) {
               : t('report.view.duration')}
           </Select.Option>
         </Select>
+        <AggregationType report={report} onChange={updateAggregation} />
       </li>
     );
   }

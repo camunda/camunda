@@ -27,8 +27,8 @@ Object {
       "sortable": false,
     },
     Object {
-      "id": "Process Instance: Duration",
-      "label": "Process Instance: Duration",
+      "id": "Process Instance: Duration - Average",
+      "label": "Process Instance: Duration - Average",
       "sortable": false,
     },
   ],

@@ -15,7 +15,7 @@ import {
   HeatmapOverlay,
   Select,
 } from 'components';
-import {loadRawData, formatters, getTooltipText} from 'services';
+import {loadRawData, formatters, getTooltipText, processResult} from 'services';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -49,7 +49,9 @@ export function Heatmap({report, mightFail, context}) {
     return <LoadingIndicator />;
   }
 
-  const resultObj = formatters.objectifyResult(result.measures[selectedMeasure].data);
+  const resultObj = formatters.objectifyResult(
+    processResult({...report, result: result.measures[selectedMeasure]}).data
+  );
 
   let heatmapComponent;
   if (targetValue && targetValue.active && !targetValue.values.target) {

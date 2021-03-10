@@ -100,9 +100,8 @@ export const versionCheckbox = (number) =>
   Selector('.specificVersions input[type="checkbox"]').nth(-number);
 export const tenantPopover = Selector('.TenantPopover');
 export const modalContainer = Selector('.Modal__content-container');
-export const aggregationTypeSelect = Selector('.AggregationType .Select');
-export const aggregationOption = (text) =>
-  Selector('.AggregationType .DropdownOption').withText(text);
+export const aggregationTypeSelect = Selector('.AggregationType');
+export const aggregationOption = (text) => Selector('.AggregationType .Switch').withText(text);
 export const detailsPopoverButton = Selector('.EntityName .Popover .Button');
 export const modalButton = (text) => Selector('.EntityName .modalsButtons .Button').withText(text);
 export const rawDataTable = Selector('.RawDataModal .Table');

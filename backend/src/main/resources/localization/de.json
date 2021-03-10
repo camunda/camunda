@@ -439,12 +439,13 @@
         "evaluation": "Zeige Evaluierungsanzahl"
       },
       "aggregation": {
-        "legend": "Aggregation",
+        "durationLegend": "Daueraggregationen",
+        "variableLegend": "Variablenaggregationen",
         "sum": "Summe",
-        "minimum": "Minimum",
-        "average": "Durchschnitt",
+        "min": "Minimum",
+        "avg": "Durchschnitt",
         "median": "Median",
-        "maximum": "Maximum"
+        "max": "Maximum"
       },
       "aggregationShort": {
         "sum": "Se",

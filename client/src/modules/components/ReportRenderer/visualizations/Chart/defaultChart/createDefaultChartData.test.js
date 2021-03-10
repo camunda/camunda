@@ -10,6 +10,8 @@ it('should return correct chart data object for a single report', () => {
   const result = {
     measures: [
       {
+        property: 'duration',
+        aggregationType: 'avg',
         data: [
           {key: 'foo', value: 123},
           {key: 'bar', value: 5},
@@ -28,7 +30,7 @@ it('should return correct chart data object for a single report', () => {
           type: '',
           value: '',
         },
-        view: {properties: ['frequency'], entity: 'flowNode'},
+        view: {properties: ['duration'], entity: 'flowNode'},
       },
       targetValue: false,
       combined: false,
@@ -37,21 +39,7 @@ it('should return correct chart data object for a single report', () => {
     theme: 'light',
   });
 
-  expect(chartData).toEqual({
-    labels: ['foo', 'bar'],
-    datasets: [
-      {
-        backgroundColor: 'testColor',
-        borderColor: 'testColor',
-        borderWidth: 2,
-        data: [123, 5],
-        fill: false,
-        label: 'Flow Node Duration',
-        legendColor: 'testColor',
-        yAxisID: 'axis-0',
-      },
-    ],
-  });
+  expect(chartData).toMatchSnapshot();
 });
 
 it('should return correct chart data object for multi-measure report', () => {
@@ -80,6 +68,7 @@ it('should return correct chart data object for multi-measure report', () => {
             },
             {
               property: 'duration',
+              aggregationType: 'avg',
               data: [
                 {key: 'foo', value: 175824},
                 {key: 'bar', value: 592754},

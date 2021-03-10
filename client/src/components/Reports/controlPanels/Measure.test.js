@@ -14,11 +14,11 @@ const props = {
   report: {
     view: {entity: 'processInstance', properties: ['frequency']},
   },
-  updateReport: jest.fn(),
+  updateMeasure: jest.fn(),
 };
 
 beforeEach(() => {
-  props.updateReport.mockClear();
+  props.updateMeasure.mockClear();
 });
 
 it('should show SelectionPreviews for multi-measure reports', () => {
@@ -33,7 +33,7 @@ it('should show SelectionPreviews for multi-measure reports', () => {
   expect(node.find('SelectionPreview').length).toBe(2);
 });
 
-it('should call updateReport with correct payload for deleting a measure', () => {
+it('should call updateMeasure with correct payload for deleting a measure', () => {
   const node = shallow(
     <Measure
       {...props}
@@ -43,10 +43,7 @@ it('should call updateReport with correct payload for deleting a measure', () =>
 
   node.find('SelectionPreview').first().simulate('click');
 
-  expect(props.updateReport).toHaveBeenCalledWith('view', {
-    entity: 'processInstance',
-    properties: ['duration'],
-  });
+  expect(props.updateMeasure).toHaveBeenCalledWith(['duration']);
 });
 
 it('should show Select for single-measure reports', () => {
@@ -55,13 +52,10 @@ it('should show Select for single-measure reports', () => {
   expect(node.find('Select')).toExist();
 });
 
-it('should call updateReport with correct payload for switching measures', () => {
+it('should call updateMeasure with correct payload for switching measures', () => {
   const node = shallow(<Measure {...props} />);
 
   node.find('Select').simulate('change', 'duration');
 
-  expect(props.updateReport).toHaveBeenCalledWith('view', {
-    entity: 'processInstance',
-    properties: ['duration'],
-  });
+  expect(props.updateMeasure).toHaveBeenCalledWith(['duration']);
 });

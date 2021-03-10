@@ -5,9 +5,7 @@
  */
 
 import {getColorFor} from './colorsUtils';
-import {getTooltipText, formatters} from 'services';
-
-const {duration, frequency} = formatters;
+import {getTooltipText} from 'services';
 
 export function formatTooltip(
   {index, datasetIndex},
@@ -15,8 +13,7 @@ export function formatTooltip(
   {alwaysShowAbsolute, alwaysShowRelative},
   formatter,
   totalInstanceCount,
-  hideRelative,
-  isMultiMeasure
+  hideRelative
 ) {
   if (datasets[datasetIndex].isTarget) {
     return;
@@ -24,23 +21,12 @@ export function formatTooltip(
 
   return getTooltipText(
     datasets[datasetIndex].data[index],
-    isMultiMeasure ? getFormatterByDatasetIndex(datasetIndex) : formatter,
+    formatter,
     totalInstanceCount,
     alwaysShowAbsolute,
     alwaysShowRelative,
     hideRelative
   );
-}
-
-function getFormatterByDatasetIndex(idx) {
-  switch (idx) {
-    case 0:
-      return frequency;
-    case 1:
-      return duration;
-    default:
-      return frequency;
-  }
 }
 
 export function getTooltipLabelColor(tooltipItem, chart, type) {

@@ -22,6 +22,7 @@ export function DistributedBy({
       view,
       groupBy,
       visualization,
+      configuration,
     },
   },
   onChange,
@@ -47,7 +48,7 @@ export function DistributedBy({
     setVariables,
   ]);
 
-  if (canDistributeData(view, groupBy)) {
+  if (canDistributeData(view, groupBy, configuration)) {
     return (
       <li className="DistributedBy">
         <span className="label">{t('report.config.userTaskDistributedBy')}</span>
@@ -97,12 +98,16 @@ function getValue(distributedBy) {
   return distributedBy.type;
 }
 
-function canDistributeData(view, groupBy) {
+function canDistributeData(view, groupBy, configuration) {
   if (!view || !groupBy) {
     return false;
   }
 
   if (view.properties.length > 1) {
+    return false;
+  }
+
+  if (view.properties.includes('duration') && configuration.aggregationTypes.length > 1) {
     return false;
   }
 

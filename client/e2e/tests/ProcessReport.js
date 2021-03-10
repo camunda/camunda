@@ -473,6 +473,7 @@ test('aggregators', async (t) => {
   await t.takeScreenshot('process/single-report/durationAggregation.png', {fullPage: true});
 
   await t.click(e.aggregationOption('Minimum'));
+  await t.click(e.aggregationOption('Average'));
 
   await t.click(e.configurationButton);
   await t.click(e.limitPrecisionSwitch);
@@ -482,7 +483,9 @@ test('aggregators', async (t) => {
 
   const min = await e.reportNumber.textContent;
 
-  await u.selectAggregation(t, 'Maximum');
+  await t.click(e.aggregationTypeSelect);
+  await t.click(e.aggregationOption('Maximum'));
+  await t.click(e.aggregationOption('Minimum'));
 
   const max = await e.reportNumber.textContent;
 
