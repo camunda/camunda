@@ -11,7 +11,7 @@
     "chart.js": "2.9.4",
     "classnames": "^2.2.6",
     "date-fns": "^2.19.0",
-    "debounce": "^1.2.0",
+    "debounce": "^1.2.1",
     "deep-equal": "^2.0.5",
     "dmn-js": "^10.1.0",
     "fitty": "^2.3.3",
