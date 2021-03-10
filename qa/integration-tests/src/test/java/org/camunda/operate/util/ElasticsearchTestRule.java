@@ -64,8 +64,8 @@ import static org.camunda.operate.util.ThreadUtil.sleepFor;
 public class ElasticsearchTestRule extends TestWatcher {
 
   protected static final Logger logger = LoggerFactory.getLogger(ElasticsearchTestRule.class);
-  
-  // Scroll contexts constants 
+
+  // Scroll contexts constants
   private static final String OPEN_SCROLL_CONTEXT_FIELD = "open_contexts";
   // Path to find search statistics for all indexes
   private static final String PATH_SEARCH_STATISTICS = "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
@@ -158,7 +158,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     operateProperties.getElasticsearch().setIndexPrefix(OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX);
     assertMaxOpenScrollContexts(15);
   }
-  
+
   public void assertMaxOpenScrollContexts(final int maxOpenScrollContexts) {
     assertThat(getOpenScrollcontextSize())
       .describedAs("There are too many open scroll contexts left.")
@@ -222,7 +222,7 @@ public class ElasticsearchTestRule extends TestWatcher {
         if (supplier != null) {
           supplier.get();
         }
-        refreshIndexesInElasticsearch(); 
+        refreshIndexesInElasticsearch();
         shouldImportCount +=  zeebeImporter.performOneRoundOfImportFor(readers);
       } catch (Exception e) {
         logger.error(e.getMessage(), e);
@@ -252,7 +252,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       }
     }
     long finishedTime = System.currentTimeMillis() - start;
-    
+
     if(found) {
       logger.debug("Conditions met in round {} ({} ms).", waitingRound,finishedTime );
     }else {
@@ -279,7 +279,7 @@ public class ElasticsearchTestRule extends TestWatcher {
   private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices) throws IOException {
     GetIndexResponse response = esClient.indices().get(new GetIndexRequest(indexPrefix + "*"), RequestOptions.DEFAULT);
     String[] indices = response.getIndices();
-    return indices != null && indices.length >= minCountOfIndices; 
+    return indices != null && indices.length >= minCountOfIndices;
   }
 
   public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
@@ -326,17 +326,17 @@ public class ElasticsearchTestRule extends TestWatcher {
   public Map<Class<? extends OperateEntity>, String> getEntityToESAliasMap(){
     if (entityToESAliasMap == null) {
       entityToESAliasMap = new HashMap<>();
-      entityToESAliasMap.put(WorkflowEntity.class, workflowIndex.getIndexName());
-      entityToESAliasMap.put(IncidentEntity.class, incidentTemplate.getMainIndexName());
-      entityToESAliasMap.put(WorkflowInstanceForListViewEntity.class, listViewTemplate.getMainIndexName());
-      entityToESAliasMap.put(ActivityInstanceForListViewEntity.class, listViewTemplate.getMainIndexName());
-      entityToESAliasMap.put(VariableForListViewEntity.class, listViewTemplate.getMainIndexName());
-      entityToESAliasMap.put(VariableEntity.class, variableTemplate.getMainIndexName());
-      entityToESAliasMap.put(OperationEntity.class, operationTemplate.getMainIndexName());
-      entityToESAliasMap.put(BatchOperationEntity.class, batchOperationTemplate.getMainIndexName());
+      entityToESAliasMap.put(WorkflowEntity.class, workflowIndex.getFullQualifiedName());
+      entityToESAliasMap.put(IncidentEntity.class, incidentTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(WorkflowInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(ActivityInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(VariableForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(VariableEntity.class, variableTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(OperationEntity.class, operationTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(BatchOperationEntity.class, batchOperationTemplate.getFullQualifiedName());
     }
     return entityToESAliasMap;
-  }  
+  }
 
   public int getOpenScrollcontextSize() {
     return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
@@ -354,7 +354,7 @@ public class ElasticsearchTestRule extends TestWatcher {
   }
 
   public Optional<JsonNode> getJsonFor(final String path) {
-    try {      
+    try {
       ObjectMapper objectMapper = new ObjectMapper();
       Response response = esClient.getLowLevelClient().performRequest(new Request("GET",path));
       return Optional.of(objectMapper.readTree(response.getEntity().getContent()));

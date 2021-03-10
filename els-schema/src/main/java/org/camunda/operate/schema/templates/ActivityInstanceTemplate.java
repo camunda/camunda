@@ -24,7 +24,7 @@ public class ActivityInstanceTemplate extends AbstractTemplateDescriptor impleme
   public static final String SCOPE_KEY = "scopeKey";
 
   @Override
-  public String getIndexNameFormat() {
+  public String getIndexName() {
     return INDEX_NAME;
   }
 

@@ -3,12 +3,15 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate.schema.templates;
 
-public interface WorkflowInstanceDependant {
+package org.camunda.operate.schema;
 
-  String WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
+public interface Versionable {
 
-  String getFullQualifiedName();
+  String DEFAULT_SCHEMA_VERSION = "1.0.0";
+
+  default String getVersion() {
+    return DEFAULT_SCHEMA_VERSION;
+  }
 
 }

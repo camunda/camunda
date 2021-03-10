@@ -1,8 +1,5 @@
 {
 	"order": 30,
-	"index_patterns": [
-		"operate-sequence-flow-${schema.version}_*"
-	],
 	"mappings": {
 		"dynamic": "strict",
 		"dynamic_templates": [
@@ -36,10 +33,6 @@
 			"key": {
 				"type": "long"
 			}
-		}
-	},
-	"aliases": {
-		"operate-sequence-flow-${schema.version}_alias": {
 		}
 	}
 }

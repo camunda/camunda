@@ -27,7 +27,7 @@ public class OperationTemplate extends AbstractTemplateDescriptor implements Wor
   public static final String USERNAME = "username";
 
   @Override
-  public String getIndexNameFormat() {
+  public String getIndexName() {
     return INDEX_NAME;
   }
 

@@ -53,10 +53,10 @@ public class WorkflowZeebeRecordProcessor {
   static {
     STATES.add(DeploymentIntent.CREATED.name());
   }
-  
+
   @Autowired
   private ListViewTemplate listViewTemplate;
-  
+
   @Autowired
   private ElasticsearchManager elasticsearchManager;
 
@@ -95,7 +95,7 @@ public class WorkflowZeebeRecordProcessor {
     try {
       updateFieldsInInstancesFor(workflowEntity, bulkRequest);
 
-      bulkRequest.add(new IndexRequest(workflowIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, ConversionUtils.toStringOrNull(workflowEntity.getKey()))
+      bulkRequest.add(new IndexRequest(workflowIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, ConversionUtils.toStringOrNull(workflowEntity.getKey()))
           .source(objectMapper.writeValueAsString(workflowEntity), XContentType.JSON)
       );
     } catch (JsonProcessingException e) {
@@ -110,7 +110,7 @@ public class WorkflowZeebeRecordProcessor {
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ListViewTemplate.WORKFLOW_NAME, workflowEntity.getName());
       updateFields.put(ListViewTemplate.WORKFLOW_VERSION, workflowEntity.getVersion());
-      UpdateRequest updateRequest = new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceKey.toString())
+      UpdateRequest updateRequest = new UpdateRequest(listViewTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceKey.toString())
           .doc(updateFields)
           .retryOnConflict(UPDATE_RETRY_COUNT);
       bulkRequest.add(updateRequest);

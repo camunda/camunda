@@ -258,7 +258,7 @@ public class EventZeebeRecordProcessor {
         entity.getWorkflowInstanceKey());
 
       //write event
-      bulkRequest.add(new IndexRequest(eventTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+      bulkRequest.add(new IndexRequest(eventTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .source(objectMapper.writeValueAsString(entity), XContentType.JSON));
 
     } catch (JsonProcessingException e) {

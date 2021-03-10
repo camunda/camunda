@@ -18,7 +18,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Configuration
 @ConfigurationProperties(OperateProperties.PREFIX)
-@PropertySource("classpath:operate-version.properties")
 public class OperateProperties {
 
   public static final String PREFIX = "camunda.operate";
@@ -45,9 +44,6 @@ public class OperateProperties {
   private Long batchOperationMaxSize = BATCH_OPERATION_MAX_SIZE_DEFAULT;
 
   private boolean enterprise = false;
-
-  @Value("${camunda.operate.internal.schema.version}")
-  private String schemaVersion;
 
   /**
    * Temporary flag to enable/disable new flow node instances functionality.
@@ -205,14 +201,6 @@ public class OperateProperties {
 
   public void setEnterprise(boolean enterprise) {
     this.enterprise = enterprise;
-  }
-
-  public String getSchemaVersion() {
-    return schemaVersion.toLowerCase();
-  }
-
-  public void setSchemaVersion(String schemaVersion) {
-    this.schemaVersion = schemaVersion;
   }
 
   public boolean isNextFlowNodeInstances() {

@@ -123,7 +123,7 @@ public class BatchOperationPerformanceTest {
   }
 
   private String getOperateAlias(String indexName) {
-    return String.format("%s-%s-%s_alias", operateProperties.getElasticsearch().getIndexPrefix(), indexName, operateProperties.getSchemaVersion());
+    return String.format("%s-%s-*_alias", operateProperties.getElasticsearch().getIndexPrefix(), indexName);
   }
 
   private class BenchmarkingExecutionFinishedListener implements ExecutionFinishedListener {

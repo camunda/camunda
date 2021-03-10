@@ -1,8 +1,5 @@
 {
 	"order": 30,
-	"index_patterns": [
-		"operate-variable-${schema.version}_*"
-	],
 	"mappings": {
 		"dynamic": "strict",
 		"dynamic_templates": [
@@ -43,10 +40,6 @@
 			"key": {
 				"type": "long"
 			}
-		}
-	},
-	"aliases": {
-		"operate-variable-${schema.version}_alias": {
 		}
 	}
 }

@@ -3,6 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
+
 package org.camunda.operate.schema.migration;
 
 import java.util.List;
@@ -30,25 +31,42 @@ public class ReindexPlan implements Plan {
 
   private static final String DEFAULT_SCRIPT = "ctx._index = params.dstIndex+'_' + (ctx._index.substring(ctx._index.indexOf('_') + 1, ctx._index.length()))";
 
-  private final List<Step> steps;
+  private List<Step> steps;
   private Script script;
-  private final String srcIndex;
-  private final String dstIndex;
+  private String srcIndex;
+  private String dstIndex;
 
-  public ReindexPlan(final String srcIndex,final String dstIndex,final List<Step> steps) {
-    this(srcIndex,dstIndex,steps,true);
+  private int reindexBatchSize;
+  private int slices;
+
+  public Script getScript() {
+    return script;
   }
 
-  public ReindexPlan(final String srcIndex,final String dstIndex,final List<Step> steps,final boolean useDefaultScript) {
+  public ReindexPlan setScript(Script script) {
+    this.script = script;
+    return this;
+  }
+
+  public String getSrcIndex() {
+    return srcIndex;
+  }
+
+  public String getDstIndex() {
+    return dstIndex;
+  }
+
+  public ReindexPlan setSrcIndex(String srcIndex) {
     this.srcIndex = srcIndex;
-    this.dstIndex = dstIndex;
-    this.steps = steps;
-    if (useDefaultScript) {
-      setScript(DEFAULT_SCRIPT, Map.of("dstIndex", dstIndex));
-    }
+    return this;
   }
 
-  public ReindexPlan setScript(final String scriptContent,final Map<String,Object> params) {
+  public ReindexPlan setDstIndex(String dstIndex) {
+    this.dstIndex = dstIndex;
+    return this;
+  }
+
+  public ReindexPlan setScript(final String scriptContent, final Map<String,Object> params) {
     script = new Script(ScriptType.INLINE, "painless", scriptContent, params);
     return this;
   }
@@ -58,17 +76,27 @@ public class ReindexPlan implements Plan {
     return steps;
   }
 
+  public ReindexPlan setSteps(List<Step> steps) {
+    this.steps = steps;
+    return this;
+  }
+
   @Override
   public void executeOn(final RetryElasticsearchClient retryElasticsearchClient) throws MigrationException {
+    int batchSize = 10_000; // Maximum
     final ReindexRequest reindexRequest = new ReindexRequest()
           .setSourceIndices(srcIndex + "_*")
-          .setDestIndex(dstIndex + "_");
+          .setDestIndex(dstIndex + "_")
+          .setSlices(slices) // Useful if there more than 1 shard per index
+          .setSourceBatchSize(reindexBatchSize);
 
     final Optional<String> pipelineName = createPipelineFromSteps(retryElasticsearchClient);
 
     pipelineName.ifPresent(reindexRequest::setDestPipeline);
     if (script != null) {
       reindexRequest.setScript(script);
+    } else {
+      setScript(DEFAULT_SCRIPT, Map.of("dstIndex", dstIndex));
     }
 
     try {
@@ -99,5 +127,15 @@ public class ReindexPlan implements Plan {
   @Override
   public String toString() {
     return "ReindexPlan [steps=" + steps + ",  srcIndex=" + srcIndex + ", dstIndex=" + dstIndex + "]";
+  }
+
+  public ReindexPlan setBatchSize(int reindexBatchSize) {
+    this.reindexBatchSize = reindexBatchSize;
+    return this;
+  }
+
+  public ReindexPlan setSlices(int slices) {
+    this.slices = slices;
+    return this;
   }
 }

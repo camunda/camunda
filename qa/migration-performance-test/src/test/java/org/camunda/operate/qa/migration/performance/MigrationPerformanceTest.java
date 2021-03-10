@@ -18,7 +18,7 @@ public class MigrationPerformanceTest {
 
   @Test
   public void testPerformanceDuration(){
-    int timeoutInMinutes = 15;
+    int timeoutInMinutes = 60;
     try {
       timeoutInMinutes = Integer.parseInt(System.getProperty("MIGRATION_TIMEOUT"));
     } catch (NumberFormatException e) {
@@ -26,7 +26,9 @@ public class MigrationPerformanceTest {
     }
     long timeout = TimeUnit.MINUTES.toMillis(timeoutInMinutes);
     Instant start = Instant.now();
-    SchemaMigration.main(new String[] { "--camunda.operate.schemaVersion=" + createRandomVersion() });
+    String randomVersion = createRandomVersion();
+    System.setProperty("camunda.operate.schemaVersion", randomVersion);
+    SchemaMigration.main(new String[] { "--camunda.operate.schemaVersion=" + randomVersion});
     Instant finish = Instant.now();
     long timeElapsed = Duration.between(start, finish).toMillis();
     assertThat(timeElapsed)

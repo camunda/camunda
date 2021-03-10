@@ -18,7 +18,7 @@ public class SequenceFlowTemplate extends AbstractTemplateDescriptor implements 
   public static final String ACTIVITY_ID = "activityId";
 
   @Override
-  public String getIndexNameFormat() {
+  public String getIndexName() {
     return INDEX_NAME;
   }
 

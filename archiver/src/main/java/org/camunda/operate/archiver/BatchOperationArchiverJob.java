@@ -59,7 +59,7 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
     if (archiveBatch != null) {
       logger.debug("Following batch operations are found for archiving: {}", archiveBatch);
       try {
-        archiver.moveDocuments(batchOperationTemplate.getMainIndexName(), BatchOperationTemplate.ID, archiveBatch.getFinishDate(),
+        archiver.moveDocuments(batchOperationTemplate.getFullQualifiedName(), BatchOperationTemplate.ID, archiveBatch.getFinishDate(),
             archiveBatch.getIds());
         return archiveBatch.getIds().size();
       } catch (ArchiverException e) {
@@ -94,7 +94,7 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
     final QueryBuilder endDateQ = rangeQuery(BatchOperationTemplate.END_DATE).lte(operateProperties.getArchiver().getArchivingTimepoint());
     final ConstantScoreQueryBuilder q = constantScoreQuery(endDateQ);
 
-    final SearchRequest searchRequest = new SearchRequest(batchOperationTemplate.getMainIndexName())
+    final SearchRequest searchRequest = new SearchRequest(batchOperationTemplate.getFullQualifiedName())
         .source(new SearchSourceBuilder()
             .query(q)
             .aggregation(agg)

@@ -1,8 +1,5 @@
 {
 	"order": 30,
-	"index_patterns": [
-		"operate-list-view-${schema.version}_*"
-	],
 	"settings": {
 		"index": {
 			"refresh_interval": "2s",
@@ -110,11 +107,6 @@
 			"key": {
 				"type": "long"
 			}
-		}
-	},
-	"aliases": {
-		"operate-list-view-${schema.version}_alias": {
-			
 		}
 	}
 }

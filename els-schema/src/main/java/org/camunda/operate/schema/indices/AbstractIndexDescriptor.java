@@ -18,18 +18,8 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   protected OperateProperties operateProperties;
 
   @Override
-  public String getIndexName() {
-    return String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getMainIndexName(), operateProperties.getSchemaVersion());
-  }
-
-  @Override
-  public String getFileName() {
-    return "/schema/create/index/operate-"+getMainIndexName()+".json";
-  }
-
-  @Override
-  public String getAlias() {
-    return getIndexName() + "alias";
+  public String getFullQualifiedName() {
+    return String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getIndexName(), getVersion());
   }
 
 }

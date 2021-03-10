@@ -17,7 +17,7 @@ public class ImportPositionIndex extends AbstractIndexDescriptor {
   public static final String FIELD_INDEX_NAME = "indexName";
 
   @Override
-  public String getMainIndexName() {
+  public String getIndexName() {
     return INDEX_NAME;
   }
 

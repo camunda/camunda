@@ -101,7 +101,7 @@ public class WorkflowInstancesArchiverJob extends AbstractArchiverJob {
     final TermsQueryBuilder partitionQ = termsQuery(ListViewTemplate.PARTITION_ID, partitionIds);
     final ConstantScoreQueryBuilder q = constantScoreQuery(ElasticsearchUtil.joinWithAnd(endDateQ, isWorkflowInstanceQ, partitionQ));
 
-    final SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getMainIndexName())
+    final SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getFullQualifiedName())
         .source(new SearchSourceBuilder()
             .query(q)
             .aggregation(agg)
@@ -146,12 +146,12 @@ public class WorkflowInstancesArchiverJob extends AbstractArchiverJob {
       try {
         //1st remove dependent data
         for (WorkflowInstanceDependant template: workflowInstanceDependantTemplates) {
-          archiver.moveDocuments(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_KEY, archiveBatch.getFinishDate(),
+          archiver.moveDocuments(template.getFullQualifiedName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_KEY, archiveBatch.getFinishDate(),
               archiveBatch.getIds());
         }
 
         //then remove workflow instances themselves
-        archiver.moveDocuments(workflowInstanceTemplate.getMainIndexName(), ListViewTemplate.WORKFLOW_INSTANCE_KEY, archiveBatch.getFinishDate(),
+        archiver.moveDocuments(workflowInstanceTemplate.getFullQualifiedName(), ListViewTemplate.WORKFLOW_INSTANCE_KEY, archiveBatch.getFinishDate(),
             archiveBatch.getIds());
         metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVED, archiveBatch.getIds().size());
         return archiveBatch.getIds().size();

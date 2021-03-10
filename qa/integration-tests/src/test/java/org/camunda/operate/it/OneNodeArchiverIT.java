@@ -151,13 +151,13 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
     List<Long> ids = assertWorkflowInstanceIndex(instancesCount, endDate);
     for (WorkflowInstanceDependant template : workflowInstanceDependantTemplates) {
       if (! (template instanceof IncidentTemplate || template instanceof SequenceFlowTemplate)) {
-        assertDependentIndex(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_KEY, ids, endDate);
+        assertDependentIndex(template.getFullQualifiedName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_KEY, ids, endDate);
       }
     }
   }
 
   private List<Long> assertWorkflowInstanceIndex(int instancesCount, Instant endDate) throws IOException {
-    final String destinationIndexName = archiver.getDestinationIndexName(listViewTemplate.getMainIndexName(), dateTimeFormatter.format(endDate));
+    final String destinationIndexName = archiver.getDestinationIndexName(listViewTemplate.getFullQualifiedName(), dateTimeFormatter.format(endDate));
     final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
 
     final SearchRequest searchRequest = new SearchRequest(destinationIndexName)

@@ -57,7 +57,7 @@ public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
 
   @Autowired
   private PasswordEncoder passwordEncoder;
-  
+
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
@@ -95,7 +95,7 @@ public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
       Map<String, Object> jsonMap = new HashMap<>();
       jsonMap.put(UserIndex.FIRSTNAME, TEST_FIRSTNAME);
       jsonMap.put(UserIndex.LASTNAME, TEST_LASTNAME);
-      UpdateRequest request = new UpdateRequest(userIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, TEST_USERNAME)
+      UpdateRequest request = new UpdateRequest(userIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, TEST_USERNAME)
           .doc(jsonMap);
       esClient.update(request, RequestOptions.DEFAULT);
       elasticsearchTestRule.refreshOperateESIndices();
@@ -106,7 +106,7 @@ public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
 
   public void deleteById(String id) {
     try {
-      DeleteRequest request = new DeleteRequest(userIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, id);
+      DeleteRequest request = new DeleteRequest(userIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, id);
       esClient.delete(request, RequestOptions.DEFAULT);
     } catch (IOException ex) {
       //

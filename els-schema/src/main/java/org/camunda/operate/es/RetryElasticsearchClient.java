@@ -38,6 +38,7 @@ import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
 import org.elasticsearch.client.tasks.GetTaskRequest;
 import org.elasticsearch.client.tasks.GetTaskResponse;
+import org.elasticsearch.cluster.health.ClusterIndexHealth;
 import org.elasticsearch.common.bytes.ByteBufferReference;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
@@ -110,6 +111,12 @@ public class RetryElasticsearchClient {
     return executeWithRetries("ClusterHealth ", () -> esClient.cluster().health(request, requestOptions));
   }
 
+  public Set<String> getIndexNamesFromClusterHealth(String namePattern) {
+    final ClusterHealthResponse clusterHealthResponse = clusterHealth(new ClusterHealthRequest(namePattern));
+    Map<String, ClusterIndexHealth> indicesStatus = clusterHealthResponse.getIndices();
+    return indicesStatus.keySet();
+  }
+
   public List<String> getIndexNamesFor(String namePattern) {
     return executeWithRetries(() -> List.of(esClient.indices().get(new GetIndexRequest(namePattern), requestOptions).getIndices()));
   }
@@ -158,7 +165,7 @@ public class RetryElasticsearchClient {
   }
 
   public boolean deleteIndicesFor(final String indexPattern) {
-    return executeWithRetries("DeleteIndices "+indexPattern,() -> {
+    return executeWithRetries("DeleteIndices " + indexPattern, () -> {
       if (indicesExist(indexPattern)){
         return esClient.indices().delete(new DeleteIndexRequest(indexPattern), requestOptions).isAcknowledged();
       }
@@ -209,7 +216,7 @@ public class RetryElasticsearchClient {
         () -> {
           String srcIndices = reindexRequest.getSearchRequest().indices()[0];
           long srcCount = getNumberOfDocumentsFor(srcIndices);
-          if(checkDocumentCount) {
+          if (checkDocumentCount) {
             String dstIndex = reindexRequest.getDestination().indices()[0];
             long dstCount = getNumberOfDocumentsFor(dstIndex + "*");
             if (srcCount == dstCount) {
@@ -238,7 +245,9 @@ public class RetryElasticsearchClient {
     final long created = (Integer) statusMap.get("created");
     final long updated = (Integer) statusMap.get("updated");
     final long deleted = (Integer) statusMap.get("deleted");
-    //TODO: Does it really matter to sum and compare the numbers when completed is already set?
+    if (created == 0 && updated == 0 && deleted == 0 && total > 0) {
+      return false;
+    }
     return !taskResponse.get().isCompleted() || (created + updated + deleted != total);
   }
 

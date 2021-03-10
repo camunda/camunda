@@ -47,7 +47,6 @@ public class StartupBean {
 
   @PostConstruct
   public void initApplication() {
-    logger.info("Operate Version: " + operateProperties.getSchemaVersion());
     if (elasticsearchUserDetailsService != null) {
       logger.info("INIT: Create users in elasticsearch if not exists ...");
       elasticsearchUserDetailsService.initializeUsers();

@@ -15,7 +15,7 @@ public class IncidentTemplate extends AbstractTemplateDescriptor implements Work
   public static final String ID = "id";
   public static final String KEY = "key";
   public static final String WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
-  
+
   public static final String WORKFLOW_KEY = "workflowKey";
   public static final String FLOW_NODE_ID = "flowNodeId";
   public static final String FLOW_NODE_INSTANCE_KEY = "flowNodeInstanceKey";
@@ -27,7 +27,7 @@ public class IncidentTemplate extends AbstractTemplateDescriptor implements Work
   public static final String CREATION_TIME = "creationTime";
 
   @Override
-  public String getIndexNameFormat() {
+  public String getIndexName() {
     return INDEX_NAME;
   }
 

@@ -57,6 +57,9 @@ public class ElasticsearchStepsRepository implements StepsRepository {
   @Autowired
   private OperateProperties operateProperties;
 
+  @Autowired
+  private MigrationRepositoryIndex migrationRepositoryIndex;
+
   /**
    * Updates Steps in index by comparing steps in json format with documents from index.
    * If there are any new steps then they will be saved in index.
@@ -72,6 +75,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
         save(step);
       }
     }
+    retryElasticsearchClient.refresh(getName());
   }
 
   private List<Step> readStepsFromClasspath() throws IOException {
@@ -96,7 +100,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
    */
   @Override
   public String getName() {
-    return operateProperties.getElasticsearch().getIndexPrefix() + "-" + MigrationRepositoryIndex.INDEX_NAME;
+    return migrationRepositoryIndex.getFullQualifiedName();
   }
 
   protected String idFromStep(final Step step) {
@@ -104,7 +108,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
   }
 
   @Override
-  public void save(final Step step) throws MigrationException,IOException {
+  public void save(final Step step) throws MigrationException, IOException {
     final boolean createdOrUpdated = retryElasticsearchClient.createOrUpdateDocument(
         getName(),
         idFromStep(step),

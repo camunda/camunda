@@ -115,7 +115,7 @@ public class IncidentZeebeRecordProcessor {
   private IndexRequest getIncidentInsertQuery(IncidentEntity incident) throws PersistenceException {
     try {
       logger.debug("Index incident: id {}", incident.getId());
-      return new IndexRequest(incidentTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, String.valueOf(incident.getKey()))
+      return new IndexRequest(incidentTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, String.valueOf(incident.getKey()))
         .source(objectMapper.writeValueAsString(incident), XContentType.JSON);
     } catch (IOException e) {
       logger.error("Error preparing the query to index incident", e);
@@ -125,7 +125,7 @@ public class IncidentZeebeRecordProcessor {
 
   private DeleteRequest getIncidentDeleteQuery(Long incidentKey) throws PersistenceException {
     logger.debug("Delete incident: key {}", incidentKey);
-    return new DeleteRequest(incidentTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, incidentKey.toString());
+    return new DeleteRequest(incidentTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, incidentKey.toString());
   }
 
 }

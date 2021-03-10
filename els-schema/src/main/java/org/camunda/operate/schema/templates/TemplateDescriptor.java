@@ -3,19 +3,21 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
+
 package org.camunda.operate.schema.templates;
 
-public interface TemplateDescriptor {
+import org.camunda.operate.schema.indices.IndexDescriptor;
 
-  String getIndexNameFormat();
-  String getTemplateName();
+public interface TemplateDescriptor extends IndexDescriptor {
 
-  String getIndexPattern();
+  String PARTITION_ID = "partitionId";
 
-  String getMainIndexName();
-  
-  String getFileName();
+  default String getTemplateName() {
+    return getFullQualifiedName() + "template";
+  }
 
-  String getAlias();
+  default String getIndexPattern() {
+    return getFullQualifiedName() + "*";
+  }
 
 }

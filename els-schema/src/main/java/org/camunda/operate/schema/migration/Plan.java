@@ -5,18 +5,25 @@
  */
 package org.camunda.operate.schema.migration;
 
-import java.io.IOException;
-import java.util.List;
-
-import org.camunda.operate.exceptions.MigrationException;
 import org.camunda.operate.es.RetryElasticsearchClient;
+import org.camunda.operate.exceptions.MigrationException;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 /**
  * A plan consists of executable Steps.
  * The plan can be execute on an elasticsearch client.
  */
 public interface Plan {
 
-  List<Step> getSteps();
+  static ReindexPlan forReindex() {
+    return new ReindexPlan();
+  }
+
+  default List<Step> getSteps() {
+    return Collections.emptyList();
+  }
 
   void executeOn(final RetryElasticsearchClient retryElasticsearchClient) throws IOException, MigrationException;
 

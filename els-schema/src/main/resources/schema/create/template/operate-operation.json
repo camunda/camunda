@@ -1,8 +1,5 @@
 {
 	"order": 30,
-	"index_patterns": [
-		"operate-operation-${schema.version}_*"
-	],
 	"mappings": {
 		"dynamic": "strict",
 		"dynamic_templates": [
@@ -65,10 +62,6 @@
 			"username": {
 				"type": "keyword"
 			}
-		}
-	},
-	"aliases": {
-		"operate-operation-${schema.version}_alias": {
 		}
 	}
 }

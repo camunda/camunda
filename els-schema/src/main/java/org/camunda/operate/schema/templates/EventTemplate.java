@@ -39,7 +39,7 @@ public class EventTemplate extends AbstractTemplateDescriptor implements Workflo
   public static final String JOB_KEY = "jobKey";
 
   @Override
-  public String getIndexNameFormat() {
+  public String getIndexName() {
     return INDEX_NAME;
   }
 

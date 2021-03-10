@@ -72,7 +72,7 @@ public class VariableZeebeRecordProcessor {
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(VariableTemplate.VALUE, entity.getValue());
 
-      return new UpdateRequest(variableTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+      return new UpdateRequest(variableTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(updateFields)
         .retryOnConflict(UPDATE_RETRY_COUNT);

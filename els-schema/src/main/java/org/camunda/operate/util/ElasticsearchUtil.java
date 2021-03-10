@@ -148,13 +148,13 @@ public abstract class ElasticsearchUtil {
     SearchRequest searchRequest = new SearchRequest(whereToSearch(template, queryType)).indicesOptions(IndicesOptions.lenientExpandOpen());
     return searchRequest;
   }
-  
+
   private static String whereToSearch(TemplateDescriptor template, QueryType queryType) {
     switch (queryType) {
     case ONLY_ARCHIVE:
-      return template.getIndexPattern() + ",-" + template.getMainIndexName();
+      return template.getIndexPattern() + ",-" + template.getFullQualifiedName();
     case ONLY_RUNTIME:
-      return template.getMainIndexName();
+      return template.getFullQualifiedName();
     case ALL:
     default:
       return template.getAlias();
@@ -191,7 +191,7 @@ public abstract class ElasticsearchUtil {
       return boolQ;
     }
   }
-  
+
   public static QueryBuilder joinWithOr(Collection<QueryBuilder> queries) {
     return joinWithOr(queries.toArray(new QueryBuilder[queries.size()]));
   }
@@ -321,7 +321,7 @@ public abstract class ElasticsearchUtil {
 
   public static <T> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper, RestHighLevelClient esClient,
     Consumer<SearchHits> searchHitsProcessor, Consumer<Aggregations> aggsProcessor) throws IOException {
-    
+
     searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
     SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
@@ -333,7 +333,7 @@ public abstract class ElasticsearchUtil {
     List<T> result = new ArrayList<>();
     String scrollId = response.getScrollId();
     SearchHits hits = response.getHits();
-    
+
     while (hits.getHits().length != 0) {
       result.addAll(mapSearchHits(hits.getHits(), objectMapper, clazz));
 
@@ -407,24 +407,24 @@ public abstract class ElasticsearchUtil {
     }
   }
 
-  public static List<String> scrollIdsToList(SearchRequest request, RestHighLevelClient esClient) throws IOException {    
-    List<String> result = new ArrayList<>();   
-    
+  public static List<String> scrollIdsToList(SearchRequest request, RestHighLevelClient esClient) throws IOException {
+    List<String> result = new ArrayList<>();
+
     Consumer<SearchHits> collectIds = (hits) -> {
       result.addAll(map(hits.getHits(),searchHitIdToString));
     };
-    
+
     scrollWith(request, esClient, collectIds, null, collectIds);
     return result;
   }
-  
+
   public static List<Long> scrollKeysToList(SearchRequest request, RestHighLevelClient esClient) throws IOException {
     List<Long> result = new ArrayList<>();
-    
+
     Consumer<SearchHits> collectIds = (hits) -> {
       result.addAll(map(hits.getHits(),searchHitIdToLong));
     };
-    
+
     scrollWith(request, esClient, collectIds, null, collectIds);
     return result;
   }
@@ -443,18 +443,18 @@ public abstract class ElasticsearchUtil {
 
   public static Set<String> scrollIdsToSet(SearchRequest request, RestHighLevelClient esClient) throws IOException {
     Set<String> result = new HashSet<>();
-    
+
     Consumer<SearchHits> collectIds= (hits) -> {
-        result.addAll(map(hits.getHits(),searchHitIdToString));        
+        result.addAll(map(hits.getHits(),searchHitIdToString));
     };
     scrollWith(request, esClient, collectIds, null, collectIds);
     return result;
   }
-  
+
   public static Set<Long> scrollKeysToSet(SearchRequest request, RestHighLevelClient esClient) throws IOException {
     Set<Long> result = new HashSet<>();
     Consumer<SearchHits> collectIds= (hits) -> {
-      result.addAll(map(hits.getHits(), searchHitIdToLong));   
+      result.addAll(map(hits.getHits(), searchHitIdToLong));
     };
     scrollWith(request, esClient, collectIds, null, collectIds);
     return result;

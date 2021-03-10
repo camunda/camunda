@@ -19,7 +19,7 @@ public class VariableTemplate extends AbstractTemplateDescriptor implements Work
   public static final String VALUE = "value";
 
   @Override
-  public String getIndexNameFormat() {
+  public String getIndexName() {
     return INDEX_NAME;
   }
 

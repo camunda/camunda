@@ -57,9 +57,9 @@ public class DataMultiplicator implements CommandLineRunner {
   @Autowired
   private List<TemplateDescriptor> indexDescriptors;
 
-  private Map<Class<? extends TemplateDescriptor>,Class<? extends OperateEntity>> descriptorToEntity = Map.of(
-      EventTemplate.class,EventEntity.class,
-      SequenceFlowTemplate.class,SequenceFlowEntity.class,
+  private Map<Class<? extends TemplateDescriptor>, Class<? extends OperateEntity>> descriptorToEntity = Map.of(
+      EventTemplate.class, EventEntity.class,
+      SequenceFlowTemplate.class, SequenceFlowEntity.class,
       VariableTemplate.class, VariableEntity.class,
       IncidentTemplate.class, IncidentEntity.class
   );
@@ -73,13 +73,13 @@ public class DataMultiplicator implements CommandLineRunner {
     final int[] times = {500};
     try {
       times[0] = Integer.parseInt(args[0]);
-    }catch (Exception e){
+    } catch (Exception e){
       logger.warn("Couldn't parse times of duplication. Use default {}", times[0]);
     }
-    List<TemplateDescriptor> duplicatable = filter(indexDescriptors,descriptor -> descriptorToEntity.containsKey(descriptor.getClass()));
-    List<Thread> duplicators = map(duplicatable, descriptor -> new Thread(() -> duplicateIndexBy(times[0],descriptor)));
+    List<TemplateDescriptor> duplicatable = filter(indexDescriptors, descriptor -> descriptorToEntity.containsKey(descriptor.getClass()));
+    List<Thread> duplicators = map(duplicatable, descriptor -> new Thread(() -> duplicateIndexBy(times[0], descriptor)));
     duplicators.forEach(Thread::start);
-    for(Thread t: duplicators){
+    for (Thread t: duplicators) {
       t.join();
     }
   }
@@ -89,12 +89,12 @@ public class DataMultiplicator implements CommandLineRunner {
     try {
       List<? extends OperateEntity> results = findDocumentsFor(templateDescriptor, resultClass);
       if(results.isEmpty()) {
-        logger.info("No datasets for {} found.", templateDescriptor.getMainIndexName());
+        logger.info("No datasets for {} found.", templateDescriptor.getFullQualifiedName());
         return;
       }
-      logger.info("Load {} {}. Duplicate it {} times.", results.size(), templateDescriptor.getMainIndexName(), times);
+      logger.info("Load {} {}. Duplicate it {} times.", results.size(), templateDescriptor.getFullQualifiedName(), times);
       duplicate(times, templateDescriptor, results);
-      logger.info("Finished. Added {} documents of {}",results.size() * times, templateDescriptor.getMainIndexName());
+      logger.info("Finished. Added {} documents of {}",results.size() * times, templateDescriptor.getFullQualifiedName());
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
     }
@@ -115,7 +115,7 @@ public class DataMultiplicator implements CommandLineRunner {
       results.forEach(item -> {
         item.setId(UUID.randomUUID().toString());
         try {
-          bulkRequest.add(new IndexRequest(templateDescriptor.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, item.getId()).
+          bulkRequest.add(new IndexRequest(templateDescriptor.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, item.getId()).
               source(objectMapper.writeValueAsString(item), XContentType.JSON));
         } catch (JsonProcessingException e) {
           logger.error(e.getMessage());
@@ -125,7 +125,7 @@ public class DataMultiplicator implements CommandLineRunner {
       ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
       int percentDone = Double.valueOf(100 * count/max).intValue();
       if(percentDone > 0 && percentDone % 20 == 0){
-        logger.info("{}/{} ( {}% ) documents added to {}.", count, max, percentDone, templateDescriptor.getMainIndexName());
+        logger.info("{}/{} ( {}% ) documents added to {}.", count, max, percentDone, templateDescriptor.getFullQualifiedName());
       }
     }
   }

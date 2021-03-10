@@ -1,8 +1,4 @@
 {
-	"aliases": {
-		"operate-workflow-${schema.version}_alias": {
-		}
-	},
 	"mappings": {
 		"dynamic": "strict",
 		"dynamic_templates": [

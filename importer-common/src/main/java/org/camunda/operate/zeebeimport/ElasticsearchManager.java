@@ -117,7 +117,7 @@ public class ElasticsearchManager {
   }
 
   public void completeOperation(String operationId, BulkRequest bulkRequest) {
-    UpdateRequest updateRequest = new UpdateRequest(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operationId)
+    UpdateRequest updateRequest = new UpdateRequest(operationTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, operationId)
         .script(getUpdateOperationScript())
         .retryOnConflict(UPDATE_RETRY_COUNT);
     bulkRequest.add(updateRequest);

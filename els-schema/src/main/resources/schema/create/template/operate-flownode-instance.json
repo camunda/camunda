@@ -1,8 +1,5 @@
 {
 	"order": 30,
-	"index_patterns": [
-		"operate-flownode-instance-${schema.version}_*"
-	],
 	"settings": {
 		"analysis": {
 			"analyzer": {
@@ -66,10 +63,6 @@
 			"level": {
 				"type": "long"
 			}
-		}
-	},
-	"aliases": {
-		"operate-flownode-instance-${schema.version}_alias": {
 		}
 	}
 }

@@ -13,7 +13,6 @@ import org.camunda.operate.schema.ElasticsearchSchemaManager;
 import org.camunda.operate.schema.indices.IndexDescriptor;
 import org.camunda.operate.schema.templates.EventTemplate;
 import org.camunda.operate.schema.templates.IncidentTemplate;
-import org.camunda.operate.schema.templates.TemplateDescriptor;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -45,9 +44,6 @@ public class SchemaCreationIT extends OperateIntegrationTest {
   private List<IndexDescriptor> indexDescriptors;
 
   @Autowired
-  private List<TemplateDescriptor> templateDescriptors;
-
-  @Autowired
   private ElsIndicesCheck elsIndicesCheck;
 
   @Rule
@@ -55,12 +51,8 @@ public class SchemaCreationIT extends OperateIntegrationTest {
 
   @Test
   public void testIndexCreation() throws ExecutionException, InterruptedException, IOException {
-    for (TemplateDescriptor templateDescriptor: templateDescriptors) {
-      assertIndexAndAlias(templateDescriptor.getMainIndexName(), templateDescriptor.getAlias());
-    }
-
     for (IndexDescriptor indexDescriptor: indexDescriptors) {
-      assertIndexAndAlias(indexDescriptor.getIndexName(), indexDescriptor.getAlias());
+      assertIndexAndAlias(indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias());
     }
 
     assertTemplateOrder(workflowInstanceTemplate.getTemplateName(), 30);

@@ -11,34 +11,13 @@ import org.springframework.stereotype.Component;
 
 @Component
 public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
-  public static final String PARTITION_ID = "partitionId";
 
   @Autowired
   private OperateProperties operateProperties;
 
   @Override
-  public String getMainIndexName() {
-    return String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getIndexNameFormat(), operateProperties.getSchemaVersion());
-  }
-
-  @Override
-  public String getTemplateName() {
-    return getMainIndexName() + "template";
-  }
-
-  @Override
-  public String getAlias() {
-    return getMainIndexName() + "alias";
-  }
-  
-  @Override
-  public String getFileName() {
-    return "/schema/create/template/operate-"+getIndexNameFormat()+".json";
-  }
-
-  @Override
-  public String getIndexPattern() {
-    return getMainIndexName() + "*";
+  public String getFullQualifiedName() {
+    return String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getIndexName(), getVersion());
   }
 
 }

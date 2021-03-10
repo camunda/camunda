@@ -23,7 +23,7 @@ public class BatchOperationTemplate extends AbstractTemplateDescriptor {
   public static final String OPERATIONS_FINISHED_COUNT = "operationsFinishedCount";
 
   @Override
-  public String getIndexNameFormat() {
+  public String getIndexName() {
     return INDEX_NAME;
   }
 

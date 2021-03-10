@@ -234,7 +234,7 @@ public class ListViewZeebeRecordProcessor {
       updateFields.put(ListViewTemplate.ACTIVITY_TYPE, entity.getActivityType());
       updateFields.put(ListViewTemplate.ACTIVITY_STATE, entity.getActivityState());
 
-      return new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+      return new UpdateRequest(listViewTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(updateFields)
         .routing(workflowInstanceKey.toString())
@@ -253,7 +253,7 @@ public class ListViewZeebeRecordProcessor {
       updateFields.put(ListViewTemplate.VAR_NAME, entity.getVarName());
       updateFields.put(ListViewTemplate.VAR_VALUE, entity.getVarValue());
 
-      return new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+      return new UpdateRequest(listViewTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(updateFields)
         .routing(workflowInstanceKey.toString())
@@ -273,7 +273,7 @@ public class ListViewZeebeRecordProcessor {
       updateFields.put(ListViewTemplate.INCIDENT_KEY, entity.getIncidentKey());
       updateFields.put(ListViewTemplate.INCIDENT_JOB_KEY, entity.getIncidentJobKey());
 
-      return new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+      return new UpdateRequest(listViewTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(updateFields)
         .routing(workflowInstanceKey.toString())
@@ -303,7 +303,7 @@ public class ListViewZeebeRecordProcessor {
 
       //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-      return new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, wiEntity.getId())
+      return new UpdateRequest(listViewTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, wiEntity.getId())
         .upsert(objectMapper.writeValueAsString(wiEntity), XContentType.JSON)
         .doc(jsonMap)
         .retryOnConflict(UPDATE_RETRY_COUNT);

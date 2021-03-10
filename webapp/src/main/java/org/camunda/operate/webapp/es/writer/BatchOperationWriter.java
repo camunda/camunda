@@ -125,7 +125,7 @@ public class BatchOperationWriter {
     try {
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(operation), HashMap.class);
 
-      UpdateRequest updateRequest = new UpdateRequest(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operation.getId())
+      UpdateRequest updateRequest = new UpdateRequest(operationTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, operation.getId())
           .doc(jsonMap);
       if (refreshImmediately) {
         updateRequest = updateRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
@@ -285,7 +285,7 @@ public class BatchOperationWriter {
   }
 
   private IndexRequest getIndexBatchOperationRequest(BatchOperationEntity batchOperationEntity) throws JsonProcessingException {
-    return new IndexRequest(batchOperationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, batchOperationEntity.getId()).
+    return new IndexRequest(batchOperationTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, batchOperationEntity.getId()).
             source(objectMapper.writeValueAsString(batchOperationEntity), XContentType.JSON);
   }
 
@@ -341,7 +341,7 @@ public class BatchOperationWriter {
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ListViewTemplate.BATCH_OPERATION_IDS, batchOperationId);
 
-      return new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, String.valueOf(workflowInstanceKey))
+      return new UpdateRequest(listViewTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, String.valueOf(workflowInstanceKey))
           .script(getUpdateBatchOperationIdScript(batchOperationId))
           .retryOnConflict(UPDATE_RETRY_COUNT);
   }
@@ -359,7 +359,7 @@ public class BatchOperationWriter {
 
   private IndexRequest createIndexRequest(OperationEntity operationEntity, OperationType operationType, Long workflowInstanceKey) throws PersistenceException {
     try {
-      return new IndexRequest(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operationEntity.getId())
+      return new IndexRequest(operationTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, operationEntity.getId())
           .source(objectMapper.writeValueAsString(operationEntity), XContentType.JSON);
     } catch (IOException e) {
       logger.error("Error preparing the query to insert operation", e);

@@ -18,7 +18,6 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -249,7 +248,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
 
-      return new UpdateRequest(flowNodeInstanceTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+      return new UpdateRequest(flowNodeInstanceTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(jsonMap)
         .retryOnConflict(UPDATE_RETRY_COUNT);
@@ -265,7 +264,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       Map<String, Object> jsonMap = new HashMap<>();
       jsonMap.put(ActivityInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
 
-      return new UpdateRequest(flowNodeInstanceTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+      return new UpdateRequest(flowNodeInstanceTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(jsonMap)
         .retryOnConflict(UPDATE_RETRY_COUNT);

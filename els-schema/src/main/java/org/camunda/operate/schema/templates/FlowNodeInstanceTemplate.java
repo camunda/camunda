@@ -27,7 +27,7 @@ public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor impleme
   public static final String LEVEL = "level";
 
   @Override
-  public String getIndexNameFormat() {
+  public String getIndexName() {
     return INDEX_NAME;
   }
 

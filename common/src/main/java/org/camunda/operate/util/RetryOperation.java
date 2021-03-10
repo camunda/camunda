@@ -153,7 +153,11 @@ public class RetryOperation<T> {
     retries++;
     if (retries < noOfRetry && delayInterval > 0) {
       try {
-        logger.info("{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
+        if (retries % 20 == 0) {
+          logger.info("{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
+        } else {
+          logger.debug("{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
+        }
         timeUnit.sleep(delayInterval);
       } catch (InterruptedException ignore) {
         Thread.currentThread().interrupt();

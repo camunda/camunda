@@ -20,7 +20,7 @@ public class WorkflowIndex extends AbstractIndexDescriptor {
   public static final String RESOURCE_NAME = "resourceName";
 
   @Override
-  public String getMainIndexName() {
+  public String getIndexName() {
     return INDEX_NAME;
   }
 

@@ -1,8 +1,5 @@
 {
 	"order": 30,
-	"index_patterns": [
-		"operate-activity-instance-${schema.version}_*"
-	],
 	"mappings": {
 		"dynamic": "strict",
 		"dynamic_templates": [
@@ -59,10 +56,6 @@
 				"format": "date_time",
 				"type": "date"
 			}
-		}
-	},
-	"aliases": {
-		"operate-activity-instance-${schema.version}_alias": {
 		}
 	}
 }

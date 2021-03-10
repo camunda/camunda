@@ -53,7 +53,7 @@ public class SequenceFlowZeebeRecordProcessor {
   private IndexRequest getSequenceFlowInsertQuery(SequenceFlowEntity sequenceFlow) throws PersistenceException {
     try {
       logger.debug("Index sequence flow: id {}", sequenceFlow.getId());
-      return new IndexRequest(sequenceFlowTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, sequenceFlow.getId())
+      return new IndexRequest(sequenceFlowTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, sequenceFlow.getId())
         .source(objectMapper.writeValueAsString(sequenceFlow), XContentType.JSON);
     } catch (IOException e) {
       logger.error("Error preparing the query to index sequence flow", e);

@@ -324,9 +324,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private void assertBatchOperationsInCorrectIndex(int instancesCount, List<String> ids, Instant endDate) throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
-      destinationIndexName = archiver.getDestinationIndexName(batchOperationTemplate.getMainIndexName(), dateTimeFormatter.format(endDate));
+      destinationIndexName = archiver.getDestinationIndexName(batchOperationTemplate.getFullQualifiedName(), dateTimeFormatter.format(endDate));
     } else {
-      destinationIndexName = archiver.getDestinationIndexName(batchOperationTemplate.getMainIndexName(), "");
+      destinationIndexName = archiver.getDestinationIndexName(batchOperationTemplate.getFullQualifiedName(), "");
     }
     final IdsQueryBuilder idsQ = idsQuery().addIds(CollectionUtil.toSafeArrayOfStrings(ids));
 
@@ -351,7 +351,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     assertWorkflowInstanceIndex(instancesCount, ids, endDate);
     for (WorkflowInstanceDependant template : workflowInstanceDependantTemplates) {
       if (! (template instanceof IncidentTemplate || template instanceof SequenceFlowTemplate)) {
-        assertDependentIndex(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_KEY, ids, endDate, ignoreAbsentIndex);
+        assertDependentIndex(template.getFullQualifiedName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_KEY, ids, endDate, ignoreAbsentIndex);
       }
     }
   }
@@ -359,9 +359,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private void assertWorkflowInstanceIndex(int instancesCount, List<Long> ids, Instant endDate) throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
-      destinationIndexName = archiver.getDestinationIndexName(workflowInstanceTemplate.getMainIndexName(), dateTimeFormatter.format(endDate));
+      destinationIndexName = archiver.getDestinationIndexName(workflowInstanceTemplate.getFullQualifiedName(), dateTimeFormatter.format(endDate));
     } else {
-      destinationIndexName = archiver.getDestinationIndexName(workflowInstanceTemplate.getMainIndexName(), "");
+      destinationIndexName = archiver.getDestinationIndexName(workflowInstanceTemplate.getFullQualifiedName(), "");
     }
     final IdsQueryBuilder idsQ = idsQuery().addIds(CollectionUtil.toSafeArrayOfStrings(ids));
     final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);

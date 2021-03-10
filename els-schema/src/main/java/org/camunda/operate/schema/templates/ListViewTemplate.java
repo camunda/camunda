@@ -43,7 +43,7 @@ public class ListViewTemplate extends AbstractTemplateDescriptor {
   public static final String VARIABLES_JOIN_RELATION = "variable";
 
   @Override
-  public String getIndexNameFormat() {
+  public String getIndexName() {
     return INDEX_NAME;
   }
 

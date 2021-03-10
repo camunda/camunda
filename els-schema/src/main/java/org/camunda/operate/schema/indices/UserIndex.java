@@ -19,7 +19,7 @@ public class UserIndex extends AbstractIndexDescriptor {
   public static final String ROLE = "role";
 
   @Override
-  public String getMainIndexName() {
+  public String getIndexName() {
     return INDEX_NAME;
   }
 

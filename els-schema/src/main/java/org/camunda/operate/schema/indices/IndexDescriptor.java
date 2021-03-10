@@ -5,13 +5,22 @@
  */
 package org.camunda.operate.schema.indices;
 
-public interface IndexDescriptor {
-  
-  String getMainIndexName();
+import org.camunda.operate.schema.Versionable;
+
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public interface IndexDescriptor extends Versionable {
 
   String getIndexName();
 
-  String getAlias();
+  String getFullQualifiedName();
 
-  String getFileName();
+  default String getDerivedIndexNamePattern() { return getFullQualifiedName() + "*"; }
+
+  default String getAlias() {
+    return getFullQualifiedName() + "alias";
+  }
+
 }
