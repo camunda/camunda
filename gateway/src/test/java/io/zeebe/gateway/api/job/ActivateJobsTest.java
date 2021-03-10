@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.gateway.api.job;
 
@@ -99,10 +99,10 @@ public final class ActivateJobsTest extends GatewayTest {
       assertThat(job.getWorker()).isEqualTo(worker);
       assertThat(job.getRetries()).isEqualTo(stub.getRetries());
       assertThat(job.getDeadline()).isEqualTo(stub.getDeadline());
-      assertThat(job.getWorkflowInstanceKey()).isEqualTo(stub.getWorkflowInstanceKey());
+      assertThat(job.getProcessInstanceKey()).isEqualTo(stub.getProcessInstanceKey());
       assertThat(job.getBpmnProcessId()).isEqualTo(stub.getBpmnProcessId());
-      assertThat(job.getWorkflowDefinitionVersion()).isEqualTo(stub.getWorkflowDefinitionVersion());
-      assertThat(job.getWorkflowKey()).isEqualTo(stub.getWorkflowKey());
+      assertThat(job.getProcessDefinitionVersion()).isEqualTo(stub.getProcessDefinitionVersion());
+      assertThat(job.getProcessDefinitionKey()).isEqualTo(stub.getProcessDefinitionKey());
       assertThat(job.getElementId()).isEqualTo(stub.getElementId());
       assertThat(job.getElementInstanceKey()).isEqualTo(stub.getElementInstanceKey());
       JsonUtil.assertEquality(job.getCustomHeaders(), stub.getCustomHeaders());

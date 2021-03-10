@@ -2,13 +2,13 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.deployment.model.transformation;
 
 import io.zeebe.el.ExpressionLanguage;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.processing.deployment.model.transformer.BoundaryEventTransformer;
 import io.zeebe.engine.processing.deployment.model.transformer.CallActivityTransformer;
 import io.zeebe.engine.processing.deployment.model.transformer.CatchEventTransformer;
@@ -35,7 +35,7 @@ import java.util.List;
 public final class BpmnTransformer {
 
   /*
-   * Step 1: Instantiate all elements in the workflow
+   * Step 1: Instantiate all elements in the process
    */
   private final TransformationVisitor step1Visitor;
 
@@ -88,7 +88,7 @@ public final class BpmnTransformer {
     step4Visitor.registerHandler(new MultiInstanceActivityTransformer());
   }
 
-  public List<ExecutableWorkflow> transformDefinitions(final BpmnModelInstance modelInstance) {
+  public List<ExecutableProcess> transformDefinitions(final BpmnModelInstance modelInstance) {
     final TransformContext context = new TransformContext();
     context.setExpressionLanguage(expressionLanguage);
 
@@ -105,6 +105,6 @@ public final class BpmnTransformer {
     step4Visitor.setContext(context);
     walker.walk(step4Visitor);
 
-    return context.getWorkflows();
+    return context.getProcesses();
   }
 }

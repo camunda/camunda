@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.exporter;
 
@@ -159,14 +159,14 @@ public class ElasticsearchExporter implements Exporter {
       if (index.variableDocument) {
         createValueIndexTemplate(ValueType.VARIABLE_DOCUMENT);
       }
-      if (index.workflowInstance) {
-        createValueIndexTemplate(ValueType.WORKFLOW_INSTANCE);
+      if (index.processInstance) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE);
       }
-      if (index.workflowInstanceCreation) {
-        createValueIndexTemplate(ValueType.WORKFLOW_INSTANCE_CREATION);
+      if (index.processInstanceCreation) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_CREATION);
       }
-      if (index.workflowInstanceSubscription) {
-        createValueIndexTemplate(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+      if (index.processInstanceSubscription) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_SUBSCRIPTION);
       }
     }
 

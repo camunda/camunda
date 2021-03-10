@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.exporter;
 
@@ -45,7 +45,7 @@ public class ElasticsearchExporterJobRecordIT
   @Test
   public void shouldExportJobRecordWithCustomHeaders() {
     // when
-    exporterBrokerRule.deployWorkflow(
+    exporterBrokerRule.deployProcess(
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
@@ -55,12 +55,12 @@ public class ElasticsearchExporterJobRecordIT
             .done(),
         "process.bpmn");
 
-    final var workflowInstanceKey = exporterBrokerRule.createWorkflowInstance("process", Map.of());
+    final var processInstanceKey = exporterBrokerRule.createProcessInstance("process", Map.of());
 
     // then
     final var jobCreated =
         RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     assertRecordExported(jobCreated);
@@ -69,7 +69,7 @@ public class ElasticsearchExporterJobRecordIT
   @Test
   public void shouldExportJobRecordWithOverlappingCustomHeaders() {
     // when
-    exporterBrokerRule.deployWorkflow(
+    exporterBrokerRule.deployProcess(
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
@@ -79,12 +79,12 @@ public class ElasticsearchExporterJobRecordIT
             .done(),
         "process.bpmn");
 
-    final var workflowInstanceKey = exporterBrokerRule.createWorkflowInstance("process", Map.of());
+    final var processInstanceKey = exporterBrokerRule.createProcessInstance("process", Map.of());
 
     // then
     final var jobCreated =
         RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     assertRecordExported(jobCreated);
@@ -93,7 +93,7 @@ public class ElasticsearchExporterJobRecordIT
   @Test
   public void shouldExportJobBatchRecordWithOverlappingCustomHeaders() {
     // when
-    exporterBrokerRule.deployWorkflow(
+    exporterBrokerRule.deployProcess(
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
@@ -103,11 +103,11 @@ public class ElasticsearchExporterJobRecordIT
             .done(),
         "process.bpmn");
 
-    final var workflowInstanceKey = exporterBrokerRule.createWorkflowInstance("process", Map.of());
+    final var processInstanceKey = exporterBrokerRule.createProcessInstance("process", Map.of());
 
     final var jobCreated =
         RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     jobWorker =

@@ -2,16 +2,16 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.deployment.model.transformer;
 
 import io.zeebe.el.Expression;
 import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
@@ -25,22 +25,22 @@ public final class SequenceFlowTransformer implements ModelElementTransformer<Se
 
   @Override
   public void transform(final SequenceFlow element, final TransformContext context) {
-    final ExecutableWorkflow workflow = context.getCurrentWorkflow();
+    final ExecutableProcess process = context.getCurrentProcess();
     final ExecutableSequenceFlow sequenceFlow =
-        workflow.getElementById(element.getId(), ExecutableSequenceFlow.class);
+        process.getElementById(element.getId(), ExecutableSequenceFlow.class);
 
     parseCondition(element, sequenceFlow, context.getExpressionLanguage());
-    connectWithFlowNodes(element, workflow, sequenceFlow);
+    connectWithFlowNodes(element, process, sequenceFlow);
   }
 
   private void connectWithFlowNodes(
       final SequenceFlow element,
-      final ExecutableWorkflow workflow,
+      final ExecutableProcess process,
       final ExecutableSequenceFlow sequenceFlow) {
     final ExecutableFlowNode source =
-        workflow.getElementById(element.getSource().getId(), ExecutableFlowNode.class);
+        process.getElementById(element.getSource().getId(), ExecutableFlowNode.class);
     final ExecutableFlowNode target =
-        workflow.getElementById(element.getTarget().getId(), ExecutableFlowNode.class);
+        process.getElementById(element.getTarget().getId(), ExecutableFlowNode.class);
 
     source.addOutgoing(sequenceFlow);
     target.addIncoming(sequenceFlow);

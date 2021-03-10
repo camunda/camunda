@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn.multiinstance;
 
@@ -15,7 +15,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -36,7 +36,7 @@ public final class MultiInstanceReceiveTaskTest {
   private static final String INPUT_COLLECTION = "items";
   private static final String INPUT_ELEMENT = "item";
 
-  private static final BpmnModelInstance WORKFLOW =
+  private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .receiveTask(
@@ -57,20 +57,20 @@ public final class MultiInstanceReceiveTaskTest {
   @Test
   public void shouldCreateOneMessageSubscriptionForEachElement() {
     // given
-    ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS).deploy();
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(INPUT_COLLECTION, Arrays.asList("a", "b", "c"))
             .create();
 
     // then
     final List<Long> elementInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId(ELEMENT_ID)
             .skip(1)
             .limit(3)
@@ -79,7 +79,7 @@ public final class MultiInstanceReceiveTaskTest {
 
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
         .hasSize(3)
         .extracting(Record::getValue)
@@ -93,13 +93,13 @@ public final class MultiInstanceReceiveTaskTest {
   @Test
   public void shouldCompleteBodyWhenAllMessagesAreCorrelated() {
     // given
-    ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS).deploy();
 
     final List<String> inputCollection = Arrays.asList("a", "b", "c");
 
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(INPUT_COLLECTION, inputCollection)
             .create();
@@ -116,44 +116,44 @@ public final class MultiInstanceReceiveTaskTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted()
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
                 .withElementId(ELEMENT_ID))
         .hasSize(4);
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
+            RecordingExporter.processInstanceRecords()
                 .filterRootScope()
-                .limitToWorkflowInstanceCompleted())
+                .limitToProcessInstanceCompleted())
         .extracting(Record::getIntent)
-        .contains(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        .contains(ProcessInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
   public void shouldCloseMessageSubscriptionOnTermination() {
     // given
-    ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS).deploy();
 
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(INPUT_COLLECTION, Arrays.asList(10, 20, 30))
             .create();
 
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .limit(3)
         .exists();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
         .hasSize(3);
   }

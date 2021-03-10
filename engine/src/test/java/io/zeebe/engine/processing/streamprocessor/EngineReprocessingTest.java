@@ -2,12 +2,12 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.streamprocessor;
 
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
 
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
@@ -40,12 +40,12 @@ public class EngineReprocessingTest {
     engineRule.deployment().withXmlResource(SIMPLE_FLOW).deploy();
     final var instanceCount = 10;
     IntStream.range(0, instanceCount)
-        .forEach(i -> engineRule.workflowInstance().ofBpmnProcessId(PROCESS_ID).create());
+        .forEach(i -> engineRule.processInstance().ofBpmnProcessId(PROCESS_ID).create());
 
     Awaitility.await()
         .until(
             () ->
-                RecordingExporter.workflowInstanceRecords()
+                RecordingExporter.processInstanceRecords()
                     .withElementType(BpmnElementType.PROCESS)
                     .withIntent(ELEMENT_ACTIVATED)
                     .limit(instanceCount)
@@ -85,7 +85,7 @@ public class EngineReprocessingTest {
         .until(() -> RecordingExporter.getRecords().size(), (size) -> size >= lastSize);
 
     // when - then
-    engineRule.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    engineRule.processInstance().ofBpmnProcessId(PROCESS_ID).create();
   }
 
   @Test
@@ -104,7 +104,7 @@ public class EngineReprocessingTest {
     // then
     Assert.assertThrows(
         StreamWrapperException.class,
-        () -> engineRule.workflowInstance().ofBpmnProcessId(PROCESS_ID).create());
+        () -> engineRule.processInstance().ofBpmnProcessId(PROCESS_ID).create());
   }
 
   @Test
@@ -121,6 +121,6 @@ public class EngineReprocessingTest {
         .until(() -> RecordingExporter.getRecords().size(), (size) -> size >= lastSize);
 
     // when
-    engineRule.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    engineRule.processInstance().ofBpmnProcessId(PROCESS_ID).create();
   }
 }

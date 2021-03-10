@@ -69,7 +69,7 @@ describes:
 ## Create a Pull Request
 
 Zeebe follows a
-[gitflow](https://nvie.com/posts/a-successful-git-branching-model/) workflow.
+[gitflow](https://nvie.com/posts/a-successful-git-branching-model/) process.
 The `develop` branch contains the current in-development state of the project. The `master` branch contains the latest stable release.
 
 To work on an issue, follow the following steps:
@@ -179,7 +179,7 @@ need to sign the CLA once.
 ## Licenses
 
 Zeebe source files are made available under the [Zeebe Community License
-Version 1.0](/licenses/ZEEBE-COMMUNITY-LICENSE-1.0.txt) except for the parts listed
+Version 1.1](/licenses/ZEEBE-COMMUNITY-LICENSE-1.1.txt) except for the parts listed
 below, which are made available under the [Apache License, Version
 2.0](/licenses/APACHE-2.0.txt).  See individual source files for details.
 

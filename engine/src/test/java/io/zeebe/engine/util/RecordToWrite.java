@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.util;
 
@@ -11,17 +11,17 @@ import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.protocol.record.value.TimerRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 
 public final class RecordToWrite {
 
@@ -77,10 +77,10 @@ public final class RecordToWrite {
     return this;
   }
 
-  public RecordToWrite workflowInstance(
-      final WorkflowInstanceIntent intent, final WorkflowInstanceRecordValue value) {
-    recordMetadata.valueType(ValueType.WORKFLOW_INSTANCE).intent(intent);
-    unifiedRecordValue = (WorkflowInstanceRecord) value;
+  public RecordToWrite processInstance(
+      final ProcessInstanceIntent intent, final ProcessInstanceRecordValue value) {
+    recordMetadata.valueType(ValueType.PROCESS_INSTANCE).intent(intent);
+    unifiedRecordValue = (ProcessInstanceRecord) value;
     return this;
   }
 

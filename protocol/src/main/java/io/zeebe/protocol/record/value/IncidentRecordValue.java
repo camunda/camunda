@@ -19,11 +19,11 @@ import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 
 /**
- * Represents a workflow incident.
+ * Represents a process incident.
  *
  * <p>See {@link IncidentIntent} for intents.
  */
-public interface IncidentRecordValue extends RecordValue, WorkflowInstanceRelated {
+public interface IncidentRecordValue extends RecordValue, ProcessInstanceRelated {
   /**
    * @return the type of error this incident is caused by. Can be <code>UNKNOWN</code> if the
    *     incident record is part of a {@link IncidentIntent#RESOLVE} command.
@@ -43,16 +43,16 @@ public interface IncidentRecordValue extends RecordValue, WorkflowInstanceRelate
   String getBpmnProcessId();
 
   /**
-   * @return the key of the workflow this incident belongs to. Can be <code>-1</code> if the
-   *     incident record is part of a {@link IncidentIntent#RESOLVE} command.
+   * @return the key of the process this incident belongs to. Can be <code>-1</code> if the incident
+   *     record is part of a {@link IncidentIntent#RESOLVE} command.
    */
-  long getWorkflowKey();
+  long getProcessDefinitionKey();
 
   /**
-   * @return the key of the workflow instance this incident belongs to. Can be <code>-1</code> if
-   *     the incident record is part of a {@link IncidentIntent#RESOLVE} command.
+   * @return the key of the process instance this incident belongs to. Can be <code>-1</code> if the
+   *     incident record is part of a {@link IncidentIntent#RESOLVE} command.
    */
-  long getWorkflowInstanceKey();
+  long getProcessInstanceKey();
 
   /**
    * @return the id of the element this incident belongs to. Can be empty if incident record is part

@@ -2,13 +2,13 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.streamprocessor;
 
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,7 +27,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,15 +52,15 @@ public final class StreamProcessorReprocessingTest {
   @Test
   public void shouldCallRecordProcessorLifecycle() {
     // given
-    final long position = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    final long position = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
     final long secondPosition =
-        streamProcessorRule.writeWorkflowInstanceEventWithSource(
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED, 1, position);
+        streamProcessorRule.writeProcessInstanceEventWithSource(
+            ProcessInstanceIntent.ELEMENT_ACTIVATED, 1, position);
     waitUntil(
         () ->
             streamProcessorRule
                 .events()
-                .onlyWorkflowInstanceRecords()
+                .onlyProcessInstanceRecords()
                 .withIntent(ELEMENT_ACTIVATED)
                 .exists());
 
@@ -69,8 +69,8 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors
-                .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
-                .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
+                .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
+                .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
 
     verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(secondPosition), any(), any(), any(), any());
@@ -96,17 +96,17 @@ public final class StreamProcessorReprocessingTest {
   public void shouldStopProcessingWhenPaused() throws Exception {
     // given - bunch of events to reprocess
     IntStream.range(0, 5000)
-        .forEach(i -> streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, i));
-    final long sourceEvent = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
-    streamProcessorRule.writeWorkflowInstanceEventWithSource(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, 1, sourceEvent);
+        .forEach(i -> streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, i));
+    final long sourceEvent = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeProcessInstanceEventWithSource(
+        ProcessInstanceIntent.ELEMENT_ACTIVATED, 1, sourceEvent);
 
     Awaitility.await()
         .until(
             () ->
                 streamProcessorRule
                     .events()
-                    .onlyWorkflowInstanceRecords()
+                    .onlyProcessInstanceRecords()
                     .withIntent(ELEMENT_ACTIVATED),
             StreamWrapper::exists);
 
@@ -116,7 +116,7 @@ public final class StreamProcessorReprocessingTest {
         streamProcessorRule.startTypedStreamProcessor(
             (processors, context) ->
                 processors
-                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
+                    .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
                     .withListener(
                         new StreamProcessorLifecycleAware() {
                           @Override
@@ -132,7 +132,7 @@ public final class StreamProcessorReprocessingTest {
     // then
     assertThat(success).isTrue();
     Mockito.clearInvocations(typedRecordProcessor);
-    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 0xcafe);
+    streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 0xcafe);
 
     verify(typedRecordProcessor, TIMEOUT.times(0))
         .processRecord(anyLong(), any(), any(), any(), any());
@@ -144,17 +144,17 @@ public final class StreamProcessorReprocessingTest {
   public void shouldContinueToProcessWhenResumed() throws Exception {
     // given - bunch of events to reprocess
     IntStream.range(0, 5000)
-        .forEach(i -> streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, i));
-    final long sourceEvent = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
-    streamProcessorRule.writeWorkflowInstanceEventWithSource(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, 1, sourceEvent);
+        .forEach(i -> streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, i));
+    final long sourceEvent = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeProcessInstanceEventWithSource(
+        ProcessInstanceIntent.ELEMENT_ACTIVATED, 1, sourceEvent);
 
     Awaitility.await()
         .until(
             () ->
                 streamProcessorRule
                     .events()
-                    .onlyWorkflowInstanceRecords()
+                    .onlyProcessInstanceRecords()
                     .withIntent(ELEMENT_ACTIVATED),
             StreamWrapper::exists);
 
@@ -165,7 +165,7 @@ public final class StreamProcessorReprocessingTest {
         streamProcessorRule.startTypedStreamProcessor(
             (processors, context) ->
                 processors
-                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
+                    .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
                     .withListener(
                         new StreamProcessorLifecycleAware() {
                           @Override
@@ -180,7 +180,7 @@ public final class StreamProcessorReprocessingTest {
     // then
     assertThat(success).isTrue();
     Mockito.clearInvocations(typedRecordProcessor);
-    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 0xcafe);
+    streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 0xcafe);
 
     verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(anyLong(), any(), any(), any(), any());
@@ -190,17 +190,17 @@ public final class StreamProcessorReprocessingTest {
   public void shouldCallOnPausedAfterOnRecovered() {
     // given - bunch of events to reprocess
     IntStream.range(0, 5000)
-        .forEach(i -> streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, i));
-    final long sourceEvent = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
-    streamProcessorRule.writeWorkflowInstanceEventWithSource(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, 1, sourceEvent);
+        .forEach(i -> streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, i));
+    final long sourceEvent = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeProcessInstanceEventWithSource(
+        ProcessInstanceIntent.ELEMENT_ACTIVATED, 1, sourceEvent);
 
     Awaitility.await()
         .until(
             () ->
                 streamProcessorRule
                     .events()
-                    .onlyWorkflowInstanceRecords()
+                    .onlyProcessInstanceRecords()
                     .withIntent(ELEMENT_ACTIVATED),
             StreamWrapper::exists);
 
@@ -225,17 +225,17 @@ public final class StreamProcessorReprocessingTest {
   public void shouldCallOnPausedBeforeOnResumedNoMatterWhenResumedWasCalled() {
     // given - bunch of events to reprocess
     IntStream.range(0, 5000)
-        .forEach(i -> streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, i));
-    final long sourceEvent = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
-    streamProcessorRule.writeWorkflowInstanceEventWithSource(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, 1, sourceEvent);
+        .forEach(i -> streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, i));
+    final long sourceEvent = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeProcessInstanceEventWithSource(
+        ProcessInstanceIntent.ELEMENT_ACTIVATED, 1, sourceEvent);
 
     Awaitility.await()
         .until(
             () ->
                 streamProcessorRule
                     .events()
-                    .onlyWorkflowInstanceRecords()
+                    .onlyProcessInstanceRecords()
                     .withIntent(ELEMENT_ACTIVATED),
             StreamWrapper::exists);
 
@@ -260,18 +260,18 @@ public final class StreamProcessorReprocessingTest {
   @Test
   public void shouldReprocessUntilLastSource() {
     // given
-    final long firstEvent = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
-    final long secondEvent = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    final long firstEvent = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    final long secondEvent = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
     final long lastSourceEvent =
-        streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+        streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
     final long normalProcessingPosition =
-        streamProcessorRule.writeWorkflowInstanceEventWithSource(
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED, 1, lastSourceEvent);
+        streamProcessorRule.writeProcessInstanceEventWithSource(
+            ProcessInstanceIntent.ELEMENT_ACTIVATED, 1, lastSourceEvent);
     waitUntil(
         () ->
             streamProcessorRule
                 .events()
-                .onlyWorkflowInstanceRecords()
+                .onlyProcessInstanceRecords()
                 .withIntent(ELEMENT_ACTIVATED)
                 .exists());
 
@@ -280,8 +280,8 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors
-                .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
-                .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
+                .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
+                .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
 
     verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(normalProcessingPosition), any(), any(), any(), any());
@@ -312,14 +312,14 @@ public final class StreamProcessorReprocessingTest {
   @Test
   public void shouldNotReprocessWithoutSourcePosition() {
     // given
-    final long position = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    final long position = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
     final long secondPosition =
-        streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED, 1);
+        streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1);
     waitUntil(
         () ->
             streamProcessorRule
                 .events()
-                .onlyWorkflowInstanceRecords()
+                .onlyProcessInstanceRecords()
                 .withIntent(ELEMENT_ACTIVATED)
                 .exists());
 
@@ -328,8 +328,8 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors
-                .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
-                .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
+                .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
+                .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
 
     verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(secondPosition), any(), any(), any(), any());
@@ -354,15 +354,14 @@ public final class StreamProcessorReprocessingTest {
   @Test
   public void shouldRetryProcessingRecordOnException() {
     // given
-    final long firstPosition =
-        streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
-    streamProcessorRule.writeWorkflowInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
+    final long firstPosition = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeProcessInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
 
     waitUntil(
         () ->
             streamProcessorRule
                 .events()
-                .onlyWorkflowInstanceRecords()
+                .onlyProcessInstanceRecords()
                 .withIntent(ELEMENT_ACTIVATED)
                 .exists());
 
@@ -381,7 +380,7 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors.onEvent(
-                ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor));
+                ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor));
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
@@ -396,17 +395,17 @@ public final class StreamProcessorReprocessingTest {
   @Test
   public void shouldIgnoreRecordWhenNoProcessorExistForThisType() {
     // given
-    final long firstPosition = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATED, 1);
+    final long firstPosition = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATED, 1);
     final long secondPosition =
-        streamProcessorRule.writeWorkflowInstanceEventWithSource(
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING, 1, firstPosition);
+        streamProcessorRule.writeProcessInstanceEventWithSource(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, 1, firstPosition);
 
     // when
     final TypedRecordProcessor<?> typedRecordProcessor = mock(TypedRecordProcessor.class);
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors.onEvent(
-                ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor));
+                ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor));
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
@@ -424,15 +423,14 @@ public final class StreamProcessorReprocessingTest {
   @Test
   public void shouldNotWriteFollowUpEvent() throws Exception {
     // given
-    final long firstPosition =
-        streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
-    streamProcessorRule.writeWorkflowInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
+    final long firstPosition = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeProcessInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
 
     waitUntil(
         () ->
             streamProcessorRule
                 .events()
-                .onlyWorkflowInstanceRecords()
+                .onlyProcessInstanceRecords()
                 .withIntent(ELEMENT_ACTIVATED)
                 .exists());
 
@@ -442,7 +440,7 @@ public final class StreamProcessorReprocessingTest {
         (processors, context) ->
             processors
                 .onEvent(
-                    ValueType.WORKFLOW_INSTANCE,
+                    ValueType.PROCESS_INSTANCE,
                     ELEMENT_ACTIVATING,
                     new TypedRecordProcessor<>() {
                       @Override
@@ -454,12 +452,12 @@ public final class StreamProcessorReprocessingTest {
                           final Consumer<SideEffectProducer> sideEffect) {
                         streamWriter.appendFollowUpEvent(
                             record.getKey(),
-                            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+                            ProcessInstanceIntent.ELEMENT_ACTIVATED,
                             record.getValue());
                       }
                     })
                 .onEvent(
-                    ValueType.WORKFLOW_INSTANCE,
+                    ValueType.PROCESS_INSTANCE,
                     ELEMENT_ACTIVATED,
                     new TypedRecordProcessor<UnifiedRecordValue>() {
                       @Override
@@ -479,7 +477,7 @@ public final class StreamProcessorReprocessingTest {
     final long eventCount =
         streamProcessorRule
             .events()
-            .onlyWorkflowInstanceRecords()
+            .onlyProcessInstanceRecords()
             .withIntent(ELEMENT_ACTIVATED)
             .count();
     assertThat(eventCount).isEqualTo(1);
@@ -492,7 +490,7 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors.onEvent(
-                ValueType.WORKFLOW_INSTANCE,
+                ValueType.PROCESS_INSTANCE,
                 ELEMENT_ACTIVATING,
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
@@ -505,8 +503,8 @@ public final class StreamProcessorReprocessingTest {
                 }),
         (t) -> onProcessedListenerLatch.countDown());
 
-    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING);
-    streamProcessorRule.writeWorkflowInstanceEvent(
+    streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING);
+    streamProcessorRule.writeProcessInstanceEvent(
         ELEMENT_ACTIVATING); // should be processed and included in the snapshot
     onProcessedListenerLatch.await();
     streamProcessorRule.snapshot();
@@ -520,7 +518,7 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors.onEvent(
-                ValueType.WORKFLOW_INSTANCE,
+                ValueType.PROCESS_INSTANCE,
                 ELEMENT_ACTIVATING,
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
@@ -534,7 +532,7 @@ public final class StreamProcessorReprocessingTest {
                     newProcessLatch.countDown();
                   }
                 }));
-    final long position = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING);
+    final long position = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING);
 
     // then
     newProcessLatch.await();
@@ -549,7 +547,7 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors.onEvent(
-                ValueType.WORKFLOW_INSTANCE,
+                ValueType.PROCESS_INSTANCE,
                 ELEMENT_ACTIVATING,
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
@@ -562,17 +560,17 @@ public final class StreamProcessorReprocessingTest {
                 }),
         t -> onProcessedListenerLatch.countDown());
 
-    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
     final long snapshotPosition =
-        streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+        streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
     onProcessedListenerLatch.await();
     streamProcessorRule.snapshot();
     streamProcessorRule.closeStreamProcessor();
     final long lastSourceEvent =
-        streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+        streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
     final long lastEvent =
-        streamProcessorRule.writeWorkflowInstanceEventWithSource(
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING, 1, lastSourceEvent);
+        streamProcessorRule.writeProcessInstanceEventWithSource(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, 1, lastSourceEvent);
 
     // when
     final List<Long> processedPositions = new ArrayList<>();
@@ -580,7 +578,7 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors.onEvent(
-                ValueType.WORKFLOW_INSTANCE,
+                ValueType.PROCESS_INSTANCE,
                 ELEMENT_ACTIVATING,
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
@@ -605,15 +603,14 @@ public final class StreamProcessorReprocessingTest {
   @Test
   public void shouldUpdateLastProcessedPositionAfterReprocessing() throws Exception {
     // given
-    final long firstPosition =
-        streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
-    streamProcessorRule.writeWorkflowInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
+    final long firstPosition = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeProcessInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
 
     waitUntil(
         () ->
             streamProcessorRule
                 .events()
-                .onlyWorkflowInstanceRecords()
+                .onlyProcessInstanceRecords()
                 .withIntent(ELEMENT_ACTIVATED)
                 .exists());
 
@@ -643,7 +640,7 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors.onEvent(
-                ValueType.WORKFLOW_INSTANCE,
+                ValueType.PROCESS_INSTANCE,
                 ELEMENT_ACTIVATING,
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
@@ -656,9 +653,9 @@ public final class StreamProcessorReprocessingTest {
                 }),
         (t) -> onProcessedListenerLatch.countDown());
 
-    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING);
+    streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING);
     final var snapshotPosition =
-        streamProcessorRule.writeWorkflowInstanceEvent(
+        streamProcessorRule.writeProcessInstanceEvent(
             ELEMENT_ACTIVATING); // should be processed and included in the snapshot
     onProcessedListenerLatch.await();
 

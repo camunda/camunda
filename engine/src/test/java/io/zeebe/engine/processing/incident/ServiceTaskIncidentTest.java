@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.incident;
 
@@ -18,11 +18,11 @@ import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -69,18 +69,18 @@ public class ServiceTaskIncidentTest {
         .deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    final Record<WorkflowInstanceRecordValue> recordThatLeadsToIncident =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> recordThatLeadsToIncident =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
@@ -104,18 +104,18 @@ public class ServiceTaskIncidentTest {
         .deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    final Record<WorkflowInstanceRecordValue> recordThatLeadsToIncident =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> recordThatLeadsToIncident =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
@@ -138,11 +138,11 @@ public class ServiceTaskIncidentTest {
                 t -> t.zeebeJobTypeExpression("lorem"))) // invalid expression, will fail at runtime
         .deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     final Record<IncidentRecordValue> incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // when
@@ -156,16 +156,12 @@ public class ServiceTaskIncidentTest {
 
     // ... resolve incident
     final Record<IncidentRecordValue> incidentResolvedEvent =
-        ENGINE
-            .incident()
-            .ofInstance(workflowInstanceKey)
-            .withKey(incidentRecord.getKey())
-            .resolve();
+        ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentRecord.getKey()).resolve();
 
     // then
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .withElementId(SERVICE_TASK_ID)
                 .exists())
         .isTrue();
@@ -189,18 +185,18 @@ public class ServiceTaskIncidentTest {
         .deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    final Record<WorkflowInstanceRecordValue> recordThatLeadsToIncident =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> recordThatLeadsToIncident =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
@@ -224,18 +220,18 @@ public class ServiceTaskIncidentTest {
         .deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    final Record<WorkflowInstanceRecordValue> recordThatLeadsToIncident =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> recordThatLeadsToIncident =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
@@ -260,11 +256,11 @@ public class ServiceTaskIncidentTest {
                         "lorem"))) // invalid expression, will fail at runtime
         .deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     final Record<IncidentRecordValue> incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // when
@@ -278,16 +274,12 @@ public class ServiceTaskIncidentTest {
 
     // ... resolve incident
     final Record<IncidentRecordValue> incidentResolvedEvent =
-        ENGINE
-            .incident()
-            .ofInstance(workflowInstanceKey)
-            .withKey(incidentRecord.getKey())
-            .resolve();
+        ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentRecord.getKey()).resolve();
 
     // then
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .withElementId(SERVICE_TASK_ID)
                 .exists())
         .isTrue();

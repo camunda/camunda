@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.job;
 
@@ -63,7 +63,7 @@ public final class ActivatableJobsNotificationTests {
   @Test
   public void shouldNotifyWhenJobCreated() {
     // when
-    createWorkflowInstanceAndJobs(3);
+    createProcessInstanceAndJobs(3);
 
     // then
     Mockito.verify(JOB_AVAILABLE_CALLBACK, times(3)).accept(taskType);
@@ -72,11 +72,11 @@ public final class ActivatableJobsNotificationTests {
   @Test
   public void shouldNotifyWhenJobsAvailableAgain() {
     // given
-    createWorkflowInstanceAndJobs(1);
+    createProcessInstanceAndJobs(1);
     final Record<JobBatchRecordValue> jobs = activateJobs(1);
 
     // when
-    createWorkflowInstanceAndJobs(1);
+    createProcessInstanceAndJobs(1);
 
     // then
     Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).accept(taskType);
@@ -85,11 +85,11 @@ public final class ActivatableJobsNotificationTests {
   @Test
   public void shouldNotifyWhenJobCanceled() {
     // given
-    final List<Long> instanceKeys = createWorkflowInstanceAndJobs(1);
-    ENGINE.workflowInstance().withInstanceKey(instanceKeys.get(0)).cancel();
+    final List<Long> instanceKeys = createProcessInstanceAndJobs(1);
+    ENGINE.processInstance().withInstanceKey(instanceKeys.get(0)).cancel();
 
     // when
-    createWorkflowInstanceAndJobs(1);
+    createProcessInstanceAndJobs(1);
 
     // then
     Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).accept(taskType);
@@ -98,7 +98,7 @@ public final class ActivatableJobsNotificationTests {
   @Test
   public void shouldNotifyWhenJobsAvailableAfterTimeOut() {
     // given
-    createWorkflowInstanceAndJobs(1);
+    createProcessInstanceAndJobs(1);
     activateJobs(1, Duration.ofMillis(10));
 
     // when
@@ -112,14 +112,14 @@ public final class ActivatableJobsNotificationTests {
   @Test
   public void shouldNotifyWhenJobCreatedAfterNotActivatedJobCompleted() {
     // given
-    createWorkflowInstanceAndJobs(1);
+    createProcessInstanceAndJobs(1);
     final long jobKey = activateJobs(1, Duration.ofMillis(10)).getValue().getJobKeys().get(0);
     ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
     RecordingExporter.jobRecords(TIMED_OUT).withType(taskType).getFirst();
 
     // when
     ENGINE.job().withKey(jobKey).complete();
-    createWorkflowInstanceAndJobs(1);
+    createProcessInstanceAndJobs(1);
 
     // then
     Mockito.verify(JOB_AVAILABLE_CALLBACK, times(3)).accept(taskType);
@@ -128,7 +128,7 @@ public final class ActivatableJobsNotificationTests {
   @Test
   public void shouldNotifyWhenJobsFailWithRetryAvailable() {
     // given
-    createWorkflowInstanceAndJobs(1);
+    createProcessInstanceAndJobs(1);
     final Record<JobBatchRecordValue> jobs = activateJobs(1);
     final long jobKey = jobs.getValue().getJobKeys().get(0);
 
@@ -142,20 +142,20 @@ public final class ActivatableJobsNotificationTests {
   @Test
   public void shouldNotifyWhenFailedJobsResolved() {
     // given
-    createWorkflowInstanceAndJobs(1);
+    createProcessInstanceAndJobs(1);
     final Record<JobBatchRecordValue> jobs = activateJobs(1);
     final JobRecordValue job = jobs.getValue().getJobs().get(0);
 
-    ENGINE.job().withType(taskType).ofInstance(job.getWorkflowInstanceKey()).fail();
+    ENGINE.job().withType(taskType).ofInstance(job.getProcessInstanceKey()).fail();
 
     // when
     ENGINE
         .job()
-        .ofInstance(job.getWorkflowInstanceKey())
+        .ofInstance(job.getProcessInstanceKey())
         .withType(taskType)
         .withRetries(1)
         .updateRetries();
-    ENGINE.incident().ofInstance(job.getWorkflowInstanceKey()).resolve();
+    ENGINE.incident().ofInstance(job.getProcessInstanceKey()).resolve();
 
     // then
     Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).accept(taskType);
@@ -176,10 +176,10 @@ public final class ActivatableJobsNotificationTests {
     Mockito.verify(JOB_AVAILABLE_CALLBACK, times(1)).accept(secondType);
   }
 
-  private List<Long> createWorkflowInstanceAndJobs(final int amount) {
+  private List<Long> createProcessInstanceAndJobs(final int amount) {
     return IntStream.range(0, amount)
         .mapToObj(i -> ENGINE.createJob(taskType, PROCESS_ID))
-        .map(r -> r.getValue().getWorkflowInstanceKey())
+        .map(r -> r.getValue().getProcessInstanceKey())
         .collect(Collectors.toList());
   }
 

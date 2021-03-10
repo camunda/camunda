@@ -24,7 +24,7 @@ import java.util.Map;
  *
  * <p>See {@link JobIntent} for intents.
  */
-public interface JobRecordValue extends RecordValueWithVariables, WorkflowInstanceRelated {
+public interface JobRecordValue extends RecordValueWithVariables, ProcessInstanceRelated {
 
   /** @return the type of the job */
   String getType();
@@ -54,7 +54,7 @@ public interface JobRecordValue extends RecordValueWithVariables, WorkflowInstan
 
   /**
    * @return the error code to identify the business error. It is set by the job worker then the
-   *     processing fails because of a non-technical error that should be handled by the workflow.
+   *     processing fails because of a non-technical error that should be handled by the process.
    */
   String getErrorCode();
 
@@ -64,12 +64,12 @@ public interface JobRecordValue extends RecordValueWithVariables, WorkflowInstan
   /** @return the element instance key of the corresponding service task */
   long getElementInstanceKey();
 
-  /** @return the bpmn process id of the corresponding workflow definition */
+  /** @return the bpmn process id of the corresponding process definition */
   String getBpmnProcessId();
 
-  /** @return the version of the corresponding workflow definition */
-  int getWorkflowDefinitionVersion();
+  /** @return the version of the corresponding process definition */
+  int getProcessDefinitionVersion();
 
-  /** @return the workflow key of the corresponding workflow definition */
-  long getWorkflowKey();
+  /** @return the process key of the corresponding process definition */
+  long getProcessDefinitionKey();
 }

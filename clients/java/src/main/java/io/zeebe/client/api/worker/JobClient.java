@@ -39,7 +39,7 @@ public interface JobClient {
    *  .send();
    * </pre>
    *
-   * <p>If the job is linked to a workflow instance then this command will complete the related
+   * <p>If the job is linked to a process instance then this command will complete the related
    * activity and continue the flow.
    *
    * @param jobKey the key which identifies the job
@@ -80,7 +80,7 @@ public interface JobClient {
    *  .send();
    * </pre>
    *
-   * <p>The error is handled in the workflow by an error catch event. If there is no error catch
+   * <p>The error is handled in the process by an error catch event. If there is no error catch
    * event with the specified errorCode then an incident will be raised instead.
    *
    * @param jobKey the key which identifies the job

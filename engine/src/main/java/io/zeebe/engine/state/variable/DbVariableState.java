@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.variable;
 
@@ -90,18 +90,18 @@ public class DbVariableState implements MutableVariableState {
   public void setVariableLocal(
       final long key,
       final long scopeKey,
-      final long workflowKey,
+      final long processDefinitionKey,
       final DirectBuffer name,
       final DirectBuffer value) {
     setVariableLocal(
-        key, scopeKey, workflowKey, name, 0, name.capacity(), value, 0, value.capacity());
+        key, scopeKey, processDefinitionKey, name, 0, name.capacity(), value, 0, value.capacity());
   }
 
   @Override
   public void setVariableLocal(
       final long key,
       final long scopeKey,
-      final long workflowKey,
+      final long processDefinitionKey,
       final DirectBuffer name,
       final int nameOffset,
       final int nameLength,

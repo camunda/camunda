@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.appliers;
 
@@ -16,7 +16,7 @@ import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
 class JobCompletedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
@@ -46,7 +46,7 @@ class JobCompletedApplier implements TypedEventApplier<JobIntent, JobRecord> {
       if (scopeInstance != null && scopeInstance.isActive()) {
 
         // TODO (#6172) move to somewhere else
-        elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
+        elementInstance.setState(ProcessInstanceIntent.ELEMENT_COMPLETING);
         elementInstance.setJobKey(-1);
         elementInstanceState.updateInstance(elementInstance);
         // TODO move to somewhere else

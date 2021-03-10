@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.incident;
 
@@ -15,10 +15,10 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -44,7 +44,7 @@ public final class TimerIncidentTest {
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
-  private static BpmnModelInstance createWorkflow(final String expression) {
+  private static BpmnModelInstance createProcess(final String expression) {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .intermediateCatchEvent(ELEMENT_ID, b -> b.timerWithDurationExpression(expression))
@@ -52,7 +52,7 @@ public final class TimerIncidentTest {
         .done();
   }
 
-  private static BpmnModelInstance createWorkflowWithCycle(final String expression) {
+  private static BpmnModelInstance createProcessWithCycle(final String expression) {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .serviceTask(
@@ -74,17 +74,17 @@ public final class TimerIncidentTest {
   @Test
   public void shouldCreateIncidentIfDurationVariableNotFound() {
     // when
-    ENGINE.deployment().withXmlResource(createWorkflow(DURATION_EXPRESSION)).deploy();
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    ENGINE.deployment().withXmlResource(createProcess(DURATION_EXPRESSION)).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    final Record<WorkflowInstanceRecordValue> elementInstance =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId(ELEMENT_ID)
             .getFirst();
 
@@ -103,10 +103,10 @@ public final class TimerIncidentTest {
   @Test
   public void shouldCreateIncidentIfDurationVariableNotADuration() {
     // when
-    ENGINE.deployment().withXmlResource(createWorkflow(DURATION_VARIABLE)).deploy();
-    final long workflowInstanceKey =
+    ENGINE.deployment().withXmlResource(createProcess(DURATION_VARIABLE)).deploy();
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(DURATION_VARIABLE, "not_a_duration_expression")
             .create();
@@ -114,11 +114,11 @@ public final class TimerIncidentTest {
     // then
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    final Record<WorkflowInstanceRecordValue> elementInstance =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId(ELEMENT_ID)
             .getFirst();
 
@@ -135,10 +135,10 @@ public final class TimerIncidentTest {
   @Test
   public void shouldCreateIncidentIfCycleExpressionCannotBeEvaluated() {
     // when
-    ENGINE.deployment().withXmlResource(createWorkflowWithCycle(CYCLE_EXPRESSION)).deploy();
-    final long workflowInstanceKey =
+    ENGINE.deployment().withXmlResource(createProcessWithCycle(CYCLE_EXPRESSION)).deploy();
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(DURATION_VARIABLE, "not_a_duration_expression")
             .create();
@@ -146,11 +146,11 @@ public final class TimerIncidentTest {
     // then
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    final Record<WorkflowInstanceRecordValue> elementInstance =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId(ELEMENT_ID)
             .getFirst();
 
@@ -167,12 +167,12 @@ public final class TimerIncidentTest {
   @Test
   public void shouldResolveIncident() {
     // given
-    ENGINE.deployment().withXmlResource(createWorkflow(DURATION_EXPRESSION)).deploy();
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    ENGINE.deployment().withXmlResource(createProcess(DURATION_EXPRESSION)).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // when
@@ -182,14 +182,14 @@ public final class TimerIncidentTest {
         .withDocument(Collections.singletonMap(DURATION_VARIABLE, Duration.ofSeconds(1).toString()))
         .update();
 
-    ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incident.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
+            RecordingExporter.processInstanceRecords()
                 .withRecordKey(incident.getValue().getElementInstanceKey())
                 .limit(2))
         .extracting(Record::getIntent)
-        .contains(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
   }
 }

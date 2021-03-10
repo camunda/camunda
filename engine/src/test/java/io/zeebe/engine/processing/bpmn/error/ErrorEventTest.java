@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn.error;
 
@@ -17,7 +17,7 @@ import io.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -36,14 +36,14 @@ public class ErrorEventTest {
   private static final String ERROR_CODE = "ERROR";
 
   private static final BpmnModelInstance SINGLE_BOUNDARY_EVENT =
-      workflow(
+      process(
           serviceTask -> serviceTask.boundaryEvent("error", b -> b.error(ERROR_CODE)).endEvent());
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private static BpmnModelInstance workflow(final Consumer<ServiceTaskBuilder> customizer) {
+  private static BpmnModelInstance process(final Consumer<ServiceTaskBuilder> customizer) {
     final var builder =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
@@ -59,37 +59,37 @@ public class ErrorEventTest {
     // given
     ENGINE.deployment().withXmlResource(SINGLE_BOUNDARY_EVENT).deploy();
 
-    final var workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     ENGINE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSequence(
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.EVENT_OCCURRED),
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.SEQUENCE_FLOW, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -98,44 +98,44 @@ public class ErrorEventTest {
     ENGINE
         .deployment()
         .withXmlResource(
-            workflow(
+            process(
                 serviceTask -> {
                   serviceTask.boundaryEvent("error-1", b -> b.error("error-1").endEvent());
                   serviceTask.boundaryEvent("error-2", b -> b.error("error-2").endEvent());
                 }))
         .deploy();
 
-    final var workflowInstanceKey1 = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final var workflowInstanceKey2 = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var processInstanceKey1 = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var processInstanceKey2 = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     ENGINE
         .job()
-        .ofInstance(workflowInstanceKey1)
+        .ofInstance(processInstanceKey1)
         .withType(JOB_TYPE)
         .withErrorCode("error-1")
         .throwError();
 
     ENGINE
         .job()
-        .ofInstance(workflowInstanceKey2)
+        .ofInstance(processInstanceKey2)
         .withType(JOB_TYPE)
         .withErrorCode("error-2")
         .throwError();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey1)
-                .limitToWorkflowInstanceCompleted()
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey1)
+                .limitToProcessInstanceCompleted()
                 .withElementType(BpmnElementType.BOUNDARY_EVENT))
         .extracting(r -> r.getValue().getElementId())
         .containsOnly("error-1");
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey2)
-                .limitToWorkflowInstanceCompleted()
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey2)
+                .limitToProcessInstanceCompleted()
                 .withElementType(BpmnElementType.BOUNDARY_EVENT))
         .extracting(r -> r.getValue().getElementId())
         .containsOnly("error-2");
@@ -146,19 +146,18 @@ public class ErrorEventTest {
     // given
     ENGINE.deployment().withXmlResource(SINGLE_BOUNDARY_EVENT).deploy();
 
-    final var workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     ENGINE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
     // then
-    assertThat(
-            RecordingExporter.records().limitToWorkflowInstance(workflowInstanceKey).jobRecords())
+    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey).jobRecords())
         .extracting(Record::getIntent)
         .containsExactly(
             JobIntent.CREATE, JobIntent.CREATED, JobIntent.THROW_ERROR, JobIntent.ERROR_THROWN);
@@ -167,14 +166,14 @@ public class ErrorEventTest {
   @Test
   public void shouldCatchErrorFromChildInstance() {
     // given
-    final var workflowChild =
+    final var processChild =
         Bpmn.createExecutableProcess("wf-child")
             .startEvent()
             .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
             .endEvent()
             .done();
 
-    final var workflowParent =
+    final var processParent =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .callActivity("call", c -> c.zeebeProcessId("wf-child"))
@@ -184,49 +183,49 @@ public class ErrorEventTest {
 
     ENGINE
         .deployment()
-        .withXmlResource("wf-child.bpmn", workflowChild)
-        .withXmlResource("wf-parent.bpmn", workflowParent)
+        .withXmlResource("wf-child.bpmn", processChild)
+        .withXmlResource("wf-parent.bpmn", processParent)
         .deploy();
 
-    final var parentWorkflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var parentProcessInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    final var childWorkflowInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withParentWorkflowInstanceKey(parentWorkflowInstanceKey)
+    final var childProcessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(parentProcessInstanceKey)
             .getFirst()
             .getValue()
-            .getWorkflowInstanceKey();
+            .getProcessInstanceKey();
 
     // when
     ENGINE
         .job()
-        .ofInstance(childWorkflowInstanceKey)
+        .ofInstance(childProcessInstanceKey)
         .withType(JOB_TYPE)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(childWorkflowInstanceKey)
-                .limitToWorkflowInstanceTerminated())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(childProcessInstanceKey)
+                .limitToProcessInstanceTerminated())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(parentWorkflowInstanceKey)
-                .limitToWorkflowInstanceCompleted())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(parentProcessInstanceKey)
+                .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
-            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.EVENT_OCCURRED),
-            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -235,7 +234,7 @@ public class ErrorEventTest {
     final Consumer<EventSubProcessBuilder> eventSubprocess =
         s -> s.startEvent("error-start-event").error(ERROR_CODE).endEvent();
 
-    final var workflow =
+    final var process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .subProcess(
@@ -250,11 +249,11 @@ public class ErrorEventTest {
             .endEvent()
             .done();
 
-    ENGINE.deployment().withXmlResource(workflow).deploy();
+    ENGINE.deployment().withXmlResource(process).deploy();
 
-    final var workflowInstanceKey =
+    final var processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("items", List.of(1))
             .create();
@@ -262,32 +261,32 @@ public class ErrorEventTest {
     // when
     ENGINE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
-            tuple("error-start-event", WorkflowInstanceIntent.EVENT_OCCURRED),
-            tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple("error-subprocess", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("error-start-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("error-start-event", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple("error-subprocess", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple("subprocess", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple("error-start-event", ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple("task", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple("error-subprocess", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("error-start-event", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("error-start-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("error-subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
   public void shouldCatchErrorOutsideMultiInstanceSubprocess() {
     // given
-    final var workflow =
+    final var process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .subProcess(
@@ -302,42 +301,42 @@ public class ErrorEventTest {
             .endEvent()
             .done();
 
-    ENGINE.deployment().withXmlResource(workflow).deploy();
+    ENGINE.deployment().withXmlResource(process).deploy();
 
-    final var workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     ENGINE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
-            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.EVENT_OCCURRED),
-            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
   public void shouldThrowErrorOnEndEvent() {
     // given
-    final var workflow =
+    final var process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .subProcess(
@@ -351,26 +350,26 @@ public class ErrorEventTest {
             .endEvent()
             .done();
 
-    ENGINE.deployment().withXmlResource(workflow).deploy();
+    ENGINE.deployment().withXmlResource(process).deploy();
 
     // when
-    final var workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
-            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.EVENT_OCCURRED),
-            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 }

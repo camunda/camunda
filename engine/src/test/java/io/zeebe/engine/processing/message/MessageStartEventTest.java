@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message;
 
@@ -19,8 +19,8 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -79,22 +79,22 @@ public final class MessageStartEventTest {
     engine.message().withCorrelationKey(CORRELATION_KEY_1).withName(MESSAGE_NAME_1).publish();
 
     // then
-    final var workflowInstance =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+    final var processInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .filterRootScope()
             .getFirst();
 
     final var startEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementType(BpmnElementType.START_EVENT)
             .getFirst();
 
     Assertions.assertThat(startEvent.getValue())
-        .hasWorkflowKey(workflowInstance.getValue().getWorkflowKey())
-        .hasBpmnProcessId(workflowInstance.getValue().getBpmnProcessId())
-        .hasVersion(workflowInstance.getValue().getVersion())
-        .hasWorkflowInstanceKey(workflowInstance.getKey())
-        .hasFlowScopeKey(workflowInstance.getKey());
+        .hasProcessDefinitionKey(processInstance.getValue().getProcessDefinitionKey())
+        .hasBpmnProcessId(processInstance.getValue().getBpmnProcessId())
+        .hasVersion(processInstance.getValue().getVersion())
+        .hasProcessInstanceKey(processInstance.getKey())
+        .hasFlowScopeKey(processInstance.getKey());
   }
 
   @Test
@@ -108,7 +108,7 @@ public final class MessageStartEventTest {
 
     // then
     final var startEventActivated =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementType(BpmnElementType.START_EVENT)
             .getFirst();
 
@@ -118,9 +118,9 @@ public final class MessageStartEventTest {
             .getFirst();
 
     Assertions.assertThat(subscriptionCorrelated.getValue())
-        .hasWorkflowKey(startEventActivated.getValue().getWorkflowKey())
+        .hasProcessDefinitionKey(startEventActivated.getValue().getProcessDefinitionKey())
         .hasBpmnProcessId(startEventActivated.getValue().getBpmnProcessId())
-        .hasWorkflowInstanceKey(startEventActivated.getValue().getWorkflowInstanceKey())
+        .hasProcessInstanceKey(startEventActivated.getValue().getProcessInstanceKey())
         .hasStartEventId(startEventActivated.getValue().getElementId())
         .hasMessageKey(messagePublished.getKey())
         .hasMessageName(MESSAGE_NAME_1)
@@ -139,16 +139,16 @@ public final class MessageStartEventTest {
     engine.job().withKey(job.getKey()).complete();
 
     // then
-    assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
+    assertThat(RecordingExporter.processInstanceRecords().limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSequence(
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.EVENT_OCCURRED),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -163,16 +163,16 @@ public final class MessageStartEventTest {
     engine.job().withKey(job.getKey()).complete();
 
     // then
-    assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
+    assertThat(RecordingExporter.processInstanceRecords().limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSequence(
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.EVENT_OCCURRED),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -213,12 +213,12 @@ public final class MessageStartEventTest {
         .publish();
 
     // then
-    final var workflowInstance =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+    final var processInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .filterRootScope()
             .getFirst();
 
-    assertThat(RecordingExporter.variableRecords().withScopeKey(workflowInstance.getKey()).limit(1))
+    assertThat(RecordingExporter.variableRecords().withScopeKey(processInstance.getKey()).limit(1))
         .extracting(Record::getValue)
         .extracting(VariableRecordValue::getName, VariableRecordValue::getValue)
         .contains(tuple("y", "1"));
@@ -242,7 +242,7 @@ public final class MessageStartEventTest {
 
     // then
     final var startEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementType(BpmnElementType.START_EVENT)
             .getFirst();
 
@@ -291,8 +291,8 @@ public final class MessageStartEventTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .limitToWorkflowInstanceCompleted()
+            RecordingExporter.processInstanceRecords()
+                .limitToProcessInstanceCompleted()
                 .withElementType(BpmnElementType.START_EVENT))
         .extracting(r -> r.getValue().getElementId())
         .containsOnly("message-start");
@@ -340,8 +340,8 @@ public final class MessageStartEventTest {
         .containsExactly("1", "2");
 
     final var subscription =
-        RecordingExporter.workflowInstanceSubscriptionRecords(
-                WorkflowInstanceSubscriptionIntent.CORRELATED)
+        RecordingExporter.processInstanceSubscriptionRecords(
+                ProcessInstanceSubscriptionIntent.CORRELATED)
             .getFirst();
 
     Assertions.assertThat(subscription.getValue()).hasMessageKey(message2.getKey());
@@ -471,8 +471,8 @@ public final class MessageStartEventTest {
     final var job = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
     engine.job().withKey(job.getKey()).complete();
 
-    RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-        .withWorkflowInstanceKey(job.getValue().getWorkflowInstanceKey())
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(job.getValue().getProcessInstanceKey())
         .filterRootScope()
         .await();
 
@@ -505,7 +505,7 @@ public final class MessageStartEventTest {
 
     final var job = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
 
-    engine.workflowInstance().withInstanceKey(job.getValue().getWorkflowInstanceKey()).cancel();
+    engine.processInstance().withInstanceKey(job.getValue().getProcessInstanceKey()).cancel();
 
     // when
     engine
@@ -592,10 +592,10 @@ public final class MessageStartEventTest {
         .withVariables(Map.of("x", 3))
         .publish();
 
-    engine.workflowInstance().withInstanceKey(job1.getValue().getWorkflowInstanceKey()).cancel();
+    engine.processInstance().withInstanceKey(job1.getValue().getProcessInstanceKey()).cancel();
 
     final var job2 = RecordingExporter.jobRecords(JobIntent.CREATED).skip(1).getFirst();
-    engine.workflowInstance().withInstanceKey(job2.getValue().getWorkflowInstanceKey()).cancel();
+    engine.processInstance().withInstanceKey(job2.getValue().getProcessInstanceKey()).cancel();
 
     // then
     assertThat(RecordingExporter.variableRecords().withName("x").limit(3))
@@ -605,7 +605,7 @@ public final class MessageStartEventTest {
   }
 
   @Test
-  public void shouldCreateNewInstanceOfLatestWorkflowVersionForBufferedMessage() {
+  public void shouldCreateNewInstanceOfLatestProcessVersionForBufferedMessage() {
     // given
     engine
         .deployment()
@@ -638,7 +638,7 @@ public final class MessageStartEventTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementType(BpmnElementType.START_EVENT)
                 .limit(2))
         .extracting(r -> r.getValue().getElementId())

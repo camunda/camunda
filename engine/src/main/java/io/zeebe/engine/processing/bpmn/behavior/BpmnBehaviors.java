@@ -2,12 +2,12 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn.behavior;
 
-import io.zeebe.engine.processing.bpmn.WorkflowInstanceStateTransitionGuard;
+import io.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 
@@ -31,9 +31,9 @@ public interface BpmnBehaviors {
 
   BpmnDeferredRecordsBehavior deferredRecordsBehavior();
 
-  WorkflowInstanceStateTransitionGuard stateTransitionGuard();
+  ProcessInstanceStateTransitionGuard stateTransitionGuard();
 
-  BpmnWorkflowResultSenderBehavior workflowResultSenderBehavior();
+  BpmnProcessResultSenderBehavior processResultSenderBehavior();
 
   BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior();
 }

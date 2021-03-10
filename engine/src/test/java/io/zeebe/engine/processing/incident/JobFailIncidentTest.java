@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.incident;
 
@@ -22,11 +22,11 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -43,41 +43,41 @@ public final class JobFailIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String JOB_TYPE = "test";
-  private static final BpmnModelInstance WORKFLOW_INPUT_MAPPING =
+  private static final BpmnModelInstance PROCESS_INPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
           .serviceTask(
               "failingTask", t -> t.zeebeJobType(JOB_TYPE).zeebeInputExpression("foo", "foo"))
           .done();
   private static final Map<String, Object> VARIABLES = Maps.of(entry("foo", "bar"));
-  private static long workflowKey;
+  private static long processDefinitionKey;
 
   @Rule
   public RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private long workflowInstanceKey;
+  private long processInstanceKey;
 
   @BeforeClass
   public static void init() {
-    workflowKey =
+    processDefinitionKey =
         ENGINE
             .deployment()
-            .withXmlResource(WORKFLOW_INPUT_MAPPING)
+            .withXmlResource(PROCESS_INPUT_MAPPING)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0)
-            .getWorkflowKey();
+            .getProcessDefinitionKey();
   }
 
   @Before
   public void beforeTest() {
-    workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("process").withVariables(VARIABLES).create();
+    processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process").withVariables(VARIABLES).create();
 
     RecordingExporter.jobRecords()
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .withIntent(JobIntent.CREATED)
         .getFirst();
 
@@ -90,25 +90,25 @@ public final class JobFailIncidentTest {
 
     // when
     final Record<JobRecordValue> failedEvent =
-        ENGINE.job().withType(JOB_TYPE).ofInstance(workflowInstanceKey).fail();
+        ENGINE.job().withType(JOB_TYPE).ofInstance(processInstanceKey).fail();
 
     // then
     final Record activityEvent =
-        RecordingExporter.workflowInstanceRecords()
+        RecordingExporter.processInstanceRecords()
             .withElementId("failingTask")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .getFirst();
 
     final Record incidentCommand =
         RecordingExporter.incidentRecords()
             .withIntent(IncidentIntent.CREATE)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .withIntent(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     assertThat(incidentCommand.getSourceRecordPosition())
@@ -119,8 +119,8 @@ public final class JobFailIncidentTest {
         .hasErrorType(ErrorType.JOB_NO_RETRIES)
         .hasErrorMessage("No more retries left.")
         .hasBpmnProcessId("process")
-        .hasWorkflowKey(workflowKey)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(activityEvent.getKey())
         .hasVariableScopeKey(activityEvent.getKey());
@@ -133,32 +133,32 @@ public final class JobFailIncidentTest {
     // when
     ENGINE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
         .withErrorMessage("failed job")
         .fail();
 
     // then
     final Record activityEvent =
-        RecordingExporter.workflowInstanceRecords()
+        RecordingExporter.processInstanceRecords()
             .withElementId("failingTask")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     final Record failEvent =
         RecordingExporter.jobRecords()
             .withIntent(JobIntent.FAILED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record incidentCommand =
         RecordingExporter.incidentRecords()
             .withIntent(IncidentIntent.CREATE)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
@@ -169,8 +169,8 @@ public final class JobFailIncidentTest {
         .hasErrorType(ErrorType.JOB_NO_RETRIES)
         .hasErrorMessage("failed job")
         .hasBpmnProcessId("process")
-        .hasWorkflowKey(workflowKey)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(activityEvent.getKey())
         .hasVariableScopeKey(activityEvent.getKey());
@@ -181,7 +181,7 @@ public final class JobFailIncidentTest {
     // given
 
     // when
-    final JobClient jobClient = ENGINE.job().ofInstance(workflowInstanceKey).withType(JOB_TYPE);
+    final JobClient jobClient = ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE);
 
     jobClient.withRetries(1).withErrorMessage("first message").fail();
 
@@ -190,24 +190,24 @@ public final class JobFailIncidentTest {
 
     // then
     final Record activityEvent =
-        RecordingExporter.workflowInstanceRecords()
+        RecordingExporter.processInstanceRecords()
             .withElementId("failingTask")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .withIntent(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.JOB_NO_RETRIES)
         .hasErrorMessage("second message")
         .hasBpmnProcessId("process")
-        .hasWorkflowKey(workflowKey)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(activityEvent.getKey())
         .hasVariableScopeKey(activityEvent.getKey());
@@ -216,19 +216,19 @@ public final class JobFailIncidentTest {
   @Test
   public void shouldResolveIncidentIfJobRetriesIncreased() {
     // given
-    ENGINE.job().withType(JOB_TYPE).ofInstance(workflowInstanceKey).fail();
+    ENGINE.job().withType(JOB_TYPE).ofInstance(processInstanceKey).fail();
     final Record<IncidentRecordValue> incidentCreatedEvent =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
     // when
-    ENGINE.job().ofInstance(workflowInstanceKey).withType(JOB_TYPE).withRetries(1).updateRetries();
+    ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE).withRetries(1).updateRetries();
     final Record<IncidentRecordValue> resolvedIncident =
         ENGINE
             .incident()
-            .ofInstance(workflowInstanceKey)
+            .ofInstance(processInstanceKey)
             .withKey(incidentCreatedEvent.getKey())
             .resolve();
     ENGINE.jobs().withType(JOB_TYPE).activate();
@@ -237,14 +237,14 @@ public final class JobFailIncidentTest {
     final Record jobEvent =
         RecordingExporter.jobRecords()
             .withIntent(JobIntent.FAILED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record activityEvent =
-        RecordingExporter.workflowInstanceRecords()
+        RecordingExporter.processInstanceRecords()
             .withElementId("failingTask")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record incidentEvent =
@@ -262,8 +262,8 @@ public final class JobFailIncidentTest {
         .hasErrorType(ErrorType.JOB_NO_RETRIES)
         .hasErrorMessage("No more retries left.")
         .hasBpmnProcessId("process")
-        .hasWorkflowKey(workflowKey)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(activityEvent.getKey())
         .hasVariableScopeKey(activityEvent.getKey());
@@ -276,7 +276,7 @@ public final class JobFailIncidentTest {
                     jobBatchRecordValueRecord.getValue().getJobs().stream()
                         .anyMatch(
                             jobRecordValue ->
-                                jobRecordValue.getWorkflowInstanceKey() == workflowInstanceKey))
+                                jobRecordValue.getProcessInstanceKey() == processInstanceKey))
             .limit(2)
             .collect(Collectors.toList());
     assertThat(batchActivations).hasSize(2);
@@ -292,7 +292,7 @@ public final class JobFailIncidentTest {
             .filter(
                 r ->
                     r.getKey() == jobEvent.getKey()
-                        || r.getValue().getWorkflowInstanceKey() == workflowInstanceKey)
+                        || r.getValue().getProcessInstanceKey() == processInstanceKey)
             .limit(6)
             .collect(Collectors.toList());
 
@@ -310,34 +310,34 @@ public final class JobFailIncidentTest {
   @Test
   public void shouldDeleteIncidentIfJobIsCanceled() {
     // given
-    ENGINE.job().withType(JOB_TYPE).ofInstance(workflowInstanceKey).fail();
+    ENGINE.job().withType(JOB_TYPE).ofInstance(processInstanceKey).fail();
 
     final Record incidentCreatedEvent =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
-    final Record<WorkflowInstanceRecordValue> terminatingTask =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> terminatingTask =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("failingTask")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_TERMINATING)
+            .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATING)
             .getFirst();
 
     final Record jobCancelCommand =
         RecordingExporter.jobRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(JobIntent.CANCEL)
             .getFirst();
 
     final Record<IncidentRecordValue> resolvedIncidentEvent =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.RESOLVED)
             .getFirst();
 
@@ -350,8 +350,8 @@ public final class JobFailIncidentTest {
         .hasErrorType(ErrorType.JOB_NO_RETRIES)
         .hasErrorMessage("No more retries left.")
         .hasBpmnProcessId("process")
-        .hasWorkflowKey(workflowKey)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasVariableScopeKey(terminatingTask.getKey());
   }

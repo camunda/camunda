@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.message;
 
@@ -91,8 +91,8 @@ public final class MessageSubscriptionStateTest {
 
     // then
     assertThat(subscriptions).hasSize(1);
-    assertThat(subscriptions.get(0).getRecord().getWorkflowInstanceKey())
-        .isEqualTo(subscription.getWorkflowInstanceKey());
+    assertThat(subscriptions.get(0).getRecord().getProcessInstanceKey())
+        .isEqualTo(subscription.getProcessInstanceKey());
     assertThat(subscriptions.get(0).getRecord().getElementInstanceKey())
         .isEqualTo(subscription.getElementInstanceKey());
     assertThat(subscriptions.get(0).getRecord().getMessageName())
@@ -355,9 +355,9 @@ public final class MessageSubscriptionStateTest {
   private MessageSubscriptionRecord subscription(
       final String name, final String correlationKey, final long elementInstanceKey) {
     return new MessageSubscriptionRecord()
-        .setWorkflowInstanceKey(1L)
+        .setProcessInstanceKey(1L)
         .setElementInstanceKey(elementInstanceKey)
-        .setBpmnProcessId(wrapString("workflow"))
+        .setBpmnProcessId(wrapString("process"))
         .setMessageName(wrapString(name))
         .setCorrelationKey(wrapString(correlationKey))
         .setInterrupting(true);

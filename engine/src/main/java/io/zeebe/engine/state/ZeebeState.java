@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state;
 
@@ -18,17 +18,17 @@ import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessState;
 import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
-import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
-import io.zeebe.engine.state.mutable.MutableWorkflowState;
 import java.util.function.BiConsumer;
 
 public interface ZeebeState {
 
   MutableDeploymentState getDeploymentState();
 
-  MutableWorkflowState getWorkflowState();
+  MutableProcessState getProcessState();
 
   MutableJobState getJobState();
 
@@ -38,7 +38,7 @@ public interface ZeebeState {
 
   MutableMessageStartEventSubscriptionState getMessageStartEventSubscriptionState();
 
-  MutableWorkflowInstanceSubscriptionState getWorkflowInstanceSubscriptionState();
+  MutableProcessInstanceSubscriptionState getProcessInstanceSubscriptionState();
 
   MutableIncidentState getIncidentState();
 

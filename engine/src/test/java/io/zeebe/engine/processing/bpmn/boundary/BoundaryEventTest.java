@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn.boundary;
 
@@ -15,23 +15,23 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.protocol.record.value.VariableRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.test.util.record.ProcessInstances;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
-import io.zeebe.test.util.record.WorkflowInstances;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +55,7 @@ public final class BoundaryEventTest {
           .moveToActivity("task")
           .endEvent()
           .done();
-  private static final BpmnModelInstance NON_INTERRUPTING_WORKFLOW =
+  private static final BpmnModelInstance NON_INTERRUPTING_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .serviceTask("task", b -> b.zeebeJobType("type"))
@@ -73,24 +73,24 @@ public final class BoundaryEventTest {
   public void shouldTakeAllOutgoingSequenceFlowsIfTriggered() {
     // given
     ENGINE.deployment().withXmlResource(MULTIPLE_SEQUENCE_FLOWS).deploy();
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     RecordingExporter.timerRecords()
         .withHandlerNodeId("timer")
         .withIntent(TimerIntent.CREATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .getFirst();
     ENGINE.increaseTime(Duration.ofMinutes(1));
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .withElementType(BpmnElementType.END_EVENT)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .extracting(Record::getValue)
-        .extracting(WorkflowInstanceRecordValue::getElementId)
+        .extracting(ProcessInstanceRecordValue::getElementId)
         .contains("end1", "end2");
   }
 
@@ -98,17 +98,17 @@ public final class BoundaryEventTest {
   public void shouldActivateBoundaryEventWhenEventTriggered() {
     // given
     ENGINE.deployment().withXmlResource(MULTIPLE_SEQUENCE_FLOWS).deploy();
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     RecordingExporter.timerRecords()
         .withHandlerNodeId("timer")
         .withIntent(TimerIntent.CREATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .getFirst();
 
     RecordingExporter.jobRecords(JobIntent.CREATED)
         .withType("type")
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .getFirst();
 
     // when
@@ -117,30 +117,30 @@ public final class BoundaryEventTest {
     // then
     final List<Record<RecordValue>> records =
         RecordingExporter.records()
-            .limitToWorkflowInstance(workflowInstanceKey)
+            .limitToProcessInstance(processInstanceKey)
             .limit(
                 r ->
-                    r.getValue() instanceof WorkflowInstanceRecord
-                        && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("timer")
-                        && r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+                    r.getValue() instanceof ProcessInstanceRecord
+                        && ((ProcessInstanceRecord) r.getValue()).getElementId().equals("timer")
+                        && r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .asList();
 
     assertThat(records)
         .extracting(Record::getValueType, Record::getIntent)
         .containsSequence(
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(ValueType.JOB, JobIntent.CANCEL),
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(ValueType.JOB, JobIntent.CANCELED),
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_ACTIVATING));
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATING));
   }
 
   @Test
   public void shouldApplyOutputMappingOnTriggering() {
     // given
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .serviceTask("task", b -> b.zeebeJobType("type"))
@@ -151,9 +151,9 @@ public final class BoundaryEventTest {
             .moveToActivity("task")
             .endEvent()
             .done();
-    ENGINE.deployment().withXmlResource(workflow).deploy();
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     ENGINE
@@ -166,7 +166,7 @@ public final class BoundaryEventTest {
     // then
     final Record<VariableRecordValue> variableEvent =
         RecordingExporter.variableRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withName("bar")
             .getFirst();
     Assertions.assertThat(variableEvent.getValue()).hasValue("3");
@@ -175,7 +175,7 @@ public final class BoundaryEventTest {
   @Test
   public void shouldUseScopeVariablesWhenApplyingOutputMappings() {
     // given
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .serviceTask("task", b -> b.zeebeJobType("type").zeebeInputExpression("oof", "baz"))
@@ -186,10 +186,10 @@ public final class BoundaryEventTest {
             .moveToActivity("task")
             .endEvent()
             .done();
-    ENGINE.deployment().withXmlResource(workflow).deploy();
-    final long workflowInstanceKey =
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables("{ \"foo\": 1, \"oof\": 2 }")
             .create();
@@ -198,26 +198,26 @@ public final class BoundaryEventTest {
     RecordingExporter.timerRecords()
         .withHandlerNodeId("timer")
         .withIntent(TimerIntent.CREATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .getFirst();
     ENGINE.increaseTime(Duration.ofMinutes(1));
 
     // then
-    final Record<WorkflowInstanceRecordValue> boundaryTriggered =
-        RecordingExporter.workflowInstanceRecords()
+    final Record<ProcessInstanceRecordValue> boundaryTriggered =
+        RecordingExporter.processInstanceRecords()
             .withElementId("timer")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     final Map<String, String> variables =
-        WorkflowInstances.getCurrentVariables(workflowInstanceKey, boundaryTriggered.getPosition());
+        ProcessInstances.getCurrentVariables(processInstanceKey, boundaryTriggered.getPosition());
     assertThat(variables).contains(entry("foo", "1"), entry("oof", "2"));
   }
 
   @Test
   public void shouldTerminateSubProcessBeforeTriggeringBoundaryEvent() {
     // given
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .subProcess("sub")
@@ -233,8 +233,8 @@ public final class BoundaryEventTest {
             .moveToActivity("sub")
             .endEvent()
             .done();
-    ENGINE.deployment().withXmlResource(workflow).deploy();
-    ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    ENGINE.deployment().withXmlResource(process).deploy();
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     RecordingExporter.jobRecords().withIntent(JobIntent.CREATED).getFirst();
@@ -244,75 +244,75 @@ public final class BoundaryEventTest {
         RecordingExporter.records()
             .limit(
                 r ->
-                    r.getValue() instanceof WorkflowInstanceRecord
-                        && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("timer")
-                        && r.getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                    r.getValue() instanceof ProcessInstanceRecord
+                        && ((ProcessInstanceRecord) r.getValue()).getElementId().equals("timer")
+                        && r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED)
             .asList();
 
     assertThat(records)
         .extracting(Record::getValueType, Record::getIntent)
         .endsWith(
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(ValueType.JOB, JobIntent.CANCEL),
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(ValueType.JOB, JobIntent.CANCELED),
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
   public void shouldNotTerminateActivityForNonInterruptingBoundaryEvents() {
     // given
-    ENGINE.deployment().withXmlResource(NON_INTERRUPTING_WORKFLOW).deploy();
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    ENGINE.deployment().withXmlResource(NON_INTERRUPTING_PROCESS).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     RecordingExporter.jobRecords()
         .withType("type")
         .withIntent(JobIntent.CREATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .getFirst();
     ENGINE.increaseTime(Duration.ofSeconds(1));
     RecordingExporter.timerRecords()
         .withHandlerNodeId("event")
         .withIntent(TimerIntent.TRIGGER)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .getFirst();
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("type").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("type").complete();
 
     // then
     final List<Record<RecordValue>> records =
         RecordingExporter.records()
             .limit(
                 r ->
-                    r.getValue() instanceof WorkflowInstanceRecord
-                        && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("task")
-                        && r.getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                    r.getValue() instanceof ProcessInstanceRecord
+                        && ((ProcessInstanceRecord) r.getValue()).getElementId().equals("task")
+                        && r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED)
             .asList();
 
     assertThat(records)
         .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
             tuple(ValueType.TIMER, TimerIntent.CREATE),
             tuple(ValueType.JOB, JobIntent.COMPLETED),
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(ValueType.TIMER, TimerIntent.CANCEL),
-            tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
   public void shouldUseScopeToExtractCorrelationKeys() {
     // given
     final String processId = "shouldHaveScopeKeyIfBoundaryEvent";
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask("task", c -> c.zeebeJobType("type").zeebeInputExpression("bar", "foo"))
@@ -323,12 +323,12 @@ public final class BoundaryEventTest {
             .moveToActivity("task")
             .endEvent()
             .done();
-    ENGINE.deployment().withXmlResource(workflow).deploy();
+    ENGINE.deployment().withXmlResource(process).deploy();
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(processId)
             .withVariables("{'foo':1,'bar':2}")
             .create();
@@ -338,10 +338,10 @@ public final class BoundaryEventTest {
     // if correlation key was extracted from the task, then foo in the task scope would be 2 and
     // no event occurred would be published
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
+            RecordingExporter.processInstanceRecords()
                 .withElementId("task")
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .withIntent(WorkflowInstanceIntent.EVENT_OCCURRED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withIntent(ProcessInstanceIntent.EVENT_OCCURRED)
                 .getFirst())
         .isNotNull();
   }
@@ -350,7 +350,7 @@ public final class BoundaryEventTest {
   public void shouldHaveScopeKeyIfBoundaryEvent() {
     // given
     final String processId = "shouldHaveScopeKeyIfBoundaryEvent";
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask("task", c -> c.zeebeJobType("type"))
@@ -361,29 +361,29 @@ public final class BoundaryEventTest {
             .moveToActivity("task")
             .endEvent()
             .done();
-    ENGINE.deployment().withXmlResource(workflow).deploy();
+    ENGINE.deployment().withXmlResource(process).deploy();
 
     // when
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariable("orderId", true).create();
-    final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("orderId", true).create();
+    final Record<ProcessInstanceRecordValue> failureEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("task")
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("task")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L)
-        .hasVariableScopeKey(workflowInstanceKey);
+        .hasVariableScopeKey(processInstanceKey);
   }
 }

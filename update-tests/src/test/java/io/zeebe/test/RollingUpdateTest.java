@@ -2,15 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.response.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.ProcessInstanceEvent;
 import io.zeebe.client.api.worker.JobHandler;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebeGatewayNode;
@@ -134,8 +134,8 @@ public class RollingUpdateTest {
           .atMost(Duration.ofSeconds(5))
           .pollInterval(Duration.ofMillis(100))
           .ignoreExceptions()
-          .until(() -> createWorkflowInstance(client), Objects::nonNull)
-          .getWorkflowInstanceKey();
+          .until(() -> createProcessInstance(client), Objects::nonNull)
+          .getProcessInstanceKey();
     }
 
     try (final var client = newZeebeClient(availableBroker)) {
@@ -156,8 +156,8 @@ public class RollingUpdateTest {
             .atMost(Duration.ofSeconds(5))
             .pollInterval(Duration.ofMillis(100))
             .ignoreExceptions()
-            .until(() -> createWorkflowInstance(client), Objects::nonNull)
-            .getWorkflowInstanceKey();
+            .until(() -> createProcessInstance(client), Objects::nonNull)
+            .getProcessInstanceKey();
       }
 
       // wait for a snapshot - even if 0 is not the leader, it will get the replicated snapshot
@@ -184,19 +184,19 @@ public class RollingUpdateTest {
     Startables.deepStart(containers).join();
 
     // when
-    final long firstWorkflowInstanceKey;
+    final long firstProcessInstanceKey;
     var availableBroker = containers.get(0);
     try (final var client = newZeebeClient(availableBroker)) {
       deployProcess(client);
 
       // potentially retry in case we're faster than the deployment distribution
-      firstWorkflowInstanceKey =
+      firstProcessInstanceKey =
           Awaitility.await("process instance creation")
               .atMost(Duration.ofSeconds(5))
               .pollInterval(Duration.ofMillis(100))
               .ignoreExceptions()
-              .until(() -> createWorkflowInstance(client), Objects::nonNull)
-              .getWorkflowInstanceKey();
+              .until(() -> createProcessInstance(client), Objects::nonNull)
+              .getProcessInstanceKey();
     }
 
     for (int i = containers.size() - 1; i >= 0; i--) {
@@ -231,7 +231,7 @@ public class RollingUpdateTest {
         (jobClient, job) -> {
           jobClient.newCompleteCommand(job.getKey()).send().join();
           activatedJobs.compute(
-              job.getWorkflowInstanceKey(),
+              job.getProcessInstanceKey(),
               (ignored, list) -> {
                 final var appendedList =
                     Optional.ofNullable(list).orElse(new CopyOnWriteArrayList<>());
@@ -241,12 +241,12 @@ public class RollingUpdateTest {
         };
 
     try (final var client = newZeebeClient(availableBroker)) {
-      final var secondWorkflowInstanceKey = createWorkflowInstance(client).getWorkflowInstanceKey();
+      final var secondProcessInstanceKey = createProcessInstance(client).getProcessInstanceKey();
       final var expectedActivatedJobs =
           Map.of(
-              firstWorkflowInstanceKey,
+              firstProcessInstanceKey,
               expectedOrderedJobs,
-              secondWorkflowInstanceKey,
+              secondProcessInstanceKey,
               expectedOrderedJobs);
       client.newWorker().jobType("firstTask").handler(jobHandler).open();
       client.newWorker().jobType("secondTask").handler(jobHandler).open();
@@ -257,7 +257,7 @@ public class RollingUpdateTest {
     }
   }
 
-  private WorkflowInstanceEvent createWorkflowInstance(final ZeebeClient client) {
+  private ProcessInstanceEvent createProcessInstance(final ZeebeClient client) {
     return client
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
@@ -270,7 +270,7 @@ public class RollingUpdateTest {
   private void deployProcess(final ZeebeClient client) {
     client
         .newDeployCommand()
-        .addWorkflowModel(PROCESS, "process.bpmn")
+        .addProcessModel(PROCESS, "process.bpmn")
         .send()
         .join(10, TimeUnit.SECONDS);
   }

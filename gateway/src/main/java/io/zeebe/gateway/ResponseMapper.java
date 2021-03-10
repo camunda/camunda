@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.gateway;
 
@@ -12,11 +12,11 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
@@ -29,30 +29,30 @@ import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceResultRecord;
 import java.util.Iterator;
 import org.agrona.DirectBuffer;
 
 public final class ResponseMapper {
 
-  public static DeployWorkflowResponse toDeployWorkflowResponse(
+  public static DeployProcessResponse toDeployProcessResponse(
       final long key, final DeploymentRecord brokerResponse) {
-    final DeployWorkflowResponse.Builder responseBuilder =
-        DeployWorkflowResponse.newBuilder().setKey(key);
+    final DeployProcessResponse.Builder responseBuilder =
+        DeployProcessResponse.newBuilder().setKey(key);
 
     brokerResponse
-        .workflows()
+        .processes()
         .forEach(
-            workflow ->
+            process ->
                 responseBuilder
-                    .addWorkflowsBuilder()
-                    .setBpmnProcessId(bufferAsString(workflow.getBpmnProcessIdBuffer()))
-                    .setVersion(workflow.getVersion())
-                    .setWorkflowKey(workflow.getKey())
-                    .setResourceName(bufferAsString(workflow.getResourceNameBuffer())));
+                    .addProcessesBuilder()
+                    .setBpmnProcessId(bufferAsString(process.getBpmnProcessIdBuffer()))
+                    .setVersion(process.getVersion())
+                    .setProcessDefinitionKey(process.getKey())
+                    .setResourceName(bufferAsString(process.getResourceNameBuffer())));
 
     return responseBuilder.build();
   }
@@ -81,30 +81,30 @@ public final class ResponseMapper {
     return CompleteJobResponse.getDefaultInstance();
   }
 
-  public static CreateWorkflowInstanceResponse toCreateWorkflowInstanceResponse(
-      final long key, final WorkflowInstanceCreationRecord brokerResponse) {
-    return CreateWorkflowInstanceResponse.newBuilder()
-        .setWorkflowKey(brokerResponse.getWorkflowKey())
+  public static CreateProcessInstanceResponse toCreateProcessInstanceResponse(
+      final long key, final ProcessInstanceCreationRecord brokerResponse) {
+    return CreateProcessInstanceResponse.newBuilder()
+        .setProcessDefinitionKey(brokerResponse.getProcessDefinitionKey())
         .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessIdBuffer()))
         .setVersion(brokerResponse.getVersion())
-        .setWorkflowInstanceKey(brokerResponse.getWorkflowInstanceKey())
+        .setProcessInstanceKey(brokerResponse.getProcessInstanceKey())
         .build();
   }
 
-  public static CreateWorkflowInstanceWithResultResponse toCreateWorkflowInstanceWithResultResponse(
-      final long key, final WorkflowInstanceResultRecord brokerResponse) {
-    return CreateWorkflowInstanceWithResultResponse.newBuilder()
-        .setWorkflowKey(brokerResponse.getWorkflowKey())
+  public static CreateProcessInstanceWithResultResponse toCreateProcessInstanceWithResultResponse(
+      final long key, final ProcessInstanceResultRecord brokerResponse) {
+    return CreateProcessInstanceWithResultResponse.newBuilder()
+        .setProcessDefinitionKey(brokerResponse.getProcessDefinitionKey())
         .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessIdBuffer()))
         .setVersion(brokerResponse.getVersion())
-        .setWorkflowInstanceKey(brokerResponse.getWorkflowInstanceKey())
+        .setProcessInstanceKey(brokerResponse.getProcessInstanceKey())
         .setVariables(bufferAsJson(brokerResponse.getVariablesBuffer()))
         .build();
   }
 
-  public static CancelWorkflowInstanceResponse toCancelWorkflowInstanceResponse(
-      final long key, final WorkflowInstanceRecord brokerResponse) {
-    return CancelWorkflowInstanceResponse.getDefaultInstance();
+  public static CancelProcessInstanceResponse toCancelProcessInstanceResponse(
+      final long key, final ProcessInstanceRecord brokerResponse) {
+    return CancelProcessInstanceResponse.getDefaultInstance();
   }
 
   public static SetVariablesResponse toSetVariablesResponse(
@@ -128,9 +128,9 @@ public final class ResponseMapper {
               .setType(bufferAsString(job.getTypeBuffer()))
               .setBpmnProcessId(job.getBpmnProcessId())
               .setElementId(job.getElementId())
-              .setWorkflowInstanceKey(job.getWorkflowInstanceKey())
-              .setWorkflowDefinitionVersion(job.getWorkflowDefinitionVersion())
-              .setWorkflowKey(job.getWorkflowKey())
+              .setProcessInstanceKey(job.getProcessInstanceKey())
+              .setProcessDefinitionVersion(job.getProcessDefinitionVersion())
+              .setProcessDefinitionKey(job.getProcessDefinitionKey())
               .setElementInstanceKey(job.getElementInstanceKey())
               .setCustomHeaders(bufferAsJson(job.getCustomHeadersBuffer()))
               .setWorker(bufferAsString(job.getWorkerBuffer()))

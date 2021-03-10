@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.test.util.bpmn.random.blocks;
 
@@ -100,7 +100,7 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
    * This method build the step that results in a successful execution of the service task.
    * Successful execution here does not necessarily mean that the job is completed orderly.
    * Successful execution is any execution which moves the token past the service task, so that the
-   * workflow can continue.
+   * process can continue.
    */
   private AbstractExecutionStep buildStepForSuccessfulExecution(final Random random) {
     final AbstractExecutionStep result;

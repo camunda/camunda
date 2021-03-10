@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.it.gateway;
 
@@ -13,7 +13,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.gateway.cmd.BrokerRejectionException;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
-import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.protocol.record.RejectionType;
@@ -69,7 +69,7 @@ public final class GatewayIntegrationTest {
 
     // when
     client.sendRequestWithRetry(
-        new BrokerCreateWorkflowInstanceRequest(),
+        new BrokerCreateProcessInstanceRequest(),
         (k, r) -> {},
         error -> {
           errorResponse.set(error);

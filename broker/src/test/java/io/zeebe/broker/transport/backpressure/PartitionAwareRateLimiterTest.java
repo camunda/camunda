@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.transport.backpressure;
 
@@ -11,14 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Test;
 
 public final class PartitionAwareRateLimiterTest {
   private static final int PARTITIONS = 3;
-  private final Intent context = WorkflowInstanceCreationIntent.CREATE;
+  private final Intent context = ProcessInstanceCreationIntent.CREATE;
   private PartitionAwareRequestLimiter partitionedLimiter;
 
   @Before

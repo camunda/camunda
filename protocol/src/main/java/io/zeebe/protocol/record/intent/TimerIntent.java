@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.record.intent;
 
-public enum TimerIntent implements WorkflowInstanceRelatedIntent {
+public enum TimerIntent implements ProcessInstanceRelatedIntent {
   CREATE((short) 0),
   CREATED((short) 1),
 

@@ -2,12 +2,12 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.deployment.model.transformer;
 
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Process;
@@ -24,12 +24,12 @@ public final class ProcessTransformer implements ModelElementTransformer<Process
   public void transform(final Process element, final TransformContext context) {
 
     final String id = element.getId();
-    final ExecutableWorkflow workflow = new ExecutableWorkflow(id);
+    final ExecutableProcess process = new ExecutableProcess(id);
 
-    workflow.setElementType(
+    process.setElementType(
         BpmnElementType.bpmnElementTypeFor(element.getElementType().getTypeName()));
 
-    context.addWorkflow(workflow);
-    context.setCurrentWorkflow(workflow);
+    context.addProcess(process);
+    context.setCurrentProcess(process);
   }
 }

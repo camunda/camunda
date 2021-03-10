@@ -24,11 +24,11 @@ import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
  * <p>See {@link MessageSubscriptionIntent} for intents.
  */
 public interface MessageSubscriptionRecordValue
-    extends RecordValueWithVariables, WorkflowInstanceRelated {
+    extends RecordValueWithVariables, ProcessInstanceRelated {
 
-  /** @return the workflow instance key tied to the subscription */
+  /** @return the process instance key tied to the subscription */
   @Override
-  long getWorkflowInstanceKey();
+  long getProcessInstanceKey();
 
   /** @return the element instance key tied to the subscription */
   long getElementInstanceKey();

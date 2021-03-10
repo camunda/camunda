@@ -2,15 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.test;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.response.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.ProcessInstanceEvent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.SocketUtil;
@@ -77,13 +77,13 @@ public class ZeebeTestRule extends ExternalResource {
     brokerRule.after();
   }
 
-  public static WorkflowInstanceAssert assertThat(final WorkflowInstanceEvent workflowInstance) {
-    return WorkflowInstanceAssert.assertThat(workflowInstance);
+  public static ProcessInstanceAssert assertThat(final ProcessInstanceEvent processInstance) {
+    return ProcessInstanceAssert.assertThat(processInstance);
   }
 
-  public void printWorkflowInstanceEvents(final long key) {
-    RecordingExporter.workflowInstanceRecords()
-        .withWorkflowInstanceKey(key)
+  public void printProcessInstanceEvents(final long key) {
+    RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(key)
         .forEach(
             event -> {
               System.out.println("> " + event.toJson());

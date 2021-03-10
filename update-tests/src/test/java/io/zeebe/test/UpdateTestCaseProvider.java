@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.test;
 
@@ -34,27 +34,27 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
     return Stream.of(
         scenario()
             .name("job")
-            .deployWorkflow(jobWorkflow())
+            .deployProcess(jobProcess())
             .createInstance()
             .beforeUpgrade(this::activateJob)
             .afterUpgrade(this::completeJob)
             .done(),
         scenario()
             .name("message subscription")
-            .deployWorkflow(messageWorkflow())
+            .deployProcess(messageProcess())
             .createInstance(Map.of("key", "123"))
             .beforeUpgrade(this::awaitOpenMessageSubscription)
             .afterUpgrade(this::publishMessage)
             .done(),
         scenario()
             .name("message start event")
-            .deployWorkflow(msgStartWorkflow())
+            .deployProcess(msgStartProcess())
             .beforeUpgrade(this::awaitStartMessageSubscription)
             .afterUpgrade(this::publishMessage)
             .done(),
         scenario()
             .name("message event sub-process")
-            .deployWorkflow(
+            .deployProcess(
                 Bpmn.createExecutableProcess(PROCESS_ID)
                     .eventSubProcess(
                         "event-subprocess",
@@ -80,20 +80,20 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
             .done(),
         scenario()
             .name("timer")
-            .deployWorkflow(timerWorkflow())
+            .deployProcess(timerProcess())
             .beforeUpgrade(this::awaitTimerCreation)
             .afterUpgrade(this::awaitTimerTriggered)
             .done(),
         scenario()
             .name("incident")
-            .deployWorkflow(incidentWorkflow())
+            .deployProcess(incidentProcess())
             .createInstance()
             .beforeUpgrade(this::awaitIncidentCreation)
             .afterUpgrade(this::resolveIncident)
             .done(),
         scenario()
             .name("publish message")
-            .deployWorkflow(messageWorkflow())
+            .deployProcess(messageProcess())
             .beforeUpgrade(
                 state -> {
                   publishMessage(state, -1L, -1L);
@@ -114,9 +114,9 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
             .done(),
         scenario()
             .name("call activity")
-            .deployWorkflow(
-                new Tuple<>(parentWorkflow(), PROCESS_ID),
-                new Tuple<>(childWorkflow(), CHILD_PROCESS_ID))
+            .deployProcess(
+                new Tuple<>(parentProcess(), PROCESS_ID),
+                new Tuple<>(childProcess(), CHILD_PROCESS_ID))
             .createInstance()
             .afterUpgrade(
                 (state, wfKey, key) -> {
@@ -144,7 +144,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
             .done(),
         scenario()
             .name("parallel gateway")
-            .deployWorkflow(
+            .deployProcess(
                 Bpmn.createExecutableProcess(PROCESS_ID)
                     .startEvent()
                     .parallelGateway("fork")
@@ -161,7 +161,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
             .done(),
         scenario()
             .name("exclusive gateway")
-            .deployWorkflow(
+            .deployProcess(
                 Bpmn.createExecutableProcess(PROCESS_ID)
                     .startEvent()
                     .exclusiveGateway()
@@ -181,7 +181,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
             .done());
   }
 
-  private BpmnModelInstance jobWorkflow() {
+  private BpmnModelInstance jobProcess() {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .serviceTask(TASK, t -> t.zeebeJobType(TASK))
@@ -204,7 +204,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
     state.client().newCompleteCommand(key).send().join();
   }
 
-  private BpmnModelInstance messageWorkflow() {
+  private BpmnModelInstance messageProcess() {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .intermediateCatchEvent(
@@ -228,7 +228,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
     awaitMessageIsInState(state, MESSAGE, "PUBLISHED");
   }
 
-  private BpmnModelInstance msgStartWorkflow() {
+  private BpmnModelInstance msgStartProcess() {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .message(b -> b.zeebeCorrelationKeyExpression("key").name(MESSAGE))
@@ -236,7 +236,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
         .done();
   }
 
-  private BpmnModelInstance timerWorkflow() {
+  private BpmnModelInstance timerProcess() {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .timerWithCycle("R/PT1S")
@@ -244,7 +244,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
         .done();
   }
 
-  private BpmnModelInstance incidentWorkflow() {
+  private BpmnModelInstance incidentProcess() {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .serviceTask("failingTask", t -> t.zeebeJobType(TASK).zeebeInputExpression("foo", "foo"))
@@ -266,7 +266,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
     state.client().newCompleteCommand(job.getJobs().get(0).getKey()).send().join();
   }
 
-  private BpmnModelInstance parentWorkflow() {
+  private BpmnModelInstance parentProcess() {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .callActivity("c", b -> b.zeebeProcessId(CHILD_PROCESS_ID))
@@ -274,7 +274,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
         .done();
   }
 
-  private BpmnModelInstance childWorkflow() {
+  private BpmnModelInstance childProcess() {
     return Bpmn.createExecutableProcess(CHILD_PROCESS_ID)
         .startEvent()
         .serviceTask(TASK, b -> b.zeebeJobType(TASK))

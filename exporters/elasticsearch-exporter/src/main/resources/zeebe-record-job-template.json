@@ -27,13 +27,13 @@
             "bpmnProcessId": {
               "type": "keyword"
             },
-            "workflowDefinitionVersion": {
+            "processDefinitionVersion": {
               "type": "integer"
             },
-            "workflowInstanceKey": {
+            "processInstanceKey": {
               "type": "long"
             },
-            "workflowKey": {
+            "processDefinitionKey": {
               "type": "long"
             },
             "customHeaders": {

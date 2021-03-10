@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.message;
 
@@ -24,37 +24,37 @@ public final class DbMessageStartEventSubscriptionState
     implements MutableMessageStartEventSubscriptionState {
 
   private final DbString messageName;
-  private final DbLong workflowKey;
+  private final DbLong processDefinitionKey;
 
-  // (messageName, workflowKey => MessageSubscription)
-  private final DbCompositeKey<DbString, DbLong> messageNameAndWorkflowKey;
+  // (messageName, processDefinitionKey => MessageSubscription)
+  private final DbCompositeKey<DbString, DbLong> messageNameAndProcessDefinitionKey;
   private final ColumnFamily<DbCompositeKey<DbString, DbLong>, SubscriptionValue>
       subscriptionsColumnFamily;
   private final SubscriptionValue subscriptionValue = new SubscriptionValue();
 
-  // (workflowKey, messageName) => \0  : to find existing subscriptions of a workflow
-  private final DbCompositeKey<DbLong, DbString> workflowKeyAndMessageName;
+  // (processDefinitionKey, messageName) => \0  : to find existing subscriptions of a process
+  private final DbCompositeKey<DbLong, DbString> processDefinitionKeyAndMessageName;
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil>
-      subscriptionsOfWorkflowKeyColumnFamily;
+      subscriptionsOfProcessDefinitionKeyColumnFamily;
 
   public DbMessageStartEventSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     messageName = new DbString();
-    workflowKey = new DbLong();
-    messageNameAndWorkflowKey = new DbCompositeKey<>(messageName, workflowKey);
+    processDefinitionKey = new DbLong();
+    messageNameAndProcessDefinitionKey = new DbCompositeKey<>(messageName, processDefinitionKey);
     subscriptionsColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
             transactionContext,
-            messageNameAndWorkflowKey,
+            messageNameAndProcessDefinitionKey,
             subscriptionValue);
 
-    workflowKeyAndMessageName = new DbCompositeKey<>(workflowKey, messageName);
-    subscriptionsOfWorkflowKeyColumnFamily =
+    processDefinitionKeyAndMessageName = new DbCompositeKey<>(processDefinitionKey, messageName);
+    subscriptionsOfProcessDefinitionKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME,
             transactionContext,
-            workflowKeyAndMessageName,
+            processDefinitionKeyAndMessageName,
             DbNil.INSTANCE);
   }
 
@@ -63,29 +63,30 @@ public final class DbMessageStartEventSubscriptionState
     subscriptionValue.set(subscription);
 
     messageName.wrapBuffer(subscription.getMessageNameBuffer());
-    workflowKey.wrapLong(subscription.getWorkflowKey());
-    subscriptionsColumnFamily.put(messageNameAndWorkflowKey, subscriptionValue);
-    subscriptionsOfWorkflowKeyColumnFamily.put(workflowKeyAndMessageName, DbNil.INSTANCE);
+    processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
+    subscriptionsColumnFamily.put(messageNameAndProcessDefinitionKey, subscriptionValue);
+    subscriptionsOfProcessDefinitionKeyColumnFamily.put(
+        processDefinitionKeyAndMessageName, DbNil.INSTANCE);
   }
 
   @Override
-  public void removeSubscriptionsOfWorkflow(final long workflowKey) {
-    this.workflowKey.wrapLong(workflowKey);
+  public void removeSubscriptionsOfProcess(final long processDefinitionKey) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
 
-    subscriptionsOfWorkflowKeyColumnFamily.whileEqualPrefix(
-        this.workflowKey,
+    subscriptionsOfProcessDefinitionKeyColumnFamily.whileEqualPrefix(
+        this.processDefinitionKey,
         (key, value) -> {
-          subscriptionsColumnFamily.delete(messageNameAndWorkflowKey);
-          subscriptionsOfWorkflowKeyColumnFamily.delete(key);
+          subscriptionsColumnFamily.delete(messageNameAndProcessDefinitionKey);
+          subscriptionsOfProcessDefinitionKeyColumnFamily.delete(key);
         });
   }
 
   @Override
   public boolean exists(final MessageStartEventSubscriptionRecord subscription) {
     messageName.wrapBuffer(subscription.getMessageNameBuffer());
-    workflowKey.wrapLong(subscription.getWorkflowKey());
+    processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
 
-    return subscriptionsColumnFamily.exists(messageNameAndWorkflowKey);
+    return subscriptionsColumnFamily.exists(messageNameAndProcessDefinitionKey);
   }
 
   @Override

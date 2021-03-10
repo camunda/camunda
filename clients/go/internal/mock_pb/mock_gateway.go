@@ -56,24 +56,24 @@ func (mr *MockGatewayClientMockRecorder) ActivateJobs(arg0, arg1 interface{}, ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ActivateJobs", reflect.TypeOf((*MockGatewayClient)(nil).ActivateJobs), varargs...)
 }
 
-// CancelWorkflowInstance mocks base method
-func (m *MockGatewayClient) CancelWorkflowInstance(arg0 context.Context, arg1 *pb.CancelWorkflowInstanceRequest, arg2 ...grpc.CallOption) (*pb.CancelWorkflowInstanceResponse, error) {
+// CancelProcessInstance mocks base method
+func (m *MockGatewayClient) CancelProcessInstance(arg0 context.Context, arg1 *pb.CancelProcessInstanceRequest, arg2 ...grpc.CallOption) (*pb.CancelProcessInstanceResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "CancelWorkflowInstance", varargs...)
-	ret0, _ := ret[0].(*pb.CancelWorkflowInstanceResponse)
+	ret := m.ctrl.Call(m, "CancelProcessInstance", varargs...)
+	ret0, _ := ret[0].(*pb.CancelProcessInstanceResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CancelWorkflowInstance indicates an expected call of CancelWorkflowInstance
-func (mr *MockGatewayClientMockRecorder) CancelWorkflowInstance(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+// CancelProcessInstance indicates an expected call of CancelProcessInstance
+func (mr *MockGatewayClientMockRecorder) CancelProcessInstance(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelWorkflowInstance", reflect.TypeOf((*MockGatewayClient)(nil).CancelWorkflowInstance), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelProcessInstance", reflect.TypeOf((*MockGatewayClient)(nil).CancelProcessInstance), varargs...)
 }
 
 // CompleteJob mocks base method
@@ -96,64 +96,64 @@ func (mr *MockGatewayClientMockRecorder) CompleteJob(arg0, arg1 interface{}, arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteJob", reflect.TypeOf((*MockGatewayClient)(nil).CompleteJob), varargs...)
 }
 
-// CreateWorkflowInstance mocks base method
-func (m *MockGatewayClient) CreateWorkflowInstance(arg0 context.Context, arg1 *pb.CreateWorkflowInstanceRequest, arg2 ...grpc.CallOption) (*pb.CreateWorkflowInstanceResponse, error) {
+// CreateProcessInstance mocks base method
+func (m *MockGatewayClient) CreateProcessInstance(arg0 context.Context, arg1 *pb.CreateProcessInstanceRequest, arg2 ...grpc.CallOption) (*pb.CreateProcessInstanceResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "CreateWorkflowInstance", varargs...)
-	ret0, _ := ret[0].(*pb.CreateWorkflowInstanceResponse)
+	ret := m.ctrl.Call(m, "CreateProcessInstance", varargs...)
+	ret0, _ := ret[0].(*pb.CreateProcessInstanceResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateWorkflowInstance indicates an expected call of CreateWorkflowInstance
-func (mr *MockGatewayClientMockRecorder) CreateWorkflowInstance(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+// CreateProcessInstance indicates an expected call of CreateProcessInstance
+func (mr *MockGatewayClientMockRecorder) CreateProcessInstance(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWorkflowInstance", reflect.TypeOf((*MockGatewayClient)(nil).CreateWorkflowInstance), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProcessInstance", reflect.TypeOf((*MockGatewayClient)(nil).CreateProcessInstance), varargs...)
 }
 
-// CreateWorkflowInstanceWithResult mocks base method
-func (m *MockGatewayClient) CreateWorkflowInstanceWithResult(arg0 context.Context, arg1 *pb.CreateWorkflowInstanceWithResultRequest, arg2 ...grpc.CallOption) (*pb.CreateWorkflowInstanceWithResultResponse, error) {
+// CreateProcessInstanceWithResult mocks base method
+func (m *MockGatewayClient) CreateProcessInstanceWithResult(arg0 context.Context, arg1 *pb.CreateProcessInstanceWithResultRequest, arg2 ...grpc.CallOption) (*pb.CreateProcessInstanceWithResultResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "CreateWorkflowInstanceWithResult", varargs...)
-	ret0, _ := ret[0].(*pb.CreateWorkflowInstanceWithResultResponse)
+	ret := m.ctrl.Call(m, "CreateProcessInstanceWithResult", varargs...)
+	ret0, _ := ret[0].(*pb.CreateProcessInstanceWithResultResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateWorkflowInstanceWithResult indicates an expected call of CreateWorkflowInstanceWithResult
-func (mr *MockGatewayClientMockRecorder) CreateWorkflowInstanceWithResult(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+// CreateProcessInstanceWithResult indicates an expected call of CreateProcessInstanceWithResult
+func (mr *MockGatewayClientMockRecorder) CreateProcessInstanceWithResult(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWorkflowInstanceWithResult", reflect.TypeOf((*MockGatewayClient)(nil).CreateWorkflowInstanceWithResult), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProcessInstanceWithResult", reflect.TypeOf((*MockGatewayClient)(nil).CreateProcessInstanceWithResult), varargs...)
 }
 
-// DeployWorkflow mocks base method
-func (m *MockGatewayClient) DeployWorkflow(arg0 context.Context, arg1 *pb.DeployWorkflowRequest, arg2 ...grpc.CallOption) (*pb.DeployWorkflowResponse, error) {
+// DeployProcess mocks base method
+func (m *MockGatewayClient) DeployProcess(arg0 context.Context, arg1 *pb.DeployProcessRequest, arg2 ...grpc.CallOption) (*pb.DeployProcessResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "DeployWorkflow", varargs...)
-	ret0, _ := ret[0].(*pb.DeployWorkflowResponse)
+	ret := m.ctrl.Call(m, "DeployProcess", varargs...)
+	ret0, _ := ret[0].(*pb.DeployProcessResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// DeployWorkflow indicates an expected call of DeployWorkflow
-func (mr *MockGatewayClientMockRecorder) DeployWorkflow(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+// DeployProcess indicates an expected call of DeployProcess
+func (mr *MockGatewayClientMockRecorder) DeployProcess(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeployWorkflow", reflect.TypeOf((*MockGatewayClient)(nil).DeployWorkflow), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeployProcess", reflect.TypeOf((*MockGatewayClient)(nil).DeployProcess), varargs...)
 }
 
 // FailJob mocks base method

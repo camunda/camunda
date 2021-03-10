@@ -2,16 +2,16 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.streamprocessor;
 
 import static io.zeebe.engine.util.StreamProcessingComposite.getLogName;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETING;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETING;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -73,24 +73,24 @@ public final class StreamProcessorInconsistentPositionTest {
   public void shouldNotStartOnInconsistentLog() {
     // given
     final var position =
-        firstStreamProcessorComposite.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING);
+        firstStreamProcessorComposite.writeProcessInstanceEvent(ELEMENT_ACTIVATING);
     final var secondPosition =
-        firstStreamProcessorComposite.writeWorkflowInstanceEvent(ELEMENT_ACTIVATED);
+        firstStreamProcessorComposite.writeProcessInstanceEvent(ELEMENT_ACTIVATED);
     waitUntil(
         () ->
             new RecordStream(testStreams.events(getLogName(1)))
-                .onlyWorkflowInstanceRecords()
+                .onlyProcessInstanceRecords()
                 .withIntent(ELEMENT_ACTIVATED)
                 .exists());
 
     final var otherPosition =
-        secondStreamProcessorComposite.writeWorkflowInstanceEvent(ELEMENT_COMPLETING);
+        secondStreamProcessorComposite.writeProcessInstanceEvent(ELEMENT_COMPLETING);
     final var otherSecondPosition =
-        secondStreamProcessorComposite.writeWorkflowInstanceEvent(ELEMENT_COMPLETED);
+        secondStreamProcessorComposite.writeProcessInstanceEvent(ELEMENT_COMPLETED);
     waitUntil(
         () ->
             new RecordStream(testStreams.events(getLogName(2)))
-                .onlyWorkflowInstanceRecords()
+                .onlyProcessInstanceRecords()
                 .withIntent(ELEMENT_COMPLETED)
                 .exists());
 
@@ -103,8 +103,8 @@ public final class StreamProcessorInconsistentPositionTest {
         firstStreamProcessorComposite.startTypedStreamProcessor(
             (processors, context) ->
                 processors
-                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
-                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
+                    .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
+                    .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
 
     // then
     waitUntil(streamProcessor::isFailed);

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.gateway.broker;
 
@@ -25,20 +25,20 @@ import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandResponseBuilder;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
@@ -114,14 +114,14 @@ public final class BrokerClientTest {
     // given
     broker
         .onExecuteCommandRequest(
-            ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE)
+            ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE)
         .respondWithError()
         .errorCode(ErrorCode.INTERNAL_ERROR)
         .errorData("test")
         .register();
 
     assertThatThrownBy(
-            () -> client.sendRequestWithRetry(new BrokerCreateWorkflowInstanceRequest()).join())
+            () -> client.sendRequestWithRetry(new BrokerCreateProcessInstanceRequest()).join())
         .hasCauseInstanceOf(BrokerErrorException.class)
         .hasCause(new BrokerErrorException(new BrokerError(ErrorCode.INTERNAL_ERROR, "test")));
 
@@ -131,8 +131,8 @@ public final class BrokerClientTest {
 
     receivedCommandRequests.forEach(
         request -> {
-          assertThat(request.valueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE_CREATION);
-          assertThat(request.intent()).isEqualTo(WorkflowInstanceCreationIntent.CREATE);
+          assertThat(request.valueType()).isEqualTo(ValueType.PROCESS_INSTANCE_CREATION);
+          assertThat(request.intent()).isEqualTo(ProcessInstanceCreationIntent.CREATE);
         });
   }
 
@@ -141,10 +141,10 @@ public final class BrokerClientTest {
     // given
     registerCreateWfCommand();
 
-    final BrokerCreateWorkflowInstanceRequest request =
-        new BrokerCreateWorkflowInstanceRequest() {
+    final BrokerCreateProcessInstanceRequest request =
+        new BrokerCreateProcessInstanceRequest() {
           @Override
-          protected WorkflowInstanceCreationRecord toResponseDto(final DirectBuffer buffer) {
+          protected ProcessInstanceCreationRecord toResponseDto(final DirectBuffer buffer) {
             throw new RuntimeException("Catch Me");
           }
         };
@@ -160,14 +160,14 @@ public final class BrokerClientTest {
     // given
     broker
         .onExecuteCommandRequest(
-            ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE)
+            ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE)
         .respondWithError()
         .errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
         .errorData("")
         .register();
 
     // when
-    final var future = client.sendRequestWithRetry(new BrokerCreateWorkflowInstanceRequest());
+    final var future = client.sendRequestWithRetry(new BrokerCreateProcessInstanceRequest());
 
     // then
     // when the partition is repeatedly not found, the client loops
@@ -184,14 +184,14 @@ public final class BrokerClientTest {
     // given
     broker
         .onExecuteCommandRequest(
-            ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE)
+            ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE)
         .respondWithError()
         .errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
         .errorData("")
         .register();
 
     // when
-    final var future = client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
+    final var future = client.sendRequest(new BrokerCreateProcessInstanceRequest());
 
     // then
     assertThatThrownBy(future::join)
@@ -297,10 +297,10 @@ public final class BrokerClientTest {
     final ExecuteCommandResponseBuilder builder =
         broker
             .onExecuteCommandRequest(
-                ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE)
+                ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE)
             .respondWith()
             .event()
-            .intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .intent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .key(ExecuteCommandRequest::key)
             .value()
             .allOf(ExecuteCommandRequest::getCommand)

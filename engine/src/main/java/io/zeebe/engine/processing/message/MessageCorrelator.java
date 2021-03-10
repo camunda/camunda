@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message;
 
@@ -47,7 +47,7 @@ public final class MessageCorrelator {
         subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.getCorrelationKeyBuffer(),
         storedMessage -> {
-          // correlate the first message which is not correlated to the workflow instance yet
+          // correlate the first message which is not correlated to the process instance yet
           final var isCorrelated =
               correlateMessage(subscriptionKey, subscriptionRecord, storedMessage);
           isMessageCorrelated.set(isCorrelated);
@@ -82,8 +82,8 @@ public final class MessageCorrelator {
   }
 
   private boolean sendCorrelateCommand(final MessageSubscriptionRecord subscriptionRecord) {
-    return commandSender.correlateWorkflowInstanceSubscription(
-        subscriptionRecord.getWorkflowInstanceKey(),
+    return commandSender.correlateProcessInstanceSubscription(
+        subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getBpmnProcessIdBuffer(),
         subscriptionRecord.getMessageNameBuffer(),

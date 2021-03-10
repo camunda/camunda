@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.exporter;
 
@@ -103,11 +103,11 @@ public class ElasticsearchClient {
 
     if (size > configuration.index.ignoreVariablesAbove) {
       log.warn(
-          "Variable {key: {}, name: {}, variableScope: {}, workflowInstanceKey: {}} exceeded max size of {} bytes with a size of {} bytes. As a consequence this variable is not index by elasticsearch.",
+          "Variable {key: {}, name: {}, variableScope: {}, processInstanceKey: {}} exceeded max size of {} bytes with a size of {} bytes. As a consequence this variable is not index by elasticsearch.",
           record.getKey(),
           value.getName(),
           value.getScopeKey(),
-          value.getWorkflowInstanceKey(),
+          value.getProcessInstanceKey(),
           configuration.index.ignoreVariablesAbove,
           size);
     }

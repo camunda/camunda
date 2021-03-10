@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn.behavior;
 
@@ -12,8 +12,8 @@ import io.zeebe.engine.processing.common.EventHandle;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.deployment.DeployedWorkflow;
-import io.zeebe.engine.state.immutable.WorkflowState;
+import io.zeebe.engine.state.deployment.DeployedProcess;
+import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.message.StoredMessage;
 import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.util.buffer.BufferUtil;
@@ -24,7 +24,7 @@ import org.agrona.DirectBuffer;
 public final class BpmnBufferedMessageStartEventBehavior {
 
   private final MutableMessageState messageState;
-  private final WorkflowState workflowState;
+  private final ProcessState processState;
   private final TypedStreamWriter streamWriter;
 
   private final EventHandle eventHandle;
@@ -32,7 +32,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
   public BpmnBufferedMessageStartEventBehavior(
       final ZeebeState zeebeState, final TypedStreamWriter streamWriter) {
     messageState = zeebeState.getMessageState();
-    workflowState = zeebeState.getWorkflowState();
+    processState = zeebeState.getProcessState();
     this.streamWriter = streamWriter;
 
     eventHandle =
@@ -41,15 +41,15 @@ public final class BpmnBufferedMessageStartEventBehavior {
 
   public void correlateMessage(final BpmnElementContext context) {
 
-    final var workflowInstanceKey = context.getWorkflowInstanceKey();
-    final var correlationKey = messageState.getWorkflowInstanceCorrelationKey(workflowInstanceKey);
+    final var processInstanceKey = context.getProcessInstanceKey();
+    final var correlationKey = messageState.getProcessInstanceCorrelationKey(processInstanceKey);
 
     if (correlationKey != null) {
-      messageState.removeWorkflowInstanceCorrelationKey(workflowInstanceKey);
+      messageState.removeProcessInstanceCorrelationKey(processInstanceKey);
 
-      // the workflow instance was created by a message with a correlation key
-      // - other messages with same correlation key are not correlated to this workflow until this
-      // instance is ended (workflow-correlation-key lock)
+      // the process instance was created by a message with a correlation key
+      // - other messages with same correlation key are not correlated to this process until this
+      // instance is ended (process-correlation-key lock)
       // - now, after the instance is ended, correlate the next buffered message
       correlateNextBufferedMessage(correlationKey, context);
     }
@@ -59,27 +59,27 @@ public final class BpmnBufferedMessageStartEventBehavior {
       final DirectBuffer correlationKey, final BpmnElementContext context) {
 
     final var bpmnProcessId = context.getBpmnProcessId();
-    final var workflow = workflowState.getLatestWorkflowVersionByProcessId(bpmnProcessId);
+    final var process = processState.getLatestProcessVersionByProcessId(bpmnProcessId);
 
-    findNextMessageToCorrelate(workflow, correlationKey)
+    findNextMessageToCorrelate(process, correlationKey)
         .ifPresentOrElse(
             messageCorrelation -> {
               final var storedMessage = messageState.getMessage(messageCorrelation.messageKey);
-              correlateMessage(workflow, messageCorrelation.elementId, storedMessage);
+              correlateMessage(process, messageCorrelation.elementId, storedMessage);
             },
             () -> {
               // no buffered message to correlate
-              // - release the workflow-correlation-key lock
-              messageState.removeActiveWorkflowInstance(bpmnProcessId, correlationKey);
+              // - release the process-correlation-key lock
+              messageState.removeActiveProcessInstance(bpmnProcessId, correlationKey);
             });
   }
 
   private Optional<Correlation> findNextMessageToCorrelate(
-      final DeployedWorkflow workflow, final DirectBuffer correlationKey) {
+      final DeployedProcess process, final DirectBuffer correlationKey) {
 
     final var messageCorrelation = new Correlation();
 
-    for (final ExecutableStartEvent startEvent : workflow.getWorkflow().getStartEvents()) {
+    for (final ExecutableStartEvent startEvent : process.getProcess().getStartEvents()) {
       if (startEvent.isMessage()) {
 
         final DirectBuffer messageNameBuffer =
@@ -92,7 +92,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
               // correlate the first message with same correlation key that was not correlated yet
               if (storedMessage.getMessage().getDeadline() > ActorClock.currentTimeMillis()
                   && !messageState.existMessageCorrelation(
-                      storedMessage.getMessageKey(), workflow.getBpmnProcessId())) {
+                      storedMessage.getMessageKey(), process.getBpmnProcessId())) {
 
                 // correlate the first published message across all message start events
                 // - using the message key to decide which message was published before
@@ -117,23 +117,22 @@ public final class BpmnBufferedMessageStartEventBehavior {
   }
 
   private void correlateMessage(
-      final DeployedWorkflow workflow,
+      final DeployedProcess process,
       final DirectBuffer elementId,
       final StoredMessage storedMessage) {
 
-    final var workflowInstanceKey =
+    final var processInstanceKey =
         eventHandle.triggerStartEvent(
             streamWriter,
-            workflow.getKey(),
+            process.getKey(),
             elementId,
             storedMessage.getMessage().getVariablesBuffer());
 
-    if (workflowInstanceKey > 0) {
+    if (processInstanceKey > 0) {
       // mark the message as correlated
-      messageState.putMessageCorrelation(
-          storedMessage.getMessageKey(), workflow.getBpmnProcessId());
-      messageState.putWorkflowInstanceCorrelationKey(
-          workflowInstanceKey, storedMessage.getMessage().getCorrelationKeyBuffer());
+      messageState.putMessageCorrelation(storedMessage.getMessageKey(), process.getBpmnProcessId());
+      messageState.putProcessInstanceCorrelationKey(
+          processInstanceKey, storedMessage.getMessage().getCorrelationKeyBuffer());
     }
   }
 

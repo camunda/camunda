@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.util;
 
@@ -13,8 +13,8 @@ import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.ValueType;
@@ -58,8 +58,8 @@ public final class Records {
     return isRecordOfType(event, ValueType.INCIDENT);
   }
 
-  public static boolean isWorkflowInstanceRecord(final LoggedEvent event) {
-    return isRecordOfType(event, ValueType.WORKFLOW_INSTANCE);
+  public static boolean isProcessInstanceRecord(final LoggedEvent event) {
+    return isRecordOfType(event, ValueType.PROCESS_INSTANCE);
   }
 
   public static boolean isMessageRecord(final LoggedEvent event) {
@@ -74,16 +74,16 @@ public final class Records {
     return isRecordOfType(event, ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
   }
 
-  public static boolean isWorkflowInstanceSubscriptionRecord(final LoggedEvent event) {
-    return isRecordOfType(event, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+  public static boolean isProcessInstanceSubscriptionRecord(final LoggedEvent event) {
+    return isRecordOfType(event, ValueType.PROCESS_INSTANCE_SUBSCRIPTION);
   }
 
   public static boolean isTimerRecord(final LoggedEvent event) {
     return isRecordOfType(event, ValueType.TIMER);
   }
 
-  public static boolean isWorkflowInstanceCreationRecord(final LoggedEvent event) {
-    return isRecordOfType(event, ValueType.WORKFLOW_INSTANCE_CREATION);
+  public static boolean isProcessInstanceCreationRecord(final LoggedEvent event) {
+    return isRecordOfType(event, ValueType.PROCESS_INSTANCE_CREATION);
   }
 
   public static boolean isErrorRecord(final LoggedEvent event) {
@@ -147,34 +147,34 @@ public final class Records {
     return metadata.getValueType() == type;
   }
 
-  public static WorkflowInstanceRecord workflowInstance(final int instanceKey) {
-    final WorkflowInstanceRecord event = new WorkflowInstanceRecord();
-    event.setWorkflowInstanceKey(instanceKey);
+  public static ProcessInstanceRecord processInstance(final int instanceKey) {
+    final ProcessInstanceRecord event = new ProcessInstanceRecord();
+    event.setProcessInstanceKey(instanceKey);
     return event;
   }
 
   public static ErrorRecord error(final int instanceKey, final long pos) {
     final ErrorRecord event = new ErrorRecord();
     event.initErrorRecord(new Exception("expected"), pos);
-    event.setWorkflowInstanceKey(instanceKey);
+    event.setProcessInstanceKey(instanceKey);
     return event;
   }
 
   public static JobRecord job(final int instanceKey) {
     final JobRecord event = new JobRecord();
-    event.setWorkflowInstanceKey(instanceKey);
+    event.setProcessInstanceKey(instanceKey);
     return event;
   }
 
   public static TimerRecord timer(final int instanceKey) {
     final TimerRecord event = new TimerRecord();
     event
-        .setWorkflowInstanceKey(instanceKey)
+        .setProcessInstanceKey(instanceKey)
         .setElementInstanceKey(instanceKey)
         .setDueDate(1245)
         .setTargetElementId(BufferUtil.wrapString("foo"))
         .setRepetitions(0)
-        .setWorkflowKey(1);
+        .setProcessDefinitionKey(1);
     return event;
   }
 

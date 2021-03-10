@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.test.util.record;
 
@@ -19,11 +19,11 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
@@ -32,14 +32,14 @@ import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.record.value.MessageRecordValue;
 import io.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.zeebe.protocol.record.value.VariableRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceCreationRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceResultRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
@@ -147,8 +147,8 @@ public final class RecordingExporter implements Exporter {
     return deploymentRecords().withIntent(intent);
   }
 
-  public static WorkflowRecordStream workflowRecords() {
-    return new WorkflowRecordStream(records(ValueType.WORKFLOW, DeployedWorkflow.class));
+  public static ProcessRecordStream processRecords() {
+    return new ProcessRecordStream(records(ValueType.PROCESS, DeployedProcess.class));
   }
 
   public static DeploymentDistributionRecordStream deploymentDistributionRecords() {
@@ -180,16 +180,15 @@ public final class RecordingExporter implements Exporter {
     return incidentRecords().withIntent(intent);
   }
 
-  public static WorkflowInstanceSubscriptionRecordStream workflowInstanceSubscriptionRecords() {
-    return new WorkflowInstanceSubscriptionRecordStream(
+  public static ProcessInstanceSubscriptionRecordStream processInstanceSubscriptionRecords() {
+    return new ProcessInstanceSubscriptionRecordStream(
         records(
-            ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
-            WorkflowInstanceSubscriptionRecordValue.class));
+            ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionRecordValue.class));
   }
 
-  public static WorkflowInstanceSubscriptionRecordStream workflowInstanceSubscriptionRecords(
-      final WorkflowInstanceSubscriptionIntent intent) {
-    return workflowInstanceSubscriptionRecords().withIntent(intent);
+  public static ProcessInstanceSubscriptionRecordStream processInstanceSubscriptionRecords(
+      final ProcessInstanceSubscriptionIntent intent) {
+    return processInstanceSubscriptionRecords().withIntent(intent);
   }
 
   public static MessageRecordStream messageRecords() {
@@ -200,14 +199,14 @@ public final class RecordingExporter implements Exporter {
     return messageRecords().withIntent(intent);
   }
 
-  public static WorkflowInstanceRecordStream workflowInstanceRecords() {
-    return new WorkflowInstanceRecordStream(
-        records(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceRecordValue.class));
+  public static ProcessInstanceRecordStream processInstanceRecords() {
+    return new ProcessInstanceRecordStream(
+        records(ValueType.PROCESS_INSTANCE, ProcessInstanceRecordValue.class));
   }
 
-  public static WorkflowInstanceRecordStream workflowInstanceRecords(
-      final WorkflowInstanceIntent intent) {
-    return workflowInstanceRecords().withIntent(intent);
+  public static ProcessInstanceRecordStream processInstanceRecords(
+      final ProcessInstanceIntent intent) {
+    return processInstanceRecords().withIntent(intent);
   }
 
   public static TimerRecordStream timerRecords() {
@@ -236,14 +235,14 @@ public final class RecordingExporter implements Exporter {
     return variableDocumentRecords().withIntent(intent);
   }
 
-  public static WorkflowInstanceCreationRecordStream workflowInstanceCreationRecords() {
-    return new WorkflowInstanceCreationRecordStream(
-        records(ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationRecordValue.class));
+  public static ProcessInstanceCreationRecordStream processInstanceCreationRecords() {
+    return new ProcessInstanceCreationRecordStream(
+        records(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationRecordValue.class));
   }
 
-  public static WorkflowInstanceResultRecordStream workflowInstanceResultRecords() {
-    return new WorkflowInstanceResultRecordStream(
-        records(ValueType.WORKFLOW_INSTANCE_RESULT, WorkflowInstanceResultRecordValue.class));
+  public static ProcessInstanceResultRecordStream processInstanceResultRecords() {
+    return new ProcessInstanceResultRecordStream(
+        records(ValueType.PROCESS_INSTANCE_RESULT, ProcessInstanceResultRecordValue.class));
   }
 
   public static class RecordIterator implements Iterator<Record<?>> {

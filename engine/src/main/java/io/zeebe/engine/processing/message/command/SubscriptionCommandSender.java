@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message.command;
 
@@ -21,13 +21,13 @@ import org.agrona.DirectBuffer;
  *+-----------^----------------+---------------------------+----------------------^-------------------------^------------------+----------+
  *            |                |                           |                      |                         |                  |
  *    +-------+------+  +------+--------+       +----------+---------+  +---------+---------+       +-------+-------+  +-------+--------+
- *    | Open Message |  | Open Workflow |       | Correlate Workflow |  | Correlate Message |       | Close Message |  | Close Workflow |
+ *    | Open Message |  | Open Process |       | Correlate Process |  | Correlate Message |       | Close Message |  | Close Process |
  *    | Subscription |  | Instance Sub  |       | Instance Sub       |  | Subscription      |       | Subscription  |  | Instance Sub   |
  *    +-------+------+  +------+--------+       +----------+---------+  +---------+---------+       +-------+-------+  +-------+--------+
  *            |                |                           |                      |                         |                  |
  * +----------+----------------v---------------------------v----------------------+-------------------------+------------------v----------+
  * |                                                                                                                                      |
- * |                                                   Workflow Instance Partition                                                        |
+ * |                                                   Process Instance Partition                                                        |
  * +--------------------------------------------------------------------------------------------------------------------------------------+
  * <pre>
  */
@@ -36,12 +36,12 @@ public class SubscriptionCommandSender {
   private final OpenMessageSubscriptionCommand openMessageSubscriptionCommand =
       new OpenMessageSubscriptionCommand();
 
-  private final OpenWorkflowInstanceSubscriptionCommand openWorkflowInstanceSubscriptionCommand =
-      new OpenWorkflowInstanceSubscriptionCommand();
+  private final OpenProcessInstanceSubscriptionCommand openProcessInstanceSubscriptionCommand =
+      new OpenProcessInstanceSubscriptionCommand();
 
-  private final CorrelateWorkflowInstanceSubscriptionCommand
-      correlateWorkflowInstanceSubscriptionCommand =
-          new CorrelateWorkflowInstanceSubscriptionCommand();
+  private final CorrelateProcessInstanceSubscriptionCommand
+      correlateProcessInstanceSubscriptionCommand =
+          new CorrelateProcessInstanceSubscriptionCommand();
 
   private final CorrelateMessageSubscriptionCommand correlateMessageSubscriptionCommand =
       new CorrelateMessageSubscriptionCommand();
@@ -49,8 +49,8 @@ public class SubscriptionCommandSender {
   private final CloseMessageSubscriptionCommand closeMessageSubscriptionCommand =
       new CloseMessageSubscriptionCommand();
 
-  private final CloseWorkflowInstanceSubscriptionCommand closeWorkflowInstanceSubscriptionCommand =
-      new CloseWorkflowInstanceSubscriptionCommand();
+  private final CloseProcessInstanceSubscriptionCommand closeProcessInstanceSubscriptionCommand =
+      new CloseProcessInstanceSubscriptionCommand();
 
   private final RejectCorrelateMessageSubscriptionCommand
       rejectCorrelateMessageSubscriptionCommand = new RejectCorrelateMessageSubscriptionCommand();
@@ -65,14 +65,14 @@ public class SubscriptionCommandSender {
 
   public boolean openMessageSubscription(
       final int subscriptionPartitionId,
-      final long workflowInstanceKey,
+      final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       final boolean closeOnCorrelate) {
     openMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
-    openMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
+    openMessageSubscriptionCommand.setProcessInstanceKey(processInstanceKey);
     openMessageSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
     openMessageSubscriptionCommand.getBpmnProcessId().wrap(bpmnProcessId);
     openMessageSubscriptionCommand.getMessageName().wrap(messageName);
@@ -83,26 +83,26 @@ public class SubscriptionCommandSender {
         subscriptionPartitionId, openMessageSubscriptionCommand);
   }
 
-  public boolean openWorkflowInstanceSubscription(
-      final long workflowInstanceKey,
+  public boolean openProcessInstanceSubscription(
+      final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer messageName,
       final boolean closeOnCorrelate) {
 
-    final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
+    final int processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
 
-    openWorkflowInstanceSubscriptionCommand.setSubscriptionPartitionId(senderPartition);
-    openWorkflowInstanceSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
-    openWorkflowInstanceSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
-    openWorkflowInstanceSubscriptionCommand.getMessageName().wrap(messageName);
-    openWorkflowInstanceSubscriptionCommand.setCloseOnCorrelate(closeOnCorrelate);
+    openProcessInstanceSubscriptionCommand.setSubscriptionPartitionId(senderPartition);
+    openProcessInstanceSubscriptionCommand.setProcessInstanceKey(processInstanceKey);
+    openProcessInstanceSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
+    openProcessInstanceSubscriptionCommand.getMessageName().wrap(messageName);
+    openProcessInstanceSubscriptionCommand.setCloseOnCorrelate(closeOnCorrelate);
 
     return partitionCommandSender.sendCommand(
-        workflowInstancePartitionId, openWorkflowInstanceSubscriptionCommand);
+        processInstancePartitionId, openProcessInstanceSubscriptionCommand);
   }
 
-  public boolean correlateWorkflowInstanceSubscription(
-      final long workflowInstanceKey,
+  public boolean correlateProcessInstanceSubscription(
+      final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
@@ -110,30 +110,30 @@ public class SubscriptionCommandSender {
       final DirectBuffer variables,
       final DirectBuffer correlationKey) {
 
-    final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
+    final int processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
 
-    correlateWorkflowInstanceSubscriptionCommand.setSubscriptionPartitionId(senderPartition);
-    correlateWorkflowInstanceSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
-    correlateWorkflowInstanceSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
-    correlateWorkflowInstanceSubscriptionCommand.getBpmnProcessId().wrap(bpmnProcessId);
-    correlateWorkflowInstanceSubscriptionCommand.setMessageKey(messageKey);
-    correlateWorkflowInstanceSubscriptionCommand.getMessageName().wrap(messageName);
-    correlateWorkflowInstanceSubscriptionCommand.getVariables().wrap(variables);
-    correlateWorkflowInstanceSubscriptionCommand.getCorrelationKey().wrap(correlationKey);
+    correlateProcessInstanceSubscriptionCommand.setSubscriptionPartitionId(senderPartition);
+    correlateProcessInstanceSubscriptionCommand.setProcessInstanceKey(processInstanceKey);
+    correlateProcessInstanceSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
+    correlateProcessInstanceSubscriptionCommand.getBpmnProcessId().wrap(bpmnProcessId);
+    correlateProcessInstanceSubscriptionCommand.setMessageKey(messageKey);
+    correlateProcessInstanceSubscriptionCommand.getMessageName().wrap(messageName);
+    correlateProcessInstanceSubscriptionCommand.getVariables().wrap(variables);
+    correlateProcessInstanceSubscriptionCommand.getCorrelationKey().wrap(correlationKey);
 
     return partitionCommandSender.sendCommand(
-        workflowInstancePartitionId, correlateWorkflowInstanceSubscriptionCommand);
+        processInstancePartitionId, correlateProcessInstanceSubscriptionCommand);
   }
 
   public boolean correlateMessageSubscription(
       final int subscriptionPartitionId,
-      final long workflowInstanceKey,
+      final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName) {
 
     correlateMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
-    correlateMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
+    correlateMessageSubscriptionCommand.setProcessInstanceKey(processInstanceKey);
     correlateMessageSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
     correlateMessageSubscriptionCommand.getBpmnProcessId().wrap(bpmnProcessId);
     correlateMessageSubscriptionCommand.getMessageName().wrap(messageName);
@@ -144,12 +144,12 @@ public class SubscriptionCommandSender {
 
   public boolean closeMessageSubscription(
       final int subscriptionPartitionId,
-      final long workflowInstanceKey,
+      final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer messageName) {
 
     closeMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
-    closeMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
+    closeMessageSubscriptionCommand.setProcessInstanceKey(processInstanceKey);
     closeMessageSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
     closeMessageSubscriptionCommand.setMessageName(messageName);
 
@@ -157,39 +157,39 @@ public class SubscriptionCommandSender {
         subscriptionPartitionId, closeMessageSubscriptionCommand);
   }
 
-  public boolean closeWorkflowInstanceSubscription(
-      final long workflowInstanceKey,
+  public boolean closeProcessInstanceSubscription(
+      final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer messageName) {
 
-    final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
+    final int processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
 
-    closeWorkflowInstanceSubscriptionCommand.setSubscriptionPartitionId(senderPartition);
-    closeWorkflowInstanceSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
-    closeWorkflowInstanceSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
-    closeWorkflowInstanceSubscriptionCommand.setMessageName(messageName);
+    closeProcessInstanceSubscriptionCommand.setSubscriptionPartitionId(senderPartition);
+    closeProcessInstanceSubscriptionCommand.setProcessInstanceKey(processInstanceKey);
+    closeProcessInstanceSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
+    closeProcessInstanceSubscriptionCommand.setMessageName(messageName);
 
     return partitionCommandSender.sendCommand(
-        workflowInstancePartitionId, closeWorkflowInstanceSubscriptionCommand);
+        processInstancePartitionId, closeProcessInstanceSubscriptionCommand);
   }
 
   public boolean rejectCorrelateMessageSubscription(
-      final long workflowInstanceKey,
+      final long processInstanceKey,
       final DirectBuffer bpmnProcessId,
       final long messageKey,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey) {
 
-    final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
+    final int processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
 
     rejectCorrelateMessageSubscriptionCommand.setSubscriptionPartitionId(senderPartition);
-    rejectCorrelateMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
+    rejectCorrelateMessageSubscriptionCommand.setProcessInstanceKey(processInstanceKey);
     rejectCorrelateMessageSubscriptionCommand.getBpmnProcessId().wrap(bpmnProcessId);
     rejectCorrelateMessageSubscriptionCommand.setMessageKey(messageKey);
     rejectCorrelateMessageSubscriptionCommand.getMessageName().wrap(messageName);
     rejectCorrelateMessageSubscriptionCommand.getCorrelationKey().wrap(correlationKey);
 
     return partitionCommandSender.sendCommand(
-        workflowInstancePartitionId, rejectCorrelateMessageSubscriptionCommand);
+        processInstancePartitionId, rejectCorrelateMessageSubscriptionCommand);
   }
 }

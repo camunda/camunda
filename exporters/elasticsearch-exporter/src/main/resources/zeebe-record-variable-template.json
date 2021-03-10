@@ -22,10 +22,10 @@
             "scopeKey": {
               "type": "long"
             },
-            "workflowInstanceKey": {
+            "processInstanceKey": {
               "type": "long"
             },
-            "workflowKey": {
+            "processDefinitionKey": {
               "type": "long"
             }
           }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.it.util;
 
@@ -137,18 +137,18 @@ public final class GrpcClientRule extends ExternalResource {
       final int amount) {
 
     final BpmnModelInstance modelInstance = createSingleJobModelInstance(type, consumer);
-    final long workflowKey = deployWorkflow(modelInstance);
+    final long processDefinitionKey = deployProcess(modelInstance);
 
-    final var workflowInstanceKeys =
+    final var processInstanceKeys =
         IntStream.range(0, amount)
             .boxed()
-            .map(i -> createWorkflowInstance(workflowKey, variables))
+            .map(i -> createProcessInstance(processDefinitionKey, variables))
             .collect(Collectors.toList());
 
     final List<Long> jobKeys =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withType(type)
-            .filter(r -> workflowInstanceKeys.contains(r.getValue().getWorkflowInstanceKey()))
+            .filter(r -> processInstanceKeys.contains(r.getValue().getProcessInstanceKey()))
             .limit(amount)
             .map(Record::getKey)
             .collect(Collectors.toList());
@@ -172,33 +172,29 @@ public final class GrpcClientRule extends ExternalResource {
         .done();
   }
 
-  public long deployWorkflow(final BpmnModelInstance modelInstance) {
+  public long deployProcess(final BpmnModelInstance modelInstance) {
     final DeploymentEvent deploymentEvent =
-        getClient()
-            .newDeployCommand()
-            .addWorkflowModel(modelInstance, "workflow.bpmn")
-            .send()
-            .join();
+        getClient().newDeployCommand().addProcessModel(modelInstance, "process.bpmn").send().join();
     waitUntilDeploymentIsDone(deploymentEvent.getKey());
-    return deploymentEvent.getWorkflows().get(0).getWorkflowKey();
+    return deploymentEvent.getProcesses().get(0).getProcessDefinitionKey();
   }
 
-  public long createWorkflowInstance(final long workflowKey, final String variables) {
+  public long createProcessInstance(final long processDefinitionKey, final String variables) {
     return getClient()
         .newCreateInstanceCommand()
-        .workflowKey(workflowKey)
+        .processDefinitionKey(processDefinitionKey)
         .variables(variables)
         .send()
         .join()
-        .getWorkflowInstanceKey();
+        .getProcessInstanceKey();
   }
 
-  public long createWorkflowInstance(final long workflowKey) {
+  public long createProcessInstance(final long processDefinitionKey) {
     return getClient()
         .newCreateInstanceCommand()
-        .workflowKey(workflowKey)
+        .processDefinitionKey(processDefinitionKey)
         .send()
         .join()
-        .getWorkflowInstanceKey();
+        .getProcessInstanceKey();
   }
 }

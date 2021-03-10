@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message;
 
@@ -37,7 +37,7 @@ public final class MessageStartEventSubscriptionTest {
   public void shouldOpenMessageSubscriptionOnDeployment() {
 
     // when
-    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
+    engine.deployment().withXmlResource(createProcessWithOneMessageStartEvent()).deploy();
 
     final Record<MessageStartEventSubscriptionRecordValue> subscription =
         RecordingExporter.messageStartEventSubscriptionRecords(
@@ -53,7 +53,7 @@ public final class MessageStartEventSubscriptionTest {
   public void shouldOpenSubscriptionsForAllMessageStartEvents() {
 
     // when
-    engine.deployment().withXmlResource(createWorkflowWithTwoMessageStartEvent()).deploy();
+    engine.deployment().withXmlResource(createProcessWithTwoMessageStartEvent()).deploy();
 
     final List<Record<MessageStartEventSubscriptionRecordValue>> subscriptions =
         RecordingExporter.messageStartEventSubscriptionRecords(
@@ -75,10 +75,10 @@ public final class MessageStartEventSubscriptionTest {
   @Test
   public void shouldCloseSubscriptionForOldVersions() {
     // given
-    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
+    engine.deployment().withXmlResource(createProcessWithOneMessageStartEvent()).deploy();
 
     // when
-    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
+    engine.deployment().withXmlResource(createProcessWithOneMessageStartEvent()).deploy();
     // then
 
     final List<Record<MessageStartEventSubscriptionRecordValue>> subscriptions =
@@ -96,11 +96,13 @@ public final class MessageStartEventSubscriptionTest {
             MessageStartEventSubscriptionIntent.CLOSED,
             MessageStartEventSubscriptionIntent.OPENED);
 
-    final long closingWorkflowKey = subscriptions.get(2).getValue().getWorkflowKey();
-    assertThat(closingWorkflowKey).isEqualTo(subscriptions.get(0).getValue().getWorkflowKey());
+    final long closingProcessDefinitionKey =
+        subscriptions.get(2).getValue().getProcessDefinitionKey();
+    assertThat(closingProcessDefinitionKey)
+        .isEqualTo(subscriptions.get(0).getValue().getProcessDefinitionKey());
   }
 
-  private static BpmnModelInstance createWorkflowWithOneMessageStartEvent() {
+  private static BpmnModelInstance createProcessWithOneMessageStartEvent() {
     return Bpmn.createExecutableProcess("processId")
         .startEvent(EVENT_ID1)
         .message(m -> m.name(MESSAGE_NAME1).id("startmsgId"))
@@ -108,7 +110,7 @@ public final class MessageStartEventSubscriptionTest {
         .done();
   }
 
-  private static BpmnModelInstance createWorkflowWithTwoMessageStartEvent() {
+  private static BpmnModelInstance createProcessWithTwoMessageStartEvent() {
     final ProcessBuilder process = Bpmn.createExecutableProcess("processId");
     process.startEvent(EVENT_ID1).message(m -> m.name(MESSAGE_NAME1).id("startmsgId1")).endEvent();
     process.startEvent(EVENT_ID2).message(m -> m.name(MESSAGE_NAME2).id("startmsgId2")).endEvent();

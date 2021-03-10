@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.test.broker.protocol.commandapi;
 
@@ -17,11 +17,11 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.deployment.WorkflowRecord;
+import io.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
@@ -31,18 +31,18 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.VariableDocumentIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.record.value.MessageRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.DeploymentRecordStream;
@@ -51,10 +51,10 @@ import io.zeebe.test.util.record.JobBatchRecordStream;
 import io.zeebe.test.util.record.JobRecordStream;
 import io.zeebe.test.util.record.MessageRecordStream;
 import io.zeebe.test.util.record.MessageSubscriptionRecordStream;
+import io.zeebe.test.util.record.ProcessInstanceRecordStream;
+import io.zeebe.test.util.record.ProcessInstanceSubscriptionRecordStream;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.TimerRecordStream;
-import io.zeebe.test.util.record.WorkflowInstanceRecordStream;
-import io.zeebe.test.util.record.WorkflowInstanceSubscriptionRecordStream;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.collection.Tuple;
@@ -73,13 +73,13 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class PartitionTestClient {
-  // workflow related properties
+  // process related properties
 
-  public static final String PROP_WORKFLOW_RESOURCES = "resources";
-  public static final String PROP_WORKFLOW_VERSION = "version";
-  public static final String PROP_WORKFLOW_VARIABLES = "variable";
-  public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
-  public static final String PROP_WORKFLOW_KEY = "workflowKey";
+  public static final String PROP_PROCESS_RESOURCES = "resources";
+  public static final String PROP_PROCESS_VERSION = "version";
+  public static final String PROP_PROCESS_VARIABLES = "variable";
+  public static final String PROP_PROCESS_INSTANCE_KEY = "processInstanceKey";
+  public static final String PROP_PROCESS_KEY = "processDefinitionKey";
 
   private final CommandApiRule apiRule;
   private final int partitionId;
@@ -89,8 +89,8 @@ public final class PartitionTestClient {
     this.partitionId = partitionId;
   }
 
-  public long deploy(final BpmnModelInstance workflow) {
-    final ExecuteCommandResponse response = deployWithResponse(workflow);
+  public long deploy(final BpmnModelInstance process) {
+    final ExecuteCommandResponse response = deployWithResponse(process);
 
     assertThat(response.getRecordType())
         .withFailMessage("Deployment failed: %s", response.getRejectionReason())
@@ -111,14 +111,14 @@ public final class PartitionTestClient {
     return deployWithResponse(resource, "BPMN_XML", "process.bpmn");
   }
 
-  public ExecuteCommandResponse deployWithResponse(final BpmnModelInstance workflow) {
-    return deployWithResponse(workflow, "process.bpmn");
+  public ExecuteCommandResponse deployWithResponse(final BpmnModelInstance process) {
+    return deployWithResponse(process, "process.bpmn");
   }
 
   public ExecuteCommandResponse deployWithResponse(
-      final BpmnModelInstance workflow, final String resourceName) {
+      final BpmnModelInstance process, final String resourceName) {
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-    Bpmn.writeModelToStream(outStream, workflow);
+    Bpmn.writeModelToStream(outStream, process);
     final byte[] resource = outStream.toByteArray();
 
     return deployWithResponse(resource, "BPMN_XML", resourceName);
@@ -136,23 +136,23 @@ public final class PartitionTestClient {
             .partitionId(Protocol.DEPLOYMENT_PARTITION)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
-            .put(PROP_WORKFLOW_RESOURCES, Collections.singletonList(deploymentResource))
+            .put(PROP_PROCESS_RESOURCES, Collections.singletonList(deploymentResource))
             .done()
             .sendAndAwait();
 
     return commandResponse;
   }
 
-  public WorkflowRecord deployWorkflow(final BpmnModelInstance workflow) {
+  public ProcessRecord deployProcess(final BpmnModelInstance process) {
     final DeploymentRecord request = new DeploymentRecord();
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-    Bpmn.writeModelToStream(outStream, workflow);
+    Bpmn.writeModelToStream(outStream, process);
 
     request.resources().add().setResource(outStream.toByteArray()).setResourceName("process.bpmn");
 
     final DeploymentRecord response = deploy(request);
-    final Iterator<WorkflowRecord> iterator = response.workflows().iterator();
-    assertThat(iterator).as("Expected at least one deployed workflow, but none returned").hasNext();
+    final Iterator<ProcessRecord> iterator = response.processes().iterator();
+    assertThat(iterator).as("Expected at least one deployed process, but none returned").hasNext();
 
     return iterator.next();
   }
@@ -171,21 +171,21 @@ public final class PartitionTestClient {
     return response.readInto(new DeploymentRecord());
   }
 
-  public WorkflowInstanceCreationRecord createWorkflowInstance(
-      final Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> mapper) {
-    return createWorkflowInstance(mapper.apply(new WorkflowInstanceCreationRecord()));
+  public ProcessInstanceCreationRecord createProcessInstance(
+      final Function<ProcessInstanceCreationRecord, ProcessInstanceCreationRecord> mapper) {
+    return createProcessInstance(mapper.apply(new ProcessInstanceCreationRecord()));
   }
 
-  public WorkflowInstanceCreationRecord createWorkflowInstance(
-      final WorkflowInstanceCreationRecord record) {
+  public ProcessInstanceCreationRecord createProcessInstance(
+      final ProcessInstanceCreationRecord record) {
     final ExecuteCommandResponse response =
         executeCommandRequest(
-            ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE, record);
+            ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, record);
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceCreationIntent.CREATED);
+    assertThat(response.getIntent()).isEqualTo(ProcessInstanceCreationIntent.CREATED);
 
-    return response.readInto(new WorkflowInstanceCreationRecord());
+    return response.readInto(new ProcessInstanceCreationRecord());
   }
 
   public ExecuteCommandResponse executeCommandRequest(
@@ -204,11 +204,11 @@ public final class PartitionTestClient {
         .sendAndAwait();
   }
 
-  public ExecuteCommandResponse cancelWorkflowInstance(final long key) {
+  public ExecuteCommandResponse cancelProcessInstance(final long key) {
     return apiRule
         .createCmdRequest()
         .partitionId(partitionId)
-        .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCEL)
+        .type(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL)
         .key(key)
         .command()
         .done()
@@ -255,14 +255,14 @@ public final class PartitionTestClient {
                 })
             .done());
 
-    final long workflowInstance =
-        createWorkflowInstance(
+    final long processInstance =
+        createProcessInstance(
                 r -> r.setBpmnProcessId("process").setVariables(MsgPackUtil.asMsgPack(variables)))
-            .getWorkflowInstanceKey();
+            .getProcessInstanceKey();
 
     return RecordingExporter.jobRecords(JobIntent.CREATED)
         .withType(type)
-        .filter(j -> j.getValue().getWorkflowInstanceKey() == workflowInstance)
+        .filter(j -> j.getValue().getProcessInstanceKey() == processInstance)
         .getFirst()
         .getKey();
   }
@@ -325,11 +325,11 @@ public final class PartitionTestClient {
     return response.readInto(new JobBatchRecord());
   }
 
-  public void completeJobOfType(final long workflowInstanceKey, final String jobType) {
+  public void completeJobOfType(final long processInstanceKey, final String jobType) {
     completeJob(
         jobType,
         MsgPackUtil.asMsgPackReturnArray("{}"),
-        r -> r.getValue().getWorkflowInstanceKey() == workflowInstanceKey);
+        r -> r.getValue().getProcessInstanceKey() == processInstanceKey);
   }
 
   public void completeJobOfType(final String jobType) {
@@ -492,7 +492,7 @@ public final class PartitionTestClient {
 
   public Record<IncidentRecordValue> receiveFirstIncidentEvent(
       final long wfInstanceKey, final Intent intent) {
-    return receiveIncidents().withIntent(intent).withWorkflowInstanceKey(wfInstanceKey).getFirst();
+    return receiveIncidents().withIntent(intent).withProcessInstanceKey(wfInstanceKey).getFirst();
   }
 
   public Record<IncidentRecordValue> receiveFirstIncidentCommand(final IncidentIntent intent) {
@@ -525,75 +525,75 @@ public final class PartitionTestClient {
   }
 
   /////////////////////////////////////////////
-  // WORKFLOW INSTANCES ///////////////////////
+  // PROCESS INSTANCES ///////////////////////
   /////////////////////////////////////////////
 
-  public WorkflowInstanceRecordStream receiveWorkflowInstances() {
-    return RecordingExporter.workflowInstanceRecords().withPartitionId(partitionId);
+  public ProcessInstanceRecordStream receiveProcessInstances() {
+    return RecordingExporter.processInstanceRecords().withPartitionId(partitionId);
   }
 
-  public Record<WorkflowInstanceRecordValue> receiveFirstWorkflowInstanceCommand(
-      final WorkflowInstanceIntent intent) {
-    return receiveWorkflowInstances().withIntent(intent).onlyCommands().getFirst();
+  public Record<ProcessInstanceRecordValue> receiveFirstProcessInstanceCommand(
+      final ProcessInstanceIntent intent) {
+    return receiveProcessInstances().withIntent(intent).onlyCommands().getFirst();
   }
 
-  public Record<WorkflowInstanceRecordValue> receiveFirstWorkflowInstanceEvent(
-      final WorkflowInstanceIntent intent) {
-    return receiveWorkflowInstances().withIntent(intent).getFirst();
+  public Record<ProcessInstanceRecordValue> receiveFirstProcessInstanceEvent(
+      final ProcessInstanceIntent intent) {
+    return receiveProcessInstances().withIntent(intent).getFirst();
   }
 
-  public Record<WorkflowInstanceRecordValue> receiveFirstWorkflowInstanceEvent(
-      final WorkflowInstanceIntent intent, final BpmnElementType elementType) {
-    return receiveWorkflowInstances().withIntent(intent).withElementType(elementType).getFirst();
+  public Record<ProcessInstanceRecordValue> receiveFirstProcessInstanceEvent(
+      final ProcessInstanceIntent intent, final BpmnElementType elementType) {
+    return receiveProcessInstances().withIntent(intent).withElementType(elementType).getFirst();
   }
 
-  public Record<WorkflowInstanceRecordValue> receiveFirstWorkflowInstanceEvent(
+  public Record<ProcessInstanceRecordValue> receiveFirstProcessInstanceEvent(
       final long wfInstanceKey, final String elementId, final Intent intent) {
-    return receiveWorkflowInstances()
+    return receiveProcessInstances()
         .withIntent(intent)
-        .withWorkflowInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(wfInstanceKey)
         .withElementId(elementId)
         .getFirst();
   }
 
-  public Record<WorkflowInstanceRecordValue> receiveFirstWorkflowInstanceEvent(
+  public Record<ProcessInstanceRecordValue> receiveFirstProcessInstanceEvent(
       final long wfInstanceKey, final Intent intent) {
-    return receiveWorkflowInstances()
+    return receiveProcessInstances()
         .withIntent(intent)
-        .withWorkflowInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(wfInstanceKey)
         .getFirst();
   }
 
-  public Record<WorkflowInstanceRecordValue> receiveFirstWorkflowInstanceEvent(
+  public Record<ProcessInstanceRecordValue> receiveFirstProcessInstanceEvent(
       final long wfInstanceKey, final Intent intent, final BpmnElementType elementType) {
-    return receiveWorkflowInstances()
+    return receiveProcessInstances()
         .withIntent(intent)
-        .withWorkflowInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(wfInstanceKey)
         .withElementType(elementType)
         .getFirst();
   }
 
-  public Record<WorkflowInstanceRecordValue> receiveElementInState(
-      final String elementId, final WorkflowInstanceIntent intent) {
-    return receiveWorkflowInstances().withIntent(intent).withElementId(elementId).getFirst();
+  public Record<ProcessInstanceRecordValue> receiveElementInState(
+      final String elementId, final ProcessInstanceIntent intent) {
+    return receiveProcessInstances().withIntent(intent).withElementId(elementId).getFirst();
   }
 
-  public Record<WorkflowInstanceRecordValue> receiveElementInState(
-      final long workflowInstanceKey, final String elementId, final WorkflowInstanceIntent intent) {
-    return receiveFirstWorkflowInstanceEvent(workflowInstanceKey, elementId, intent);
+  public Record<ProcessInstanceRecordValue> receiveElementInState(
+      final long processInstanceKey, final String elementId, final ProcessInstanceIntent intent) {
+    return receiveFirstProcessInstanceEvent(processInstanceKey, elementId, intent);
   }
 
-  public List<Record<WorkflowInstanceRecordValue>> receiveElementInstancesInState(
+  public List<Record<ProcessInstanceRecordValue>> receiveElementInstancesInState(
       final Intent intent, final int expectedNumber) {
-    return receiveWorkflowInstances()
+    return receiveProcessInstances()
         .withIntent(intent)
         .limit(expectedNumber)
         .collect(Collectors.toList());
   }
 
-  public List<Record<WorkflowInstanceRecordValue>> receiveElementInstancesInState(
+  public List<Record<ProcessInstanceRecordValue>> receiveElementInstancesInState(
       final Intent intent, final BpmnElementType elementType, final int expectedNumber) {
-    return receiveWorkflowInstances()
+    return receiveProcessInstances()
         .withIntent(intent)
         .withElementType(elementType)
         .limit(expectedNumber)
@@ -652,8 +652,8 @@ public final class PartitionTestClient {
   // MESSAGE SUBSCRIPTIONS ////////////////////
   /////////////////////////////////////////////
 
-  public WorkflowInstanceSubscriptionRecordStream receiveWorkflowInstanceSubscriptions() {
-    return RecordingExporter.workflowInstanceSubscriptionRecords().withPartitionId(partitionId);
+  public ProcessInstanceSubscriptionRecordStream receiveProcessInstanceSubscriptions() {
+    return RecordingExporter.processInstanceSubscriptionRecords().withPartitionId(partitionId);
   }
 
   /////////////////////////////////////////////

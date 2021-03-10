@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.job;
 
@@ -37,7 +37,7 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
     jobState = zeebeState.getJobState();
     errorEventHandler =
         new ErrorEventHandler(
-            zeebeState.getWorkflowState(),
+            zeebeState.getProcessState(),
             zeebeState.getElementInstanceState(),
             zeebeState.getEventScopeInstanceState(),
             zeebeState.getKeyGenerator());
@@ -97,8 +97,8 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
         .setErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .setErrorMessage(incidentErrorMessage)
         .setBpmnProcessId(job.getBpmnProcessIdBuffer())
-        .setWorkflowKey(job.getWorkflowKey())
-        .setWorkflowInstanceKey(job.getWorkflowInstanceKey())
+        .setProcessDefinitionKey(job.getProcessDefinitionKey())
+        .setProcessInstanceKey(job.getProcessInstanceKey())
         .setElementId(job.getElementIdBuffer())
         .setElementInstanceKey(job.getElementInstanceKey())
         .setJobKey(key)

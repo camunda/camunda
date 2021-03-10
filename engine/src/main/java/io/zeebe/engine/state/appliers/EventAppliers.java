@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.appliers;
 
@@ -20,9 +20,9 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.intent.WorkflowIntent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -50,9 +50,9 @@ public final class EventAppliers implements EventApplier {
   private final Map<Intent, TypedEventApplier> mapping = new HashMap<>();
 
   public EventAppliers(final ZeebeState state) {
-    registerWorkflowInstanceEventAppliers(state);
+    registerProcessInstanceEventAppliers(state);
 
-    register(WorkflowIntent.CREATED, new WorkflowCreatedApplier(state));
+    register(ProcessIntent.CREATED, new ProcessCreatedApplier(state));
     register(DeploymentDistributionIntent.DISTRIBUTING, new DeploymentDistributionApplier(state));
     register(
         DeploymentDistributionIntent.COMPLETED,
@@ -60,7 +60,7 @@ public final class EventAppliers implements EventApplier {
 
     register(DeploymentIntent.CREATED, new DeploymentCreatedApplier(state.getDeploymentState()));
     register(
-        DeploymentIntent.DISTRIBUTED, new DeploymentDistributedApplier(state.getWorkflowState()));
+        DeploymentIntent.DISTRIBUTED, new DeploymentDistributedApplier(state.getProcessState()));
     register(
         DeploymentIntent.FULLY_DISTRIBUTED,
         new DeploymentFullyDistributedApplier(state.getDeploymentState()));
@@ -86,33 +86,32 @@ public final class EventAppliers implements EventApplier {
     register(VariableIntent.UPDATED, variableApplier);
   }
 
-  private void registerWorkflowInstanceEventAppliers(final ZeebeState state) {
+  private void registerProcessInstanceEventAppliers(final ZeebeState state) {
     final var elementInstanceState = state.getElementInstanceState();
     final var eventScopeInstanceState = state.getEventScopeInstanceState();
-    final var workflowState = state.getWorkflowState();
+    final var processState = state.getProcessState();
     register(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-        new WorkflowInstanceElementActivatingApplier(elementInstanceState));
+        ProcessInstanceIntent.ELEMENT_ACTIVATING,
+        new ProcessInstanceElementActivatingApplier(elementInstanceState));
     register(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-        new WorkflowInstanceElementActivatedApplier(
-            elementInstanceState, workflowState, eventScopeInstanceState));
+        ProcessInstanceIntent.ELEMENT_ACTIVATED,
+        new ProcessInstanceElementActivatedApplier(
+            elementInstanceState, processState, eventScopeInstanceState));
     register(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING,
-        new WorkflowInstanceElementCompletingApplier(elementInstanceState));
+        ProcessInstanceIntent.ELEMENT_COMPLETING,
+        new ProcessInstanceElementCompletingApplier(elementInstanceState));
     register(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED,
-        new WorkflowInstanceElementCompletedApplier(elementInstanceState, eventScopeInstanceState));
+        ProcessInstanceIntent.ELEMENT_COMPLETED,
+        new ProcessInstanceElementCompletedApplier(elementInstanceState, eventScopeInstanceState));
     register(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING,
-        new WorkflowInstanceElementTerminatingApplier(elementInstanceState));
+        ProcessInstanceIntent.ELEMENT_TERMINATING,
+        new ProcessInstanceElementTerminatingApplier(elementInstanceState));
     register(
-        WorkflowInstanceIntent.ELEMENT_TERMINATED,
-        new WorkflowInstanceElementTerminatedApplier(
-            elementInstanceState, eventScopeInstanceState));
+        ProcessInstanceIntent.ELEMENT_TERMINATED,
+        new ProcessInstanceElementTerminatedApplier(elementInstanceState, eventScopeInstanceState));
     register(
-        WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-        new WorkflowInstanceSequenceFlowTakenApplier(elementInstanceState));
+        ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
+        new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState));
   }
 
   private void registerJobIntentEventAppliers(final ZeebeState state) {

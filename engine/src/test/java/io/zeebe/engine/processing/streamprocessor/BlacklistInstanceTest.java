@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.streamprocessor;
 
@@ -26,13 +26,13 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
-import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
+import io.zeebe.protocol.record.value.ProcessInstanceRelated;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -57,7 +57,7 @@ public final class BlacklistInstanceTest {
   @Parameter(2)
   public boolean expectedToBlacklist;
 
-  private long workflowInstanceKey;
+  private long processInstanceKey;
 
   @Parameters(name = "{0} {1} should blacklist instance {2}")
   public static Object[][] parameters() {
@@ -164,48 +164,42 @@ public final class BlacklistInstanceTest {
       {ValueType.VARIABLE, VariableIntent.UPDATED, false},
 
       ////////////////////////////////////////
-      ////////// WORKFLOW INSTANCE ///////////
+      ////////// PROCESS INSTANCE ///////////
       ////////////////////////////////////////
-      {ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, true},
-      {ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_ACTIVATING, true},
-      {ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_ACTIVATED, true},
-      {ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_COMPLETING, true},
-      {ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_COMPLETED, true},
-      {ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_TERMINATING, true},
-      {ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_TERMINATED, true},
-      {ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.EVENT_OCCURRED, true},
+      {ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, true},
+      {ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATING, true},
+      {ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED, true},
+      {ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETING, true},
+      {ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETED, true},
+      {ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING, true},
+      {ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED, true},
+      {ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.EVENT_OCCURRED, true},
 
       // USER COMMAND
-      {ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCEL, false},
+      {ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL, false},
 
       ////////////////////////////////////////
-      //////// WORKFLOW INSTANCE CRE /////////
+      //////// PROCESS INSTANCE CRE /////////
       ////////////////////////////////////////
-      {ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE, false},
-      {ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATED, true},
+      {ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, false},
+      {ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATED, true},
 
       ////////////////////////////////////////
-      //////// WORKFLOW INSTANCE SUB /////////
+      //////// PROCESS INSTANCE SUB /////////
       ////////////////////////////////////////
-      {ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION, WorkflowInstanceSubscriptionIntent.OPEN, true},
-      {ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION, WorkflowInstanceSubscriptionIntent.OPENED, true},
-      {
-        ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION, WorkflowInstanceSubscriptionIntent.CORRELATE, true
-      },
-      {
-        ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
-        WorkflowInstanceSubscriptionIntent.CORRELATED,
-        true
-      },
-      {ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION, WorkflowInstanceSubscriptionIntent.CLOSE, true},
-      {ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION, WorkflowInstanceSubscriptionIntent.CLOSED, true}
+      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.OPEN, true},
+      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.OPENED, true},
+      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CORRELATE, true},
+      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CORRELATED, true},
+      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CLOSE, true},
+      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CLOSED, true}
     };
   }
 
   @Before
   public void setup() {
     initMocks(this);
-    workflowInstanceKey = KEY_GENERATOR.getAndIncrement();
+    processInstanceKey = KEY_GENERATOR.getAndIncrement();
   }
 
   @Test
@@ -222,21 +216,21 @@ public final class BlacklistInstanceTest {
 
     // when
     final ZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
-    zeebeState.getBlackListState().tryToBlacklist(typedEvent, (workflowInstanceKey) -> {});
+    zeebeState.getBlackListState().tryToBlacklist(typedEvent, (processInstanceKey) -> {});
 
     // then
-    metadata.intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    metadata.valueType(ValueType.WORKFLOW_INSTANCE);
+    metadata.intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    metadata.valueType(ValueType.PROCESS_INSTANCE);
     typedEvent.wrap(null, metadata, new Value());
     assertThat(zeebeState.getBlackListState().isOnBlacklist(typedEvent))
         .isEqualTo(expectedToBlacklist);
   }
 
-  private final class Value extends UnifiedRecordValue implements WorkflowInstanceRelated {
+  private final class Value extends UnifiedRecordValue implements ProcessInstanceRelated {
 
     @Override
-    public long getWorkflowInstanceKey() {
-      return workflowInstanceKey;
+    public long getProcessInstanceKey() {
+      return processInstanceKey;
     }
   }
 }

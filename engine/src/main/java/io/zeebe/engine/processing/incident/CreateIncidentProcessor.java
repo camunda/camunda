@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.incident;
 
@@ -63,7 +63,7 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
     if (isJobIncident) {
       return tryRejectJobIncident(incidentEvent.getJobKey(), commandControl);
     } else {
-      return tryRejectWorkflowInstanceIncident(
+      return tryRejectProcessInstanceIncident(
           incidentEvent.getElementInstanceKey(), commandControl);
     }
   }
@@ -89,7 +89,7 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
   }
 
   /** @return true if rejected, otherwise false */
-  private boolean tryRejectWorkflowInstanceIncident(
+  private boolean tryRejectProcessInstanceIncident(
       final long elementInstanceKey, final CommandControl<IncidentRecord> commandControl) {
     final IndexedRecord failedRecord = elementInstanceState.getFailedRecord(elementInstanceKey);
     final boolean noFailedRecord = failedRecord == null;

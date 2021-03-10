@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.variable;
 
@@ -54,15 +54,15 @@ public final class UpdateVariableDocumentProcessor
       return;
     }
 
-    final long workflowKey = scope.getValue().getWorkflowKey();
-    final long workflowInstanceKey = scope.getValue().getWorkflowInstanceKey();
+    final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
+    final long processInstanceKey = scope.getValue().getProcessInstanceKey();
     try {
       if (value.getUpdateSemantics() == VariableDocumentUpdateSemantic.LOCAL) {
         variableBehavior.mergeLocalDocument(
-            scope.getKey(), workflowKey, workflowInstanceKey, value.getVariablesBuffer());
+            scope.getKey(), processDefinitionKey, processInstanceKey, value.getVariablesBuffer());
       } else {
         variableBehavior.mergeDocument(
-            scope.getKey(), workflowKey, workflowInstanceKey, value.getVariablesBuffer());
+            scope.getKey(), processDefinitionKey, processInstanceKey, value.getVariablesBuffer());
       }
     } catch (final MsgpackReaderException e) {
       final String reason =

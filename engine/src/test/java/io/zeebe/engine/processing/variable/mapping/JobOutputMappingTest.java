@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.variable.mapping;
 
@@ -15,8 +15,8 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -175,38 +175,38 @@ public final class JobOutputMappingTest {
                 .done())
         .deploy()
         .getValue()
-        .getDeployedWorkflows()
+        .getDeployedProcesses()
         .get(0)
-        .getWorkflowKey();
+        .getProcessDefinitionKey();
 
     // when
-    final long workflowInstanceKey =
-        ENGINE_RULE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("i", 0).create();
+    final long processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("i", 0).create();
 
     ENGINE_RULE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType(jobType)
         .withVariables(MsgPackUtil.asMsgPack(jobVariables))
         .complete();
 
     // then
     final long elementInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("task")
             .getFirst()
             .getKey();
 
     final Record<VariableRecordValue> initialVariable =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withName("i")
             .getFirst();
 
     assertThat(
             RecordingExporter.variableRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
                 .withScopeKey(elementInstanceKey)
                 .limit(expectedActivityVariables.size()))
@@ -217,9 +217,9 @@ public final class JobOutputMappingTest {
 
     assertThat(
             RecordingExporter.variableRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
-                .withScopeKey(workflowInstanceKey)
+                .withScopeKey(processInstanceKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> variable(v.getName(), v.getValue()))

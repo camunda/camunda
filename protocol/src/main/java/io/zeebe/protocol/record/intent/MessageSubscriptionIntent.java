@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.record.intent;
 
-public enum MessageSubscriptionIntent implements WorkflowInstanceRelatedIntent {
+public enum MessageSubscriptionIntent implements ProcessInstanceRelatedIntent {
   CREATE((short) 0),
   CREATED((short) 1),
 

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.streamprocessor;
 
@@ -23,7 +23,7 @@ import io.zeebe.protocol.record.intent.Intent;
  * Decorates a command processor with simple accept and reject logic.
  *
  * <p>On accept it writes the state corresponding to successfully processing the command (e.g.
- * workflow instance creation: CREATE => CREATED); and responds if it was a client command that
+ * process instance creation: CREATE => CREATED); and responds if it was a client command that
  * should be responded to.
  *
  * <p>On reject it writes a command rejection

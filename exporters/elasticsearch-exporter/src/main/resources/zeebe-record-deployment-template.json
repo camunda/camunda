@@ -12,7 +12,7 @@
         "value": {
           "dynamic": "strict",
           "properties": {
-            "deployedWorkflows": {
+            "deployedProcesses": {
               "properties": {
                 "bpmnProcessId": {
                   "type": "keyword"
@@ -20,7 +20,7 @@
                 "version": {
                   "type": "long"
                 },
-                "workflowKey": {
+                "processDefinitionKey": {
                   "type": "long"
                 },
                 "resourceName": {

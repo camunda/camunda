@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.variable;
 
@@ -15,12 +15,12 @@ import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordStream;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -46,39 +46,35 @@ public final class UpdateVariableDocumentTest {
     final String processId = "process";
     final String taskId = "task";
     final String type = UUID.randomUUID().toString();
-    final BpmnModelInstance process = newWorkflow(processId, taskId, type);
+    final BpmnModelInstance process = newProcess(processId, taskId, type);
     final Map<String, Object> document = Maps.of(entry("x", 2), entry("foo", "bar"));
 
     // when
     ENGINE_RULE.deployment().withXmlResource(process).deploy();
-    final long workflowInstanceKey =
-        ENGINE_RULE
-            .workflowInstance()
-            .ofBpmnProcessId(processId)
-            .withVariables("{'x': 1}")
-            .create();
-    final Record<WorkflowInstanceRecordValue> activatedEvent = waitForActivityActivatedEvent();
+    final long processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId(processId).withVariables("{'x': 1}").create();
+    final Record<ProcessInstanceRecordValue> activatedEvent = waitForActivityActivatedEvent();
     ENGINE_RULE
         .variables()
         .ofScope(activatedEvent.getKey())
         .withDocument(document)
         .withUpdateSemantic(VariableDocumentUpdateSemantic.PROPAGATE)
         .update();
-    ENGINE_RULE.job().ofInstance(workflowInstanceKey).withType(type).complete();
+    ENGINE_RULE.job().ofInstance(processInstanceKey).withType(type).complete();
 
     // then
     final long completedPosition =
-        getWorkflowInstanceCompletedPosition(processId, workflowInstanceKey);
+        getProcessInstanceCompletedPosition(processId, processInstanceKey);
     final Supplier<RecordStream> recordsSupplier =
         () -> RecordingExporter.records().between(activatedEvent.getPosition(), completedPosition);
 
-    assertVariableRecordsProduced(workflowInstanceKey, recordsSupplier);
+    assertVariableRecordsProduced(processInstanceKey, recordsSupplier);
     assertVariableDocumentEventProduced(document, activatedEvent, recordsSupplier);
   }
 
   private void assertVariableDocumentEventProduced(
       final Map<String, Object> document,
-      final Record<WorkflowInstanceRecordValue> activatedEvent,
+      final Record<ProcessInstanceRecordValue> activatedEvent,
       final Supplier<RecordStream> records) {
     assertThat(
             records
@@ -93,8 +89,8 @@ public final class UpdateVariableDocumentTest {
   }
 
   private void assertVariableRecordsProduced(
-      final long workflowInstanceKey, final Supplier<RecordStream> records) {
-    assertThat(records.get().variableRecords().withWorkflowInstanceKey(workflowInstanceKey))
+      final long processInstanceKey, final Supplier<RecordStream> records) {
+    assertThat(records.get().variableRecords().withProcessInstanceKey(processInstanceKey))
         .hasSize(2)
         .extracting(
             r ->
@@ -104,11 +100,11 @@ public final class UpdateVariableDocumentTest {
                     r.getValue().getName(),
                     r.getValue().getValue()))
         .contains(
-            tuple(VariableIntent.CREATED, workflowInstanceKey, "foo", "\"bar\""),
-            tuple(VariableIntent.UPDATED, workflowInstanceKey, "x", "2"));
+            tuple(VariableIntent.CREATED, processInstanceKey, "foo", "\"bar\""),
+            tuple(VariableIntent.UPDATED, processInstanceKey, "x", "2"));
   }
 
-  private BpmnModelInstance newWorkflow(
+  private BpmnModelInstance newProcess(
       final String processId, final String taskId, final String type) {
     return Bpmn.createExecutableProcess(processId)
         .startEvent()
@@ -117,19 +113,19 @@ public final class UpdateVariableDocumentTest {
         .done();
   }
 
-  private long getWorkflowInstanceCompletedPosition(
-      final String processId, final long workflowInstanceKey) {
-    return RecordingExporter.workflowInstanceRecords()
-        .withWorkflowInstanceKey(workflowInstanceKey)
+  private long getProcessInstanceCompletedPosition(
+      final String processId, final long processInstanceKey) {
+    return RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
         .withElementId(processId)
-        .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
         .getFirst()
         .getPosition();
   }
 
-  private Record<WorkflowInstanceRecordValue> waitForActivityActivatedEvent() {
-    return RecordingExporter.workflowInstanceRecords()
-        .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+  private Record<ProcessInstanceRecordValue> waitForActivityActivatedEvent() {
+    return RecordingExporter.processInstanceRecords()
+        .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withElementType(BpmnElementType.SERVICE_TASK)
         .getFirst();
   }

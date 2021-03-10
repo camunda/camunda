@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.timer;
 
@@ -18,7 +18,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
-import io.zeebe.engine.state.immutable.WorkflowState;
+import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.zeebe.model.bpmn.util.time.Interval;
@@ -41,7 +41,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
   private final CatchEventBehavior catchEventBehavior;
-  private final WorkflowState workflowState;
+  private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
   private final MutableTimerInstanceState timerInstanceState;
   private final EventHandle eventHandle;
@@ -53,7 +53,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       final ExpressionProcessor expressionProcessor) {
     this.catchEventBehavior = catchEventBehavior;
     this.expressionProcessor = expressionProcessor;
-    workflowState = zeebeState.getWorkflowState();
+    processState = zeebeState.getProcessState();
     elementInstanceState = zeebeState.getElementInstanceState();
     timerInstanceState = zeebeState.getTimerState();
 
@@ -86,13 +86,13 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       final TimerRecord timer,
       final long elementInstanceKey) {
 
-    final var workflowKey = timer.getWorkflowKey();
+    final var processDefinitionKey = timer.getProcessDefinitionKey();
     final var catchEvent =
-        workflowState.getFlowElement(
-            workflowKey, timer.getTargetElementIdBuffer(), ExecutableCatchEvent.class);
+        processState.getFlowElement(
+            processDefinitionKey, timer.getTargetElementIdBuffer(), ExecutableCatchEvent.class);
 
     final boolean isTriggered =
-        triggerEvent(streamWriter, timer, elementInstanceKey, workflowKey, catchEvent);
+        triggerEvent(streamWriter, timer, elementInstanceKey, processDefinitionKey, catchEvent);
 
     if (isTriggered) {
       streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
@@ -112,7 +112,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       final TypedStreamWriter streamWriter,
       final TimerRecord timer,
       final long elementInstanceKey,
-      final long workflowKey,
+      final long processDefinitionKey,
       final ExecutableCatchEvent catchEvent) {
 
     if (elementInstanceKey > 0) {
@@ -126,11 +126,11 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       }
 
     } else {
-      final var workflowInstanceKey =
+      final var processInstanceKey =
           eventHandle.triggerStartEvent(
-              streamWriter, workflowKey, timer.getTargetElementIdBuffer(), NO_VARIABLES);
+              streamWriter, processDefinitionKey, timer.getTargetElementIdBuffer(), NO_VARIABLES);
 
-      return workflowInstanceKey > 0;
+      return processInstanceKey > 0;
     }
   }
 
@@ -160,8 +160,8 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     final Timer repeatingInterval = new RepeatingInterval(repetitions, interval);
     catchEventBehavior.subscribeToTimerEvent(
         record.getElementInstanceKey(),
-        record.getWorkflowInstanceKey(),
-        record.getWorkflowKey(),
+        record.getProcessInstanceKey(),
+        record.getProcessDefinitionKey(),
         event.getId(),
         repeatingInterval,
         writer);

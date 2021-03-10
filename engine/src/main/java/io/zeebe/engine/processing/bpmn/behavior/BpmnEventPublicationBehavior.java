@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn.behavior;
 
@@ -23,12 +23,12 @@ public final class BpmnEventPublicationBehavior {
 
   public BpmnEventPublicationBehavior(
       final ZeebeState zeebeState, final TypedStreamWriter streamWriter) {
-    final var workflowState = zeebeState.getWorkflowState();
+    final var processState = zeebeState.getProcessState();
     final var keyGenerator = zeebeState.getKeyGenerator();
     elementInstanceState = zeebeState.getElementInstanceState();
     errorEventHandler =
         new ErrorEventHandler(
-            zeebeState.getWorkflowState(),
+            zeebeState.getProcessState(),
             zeebeState.getElementInstanceState(),
             zeebeState.getEventScopeInstanceState(),
             zeebeState.getKeyGenerator());

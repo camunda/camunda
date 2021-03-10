@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.streamprocessor;
 
@@ -18,7 +18,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
@@ -55,17 +55,16 @@ public final class ReplayStateTest {
   public static Collection<TestCase> testRecords() {
     return List.of(
         testCase("activated service task")
-            .withWorkflow(
+            .withProcess(
                 Bpmn.createExecutableProcess(PROCESS_ID)
                     .startEvent()
                     .serviceTask("task", t -> t.zeebeJobType("test"))
                     .done())
             .withExecution(
                 engine -> {
-                  engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+                  engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-                  RecordingExporter.workflowInstanceRecords(
-                          WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+                  RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                       .withElementType(BpmnElementType.SERVICE_TASK)
                       .await();
 
@@ -100,7 +99,7 @@ public final class ReplayStateTest {
   @Test
   public void shouldRestoreState() {
     // given
-    testCase.workflow.ifPresent(workflow -> engine.deployment().withXmlResource(workflow).deploy());
+    testCase.process.ifPresent(process -> engine.deployment().withXmlResource(process).deploy());
 
     final Record<?> finalRecord = testCase.execution.apply(engine);
 
@@ -155,7 +154,7 @@ public final class ReplayStateTest {
 
   private static final class TestCase {
     private final String description;
-    private Optional<BpmnModelInstance> workflow = Optional.empty();
+    private Optional<BpmnModelInstance> process = Optional.empty();
     private Function<EngineRule, Record<?>> execution =
         engine -> RecordingExporter.records().getFirst();
 
@@ -163,8 +162,8 @@ public final class ReplayStateTest {
       this.description = description;
     }
 
-    private TestCase withWorkflow(final BpmnModelInstance workflow) {
-      this.workflow = Optional.of(workflow);
+    private TestCase withProcess(final BpmnModelInstance process) {
+      this.process = Optional.of(process);
       return this;
     }
 

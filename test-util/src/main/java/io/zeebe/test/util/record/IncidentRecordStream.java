@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.test.util.record;
 
@@ -40,8 +40,8 @@ public final class IncidentRecordStream
     return valueFilter(v -> elementId.equals(v.getElementId()));
   }
 
-  public IncidentRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
-    return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
+  public IncidentRecordStream withProcessInstanceKey(final long processInstanceKey) {
+    return valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey);
   }
 
   public IncidentRecordStream withJobKey(final long jobKey) {

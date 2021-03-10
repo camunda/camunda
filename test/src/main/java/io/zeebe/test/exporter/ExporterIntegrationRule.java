@@ -2,13 +2,13 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.test.exporter;
 
 import static io.zeebe.test.EmbeddedBrokerRule.TEST_RECORD_EXPORTER_ID;
-import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecords;
+import static io.zeebe.test.util.record.RecordingExporter.processInstanceRecords;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +22,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
@@ -49,7 +49,7 @@ import org.junit.rules.ExternalResource;
  * <p>Sets up an embedded broker, gateway, client, and provides convenience methods to:
  *
  * <ol>
- *   <li>run a sample workload (e.g. deploy & create workflows, setup a job worker, etc.)
+ *   <li>run a sample workload (e.g. deploy & create processes, setup a job worker, etc.)
  *   <li>visit all exported records so far
  *   <li>perform simple operations such as deployments, starting a job worker, etc.
  * </ol>
@@ -118,7 +118,7 @@ import org.junit.rules.ExternalResource;
  */
 public class ExporterIntegrationRule extends ExternalResource {
 
-  public static final BpmnModelInstance SAMPLE_WORKFLOW =
+  public static final BpmnModelInstance SAMPLE_PROCESS =
       Bpmn.createExecutableProcess("testProcess")
           .startEvent()
           .intermediateCatchEvent(
@@ -255,14 +255,14 @@ public class ExporterIntegrationRule extends ExternalResource {
 
   /** Runs a sample workload on the broker, exporting several records of different types. */
   public void performSampleWorkload() {
-    deployWorkflow(SAMPLE_WORKFLOW, "sample_workflow.bpmn");
+    deployProcess(SAMPLE_PROCESS, "sample_process.bpmn");
 
     final Map<String, Object> variables = new HashMap<>();
     variables.put("orderId", "foo-bar-123");
     variables.put("largeValue", "x".repeat(8192));
     variables.put("unicode", "Á");
 
-    final long workflowInstanceKey = createWorkflowInstance("testProcess", variables);
+    final long processInstanceKey = createProcessInstance("testProcess", variables);
 
     // create job worker which fails on first try and sets retries to 0 to create an incident
     final AtomicBoolean fail = new AtomicBoolean(true);
@@ -283,7 +283,7 @@ public class ExporterIntegrationRule extends ExternalResource {
     // wait for incident and resolve it
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("task")
             .getFirst();
     clientRule
@@ -295,7 +295,7 @@ public class ExporterIntegrationRule extends ExternalResource {
     clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send().join();
 
     // wrap up
-    awaitWorkflowCompletion(workflowInstanceKey);
+    awaitProcessCompletion(processInstanceKey);
     worker.close();
   }
 
@@ -309,24 +309,24 @@ public class ExporterIntegrationRule extends ExternalResource {
   }
 
   /**
-   * Deploys the given workflow to the broker. Note that the filename must have the "bpmn" file
+   * Deploys the given process to the broker. Note that the filename must have the "bpmn" file
    * extension, e.g. "resource.bpmn".
    *
-   * @param workflow workflow to deploy
-   * @param filename resource name, e.g. "workflow.bpmn"
+   * @param process process to deploy
+   * @param filename resource name, e.g. "process.bpmn"
    */
-  public void deployWorkflow(final BpmnModelInstance workflow, final String filename) {
-    clientRule.getClient().newDeployCommand().addWorkflowModel(workflow, filename).send().join();
+  public void deployProcess(final BpmnModelInstance process, final String filename) {
+    clientRule.getClient().newDeployCommand().addProcessModel(process, filename).send().join();
   }
 
   /**
-   * Creates a workflow instance for the given process ID, with the given variables.
+   * Creates a process instance for the given process ID, with the given variables.
    *
    * @param processId BPMN process ID
    * @param variables initial variables for the instance
    * @return unique ID used to interact with the instance
    */
-  public long createWorkflowInstance(final String processId, final Map<String, Object> variables) {
+  public long createProcessInstance(final String processId, final Map<String, Object> variables) {
     return clientRule
         .getClient()
         .newCreateInstanceCommand()
@@ -335,7 +335,7 @@ public class ExporterIntegrationRule extends ExternalResource {
         .variables(variables)
         .send()
         .join()
-        .getWorkflowInstanceKey();
+        .getProcessInstanceKey();
   }
 
   /**
@@ -368,15 +368,15 @@ public class ExporterIntegrationRule extends ExternalResource {
   }
 
   /**
-   * Blocks and wait until the workflow identified by the key has been completed.
+   * Blocks and wait until the process identified by the key has been completed.
    *
-   * @param workflowInstanceKey ID of the workflow
+   * @param processInstanceKey ID of the process
    */
-  public void awaitWorkflowCompletion(final long workflowInstanceKey) {
+  public void awaitProcessCompletion(final long processInstanceKey) {
     TestUtil.waitUntil(
         () ->
-            workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .filter(r -> r.getKey() == workflowInstanceKey)
+            processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .filter(r -> r.getKey() == processInstanceKey)
                 .exists());
   }
 

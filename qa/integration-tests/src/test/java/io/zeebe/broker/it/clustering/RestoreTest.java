@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.it.clustering;
 
@@ -60,21 +60,21 @@ public final class RestoreTest {
     // given
     clusteringRule.stopBrokerAndAwaitNewLeader(2);
 
-    final BpmnModelInstance firstWorkflow =
+    final BpmnModelInstance firstProcess =
         Bpmn.createExecutableProcess("process-test1").startEvent().endEvent().done();
 
-    final BpmnModelInstance secondWorkflow =
+    final BpmnModelInstance secondProcess =
         Bpmn.createExecutableProcess("process-test2").startEvent().endEvent().done();
 
-    final BpmnModelInstance thirdWorkflow =
+    final BpmnModelInstance thirdProcess =
         Bpmn.createExecutableProcess("process-test3").startEvent().endEvent().done();
 
     // when
-    final long firstWorkflowKey = clientRule.deployWorkflow(firstWorkflow);
+    final long firstProcessDefinitionKey = clientRule.deployProcess(firstProcess);
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
     clusteringRule.waitForSnapshotAtBroker(getLeader());
 
-    final long secondWorkflowKey = clientRule.deployWorkflow(secondWorkflow);
+    final long secondProcessDefinitionKey = clientRule.deployProcess(secondProcess);
 
     writeManyEventsUntilAtomixLogIsCompactable();
     clusteringRule.waitForSnapshotAtBroker(
@@ -85,7 +85,7 @@ public final class RestoreTest {
 
     clusteringRule.stopBrokerAndAwaitNewLeader(1);
 
-    final long thirdWorkflowKey = clientRule.deployWorkflow(thirdWorkflow);
+    final long thirdProcessDefinitionKey = clientRule.deployProcess(thirdProcess);
 
     writeManyEventsUntilAtomixLogIsCompactable();
     clusteringRule.waitForSnapshotAtBroker(
@@ -95,10 +95,10 @@ public final class RestoreTest {
     clusteringRule.stopBrokerAndAwaitNewLeader(0);
 
     // then
-    // If restore did not happen, following workflows won't be deployed
-    assertThat(clientRule.createWorkflowInstance(firstWorkflowKey)).isPositive();
-    assertThat(clientRule.createWorkflowInstance(secondWorkflowKey)).isPositive();
-    assertThat(clientRule.createWorkflowInstance(thirdWorkflowKey)).isPositive();
+    // If restore did not happen, following processes won't be deployed
+    assertThat(clientRule.createProcessInstance(firstProcessDefinitionKey)).isPositive();
+    assertThat(clientRule.createProcessInstance(secondProcessDefinitionKey)).isPositive();
+    assertThat(clientRule.createProcessInstance(thirdProcessDefinitionKey)).isPositive();
   }
 
   @Test

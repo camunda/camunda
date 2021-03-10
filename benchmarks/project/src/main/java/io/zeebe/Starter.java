@@ -57,7 +57,7 @@ public class Starter extends App {
     final ScheduledExecutorService executorService =
         Executors.newScheduledThreadPool(starterCfg.getThreads());
 
-    deployWorkflow(client, starterCfg.getBpmnXmlPath());
+    deployProcess(client, starterCfg.getBpmnXmlPath());
 
     // start instances
     final int intervalMs = Math.floorDiv(1000, rate);
@@ -147,7 +147,7 @@ public class Starter extends App {
                   .send());
         }
       } catch (final Exception e) {
-        LOG.error("Error on creating new workflow instance", e);
+        LOG.error("Error on creating new process instance", e);
       }
     } else {
       countDownLatch.countDown();
@@ -169,13 +169,13 @@ public class Starter extends App {
     return builder.build();
   }
 
-  private void deployWorkflow(final ZeebeClient client, final String bpmnXmlPath) {
+  private void deployProcess(final ZeebeClient client, final String bpmnXmlPath) {
     while (true) {
       try {
         client.newDeployCommand().addResourceFromClasspath(bpmnXmlPath).send().join();
         break;
       } catch (final Exception e) {
-        LOG.warn("Failed to deploy workflow, retrying", e);
+        LOG.warn("Failed to deploy process, retrying", e);
         try {
           Thread.sleep(200);
         } catch (final InterruptedException ex) {

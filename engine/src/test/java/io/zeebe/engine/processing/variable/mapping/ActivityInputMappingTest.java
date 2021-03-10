@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.variable.mapping;
 
@@ -15,7 +15,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
@@ -98,29 +98,29 @@ public final class ActivityInputMappingTest {
                 .done())
         .deploy()
         .getValue()
-        .getDeployedWorkflows()
+        .getDeployedProcesses()
         .get(0)
-        .getWorkflowKey();
+        .getProcessDefinitionKey();
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables(initialVariables)
             .create();
 
     // then
     final long flowScopeKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("sub")
             .getFirst()
             .getKey();
 
     assertThat(
             RecordingExporter.variableRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .withScopeKey(flowScopeKey)
                 .limit(expectedActivityVariables.size()))
         .extracting(Record::getValue)

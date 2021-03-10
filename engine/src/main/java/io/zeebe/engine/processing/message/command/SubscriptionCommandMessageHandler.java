@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message.command;
 
@@ -12,12 +12,12 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -33,12 +33,12 @@ public final class SubscriptionCommandMessageHandler
   private final OpenMessageSubscriptionCommand openMessageSubscriptionCommand =
       new OpenMessageSubscriptionCommand();
 
-  private final OpenWorkflowInstanceSubscriptionCommand openWorkflowInstanceSubscriptionCommand =
-      new OpenWorkflowInstanceSubscriptionCommand();
+  private final OpenProcessInstanceSubscriptionCommand openProcessInstanceSubscriptionCommand =
+      new OpenProcessInstanceSubscriptionCommand();
 
-  private final CorrelateWorkflowInstanceSubscriptionCommand
-      correlateWorkflowInstanceSubscriptionCommand =
-          new CorrelateWorkflowInstanceSubscriptionCommand();
+  private final CorrelateProcessInstanceSubscriptionCommand
+      correlateProcessInstanceSubscriptionCommand =
+          new CorrelateProcessInstanceSubscriptionCommand();
 
   private final CorrelateMessageSubscriptionCommand correlateMessageSubscriptionCommand =
       new CorrelateMessageSubscriptionCommand();
@@ -46,8 +46,8 @@ public final class SubscriptionCommandMessageHandler
   private final CloseMessageSubscriptionCommand closeMessageSubscriptionCommand =
       new CloseMessageSubscriptionCommand();
 
-  private final CloseWorkflowInstanceSubscriptionCommand closeWorkflowInstanceSubscriptionCommand =
-      new CloseWorkflowInstanceSubscriptionCommand();
+  private final CloseProcessInstanceSubscriptionCommand closeProcessInstanceSubscriptionCommand =
+      new CloseProcessInstanceSubscriptionCommand();
 
   private final RejectCorrelateMessageSubscriptionCommand resetMessageCorrelationCommand =
       new RejectCorrelateMessageSubscriptionCommand();
@@ -57,8 +57,8 @@ public final class SubscriptionCommandMessageHandler
   private final MessageSubscriptionRecord messageSubscriptionRecord =
       new MessageSubscriptionRecord();
 
-  private final WorkflowInstanceSubscriptionRecord workflowInstanceSubscriptionRecord =
-      new WorkflowInstanceSubscriptionRecord();
+  private final ProcessInstanceSubscriptionRecord processInstanceSubscriptionRecord =
+      new ProcessInstanceSubscriptionRecord();
 
   private final Consumer<Runnable> enviromentToRun;
   private final IntFunction<LogStreamRecordWriter> logstreamRecordWriterSupplier;
@@ -86,11 +86,11 @@ public final class SubscriptionCommandMessageHandler
               case OpenMessageSubscriptionDecoder.TEMPLATE_ID:
                 onOpenMessageSubscription(buffer, offset, length);
                 break;
-              case OpenWorkflowInstanceSubscriptionDecoder.TEMPLATE_ID:
-                onOpenWorkflowInstanceSubscription(buffer, offset, length);
+              case OpenProcessInstanceSubscriptionDecoder.TEMPLATE_ID:
+                onOpenProcessInstanceSubscription(buffer, offset, length);
                 break;
-              case CorrelateWorkflowInstanceSubscriptionDecoder.TEMPLATE_ID:
-                onCorrelateWorkflowInstanceSubscription(buffer, offset, length);
+              case CorrelateProcessInstanceSubscriptionDecoder.TEMPLATE_ID:
+                onCorrelateProcessInstanceSubscription(buffer, offset, length);
                 break;
               case CorrelateMessageSubscriptionDecoder.TEMPLATE_ID:
                 onCorrelateMessageSubscription(buffer, offset, length);
@@ -98,8 +98,8 @@ public final class SubscriptionCommandMessageHandler
               case CloseMessageSubscriptionDecoder.TEMPLATE_ID:
                 onCloseMessageSubscription(buffer, offset, length);
                 break;
-              case CloseWorkflowInstanceSubscriptionDecoder.TEMPLATE_ID:
-                onCloseWorkflowInstanceSubscription(buffer, offset, length);
+              case CloseProcessInstanceSubscriptionDecoder.TEMPLATE_ID:
+                onCloseProcessInstanceSubscription(buffer, offset, length);
                 break;
               case RejectCorrelateMessageSubscriptionDecoder.TEMPLATE_ID:
                 onRejectCorrelateMessageSubscription(buffer, offset, length);
@@ -118,7 +118,7 @@ public final class SubscriptionCommandMessageHandler
     openMessageSubscriptionCommand.wrap(buffer, offset, length);
 
     messageSubscriptionRecord
-        .setWorkflowInstanceKey(openMessageSubscriptionCommand.getWorkflowInstanceKey())
+        .setProcessInstanceKey(openMessageSubscriptionCommand.getProcessInstanceKey())
         .setElementInstanceKey(openMessageSubscriptionCommand.getElementInstanceKey())
         .setBpmnProcessId(openMessageSubscriptionCommand.getBpmnProcessId())
         .setMessageKey(-1)
@@ -133,55 +133,54 @@ public final class SubscriptionCommandMessageHandler
         messageSubscriptionRecord);
   }
 
-  private boolean onOpenWorkflowInstanceSubscription(
+  private boolean onOpenProcessInstanceSubscription(
       final DirectBuffer buffer, final int offset, final int length) {
-    openWorkflowInstanceSubscriptionCommand.wrap(buffer, offset, length);
+    openProcessInstanceSubscriptionCommand.wrap(buffer, offset, length);
 
-    final long workflowInstanceKey =
-        openWorkflowInstanceSubscriptionCommand.getWorkflowInstanceKey();
-    final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
+    final long processInstanceKey = openProcessInstanceSubscriptionCommand.getProcessInstanceKey();
+    final int processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
 
-    workflowInstanceSubscriptionRecord.reset();
-    workflowInstanceSubscriptionRecord
+    processInstanceSubscriptionRecord.reset();
+    processInstanceSubscriptionRecord
         .setSubscriptionPartitionId(
-            openWorkflowInstanceSubscriptionCommand.getSubscriptionPartitionId())
-        .setWorkflowInstanceKey(workflowInstanceKey)
-        .setElementInstanceKey(openWorkflowInstanceSubscriptionCommand.getElementInstanceKey())
+            openProcessInstanceSubscriptionCommand.getSubscriptionPartitionId())
+        .setProcessInstanceKey(processInstanceKey)
+        .setElementInstanceKey(openProcessInstanceSubscriptionCommand.getElementInstanceKey())
         .setMessageKey(-1)
-        .setMessageName(openWorkflowInstanceSubscriptionCommand.getMessageName())
-        .setCloseOnCorrelate(openWorkflowInstanceSubscriptionCommand.shouldCloseOnCorrelate());
+        .setMessageName(openProcessInstanceSubscriptionCommand.getMessageName())
+        .setCloseOnCorrelate(openProcessInstanceSubscriptionCommand.shouldCloseOnCorrelate());
 
     return writeCommand(
-        workflowInstancePartitionId,
-        ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
-        WorkflowInstanceSubscriptionIntent.OPEN,
-        workflowInstanceSubscriptionRecord);
+        processInstancePartitionId,
+        ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
+        ProcessInstanceSubscriptionIntent.OPEN,
+        processInstanceSubscriptionRecord);
   }
 
-  private boolean onCorrelateWorkflowInstanceSubscription(
+  private boolean onCorrelateProcessInstanceSubscription(
       final DirectBuffer buffer, final int offset, final int length) {
-    correlateWorkflowInstanceSubscriptionCommand.wrap(buffer, offset, length);
+    correlateProcessInstanceSubscriptionCommand.wrap(buffer, offset, length);
 
-    final long workflowInstanceKey =
-        correlateWorkflowInstanceSubscriptionCommand.getWorkflowInstanceKey();
-    final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
+    final long processInstanceKey =
+        correlateProcessInstanceSubscriptionCommand.getProcessInstanceKey();
+    final int processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
 
-    workflowInstanceSubscriptionRecord
+    processInstanceSubscriptionRecord
         .setSubscriptionPartitionId(
-            correlateWorkflowInstanceSubscriptionCommand.getSubscriptionPartitionId())
-        .setWorkflowInstanceKey(workflowInstanceKey)
-        .setElementInstanceKey(correlateWorkflowInstanceSubscriptionCommand.getElementInstanceKey())
-        .setBpmnProcessId(correlateWorkflowInstanceSubscriptionCommand.getBpmnProcessId())
-        .setMessageKey(correlateWorkflowInstanceSubscriptionCommand.getMessageKey())
-        .setMessageName(correlateWorkflowInstanceSubscriptionCommand.getMessageName())
-        .setVariables(correlateWorkflowInstanceSubscriptionCommand.getVariables())
-        .setCorrelationKey(correlateWorkflowInstanceSubscriptionCommand.getCorrelationKey());
+            correlateProcessInstanceSubscriptionCommand.getSubscriptionPartitionId())
+        .setProcessInstanceKey(processInstanceKey)
+        .setElementInstanceKey(correlateProcessInstanceSubscriptionCommand.getElementInstanceKey())
+        .setBpmnProcessId(correlateProcessInstanceSubscriptionCommand.getBpmnProcessId())
+        .setMessageKey(correlateProcessInstanceSubscriptionCommand.getMessageKey())
+        .setMessageName(correlateProcessInstanceSubscriptionCommand.getMessageName())
+        .setVariables(correlateProcessInstanceSubscriptionCommand.getVariables())
+        .setCorrelationKey(correlateProcessInstanceSubscriptionCommand.getCorrelationKey());
 
     return writeCommand(
-        workflowInstancePartitionId,
-        ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
-        WorkflowInstanceSubscriptionIntent.CORRELATE,
-        workflowInstanceSubscriptionRecord);
+        processInstancePartitionId,
+        ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
+        ProcessInstanceSubscriptionIntent.CORRELATE,
+        processInstanceSubscriptionRecord);
   }
 
   private boolean onCorrelateMessageSubscription(
@@ -190,7 +189,7 @@ public final class SubscriptionCommandMessageHandler
 
     messageSubscriptionRecord.reset();
     messageSubscriptionRecord
-        .setWorkflowInstanceKey(correlateMessageSubscriptionCommand.getWorkflowInstanceKey())
+        .setProcessInstanceKey(correlateMessageSubscriptionCommand.getProcessInstanceKey())
         .setElementInstanceKey(correlateMessageSubscriptionCommand.getElementInstanceKey())
         .setBpmnProcessId(correlateMessageSubscriptionCommand.getBpmnProcessId())
         .setMessageKey(-1)
@@ -209,7 +208,7 @@ public final class SubscriptionCommandMessageHandler
 
     messageSubscriptionRecord.reset();
     messageSubscriptionRecord
-        .setWorkflowInstanceKey(closeMessageSubscriptionCommand.getWorkflowInstanceKey())
+        .setProcessInstanceKey(closeMessageSubscriptionCommand.getProcessInstanceKey())
         .setElementInstanceKey(closeMessageSubscriptionCommand.getElementInstanceKey())
         .setMessageKey(-1L)
         .setMessageName(closeMessageSubscriptionCommand.getMessageName());
@@ -221,39 +220,38 @@ public final class SubscriptionCommandMessageHandler
         messageSubscriptionRecord);
   }
 
-  private boolean onCloseWorkflowInstanceSubscription(
+  private boolean onCloseProcessInstanceSubscription(
       final DirectBuffer buffer, final int offset, final int length) {
-    closeWorkflowInstanceSubscriptionCommand.wrap(buffer, offset, length);
+    closeProcessInstanceSubscriptionCommand.wrap(buffer, offset, length);
 
-    final long workflowInstanceKey =
-        closeWorkflowInstanceSubscriptionCommand.getWorkflowInstanceKey();
-    final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
+    final long processInstanceKey = closeProcessInstanceSubscriptionCommand.getProcessInstanceKey();
+    final int processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
 
-    workflowInstanceSubscriptionRecord.reset();
-    workflowInstanceSubscriptionRecord
+    processInstanceSubscriptionRecord.reset();
+    processInstanceSubscriptionRecord
         .setSubscriptionPartitionId(
-            closeWorkflowInstanceSubscriptionCommand.getSubscriptionPartitionId())
-        .setWorkflowInstanceKey(workflowInstanceKey)
-        .setElementInstanceKey(closeWorkflowInstanceSubscriptionCommand.getElementInstanceKey())
+            closeProcessInstanceSubscriptionCommand.getSubscriptionPartitionId())
+        .setProcessInstanceKey(processInstanceKey)
+        .setElementInstanceKey(closeProcessInstanceSubscriptionCommand.getElementInstanceKey())
         .setMessageKey(-1)
-        .setMessageName(closeWorkflowInstanceSubscriptionCommand.getMessageName());
+        .setMessageName(closeProcessInstanceSubscriptionCommand.getMessageName());
 
     return writeCommand(
-        workflowInstancePartitionId,
-        ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
-        WorkflowInstanceSubscriptionIntent.CLOSE,
-        workflowInstanceSubscriptionRecord);
+        processInstancePartitionId,
+        ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
+        ProcessInstanceSubscriptionIntent.CLOSE,
+        processInstanceSubscriptionRecord);
   }
 
   private boolean onRejectCorrelateMessageSubscription(
       final DirectBuffer buffer, final int offset, final int length) {
     resetMessageCorrelationCommand.wrap(buffer, offset, length);
 
-    final long workflowInstanceKey = resetMessageCorrelationCommand.getWorkflowInstanceKey();
+    final long processInstanceKey = resetMessageCorrelationCommand.getProcessInstanceKey();
 
     messageSubscriptionRecord.reset();
     messageSubscriptionRecord
-        .setWorkflowInstanceKey(workflowInstanceKey)
+        .setProcessInstanceKey(processInstanceKey)
         .setElementInstanceKey(-1L)
         .setBpmnProcessId(resetMessageCorrelationCommand.getBpmnProcessId())
         .setMessageName(resetMessageCorrelationCommand.getMessageName())

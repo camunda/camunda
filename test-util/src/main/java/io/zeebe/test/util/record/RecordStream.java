@@ -2,15 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.test.util.record;
 
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -39,22 +39,22 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
     return limit(upperBound::test).skipUntil(lowerBound::test);
   }
 
-  public RecordStream limitToWorkflowInstance(final long workflowInstanceKey) {
+  public RecordStream limitToProcessInstance(final long processInstanceKey) {
     return between(
         r ->
-            r.getKey() == workflowInstanceKey
-                && r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            r.getKey() == processInstanceKey
+                && r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING,
         r ->
-            r.getKey() == workflowInstanceKey
+            r.getKey() == processInstanceKey
                 && Set.of(
-                        WorkflowInstanceIntent.ELEMENT_COMPLETED,
-                        WorkflowInstanceIntent.ELEMENT_TERMINATED)
+                        ProcessInstanceIntent.ELEMENT_COMPLETED,
+                        ProcessInstanceIntent.ELEMENT_TERMINATED)
                     .contains(r.getIntent()));
   }
 
-  public WorkflowInstanceRecordStream workflowInstanceRecords() {
-    return new WorkflowInstanceRecordStream(
-        filter(r -> r.getValueType() == ValueType.WORKFLOW_INSTANCE).map(Record.class::cast));
+  public ProcessInstanceRecordStream processInstanceRecords() {
+    return new ProcessInstanceRecordStream(
+        filter(r -> r.getValueType() == ValueType.PROCESS_INSTANCE).map(Record.class::cast));
   }
 
   public TimerRecordStream timerRecords() {

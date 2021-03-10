@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn.multiinstance;
 
@@ -17,8 +17,8 @@ import io.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -42,17 +42,17 @@ public final class MultiInstanceSubProcessTest {
   private static final String INPUT_ELEMENT = "item";
 
   private static final BpmnModelInstance EMPTY_SUB_PROCESS =
-      workflow(b -> b.sequenceFlowId("sub-process-to-end"));
+      process(b -> b.sequenceFlowId("sub-process-to-end"));
 
   private static final BpmnModelInstance SERVICE_TASK_SUB_PROCESS =
-      workflow(b -> b.serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE)));
+      process(b -> b.serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE)));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private static BpmnModelInstance workflow(final Consumer<StartEventBuilder> subProcessBuilder) {
-    final StartEventBuilder workflow =
+  private static BpmnModelInstance process(final Consumer<StartEventBuilder> subProcessBuilder) {
+    final StartEventBuilder process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .subProcess(
@@ -65,9 +65,9 @@ public final class MultiInstanceSubProcessTest {
             .embeddedSubProcess()
             .startEvent("sub-process-start");
 
-    subProcessBuilder.accept(workflow);
+    subProcessBuilder.accept(process);
 
-    return workflow.endEvent("sub-process-end").done();
+    return process.endEvent("sub-process-end").done();
   }
 
   @Test
@@ -76,16 +76,16 @@ public final class MultiInstanceSubProcessTest {
     ENGINE.deployment().withXmlResource(EMPTY_SUB_PROCESS).deploy();
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(INPUT_COLLECTION, Arrays.asList(10, 20, 30))
             .create();
 
     final List<Long> subProcessInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId(SUB_PROCESS_ELEMENT_ID)
             .skip(1)
             .limit(3)
@@ -94,9 +94,9 @@ public final class MultiInstanceSubProcessTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementId("sub-process-start")
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
         .extracting(r -> r.getValue().getFlowScopeKey())
         .containsExactly(
@@ -111,37 +111,37 @@ public final class MultiInstanceSubProcessTest {
     ENGINE.deployment().withXmlResource(EMPTY_SUB_PROCESS).deploy();
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(INPUT_COLLECTION, Arrays.asList(10, 20, 30))
             .create();
 
     // then
     final long subProcessInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementId(SUB_PROCESS_ELEMENT_ID)
             .skip(1)
             .getFirst()
             .getKey();
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted()
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
                 .withFlowScopeKey(subProcessInstanceKey))
         .extracting(r -> tuple(r.getValue().getElementId(), r.getIntent()))
         .containsExactly(
-            tuple("sub-process-start", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple("sub-process-start", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("sub-process-start", WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple("sub-process-start", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple("sub-process-to-end", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("sub-process-end", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple("sub-process-end", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("sub-process-end", WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple("sub-process-end", WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple("sub-process-start", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("sub-process-start", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("sub-process-start", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("sub-process-start", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("sub-process-to-end", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("sub-process-end", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("sub-process-end", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("sub-process-end", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("sub-process-end", ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -149,26 +149,26 @@ public final class MultiInstanceSubProcessTest {
     // given
     ENGINE.deployment().withXmlResource(SERVICE_TASK_SUB_PROCESS).deploy();
 
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(INPUT_COLLECTION, Arrays.asList(10, 20, 30))
             .create();
 
     RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .limit(3)
         .exists();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_TERMINATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceTerminated())
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
         .extracting(r -> r.getValue().getElementId())
         .containsExactly(
             TASK_ELEMENT_ID,
@@ -186,9 +186,9 @@ public final class MultiInstanceSubProcessTest {
     // given
     ENGINE.deployment().withXmlResource(SERVICE_TASK_SUB_PROCESS).deploy();
 
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(INPUT_COLLECTION, Arrays.asList(10, 20, 30))
             .create();
@@ -196,7 +196,7 @@ public final class MultiInstanceSubProcessTest {
     // then
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
         .hasSize(3);
 
@@ -212,28 +212,28 @@ public final class MultiInstanceSubProcessTest {
         .containsExactly(10, 20, 30);
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .filterRootScope()
-                .limitToWorkflowInstanceCompleted())
+                .limitToProcessInstanceCompleted())
         .extracting(Record::getIntent)
-        .containsExactly(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        .containsExactly(ProcessInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
   public void shouldCreateMessageSubscriptionForEachSubProcess() {
     // given
-    final BpmnModelInstance workflow =
-        workflow(
+    final BpmnModelInstance process =
+        process(
             b ->
                 b.intermediateCatchEvent()
                     .message(m -> m.name("message").zeebeCorrelationKeyExpression(INPUT_ELEMENT)));
 
-    ENGINE.deployment().withXmlResource(workflow).deploy();
+    ENGINE.deployment().withXmlResource(process).deploy();
 
     final List<String> inputCollection = Arrays.asList("a", "b", "c");
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(INPUT_COLLECTION, inputCollection)
             .create();
@@ -241,7 +241,7 @@ public final class MultiInstanceSubProcessTest {
     // then
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
         .hasSize(3)
         .extracting(r -> r.getValue().getCorrelationKey())
@@ -253,25 +253,25 @@ public final class MultiInstanceSubProcessTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .filterRootScope()
-                .limitToWorkflowInstanceCompleted())
+                .limitToProcessInstanceCompleted())
         .extracting(Record::getIntent)
-        .containsExactly(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        .containsExactly(ProcessInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
   public void shouldCreateTimerForEachSubProcess() {
     // given
-    final BpmnModelInstance workflow =
-        workflow(b -> b.intermediateCatchEvent("timer").timerWithDuration("PT1S"));
+    final BpmnModelInstance process =
+        process(b -> b.intermediateCatchEvent("timer").timerWithDuration("PT1S"));
 
-    ENGINE.deployment().withXmlResource(workflow).deploy();
+    ENGINE.deployment().withXmlResource(process).deploy();
 
     final List<String> inputCollection = Arrays.asList("a", "b", "c");
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(INPUT_COLLECTION, inputCollection)
             .create();
@@ -279,7 +279,7 @@ public final class MultiInstanceSubProcessTest {
     // then
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
         .hasSize(3)
         .extracting(r -> r.getValue().getTargetElementId())
@@ -290,10 +290,10 @@ public final class MultiInstanceSubProcessTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .filterRootScope()
-                .limitToWorkflowInstanceCompleted())
+                .limitToProcessInstanceCompleted())
         .extracting(Record::getIntent)
-        .containsExactly(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        .containsExactly(ProcessInstanceIntent.ELEMENT_COMPLETED);
   }
 }

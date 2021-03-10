@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.transport.backpressure;
 
@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.netflix.concurrency.limits.limit.SettableLimit;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.stream.IntStream;
 import org.junit.Test;
 
@@ -22,7 +22,7 @@ public final class CommandRateLimiterTest {
   private final SettableLimit limit = new SettableLimit(INITIAL_LIMIT);
 
   private final CommandRateLimiter rateLimiter = CommandRateLimiter.builder().limit(limit).build(0);
-  private final Intent context = WorkflowInstanceCreationIntent.CREATE;
+  private final Intent context = ProcessInstanceCreationIntent.CREATE;
 
   @Test
   public void shouldAcquire() {

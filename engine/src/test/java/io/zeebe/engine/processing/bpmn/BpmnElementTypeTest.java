@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn;
 
@@ -15,7 +15,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -197,8 +197,8 @@ public final class BpmnElementTypeTest {
 
             @Override
             void test() {
-              final long workflowInstanceKey = super.executeInstance();
-              ENGINE.job().ofInstance(workflowInstanceKey).withType(taskType()).complete();
+              final long processInstanceKey = super.executeInstance();
+              ENGINE.job().ofInstance(processInstanceKey).withType(taskType()).complete();
             }
           },
           new BpmnElementTypeScenario("Receive Task", BpmnElementType.RECEIVE_TASK) {
@@ -309,10 +309,10 @@ public final class BpmnElementTypeTest {
     scenario.test();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> records =
-        RecordingExporter.workflowInstanceRecords()
+    final List<Record<ProcessInstanceRecordValue>> records =
+        RecordingExporter.processInstanceRecords()
             .withBpmnProcessId(scenario.processId())
-            .limitToWorkflowInstanceCompleted()
+            .limitToProcessInstanceCompleted()
             .withElementId(scenario.elementId())
             .asList();
 
@@ -367,7 +367,7 @@ public final class BpmnElementTypeTest {
     }
 
     long executeInstance() {
-      return ENGINE.workflowInstance().ofBpmnProcessId(processId()).create();
+      return ENGINE.processInstance().ofBpmnProcessId(processId()).create();
     }
 
     long executeInstance(final Map<String, String> variables) {
@@ -377,7 +377,7 @@ public final class BpmnElementTypeTest {
                   .map(e -> String.format("\"%s\":\"%s\"", e.getKey(), e.getValue()))
                   .collect(Collectors.joining(","))
               + " }";
-      return ENGINE.workflowInstance().ofBpmnProcessId(processId()).withVariables(json).create();
+      return ENGINE.processInstance().ofBpmnProcessId(processId()).withVariables(json).create();
     }
 
     @Override

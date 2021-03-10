@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message.command;
 
@@ -23,7 +23,7 @@ public final class CorrelateMessageSubscriptionCommand
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
-  private long workflowInstanceKey;
+  private long processInstanceKey;
   private long elementInstanceKey;
 
   @Override
@@ -40,7 +40,7 @@ public final class CorrelateMessageSubscriptionCommand
   public void reset() {
     subscriptionPartitionId =
         CorrelateMessageSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    workflowInstanceKey = CorrelateMessageSubscriptionDecoder.workflowInstanceKeyNullValue();
+    processInstanceKey = CorrelateMessageSubscriptionDecoder.processInstanceKeyNullValue();
     elementInstanceKey = CorrelateMessageSubscriptionDecoder.elementInstanceKeyNullValue();
     messageName.wrap(0, 0);
     bpmnProcessId.wrap(0, 0);
@@ -61,7 +61,7 @@ public final class CorrelateMessageSubscriptionCommand
 
     encoder
         .subscriptionPartitionId(subscriptionPartitionId)
-        .workflowInstanceKey(workflowInstanceKey)
+        .processInstanceKey(processInstanceKey)
         .elementInstanceKey(elementInstanceKey)
         .putMessageName(messageName, 0, messageName.capacity())
         .putBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity());
@@ -72,7 +72,7 @@ public final class CorrelateMessageSubscriptionCommand
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
-    workflowInstanceKey = decoder.workflowInstanceKey();
+    processInstanceKey = decoder.processInstanceKey();
     elementInstanceKey = decoder.elementInstanceKey();
 
     offset = decoder.limit();
@@ -98,12 +98,12 @@ public final class CorrelateMessageSubscriptionCommand
     this.subscriptionPartitionId = subscriptionPartitionId;
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(final long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public long getElementInstanceKey() {

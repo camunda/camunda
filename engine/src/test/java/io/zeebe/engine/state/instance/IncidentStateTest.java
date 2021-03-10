@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.instance;
 
@@ -34,9 +34,9 @@ public final class IncidentStateTest {
   }
 
   @Test
-  public void shouldCreateWorkflowIncident() {
+  public void shouldCreateProcessIncident() {
     // given
-    final IncidentRecord expectedRecord = createWorkflowInstanceIncident();
+    final IncidentRecord expectedRecord = createProcessInstanceIncident();
 
     // when
     incidentState.createIncident(5_000, expectedRecord);
@@ -49,16 +49,15 @@ public final class IncidentStateTest {
   @Test
   public void shouldFindIncidentByElementInstanceKey() {
     // given
-    final IncidentRecord expectedRecord = createWorkflowInstanceIncident();
+    final IncidentRecord expectedRecord = createProcessInstanceIncident();
     incidentState.createIncident(5_000, expectedRecord);
 
     // when
-    final long workflowInstanceIncidentKey = incidentState.getWorkflowInstanceIncidentKey(1234);
+    final long processInstanceIncidentKey = incidentState.getProcessInstanceIncidentKey(1234);
 
     // then
-    assertThat(workflowInstanceIncidentKey).isEqualTo(5_000);
-    final IncidentRecord storedRecord =
-        incidentState.getIncidentRecord(workflowInstanceIncidentKey);
+    assertThat(processInstanceIncidentKey).isEqualTo(5_000);
+    final IncidentRecord storedRecord = incidentState.getIncidentRecord(processInstanceIncidentKey);
     assertIncident(expectedRecord, storedRecord);
   }
 
@@ -69,16 +68,16 @@ public final class IncidentStateTest {
     incidentState.createIncident(5_000, expectedRecord);
 
     // when
-    final long workflowInstanceIncidentKey = incidentState.getWorkflowInstanceIncidentKey(1234);
+    final long processInstanceIncidentKey = incidentState.getProcessInstanceIncidentKey(1234);
 
     // then
-    assertThat(workflowInstanceIncidentKey).isEqualTo(IncidentState.MISSING_INCIDENT);
+    assertThat(processInstanceIncidentKey).isEqualTo(IncidentState.MISSING_INCIDENT);
   }
 
   @Test
-  public void shouldDeleteWorkflowInstanceIncident() {
+  public void shouldDeleteProcessInstanceIncident() {
     // given
-    final IncidentRecord expectedRecord = createWorkflowInstanceIncident();
+    final IncidentRecord expectedRecord = createProcessInstanceIncident();
     incidentState.createIncident(5_000, expectedRecord);
 
     // when
@@ -88,8 +87,8 @@ public final class IncidentStateTest {
     final IncidentRecord incidentRecord = incidentState.getIncidentRecord(5_000);
     assertThat(incidentRecord).isNull();
 
-    final long workflowInstanceIncidentKey = incidentState.getWorkflowInstanceIncidentKey(1234);
-    assertThat(workflowInstanceIncidentKey).isEqualTo(IncidentState.MISSING_INCIDENT);
+    final long processInstanceIncidentKey = incidentState.getProcessInstanceIncidentKey(1234);
+    assertThat(processInstanceIncidentKey).isEqualTo(IncidentState.MISSING_INCIDENT);
   }
 
   @Test
@@ -123,7 +122,7 @@ public final class IncidentStateTest {
   @Test
   public void shouldNotFindIncidentByJobKey() {
     // given
-    final IncidentRecord expectedRecord = createWorkflowInstanceIncident();
+    final IncidentRecord expectedRecord = createProcessInstanceIncident();
     incidentState.createIncident(5_000, expectedRecord);
 
     // when
@@ -175,12 +174,12 @@ public final class IncidentStateTest {
     return expectedRecord;
   }
 
-  public IncidentRecord createWorkflowInstanceIncident() {
+  public IncidentRecord createProcessInstanceIncident() {
     final IncidentRecord expectedRecord = new IncidentRecord();
     expectedRecord.setElementInstanceKey(1234);
     expectedRecord.setBpmnProcessId(wrapString("process"));
     expectedRecord.setElementId(wrapString("process"));
-    expectedRecord.setWorkflowInstanceKey(4321);
+    expectedRecord.setProcessInstanceKey(4321);
     expectedRecord.setErrorMessage("Error because of error");
     expectedRecord.setErrorType(ErrorType.EXTRACT_VALUE_ERROR);
     return expectedRecord;

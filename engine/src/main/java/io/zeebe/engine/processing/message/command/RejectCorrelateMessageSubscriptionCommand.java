@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message.command;
 
@@ -24,7 +24,7 @@ public final class RejectCorrelateMessageSubscriptionCommand
   private final UnsafeBuffer correlationKey = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
-  private long workflowInstanceKey;
+  private long processInstanceKey;
   private long messageKey;
 
   @Override
@@ -41,7 +41,7 @@ public final class RejectCorrelateMessageSubscriptionCommand
   public void reset() {
     subscriptionPartitionId =
         RejectCorrelateMessageSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    workflowInstanceKey = RejectCorrelateMessageSubscriptionDecoder.workflowInstanceKeyNullValue();
+    processInstanceKey = RejectCorrelateMessageSubscriptionDecoder.processInstanceKeyNullValue();
     messageKey = RejectCorrelateMessageSubscriptionDecoder.messageKeyNullValue();
     messageName.wrap(0, 0);
     correlationKey.wrap(0, 0);
@@ -65,7 +65,7 @@ public final class RejectCorrelateMessageSubscriptionCommand
 
     encoder
         .subscriptionPartitionId(subscriptionPartitionId)
-        .workflowInstanceKey(workflowInstanceKey)
+        .processInstanceKey(processInstanceKey)
         .messageKey(messageKey)
         .putMessageName(messageName, 0, messageName.capacity())
         .putCorrelationKey(correlationKey, 0, correlationKey.capacity())
@@ -77,7 +77,7 @@ public final class RejectCorrelateMessageSubscriptionCommand
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
-    workflowInstanceKey = decoder.workflowInstanceKey();
+    processInstanceKey = decoder.processInstanceKey();
     messageKey = decoder.messageKey();
 
     decoder.wrapMessageName(messageName);
@@ -93,12 +93,12 @@ public final class RejectCorrelateMessageSubscriptionCommand
     this.subscriptionPartitionId = subscriptionPartitionId;
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(final long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public long getMessageKey() {

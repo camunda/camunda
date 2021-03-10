@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing;
 
@@ -29,7 +29,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
@@ -78,8 +78,8 @@ public final class EngineProcessors {
         deploymentDistributor);
     addMessageProcessors(subscriptionCommandSender, zeebeState, typedRecordProcessors, writers);
 
-    final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor =
-        addWorkflowProcessors(
+    final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
+        addProcessProcessors(
             zeebeState,
             expressionProcessor,
             typedRecordProcessors,
@@ -95,7 +95,7 @@ public final class EngineProcessors {
     return typedRecordProcessors;
   }
 
-  private static TypedRecordProcessor<WorkflowInstanceRecord> addWorkflowProcessors(
+  private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
       final ZeebeState zeebeState,
       final ExpressionProcessor expressionProcessor,
       final TypedRecordProcessors typedRecordProcessors,
@@ -103,7 +103,7 @@ public final class EngineProcessors {
       final CatchEventBehavior catchEventBehavior,
       final Writers writers) {
     final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getTimerState());
-    return WorkflowEventProcessors.addWorkflowProcessors(
+    return ProcessEventProcessors.addProcessProcessors(
         zeebeState,
         expressionProcessor,
         typedRecordProcessors,
@@ -147,7 +147,7 @@ public final class EngineProcessors {
     // on other partitions DISTRIBUTE command is received and processed
     final DeploymentDistributeProcessor deploymentDistributeProcessor =
         new DeploymentDistributeProcessor(
-            zeebeState.getWorkflowState(), deploymentResponder, partitionId, writers);
+            zeebeState.getProcessState(), deploymentResponder, partitionId, writers);
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
 
@@ -162,7 +162,7 @@ public final class EngineProcessors {
 
   private static void addIncidentProcessors(
       final ZeebeState zeebeState,
-      final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor,
+      final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers) {
     IncidentEventProcessors.addProcessors(typedRecordProcessors, zeebeState, bpmnStreamProcessor);

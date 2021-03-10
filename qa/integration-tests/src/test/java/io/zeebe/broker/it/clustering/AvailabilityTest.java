@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.it.clustering;
 
@@ -16,7 +16,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.HashSet;
@@ -33,7 +33,7 @@ import org.junit.rules.Timeout;
 public class AvailabilityTest {
 
   private static final String JOBTYPE = "availability-test";
-  private static final BpmnModelInstance WORKFLOW =
+  private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess("process")
           .startEvent()
           .serviceTask(
@@ -52,28 +52,28 @@ public class AvailabilityTest {
   public RuleChain ruleChain =
       RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
-  private long workflowKey;
+  private long processDefinitionKey;
 
   @Before
   public void setup() {
-    workflowKey = clientRule.deployWorkflow(WORKFLOW);
+    processDefinitionKey = clientRule.deployProcess(PROCESS);
   }
 
   @Test
-  public void shouldCreateWorkflowWhenOnePartitionDown() {
+  public void shouldCreateProcessWhenOnePartitionDown() {
     final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(partitionCount);
 
     // when
     clusteringRule.stopBroker(leaderForPartition.getNodeId());
 
     for (int i = 0; i < 2 * partitionCount; i++) {
-      clientRule.createWorkflowInstance(workflowKey);
+      clientRule.createProcessInstance(processDefinitionKey);
     }
 
     // then
     final List<Integer> partitionIds =
-        RecordingExporter.workflowInstanceCreationRecords()
-            .withIntent(WorkflowInstanceCreationIntent.CREATED)
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
             .map(Record::getPartitionId)
             .limit(2 * partitionCount)
             .collect(Collectors.toList());
@@ -83,27 +83,27 @@ public class AvailabilityTest {
   }
 
   @Test
-  public void shouldCreateWorkflowWhenPartitionRecovers() {
+  public void shouldCreateProcessWhenPartitionRecovers() {
     // given
     final int failingPartition = partitionCount;
     final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(failingPartition);
     clusteringRule.stopBroker(leaderForPartition.getNodeId());
 
     for (int i = 0; i < partitionCount; i++) {
-      clientRule.createWorkflowInstance(workflowKey);
+      clientRule.createProcessInstance(processDefinitionKey);
     }
 
     // when
     clusteringRule.restartBroker(leaderForPartition.getNodeId());
 
     for (int i = 0; i < partitionCount; i++) {
-      clientRule.createWorkflowInstance(workflowKey);
+      clientRule.createProcessInstance(processDefinitionKey);
     }
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceCreationRecords()
-                .withIntent(WorkflowInstanceCreationIntent.CREATED)
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
                 .filter(r -> r.getPartitionId() == failingPartition))
         .hasSizeGreaterThanOrEqualTo(1);
   }
@@ -116,7 +116,7 @@ public class AvailabilityTest {
     clusteringRule.stopBroker(leaderForPartition.getNodeId());
 
     for (int i = 0; i < numInstances; i++) {
-      clientRule.createWorkflowInstance(workflowKey);
+      clientRule.createProcessInstance(processDefinitionKey);
     }
 
     // when
@@ -152,7 +152,7 @@ public class AvailabilityTest {
     clusteringRule.stopBroker(leaderForPartition.getNodeId());
 
     for (int i = 0; i < numInstances; i++) {
-      clientRule.createWorkflowInstance(workflowKey);
+      clientRule.createProcessInstance(processDefinitionKey);
     }
 
     // when
