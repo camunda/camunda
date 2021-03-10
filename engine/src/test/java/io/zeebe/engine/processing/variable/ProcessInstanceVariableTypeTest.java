@@ -66,11 +66,7 @@ public final class ProcessInstanceVariableTypeTest {
   public void shouldWriteVariableCreatedEvent() {
     // when
     final long processInstanceKey =
-        ENGINE_RULE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariables(variables)
-            .create();
+        ENGINE_RULE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariables(variables).create();
 
     // then
     final Record<VariableRecordValue> variableRecord =

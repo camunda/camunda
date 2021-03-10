@@ -8,8 +8,7 @@
 package io.zeebe.engine.processing.bpmn;
 
 /**
- * Something went wrong during the process processing. This kind of exception should not be
- * handled.
+ * Something went wrong during the process processing. This kind of exception should not be handled.
  */
 public final class BpmnProcessingException extends RuntimeException {
 

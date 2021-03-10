@@ -26,12 +26,12 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.record.intent.TimerIntent;
-import io.zeebe.protocol.record.intent.VariableDocumentIntent;
-import io.zeebe.protocol.record.intent.VariableIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
+import io.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.zeebe.protocol.record.intent.VariableIntent;
 import io.zeebe.protocol.record.value.ProcessInstanceRelated;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Before;
@@ -189,14 +189,8 @@ public final class BlacklistInstanceTest {
       ////////////////////////////////////////
       {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.OPEN, true},
       {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.OPENED, true},
-      {
-        ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CORRELATE, true
-      },
-      {
-        ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
-        ProcessInstanceSubscriptionIntent.CORRELATED,
-        true
-      },
+      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CORRELATE, true},
+      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CORRELATED, true},
       {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CLOSE, true},
       {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CLOSED, true}
     };

@@ -19,12 +19,12 @@ import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.record.ValueType;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -45,8 +45,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionRecord.class);
     registry.put(
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, MessageStartEventSubscriptionRecord.class);
-    registry.put(
-        ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionRecord.class);
+    registry.put(ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionRecord.class);
     registry.put(ValueType.JOB_BATCH, JobBatchRecord.class);
     registry.put(ValueType.TIMER, TimerRecord.class);
     registry.put(ValueType.VARIABLE, VariableRecord.class);

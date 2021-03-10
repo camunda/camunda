@@ -67,8 +67,7 @@ public final class CancelProcessInstanceTest {
     CLIENT_RULE.getClient().newCancelInstanceCommand(processInstanceKey).send().join();
 
     // when
-    final var command =
-        CLIENT_RULE.getClient().newCancelInstanceCommand(processInstanceKey).send();
+    final var command = CLIENT_RULE.getClient().newCancelInstanceCommand(processInstanceKey).send();
 
     // then
     assertThatThrownBy(() -> command.join())

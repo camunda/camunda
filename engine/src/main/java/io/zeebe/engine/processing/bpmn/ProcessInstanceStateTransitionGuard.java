@@ -20,9 +20,9 @@ import org.slf4j.Logger;
  * A check to prevent concurrent state transitions of a process instance.
  *
  * <p>A process instance can be have concurrent state transitions if a user command is received
- * (e.g. cancel process instance) or if an internal/external event is triggered (e.g. timer
- * boundary event). In this case, the current process instance processing needs to be interrupted
- * be avoid an inconsistent state.
+ * (e.g. cancel process instance) or if an internal/external event is triggered (e.g. timer boundary
+ * event). In this case, the current process instance processing needs to be interrupted be avoid an
+ * inconsistent state.
  */
 public final class ProcessInstanceStateTransitionGuard {
 

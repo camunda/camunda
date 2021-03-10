@@ -14,8 +14,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class CorrelateProcessInstanceSubscriptionCommand
     extends SbeBufferWriterReader<
-        CorrelateProcessInstanceSubscriptionEncoder,
-        CorrelateProcessInstanceSubscriptionDecoder> {
+        CorrelateProcessInstanceSubscriptionEncoder, CorrelateProcessInstanceSubscriptionDecoder> {
 
   private final CorrelateProcessInstanceSubscriptionEncoder encoder =
       new CorrelateProcessInstanceSubscriptionEncoder();
@@ -44,8 +43,7 @@ public final class CorrelateProcessInstanceSubscriptionCommand
   public void reset() {
     subscriptionPartitionId =
         CorrelateProcessInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    processInstanceKey =
-        CorrelateProcessInstanceSubscriptionDecoder.processInstanceKeyNullValue();
+    processInstanceKey = CorrelateProcessInstanceSubscriptionDecoder.processInstanceKeyNullValue();
     elementInstanceKey = CorrelateProcessInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
     messageKey = CorrelateProcessInstanceSubscriptionDecoder.messageKeyNullValue();
 

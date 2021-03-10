@@ -65,8 +65,7 @@ public final class MessageIncidentTest {
   public void shouldCreateIncidentIfNameExpressionCannotBeEvaluated() {
     ENGINE
         .deployment()
-        .withXmlResource(
-            createProcessWithMessageNameFeelExpression("UNRESOLVABLE_NAME_EXPRESSION"))
+        .withXmlResource(createProcessWithMessageNameFeelExpression("UNRESOLVABLE_NAME_EXPRESSION"))
         .deploy();
 
     // when
@@ -101,8 +100,7 @@ public final class MessageIncidentTest {
   public void shouldCreateIncidentIfNameExpressionEvaluatesToWrongType() {
     ENGINE
         .deployment()
-        .withXmlResource(
-            createProcessWithMessageNameFeelExpression("NAME_EXPRESSION_INVALID_TYPE"))
+        .withXmlResource(createProcessWithMessageNameFeelExpression("NAME_EXPRESSION_INVALID_TYPE"))
         .deploy();
 
     // when
@@ -212,11 +210,7 @@ public final class MessageIncidentTest {
   public void shouldCreateIncidentIfCorrelationKeyOfInvalidType() {
     // when
     final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariable("orderId", true)
-            .create();
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("orderId", true).create();
 
     final Record<ProcessInstanceRecordValue> failureEvent =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)

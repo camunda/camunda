@@ -74,11 +74,7 @@ public final class CreateDeploymentTest {
 
     // when
     final var command =
-        CLIENT_RULE
-            .getClient()
-            .newDeployCommand()
-            .addProcessModel(process, "process.bpmn")
-            .send();
+        CLIENT_RULE.getClient().newDeployCommand().addProcessModel(process, "process.bpmn").send();
 
     // when
     assertThatThrownBy(() -> command.join())

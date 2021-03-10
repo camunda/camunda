@@ -11,8 +11,7 @@ import io.zeebe.engine.state.immutable.ProcessInstanceSubscriptionState;
 import io.zeebe.engine.state.message.ProcessInstanceSubscription;
 import org.agrona.DirectBuffer;
 
-public interface MutableProcessInstanceSubscriptionState
-    extends ProcessInstanceSubscriptionState {
+public interface MutableProcessInstanceSubscriptionState extends ProcessInstanceSubscriptionState {
 
   void put(ProcessInstanceSubscription subscription);
 

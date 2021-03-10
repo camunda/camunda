@@ -13,8 +13,8 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -144,8 +144,7 @@ public final class ConcurrentTimerEventTest {
             .processInstance(ProcessInstanceIntent.CANCEL, processActivated.getValue())
             .key(processActivated.getKey()),
         RecordToWrite.event()
-            .processInstance(
-                ProcessInstanceIntent.ELEMENT_TERMINATING, processActivated.getValue())
+            .processInstance(ProcessInstanceIntent.ELEMENT_TERMINATING, processActivated.getValue())
             .key(processActivated.getKey())
             .causedBy(0),
         RecordToWrite.event()

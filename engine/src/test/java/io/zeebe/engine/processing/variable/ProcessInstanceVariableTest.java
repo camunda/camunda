@@ -61,11 +61,7 @@ public final class ProcessInstanceVariableTest {
 
     // when
     final long processInstanceKey =
-        ENGINE_RULE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariables("{'x':1}")
-            .create();
+        ENGINE_RULE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariables("{'x':1}").create();
 
     // then
     final Record<VariableRecordValue> variableRecord =
@@ -203,11 +199,7 @@ public final class ProcessInstanceVariableTest {
   public void shouldUpdateVariableByJobCompletion() {
     // given
     final long processInstanceKey =
-        ENGINE_RULE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariables("{'x':1}")
-            .create();
+        ENGINE_RULE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariables("{'x':1}").create();
 
     // when
     ENGINE_RULE
@@ -279,11 +271,7 @@ public final class ProcessInstanceVariableTest {
   public void shouldUpdateVariableByUpdateVariables() {
     // given
     final long processInstanceKey =
-        ENGINE_RULE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariables("{'x':1}")
-            .create();
+        ENGINE_RULE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariables("{'x':1}").create();
 
     // when
     ENGINE_RULE
@@ -337,11 +325,7 @@ public final class ProcessInstanceVariableTest {
   public void shouldCreateAndUpdateVariables() {
     // given
     final long processInstanceKey =
-        ENGINE_RULE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariables("{'x':1}")
-            .create();
+        ENGINE_RULE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariables("{'x':1}").create();
 
     final Record<VariableRecordValue> variableCreated =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
@@ -377,11 +361,7 @@ public final class ProcessInstanceVariableTest {
   public void shouldHaveSameKeyOnVariableUpdate() {
     // given
     final long processInstanceKey =
-        ENGINE_RULE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariables("{'x':1}")
-            .create();
+        ENGINE_RULE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariables("{'x':1}").create();
 
     final Record<VariableRecordValue> variableCreated =
         RecordingExporter.variableRecords(VariableIntent.CREATED)

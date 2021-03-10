@@ -86,9 +86,7 @@ public final class CreateProcessInstanceTest {
 
     // then
     assertThat(
-            RecordingExporter.variableRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(2))
+            RecordingExporter.variableRecords().withProcessInstanceKey(processInstanceKey).limit(2))
         .extracting(Record::getValue)
         .allMatch(v -> v.getScopeKey() == processInstanceKey)
         .extracting(v -> tuple(v.getName(), v.getValue()))

@@ -213,8 +213,7 @@ public final class StreamProcessorRule implements TestRule {
         intent, instanceKey, sourceEventPosition);
   }
 
-  public long writeProcessInstanceEvent(
-      final ProcessInstanceIntent intent, final int instanceKey) {
+  public long writeProcessInstanceEvent(final ProcessInstanceIntent intent, final int instanceKey) {
     return streamProcessingComposite.writeProcessInstanceEvent(intent, instanceKey);
   }
 

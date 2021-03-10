@@ -170,11 +170,7 @@ public final class ProcessInstanceTokenTest {
         .deploy();
 
     final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(processId)
-            .withVariables("{'key':'123'}")
-            .create();
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariables("{'key':'123'}").create();
 
     // when
     ENGINE.job().ofInstance(processInstanceKey).withType("task").complete();
@@ -270,11 +266,7 @@ public final class ProcessInstanceTokenTest {
         .deploy();
 
     final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(processId)
-            .withVariables("{'key':'123'}")
-            .create();
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariables("{'key':'123'}").create();
 
     // when
     ENGINE.job().ofInstance(processInstanceKey).withType("task").complete();

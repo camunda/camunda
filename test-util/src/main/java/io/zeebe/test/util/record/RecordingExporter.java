@@ -19,11 +19,11 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
@@ -32,13 +32,13 @@ import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.record.value.MessageRecordValue;
 import io.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
-import io.zeebe.protocol.record.value.TimerRecordValue;
-import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
-import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.TimerRecordValue;
+import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import java.time.Duration;
 import java.util.Iterator;
@@ -183,8 +183,7 @@ public final class RecordingExporter implements Exporter {
   public static ProcessInstanceSubscriptionRecordStream processInstanceSubscriptionRecords() {
     return new ProcessInstanceSubscriptionRecordStream(
         records(
-            ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
-            ProcessInstanceSubscriptionRecordValue.class));
+            ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionRecordValue.class));
   }
 
   public static ProcessInstanceSubscriptionRecordStream processInstanceSubscriptionRecords(

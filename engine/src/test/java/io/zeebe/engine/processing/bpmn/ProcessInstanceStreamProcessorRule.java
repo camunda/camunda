@@ -37,16 +37,16 @@ import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
@@ -160,8 +160,7 @@ public final class ProcessInstanceStreamProcessorRule extends ExternalResource
 
   public Record<ProcessInstanceRecord> createAndReceiveProcessInstance(
       final Function<ProcessInstanceCreationRecord, ProcessInstanceCreationRecord> transformer) {
-    final Record<ProcessInstanceCreationRecord> createdRecord =
-        createProcessInstance(transformer);
+    final Record<ProcessInstanceCreationRecord> createdRecord = createProcessInstance(transformer);
 
     return awaitAndGetFirstProcessInstanceRecord(
         r ->
@@ -193,8 +192,7 @@ public final class ProcessInstanceStreamProcessorRule extends ExternalResource
 
   public Record<ProcessInstanceRecord> awaitAndGetFirstProcessInstanceRecord(
       final Predicate<Record<ProcessInstanceRecord>> matcher) {
-    return awaitAndGetFirstRecord(
-        ValueType.PROCESS_INSTANCE, matcher, ProcessInstanceRecord.class);
+    return awaitAndGetFirstRecord(ValueType.PROCESS_INSTANCE, matcher, ProcessInstanceRecord.class);
   }
 
   public <T extends UnifiedRecordValue> Record<T> awaitAndGetFirstRecord(

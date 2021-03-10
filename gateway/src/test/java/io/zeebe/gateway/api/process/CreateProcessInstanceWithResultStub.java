@@ -15,8 +15,7 @@ import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResult
 
 public final class CreateProcessInstanceWithResultStub
     implements RequestStub<
-        BrokerCreateProcessInstanceWithResultRequest,
-        BrokerResponse<ProcessInstanceResultRecord>> {
+        BrokerCreateProcessInstanceWithResultRequest, BrokerResponse<ProcessInstanceResultRecord>> {
 
   public static final long PROCESS_INSTANCE_KEY = 123;
   public static final String PROCESS_ID = "process";

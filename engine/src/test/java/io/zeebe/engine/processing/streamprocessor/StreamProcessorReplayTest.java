@@ -333,8 +333,7 @@ public final class StreamProcessorReplayTest {
                         ValueType.PROCESS_INSTANCE,
                         ProcessInstanceIntent.ACTIVATE_ELEMENT,
                         typedRecordProcessor)
-                    .onEvent(
-                        ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor));
+                    .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor));
   }
 
   private void awaitUntilProcessed(final long position) {

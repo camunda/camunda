@@ -33,12 +33,12 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
-import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.ProcessInstances;
+import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.util.Map;
@@ -661,12 +661,7 @@ public final class BrokerReprocessingTest {
 
   private void deploy(final BpmnModelInstance processTwoTasks, final String s) {
     final DeploymentEvent deploymentEvent =
-        clientRule
-            .getClient()
-            .newDeployCommand()
-            .addProcessModel(processTwoTasks, s)
-            .send()
-            .join();
+        clientRule.getClient().newDeployCommand().addProcessModel(processTwoTasks, s).send().join();
 
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }

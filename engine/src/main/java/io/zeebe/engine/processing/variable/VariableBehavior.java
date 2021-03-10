@@ -111,7 +111,9 @@ public final class VariableBehavior {
     long currentScope = scopeKey;
     long parentScope;
 
-    variableRecord.setProcessDefinitionKey(processDefinitionKey).setProcessInstanceKey(processInstanceKey);
+    variableRecord
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessInstanceKey(processInstanceKey);
     while ((parentScope = variableState.getParentScopeKey(currentScope)) > 0) {
       final Iterator<DocumentEntry> entryIterator = indexedDocument.iterator();
 
@@ -144,8 +146,8 @@ public final class VariableBehavior {
    * given scope with key {@code scopeKey}, with additional {@code processDefinitionKey} and {@code
    * processInstanceKey} context.
    *
-   * <p>If the scope is the process instance itself, then {@code scopeKey} should be equal to
-   * {@code processInstanceKey}.
+   * <p>If the scope is the process instance itself, then {@code scopeKey} should be equal to {@code
+   * processInstanceKey}.
    *
    * @param scopeKey the key of the scope on which to set the variable
    * @param processDefinitionKey the associated process key

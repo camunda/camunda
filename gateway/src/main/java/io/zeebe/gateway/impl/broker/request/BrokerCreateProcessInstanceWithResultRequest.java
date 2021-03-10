@@ -24,8 +24,7 @@ public final class BrokerCreateProcessInstanceWithResultRequest
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT);
   }
 
-  public BrokerCreateProcessInstanceWithResultRequest setBpmnProcessId(
-      final String bpmnProcessId) {
+  public BrokerCreateProcessInstanceWithResultRequest setBpmnProcessId(final String bpmnProcessId) {
     requestDto.setBpmnProcessId(bpmnProcessId);
     return this;
   }

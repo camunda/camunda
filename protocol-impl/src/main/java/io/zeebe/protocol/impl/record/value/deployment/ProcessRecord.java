@@ -22,8 +22,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public final class ProcessRecord extends UnifiedRecordValue implements DeployedProcess {
-  private final StringProperty bpmnProcessIdProp =
-      new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID);
+  private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID);
   private final IntegerProperty versionProp = new IntegerProperty(PROP_PROCESS_VERSION);
   private final LongProperty keyProp = new LongProperty(PROP_PROCESS_KEY);
   private final StringProperty resourceNameProp = new StringProperty("resourceName");

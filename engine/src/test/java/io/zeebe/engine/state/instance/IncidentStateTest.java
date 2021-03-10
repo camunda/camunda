@@ -57,8 +57,7 @@ public final class IncidentStateTest {
 
     // then
     assertThat(processInstanceIncidentKey).isEqualTo(5_000);
-    final IncidentRecord storedRecord =
-        incidentState.getIncidentRecord(processInstanceIncidentKey);
+    final IncidentRecord storedRecord = incidentState.getIncidentRecord(processInstanceIncidentKey);
     assertIncident(expectedRecord, storedRecord);
   }
 

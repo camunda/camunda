@@ -343,8 +343,7 @@ public final class BpmnEventSubscriptionBehavior {
     eventScopeInstanceState.deleteTrigger(processDefinitionKey, triggeredEvent.getEventKey());
   }
 
-  private void createProcessInstance(
-      final DeployedProcess process, final long processInstanceKey) {
+  private void createProcessInstance(final DeployedProcess process, final long processInstanceKey) {
 
     recordForWFICreation
         .setBpmnProcessId(process.getBpmnProcessId())

@@ -52,7 +52,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID, EMPTY_STRING);
   private final IntegerProperty processDefinitionVersionProp =
       new IntegerProperty("processDefinitionVersion", -1);
-  private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey", -1L);
+  private final LongProperty processDefinitionKeyProp =
+      new LongProperty("processDefinitionKey", -1L);
   private final StringProperty elementIdProp = new StringProperty("elementId", EMPTY_STRING);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
 

@@ -156,11 +156,7 @@ public class ServiceTaskIncidentTest {
 
     // ... resolve incident
     final Record<IncidentRecordValue> incidentResolvedEvent =
-        ENGINE
-            .incident()
-            .ofInstance(processInstanceKey)
-            .withKey(incidentRecord.getKey())
-            .resolve();
+        ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentRecord.getKey()).resolve();
 
     // then
     assertThat(
@@ -278,11 +274,7 @@ public class ServiceTaskIncidentTest {
 
     // ... resolve incident
     final Record<IncidentRecordValue> incidentResolvedEvent =
-        ENGINE
-            .incident()
-            .ofInstance(processInstanceKey)
-            .withKey(incidentRecord.getKey())
-            .resolve();
+        ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentRecord.getKey()).resolve();
 
     // then
     assertThat(

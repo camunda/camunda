@@ -75,7 +75,12 @@ public final class LargeMessageSizeTest {
 
     // then
     final var processInstanceEvent =
-        CLIENT_RULE.getClient().newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+        CLIENT_RULE
+            .getClient()
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .send()
+            .join();
 
     ZeebeAssertHelper.assertProcessInstanceCreated(processInstanceEvent.getProcessInstanceKey());
   }
@@ -107,7 +112,12 @@ public final class LargeMessageSizeTest {
     final var processDefinitionKey = CLIENT_RULE.deployProcess(process(jobType));
 
     final var processInstanceEvent =
-        CLIENT_RULE.getClient().newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+        CLIENT_RULE
+            .getClient()
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .send()
+            .join();
 
     // when
     final Map<String, Object> largeVariables = Map.of("largeVariable", LARGE_TEXT);
@@ -122,7 +132,6 @@ public final class LargeMessageSizeTest {
         .open();
 
     // then
-    ZeebeAssertHelper.assertProcessInstanceCompleted(
-        processInstanceEvent.getProcessInstanceKey());
+    ZeebeAssertHelper.assertProcessInstanceCompleted(processInstanceEvent.getProcessInstanceKey());
   }
 }

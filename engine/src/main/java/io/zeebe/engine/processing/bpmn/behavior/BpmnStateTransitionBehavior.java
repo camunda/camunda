@@ -108,8 +108,7 @@ public final class BpmnStateTransitionBehavior {
             ProcessInstanceIntent.ELEMENT_COMPLETING);
       }
     }
-    final var transitionedContext =
-        transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETING);
+    final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETING);
     if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
       stateTransitionGuard.registerStateTransition(
           context, ProcessInstanceIntent.ELEMENT_COMPLETING);
@@ -141,8 +140,7 @@ public final class BpmnStateTransitionBehavior {
 
   /** @return context with updated intent */
   public BpmnElementContext transitionToTerminated(final BpmnElementContext context) {
-    final var transitionedContext =
-        transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATED);
+    final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATED);
     if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
       stateTransitionGuard.registerStateTransition(
           context, ProcessInstanceIntent.ELEMENT_TERMINATED);

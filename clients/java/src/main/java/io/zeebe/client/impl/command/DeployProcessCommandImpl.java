@@ -103,8 +103,7 @@ public final class DeployProcessCommandImpl
   }
 
   @Override
-  public DeployProcessCommandBuilderStep2 addResourceFromClasspath(
-      final String classpathResource) {
+  public DeployProcessCommandBuilderStep2 addResourceFromClasspath(final String classpathResource) {
     ensureNotNull("classpath resource", classpathResource);
 
     try (final InputStream resourceStream =

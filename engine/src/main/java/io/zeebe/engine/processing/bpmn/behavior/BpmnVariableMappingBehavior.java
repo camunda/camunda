@@ -88,7 +88,10 @@ public final class BpmnVariableMappingBehavior {
                   elementInstanceKey, processDefinitionKey, processInstanceKey, temporaryVariables),
           () ->
               variableBehavior.mergeDocument(
-                  elementInstanceKey, processDefinitionKey, processInstanceKey, temporaryVariables));
+                  elementInstanceKey,
+                  processDefinitionKey,
+                  processInstanceKey,
+                  temporaryVariables));
       variablesState.removeTemporaryVariables(elementInstanceKey);
     }
 
@@ -98,7 +101,8 @@ public final class BpmnVariableMappingBehavior {
           .evaluateVariableMappingExpression(outputMappingExpression.get(), elementInstanceKey)
           .map(
               result -> {
-                variableBehavior.mergeDocument(scopeKey, processDefinitionKey, processInstanceKey, result);
+                variableBehavior.mergeDocument(
+                    scopeKey, processDefinitionKey, processInstanceKey, result);
                 return null;
               });
     }

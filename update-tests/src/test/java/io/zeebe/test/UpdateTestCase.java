@@ -109,8 +109,8 @@ final class UpdateTestCase implements Arguments {
       return this;
     }
     /**
-     * Should continue the instance after the upgrade in a way that will complete the process.
-     * Takes the container rule and a long (e.g., a key) as input.
+     * Should continue the instance after the upgrade in a way that will complete the process. Takes
+     * the container rule and a long (e.g., a key) as input.
      */
     TestCaseBuilder afterUpgrade(final TriConsumer<ContainerState, Long, Long> func) {
       after = func;

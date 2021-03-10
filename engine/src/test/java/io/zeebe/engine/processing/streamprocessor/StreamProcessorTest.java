@@ -254,8 +254,7 @@ public final class StreamProcessorTest {
                     ProcessInstanceIntent.ELEMENT_ACTIVATING,
                     typedRecordProcessor));
 
-    final var record =
-        new ProcessInstanceRecord().setBpmnElementType(BpmnElementType.TESTING_ONLY);
+    final var record = new ProcessInstanceRecord().setBpmnElementType(BpmnElementType.TESTING_ONLY);
 
     // when
     final long commandPosition =

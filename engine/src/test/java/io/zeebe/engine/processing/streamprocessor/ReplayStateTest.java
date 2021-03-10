@@ -64,8 +64,7 @@ public final class ReplayStateTest {
                 engine -> {
                   engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-                  RecordingExporter.processInstanceRecords(
-                          ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                  RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                       .withElementType(BpmnElementType.SERVICE_TASK)
                       .await();
 

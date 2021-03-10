@@ -245,8 +245,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public CancelProcessInstanceCommandStep1 newCancelInstanceCommand(
-      final long processInstanceKey) {
+  public CancelProcessInstanceCommandStep1 newCancelInstanceCommand(final long processInstanceKey) {
     return new CancelProcessInstanceCommandImpl(
         asyncStub,
         processInstanceKey,

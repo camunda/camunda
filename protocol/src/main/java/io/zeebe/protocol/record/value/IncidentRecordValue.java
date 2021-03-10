@@ -43,14 +43,14 @@ public interface IncidentRecordValue extends RecordValue, ProcessInstanceRelated
   String getBpmnProcessId();
 
   /**
-   * @return the key of the process this incident belongs to. Can be <code>-1</code> if the
-   *     incident record is part of a {@link IncidentIntent#RESOLVE} command.
+   * @return the key of the process this incident belongs to. Can be <code>-1</code> if the incident
+   *     record is part of a {@link IncidentIntent#RESOLVE} command.
    */
   long getProcessDefinitionKey();
 
   /**
-   * @return the key of the process instance this incident belongs to. Can be <code>-1</code> if
-   *     the incident record is part of a {@link IncidentIntent#RESOLVE} command.
+   * @return the key of the process instance this incident belongs to. Can be <code>-1</code> if the
+   *     incident record is part of a {@link IncidentIntent#RESOLVE} command.
    */
   long getProcessInstanceKey();
 

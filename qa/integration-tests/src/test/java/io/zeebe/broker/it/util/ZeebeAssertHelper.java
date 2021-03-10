@@ -16,14 +16,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.zeebe.test.util.record.ProcessInstanceRecordStream;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.util.function.Consumer;
 
 public final class ZeebeAssertHelper {

@@ -111,7 +111,8 @@ final class VariableBehaviorTest {
     setVariable(2, scopeKey, processDefinitionKey, "foo", "qux");
 
     // when
-    behavior.mergeLocalDocument(scopeKey, processDefinitionKey, scopeKey, MsgPackUtil.asMsgPack(document));
+    behavior.mergeLocalDocument(
+        scopeKey, processDefinitionKey, scopeKey, MsgPackUtil.asMsgPack(document));
 
     // then
     assertThat(getFollowUpEvents()).isEmpty();

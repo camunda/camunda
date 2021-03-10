@@ -454,8 +454,7 @@ public final class ActivateJobsTest {
     waitUntil(
         () ->
             jobRecords(JobIntent.CREATED)
-                    .filter(
-                        r -> processInstanceKeys.contains(r.getValue().getProcessInstanceKey()))
+                    .filter(r -> processInstanceKeys.contains(r.getValue().getProcessInstanceKey()))
                     .withType(jobType)
                     .limit(jobAmount)
                     .count()

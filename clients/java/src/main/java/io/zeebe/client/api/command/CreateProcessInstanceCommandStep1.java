@@ -102,8 +102,8 @@ public interface CreateProcessInstanceCommandStep1 {
     CreateProcessInstanceCommandStep3 variables(Object variables);
 
     /**
-     * When this method is called, the response to the command will be received after the process
-     * is completed. The response consists of a set of variables.
+     * When this method is called, the response to the command will be received after the process is
+     * completed. The response consists of a set of variables.
      *
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker

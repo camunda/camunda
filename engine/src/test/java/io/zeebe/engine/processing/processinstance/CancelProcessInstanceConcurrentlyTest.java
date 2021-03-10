@@ -227,8 +227,7 @@ public final class CancelProcessInstanceConcurrentlyTest {
             .key(createdJob.getKey())
             .causedBy(0),
         RecordToWrite.event()
-            .processInstance(
-                ProcessInstanceIntent.ELEMENT_COMPLETING, activityActivated.getValue())
+            .processInstance(ProcessInstanceIntent.ELEMENT_COMPLETING, activityActivated.getValue())
             .key(activityActivated.getKey())
             .causedBy(1),
         RecordToWrite.command()
@@ -260,13 +259,11 @@ public final class CancelProcessInstanceConcurrentlyTest {
             .key(createdJob.getKey())
             .causedBy(0),
         RecordToWrite.event()
-            .processInstance(
-                ProcessInstanceIntent.ELEMENT_COMPLETING, activityActivated.getValue())
+            .processInstance(ProcessInstanceIntent.ELEMENT_COMPLETING, activityActivated.getValue())
             .key(activityActivated.getKey())
             .causedBy(1),
         RecordToWrite.event()
-            .processInstance(
-                ProcessInstanceIntent.ELEMENT_COMPLETED, activityActivated.getValue())
+            .processInstance(ProcessInstanceIntent.ELEMENT_COMPLETED, activityActivated.getValue())
             .key(activityActivated.getKey())
             .causedBy(2),
         RecordToWrite.command()

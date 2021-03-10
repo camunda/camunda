@@ -183,9 +183,7 @@ public final class DeploymentTransformer {
           processRecord.setVersion(lastProcess.getVersion()).setKey(lastProcess.getKey());
         } else {
           final var key = keyGenerator.nextKey();
-          processRecord
-              .setKey(key)
-              .setVersion(processState.getProcessVersion(bpmnProcessId) + 1);
+          processRecord.setKey(key).setVersion(processState.getProcessVersion(bpmnProcessId) + 1);
 
           stateWriter.appendFollowUpEvent(key, ProcessIntent.CREATED, processRecord);
         }

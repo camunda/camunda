@@ -30,8 +30,7 @@ public final class ProcessInstanceResultRecordStream
     return valueFilter(v -> bpmnProcessId.equals(v.getBpmnProcessId()));
   }
 
-  public ProcessInstanceResultRecordStream withProcessInstanceKey(
-      final long processInstanceKey) {
+  public ProcessInstanceResultRecordStream withProcessInstanceKey(final long processInstanceKey) {
     return valueFilter(v -> processInstanceKey == v.getProcessInstanceKey());
   }
 }

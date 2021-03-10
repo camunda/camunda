@@ -18,10 +18,10 @@ import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
-import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
-import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableProcessState;
+import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
+import io.zeebe.engine.state.mutable.MutableVariableState;
 import java.util.function.BiConsumer;
 
 public interface ZeebeState {

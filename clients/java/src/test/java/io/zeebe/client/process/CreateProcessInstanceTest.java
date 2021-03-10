@@ -100,7 +100,12 @@ public final class CreateProcessInstanceTest extends ClientTest {
         new ByteArrayInputStream(variables.getBytes(StandardCharsets.UTF_8));
 
     // when
-    client.newCreateInstanceCommand().processDefinitionKey(123).variables(inputStream).send().join();
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .variables(inputStream)
+        .send()
+        .join();
 
     // then
     final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
@@ -144,7 +149,8 @@ public final class CreateProcessInstanceTest extends ClientTest {
         CreateProcessInstanceRequest.class, () -> new ClientException("Invalid request"));
 
     // when
-    assertThatThrownBy(() -> client.newCreateInstanceCommand().processDefinitionKey(123).send().join())
+    assertThatThrownBy(
+            () -> client.newCreateInstanceCommand().processDefinitionKey(123).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
   }
@@ -155,7 +161,12 @@ public final class CreateProcessInstanceTest extends ClientTest {
     final Duration requestTimeout = Duration.ofHours(124);
 
     // when
-    client.newCreateInstanceCommand().processDefinitionKey(123).requestTimeout(requestTimeout).send().join();
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .requestTimeout(requestTimeout)
+        .send()
+        .join();
 
     // then
     rule.verifyRequestTimeout(requestTimeout);

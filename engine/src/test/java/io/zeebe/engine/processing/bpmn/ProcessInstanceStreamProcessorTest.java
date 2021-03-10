@@ -24,16 +24,16 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -164,8 +164,7 @@ public final class ProcessInstanceStreamProcessorTest {
         .endsWith(ProcessInstanceIntent.ELEMENT_TERMINATED);
     LifecycleAssert.assertThat(taskLifecycle).compliesWithCompleteLifecycle();
 
-    ProcessInstanceAssert.assertThat(records)
-        .doesNotEvaluateFlowAfterTerminatingElement("process");
+    ProcessInstanceAssert.assertThat(records).doesNotEvaluateFlowAfterTerminatingElement("process");
   }
 
   @Test
@@ -445,11 +444,7 @@ public final class ProcessInstanceStreamProcessorTest {
             tuple(RecordType.COMMAND_REJECTION, TimerIntent.TRIGGER));
     // ensures timer1 node never exists as far as execution goes
     assertThat(
-            envRule
-                .events()
-                .onlyProcessInstanceRecords()
-                .onlyEvents()
-                .collect(Collectors.toList()))
+            envRule.events().onlyProcessInstanceRecords().onlyEvents().collect(Collectors.toList()))
         .noneMatch(r -> r.getValue().getElementIdBuffer().equals(wrapString("timer1")));
   }
 

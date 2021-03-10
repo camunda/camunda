@@ -39,8 +39,7 @@ public final class MessageStartEventSubscriptionCorrelatedApplier
       // - other messages with same correlation key are not correlated to this process
       // until the created instance is ended
       messageState.putActiveProcessInstance(value.getBpmnProcessIdBuffer(), correlationKey);
-      messageState.putProcessInstanceCorrelationKey(
-          value.getProcessInstanceKey(), correlationKey);
+      messageState.putProcessInstanceCorrelationKey(value.getProcessInstanceKey(), correlationKey);
     }
 
     // write the event trigger for the start event

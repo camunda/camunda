@@ -178,6 +178,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final BpmnElementProcessor<ExecutableFlowElement> processor) {
 
     return processState.getFlowElement(
-        recordValue.getProcessDefinitionKey(), recordValue.getElementIdBuffer(), processor.getType());
+        recordValue.getProcessDefinitionKey(),
+        recordValue.getElementIdBuffer(),
+        processor.getType());
   }
 }

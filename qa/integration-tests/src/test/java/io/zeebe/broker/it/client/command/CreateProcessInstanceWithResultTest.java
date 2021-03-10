@@ -133,12 +133,16 @@ public final class CreateProcessInstanceWithResultTest {
   @Test
   public void shouldReceiveRejectionCreateProcessInstanceAwaitResults() {
     final var command =
-        CLIENT_RULE.getClient().newCreateInstanceCommand().processDefinitionKey(123L).withResult().send();
+        CLIENT_RULE
+            .getClient()
+            .newCreateInstanceCommand()
+            .processDefinitionKey(123L)
+            .withResult()
+            .send();
 
     assertThatThrownBy(() -> command.join())
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining(
-            "Expected to find process definition with key '123', but none found");
+        .hasMessageContaining("Expected to find process definition with key '123', but none found");
   }
 
   @Test

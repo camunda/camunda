@@ -14,8 +14,7 @@ public final class DeployedProcess {
   private final ExecutableProcess process;
   private final PersistedProcess persistedProcess;
 
-  public DeployedProcess(
-      final ExecutableProcess process, final PersistedProcess persistedProcess) {
+  public DeployedProcess(final ExecutableProcess process, final PersistedProcess persistedProcess) {
     this.process = process;
     this.persistedProcess = persistedProcess;
   }

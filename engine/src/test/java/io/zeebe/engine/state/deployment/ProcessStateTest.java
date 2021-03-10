@@ -197,8 +197,7 @@ public final class ProcessStateTest {
     assertThat(deployedProcess.getVersion()).isEqualTo(1);
     assertThat(deployedProcess.getKey()).isEqualTo(processRecord.getKey());
     assertThat(deployedProcess.getResource()).isEqualTo(processRecord.getResourceBuffer());
-    assertThat(deployedProcess.getResourceName())
-        .isEqualTo(processRecord.getResourceNameBuffer());
+    assertThat(deployedProcess.getResourceName()).isEqualTo(processRecord.getResourceNameBuffer());
 
     final var processByKey = processState.getProcessByKey(processRecord.getKey());
     assertThat(processByKey).isNotNull();
@@ -241,8 +240,7 @@ public final class ProcessStateTest {
     assertThat(deployedProcess.getVersion()).isEqualTo(1);
     assertThat(deployedProcess.getKey()).isEqualTo(processRecord.getKey());
     assertThat(deployedProcess.getResource()).isEqualTo(processRecord.getResourceBuffer());
-    assertThat(deployedProcess.getResourceName())
-        .isEqualTo(processRecord.getResourceNameBuffer());
+    assertThat(deployedProcess.getResourceName()).isEqualTo(processRecord.getResourceNameBuffer());
   }
 
   @Test
@@ -378,8 +376,7 @@ public final class ProcessStateTest {
 
     Assertions.assertThat(latestProcess.getKey()).isNotEqualTo(firstLatest.getKey());
 
-    Assertions.assertThat(firstLatest.getResourceName())
-        .isEqualTo(latestProcess.getResourceName());
+    Assertions.assertThat(firstLatest.getResourceName()).isEqualTo(latestProcess.getResourceName());
 
     Assertions.assertThat(latestProcess.getVersion()).isEqualTo(2);
     Assertions.assertThat(firstLatest.getVersion()).isEqualTo(1);
@@ -496,7 +493,8 @@ public final class ProcessStateTest {
         .containsOnly(wrapString("otherId"));
     Assertions.assertThat(processes).extracting(DeployedProcess::getVersion).containsOnly(1);
 
-    final long expectedProcessDefinitionKey = Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 2);
+    final long expectedProcessDefinitionKey =
+        Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 2);
     Assertions.assertThat(processes)
         .extracting(DeployedProcess::getKey)
         .containsOnly(expectedProcessDefinitionKey);

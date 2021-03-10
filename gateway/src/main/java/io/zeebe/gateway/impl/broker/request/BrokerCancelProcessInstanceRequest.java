@@ -21,8 +21,7 @@ public class BrokerCancelProcessInstanceRequest
     super(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL);
   }
 
-  public BrokerCancelProcessInstanceRequest setProcessInstanceKey(
-      final long processInstanceKey) {
+  public BrokerCancelProcessInstanceRequest setProcessInstanceKey(final long processInstanceKey) {
     request.setKey(processInstanceKey);
     return this;
   }

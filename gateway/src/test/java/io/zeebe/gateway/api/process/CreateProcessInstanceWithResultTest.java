@@ -32,7 +32,8 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
     final CreateProcessInstanceWithResultRequest request =
         CreateProcessInstanceWithResultRequest.newBuilder()
             .setRequest(
-                CreateProcessInstanceRequest.newBuilder().setProcessDefinitionKey(stub.getProcessDefinitionKey()))
+                CreateProcessInstanceRequest.newBuilder()
+                    .setProcessDefinitionKey(stub.getProcessDefinitionKey()))
             .addAllFetchVariables(List.of("x"))
             .build();
 
@@ -47,7 +48,8 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.PROCESS_INSTANCE_CREATION);
 
     final ProcessInstanceCreationRecord brokerRequestValue = brokerRequest.getRequestWriter();
-    assertThat(brokerRequestValue.getProcessDefinitionKey()).isEqualTo(stub.getProcessDefinitionKey());
+    assertThat(brokerRequestValue.getProcessDefinitionKey())
+        .isEqualTo(stub.getProcessDefinitionKey());
     assertThat(brokerRequestValue.fetchVariables().iterator().next().getValue())
         .isEqualTo(wrapString("x"));
   }
@@ -61,7 +63,8 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
     final CreateProcessInstanceWithResultRequest request =
         CreateProcessInstanceWithResultRequest.newBuilder()
             .setRequest(
-                CreateProcessInstanceRequest.newBuilder().setProcessDefinitionKey(stub.getProcessDefinitionKey()))
+                CreateProcessInstanceRequest.newBuilder()
+                    .setProcessDefinitionKey(stub.getProcessDefinitionKey()))
             .build();
 
     // when

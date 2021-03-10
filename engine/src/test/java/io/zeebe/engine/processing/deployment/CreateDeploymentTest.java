@@ -154,7 +154,8 @@ public final class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource(process).deploy();
 
     // then
-    final long processDefinitionKey = deployment.getValue().getDeployedProcesses().get(0).getProcessDefinitionKey();
+    final long processDefinitionKey =
+        deployment.getValue().getDeployedProcesses().get(0).getProcessDefinitionKey();
     final long deploymentKey = deployment.getKey();
     assertThat(processDefinitionKey).isNotEqualTo(deploymentKey);
   }
@@ -650,8 +651,7 @@ public final class CreateDeploymentTest {
         .orElse(null);
   }
 
-  private void assertSameResource(
-      final DeployedProcess original, final DeployedProcess repeated) {
+  private void assertSameResource(final DeployedProcess original, final DeployedProcess repeated) {
     io.zeebe.protocol.record.Assertions.assertThat(repeated)
         .hasVersion(original.getVersion())
         .hasProcessDefinitionKey(original.getProcessDefinitionKey())

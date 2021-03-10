@@ -450,8 +450,7 @@ public final class VariableStateTest {
         parent, key, record.getValue(), ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
 
-  private TypedRecord<ProcessInstanceRecord> mockTypedRecord(
-      final long key, final long parentKey) {
+  private TypedRecord<ProcessInstanceRecord> mockTypedRecord(final long key, final long parentKey) {
     final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord(parentKey);
 
     final TypedRecord<ProcessInstanceRecord> typedRecord = mock(TypedRecord.class);

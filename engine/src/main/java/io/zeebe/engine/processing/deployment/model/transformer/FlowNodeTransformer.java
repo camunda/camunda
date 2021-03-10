@@ -39,9 +39,7 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
   }
 
   private void setParentReference(
-      final FlowNode flowNode,
-      final ExecutableProcess process,
-      final ExecutableFlowNode element) {
+      final FlowNode flowNode, final ExecutableProcess process, final ExecutableFlowNode element) {
 
     final var parentElement = flowNode.getParentElement();
     Optional.ofNullable(parentElement.getAttributeValue(BpmnModelConstants.BPMN_ATTRIBUTE_ID))

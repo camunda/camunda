@@ -39,6 +39,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
@@ -51,7 +52,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -71,8 +71,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
 
   public RecordingGatewayService() {
     addRequestHandler(TopologyRequest.class, r -> TopologyResponse.getDefaultInstance());
-    addRequestHandler(
-        DeployProcessRequest.class, r -> DeployProcessResponse.getDefaultInstance());
+    addRequestHandler(DeployProcessRequest.class, r -> DeployProcessResponse.getDefaultInstance());
     addRequestHandler(
         PublishMessageRequest.class, r -> PublishMessageResponse.getDefaultInstance());
     addRequestHandler(

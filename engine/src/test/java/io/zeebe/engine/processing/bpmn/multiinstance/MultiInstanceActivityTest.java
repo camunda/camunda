@@ -21,8 +21,8 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.record.intent.VariableIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.VariableIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.record.value.VariableRecordValue;
@@ -987,9 +987,7 @@ public final class MultiInstanceActivityTest {
                 BpmnElementType.SERVICE_TASK,
                 ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(
-                ELEMENT_ID,
-                BpmnElementType.SERVICE_TASK,
-                ProcessInstanceIntent.ELEMENT_TERMINATED),
+                ELEMENT_ID, BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(
                 ELEMENT_ID,
                 BpmnElementType.MULTI_INSTANCE_BODY,
@@ -1066,8 +1064,7 @@ public final class MultiInstanceActivityTest {
                 "to-notified",
                 BpmnElementType.SEQUENCE_FLOW,
                 ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple(
-                "notified", BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING));
+            tuple("notified", BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING));
 
     // and
     completeJobs(processInstanceKey, 1);

@@ -211,11 +211,11 @@ public final class CreateProcessInstanceTest {
   @Test
   public void shouldRejectCreateBpmnProcessByNonExistingKey() {
     // when
-    final var command = CLIENT_RULE.getClient().newCreateInstanceCommand().processDefinitionKey(123L).send();
+    final var command =
+        CLIENT_RULE.getClient().newCreateInstanceCommand().processDefinitionKey(123L).send();
 
     assertThatThrownBy(() -> command.join())
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining(
-            "Expected to find process definition with key '123', but none found");
+        .hasMessageContaining("Expected to find process definition with key '123', but none found");
   }
 }

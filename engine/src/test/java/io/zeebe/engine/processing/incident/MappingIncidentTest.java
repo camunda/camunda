@@ -433,11 +433,7 @@ public final class MappingIncidentTest {
     ENGINE.variables().ofScope(failureEvent.getKey()).withDocument(VARIABLES).update();
 
     final Record<IncidentRecordValue> secondResolvedIncident =
-        ENGINE
-            .incident()
-            .ofInstance(processInstanceKey)
-            .withKey(secondIncident.getKey())
-            .resolve();
+        ENGINE.incident().ofInstance(processInstanceKey).withKey(secondIncident.getKey()).resolve();
 
     // then
     assertThat(secondResolvedIncident.getKey()).isGreaterThan(firstIncident.getKey());
@@ -487,8 +483,7 @@ public final class MappingIncidentTest {
 
     // when
     ENGINE.variables().ofScope(failureEvent.getKey()).withDocument(VARIABLES).update();
-    final Record incidentResolvedEvent =
-        ENGINE.incident().ofInstance(processInstanceKey).resolve();
+    final Record incidentResolvedEvent = ENGINE.incident().ofInstance(processInstanceKey).resolve();
 
     // then
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(secondIncidentKey);

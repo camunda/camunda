@@ -16,11 +16,11 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
@@ -717,7 +717,9 @@ public final class TimerStartEventTest {
             .get(0);
     final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
 
-    RecordingExporter.timerRecords(TimerIntent.CREATED).withProcessDefinitionKey(processDefinitionKey).await();
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
 
     // when
     engine.increaseTime(Duration.ofSeconds(1));

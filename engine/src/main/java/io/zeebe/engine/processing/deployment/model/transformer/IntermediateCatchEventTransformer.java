@@ -8,8 +8,8 @@
 package io.zeebe.engine.processing.deployment.model.transformer;
 
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;

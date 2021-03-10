@@ -20,7 +20,8 @@ public final class TimerInstance extends UnpackedObject implements DbValue {
   public static final int NO_ELEMENT_INSTANCE = -1;
 
   private final StringProperty handlerNodeIdProp = new StringProperty("handlerNodeId", "");
-  private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey", 0L);
+  private final LongProperty processDefinitionKeyProp =
+      new LongProperty("processDefinitionKey", 0L);
   private final LongProperty keyProp = new LongProperty("key", 0L);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", 0L);
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", 0L);

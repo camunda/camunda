@@ -354,8 +354,7 @@ public final class StreamProcessorReprocessingTest {
   @Test
   public void shouldRetryProcessingRecordOnException() {
     // given
-    final long firstPosition =
-        streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    final long firstPosition = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
     streamProcessorRule.writeProcessInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
 
     waitUntil(
@@ -424,8 +423,7 @@ public final class StreamProcessorReprocessingTest {
   @Test
   public void shouldNotWriteFollowUpEvent() throws Exception {
     // given
-    final long firstPosition =
-        streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    final long firstPosition = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
     streamProcessorRule.writeProcessInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
 
     waitUntil(
@@ -605,8 +603,7 @@ public final class StreamProcessorReprocessingTest {
   @Test
   public void shouldUpdateLastProcessedPositionAfterReprocessing() throws Exception {
     // given
-    final long firstPosition =
-        streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    final long firstPosition = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
     streamProcessorRule.writeProcessInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
 
     waitUntil(

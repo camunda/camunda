@@ -157,8 +157,7 @@ public class ErrorEventTest {
         .throwError();
 
     // then
-    assertThat(
-            RecordingExporter.records().limitToProcessInstance(processInstanceKey).jobRecords())
+    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey).jobRecords())
         .extracting(Record::getIntent)
         .containsExactly(
             JobIntent.CREATE, JobIntent.CREATED, JobIntent.THROW_ERROR, JobIntent.ERROR_THROWN);

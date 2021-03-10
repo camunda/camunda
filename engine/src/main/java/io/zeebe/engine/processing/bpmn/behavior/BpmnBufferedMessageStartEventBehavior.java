@@ -130,8 +130,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
 
     if (processInstanceKey > 0) {
       // mark the message as correlated
-      messageState.putMessageCorrelation(
-          storedMessage.getMessageKey(), process.getBpmnProcessId());
+      messageState.putMessageCorrelation(storedMessage.getMessageKey(), process.getBpmnProcessId());
       messageState.putProcessInstanceCorrelationKey(
           processInstanceKey, storedMessage.getMessage().getCorrelationKeyBuffer());
     }

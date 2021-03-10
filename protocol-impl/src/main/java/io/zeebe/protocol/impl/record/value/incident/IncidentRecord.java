@@ -24,7 +24,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
-  private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey", -1L);
+  private final LongProperty processDefinitionKeyProp =
+      new LongProperty("processDefinitionKey", -1L);
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);

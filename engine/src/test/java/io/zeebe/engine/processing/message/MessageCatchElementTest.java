@@ -417,8 +417,8 @@ public final class MessageCatchElementTest {
         .getFirst();
   }
 
-  private Record<ProcessInstanceSubscriptionRecordValue>
-      getFirstProcessInstanceSubscriptionRecord(final ProcessInstanceSubscriptionIntent intent) {
+  private Record<ProcessInstanceSubscriptionRecordValue> getFirstProcessInstanceSubscriptionRecord(
+      final ProcessInstanceSubscriptionIntent intent) {
     return RecordingExporter.processInstanceSubscriptionRecords(intent)
         .withProcessInstanceKey(processInstanceKey)
         .withMessageName(MESSAGE_NAME)

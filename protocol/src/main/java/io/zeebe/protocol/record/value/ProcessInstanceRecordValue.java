@@ -49,8 +49,8 @@ public interface ProcessInstanceRecordValue extends RecordValue, ProcessInstance
   BpmnElementType getBpmnElementType();
 
   /**
-   * @return the key of the process instance that created this instance, or -1 if it was not
-   *     created by another process instance.
+   * @return the key of the process instance that created this instance, or -1 if it was not created
+   *     by another process instance.
    */
   long getParentProcessInstanceKey();
 

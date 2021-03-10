@@ -14,7 +14,8 @@ import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
 public class ProcessMetadata extends UnpackedObject {
-  private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey", -1);
+  private final LongProperty processDefinitionKeyProp =
+      new LongProperty("processDefinitionKey", -1);
   private final IntegerProperty versionProp = new IntegerProperty("version", -1);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
   private final StringProperty resourceNameProp = new StringProperty("resourceName");

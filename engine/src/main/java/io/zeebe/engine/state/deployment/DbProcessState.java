@@ -71,7 +71,10 @@ public final class DbProcessState implements MutableProcessState {
     persistedProcess = new PersistedProcess();
     processColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PROCESS_CACHE, transactionContext, processDefinitionKey, persistedProcess);
+            ZbColumnFamilies.PROCESS_CACHE,
+            transactionContext,
+            processDefinitionKey,
+            persistedProcess);
 
     processId = new DbString();
     processVersion = new DbLong();
@@ -153,8 +156,7 @@ public final class DbProcessState implements MutableProcessState {
             .findFirst()
             .orElseThrow();
 
-    final DeployedProcess deployedProcess =
-        new DeployedProcess(executableProcess, copiedProcess);
+    final DeployedProcess deployedProcess = new DeployedProcess(executableProcess, copiedProcess);
 
     addProcessToInMemoryState(deployedProcess);
 
@@ -219,9 +221,7 @@ public final class DbProcessState implements MutableProcessState {
 
     if (versionMap != null) {
       final DeployedProcess deployedProcess = versionMap.get(version);
-      return deployedProcess != null
-          ? deployedProcess
-          : lookupPersistenceState(processId, version);
+      return deployedProcess != null ? deployedProcess : lookupPersistenceState(processId, version);
     } else {
       return lookupPersistenceState(processId, version);
     }
@@ -279,8 +279,7 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public Collection<DeployedProcess> getProcessesByBpmnProcessId(
-      final DirectBuffer bpmnProcessId) {
+  public Collection<DeployedProcess> getProcessesByBpmnProcessId(final DirectBuffer bpmnProcessId) {
     updateCompleteInMemoryState();
 
     final Long2ObjectHashMap<DeployedProcess> processesByVersions =
@@ -324,7 +323,8 @@ public final class DbProcessState implements MutableProcessState {
     if (deployedProcess == null) {
       throw new IllegalStateException(
           String.format(
-              "Expected to find a process deployed with key '%d' but not found.", processDefinitionKey));
+              "Expected to find a process deployed with key '%d' but not found.",
+              processDefinitionKey));
     }
 
     final var process = deployedProcess.getProcess();

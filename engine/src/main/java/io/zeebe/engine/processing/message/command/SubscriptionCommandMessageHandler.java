@@ -137,8 +137,7 @@ public final class SubscriptionCommandMessageHandler
       final DirectBuffer buffer, final int offset, final int length) {
     openProcessInstanceSubscriptionCommand.wrap(buffer, offset, length);
 
-    final long processInstanceKey =
-        openProcessInstanceSubscriptionCommand.getProcessInstanceKey();
+    final long processInstanceKey = openProcessInstanceSubscriptionCommand.getProcessInstanceKey();
     final int processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
 
     processInstanceSubscriptionRecord.reset();
@@ -225,8 +224,7 @@ public final class SubscriptionCommandMessageHandler
       final DirectBuffer buffer, final int offset, final int length) {
     closeProcessInstanceSubscriptionCommand.wrap(buffer, offset, length);
 
-    final long processInstanceKey =
-        closeProcessInstanceSubscriptionCommand.getProcessInstanceKey();
+    final long processInstanceKey = closeProcessInstanceSubscriptionCommand.getProcessInstanceKey();
     final int processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
 
     processInstanceSubscriptionRecord.reset();

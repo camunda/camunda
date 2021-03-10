@@ -96,8 +96,10 @@ public final class MessageStartEventSubscriptionTest {
             MessageStartEventSubscriptionIntent.CLOSED,
             MessageStartEventSubscriptionIntent.OPENED);
 
-    final long closingProcessDefinitionKey = subscriptions.get(2).getValue().getProcessDefinitionKey();
-    assertThat(closingProcessDefinitionKey).isEqualTo(subscriptions.get(0).getValue().getProcessDefinitionKey());
+    final long closingProcessDefinitionKey =
+        subscriptions.get(2).getValue().getProcessDefinitionKey();
+    assertThat(closingProcessDefinitionKey)
+        .isEqualTo(subscriptions.get(0).getValue().getProcessDefinitionKey());
   }
 
   private static BpmnModelInstance createProcessWithOneMessageStartEvent() {

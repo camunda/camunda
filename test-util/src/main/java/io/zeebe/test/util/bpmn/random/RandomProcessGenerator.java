@@ -67,8 +67,7 @@ public final class RandomProcessGenerator {
 
       final String id = "process" + i;
 
-      final RandomProcessGenerator builder =
-          new RandomProcessGenerator(random.nextLong(), 5, 3, 3);
+      final RandomProcessGenerator builder = new RandomProcessGenerator(random.nextLong(), 5, 3, 3);
 
       Bpmn.writeModelToFile(new File(id + ".bpmn"), builder.buildProcess());
 

@@ -196,9 +196,7 @@ public final class ErrorEventIncidentTest {
         .doesNotContain(jobEvent.getKey());
 
     assertThat(
-            RecordingExporter.incidentRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(5))
+            RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(5))
         .extracting(Record::getIntent)
         .containsExactly(
             IncidentIntent.CREATE,
@@ -238,8 +236,7 @@ public final class ErrorEventIncidentTest {
         .extracting(Record::getIntent)
         .contains(IncidentIntent.RESOLVED);
 
-    assertThat(
-            RecordingExporter.records().limitToProcessInstance(processInstanceKey).jobRecords())
+    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey).jobRecords())
         .extracting(Record::getIntent)
         .doesNotContain(JobIntent.CANCEL);
   }
@@ -296,9 +293,7 @@ public final class ErrorEventIncidentTest {
 
     // then
     assertThat(
-            RecordingExporter.incidentRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(5))
+            RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(5))
         .extracting(Record::getIntent)
         .containsExactly(
             IncidentIntent.CREATE,

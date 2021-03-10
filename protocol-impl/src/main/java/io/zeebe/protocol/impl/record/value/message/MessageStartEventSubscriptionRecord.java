@@ -22,7 +22,8 @@ import org.agrona.DirectBuffer;
 public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValue
     implements MessageStartEventSubscriptionRecordValue {
 
-  private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey", -1L);
+  private final LongProperty processDefinitionKeyProp =
+      new LongProperty("processDefinitionKey", -1L);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final StringProperty startEventIdProp = new StringProperty("startEventId", "");

@@ -27,7 +27,9 @@ public final class CreateProcessInstanceTest extends GatewayTest {
     stub.registerWith(brokerClient);
 
     final CreateProcessInstanceRequest request =
-        CreateProcessInstanceRequest.newBuilder().setProcessDefinitionKey(stub.getProcessDefinitionKey()).build();
+        CreateProcessInstanceRequest.newBuilder()
+            .setProcessDefinitionKey(stub.getProcessDefinitionKey())
+            .build();
 
     // when
     final CreateProcessInstanceResponse response = client.createProcessInstance(request);
@@ -43,6 +45,7 @@ public final class CreateProcessInstanceTest extends GatewayTest {
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.PROCESS_INSTANCE_CREATION);
 
     final ProcessInstanceCreationRecord brokerRequestValue = brokerRequest.getRequestWriter();
-    assertThat(brokerRequestValue.getProcessDefinitionKey()).isEqualTo(stub.getProcessDefinitionKey());
+    assertThat(brokerRequestValue.getProcessDefinitionKey())
+        .isEqualTo(stub.getProcessDefinitionKey());
   }
 }

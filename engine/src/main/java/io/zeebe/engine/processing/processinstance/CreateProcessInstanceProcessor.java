@@ -84,9 +84,7 @@ public final class CreateProcessInstanceProcessor
 
     final ElementInstance processInstance = createElementInstance(process, processInstanceKey);
     eventWriter.appendFollowUpEvent(
-        processInstanceKey,
-        ProcessInstanceIntent.ELEMENT_ACTIVATING,
-        processInstance.getValue());
+        processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, processInstance.getValue());
 
     record
         .setProcessInstanceKey(processInstanceKey)
@@ -115,7 +113,10 @@ public final class CreateProcessInstanceProcessor
       final long processInstanceKey) {
     try {
       variableBehavior.mergeLocalDocument(
-          processInstanceKey, processDefinitionKey, processInstanceKey, record.getVariablesBuffer());
+          processInstanceKey,
+          processDefinitionKey,
+          processInstanceKey,
+          record.getVariablesBuffer());
     } catch (final MsgpackReaderException e) {
       Loggers.PROCESS_PROCESSOR_LOGGER.error(ERROR_INVALID_VARIABLES_LOGGED_MESSAGE, e);
       controller.reject(
@@ -167,8 +168,7 @@ public final class CreateProcessInstanceProcessor
 
   private DeployedProcess getProcess(
       final DirectBuffer bpmnProcessId, final CommandControl controller) {
-    final DeployedProcess process =
-        processState.getLatestProcessVersionByProcessId(bpmnProcessId);
+    final DeployedProcess process = processState.getLatestProcessVersionByProcessId(bpmnProcessId);
     if (process == null) {
       controller.reject(
           RejectionType.NOT_FOUND,

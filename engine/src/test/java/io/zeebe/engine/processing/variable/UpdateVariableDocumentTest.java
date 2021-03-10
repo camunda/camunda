@@ -15,12 +15,12 @@ import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordStream;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -52,11 +52,7 @@ public final class UpdateVariableDocumentTest {
     // when
     ENGINE_RULE.deployment().withXmlResource(process).deploy();
     final long processInstanceKey =
-        ENGINE_RULE
-            .processInstance()
-            .ofBpmnProcessId(processId)
-            .withVariables("{'x': 1}")
-            .create();
+        ENGINE_RULE.processInstance().ofBpmnProcessId(processId).withVariables("{'x': 1}").create();
     final Record<ProcessInstanceRecordValue> activatedEvent = waitForActivityActivatedEvent();
     ENGINE_RULE
         .variables()

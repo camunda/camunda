@@ -422,7 +422,9 @@ public final class ReProcessingStateMachine {
     if (value.getBpmnElementType() == BpmnElementType.SEQUENCE_FLOW) {
       final var sequenceFlow =
           processState.getFlowElement(
-              value.getProcessDefinitionKey(), value.getElementIdBuffer(), ExecutableSequenceFlow.class);
+              value.getProcessDefinitionKey(),
+              value.getElementIdBuffer(),
+              ExecutableSequenceFlow.class);
       if (MigratedStreamProcessors.isMigrated(sequenceFlow.getSource().getElementType())) {
         eventApplier.applyState(typedEvent.getKey(), typedEvent.getIntent(), typedEvent.getValue());
       }

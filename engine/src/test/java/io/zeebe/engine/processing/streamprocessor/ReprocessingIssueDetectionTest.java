@@ -176,8 +176,7 @@ public final class ReprocessingIssueDetectionTest {
             .processInstance(ProcessInstanceIntent.CANCEL, processActivated.getValue())
             .key(processInstanceKey),
         RecordToWrite.event()
-            .processInstance(
-                ProcessInstanceIntent.ELEMENT_TERMINATING, processActivated.getValue())
+            .processInstance(ProcessInstanceIntent.ELEMENT_TERMINATING, processActivated.getValue())
             .key(processInstanceKey)
             .causedBy(0),
         // expected the follow-up event with intent ELEMENT_TERMINATING for the service task

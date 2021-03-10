@@ -23,7 +23,8 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
     implements ProcessInstanceResultRecordValue {
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty("bpmnProcessId", "");
-  private final LongProperty processDefinitionKeyProperty = new LongProperty("processDefinitionKey", -1);
+  private final LongProperty processDefinitionKeyProperty =
+      new LongProperty("processDefinitionKey", -1);
   private final IntegerProperty versionProperty = new IntegerProperty("version", -1);
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
   private final LongProperty processInstanceKeyProperty =

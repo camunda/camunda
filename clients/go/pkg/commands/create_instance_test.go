@@ -42,10 +42,10 @@ func TestCreateProcessInstanceCommand(t *testing.T) {
 		ProcessDefinitionKey: 123,
 	}
 	stub := &pb.CreateProcessInstanceResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
 	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -74,10 +74,10 @@ func TestCreateProcessInstanceCommandByBpmnProcessId(t *testing.T) {
 		Version:       LatestVersion,
 	}
 	stub := &pb.CreateProcessInstanceResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
 	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -106,10 +106,10 @@ func TestCreateProcessInstanceCommandByBpmnProcessIdAndVersion(t *testing.T) {
 		Version:       56,
 	}
 	stub := &pb.CreateProcessInstanceResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
 	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -137,13 +137,13 @@ func TestCreateProcessInstanceCommandWithVariablesFromString(t *testing.T) {
 
 	request := &pb.CreateProcessInstanceRequest{
 		ProcessDefinitionKey: 123,
-		Variables:   variables,
+		Variables:            variables,
 	}
 	stub := &pb.CreateProcessInstanceResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
 	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -176,13 +176,13 @@ func TestCreateProcessInstanceCommandWithVariablesFromStringer(t *testing.T) {
 
 	request := &pb.CreateProcessInstanceRequest{
 		ProcessDefinitionKey: 123,
-		Variables:   variables,
+		Variables:            variables,
 	}
 	stub := &pb.CreateProcessInstanceResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
 	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -215,13 +215,13 @@ func TestCreateProcessInstanceCommandWithVariablesFromObject(t *testing.T) {
 
 	request := &pb.CreateProcessInstanceRequest{
 		ProcessDefinitionKey: 123,
-		Variables:   variables,
+		Variables:            variables,
 	}
 	stub := &pb.CreateProcessInstanceResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
 	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -254,13 +254,13 @@ func TestCreateProcessInstanceCommandWithVariablesFromObjectOmitempty(t *testing
 
 	request := &pb.CreateProcessInstanceRequest{
 		ProcessDefinitionKey: 123,
-		Variables:   variables,
+		Variables:            variables,
 	}
 	stub := &pb.CreateProcessInstanceResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
 	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -293,13 +293,13 @@ func TestCreateProcessInstanceCommandWithVariablesFromObjectIgnoreOmitempty(t *t
 
 	request := &pb.CreateProcessInstanceRequest{
 		ProcessDefinitionKey: 123,
-		Variables:   variables,
+		Variables:            variables,
 	}
 	stub := &pb.CreateProcessInstanceResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
 	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -334,13 +334,13 @@ func TestCreateProcessInstanceCommandWithVariablesFromMap(t *testing.T) {
 
 	request := &pb.CreateProcessInstanceRequest{
 		ProcessDefinitionKey: 123,
-		Variables:   variables,
+		Variables:            variables,
 	}
 	stub := &pb.CreateProcessInstanceResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
 	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -375,11 +375,11 @@ func TestCreateProcessInstanceWithResultCommand(t *testing.T) {
 		RequestTimeout: longPollMillis,
 	}
 	stub := &pb.CreateProcessInstanceWithResultResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
-		Variables:           "{}",
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            "{}",
 	}
 
 	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -414,11 +414,11 @@ func TestCreateProcessInstanceWithResultCommandByBpmnProcessId(t *testing.T) {
 		RequestTimeout: longPollMillis,
 	}
 	stub := &pb.CreateProcessInstanceWithResultResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
-		Variables:           "{}",
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            "{}",
 	}
 
 	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -453,11 +453,11 @@ func TestCreateProcessInstanceWithResultCommandByBpmnProcessIdAndVersion(t *test
 		RequestTimeout: longPollMillis,
 	}
 	stub := &pb.CreateProcessInstanceWithResultResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
-		Variables:           "{}",
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            "{}",
 	}
 
 	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -488,16 +488,16 @@ func TestCreateProcessInstanceWithResultCommandWithVariablesFromString(t *testin
 	request := &pb.CreateProcessInstanceWithResultRequest{
 		Request: &pb.CreateProcessInstanceRequest{
 			ProcessDefinitionKey: 123,
-			Variables:   variables,
+			Variables:            variables,
 		},
 		RequestTimeout: longPollMillis,
 	}
 	stub := &pb.CreateProcessInstanceWithResultResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
-		Variables:           variables,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            variables,
 	}
 
 	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -533,16 +533,16 @@ func TestCreateProcessInstanceWithResultCommandWithVariablesFromStringer(t *test
 	request := &pb.CreateProcessInstanceWithResultRequest{
 		Request: &pb.CreateProcessInstanceRequest{
 			ProcessDefinitionKey: 123,
-			Variables:   variables,
+			Variables:            variables,
 		},
 		RequestTimeout: longPollMillis,
 	}
 	stub := &pb.CreateProcessInstanceWithResultResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
-		Variables:           variables,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            variables,
 	}
 
 	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -578,16 +578,16 @@ func TestCreateProcessInstanceWithResultCommandWithVariablesFromObject(t *testin
 	request := &pb.CreateProcessInstanceWithResultRequest{
 		Request: &pb.CreateProcessInstanceRequest{
 			ProcessDefinitionKey: 123,
-			Variables:   variables,
+			Variables:            variables,
 		},
 		RequestTimeout: longPollMillis,
 	}
 	stub := &pb.CreateProcessInstanceWithResultResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
-		Variables:           variables,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            variables,
 	}
 
 	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -623,16 +623,16 @@ func TestCreateProcessInstanceWithResultCommandWithVariablesFromObjectOmitempty(
 	request := &pb.CreateProcessInstanceWithResultRequest{
 		Request: &pb.CreateProcessInstanceRequest{
 			ProcessDefinitionKey: 123,
-			Variables:   variables,
+			Variables:            variables,
 		},
 		RequestTimeout: longPollMillis,
 	}
 	stub := &pb.CreateProcessInstanceWithResultResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
-		Variables:           variables,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            variables,
 	}
 
 	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -668,16 +668,16 @@ func TestCreateProcessInstanceWithResultCommandWithVariablesFromObjectIgnoreOmit
 	request := &pb.CreateProcessInstanceWithResultRequest{
 		Request: &pb.CreateProcessInstanceRequest{
 			ProcessDefinitionKey: 123,
-			Variables:   variables,
+			Variables:            variables,
 		},
 		RequestTimeout: longPollMillis,
 	}
 	stub := &pb.CreateProcessInstanceWithResultResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
-		Variables:           variables,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            variables,
 	}
 
 	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -716,16 +716,16 @@ func TestCreateProcessInstanceWithResultCommandWithVariablesFromMap(t *testing.T
 	request := &pb.CreateProcessInstanceWithResultRequest{
 		Request: &pb.CreateProcessInstanceRequest{
 			ProcessDefinitionKey: 123,
-			Variables:   variables,
+			Variables:            variables,
 		},
 		RequestTimeout: longPollMillis,
 	}
 	stub := &pb.CreateProcessInstanceWithResultResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
-		Variables:           variables,
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            variables,
 	}
 
 	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -764,11 +764,11 @@ func TestCreateProcessInstanceWithResultAndFetchVariablesCommand(t *testing.T) {
 		FetchVariables: []string{"a", "b", "c"},
 	}
 	stub := &pb.CreateProcessInstanceWithResultResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
-		Variables:           "{}",
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            "{}",
 	}
 
 	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
@@ -801,11 +801,11 @@ func TestCreateProcessInstanceWithResultAndFetchEmptyVariablesListCommand(t *tes
 		RequestTimeout: longPollMillis,
 	}
 	stub := &pb.CreateProcessInstanceWithResultResponse{
-		ProcessDefinitionKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		ProcessInstanceKey: 5632,
-		Variables:           "{}",
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            "{}",
 	}
 
 	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)

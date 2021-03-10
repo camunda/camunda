@@ -38,8 +38,8 @@ public interface MessageStartEventSubscriptionRecordValue extends RecordValueWit
   String getMessageName();
 
   /**
-   * @return the key of the process instance that was created by this message. It is only set when
-   *     a message is correlated to this subscription. Otherwise, it returns -1.
+   * @return the key of the process instance that was created by this message. It is only set when a
+   *     message is correlated to this subscription. Otherwise, it returns -1.
    */
   long getProcessInstanceKey();
 

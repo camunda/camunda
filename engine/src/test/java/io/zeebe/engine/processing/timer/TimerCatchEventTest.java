@@ -14,11 +14,11 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -283,10 +283,7 @@ public final class TimerCatchEventTest {
 
     ENGINE.deployment().withXmlResource(process).deploy();
     final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId("shouldTriggerTimerWithNegativeDuration")
-            .create();
+        ENGINE.processInstance().ofBpmnProcessId("shouldTriggerTimerWithNegativeDuration").create();
 
     // then
     assertThat(
