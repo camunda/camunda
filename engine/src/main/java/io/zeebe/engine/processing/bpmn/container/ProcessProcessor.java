@@ -16,9 +16,9 @@ import io.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
-import io.zeebe.engine.processing.bpmn.behavior.BpmnWorkflowResultSenderBehavior;
+import io.zeebe.engine.processing.bpmn.behavior.BpmnProcessResultSenderBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
 public final class ProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
@@ -27,7 +27,7 @@ public final class ProcessProcessor
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
-  private final BpmnWorkflowResultSenderBehavior workflowResultSenderBehavior;
+  private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
 
   public ProcessProcessor(final BpmnBehaviors bpmnBehaviors) {
@@ -35,7 +35,7 @@ public final class ProcessProcessor
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
-    workflowResultSenderBehavior = bpmnBehaviors.workflowResultSenderBehavior();
+    processResultSenderBehavior = bpmnBehaviors.processResultSenderBehavior();
     bufferedMessageStartEventBehavior = bpmnBehaviors.bufferedMessageStartEventBehavior();
   }
 
@@ -89,14 +89,14 @@ public final class ProcessProcessor
   public void onCompleted(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
 
-    final var parentWorkflowInstanceKey = context.getParentWorkflowInstanceKey();
-    if (parentWorkflowInstanceKey > 0) {
-      // workflow instance is created by a call activity
+    final var parentProcessInstanceKey = context.getParentProcessInstanceKey();
+    if (parentProcessInstanceKey > 0) {
+      // process instance is created by a call activity
       stateTransitionBehavior.onElementCompleted(element, context);
     }
 
     if (element.hasNoneStartEvent()) {
-      workflowResultSenderBehavior.sendResult(context);
+      processResultSenderBehavior.sendResult(context);
     }
 
     if (element.hasMessageStartEvent()) {
@@ -124,10 +124,10 @@ public final class ProcessProcessor
 
     incidentBehavior.resolveIncidents(context);
 
-    final var parentWorkflowInstanceKey = context.getParentWorkflowInstanceKey();
+    final var parentProcessInstanceKey = context.getParentProcessInstanceKey();
 
-    if (parentWorkflowInstanceKey > 0) {
-      // workflow instance is created by a call activity
+    if (parentProcessInstanceKey > 0) {
+      // process instance is created by a call activity
       stateTransitionBehavior.onElementTerminated(element, context);
     }
 
@@ -163,7 +163,7 @@ public final class ProcessProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
 
-    if (flowScopeContext.getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATING
+    if (flowScopeContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
         && stateBehavior.isLastActiveExecutionPathInScope(childContext)) {
       stateTransitionBehavior.transitionToTerminated(flowScopeContext);
 

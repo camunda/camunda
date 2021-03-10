@@ -16,17 +16,17 @@
 package io.zeebe.protocol.record.value;
 
 import io.zeebe.protocol.record.RecordValueWithVariables;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 
 /**
- * Represents a workflow instance subscription command or event.
+ * Represents a process instance subscription command or event.
  *
- * <p>See {@link WorkflowInstanceSubscriptionIntent} for intents.
+ * <p>See {@link ProcessInstanceSubscriptionIntent} for intents.
  */
-public interface WorkflowInstanceSubscriptionRecordValue
-    extends RecordValueWithVariables, WorkflowInstanceRelated {
-  /** @return the workflow instance key */
-  long getWorkflowInstanceKey();
+public interface ProcessInstanceSubscriptionRecordValue
+    extends RecordValueWithVariables, ProcessInstanceRelated {
+  /** @return the process instance key */
+  long getProcessInstanceKey();
 
   /** @return the element instance key */
   long getElementInstanceKey();

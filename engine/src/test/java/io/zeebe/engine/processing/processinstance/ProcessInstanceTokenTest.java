@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.processing.workflowinstance;
+package io.zeebe.engine.processing.processinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -15,9 +15,9 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -28,7 +28,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class WorkflowInstanceTokenTest {
+public final class ProcessInstanceTokenTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -53,10 +53,10 @@ public final class WorkflowInstanceTokenTest {
         .deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // then
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end");
   }
 
   @Test
@@ -68,10 +68,10 @@ public final class WorkflowInstanceTokenTest {
         .deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // then
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "start");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "start");
   }
 
   @Test
@@ -86,13 +86,13 @@ public final class WorkflowInstanceTokenTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // when
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task").complete();
 
     // then
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "task");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "task");
   }
 
   @Test
@@ -112,14 +112,14 @@ public final class WorkflowInstanceTokenTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // when
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task-1").complete();
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task-2").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task-1").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task-2").complete();
 
     // then
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end-2");
   }
 
   @Test
@@ -140,14 +140,14 @@ public final class WorkflowInstanceTokenTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // when
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task-1").complete();
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task-2").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task-1").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task-2").complete();
 
     // then
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end");
   }
 
   @Test
@@ -169,19 +169,19 @@ public final class WorkflowInstanceTokenTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(processId)
             .withVariables("{'key':'123'}")
             .create();
 
     // when
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task").complete();
     ENGINE.message().withName("msg").withCorrelationKey("123").publish();
 
     // then
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end-2");
   }
 
   @Test
@@ -201,14 +201,14 @@ public final class WorkflowInstanceTokenTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // when
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task").complete();
     ENGINE.increaseTime(Duration.ofSeconds(1));
 
     // then
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end-2");
   }
 
   @Test
@@ -234,14 +234,14 @@ public final class WorkflowInstanceTokenTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // when
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task-1").complete();
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task-2").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task-1").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task-2").complete();
 
     // then
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end-2");
   }
 
   @Test
@@ -269,19 +269,19 @@ public final class WorkflowInstanceTokenTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(processId)
             .withVariables("{'key':'123'}")
             .create();
 
     // when
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task").complete();
     ENGINE.message().withName("msg-1").withCorrelationKey("123").publish();
 
     // then
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end-2");
   }
 
   @Test
@@ -300,17 +300,17 @@ public final class WorkflowInstanceTokenTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // when
     RecordingExporter.jobRecords()
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .withIntent(JobIntent.CREATED)
         .getFirst();
     ENGINE.increaseTime(Duration.ofSeconds(1));
 
     // then
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end-2");
   }
 
   @Test
@@ -330,21 +330,21 @@ public final class WorkflowInstanceTokenTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // when
     RecordingExporter.jobRecords()
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .withIntent(JobIntent.CREATED)
         .getFirst();
     ENGINE.increaseTime(Duration.ofSeconds(1));
 
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task-2").complete();
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task-1").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task-2").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task-1").complete();
 
     // then
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-1");
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end-1");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end-2");
   }
 
   @Test
@@ -366,15 +366,15 @@ public final class WorkflowInstanceTokenTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // when
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task").complete();
 
     ENGINE
         .variables()
@@ -382,11 +382,11 @@ public final class WorkflowInstanceTokenTest {
         .withDocument(Maps.of(entry("key", "123")))
         .update();
 
-    ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incident.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
     ENGINE.message().withName("msg").withCorrelationKey("123").publish();
 
     // then
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end-2");
   }
 
   @Test
@@ -407,17 +407,17 @@ public final class WorkflowInstanceTokenTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // when
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task-2").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task-2").complete();
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task-1").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task-1").complete();
 
     ENGINE
         .variables()
@@ -425,10 +425,10 @@ public final class WorkflowInstanceTokenTest {
         .withDocument(Maps.of(entry("result", "123")))
         .update();
 
-    ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incident.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
     // then
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end-2");
   }
 
   @Test
@@ -453,15 +453,15 @@ public final class WorkflowInstanceTokenTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // when
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("task").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task").complete();
 
     ENGINE
         .variables()
@@ -469,23 +469,23 @@ public final class WorkflowInstanceTokenTest {
         .withDocument(Maps.of(entry("x", 123)))
         .update();
 
-    ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incident.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
     // then
-    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end-2");
   }
 
-  private void assertThatWorkflowInstanceCompletedAfter(
-      final long workflowInstanceKey, final String elementId) {
-    final Record<WorkflowInstanceRecordValue> lastEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+  private void assertThatProcessInstanceCompletedAfter(
+      final long processInstanceKey, final String elementId) {
+    final Record<ProcessInstanceRecordValue> lastEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId(elementId)
             .getFirst();
 
-    final Record<WorkflowInstanceRecordValue> completedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> completedEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId(processId)
             .getFirst();
 

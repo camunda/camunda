@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.record.intent;
 
-public interface WorkflowInstanceRelatedIntent extends Intent {
+public interface ProcessInstanceRelatedIntent extends Intent {
 
   boolean shouldBlacklistInstanceOnError();
 }

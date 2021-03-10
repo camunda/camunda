@@ -18,7 +18,7 @@ import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableExclusiveGateway;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.util.Either;
 import io.zeebe.util.buffer.BufferUtil;
@@ -92,7 +92,7 @@ public final class ExclusiveGatewayProcessor
   }
 
   private BpmnElementContext transitionToCompleted(final BpmnElementContext activating) {
-    if (activating.getIntent() != WorkflowInstanceIntent.ELEMENT_ACTIVATING) {
+    if (activating.getIntent() != ProcessInstanceIntent.ELEMENT_ACTIVATING) {
       throw new BpmnProcessingException(activating, TRANSITION_TO_COMPLETED_PRECONDITION_ERROR);
     }
     final var activated = stateTransitionBehavior.transitionToActivated(activating);

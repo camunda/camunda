@@ -17,14 +17,14 @@ package io.zeebe.protocol.record.value;
 
 import io.zeebe.protocol.record.RecordValueWithVariables;
 
-public interface WorkflowInstanceCreationRecordValue
-    extends RecordValueWithVariables, WorkflowInstanceRelated {
-  /** @return the BPMN process id to create a workflow from */
+public interface ProcessInstanceCreationRecordValue
+    extends RecordValueWithVariables, ProcessInstanceRelated {
+  /** @return the BPMN process id to create a process from */
   String getBpmnProcessId();
 
-  /** @return the version of the BPMN process to create a workflow from */
+  /** @return the version of the BPMN process to create a process from */
   int getVersion();
 
-  /** @return the unique key of the BPMN process definition to create a workflow from */
-  long getWorkflowKey();
+  /** @return the unique key of the BPMN process definition to create a process from */
+  long getProcessDefinitionKey();
 }

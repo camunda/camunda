@@ -106,7 +106,7 @@ public final class RequestRetryHandler {
                   responseConsumer.accept(response.getKey(), response.getResponse());
                 } else if (shouldRetryWithNextPartition(error)) {
                   Loggers.GATEWAY_LOGGER.trace(
-                      "Failed to create workflow on partition {}",
+                      "Failed to create process on partition {}",
                       partitionIdIterator.getCurrentPartitionId(),
                       error);
                   errors.add(error);

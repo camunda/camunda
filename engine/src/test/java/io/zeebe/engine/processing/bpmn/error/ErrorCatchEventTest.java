@@ -14,7 +14,7 @@ import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
@@ -39,7 +39,7 @@ public final class ErrorCatchEventTest {
   public String description;
 
   @Parameter(1)
-  public BpmnModelInstance workflow;
+  public BpmnModelInstance process;
 
   @Parameter(2)
   public String expectedEventOccurredElementId;
@@ -195,30 +195,30 @@ public final class ErrorCatchEventTest {
   @Test
   public void shouldTriggerEvent() {
     // given
-    ENGINE.deployment().withXmlResource(workflow).deploy();
+    ENGINE.deployment().withXmlResource(process).deploy();
 
-    final var workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     ENGINE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
-            tuple(expectedEventOccurredElementId, WorkflowInstanceIntent.EVENT_OCCURRED),
-            tuple(TASK_ELEMENT_ID, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(TASK_ELEMENT_ID, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(expectedActivatedElement, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(expectedActivatedElement, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(expectedEventOccurredElementId, ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple(TASK_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(TASK_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(expectedActivatedElement, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(expectedActivatedElement, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 }

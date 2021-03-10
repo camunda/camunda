@@ -15,104 +15,104 @@
  */
 package io.zeebe.client.api.command;
 
-import io.zeebe.client.api.response.WorkflowInstanceEvent;
-import io.zeebe.client.api.response.WorkflowInstanceResult;
+import io.zeebe.client.api.response.ProcessInstanceEvent;
+import io.zeebe.client.api.response.ProcessInstanceResult;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-public interface CreateWorkflowInstanceCommandStep1 {
-  /** Use the latest version of the workflow (without guarantee). */
+public interface CreateProcessInstanceCommandStep1 {
+  /** Use the latest version of the process (without guarantee). */
   int LATEST_VERSION = -1;
 
   /**
-   * Set the BPMN process id of the workflow to create an instance of. This is the static id of the
-   * process in the BPMN XML (i.e. "&#60;bpmn:process id='my-workflow'&#62;").
+   * Set the BPMN process id of the process to create an instance of. This is the static id of the
+   * process in the BPMN XML (i.e. "&#60;bpmn:process id='my-process'&#62;").
    *
-   * @param bpmnProcessId the BPMN process id of the workflow
+   * @param bpmnProcessId the BPMN process id of the process
    * @return the builder for this command
    */
-  CreateWorkflowInstanceCommandStep2 bpmnProcessId(String bpmnProcessId);
+  CreateProcessInstanceCommandStep2 bpmnProcessId(String bpmnProcessId);
 
   /**
-   * Set the key of the workflow to create an instance of. The key is assigned by the broker while
-   * deploying the workflow. It can be picked from the deployment or workflow event.
+   * Set the key of the process to create an instance of. The key is assigned by the broker while
+   * deploying the process. It can be picked from the deployment or process event.
    *
-   * @param workflowKey the key of the workflow
+   * @param processDefinitionKey the key of the process
    * @return the builder for this command
    */
-  CreateWorkflowInstanceCommandStep3 workflowKey(long workflowKey);
+  CreateProcessInstanceCommandStep3 processDefinitionKey(long processDefinitionKey);
 
-  interface CreateWorkflowInstanceCommandStep2 {
+  interface CreateProcessInstanceCommandStep2 {
     /**
-     * Set the version of the workflow to create an instance of. The version is assigned by the
-     * broker while deploying the workflow. It can be picked from the deployment or workflow event.
+     * Set the version of the process to create an instance of. The version is assigned by the
+     * broker while deploying the process. It can be picked from the deployment or process event.
      *
-     * @param version the version of the workflow
+     * @param version the version of the process
      * @return the builder for this command
      */
-    CreateWorkflowInstanceCommandStep3 version(int version);
+    CreateProcessInstanceCommandStep3 version(int version);
 
     /**
-     * Use the latest version of the workflow to create an instance of.
+     * Use the latest version of the process to create an instance of.
      *
      * <p>If the latest version was deployed few moments before then it can happen that the new
      * instance is created of the previous version.
      *
      * @return the builder for this command
      */
-    CreateWorkflowInstanceCommandStep3 latestVersion();
+    CreateProcessInstanceCommandStep3 latestVersion();
   }
 
-  interface CreateWorkflowInstanceCommandStep3 extends FinalCommandStep<WorkflowInstanceEvent> {
+  interface CreateProcessInstanceCommandStep3 extends FinalCommandStep<ProcessInstanceEvent> {
     /**
-     * Set the initial variables of the workflow instance.
+     * Set the initial variables of the process instance.
      *
      * @param variables the variables JSON document as stream
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CreateWorkflowInstanceCommandStep3 variables(InputStream variables);
+    CreateProcessInstanceCommandStep3 variables(InputStream variables);
 
     /**
-     * Set the initial variables of the workflow instance.
+     * Set the initial variables of the process instance.
      *
      * @param variables the variables JSON document as String
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CreateWorkflowInstanceCommandStep3 variables(String variables);
+    CreateProcessInstanceCommandStep3 variables(String variables);
 
     /**
-     * Set the initial variables of the workflow instance.
+     * Set the initial variables of the process instance.
      *
      * @param variables the variables document as map
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CreateWorkflowInstanceCommandStep3 variables(Map<String, Object> variables);
+    CreateProcessInstanceCommandStep3 variables(Map<String, Object> variables);
 
     /**
-     * Set the initial variables of the workflow instance.
+     * Set the initial variables of the process instance.
      *
      * @param variables the variables document as object to be serialized to JSON
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CreateWorkflowInstanceCommandStep3 variables(Object variables);
+    CreateProcessInstanceCommandStep3 variables(Object variables);
 
     /**
-     * When this method is called, the response to the command will be received after the workflow
+     * When this method is called, the response to the command will be received after the process
      * is completed. The response consists of a set of variables.
      *
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker
      */
-    CreateWorkflowInstanceWithResultCommandStep1 withResult();
+    CreateProcessInstanceWithResultCommandStep1 withResult();
   }
 
-  interface CreateWorkflowInstanceWithResultCommandStep1
-      extends FinalCommandStep<WorkflowInstanceResult> {
+  interface CreateProcessInstanceWithResultCommandStep1
+      extends FinalCommandStep<ProcessInstanceResult> {
 
     /**
      * Set a list of variables names which should be fetched in the response.
@@ -121,7 +121,7 @@ public interface CreateWorkflowInstanceCommandStep1 {
      * @return the builder for this command. Call {@link #send()} to complete the command and send *
      *     it to the broker
      */
-    CreateWorkflowInstanceWithResultCommandStep1 fetchVariables(List<String> fetchVariables);
+    CreateProcessInstanceWithResultCommandStep1 fetchVariables(List<String> fetchVariables);
 
     /**
      * Set a list of variables names which should be fetched in the response.
@@ -130,6 +130,6 @@ public interface CreateWorkflowInstanceCommandStep1 {
      * @return the builder for this command. Call {@link #send()} to complete the command and send *
      *     it to the broker
      */
-    CreateWorkflowInstanceWithResultCommandStep1 fetchVariables(String... fetchVariables);
+    CreateProcessInstanceWithResultCommandStep1 fetchVariables(String... fetchVariables);
   }
 }

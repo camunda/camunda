@@ -12,43 +12,43 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class CloseWorkflowInstanceSubscriptionCommand
+public final class CloseProcessInstanceSubscriptionCommand
     extends SbeBufferWriterReader<
-        CloseWorkflowInstanceSubscriptionEncoder, CloseWorkflowInstanceSubscriptionDecoder> {
+        CloseProcessInstanceSubscriptionEncoder, CloseProcessInstanceSubscriptionDecoder> {
 
-  private final CloseWorkflowInstanceSubscriptionEncoder encoder =
-      new CloseWorkflowInstanceSubscriptionEncoder();
-  private final CloseWorkflowInstanceSubscriptionDecoder decoder =
-      new CloseWorkflowInstanceSubscriptionDecoder();
+  private final CloseProcessInstanceSubscriptionEncoder encoder =
+      new CloseProcessInstanceSubscriptionEncoder();
+  private final CloseProcessInstanceSubscriptionDecoder decoder =
+      new CloseProcessInstanceSubscriptionDecoder();
 
   private final DirectBuffer messageName = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
-  private long workflowInstanceKey;
+  private long processInstanceKey;
   private long elementInstanceKey;
 
   @Override
-  protected CloseWorkflowInstanceSubscriptionEncoder getBodyEncoder() {
+  protected CloseProcessInstanceSubscriptionEncoder getBodyEncoder() {
     return encoder;
   }
 
   @Override
-  protected CloseWorkflowInstanceSubscriptionDecoder getBodyDecoder() {
+  protected CloseProcessInstanceSubscriptionDecoder getBodyDecoder() {
     return decoder;
   }
 
   @Override
   public void reset() {
     subscriptionPartitionId =
-        CloseWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    workflowInstanceKey = CloseWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue();
-    elementInstanceKey = CloseWorkflowInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
+        CloseProcessInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
+    processInstanceKey = CloseProcessInstanceSubscriptionDecoder.processInstanceKeyNullValue();
+    elementInstanceKey = CloseProcessInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
     messageName.wrap(0, 0);
   }
 
   @Override
   public int getLength() {
     return super.getLength()
-        + CloseWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength()
+        + CloseProcessInstanceSubscriptionDecoder.messageNameHeaderLength()
         + messageName.capacity();
   }
 
@@ -58,7 +58,7 @@ public final class CloseWorkflowInstanceSubscriptionCommand
 
     encoder
         .subscriptionPartitionId(subscriptionPartitionId)
-        .workflowInstanceKey(workflowInstanceKey)
+        .processInstanceKey(processInstanceKey)
         .elementInstanceKey(elementInstanceKey)
         .putMessageName(messageName, 0, messageName.capacity());
   }
@@ -68,7 +68,7 @@ public final class CloseWorkflowInstanceSubscriptionCommand
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
-    workflowInstanceKey = decoder.workflowInstanceKey();
+    processInstanceKey = decoder.processInstanceKey();
     elementInstanceKey = decoder.elementInstanceKey();
     decoder.wrapMessageName(messageName);
   }
@@ -81,12 +81,12 @@ public final class CloseWorkflowInstanceSubscriptionCommand
     this.subscriptionPartitionId = subscriptionPartitionId;
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(final long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public long getElementInstanceKey() {

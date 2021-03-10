@@ -39,7 +39,7 @@ public final class IncidentTest {
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
-  private long workflowKey;
+  private long processDefinitionKey;
   private String jobType;
 
   @Before
@@ -47,14 +47,14 @@ public final class IncidentTest {
 
     jobType = helper.getJobType();
 
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "failingTask", t -> t.zeebeJobType(jobType).zeebeInputExpression("foo", "foo"))
             .done();
 
-    workflowKey = CLIENT_RULE.deployWorkflow(workflow);
+    processDefinitionKey = CLIENT_RULE.deployProcess(process);
   }
 
   @Test
@@ -78,7 +78,7 @@ public final class IncidentTest {
   @Test
   public void shouldResolveIncident() {
     // given
-    final long workflowInstanceKey = CLIENT_RULE.createWorkflowInstance(workflowKey);
+    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(CREATED).getFirst();
@@ -86,7 +86,7 @@ public final class IncidentTest {
     // when
     CLIENT_RULE
         .getClient()
-        .newSetVariablesCommand(workflowInstanceKey)
+        .newSetVariablesCommand(processInstanceKey)
         .variables(Map.of("foo", "bar"))
         .send()
         .join();
@@ -101,7 +101,7 @@ public final class IncidentTest {
   @Test
   public void shouldRejectDuplicateResolving() {
     // given
-    final long workflowInstanceKey = CLIENT_RULE.createWorkflowInstance(workflowKey);
+    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(CREATED).getFirst();
@@ -109,7 +109,7 @@ public final class IncidentTest {
     // when
     CLIENT_RULE
         .getClient()
-        .newSetVariablesCommand(workflowInstanceKey)
+        .newSetVariablesCommand(processInstanceKey)
         .variables(Map.of("foo", "bar"))
         .send()
         .join();

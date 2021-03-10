@@ -7,48 +7,48 @@
  */
 package io.zeebe.gateway.impl.broker.request;
 
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerCreateWorkflowInstanceRequest
-    extends BrokerExecuteCommand<WorkflowInstanceCreationRecord> {
+public class BrokerCreateProcessInstanceRequest
+    extends BrokerExecuteCommand<ProcessInstanceCreationRecord> {
 
-  private final WorkflowInstanceCreationRecord requestDto = new WorkflowInstanceCreationRecord();
+  private final ProcessInstanceCreationRecord requestDto = new ProcessInstanceCreationRecord();
 
-  public BrokerCreateWorkflowInstanceRequest() {
-    super(ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE);
+  public BrokerCreateProcessInstanceRequest() {
+    super(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE);
   }
 
-  public BrokerCreateWorkflowInstanceRequest setBpmnProcessId(final String bpmnProcessId) {
+  public BrokerCreateProcessInstanceRequest setBpmnProcessId(final String bpmnProcessId) {
     requestDto.setBpmnProcessId(bpmnProcessId);
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceRequest setKey(final long key) {
-    requestDto.setWorkflowKey(key);
+  public BrokerCreateProcessInstanceRequest setKey(final long key) {
+    requestDto.setProcessDefinitionKey(key);
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceRequest setVersion(final int version) {
+  public BrokerCreateProcessInstanceRequest setVersion(final int version) {
     requestDto.setVersion(version);
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceRequest setVariables(final DirectBuffer variables) {
+  public BrokerCreateProcessInstanceRequest setVariables(final DirectBuffer variables) {
     requestDto.setVariables(variables);
     return this;
   }
 
   @Override
-  public WorkflowInstanceCreationRecord getRequestWriter() {
+  public ProcessInstanceCreationRecord getRequestWriter() {
     return requestDto;
   }
 
   @Override
-  protected WorkflowInstanceCreationRecord toResponseDto(final DirectBuffer buffer) {
-    final WorkflowInstanceCreationRecord responseDto = new WorkflowInstanceCreationRecord();
+  protected ProcessInstanceCreationRecord toResponseDto(final DirectBuffer buffer) {
+    final ProcessInstanceCreationRecord responseDto = new ProcessInstanceCreationRecord();
     responseDto.wrap(buffer);
     return responseDto;
   }

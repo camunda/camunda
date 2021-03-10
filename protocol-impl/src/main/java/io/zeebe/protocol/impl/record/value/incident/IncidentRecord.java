@@ -12,7 +12,7 @@ import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
@@ -24,8 +24,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
-  private final LongProperty workflowKeyProp = new LongProperty("workflowKey", -1L);
-  private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
+  private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey", -1L);
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
@@ -35,8 +35,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
         .declareProperty(bpmnProcessIdProp)
-        .declareProperty(workflowKeyProp)
-        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(processDefinitionKeyProp)
+        .declareProperty(processInstanceKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(jobKeyProp)
@@ -47,22 +47,22 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     errorTypeProp.setValue(record.getErrorType());
     errorMessageProp.setValue(record.getErrorMessage());
     bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
-    workflowKeyProp.setValue(record.getWorkflowKey());
-    workflowInstanceKeyProp.setValue(record.getWorkflowInstanceKey());
+    processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
+    processInstanceKeyProp.setValue(record.getProcessInstanceKey());
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     jobKeyProp.setValue(record.getJobKey());
     variableScopeKeyProp.setValue(record.getVariableScopeKey());
   }
 
-  public IncidentRecord initFromWorkflowInstanceFailure(
-      final long key, final WorkflowInstanceRecord workflowInstanceEvent) {
+  public IncidentRecord initFromProcessInstanceFailure(
+      final long key, final ProcessInstanceRecord processInstanceEvent) {
 
     setElementInstanceKey(key);
-    setBpmnProcessId(workflowInstanceEvent.getBpmnProcessIdBuffer());
-    setWorkflowKey(workflowInstanceEvent.getWorkflowKey());
-    setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey());
-    setElementId(workflowInstanceEvent.getElementIdBuffer());
+    setBpmnProcessId(processInstanceEvent.getBpmnProcessIdBuffer());
+    setProcessDefinitionKey(processInstanceEvent.getProcessDefinitionKey());
+    setProcessInstanceKey(processInstanceEvent.getProcessInstanceKey());
+    setElementId(processInstanceEvent.getElementIdBuffer());
     setVariableScopeKey(key);
 
     return this;
@@ -103,12 +103,12 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
-  public long getWorkflowKey() {
-    return workflowKeyProp.getValue();
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProp.getValue();
   }
 
-  public IncidentRecord setWorkflowKey(final long workflowKey) {
-    workflowKeyProp.setValue(workflowKey);
+  public IncidentRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
   }
 
@@ -164,12 +164,12 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
-  public IncidentRecord setWorkflowInstanceKey(final long workflowInstanceKey) {
-    workflowInstanceKeyProp.setValue(workflowInstanceKey);
+  public IncidentRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
 }

@@ -45,12 +45,12 @@ public final class SetVariablesTest {
 
   @Rule public BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
-  private long workflowKey;
+  private long processDefinitionKey;
 
   @Before
   public void init() {
-    workflowKey =
-        CLIENT_RULE.deployWorkflow(
+    processDefinitionKey =
+        CLIENT_RULE.deployProcess(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .serviceTask("task", t -> t.zeebeJobType("test"))
@@ -60,13 +60,13 @@ public final class SetVariablesTest {
   @Test
   public void shouldSetVariables() {
     // given
-    final long workflowInstanceKey = CLIENT_RULE.createWorkflowInstance(workflowKey);
+    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
 
     // when
     final SetVariablesResponse response =
         CLIENT_RULE
             .getClient()
-            .newSetVariablesCommand(workflowInstanceKey)
+            .newSetVariablesCommand(processInstanceKey)
             .variables(Map.of("foo", "bar"))
             .send()
             .join();
@@ -84,12 +84,12 @@ public final class SetVariablesTest {
   @Test
   public void shouldSetVariablesWithNullVariables() {
     // given
-    final long workflowInstanceKey = CLIENT_RULE.createWorkflowInstance(workflowKey);
+    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
 
     // when
     CLIENT_RULE
         .getClient()
-        .newSetVariablesCommand(workflowInstanceKey)
+        .newSetVariablesCommand(processInstanceKey)
         .variables("null")
         .send()
         .join();
@@ -102,11 +102,11 @@ public final class SetVariablesTest {
   @Test
   public void shouldRejectIfVariablesAreInvalid() {
     // given
-    final long workflowInstanceKey = CLIENT_RULE.createWorkflowInstance(workflowKey);
+    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
 
     // when
     final var command =
-        CLIENT_RULE.getClient().newSetVariablesCommand(workflowInstanceKey).variables("[]").send();
+        CLIENT_RULE.getClient().newSetVariablesCommand(processInstanceKey).variables("[]").send();
 
     // then
     assertThatThrownBy(command::join)
@@ -116,17 +116,17 @@ public final class SetVariablesTest {
   }
 
   @Test
-  public void shouldRejectIfWorkflowInstanceIsEnded() {
+  public void shouldRejectIfProcessInstanceIsEnded() {
     // given
-    final long workflowInstanceKey = CLIENT_RULE.createWorkflowInstance(workflowKey);
+    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
 
-    CLIENT_RULE.getClient().newCancelInstanceCommand(workflowInstanceKey).send().join();
+    CLIENT_RULE.getClient().newCancelInstanceCommand(processInstanceKey).send().join();
 
     // when
     final var command =
         CLIENT_RULE
             .getClient()
-            .newSetVariablesCommand(workflowInstanceKey)
+            .newSetVariablesCommand(processInstanceKey)
             .variables(Map.of("foo", "bar"))
             .send();
 
@@ -134,7 +134,7 @@ public final class SetVariablesTest {
     final var expectedMessage =
         String.format(
             "Expected to update variables for element with key '%d', but no such element was found",
-            workflowInstanceKey);
+            processInstanceKey);
 
     assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
@@ -146,11 +146,11 @@ public final class SetVariablesTest {
     // given
 
     // when
-    final int workflowInstanceKey = 0;
+    final int processInstanceKey = 0;
     final var command =
         CLIENT_RULE
             .getClient()
-            .newSetVariablesCommand(workflowInstanceKey)
+            .newSetVariablesCommand(processInstanceKey)
             .variables(Map.of("foo", "bar"))
             .requestTimeout(Duration.ofSeconds(60))
             .send();

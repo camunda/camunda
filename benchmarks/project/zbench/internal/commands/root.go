@@ -54,7 +54,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "zbench",
 	Short: "zeebe benchmark application",
-	Long:  `zbench is command line interface designed to start a Zeebe workflow at a regular interval, and complete them`,
+	Long:  `zbench is command line interface designed to start a Zeebe process at a regular interval, and complete them`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// silence help here instead of as a parameter because we only want to suppress it on a 'Zeebe' error and not if
 		// parsing args fails

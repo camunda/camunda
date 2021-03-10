@@ -229,7 +229,7 @@ public class SingleBrokerDataDeletionTest {
     clusteringRule
         .getClient()
         .newDeployCommand()
-        .addWorkflowModel(
+        .addProcessModel(
             Bpmn.createExecutableProcess("process").startEvent().done(), "process.bpmn")
         .send()
         .join();

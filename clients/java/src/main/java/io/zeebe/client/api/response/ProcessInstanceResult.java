@@ -17,35 +17,35 @@ package io.zeebe.client.api.response;
 
 import java.util.Map;
 
-public interface WorkflowInstanceResult {
-  /** Key of the workflow which this instance was created for */
-  long getWorkflowKey();
+public interface ProcessInstanceResult {
+  /** Key of the process which this instance was created for */
+  long getProcessDefinitionKey();
 
-  /** BPMN process id of the workflow which this instance was created for */
+  /** BPMN process id of the process which this instance was created for */
   String getBpmnProcessId();
 
-  /** Version of the workflow which this instance was created for */
+  /** Version of the process which this instance was created for */
   int getVersion();
 
-  /** Unique key of the created workflow instance on the partition */
-  long getWorkflowInstanceKey();
+  /** Unique key of the created process instance on the partition */
+  long getProcessInstanceKey();
 
   /**
-   * Variables returned after the workflow is completed.
+   * Variables returned after the process is completed.
    *
    * @return JSON-formatted variables
    */
   String getVariables();
 
   /**
-   * Variables returned after the workflow is completed.
+   * Variables returned after the process is completed.
    *
    * @return de-serialized variables as map
    */
   Map<String, Object> getVariablesAsMap();
 
   /**
-   * Variables returned after the workflow is completed.
+   * Variables returned after the process is completed.
    *
    * @return de-serialized variables as the given type
    */

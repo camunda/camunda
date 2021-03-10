@@ -13,7 +13,7 @@ import io.zeebe.el.ResultType;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.FlowNode;
@@ -29,9 +29,9 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
 
   @Override
   public void transform(final StartEvent element, final TransformContext context) {
-    final ExecutableWorkflow workflow = context.getCurrentWorkflow();
+    final ExecutableProcess process = context.getCurrentProcess();
     final ExecutableStartEvent startEvent =
-        workflow.getElementById(element.getId(), ExecutableStartEvent.class);
+        process.getElementById(element.getId(), ExecutableStartEvent.class);
 
     startEvent.setInterrupting(element.isInterrupting());
 
@@ -39,11 +39,11 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
       final FlowNode scope = (FlowNode) element.getScope();
 
       final ExecutableFlowElementContainer subprocess =
-          workflow.getElementById(scope.getId(), ExecutableFlowElementContainer.class);
+          process.getElementById(scope.getId(), ExecutableFlowElementContainer.class);
       subprocess.addStartEvent(startEvent);
     } else {
       // top-level start event
-      workflow.addStartEvent(startEvent);
+      process.addStartEvent(startEvent);
     }
 
     if (startEvent.isMessage() && element.getScope() instanceof Process) {

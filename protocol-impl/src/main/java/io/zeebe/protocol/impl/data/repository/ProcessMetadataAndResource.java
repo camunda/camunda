@@ -10,10 +10,10 @@ package io.zeebe.protocol.impl.data.repository;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
-public final class WorkflowMetadataAndResource extends WorkflowMetadata {
+public final class ProcessMetadataAndResource extends ProcessMetadata {
   private final StringProperty bpmnXmlProp = new StringProperty("bpmnXml");
 
-  public WorkflowMetadataAndResource() {
+  public ProcessMetadataAndResource() {
     super();
     declareProperty(bpmnXmlProp);
   }
@@ -22,12 +22,12 @@ public final class WorkflowMetadataAndResource extends WorkflowMetadata {
     return bpmnXmlProp.getValue();
   }
 
-  public WorkflowMetadataAndResource setBpmnXml(final String bpmnXml) {
+  public ProcessMetadataAndResource setBpmnXml(final String bpmnXml) {
     bpmnXmlProp.setValue(bpmnXml);
     return this;
   }
 
-  public WorkflowMetadataAndResource setBpmnXml(final DirectBuffer val) {
+  public ProcessMetadataAndResource setBpmnXml(final DirectBuffer val) {
     bpmnXmlProp.setValue(val);
     return this;
   }

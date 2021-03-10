@@ -7,50 +7,50 @@
  */
 package io.zeebe.engine.state.deployment;
 
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import org.agrona.DirectBuffer;
 
-public final class DeployedWorkflow {
-  private final ExecutableWorkflow workflow;
-  private final PersistedWorkflow persistedWorkflow;
+public final class DeployedProcess {
+  private final ExecutableProcess process;
+  private final PersistedProcess persistedProcess;
 
-  public DeployedWorkflow(
-      final ExecutableWorkflow workflow, final PersistedWorkflow persistedWorkflow) {
-    this.workflow = workflow;
-    this.persistedWorkflow = persistedWorkflow;
+  public DeployedProcess(
+      final ExecutableProcess process, final PersistedProcess persistedProcess) {
+    this.process = process;
+    this.persistedProcess = persistedProcess;
   }
 
   public DirectBuffer getResourceName() {
-    return persistedWorkflow.getResourceName();
+    return persistedProcess.getResourceName();
   }
 
-  public ExecutableWorkflow getWorkflow() {
-    return workflow;
+  public ExecutableProcess getProcess() {
+    return process;
   }
 
   public int getVersion() {
-    return persistedWorkflow.getVersion();
+    return persistedProcess.getVersion();
   }
 
   public long getKey() {
-    return persistedWorkflow.getKey();
+    return persistedProcess.getKey();
   }
 
   public DirectBuffer getResource() {
-    return persistedWorkflow.getResource();
+    return persistedProcess.getResource();
   }
 
   public DirectBuffer getBpmnProcessId() {
-    return persistedWorkflow.getBpmnProcessId();
+    return persistedProcess.getBpmnProcessId();
   }
 
   @Override
   public String toString() {
-    return "DeployedWorkflow{"
-        + "workflow="
-        + workflow
-        + ", persistedWorkflow="
-        + persistedWorkflow
+    return "DeployedProcess{"
+        + "process="
+        + process
+        + ", persistedProcess="
+        + persistedProcess
         + '}';
   }
 }

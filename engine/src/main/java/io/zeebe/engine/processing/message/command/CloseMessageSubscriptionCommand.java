@@ -22,7 +22,7 @@ public final class CloseMessageSubscriptionCommand
   private final DirectBuffer messageName = new UnsafeBuffer(0, 0);
 
   private int subscriptionPartitionId;
-  private long workflowInstanceKey;
+  private long processInstanceKey;
   private long elementInstanceKey;
 
   @Override
@@ -38,7 +38,7 @@ public final class CloseMessageSubscriptionCommand
   @Override
   public void reset() {
     subscriptionPartitionId = CloseMessageSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    workflowInstanceKey = CloseMessageSubscriptionDecoder.workflowInstanceKeyNullValue();
+    processInstanceKey = CloseMessageSubscriptionDecoder.processInstanceKeyNullValue();
     elementInstanceKey = CloseMessageSubscriptionDecoder.elementInstanceKeyNullValue();
     messageName.wrap(0, 0);
   }
@@ -56,7 +56,7 @@ public final class CloseMessageSubscriptionCommand
 
     encoder
         .subscriptionPartitionId(subscriptionPartitionId)
-        .workflowInstanceKey(workflowInstanceKey)
+        .processInstanceKey(processInstanceKey)
         .elementInstanceKey(elementInstanceKey)
         .putMessageName(messageName, 0, messageName.capacity());
   }
@@ -66,7 +66,7 @@ public final class CloseMessageSubscriptionCommand
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
-    workflowInstanceKey = decoder.workflowInstanceKey();
+    processInstanceKey = decoder.processInstanceKey();
     elementInstanceKey = decoder.elementInstanceKey();
     decoder.wrapMessageName(messageName);
   }
@@ -79,12 +79,12 @@ public final class CloseMessageSubscriptionCommand
     this.subscriptionPartitionId = subscriptionPartitionId;
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(final long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public long getElementInstanceKey() {

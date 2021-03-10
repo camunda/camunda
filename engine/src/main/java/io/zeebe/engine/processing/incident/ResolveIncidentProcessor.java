@@ -23,7 +23,7 @@ import io.zeebe.engine.state.mutable.MutableIncidentState;
 import io.zeebe.engine.state.mutable.MutableJobState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import java.util.function.Consumer;
@@ -37,14 +37,14 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private final TypedResponseWriter noopResponseWriter = new NoopResponseWriter();
 
   private final ZeebeState zeebeState;
-  private final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor;
+  private final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor;
 
   private final IncidentRecordWrapper incidentRecordWrapper = new IncidentRecordWrapper();
   private final JobErrorThrownProcessor jobErrorThrownProcessor;
 
   public ResolveIncidentProcessor(
       final ZeebeState zeebeState,
-      final TypedRecordProcessor<WorkflowInstanceRecord> bpmnStreamProcessor) {
+      final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     this.zeebeState = zeebeState;
     jobErrorThrownProcessor = new JobErrorThrownProcessor(zeebeState);
@@ -67,7 +67,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
       responseWriter.writeEventOnCommand(
           incidentKey, IncidentIntent.RESOLVED, incidentRecord, command);
 
-      // workflow / job is already cleared if canceled, then we simply delete without resolving
+      // process / job is already cleared if canceled, then we simply delete without resolving
       attemptToResolveIncident(responseWriter, streamWriter, sideEffect, incidentRecord);
     } else {
       rejectResolveCommand(command, responseWriter, streamWriter, incidentKey);
@@ -96,11 +96,11 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     if (isJobIncident) {
       attemptToSolveJobIncident(jobKey, streamWriter);
     } else {
-      attemptToContinueWorkflowProcessing(responseWriter, streamWriter, sideEffect, incidentRecord);
+      attemptToContinueProcessProcessing(responseWriter, streamWriter, sideEffect, incidentRecord);
     }
   }
 
-  private void attemptToContinueWorkflowProcessing(
+  private void attemptToContinueProcessProcessing(
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect,

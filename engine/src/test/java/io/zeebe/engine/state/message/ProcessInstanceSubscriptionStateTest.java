@@ -11,7 +11,7 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
@@ -22,21 +22,21 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class WorkflowInstanceSubscriptionStateTest {
+public final class ProcessInstanceSubscriptionStateTest {
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
-  private MutableWorkflowInstanceSubscriptionState state;
+  private MutableProcessInstanceSubscriptionState state;
 
   @Before
   public void setUp() {
-    state = stateRule.getZeebeState().getWorkflowInstanceSubscriptionState();
+    state = stateRule.getZeebeState().getProcessInstanceSubscriptionState();
   }
 
   @Test
   public void shouldNotExist() {
     // given
-    final WorkflowInstanceSubscription subscription = subscriptionWithElementInstanceKey(1);
+    final ProcessInstanceSubscription subscription = subscriptionWithElementInstanceKey(1);
     state.put(subscription);
 
     // when
@@ -50,7 +50,7 @@ public final class WorkflowInstanceSubscriptionStateTest {
   @Test
   public void shouldExistSubscription() {
     // given
-    final WorkflowInstanceSubscription subscription = subscriptionWithElementInstanceKey(1);
+    final ProcessInstanceSubscription subscription = subscriptionWithElementInstanceKey(1);
     state.put(subscription);
 
     // when
@@ -64,11 +64,11 @@ public final class WorkflowInstanceSubscriptionStateTest {
   @Test
   public void shouldNoVisitSubscriptionBeforeTime() {
     // given
-    final WorkflowInstanceSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
+    final ProcessInstanceSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
     state.put(subscription1);
     state.updateSentTime(subscription1, 1_000);
 
-    final WorkflowInstanceSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
+    final ProcessInstanceSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
     state.put(subscription2);
     state.updateSentTime(subscription2, 3_000);
 
@@ -82,11 +82,11 @@ public final class WorkflowInstanceSubscriptionStateTest {
   @Test
   public void shouldVisitSubscriptionBeforeTime() {
     // given
-    final WorkflowInstanceSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
+    final ProcessInstanceSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
     state.put(subscription1);
     state.updateSentTime(subscription1, 1_000);
 
-    final WorkflowInstanceSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
+    final ProcessInstanceSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
     state.put(subscription2);
     state.updateSentTime(subscription2, 3_000);
 
@@ -100,11 +100,11 @@ public final class WorkflowInstanceSubscriptionStateTest {
   @Test
   public void shouldFindSubscriptionBeforeTimeInOrder() {
     // given
-    final WorkflowInstanceSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
+    final ProcessInstanceSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
     state.put(subscription1);
     state.updateSentTime(subscription1, 1_000);
 
-    final WorkflowInstanceSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
+    final ProcessInstanceSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
     state.put(subscription2);
     state.updateSentTime(subscription2, 2_000);
 
@@ -118,10 +118,10 @@ public final class WorkflowInstanceSubscriptionStateTest {
   @Test
   public void shouldNotVisitSubscriptionIfOpened() {
     // given
-    final WorkflowInstanceSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
+    final ProcessInstanceSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
     state.put(subscription1);
 
-    final WorkflowInstanceSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
+    final ProcessInstanceSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
     state.put(subscription2);
     state.updateToOpenedState(subscription2, 3);
 
@@ -135,7 +135,7 @@ public final class WorkflowInstanceSubscriptionStateTest {
   @Test
   public void shouldUpdateSubscriptionSentTime() {
     // given
-    final WorkflowInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
+    final ProcessInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
     state.put(subscription);
 
     // when
@@ -159,7 +159,7 @@ public final class WorkflowInstanceSubscriptionStateTest {
   @Test
   public void shouldUpdateOpenState() {
     // given
-    final WorkflowInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
+    final ProcessInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
     state.put(subscription);
 
     Assertions.assertThat(subscription.isOpening()).isTrue();
@@ -185,7 +185,7 @@ public final class WorkflowInstanceSubscriptionStateTest {
   @Test
   public void shouldUpdateCloseState() {
     // given
-    final WorkflowInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
+    final ProcessInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
     state.put(subscription);
 
     state.updateToOpenedState(subscription, 3);
@@ -207,7 +207,7 @@ public final class WorkflowInstanceSubscriptionStateTest {
   @Test
   public void shouldRemoveSubscription() {
     // given
-    final WorkflowInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
+    final ProcessInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
     state.put(subscription);
     state.updateSentTime(subscription, 1_000);
 
@@ -228,7 +228,7 @@ public final class WorkflowInstanceSubscriptionStateTest {
   @Test
   public void shouldNotFailOnRemoveSubscriptionTwice() {
     // given
-    final WorkflowInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
+    final ProcessInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
     state.put(subscription);
 
     // when
@@ -272,25 +272,25 @@ public final class WorkflowInstanceSubscriptionStateTest {
             new Tuple<>(1L, wrapString("message1")), new Tuple<>(1L, wrapString("message2")));
   }
 
-  private WorkflowInstanceSubscription subscriptionWithElementInstanceKey(
+  private ProcessInstanceSubscription subscriptionWithElementInstanceKey(
       final long elementInstanceKey) {
     return subscription("handler", "messageName", "correlationKey", elementInstanceKey);
   }
 
-  private WorkflowInstanceSubscription subscription(
+  private ProcessInstanceSubscription subscription(
       final String name, final String correlationKey, final long elementInstanceKey) {
     return subscription("handler", name, correlationKey, elementInstanceKey);
   }
 
-  private WorkflowInstanceSubscription subscription(
+  private ProcessInstanceSubscription subscription(
       final String handlerId,
       final String name,
       final String correlationKey,
       final long elementInstanceKey) {
-    return new WorkflowInstanceSubscription(
+    return new ProcessInstanceSubscription(
         1L,
         elementInstanceKey,
-        wrapString("workflow"),
+        wrapString("process"),
         wrapString(handlerId),
         wrapString(name),
         wrapString(correlationKey),

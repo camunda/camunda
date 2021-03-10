@@ -31,7 +31,7 @@ public final class MultiPartitionRecoveryTest {
 
   private static final String PROCESS_ID = "process";
 
-  private static final BpmnModelInstance WORKFLOW =
+  private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
           .serviceTask("task", t -> t.zeebeJobType("foo"))
@@ -72,7 +72,7 @@ public final class MultiPartitionRecoveryTest {
         clientRule
             .getClient()
             .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+            .addProcessModel(PROCESS, "process.bpmn")
             .send()
             .join();
 
@@ -84,9 +84,9 @@ public final class MultiPartitionRecoveryTest {
   }
 
   @Test
-  public void shouldCreateWorkflowInstanceOnAllPartitionsAfterRestart() {
+  public void shouldCreateProcessInstanceOnAllPartitionsAfterRestart() {
     // given
-    deploy(WORKFLOW, "workflow.bpmn");
+    deploy(PROCESS, "process.bpmn");
 
     // when
     reprocessingTrigger.accept(this);
@@ -97,7 +97,7 @@ public final class MultiPartitionRecoveryTest {
     Awaitility.await("createInstancesOnAllPartitions")
         .until(
             () -> {
-              final var workflowInstanceEvent =
+              final var processInstanceEvent =
                   clientRule
                       .getClient()
                       .newCreateInstanceCommand()
@@ -106,8 +106,8 @@ public final class MultiPartitionRecoveryTest {
                       .send()
                       .join();
 
-              final var workflowInstanceKey = workflowInstanceEvent.getWorkflowInstanceKey();
-              final var partitionId = Protocol.decodePartitionId(workflowInstanceKey);
+              final var processInstanceKey = processInstanceEvent.getProcessInstanceKey();
+              final var partitionId = Protocol.decodePartitionId(processInstanceKey);
               partitionIds.remove(Integer.valueOf(partitionId));
               return partitionIds.isEmpty();
             });
@@ -117,9 +117,9 @@ public final class MultiPartitionRecoveryTest {
     clusteringRule.restartBroker(nodeId);
   }
 
-  private void deploy(final BpmnModelInstance workflow, final String s) {
+  private void deploy(final BpmnModelInstance process, final String s) {
     final DeploymentEvent deploymentEvent =
-        clientRule.getClient().newDeployCommand().addWorkflowModel(workflow, s).send().join();
+        clientRule.getClient().newDeployCommand().addProcessModel(process, s).send().join();
 
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }

@@ -481,9 +481,9 @@
         #     messageSubscription: false
         #     variable: true
         #     variableDocument: true
-        #     workflowInstance: true
-        #     workflowInstanceCreation: false
-        #     workflowInstanceSubscription: false
+        #     processInstance: true
+        #     processInstanceCreation: false
+        #     processInstanceSubscription: false
         #
         #     ignoreVariablesAbove: 32677
     # experimental

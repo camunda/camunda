@@ -74,15 +74,15 @@ public interface Record<T extends RecordValue> extends JsonSerializable, Cloneab
   /** @return the version of the broker that wrote this record */
   String getBrokerVersion();
 
-  /** @return the type of the record (e.g. job, workflow, workflow instance, etc.) */
+  /** @return the type of the record (e.g. job, process, process instance, etc.) */
   ValueType getValueType();
 
   /**
    * Returns the raw value of the record, which should implement one of the interfaces in the {@link
    * io.zeebe.exporter.record.value} package.
    *
-   * <p>The record value is essentially the record specific data, e.g. for a workflow instance
-   * creation event, it would contain information relevant to the workflow instance being created.
+   * <p>The record value is essentially the record specific data, e.g. for a process instance
+   * creation event, it would contain information relevant to the process instance being created.
    *
    * @return record value
    */

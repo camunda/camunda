@@ -87,26 +87,26 @@ public class DiskSpaceRecoveryTest {
   @Test
   public void shouldProcessTimersWhenDiskSpaceAvailableAgain() throws InterruptedException {
     // given
-    final BpmnModelInstance timerWorkflow =
+    final BpmnModelInstance timerProcess =
         Bpmn.createExecutableProcess("TimerProcess")
             .startEvent("start")
             .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT100S"))
             .endEvent("end")
             .done();
-    final long workflowKey = clientRule.deployWorkflow(timerWorkflow);
-    final long workflowInstanceKey = clientRule.createWorkflowInstance(workflowKey);
+    final long processDefinitionKey = clientRule.deployProcess(timerProcess);
+    final long processInstanceKey = clientRule.createProcessInstance(processDefinitionKey);
     Awaitility.await()
         .timeout(Duration.ofSeconds(60))
         .until(
             () ->
                 RecordingExporter.timerRecords(TimerIntent.CREATED)
-                    .withWorkflowInstanceKey(workflowInstanceKey)
+                    .withProcessInstanceKey(processInstanceKey)
                     .limit(1)
                     .exists());
 
     final var timerKey =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst()
             .getValue()
             .getElementInstanceKey();
@@ -129,26 +129,26 @@ public class DiskSpaceRecoveryTest {
 
     TimerRecordValueAssert.assertThat(
             RecordingExporter.timerRecords(TimerIntent.TRIGGER).getFirst().getValue())
-        .hasWorkflowInstanceKey(workflowInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey);
   }
 
   @Test
   public void shouldTimeoutActivatedJobsWhenDiskSpaceAvailableAgain() throws InterruptedException {
     // given
-    final BpmnModelInstance timerWorkflow =
+    final BpmnModelInstance timerProcess =
         Bpmn.createExecutableProcess("TimerProcess")
             .startEvent("start")
             .serviceTask("test", s -> s.zeebeJobType("timeout"))
             .endEvent("end")
             .done();
-    final long workflowKey = clientRule.deployWorkflow(timerWorkflow);
-    final long workflowInstanceKey = clientRule.createWorkflowInstance(workflowKey);
+    final long processDefinitionKey = clientRule.deployProcess(timerProcess);
+    final long processInstanceKey = clientRule.createProcessInstance(processDefinitionKey);
     Awaitility.await()
         .timeout(Duration.ofSeconds(60))
         .until(
             () ->
                 RecordingExporter.jobRecords(JobIntent.CREATED)
-                    .withWorkflowInstanceKey(workflowInstanceKey)
+                    .withProcessInstanceKey(processInstanceKey)
                     .limit(1)
                     .exists());
 
@@ -180,7 +180,7 @@ public class DiskSpaceRecoveryTest {
         .until(
             () ->
                 RecordingExporter.jobRecords(JobIntent.TIME_OUT)
-                    .withWorkflowInstanceKey(workflowInstanceKey)
+                    .withProcessInstanceKey(processInstanceKey)
                     .limit(1)
                     .exists());
 

@@ -17,50 +17,50 @@ package io.zeebe.client.impl.command;
 
 import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.command.CancelWorkflowInstanceCommandStep1;
+import io.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.zeebe.client.api.command.FinalCommandStep;
-import io.zeebe.client.api.response.CancelWorkflowInstanceResponse;
+import io.zeebe.client.api.response.CancelProcessInstanceResponse;
 import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest.Builder;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest.Builder;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public final class CancelWorkflowInstanceCommandImpl implements CancelWorkflowInstanceCommandStep1 {
+public final class CancelProcessInstanceCommandImpl implements CancelProcessInstanceCommandStep1 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;
   private final Predicate<Throwable> retryPredicate;
   private Duration requestTimeout;
 
-  public CancelWorkflowInstanceCommandImpl(
+  public CancelProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
-      final long workflowInstanceKey,
+      final long processInstanceKey,
       final Duration requestTimeout,
       final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
-    builder = CancelWorkflowInstanceRequest.newBuilder();
-    builder.setWorkflowInstanceKey(workflowInstanceKey);
+    builder = CancelProcessInstanceRequest.newBuilder();
+    builder.setProcessInstanceKey(processInstanceKey);
   }
 
   @Override
-  public FinalCommandStep<CancelWorkflowInstanceResponse> requestTimeout(
+  public FinalCommandStep<CancelProcessInstanceResponse> requestTimeout(
       final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
 
   @Override
-  public ZeebeFuture<CancelWorkflowInstanceResponse> send() {
-    final CancelWorkflowInstanceRequest request = builder.build();
+  public ZeebeFuture<CancelProcessInstanceResponse> send() {
+    final CancelProcessInstanceRequest request = builder.build();
 
     final RetriableClientFutureImpl<
-            CancelWorkflowInstanceResponse, GatewayOuterClass.CancelWorkflowInstanceResponse>
+            CancelProcessInstanceResponse, GatewayOuterClass.CancelProcessInstanceResponse>
         future =
             new RetriableClientFutureImpl<>(
                 retryPredicate, streamObserver -> send(request, streamObserver));
@@ -70,10 +70,10 @@ public final class CancelWorkflowInstanceCommandImpl implements CancelWorkflowIn
   }
 
   private void send(
-      final CancelWorkflowInstanceRequest request,
-      final StreamObserver<GatewayOuterClass.CancelWorkflowInstanceResponse> future) {
+      final CancelProcessInstanceRequest request,
+      final StreamObserver<GatewayOuterClass.CancelProcessInstanceResponse> future) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
-        .cancelWorkflowInstance(request, future);
+        .cancelProcessInstance(request, future);
   }
 }

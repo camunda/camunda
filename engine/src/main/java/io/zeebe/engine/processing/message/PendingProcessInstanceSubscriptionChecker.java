@@ -8,20 +8,20 @@
 package io.zeebe.engine.processing.message;
 
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
-import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
+import io.zeebe.engine.state.message.ProcessInstanceSubscription;
+import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
 import io.zeebe.util.sched.clock.ActorClock;
 
-public final class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
+public final class PendingProcessInstanceSubscriptionChecker implements Runnable {
 
   private final SubscriptionCommandSender commandSender;
-  private final MutableWorkflowInstanceSubscriptionState subscriptionState;
+  private final MutableProcessInstanceSubscriptionState subscriptionState;
 
   private final long subscriptionTimeout;
 
-  public PendingWorkflowInstanceSubscriptionChecker(
+  public PendingProcessInstanceSubscriptionChecker(
       final SubscriptionCommandSender commandSender,
-      final MutableWorkflowInstanceSubscriptionState subscriptionState,
+      final MutableProcessInstanceSubscriptionState subscriptionState,
       final long subscriptionTimeout) {
     this.commandSender = commandSender;
     this.subscriptionState = subscriptionState;
@@ -35,7 +35,7 @@ public final class PendingWorkflowInstanceSubscriptionChecker implements Runnabl
         ActorClock.currentTimeMillis() - subscriptionTimeout, this::sendCommand);
   }
 
-  private boolean sendCommand(final WorkflowInstanceSubscription subscription) {
+  private boolean sendCommand(final ProcessInstanceSubscription subscription) {
     final boolean success;
 
     // can only be opening/closing as an opened subscription is not indexed in the sent time column
@@ -52,10 +52,10 @@ public final class PendingWorkflowInstanceSubscriptionChecker implements Runnabl
     return success;
   }
 
-  private boolean sendOpenCommand(final WorkflowInstanceSubscription subscription) {
+  private boolean sendOpenCommand(final ProcessInstanceSubscription subscription) {
     return commandSender.openMessageSubscription(
         subscription.getSubscriptionPartitionId(),
-        subscription.getWorkflowInstanceKey(),
+        subscription.getProcessInstanceKey(),
         subscription.getElementInstanceKey(),
         subscription.getBpmnProcessId(),
         subscription.getMessageName(),
@@ -63,10 +63,10 @@ public final class PendingWorkflowInstanceSubscriptionChecker implements Runnabl
         subscription.shouldCloseOnCorrelate());
   }
 
-  private boolean sendCloseCommand(final WorkflowInstanceSubscription subscription) {
+  private boolean sendCloseCommand(final ProcessInstanceSubscription subscription) {
     return commandSender.closeMessageSubscription(
         subscription.getSubscriptionPartitionId(),
-        subscription.getWorkflowInstanceKey(),
+        subscription.getProcessInstanceKey(),
         subscription.getElementInstanceKey(),
         subscription.getMessageName());
   }

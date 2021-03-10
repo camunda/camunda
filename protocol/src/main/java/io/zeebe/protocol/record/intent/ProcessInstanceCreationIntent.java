@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.record.intent;
 
-public enum WorkflowInstanceCreationIntent implements Intent, WorkflowInstanceRelatedIntent {
+public enum ProcessInstanceCreationIntent implements Intent, ProcessInstanceRelatedIntent {
   CREATE(0, false),
   CREATED(1, true),
   CREATE_WITH_AWAITING_RESULT(2, false);
@@ -23,11 +23,11 @@ public enum WorkflowInstanceCreationIntent implements Intent, WorkflowInstanceRe
   private final short value;
   private final boolean shouldBlacklist;
 
-  WorkflowInstanceCreationIntent(final int value, final boolean shouldBlacklist) {
+  ProcessInstanceCreationIntent(final int value, final boolean shouldBlacklist) {
     this((short) value, shouldBlacklist);
   }
 
-  WorkflowInstanceCreationIntent(final short value, final boolean shouldBlacklist) {
+  ProcessInstanceCreationIntent(final short value, final boolean shouldBlacklist) {
     this.value = value;
     this.shouldBlacklist = shouldBlacklist;
   }

@@ -19,8 +19,8 @@ import io.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
-import io.zeebe.engine.state.deployment.DeployedWorkflow;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.engine.state.deployment.DeployedProcess;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.util.Either;
 import io.zeebe.util.buffer.BufferUtil;
@@ -61,22 +61,22 @@ public final class CallActivityProcessor
         .applyInputMappings(context, element)
         .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
         .flatMap(ok -> evaluateProcessId(context, element))
-        .flatMap(this::getWorkflowForProcessId)
-        .flatMap(this::checkWorkflowHasNoneStartEvent)
+        .flatMap(this::getProcessForProcessId)
+        .flatMap(this::checkProcessHasNoneStartEvent)
         .ifRightOrLeft(
-            workflow -> {
+            process -> {
               stateTransitionBehavior.transitionToActivated(context);
 
-              final var childWorkflowInstanceKey =
-                  stateTransitionBehavior.createChildProcessInstance(workflow, context);
+              final var childProcessInstanceKey =
+                  stateTransitionBehavior.createChildProcessInstance(process, context);
 
               final var callActivityInstance = stateBehavior.getElementInstance(context);
-              callActivityInstance.setCalledChildInstanceKey(childWorkflowInstanceKey);
+              callActivityInstance.setCalledChildInstanceKey(childProcessInstanceKey);
               stateBehavior.updateElementInstance(callActivityInstance);
 
               final var callActivityInstanceKey = context.getElementInstanceKey();
-              stateBehavior.copyVariablesToWorkflowInstance(
-                  callActivityInstanceKey, childWorkflowInstanceKey, workflow);
+              stateBehavior.copyVariablesToProcessInstance(
+                  callActivityInstanceKey, childProcessInstanceKey, process);
             },
             failure -> incidentBehavior.createIncident(failure, context));
   }
@@ -159,7 +159,7 @@ public final class CallActivityProcessor
       final BpmnElementContext callActivityContext,
       final BpmnElementContext childContext) {
     final var currentState = callActivityContext.getIntent();
-    if (currentState == WorkflowInstanceIntent.ELEMENT_TERMINATING) {
+    if (currentState == ProcessInstanceIntent.ELEMENT_TERMINATING) {
       stateTransitionBehavior.transitionToTerminated(callActivityContext);
     } else {
       final var message = String.format(UNABLE_TO_TERMINATE_FROM_STATE_MESSAGE, currentState);
@@ -175,29 +175,29 @@ public final class CallActivityProcessor
         processIdExpression, scopeKey);
   }
 
-  private Either<Failure, DeployedWorkflow> getWorkflowForProcessId(final DirectBuffer processId) {
-    final var workflow = stateBehavior.getLatestWorkflowVersion(processId);
-    if (workflow.isPresent()) {
-      return Either.right(workflow.get());
+  private Either<Failure, DeployedProcess> getProcessForProcessId(final DirectBuffer processId) {
+    final var process = stateBehavior.getLatestProcessVersion(processId);
+    if (process.isPresent()) {
+      return Either.right(process.get());
     }
     return Either.left(
         new Failure(
             String.format(
-                "Expected workflow with BPMN process id '%s' to be deployed, but not found.",
+                "Expected process with BPMN process id '%s' to be deployed, but not found.",
                 BufferUtil.bufferAsString(processId)),
             ErrorType.CALLED_ELEMENT_ERROR));
   }
 
-  private Either<Failure, DeployedWorkflow> checkWorkflowHasNoneStartEvent(
-      final DeployedWorkflow workflow) {
-    if (workflow.getWorkflow().getNoneStartEvent() == null) {
+  private Either<Failure, DeployedProcess> checkProcessHasNoneStartEvent(
+      final DeployedProcess process) {
+    if (process.getProcess().getNoneStartEvent() == null) {
       return Either.left(
           new Failure(
               String.format(
-                  "Expected workflow with BPMN process id '%s' to have a none start event, but not found.",
-                  BufferUtil.bufferAsString(workflow.getBpmnProcessId())),
+                  "Expected process with BPMN process id '%s' to have a none start event, but not found.",
+                  BufferUtil.bufferAsString(process.getBpmnProcessId())),
               ErrorType.CALLED_ELEMENT_ERROR));
     }
-    return Either.right(workflow);
+    return Either.right(process);
   }
 }

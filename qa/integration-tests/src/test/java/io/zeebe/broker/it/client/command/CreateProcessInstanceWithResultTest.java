@@ -17,7 +17,7 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.response.ActivateJobsResponse;
-import io.zeebe.client.api.response.WorkflowInstanceResult;
+import io.zeebe.client.api.response.ProcessInstanceResult;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.intent.JobIntent;
@@ -31,7 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public final class CreateWorkflowInstanceWithResultTest {
+public final class CreateProcessInstanceWithResultTest {
 
   private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
@@ -42,42 +42,42 @@ public final class CreateWorkflowInstanceWithResultTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   private String processId;
-  private long workflowKey;
+  private long processDefinitionKey;
   private String jobType;
 
   @Before
   public void deployProcess() {
     processId = helper.getBpmnProcessId();
-    workflowKey =
-        CLIENT_RULE.deployWorkflow(Bpmn.createExecutableProcess(processId).startEvent("v1").done());
+    processDefinitionKey =
+        CLIENT_RULE.deployProcess(Bpmn.createExecutableProcess(processId).startEvent("v1").done());
     jobType = helper.getJobType();
   }
 
   @Test
-  public void shouldCreateWorkflowInstanceAwaitResults() {
+  public void shouldCreateProcessInstanceAwaitResults() {
     final Map<String, Object> variables = Maps.of(entry("foo", "bar"));
-    final WorkflowInstanceResult result = createWorkflowInstanceWithVariables(variables).join();
+    final ProcessInstanceResult result = createProcessInstanceWithVariables(variables).join();
 
     assertThat(result.getBpmnProcessId()).isEqualTo(processId);
-    assertThat(result.getWorkflowKey()).isEqualTo(workflowKey);
+    assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(result.getVariablesAsMap()).containsExactly(entry("foo", "bar"));
   }
 
   @Test
-  public void shouldCreateWorkflowInstanceAwaitResultsWithNoVariables() {
+  public void shouldCreateProcessInstanceAwaitResultsWithNoVariables() {
     // given
-    final WorkflowInstanceResult result =
+    final ProcessInstanceResult result =
         CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
-            .workflowKey(workflowKey)
+            .processDefinitionKey(processDefinitionKey)
             .withResult()
             .send()
             .join();
 
     // then
     assertThat(result.getBpmnProcessId()).isEqualTo(processId);
-    assertThat(result.getWorkflowKey()).isEqualTo(workflowKey);
+    assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(result.getVariablesAsMap()).isEmpty();
   }
 
@@ -86,13 +86,13 @@ public final class CreateWorkflowInstanceWithResultTest {
     // given
     deployProcessWithJob();
     final Map<String, Object> variables = Maps.of(entry("foo", "bar"));
-    final ZeebeFuture<WorkflowInstanceResult> resultFuture =
-        createWorkflowInstanceWithVariables(variables);
+    final ZeebeFuture<ProcessInstanceResult> resultFuture =
+        createProcessInstanceWithVariables(variables);
 
     completeJobWithVariables(Map.of("x", "y"));
 
     // then
-    final WorkflowInstanceResult result = resultFuture.join();
+    final ProcessInstanceResult result = resultFuture.join();
     assertThat(result.getBpmnProcessId()).isEqualTo(processId);
     assertThat(result.getVariablesAsMap())
         .containsExactlyInAnyOrderEntriesOf(Map.of("foo", "bar", "x", "y"));
@@ -115,41 +115,41 @@ public final class CreateWorkflowInstanceWithResultTest {
                 })
             .endEvent()
             .done();
-    workflowKey = CLIENT_RULE.deployWorkflow(processWithVariableScopes);
+    processDefinitionKey = CLIENT_RULE.deployProcess(processWithVariableScopes);
 
-    final ZeebeFuture<WorkflowInstanceResult> resultFuture =
-        createWorkflowInstanceWithVariables(Map.of("x", "1"));
+    final ZeebeFuture<ProcessInstanceResult> resultFuture =
+        createProcessInstanceWithVariables(Map.of("x", "1"));
 
     // when
     completeJobWithVariables(Map.of("y", "2"));
 
     // then
-    final WorkflowInstanceResult result = resultFuture.join();
+    final ProcessInstanceResult result = resultFuture.join();
     assertThat(result.getBpmnProcessId()).isEqualTo(processId);
-    assertThat(result.getWorkflowKey()).isEqualTo(workflowKey);
+    assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(result.getVariablesAsMap()).containsExactly(entry("x", "1"));
   }
 
   @Test
-  public void shouldReceiveRejectionCreateWorkflowInstanceAwaitResults() {
+  public void shouldReceiveRejectionCreateProcessInstanceAwaitResults() {
     final var command =
-        CLIENT_RULE.getClient().newCreateInstanceCommand().workflowKey(123L).withResult().send();
+        CLIENT_RULE.getClient().newCreateInstanceCommand().processDefinitionKey(123L).withResult().send();
 
     assertThatThrownBy(() -> command.join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
-            "Expected to find workflow definition with key '123', but none found");
+            "Expected to find process definition with key '123', but none found");
   }
 
   @Test
-  public void shouldCreateWorkflowInstanceAwaitResultsWithFetchVariables() {
+  public void shouldCreateProcessInstanceAwaitResultsWithFetchVariables() {
     // when
     final Map<String, Object> variables = Map.of("x", "foo", "y", "bar");
-    final WorkflowInstanceResult result =
+    final ProcessInstanceResult result =
         CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
-            .workflowKey(workflowKey)
+            .processDefinitionKey(processDefinitionKey)
             .variables(variables)
             .withResult()
             .fetchVariables("y")
@@ -158,16 +158,16 @@ public final class CreateWorkflowInstanceWithResultTest {
 
     // then
     assertThat(result.getBpmnProcessId()).isEqualTo(processId);
-    assertThat(result.getWorkflowKey()).isEqualTo(workflowKey);
+    assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(result.getVariablesAsMap()).containsExactly(entry("y", "bar"));
   }
 
-  private ZeebeFuture<WorkflowInstanceResult> createWorkflowInstanceWithVariables(
+  private ZeebeFuture<ProcessInstanceResult> createProcessInstanceWithVariables(
       final Map<String, Object> variables) {
     return CLIENT_RULE
         .getClient()
         .newCreateInstanceCommand()
-        .workflowKey(workflowKey)
+        .processDefinitionKey(processDefinitionKey)
         .variables(variables)
         .withResult()
         .send();
@@ -175,8 +175,8 @@ public final class CreateWorkflowInstanceWithResultTest {
 
   private void deployProcessWithJob() {
     processId = helper.getBpmnProcessId();
-    workflowKey =
-        CLIENT_RULE.deployWorkflow(
+    processDefinitionKey =
+        CLIENT_RULE.deployProcess(
             Bpmn.createExecutableProcess(processId)
                 .startEvent("v1")
                 .serviceTask(

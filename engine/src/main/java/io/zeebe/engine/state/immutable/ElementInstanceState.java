@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.state.immutable;
 
-import io.zeebe.engine.state.instance.AwaitWorkflowInstanceResultMetadata;
+import io.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.engine.state.instance.StoredRecord;
@@ -25,5 +25,5 @@ public interface ElementInstanceState {
 
   IndexedRecord getFailedRecord(long key);
 
-  AwaitWorkflowInstanceResultMetadata getAwaitResultRequestMetadata(long workflowInstanceKey);
+  AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(long processInstanceKey);
 }

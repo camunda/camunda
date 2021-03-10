@@ -24,12 +24,12 @@ import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
 import org.agrona.DirectBuffer;
@@ -44,7 +44,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   public static final String NO_CATCH_EVENT_FOUND = "NO_CATCH_EVENT_FOUND";
 
   private final IncidentRecord incidentEvent = new IncidentRecord();
-  private final WorkflowInstanceRecord eventOccurredRecord = new WorkflowInstanceRecord();
+  private final ProcessInstanceRecord eventOccurredRecord = new ProcessInstanceRecord();
 
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
@@ -63,7 +63,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
         new DefaultJobCommandPreconditionGuard<>(
             "throw an error for", jobState, this::acceptCommand);
 
-    stateAnalyzer = new CatchEventAnalyzer(state.getWorkflowState(), elementInstanceState);
+    stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
   }
 
   @Override
@@ -151,7 +151,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     }
 
     stateWriter.appendFollowUpEvent(
-        eventOccurredKey, WorkflowInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
+        eventOccurredKey, ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
   }
 
   private boolean isEventSubprocess(final ExecutableFlowElement catchEvent) {
@@ -176,8 +176,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
         .setErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .setErrorMessage(incidentErrorMessage)
         .setBpmnProcessId(job.getBpmnProcessIdBuffer())
-        .setWorkflowKey(job.getWorkflowKey())
-        .setWorkflowInstanceKey(job.getWorkflowInstanceKey())
+        .setProcessDefinitionKey(job.getProcessDefinitionKey())
+        .setProcessInstanceKey(job.getProcessInstanceKey())
         .setElementId(job.getElementIdBuffer())
         .setElementInstanceKey(job.getElementInstanceKey())
         .setJobKey(key)

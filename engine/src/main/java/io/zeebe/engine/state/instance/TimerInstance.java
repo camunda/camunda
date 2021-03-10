@@ -20,19 +20,19 @@ public final class TimerInstance extends UnpackedObject implements DbValue {
   public static final int NO_ELEMENT_INSTANCE = -1;
 
   private final StringProperty handlerNodeIdProp = new StringProperty("handlerNodeId", "");
-  private final LongProperty workflowKeyProp = new LongProperty("workflowKey", 0L);
+  private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey", 0L);
   private final LongProperty keyProp = new LongProperty("key", 0L);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", 0L);
-  private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", 0L);
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", 0L);
   private final LongProperty dueDateProp = new LongProperty("dueDate", 0L);
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions", 0);
 
   public TimerInstance() {
     declareProperty(handlerNodeIdProp)
-        .declareProperty(workflowKeyProp)
+        .declareProperty(processDefinitionKeyProp)
         .declareProperty(keyProp)
         .declareProperty(elementInstanceKeyProp)
-        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(processInstanceKeyProp)
         .declareProperty(dueDateProp)
         .declareProperty(repetitionsProp);
   }
@@ -77,20 +77,20 @@ public final class TimerInstance extends UnpackedObject implements DbValue {
     repetitionsProp.setValue(repetitions);
   }
 
-  public long getWorkflowKey() {
-    return workflowKeyProp.getValue();
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProp.getValue();
   }
 
-  public void setWorkflowKey(final long workflowKey) {
-    workflowKeyProp.setValue(workflowKey);
+  public void setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProp.setValue(processDefinitionKey);
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
-  public void setWorkflowInstanceKey(final long workflowInstanceKey) {
-    workflowInstanceKeyProp.setValue(workflowInstanceKey);
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
   }
 
   @Override

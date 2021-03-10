@@ -17,7 +17,7 @@ import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 
 public final class BpmnIncidentBehavior {
@@ -61,9 +61,9 @@ public final class BpmnIncidentBehavior {
 
     incidentCommand.reset();
     incidentCommand
-        .setWorkflowInstanceKey(context.getWorkflowInstanceKey())
+        .setProcessInstanceKey(context.getProcessInstanceKey())
         .setBpmnProcessId(context.getBpmnProcessId())
-        .setWorkflowKey(context.getWorkflowKey())
+        .setProcessDefinitionKey(context.getProcessDefinitionKey())
         .setElementInstanceKey(context.getElementInstanceKey())
         .setElementId(context.getElementId())
         .setVariableScopeKey(variableScopeKey)
@@ -84,26 +84,26 @@ public final class BpmnIncidentBehavior {
     streamWriter.appendNewCommand(IncidentIntent.CREATE, incidentCommand);
   }
 
-  private WorkflowInstanceIntent determineCommandIntent(final BpmnElementContext context) {
+  private ProcessInstanceIntent determineCommandIntent(final BpmnElementContext context) {
     if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
       return context.getIntent();
     } else {
-      if (context.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING) {
-        return WorkflowInstanceIntent.ACTIVATE_ELEMENT;
-      } else if (context.getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETING) {
-        return WorkflowInstanceIntent.COMPLETE_ELEMENT;
+      if (context.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING) {
+        return ProcessInstanceIntent.ACTIVATE_ELEMENT;
+      } else if (context.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETING) {
+        return ProcessInstanceIntent.COMPLETE_ELEMENT;
       }
     }
     throw new UnsupportedOperationException(
         String.format(
             "Expected to raise incident, but element state %s not one of incident supporting states %s %s",
             context.getIntent(),
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-            WorkflowInstanceIntent.ELEMENT_COMPLETING));
+            ProcessInstanceIntent.ELEMENT_ACTIVATING,
+            ProcessInstanceIntent.ELEMENT_COMPLETING));
   }
 
   public void resolveIncidents(final BpmnElementContext context) {
-    incidentState.forExistingWorkflowIncident(
+    incidentState.forExistingProcessIncident(
         context.getElementInstanceKey(),
         (record, key) -> streamWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, record));
   }

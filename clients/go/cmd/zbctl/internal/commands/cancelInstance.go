@@ -21,11 +21,11 @@ import (
 )
 
 type CancelInstanceResponseWrapper struct {
-	resp *pb.CancelWorkflowInstanceResponse
+	resp *pb.CancelProcessInstanceResponse
 }
 
 func (c CancelInstanceResponseWrapper) human() (string, error) {
-	return fmt.Sprint("Canceled workflow instance with key '", cancelInstanceKey, "'"), nil
+	return fmt.Sprint("Canceled process instance with key '", cancelInstanceKey, "'"), nil
 }
 
 func (c CancelInstanceResponseWrapper) json() (string, error) {
@@ -36,13 +36,13 @@ var cancelInstanceKey int64
 
 var cancelInstanceCmd = &cobra.Command{
 	Use:     "instance <key>",
-	Short:   "Cancel workflow instance by key",
+	Short:   "Cancel process instance by key",
 	Args:    keyArg(&cancelInstanceKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		zbCmd := client.
 			NewCancelInstanceCommand().
-			WorkflowInstanceKey(cancelInstanceKey)
+			ProcessInstanceKey(cancelInstanceKey)
 
 		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()

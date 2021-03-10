@@ -1,7 +1,7 @@
 {
   "metadata": {
     "intent": "START_EVENT_OCCURRED",
-    "valueType": "WORKFLOW_INSTANCE",
+    "valueType": "PROCESS_INSTANCE",
     "recordType": "EVENT",
     "partitionId": 1,
     "key": 4294967816,
@@ -13,8 +13,8 @@
   },
   "bpmnProcessId": "process",
   "version": 1,
-  "workflowKey": 1,
-  "workflowInstanceKey": 4294967408,
+  "processDefinitionKey": 1,
+  "processInstanceKey": 4294967408,
   "flowScopeKey": 123456,
   "elementId": "start",
   "variables": {

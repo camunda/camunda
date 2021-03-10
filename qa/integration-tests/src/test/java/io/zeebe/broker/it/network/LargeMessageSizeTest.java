@@ -42,7 +42,7 @@ public final class LargeMessageSizeTest {
 
   private String jobType;
 
-  private static BpmnModelInstance workflow(final String jobType) {
+  private static BpmnModelInstance process(final String jobType) {
     return Bpmn.createExecutableProcess("process")
         .startEvent()
         .serviceTask("task", t -> t.zeebeJobType(jobType))
@@ -56,58 +56,58 @@ public final class LargeMessageSizeTest {
   }
 
   @Test
-  public void shouldDeployLargeWorkflow() {
+  public void shouldDeployLargeProcess() {
     // given
-    final var workflowAsString = Bpmn.convertToString(workflow(jobType));
+    final var processAsString = Bpmn.convertToString(process(jobType));
     final var additionalChars = "<!--" + LARGE_TEXT + "-->";
-    final var largeWorkflow = workflowAsString + additionalChars;
+    final var largeProcess = processAsString + additionalChars;
 
     // when
     final var deployment =
         CLIENT_RULE
             .getClient()
             .newDeployCommand()
-            .addResourceStringUtf8(largeWorkflow, "process.bpmn")
+            .addResourceStringUtf8(largeProcess, "process.bpmn")
             .send()
             .join();
 
-    final var workflowKey = deployment.getWorkflows().get(0).getWorkflowKey();
+    final var processDefinitionKey = deployment.getProcesses().get(0).getProcessDefinitionKey();
 
     // then
-    final var workflowInstanceEvent =
-        CLIENT_RULE.getClient().newCreateInstanceCommand().workflowKey(workflowKey).send().join();
+    final var processInstanceEvent =
+        CLIENT_RULE.getClient().newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
-    ZeebeAssertHelper.assertWorkflowInstanceCreated(workflowInstanceEvent.getWorkflowInstanceKey());
+    ZeebeAssertHelper.assertProcessInstanceCreated(processInstanceEvent.getProcessInstanceKey());
   }
 
   @Test
   public void shouldCreateInstanceWithLargeVariables() {
     // given
-    final var workflowKey = CLIENT_RULE.deployWorkflow(workflow(jobType));
+    final var processDefinitionKey = CLIENT_RULE.deployProcess(process(jobType));
 
     // when
     final Map<String, Object> largeVariables = Map.of("largeVariable", LARGE_TEXT);
 
-    final var workflowInstanceEvent =
+    final var processInstanceEvent =
         CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
-            .workflowKey(workflowKey)
+            .processDefinitionKey(processDefinitionKey)
             .variables(largeVariables)
             .send()
             .join();
 
     // then
-    ZeebeAssertHelper.assertWorkflowInstanceCreated(workflowInstanceEvent.getWorkflowInstanceKey());
+    ZeebeAssertHelper.assertProcessInstanceCreated(processInstanceEvent.getProcessInstanceKey());
   }
 
   @Test
   public void shouldCompleteJobWithLargeVariables() {
     // given
-    final var workflowKey = CLIENT_RULE.deployWorkflow(workflow(jobType));
+    final var processDefinitionKey = CLIENT_RULE.deployProcess(process(jobType));
 
-    final var workflowInstanceEvent =
-        CLIENT_RULE.getClient().newCreateInstanceCommand().workflowKey(workflowKey).send().join();
+    final var processInstanceEvent =
+        CLIENT_RULE.getClient().newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // when
     final Map<String, Object> largeVariables = Map.of("largeVariable", LARGE_TEXT);
@@ -122,7 +122,7 @@ public final class LargeMessageSizeTest {
         .open();
 
     // then
-    ZeebeAssertHelper.assertWorkflowInstanceCompleted(
-        workflowInstanceEvent.getWorkflowInstanceKey());
+    ZeebeAssertHelper.assertProcessInstanceCompleted(
+        processInstanceEvent.getProcessInstanceKey());
   }
 }

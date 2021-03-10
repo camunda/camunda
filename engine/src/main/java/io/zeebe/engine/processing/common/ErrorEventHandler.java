@@ -11,7 +11,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
-import io.zeebe.engine.state.immutable.WorkflowState;
+import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import org.agrona.DirectBuffer;
@@ -25,13 +25,13 @@ public final class ErrorEventHandler {
   private final CatchEventAnalyzer stateAnalyzer;
 
   public ErrorEventHandler(
-      final WorkflowState workflowState,
+      final ProcessState processState,
       final ElementInstanceState elementInstanceState,
       final MutableEventScopeInstanceState eventScopeInstanceState,
       final KeyGenerator keyGenerator) {
 
     eventHandle = new EventHandle(keyGenerator, eventScopeInstanceState);
-    stateAnalyzer = new CatchEventAnalyzer(workflowState, elementInstanceState);
+    stateAnalyzer = new CatchEventAnalyzer(processState, elementInstanceState);
   }
 
   /**

@@ -11,37 +11,37 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
-import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
-import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.engine.state.message.ProcessInstanceSubscription;
+import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
 import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 
-public final class OpenWorkflowInstanceSubscriptionProcessor
-    implements TypedRecordProcessor<WorkflowInstanceSubscriptionRecord> {
+public final class OpenProcessInstanceSubscriptionProcessor
+    implements TypedRecordProcessor<ProcessInstanceSubscriptionRecord> {
 
   public static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
-      "Expected to open workflow instance subscription with element key '%d' and message name '%s', "
+      "Expected to open process instance subscription with element key '%d' and message name '%s', "
           + "but no such subscription was found";
   public static final String NOT_OPENING_MSG =
-      "Expected to open workflow instance subscription with element key '%d' and message name '%s', "
+      "Expected to open process instance subscription with element key '%d' and message name '%s', "
           + "but it is already %s";
-  private final MutableWorkflowInstanceSubscriptionState subscriptionState;
+  private final MutableProcessInstanceSubscriptionState subscriptionState;
 
-  public OpenWorkflowInstanceSubscriptionProcessor(
-      final MutableWorkflowInstanceSubscriptionState subscriptionState) {
+  public OpenProcessInstanceSubscriptionProcessor(
+      final MutableProcessInstanceSubscriptionState subscriptionState) {
     this.subscriptionState = subscriptionState;
   }
 
   @Override
   public void processRecord(
-      final TypedRecord<WorkflowInstanceSubscriptionRecord> record,
+      final TypedRecord<ProcessInstanceSubscriptionRecord> record,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter) {
 
-    final WorkflowInstanceSubscriptionRecord subscriptionRecord = record.getValue();
-    final WorkflowInstanceSubscription subscription =
+    final ProcessInstanceSubscriptionRecord subscriptionRecord = record.getValue();
+    final ProcessInstanceSubscription subscription =
         subscriptionState.getSubscription(
             subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
 
@@ -51,7 +51,7 @@ public final class OpenWorkflowInstanceSubscriptionProcessor
           subscription, subscription.getSubscriptionPartitionId());
 
       streamWriter.appendFollowUpEvent(
-          record.getKey(), WorkflowInstanceSubscriptionIntent.OPENED, subscriptionRecord);
+          record.getKey(), ProcessInstanceSubscriptionIntent.OPENED, subscriptionRecord);
 
     } else {
       final String messageName =

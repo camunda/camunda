@@ -5,38 +5,38 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.gateway.api.workflow;
+package io.zeebe.gateway.api.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.gateway.api.util.GatewayTest;
-import io.zeebe.gateway.impl.broker.request.BrokerCancelWorkflowInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
+import io.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import org.junit.Test;
 
-public final class CancelWorkflowInstanceTest extends GatewayTest {
+public final class CancelProcessInstanceTest extends GatewayTest {
 
   @Test
   public void shouldMapRequestAndResponse() {
     // given
-    final CancelWorkflowInstanceStub stub = new CancelWorkflowInstanceStub();
+    final CancelProcessInstanceStub stub = new CancelProcessInstanceStub();
     stub.registerWith(brokerClient);
 
-    final CancelWorkflowInstanceRequest request =
-        CancelWorkflowInstanceRequest.newBuilder().setWorkflowInstanceKey(123).build();
+    final CancelProcessInstanceRequest request =
+        CancelProcessInstanceRequest.newBuilder().setProcessInstanceKey(123).build();
 
     // when
-    final CancelWorkflowInstanceResponse response = client.cancelWorkflowInstance(request);
+    final CancelProcessInstanceResponse response = client.cancelProcessInstance(request);
 
     // then
     assertThat(response).isNotNull();
 
-    final BrokerCancelWorkflowInstanceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    final BrokerCancelProcessInstanceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getKey()).isEqualTo(123);
-    assertThat(brokerRequest.getIntent()).isEqualTo(WorkflowInstanceIntent.CANCEL);
-    assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE);
+    assertThat(brokerRequest.getIntent()).isEqualTo(ProcessInstanceIntent.CANCEL);
+    assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.PROCESS_INSTANCE);
   }
 }

@@ -25,9 +25,9 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.TimerInstanceState;
 import io.zeebe.engine.state.instance.TimerInstance;
-import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
+import io.zeebe.engine.state.message.ProcessInstanceSubscription;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -48,10 +48,10 @@ public final class CatchEventBehavior {
   private final int partitionsCount;
 
   private final MutableEventScopeInstanceState eventScopeInstanceState;
-  private final MutableWorkflowInstanceSubscriptionState workflowInstanceSubscriptionState;
+  private final MutableProcessInstanceSubscriptionState processInstanceSubscriptionState;
   private final TimerInstanceState timerInstanceState;
 
-  private final WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
+  private final ProcessInstanceSubscription subscription = new ProcessInstanceSubscription();
   private final TimerRecord timerRecord = new TimerRecord();
   private final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys = new HashMap<>();
   private final Map<DirectBuffer, Timer> evaluatedTimers = new HashMap<>();
@@ -67,7 +67,7 @@ public final class CatchEventBehavior {
 
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
     timerInstanceState = zeebeState.getTimerState();
-    workflowInstanceSubscriptionState = zeebeState.getWorkflowInstanceSubscriptionState();
+    processInstanceSubscriptionState = zeebeState.getProcessInstanceSubscriptionState();
   }
 
   public void unsubscribeFromEvents(
@@ -106,8 +106,8 @@ public final class CatchEventBehavior {
       if (event.isTimer()) {
         subscribeToTimerEvent(
             context.getElementInstanceKey(),
-            context.getWorkflowInstanceKey(),
-            context.getWorkflowKey(),
+            context.getProcessInstanceKey(),
+            context.getProcessDefinitionKey(),
             event.getId(),
             evaluatedTimers.get(event.getId()),
             streamWriter);
@@ -130,8 +130,8 @@ public final class CatchEventBehavior {
 
   public void subscribeToTimerEvent(
       final long elementInstanceKey,
-      final long workflowInstanceKey,
-      final long workflowKey,
+      final long processInstanceKey,
+      final long processDefinitionKey,
       final DirectBuffer handlerNodeId,
       final Timer timer,
       final TypedStreamWriter writer) {
@@ -140,9 +140,9 @@ public final class CatchEventBehavior {
         .setRepetitions(timer.getRepetitions())
         .setDueDate(timer.getDueDate(ActorClock.currentTimeMillis()))
         .setElementInstanceKey(elementInstanceKey)
-        .setWorkflowInstanceKey(workflowInstanceKey)
+        .setProcessInstanceKey(processInstanceKey)
         .setTargetElementId(handlerNodeId)
-        .setWorkflowKey(workflowKey);
+        .setProcessDefinitionKey(processDefinitionKey);
     writer.appendNewCommand(TimerIntent.CREATE, timerRecord);
   }
 
@@ -156,11 +156,11 @@ public final class CatchEventBehavior {
     timerRecord.reset();
     timerRecord
         .setElementInstanceKey(timer.getElementInstanceKey())
-        .setWorkflowInstanceKey(timer.getWorkflowInstanceKey())
+        .setProcessInstanceKey(timer.getProcessInstanceKey())
         .setDueDate(timer.getDueDate())
         .setRepetitions(timer.getRepetitions())
         .setTargetElementId(timer.getHandlerNodeId())
-        .setWorkflowKey(timer.getWorkflowKey());
+        .setProcessDefinitionKey(timer.getProcessDefinitionKey());
 
     writer.appendFollowUpCommand(timer.getKey(), TimerIntent.CANCEL, timerRecord);
   }
@@ -172,7 +172,7 @@ public final class CatchEventBehavior {
       final DirectBuffer extractedMessageName,
       final SideEffects sideEffects) {
 
-    final long workflowInstanceKey = context.getWorkflowInstanceKey();
+    final long processInstanceKey = context.getProcessInstanceKey();
     final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
     final long elementInstanceKey = context.getElementInstanceKey();
 
@@ -186,19 +186,19 @@ public final class CatchEventBehavior {
     subscription.setMessageName(messageName);
     subscription.setElementInstanceKey(elementInstanceKey);
     subscription.setCommandSentTime(ActorClock.currentTimeMillis());
-    subscription.setWorkflowInstanceKey(workflowInstanceKey);
+    subscription.setProcessInstanceKey(processInstanceKey);
     subscription.setBpmnProcessId(bpmnProcessId);
     subscription.setCorrelationKey(correlationKey);
     subscription.setTargetElementId(handler.getId());
     subscription.setCloseOnCorrelate(closeOnCorrelate);
     // todo(zell): phil will migrate this via writing the open subscription
-    workflowInstanceSubscriptionState.put(subscription);
+    processInstanceSubscriptionState.put(subscription);
 
     sideEffects.add(
         () ->
             sendOpenMessageSubscription(
                 subscriptionPartitionId,
-                workflowInstanceKey,
+                processInstanceKey,
                 elementInstanceKey,
                 bpmnProcessId,
                 messageName,
@@ -208,27 +208,27 @@ public final class CatchEventBehavior {
 
   private void unsubscribeFromMessageEvents(
       final BpmnElementContext context, final SideEffects sideEffects) {
-    workflowInstanceSubscriptionState.visitElementSubscriptions(
+    processInstanceSubscriptionState.visitElementSubscriptions(
         context.getElementInstanceKey(),
         subscription -> unsubscribeFromMessageEvent(subscription, sideEffects));
   }
 
   private boolean unsubscribeFromMessageEvent(
-      final WorkflowInstanceSubscription subscription, final SideEffects sideEffects) {
+      final ProcessInstanceSubscription subscription, final SideEffects sideEffects) {
 
     final DirectBuffer messageName = cloneBuffer(subscription.getMessageName());
     final int subscriptionPartitionId = subscription.getSubscriptionPartitionId();
-    final long workflowInstanceKey = subscription.getWorkflowInstanceKey();
+    final long processInstanceKey = subscription.getProcessInstanceKey();
     final long elementInstanceKey = subscription.getElementInstanceKey();
 
     subscription.setClosing();
-    workflowInstanceSubscriptionState.updateToClosingState(
+    processInstanceSubscriptionState.updateToClosingState(
         subscription, ActorClock.currentTimeMillis());
 
     sideEffects.add(
         () ->
             sendCloseMessageSubscriptionCommand(
-                subscriptionPartitionId, workflowInstanceKey, elementInstanceKey, messageName));
+                subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName));
 
     return true;
   }
@@ -251,16 +251,16 @@ public final class CatchEventBehavior {
 
   private boolean sendCloseMessageSubscriptionCommand(
       final int subscriptionPartitionId,
-      final long workflowInstanceKey,
+      final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer messageName) {
     return subscriptionCommandSender.closeMessageSubscription(
-        subscriptionPartitionId, workflowInstanceKey, elementInstanceKey, messageName);
+        subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
   }
 
   private boolean sendOpenMessageSubscription(
       final int subscriptionPartitionId,
-      final long workflowInstanceKey,
+      final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
@@ -268,7 +268,7 @@ public final class CatchEventBehavior {
       final boolean closeOnCorrelate) {
     return subscriptionCommandSender.openMessageSubscription(
         subscriptionPartitionId,
-        workflowInstanceKey,
+        processInstanceKey,
         elementInstanceKey,
         bpmnProcessId,
         messageName,

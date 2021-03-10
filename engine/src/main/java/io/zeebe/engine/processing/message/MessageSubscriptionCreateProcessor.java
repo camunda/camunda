@@ -92,8 +92,8 @@ public final class MessageSubscriptionCreateProcessor
   }
 
   private boolean sendAcknowledgeCommand() {
-    return commandSender.openWorkflowInstanceSubscription(
-        subscriptionRecord.getWorkflowInstanceKey(),
+    return commandSender.openProcessInstanceSubscription(
+        subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.isInterrupting());

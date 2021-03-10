@@ -18,12 +18,12 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.TimerIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.TimerRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -37,8 +37,8 @@ import org.junit.Test;
 public final class EventbasedGatewayTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-  private static final BpmnModelInstance WORKFLOW_WITH_TIMERS =
-      Bpmn.createExecutableProcess("WORKFLOW_WITH_TIMERS")
+  private static final BpmnModelInstance PROCESS_WITH_TIMERS =
+      Bpmn.createExecutableProcess("PROCESS_WITH_TIMERS")
           .startEvent("start")
           .eventBasedGateway()
           .id("gateway")
@@ -50,8 +50,8 @@ public final class EventbasedGatewayTest {
           .sequenceFlowId("to-end2")
           .endEvent("end2")
           .done();
-  private static final BpmnModelInstance WORKFLOW_WITH_EQUAL_TIMERS =
-      Bpmn.createExecutableProcess("WORKFLOW_WITH_EQUAL_TIMERS")
+  private static final BpmnModelInstance PROCESS_WITH_EQUAL_TIMERS =
+      Bpmn.createExecutableProcess("PROCESS_WITH_EQUAL_TIMERS")
           .startEvent("start")
           .eventBasedGateway()
           .id("gateway")
@@ -63,8 +63,8 @@ public final class EventbasedGatewayTest {
           .sequenceFlowId("to-end2")
           .endEvent("end2")
           .done();
-  private static final BpmnModelInstance WORKFLOW_WITH_MESSAGES =
-      Bpmn.createExecutableProcess("WORKFLOW_WITH_MESSAGES")
+  private static final BpmnModelInstance PROCESS_WITH_MESSAGES =
+      Bpmn.createExecutableProcess("PROCESS_WITH_MESSAGES")
           .startEvent("start")
           .eventBasedGateway()
           .id("gateway")
@@ -80,8 +80,8 @@ public final class EventbasedGatewayTest {
           .sequenceFlowId("to-end2")
           .endEvent("end2")
           .done();
-  private static final BpmnModelInstance WORKFLOW_WITH_TIMER_AND_MESSAGE =
-      Bpmn.createExecutableProcess("WORKFLOW_WITH_TIMER_AND_MESSAGE")
+  private static final BpmnModelInstance PROCESS_WITH_TIMER_AND_MESSAGE =
+      Bpmn.createExecutableProcess("PROCESS_WITH_TIMER_AND_MESSAGE")
           .startEvent("start")
           .eventBasedGateway()
           .id("gateway")
@@ -101,26 +101,26 @@ public final class EventbasedGatewayTest {
 
   @BeforeClass
   public static void init() {
-    ENGINE.deployment().withXmlResource(WORKFLOW_WITH_TIMERS).deploy();
-    ENGINE.deployment().withXmlResource(WORKFLOW_WITH_EQUAL_TIMERS).deploy();
-    ENGINE.deployment().withXmlResource(WORKFLOW_WITH_MESSAGES).deploy();
-    ENGINE.deployment().withXmlResource(WORKFLOW_WITH_TIMER_AND_MESSAGE).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_WITH_TIMERS).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_WITH_EQUAL_TIMERS).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_WITH_MESSAGES).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_WITH_TIMER_AND_MESSAGE).deploy();
   }
 
   @Test
   public void testLifecycle() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("WORKFLOW_WITH_TIMERS")
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_TIMERS")
             .withVariable("key", "testLifecycle")
             .create();
 
     // when
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(2)
                 .exists())
         .isTrue();
@@ -128,31 +128,31 @@ public final class EventbasedGatewayTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .skipUntil(
                     r ->
-                        r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED
                             && r.getValue().getBpmnElementType()
                                 == BpmnElementType.EVENT_BASED_GATEWAY)
-                .limitToWorkflowInstanceCompleted())
+                .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getElementId(), r.getIntent()))
         .containsExactly(
-            tuple("gateway", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("gateway", WorkflowInstanceIntent.EVENT_OCCURRED),
-            tuple("gateway", WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple("gateway", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple("timer-1", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple("timer-1", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("timer-1", WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple("timer-1", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple("to-end1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("end1", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple("end1", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("end1", WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple("end1", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple("WORKFLOW_WITH_TIMERS", WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple("WORKFLOW_WITH_TIMERS", WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple("gateway", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("gateway", ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple("gateway", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("gateway", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("timer-1", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("timer-1", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("timer-1", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("timer-1", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("to-end1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("end1", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("end1", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("end1", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("end1", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("PROCESS_WITH_TIMERS", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("PROCESS_WITH_TIMERS", ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -160,19 +160,19 @@ public final class EventbasedGatewayTest {
     // given
 
     // when
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("WORKFLOW_WITH_TIMERS").create();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("PROCESS_WITH_TIMERS").create();
 
     // then
-    final Record<WorkflowInstanceRecordValue> gatewayEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+    final Record<ProcessInstanceRecordValue> gatewayEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementType(BpmnElementType.EVENT_BASED_GATEWAY)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final List<Record<TimerRecordValue>> timerEvents =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .limit(2)
             .asList();
 
@@ -184,28 +184,28 @@ public final class EventbasedGatewayTest {
   }
 
   @Test
-  public void shouldOpenWorkflowInstanceSubscriptions() {
+  public void shouldOpenProcessInstanceSubscriptions() {
     // given
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("WORKFLOW_WITH_MESSAGES")
-            .withVariable("key", "shouldOpenWorkflowInstanceSubscriptions")
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_MESSAGES")
+            .withVariable("key", "shouldOpenProcessInstanceSubscriptions")
             .create();
 
     // then
-    final Record<WorkflowInstanceRecordValue> gatewayEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+    final Record<ProcessInstanceRecordValue> gatewayEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementType(BpmnElementType.EVENT_BASED_GATEWAY)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    final List<Record<WorkflowInstanceSubscriptionRecordValue>> subscriptionEvents =
-        RecordingExporter.workflowInstanceSubscriptionRecords(
-                WorkflowInstanceSubscriptionIntent.OPENED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final List<Record<ProcessInstanceSubscriptionRecordValue>> subscriptionEvents =
+        RecordingExporter.processInstanceSubscriptionRecords(
+                ProcessInstanceSubscriptionIntent.OPENED)
+            .withProcessInstanceKey(processInstanceKey)
             .limit(2)
             .asList();
 
@@ -218,16 +218,16 @@ public final class EventbasedGatewayTest {
   @Test
   public void shouldContinueWhenTimerIsTriggered() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("WORKFLOW_WITH_TIMERS")
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_TIMERS")
             .withVariable("key", "shouldContinueWhenTimerIsTriggered")
             .create();
 
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(2)
                 .exists())
         .isTrue();
@@ -236,25 +236,25 @@ public final class EventbasedGatewayTest {
     ENGINE.increaseTime(Duration.ofSeconds(1));
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> records =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .limitToWorkflowInstanceCompleted()
+    final List<Record<ProcessInstanceRecordValue>> records =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .limitToProcessInstanceCompleted()
             .asList();
 
     assertThat(records)
         .extracting(Record::getIntent, r -> r.getValue().getElementId())
         .containsSubsequence(
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "timer-1"),
-            tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "to-end1"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "WORKFLOW_WITH_TIMERS"));
+            tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, "timer-1"),
+            tuple(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, "to-end1"),
+            tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, "PROCESS_WITH_TIMERS"));
   }
 
   @Test
   public void shouldOnlyExecuteOneBranchWithEqualTimers() {
     // given
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("WORKFLOW_WITH_EQUAL_TIMERS").create();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("PROCESS_WITH_EQUAL_TIMERS").create();
 
     // when
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).count()).isEqualTo(2);
@@ -263,7 +263,7 @@ public final class EventbasedGatewayTest {
     // then
     final List<String> timers =
         RecordingExporter.timerRecords(TimerIntent.CREATE)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .limit(2)
             .map(r -> r.getValue().getTargetElementId())
             .collect(Collectors.toList());
@@ -271,14 +271,14 @@ public final class EventbasedGatewayTest {
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
                 .withHandlerNodeId(timers.get(0))
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .exists())
         .isTrue();
 
     Assertions.assertThat(
             RecordingExporter.timerRecords(TimerIntent.TRIGGER)
                 .withHandlerNodeId(timers.get(1))
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .onlyCommandRejections()
                 .getFirst())
         .hasRejectionType(RejectionType.INVALID_STATE)
@@ -288,10 +288,10 @@ public final class EventbasedGatewayTest {
   @Test
   public void shouldContinueWhenMessageIsCorrelated() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("WORKFLOW_WITH_MESSAGES")
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_MESSAGES")
             .withVariable("key", "shouldContinueWhenMessageIsCorrelated")
             .create();
 
@@ -303,33 +303,33 @@ public final class EventbasedGatewayTest {
         .publish();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> records =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .limitToWorkflowInstanceCompleted()
+    final List<Record<ProcessInstanceRecordValue>> records =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .limitToProcessInstanceCompleted()
             .asList();
 
     assertThat(records)
         .extracting(r -> r.getIntent(), r -> r.getValue().getElementId())
         .containsSubsequence(
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "message-1"),
-            tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "to-end1"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "WORKFLOW_WITH_MESSAGES"));
+            tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, "message-1"),
+            tuple(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, "to-end1"),
+            tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, "PROCESS_WITH_MESSAGES"));
   }
 
   @Test
   public void shouldCancelTimer() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("WORKFLOW_WITH_TIMERS")
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_TIMERS")
             .withVariable("key", "shouldCancelTimer")
             .create();
 
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(2)
                 .exists())
         .isTrue();
@@ -340,35 +340,35 @@ public final class EventbasedGatewayTest {
     // then
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CANCELED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .withHandlerNodeId("timer-2")
                 .exists())
         .isTrue();
   }
 
   @Test
-  public void shouldCloseWorkflowInstanceSubscription() {
+  public void shouldCloseProcessInstanceSubscription() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("WORKFLOW_WITH_MESSAGES")
-            .withVariable("key", "shouldCloseWorkflowInstanceSubscription")
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_MESSAGES")
+            .withVariable("key", "shouldCloseProcessInstanceSubscription")
             .create();
 
     // when
     ENGINE
         .message()
         .withName("msg-1")
-        .withCorrelationKey("shouldCloseWorkflowInstanceSubscription")
+        .withCorrelationKey("shouldCloseProcessInstanceSubscription")
         .publish();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.CLOSED)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.CLOSED)
                 .withMessageName("msg-2")
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .exists())
         .isTrue();
   }
@@ -376,34 +376,34 @@ public final class EventbasedGatewayTest {
   @Test
   public void shouldCancelSubscriptionsWhenScopeIsTerminated() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("WORKFLOW_WITH_TIMER_AND_MESSAGE")
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_TIMER_AND_MESSAGE")
             .withVariable("key", "shouldCancelSubscriptionsWhenScopeIsTerminated")
             .create();
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).exists()).isTrue();
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.OPENED)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.OPENED)
                 .exists())
         .isTrue();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CANCELED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .withHandlerNodeId("timer")
                 .exists())
         .isTrue();
 
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.CLOSED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.CLOSED)
+                .withProcessInstanceKey(processInstanceKey)
                 .withMessageName("msg")
                 .exists())
         .isTrue();
@@ -423,17 +423,17 @@ public final class EventbasedGatewayTest {
         .withCorrelationKey("shouldOnlyExecuteOneBranchWithSimultaneousMessages")
         .withName("msg-2")
         .publish();
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("WORKFLOW_WITH_MESSAGES")
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_WITH_MESSAGES")
             .withVariable("key", "shouldOnlyExecuteOneBranchWithSimultaneousMessages")
             .create();
 
     final List<String> messageNames =
-        RecordingExporter.workflowInstanceSubscriptionRecords(
-                WorkflowInstanceSubscriptionIntent.CORRELATE)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+        RecordingExporter.processInstanceSubscriptionRecords(
+                ProcessInstanceSubscriptionIntent.CORRELATE)
+            .withProcessInstanceKey(processInstanceKey)
             .limit(2)
             .map(r -> r.getValue().getMessageName())
             .collect(Collectors.toList());
@@ -441,15 +441,15 @@ public final class EventbasedGatewayTest {
     assertThat(messageNames).hasSize(2);
 
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.CORRELATED)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.CORRELATED)
                 .withMessageName(messageNames.get(0))
                 .exists())
         .isTrue();
 
     Assertions.assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.CORRELATE)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.CORRELATE)
                 .withMessageName(messageNames.get(1))
                 .onlyCommandRejections()
                 .getFirst())

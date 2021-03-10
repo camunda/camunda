@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 
 public final class DbJobState implements JobState, MutableJobState {
 
-  private static final Logger LOG = Loggers.WORKFLOW_PROCESSOR_LOGGER;
+  private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
   // key => job record value
   // we need two separate wrapper to not interfere with get and put

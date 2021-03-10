@@ -71,7 +71,7 @@ public final class DbMessageState implements MutableMessageState {
   /**
    * <pre>key | bpmn process id -> []
    *
-   * check if a message is correlated to a workflow
+   * check if a message is correlated to a process
    */
   private final DbCompositeKey<DbLong, DbString> messageBpmnProcessIdKey;
 
@@ -81,21 +81,21 @@ public final class DbMessageState implements MutableMessageState {
   /**
    * <pre> bpmn process id | correlation key -> []
    *
-   * check if a workflow instance is created by this correlation key
+   * check if a process instance is created by this correlation key
    */
   private final DbCompositeKey<DbString, DbString> bpmnProcessIdCorrelationKey;
 
   private final ColumnFamily<DbCompositeKey<DbString, DbString>, DbNil>
-      activeWorkflowInstancesByCorrelationKeyColumnFamiliy;
+      activeProcessInstancesByCorrelationKeyColumnFamiliy;
 
   /**
-   * <pre> workflow instance key -> correlation key
+   * <pre> process instance key -> correlation key
    *
-   * get correlation key by workflow instance key
+   * get correlation key by process instance key
    */
-  private final DbLong workflowInstanceKey;
+  private final DbLong processInstanceKey;
 
-  private final ColumnFamily<DbLong, DbString> workflowInstanceCorrelationKeyColumnFamiliy;
+  private final ColumnFamily<DbLong, DbString> processInstanceCorrelationKeyColumnFamiliy;
 
   public DbMessageState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -144,19 +144,19 @@ public final class DbMessageState implements MutableMessageState {
             DbNil.INSTANCE);
 
     bpmnProcessIdCorrelationKey = new DbCompositeKey<>(bpmnProcessIdKey, correlationKey);
-    activeWorkflowInstancesByCorrelationKeyColumnFamiliy =
+    activeProcessInstancesByCorrelationKeyColumnFamiliy =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_WORKFLOWS_ACTIVE_BY_CORRELATION_KEY,
+            ZbColumnFamilies.MESSAGE_PROCESSES_ACTIVE_BY_CORRELATION_KEY,
             transactionContext,
             bpmnProcessIdCorrelationKey,
             DbNil.INSTANCE);
 
-    workflowInstanceKey = new DbLong();
-    workflowInstanceCorrelationKeyColumnFamiliy =
+    processInstanceKey = new DbLong();
+    processInstanceCorrelationKeyColumnFamiliy =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_WORKFLOW_INSTANCE_CORRELATION_KEYS,
+            ZbColumnFamilies.MESSAGE_PROCESS_INSTANCE_CORRELATION_KEYS,
             transactionContext,
-            workflowInstanceKey,
+            processInstanceKey,
             correlationKey);
   }
 
@@ -213,67 +213,67 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
-  public boolean existActiveWorkflowInstance(
+  public boolean existActiveProcessInstance(
       final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
     ensureNotNullOrEmpty("correlation key", correlationKey);
 
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
     this.correlationKey.wrapBuffer(correlationKey);
-    return activeWorkflowInstancesByCorrelationKeyColumnFamiliy.exists(bpmnProcessIdCorrelationKey);
+    return activeProcessInstancesByCorrelationKeyColumnFamiliy.exists(bpmnProcessIdCorrelationKey);
   }
 
   @Override
-  public void putActiveWorkflowInstance(
+  public void putActiveProcessInstance(
       final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
     ensureNotNullOrEmpty("correlation key", correlationKey);
 
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
     this.correlationKey.wrapBuffer(correlationKey);
-    activeWorkflowInstancesByCorrelationKeyColumnFamiliy.put(
+    activeProcessInstancesByCorrelationKeyColumnFamiliy.put(
         bpmnProcessIdCorrelationKey, DbNil.INSTANCE);
   }
 
   @Override
-  public void removeActiveWorkflowInstance(
+  public void removeActiveProcessInstance(
       final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
     ensureNotNullOrEmpty("correlation key", correlationKey);
 
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
     this.correlationKey.wrapBuffer(correlationKey);
-    activeWorkflowInstancesByCorrelationKeyColumnFamiliy.delete(bpmnProcessIdCorrelationKey);
+    activeProcessInstancesByCorrelationKeyColumnFamiliy.delete(bpmnProcessIdCorrelationKey);
   }
 
   @Override
-  public void putWorkflowInstanceCorrelationKey(
-      final long workflowInstanceKey, final DirectBuffer correlationKey) {
-    ensureGreaterThan("workflow instance key", workflowInstanceKey, 0);
+  public void putProcessInstanceCorrelationKey(
+      final long processInstanceKey, final DirectBuffer correlationKey) {
+    ensureGreaterThan("process instance key", processInstanceKey, 0);
     ensureNotNullOrEmpty("correlation key", correlationKey);
 
-    this.workflowInstanceKey.wrapLong(workflowInstanceKey);
+    this.processInstanceKey.wrapLong(processInstanceKey);
     this.correlationKey.wrapBuffer(correlationKey);
-    workflowInstanceCorrelationKeyColumnFamiliy.put(this.workflowInstanceKey, this.correlationKey);
+    processInstanceCorrelationKeyColumnFamiliy.put(this.processInstanceKey, this.correlationKey);
   }
 
   @Override
-  public DirectBuffer getWorkflowInstanceCorrelationKey(final long workflowInstanceKey) {
-    ensureGreaterThan("workflow instance key", workflowInstanceKey, 0);
+  public DirectBuffer getProcessInstanceCorrelationKey(final long processInstanceKey) {
+    ensureGreaterThan("process instance key", processInstanceKey, 0);
 
-    this.workflowInstanceKey.wrapLong(workflowInstanceKey);
+    this.processInstanceKey.wrapLong(processInstanceKey);
     final var correlationKey =
-        workflowInstanceCorrelationKeyColumnFamiliy.get(this.workflowInstanceKey);
+        processInstanceCorrelationKeyColumnFamiliy.get(this.processInstanceKey);
 
     return correlationKey != null ? correlationKey.getBuffer() : null;
   }
 
   @Override
-  public void removeWorkflowInstanceCorrelationKey(final long workflowInstanceKey) {
-    ensureGreaterThan("workflow instance key", workflowInstanceKey, 0);
+  public void removeProcessInstanceCorrelationKey(final long processInstanceKey) {
+    ensureGreaterThan("process instance key", processInstanceKey, 0);
 
-    this.workflowInstanceKey.wrapLong(workflowInstanceKey);
-    workflowInstanceCorrelationKeyColumnFamiliy.delete(this.workflowInstanceKey);
+    this.processInstanceKey.wrapLong(processInstanceKey);
+    processInstanceCorrelationKeyColumnFamiliy.delete(this.processInstanceKey);
   }
 
   @Override

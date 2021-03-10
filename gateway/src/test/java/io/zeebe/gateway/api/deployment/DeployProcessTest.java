@@ -11,55 +11,55 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
 import io.zeebe.gateway.api.util.GatewayTest;
-import io.zeebe.gateway.impl.broker.request.BrokerDeployWorkflowRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest.Builder;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowMetadata;
+import io.zeebe.gateway.impl.broker.request.BrokerDeployProcessRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest.Builder;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import org.junit.Test;
 
-public final class DeployWorkflowTest extends GatewayTest {
+public final class DeployProcessTest extends GatewayTest {
 
   @Test
   public void shouldMapRequestAndResponse() {
     // given
-    final DeployWorkflowStub stub = new DeployWorkflowStub();
+    final DeployProcessStub stub = new DeployProcessStub();
     stub.registerWith(brokerClient);
 
     final String bpmnName = "testProcess.bpmn";
     final String otherName = "testProcess.txt";
 
-    final Builder builder = DeployWorkflowRequest.newBuilder();
+    final Builder builder = DeployProcessRequest.newBuilder();
     builder
-        .addWorkflowsBuilder()
+        .addProcessesBuilder()
         .setName(bpmnName)
         .setDefinition(ByteString.copyFromUtf8("<xml/>"));
-    builder.addWorkflowsBuilder().setName(otherName).setDefinition(ByteString.copyFromUtf8("test"));
+    builder.addProcessesBuilder().setName(otherName).setDefinition(ByteString.copyFromUtf8("test"));
 
-    final DeployWorkflowRequest request = builder.build();
+    final DeployProcessRequest request = builder.build();
 
     // when
-    final DeployWorkflowResponse response = client.deployWorkflow(request);
+    final DeployProcessResponse response = client.deployProcess(request);
 
     // then
     assertThat(response.getKey()).isEqualTo(stub.getKey());
-    assertThat(response.getWorkflowsCount()).isEqualTo(2);
+    assertThat(response.getProcessesCount()).isEqualTo(2);
 
-    WorkflowMetadata workflow = response.getWorkflows(0);
-    assertThat(workflow.getBpmnProcessId()).isEqualTo(bpmnName);
-    assertThat(workflow.getResourceName()).isEqualTo(bpmnName);
-    assertThat(workflow.getWorkflowKey()).isEqualTo(stub.getWorkflowKey());
-    assertThat(workflow.getVersion()).isEqualTo(stub.getWorkflowVersion());
+    ProcessMetadata process = response.getProcesses(0);
+    assertThat(process.getBpmnProcessId()).isEqualTo(bpmnName);
+    assertThat(process.getResourceName()).isEqualTo(bpmnName);
+    assertThat(process.getProcessDefinitionKey()).isEqualTo(stub.getProcessDefinitionKey());
+    assertThat(process.getVersion()).isEqualTo(stub.getProcessVersion());
 
-    workflow = response.getWorkflows(1);
-    assertThat(workflow.getBpmnProcessId()).isEqualTo(otherName);
-    assertThat(workflow.getResourceName()).isEqualTo(otherName);
-    assertThat(workflow.getWorkflowKey()).isEqualTo(stub.getWorkflowKey());
-    assertThat(workflow.getVersion()).isEqualTo(stub.getWorkflowVersion());
+    process = response.getProcesses(1);
+    assertThat(process.getBpmnProcessId()).isEqualTo(otherName);
+    assertThat(process.getResourceName()).isEqualTo(otherName);
+    assertThat(process.getProcessDefinitionKey()).isEqualTo(stub.getProcessDefinitionKey());
+    assertThat(process.getVersion()).isEqualTo(stub.getProcessVersion());
 
-    final BrokerDeployWorkflowRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    final BrokerDeployProcessRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getIntent()).isEqualTo(DeploymentIntent.CREATE);
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.DEPLOYMENT);
   }

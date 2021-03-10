@@ -21,10 +21,10 @@
             "bpmnProcessId": {
               "type": "keyword"
             },
-            "workflowKey": {
+            "processDefinitionKey": {
               "type": "long"
             },
-            "workflowInstanceKey": {
+            "processInstanceKey": {
               "type": "long"
             },
             "elementId": {

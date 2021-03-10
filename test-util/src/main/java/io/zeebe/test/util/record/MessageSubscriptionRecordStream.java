@@ -25,8 +25,8 @@ public final class MessageSubscriptionRecordStream
     return new MessageSubscriptionRecordStream(wrappedStream);
   }
 
-  public MessageSubscriptionRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
-    return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
+  public MessageSubscriptionRecordStream withProcessInstanceKey(final long processInstanceKey) {
+    return valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey);
   }
 
   public MessageSubscriptionRecordStream withElementInstanceKey(final long elementInstanceKey) {

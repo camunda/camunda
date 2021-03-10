@@ -20,12 +20,12 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
@@ -58,7 +58,7 @@ public class NonInterruptingEventSubprocessTest {
   @Parameterized.Parameter(2)
   public Consumer<Long> triggerEventSubprocess;
 
-  private DeployedWorkflow currentWorkflow;
+  private DeployedProcess currentProcess;
 
   @Parameterized.Parameters(name = "{0} event subprocess")
   public static Object[][] parameters() {
@@ -70,7 +70,7 @@ public class NonInterruptingEventSubprocessTest {
             key -> {
               assertThat(
                       RecordingExporter.timerRecords(TimerIntent.CREATED)
-                          .withWorkflowInstanceKey(key)
+                          .withProcessInstanceKey(key)
                           .exists())
                   .describedAs("Expected timer to exist")
                   .isTrue();
@@ -84,7 +84,7 @@ public class NonInterruptingEventSubprocessTest {
         eventTrigger(
             key -> {
               RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-                  .withWorkflowInstanceKey(key)
+                  .withProcessInstanceKey(key)
                   .withMessageName(messageName)
                   .await();
               ENGINE.message().withName(messageName).withCorrelationKey("123").publish();
@@ -114,16 +114,16 @@ public class NonInterruptingEventSubprocessTest {
     final long wfInstanceKey = createInstanceAndTriggerEvent(model);
 
     // then
-    final Record<WorkflowInstanceRecordValue> eventOccurred =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_OCCURRED)
-            .withWorkflowInstanceKey(wfInstanceKey)
+    final Record<ProcessInstanceRecordValue> eventOccurred =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.EVENT_OCCURRED)
+            .withProcessInstanceKey(wfInstanceKey)
             .getFirst();
     Assertions.assertThat(eventOccurred.getValue())
-        .hasWorkflowKey(currentWorkflow.getWorkflowKey())
-        .hasWorkflowInstanceKey(wfInstanceKey)
+        .hasProcessDefinitionKey(currentProcess.getProcessDefinitionKey())
+        .hasProcessInstanceKey(wfInstanceKey)
         .hasBpmnElementType(BpmnElementType.START_EVENT)
         .hasElementId("event_sub_start")
-        .hasVersion(currentWorkflow.getVersion())
+        .hasVersion(currentProcess.getVersion())
         .hasFlowScopeKey(wfInstanceKey);
 
     assertEventSubprocessLifecycle(wfInstanceKey);
@@ -140,17 +140,17 @@ public class NonInterruptingEventSubprocessTest {
     ENGINE.job().ofInstance(wfInstanceKey).withType("type").complete();
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(wfInstanceKey)
-                .limitToWorkflowInstanceCompleted())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(wfInstanceKey)
+                .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.EVENT_OCCURRED),
-            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -159,8 +159,8 @@ public class NonInterruptingEventSubprocessTest {
     final BpmnModelInstance model = eventSubProcTaskModel(helper.getJobType(), "sub_type");
     final long wfInstanceKey = createInstanceAndTriggerEvent(model);
     final long eventSubprocKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowInstanceKey(wfInstanceKey)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(wfInstanceKey)
             .withElementType(BpmnElementType.SUB_PROCESS)
             .getFirst()
             .getKey();
@@ -182,10 +182,10 @@ public class NonInterruptingEventSubprocessTest {
     assertThat(jobVariables).containsOnly(Map.entry("key", 123));
   }
 
-  private static void assertEventSubprocessLifecycle(final long workflowInstanceKey) {
-    final List<Record<WorkflowInstanceRecordValue>> events =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+  private static void assertEventSubprocessLifecycle(final long processInstanceKey) {
+    final List<Record<ProcessInstanceRecordValue>> events =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .filter(r -> r.getValue().getElementId().startsWith("event_sub_"))
             .limit(13)
             .asList();
@@ -193,40 +193,40 @@ public class NonInterruptingEventSubprocessTest {
     assertThat(events)
         .extracting(Record::getIntent, e -> e.getValue().getElementId())
         .containsExactly(
-            tuple(WorkflowInstanceIntent.EVENT_OCCURRED, "event_sub_start"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "event_sub_proc"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "event_sub_proc"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "event_sub_start"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "event_sub_start"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "event_sub_start"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "event_sub_start"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "event_sub_end"),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "event_sub_end"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "event_sub_end"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "event_sub_end"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "event_sub_proc"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "event_sub_proc"));
+            tuple(ProcessInstanceIntent.EVENT_OCCURRED, "event_sub_start"),
+            tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, "event_sub_proc"),
+            tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, "event_sub_proc"),
+            tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, "event_sub_start"),
+            tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, "event_sub_start"),
+            tuple(ProcessInstanceIntent.ELEMENT_COMPLETING, "event_sub_start"),
+            tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, "event_sub_start"),
+            tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, "event_sub_end"),
+            tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, "event_sub_end"),
+            tuple(ProcessInstanceIntent.ELEMENT_COMPLETING, "event_sub_end"),
+            tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, "event_sub_end"),
+            tuple(ProcessInstanceIntent.ELEMENT_COMPLETING, "event_sub_proc"),
+            tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, "event_sub_proc"));
   }
 
   private long createInstanceAndTriggerEvent(final BpmnModelInstance model) {
-    currentWorkflow =
+    currentProcess =
         ENGINE
             .deployment()
             .withXmlResource(model)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
 
     final long wfInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables(Map.of("key", 123))
             .create();
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withWorkflowInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(wfInstanceKey)
                 .exists())
         .describedAs("Expected job to be created")
         .isTrue();

@@ -23,7 +23,7 @@ import io.zeebe.protocol.record.intent.Intent;
  * Decorates a command processor with simple accept and reject logic.
  *
  * <p>On accept it writes the state corresponding to successfully processing the command (e.g.
- * workflow instance creation: CREATE => CREATED); and responds if it was a client command that
+ * process instance creation: CREATE => CREATED); and responds if it was a client command that
  * should be responded to.
  *
  * <p>On reject it writes a command rejection

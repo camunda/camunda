@@ -7,25 +7,25 @@
  */
 package io.zeebe.engine.processing.bpmn;
 
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETING;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATING;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.EVENT_OCCURRED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETING;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATING;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.EVENT_OCCURRED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN;
 
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
-public final class WorkflowInstanceLifecycle {
+public final class ProcessInstanceLifecycle {
 
-  private static final EnumSet<WorkflowInstanceIntent> ELEMENT_INSTANCE_STATES =
+  private static final EnumSet<ProcessInstanceIntent> ELEMENT_INSTANCE_STATES =
       EnumSet.of(
           ELEMENT_ACTIVATING,
           ELEMENT_ACTIVATED,
@@ -34,14 +34,14 @@ public final class WorkflowInstanceLifecycle {
           ELEMENT_TERMINATING,
           ELEMENT_TERMINATED);
 
-  private static final EnumSet<WorkflowInstanceIntent> FINAL_ELEMENT_INSTANCE_STATES =
+  private static final EnumSet<ProcessInstanceIntent> FINAL_ELEMENT_INSTANCE_STATES =
       EnumSet.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
 
-  private static final EnumSet<WorkflowInstanceIntent> TERMINATABLE_STATES =
+  private static final EnumSet<ProcessInstanceIntent> TERMINATABLE_STATES =
       EnumSet.of(ELEMENT_ACTIVATING, ELEMENT_ACTIVATED, ELEMENT_COMPLETING);
 
-  private static final Map<WorkflowInstanceIntent, Set<WorkflowInstanceIntent>> TRANSITION_RULES =
-      new EnumMap<>(WorkflowInstanceIntent.class);
+  private static final Map<ProcessInstanceIntent, Set<ProcessInstanceIntent>> TRANSITION_RULES =
+      new EnumMap<>(ProcessInstanceIntent.class);
 
   static {
     TRANSITION_RULES.put(ELEMENT_ACTIVATING, EnumSet.of(ELEMENT_ACTIVATED, ELEMENT_TERMINATING));
@@ -54,38 +54,38 @@ public final class WorkflowInstanceLifecycle {
     TRANSITION_RULES.put(SEQUENCE_FLOW_TAKEN, EnumSet.of(ELEMENT_ACTIVATING));
   }
 
-  private WorkflowInstanceLifecycle() {}
+  private ProcessInstanceLifecycle() {}
 
   public static boolean canTransition(
-      final WorkflowInstanceIntent from, final WorkflowInstanceIntent to) {
+      final ProcessInstanceIntent from, final ProcessInstanceIntent to) {
     return TRANSITION_RULES.get(from).contains(to);
   }
 
-  public static boolean isFinalState(final WorkflowInstanceIntent state) {
+  public static boolean isFinalState(final ProcessInstanceIntent state) {
     return FINAL_ELEMENT_INSTANCE_STATES.contains(state);
   }
 
-  public static boolean isInitialState(final WorkflowInstanceIntent state) {
+  public static boolean isInitialState(final ProcessInstanceIntent state) {
     return state == ELEMENT_ACTIVATING;
   }
 
-  public static boolean isElementInstanceState(final WorkflowInstanceIntent state) {
+  public static boolean isElementInstanceState(final ProcessInstanceIntent state) {
     return ELEMENT_INSTANCE_STATES.contains(state);
   }
 
-  public static boolean isTokenState(final WorkflowInstanceIntent state) {
+  public static boolean isTokenState(final ProcessInstanceIntent state) {
     return !isElementInstanceState(state);
   }
 
-  public static boolean canTerminate(final WorkflowInstanceIntent currentState) {
+  public static boolean canTerminate(final ProcessInstanceIntent currentState) {
     return TERMINATABLE_STATES.contains(currentState);
   }
 
-  public static boolean isActive(final WorkflowInstanceIntent currentState) {
+  public static boolean isActive(final ProcessInstanceIntent currentState) {
     return currentState == ELEMENT_ACTIVATED;
   }
 
-  public static boolean isTerminating(final WorkflowInstanceIntent currentState) {
+  public static boolean isTerminating(final ProcessInstanceIntent currentState) {
     return currentState == ELEMENT_TERMINATING;
   }
 }

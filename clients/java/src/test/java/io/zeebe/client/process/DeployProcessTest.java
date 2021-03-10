@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.workflow;
+package io.zeebe.client.process;
 
-import static io.zeebe.client.util.RecordingGatewayService.deployedWorkflow;
+import static io.zeebe.client.util.RecordingGatewayService.deployedProcess;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.response.DeploymentEvent;
-import io.zeebe.client.api.response.Workflow;
+import io.zeebe.client.api.response.Process;
 import io.zeebe.client.impl.command.StreamUtil;
-import io.zeebe.client.impl.response.WorkflowImpl;
+import io.zeebe.client.impl.response.ProcessImpl;
 import io.zeebe.client.util.ClientTest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayOutputStream;
@@ -37,22 +37,22 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.Test;
 
-public final class DeployWorkflowTest extends ClientTest {
+public final class DeployProcessTest extends ClientTest {
 
-  public static final String BPMN_1_FILENAME = "/workflows/demo-process.bpmn";
-  public static final String BPMN_2_FILENAME = "/workflows/another-demo-process.bpmn";
+  public static final String BPMN_1_FILENAME = "/processes/demo-process.bpmn";
+  public static final String BPMN_2_FILENAME = "/processes/another-demo-process.bpmn";
 
   public static final String BPMN_1_PROCESS_ID = "demoProcess";
   public static final String BPMN_2_PROCESS_ID = "anotherDemoProcess";
 
   @Test
-  public void shouldDeployWorkflowFromFile() {
+  public void shouldDeployProcessFromFile() {
     // given
     final long key = 123L;
-    final String filename = DeployWorkflowTest.class.getResource(BPMN_1_FILENAME).getPath();
-    gatewayService.onDeployWorkflowRequest(
-        key, deployedWorkflow(BPMN_1_PROCESS_ID, 12, 423, filename));
-    final Workflow expected = new WorkflowImpl(423, BPMN_1_PROCESS_ID, 12, filename);
+    final String filename = DeployProcessTest.class.getResource(BPMN_1_FILENAME).getPath();
+    gatewayService.onDeployProcessRequest(
+        key, deployedProcess(BPMN_1_PROCESS_ID, 12, 423, filename));
+    final Process expected = new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename);
 
     // when
     final DeploymentEvent response =
@@ -61,19 +61,19 @@ public final class DeployWorkflowTest extends ClientTest {
     // then
     assertThat(response.getKey()).isEqualTo(key);
 
-    final List<Workflow> workflows = response.getWorkflows();
-    assertThat(workflows).containsOnly(expected);
+    final List<Process> processes = response.getProcesses();
+    assertThat(processes).containsOnly(expected);
 
-    final DeployWorkflowRequest request = gatewayService.getLastRequest();
-    final WorkflowRequestObject workflow = request.getWorkflows(0);
-    assertThat(workflow.getName()).isEqualTo(filename);
-    assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
+    final DeployProcessRequest request = gatewayService.getLastRequest();
+    final ProcessRequestObject process = request.getProcesses(0);
+    assertThat(process.getName()).isEqualTo(filename);
+    assertThat(process.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
 
     rule.verifyDefaultRequestTimeout();
   }
 
   @Test
-  public void shouldDeployWorkflowFromClasspath() {
+  public void shouldDeployProcessFromClasspath() {
     // given
     final String filename = BPMN_1_FILENAME.substring(1);
 
@@ -81,30 +81,30 @@ public final class DeployWorkflowTest extends ClientTest {
     client.newDeployCommand().addResourceFromClasspath(filename).send().join();
 
     // then
-    final DeployWorkflowRequest request = gatewayService.getLastRequest();
-    final WorkflowRequestObject workflow = request.getWorkflows(0);
-    assertThat(workflow.getName()).isEqualTo(filename);
-    assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
+    final DeployProcessRequest request = gatewayService.getLastRequest();
+    final ProcessRequestObject process = request.getProcesses(0);
+    assertThat(process.getName()).isEqualTo(filename);
+    assertThat(process.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
   }
 
   @Test
-  public void shouldDeployWorkflowFromInputStream() {
+  public void shouldDeployProcessFromInputStream() {
     // given
     final String filename = BPMN_1_FILENAME;
-    final InputStream resourceAsStream = DeployWorkflowTest.class.getResourceAsStream(filename);
+    final InputStream resourceAsStream = DeployProcessTest.class.getResourceAsStream(filename);
 
     // when
     client.newDeployCommand().addResourceStream(resourceAsStream, filename).send().join();
 
     // then
-    final DeployWorkflowRequest request = gatewayService.getLastRequest();
-    final WorkflowRequestObject workflow = request.getWorkflows(0);
-    assertThat(workflow.getName()).isEqualTo(filename);
-    assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
+    final DeployProcessRequest request = gatewayService.getLastRequest();
+    final ProcessRequestObject process = request.getProcesses(0);
+    assertThat(process.getName()).isEqualTo(filename);
+    assertThat(process.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
   }
 
   @Test
-  public void shouldDeployWorkflowFromBytes() {
+  public void shouldDeployProcessFromBytes() {
     // given
     final String filename = BPMN_1_FILENAME;
     final byte[] bytes = getBytes(filename);
@@ -113,15 +113,15 @@ public final class DeployWorkflowTest extends ClientTest {
     client.newDeployCommand().addResourceBytes(bytes, filename).send().join();
 
     // then
-    final DeployWorkflowRequest request = gatewayService.getLastRequest();
-    final WorkflowRequestObject workflow = request.getWorkflows(0);
+    final DeployProcessRequest request = gatewayService.getLastRequest();
+    final ProcessRequestObject process = request.getProcesses(0);
 
-    assertThat(workflow.getName()).isEqualTo(filename);
-    assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
+    assertThat(process.getName()).isEqualTo(filename);
+    assertThat(process.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
   }
 
   @Test
-  public void shouldDeployWorkflowFromString() {
+  public void shouldDeployProcessFromString() {
     // given
     final String filename = BPMN_1_FILENAME;
     final String xml = new String(getBytes(filename));
@@ -134,15 +134,15 @@ public final class DeployWorkflowTest extends ClientTest {
         .join();
 
     // then
-    final DeployWorkflowRequest request = gatewayService.getLastRequest();
-    final WorkflowRequestObject workflow = request.getWorkflows(0);
+    final DeployProcessRequest request = gatewayService.getLastRequest();
+    final ProcessRequestObject process = request.getProcesses(0);
 
-    assertThat(workflow.getName()).isEqualTo(filename);
-    assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
+    assertThat(process.getName()).isEqualTo(filename);
+    assertThat(process.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
   }
 
   @Test
-  public void shouldDeployWorkflowFromUtf8String() {
+  public void shouldDeployProcessFromUtf8String() {
     // given
     final String filename = BPMN_1_FILENAME;
     final String xml = new String(getBytes(filename), StandardCharsets.UTF_8);
@@ -151,50 +151,50 @@ public final class DeployWorkflowTest extends ClientTest {
     client.newDeployCommand().addResourceStringUtf8(xml, filename).send().join();
 
     // then
-    final DeployWorkflowRequest request = gatewayService.getLastRequest();
-    final WorkflowRequestObject workflow = request.getWorkflows(0);
+    final DeployProcessRequest request = gatewayService.getLastRequest();
+    final ProcessRequestObject process = request.getProcesses(0);
 
-    assertThat(workflow.getName()).isEqualTo(filename);
-    assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
+    assertThat(process.getName()).isEqualTo(filename);
+    assertThat(process.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
   }
 
   @Test
-  public void shouldDeployWorkflowFromWorkflowModel() {
+  public void shouldDeployProcessFromProcessModel() {
     // given
     final String filename = "test.bpmn";
-    final BpmnModelInstance workflowModel =
+    final BpmnModelInstance processModel =
         Bpmn.createExecutableProcess(BPMN_1_PROCESS_ID).startEvent().endEvent().done();
 
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-    Bpmn.writeModelToStream(outStream, workflowModel);
+    Bpmn.writeModelToStream(outStream, processModel);
     final byte[] expectedBytes = outStream.toByteArray();
 
     // when
-    client.newDeployCommand().addWorkflowModel(workflowModel, filename).send().join();
+    client.newDeployCommand().addProcessModel(processModel, filename).send().join();
 
     // then
-    final DeployWorkflowRequest request = gatewayService.getLastRequest();
-    final WorkflowRequestObject workflow = request.getWorkflows(0);
+    final DeployProcessRequest request = gatewayService.getLastRequest();
+    final ProcessRequestObject process = request.getProcesses(0);
 
-    assertThat(workflow.getName()).isEqualTo(filename);
-    assertThat(workflow.getDefinition().toByteArray()).isEqualTo(expectedBytes);
+    assertThat(process.getName()).isEqualTo(filename);
+    assertThat(process.getDefinition().toByteArray()).isEqualTo(expectedBytes);
   }
 
   @Test
-  public void shouldDeployMultipleWorkflows() {
+  public void shouldDeployMultipleProcesses() {
     // given
     final long key = 345L;
 
     final String filename1 = BPMN_1_FILENAME.substring(1);
     final String filename2 = BPMN_2_FILENAME.substring(1);
 
-    final Workflow expected1 = new WorkflowImpl(1, BPMN_1_PROCESS_ID, 1, filename1);
-    final Workflow expected2 = new WorkflowImpl(2, BPMN_2_PROCESS_ID, 1, filename2);
+    final Process expected1 = new ProcessImpl(1, BPMN_1_PROCESS_ID, 1, filename1);
+    final Process expected2 = new ProcessImpl(2, BPMN_2_PROCESS_ID, 1, filename2);
 
-    gatewayService.onDeployWorkflowRequest(
+    gatewayService.onDeployProcessRequest(
         key,
-        deployedWorkflow(BPMN_1_PROCESS_ID, 1, 1, filename1),
-        deployedWorkflow(BPMN_2_PROCESS_ID, 1, 2, filename2));
+        deployedProcess(BPMN_1_PROCESS_ID, 1, 1, filename1),
+        deployedProcess(BPMN_2_PROCESS_ID, 1, 2, filename2));
 
     // when
     final DeploymentEvent response =
@@ -208,27 +208,27 @@ public final class DeployWorkflowTest extends ClientTest {
     // then
     assertThat(response.getKey()).isEqualTo(key);
 
-    final List<Workflow> workflows = response.getWorkflows();
-    assertThat(workflows).containsOnly(expected1, expected2);
+    final List<Process> processes = response.getProcesses();
+    assertThat(processes).containsOnly(expected1, expected2);
 
-    final DeployWorkflowRequest request = gatewayService.getLastRequest();
-    assertThat(request.getWorkflowsList()).hasSize(2);
+    final DeployProcessRequest request = gatewayService.getLastRequest();
+    assertThat(request.getProcessesList()).hasSize(2);
 
-    WorkflowRequestObject workflow = request.getWorkflows(0);
+    ProcessRequestObject process = request.getProcesses(0);
 
-    assertThat(workflow.getName()).isEqualTo(filename1);
-    assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
+    assertThat(process.getName()).isEqualTo(filename1);
+    assertThat(process.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
 
-    workflow = request.getWorkflows(1);
-    assertThat(workflow.getName()).isEqualTo(filename2);
-    assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_2_FILENAME));
+    process = request.getProcesses(1);
+    assertThat(process.getName()).isEqualTo(filename2);
+    assertThat(process.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_2_FILENAME));
   }
 
   @Test
   public void shouldRaiseExceptionOnError() {
     // given
     gatewayService.errorOnRequest(
-        DeployWorkflowRequest.class, () -> new ClientException("Invalid request"));
+        DeployProcessRequest.class, () -> new ClientException("Invalid request"));
 
     // when
     assertThatThrownBy(
@@ -256,7 +256,7 @@ public final class DeployWorkflowTest extends ClientTest {
 
   private byte[] getBytes(final String filename) {
     try {
-      return StreamUtil.readInputStream(DeployWorkflowTest.class.getResourceAsStream(filename));
+      return StreamUtil.readInputStream(DeployProcessTest.class.getResourceAsStream(filename));
     } catch (final IOException e) {
       throw new AssertionError("Failed to read bytes of file: " + filename, e);
     }

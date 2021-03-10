@@ -41,7 +41,7 @@ public final class BrokerClassRuleHelper extends TestWatcher {
   }
 
   public String getBpmnProcessId() {
-    return "workflow-" + currentTestMethod;
+    return "process-" + currentTestMethod;
   }
 
   public String getCorrelationValue() {

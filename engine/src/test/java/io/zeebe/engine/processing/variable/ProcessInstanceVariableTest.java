@@ -26,17 +26,17 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class WorkflowInstanceVariableTest {
+public final class ProcessInstanceVariableTest {
 
   public static final String PROCESS_ID = "process";
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
-  private static final BpmnModelInstance WORKFLOW =
+  private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .serviceTask("task", t -> t.zeebeJobType("test"))
           .endEvent()
           .done();
-  private static long workflowKey;
+  private static long processDefinitionKey;
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -44,25 +44,25 @@ public final class WorkflowInstanceVariableTest {
 
   @BeforeClass
   public static void init() {
-    workflowKey =
+    processDefinitionKey =
         ENGINE_RULE
             .deployment()
-            .withXmlResource(WORKFLOW)
+            .withXmlResource(PROCESS)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0)
-            .getWorkflowKey();
+            .getProcessDefinitionKey();
   }
 
   @Test
-  public void shouldCreateVariableByWorkflowInstanceCreation() {
+  public void shouldCreateVariableByProcessInstanceCreation() {
     // given
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables("{'x':1}")
             .create();
@@ -70,11 +70,11 @@ public final class WorkflowInstanceVariableTest {
     // then
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeKey(workflowInstanceKey)
-        .hasWorkflowKey(workflowKey)
+        .hasScopeKey(processInstanceKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
         .hasName("x")
         .hasValue("1");
   }
@@ -82,13 +82,13 @@ public final class WorkflowInstanceVariableTest {
   @Test
   public void shouldCreateVariableByJobCompletion() {
     // given
-    final long workflowInstanceKey =
-        ENGINE_RULE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     ENGINE_RULE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType("test")
         .withVariables("{'x':1}")
         .complete();
@@ -96,11 +96,11 @@ public final class WorkflowInstanceVariableTest {
     // then
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeKey(workflowInstanceKey)
-        .hasWorkflowKey(workflowKey)
+        .hasScopeKey(processInstanceKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
         .hasName("x")
         .hasValue("1");
   }
@@ -108,7 +108,7 @@ public final class WorkflowInstanceVariableTest {
   @Test
   public void shouldCreateVariableByOutputMapping() {
     // given
-    final long workflowKey =
+    final long processDefinitionKey =
         ENGINE_RULE
             .deployment()
             .withXmlResource(
@@ -120,20 +120,20 @@ public final class WorkflowInstanceVariableTest {
                     .done())
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0)
-            .getWorkflowKey();
+            .getProcessDefinitionKey();
 
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId("shouldCreateVariableByOutputMapping")
             .create();
 
     // when
     ENGINE_RULE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType("test")
         .withVariables("{'x':1}")
         .complete();
@@ -141,12 +141,12 @@ public final class WorkflowInstanceVariableTest {
     // then
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withName("y")
             .getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeKey(workflowInstanceKey)
-        .hasWorkflowKey(workflowKey)
+        .hasScopeKey(processInstanceKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
         .hasName("y")
         .hasValue("1");
   }
@@ -154,24 +154,24 @@ public final class WorkflowInstanceVariableTest {
   @Test
   public void shouldCreateVariableByUpdateVariables() {
     // given
-    final long workflowInstanceKey =
-        ENGINE_RULE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     ENGINE_RULE
         .variables()
-        .ofScope(workflowInstanceKey)
+        .ofScope(processInstanceKey)
         .withDocument(Maps.of(entry("x", 1)))
         .update();
 
     // then
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeKey(workflowInstanceKey)
-        .hasWorkflowKey(workflowKey)
+        .hasScopeKey(processInstanceKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
         .hasName("x")
         .hasValue("1");
   }
@@ -181,9 +181,9 @@ public final class WorkflowInstanceVariableTest {
     // given
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables("{'x':1, 'y':2}")
             .create();
@@ -191,7 +191,7 @@ public final class WorkflowInstanceVariableTest {
     // then
     assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
@@ -202,9 +202,9 @@ public final class WorkflowInstanceVariableTest {
   @Test
   public void shouldUpdateVariableByJobCompletion() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables("{'x':1}")
             .create();
@@ -212,7 +212,7 @@ public final class WorkflowInstanceVariableTest {
     // when
     ENGINE_RULE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType("test")
         .withVariables("{'x':2}")
         .complete();
@@ -220,11 +220,11 @@ public final class WorkflowInstanceVariableTest {
     // then
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.UPDATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeKey(workflowInstanceKey)
-        .hasWorkflowKey(workflowKey)
+        .hasScopeKey(processInstanceKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
         .hasName("x")
         .hasValue("2");
   }
@@ -232,7 +232,7 @@ public final class WorkflowInstanceVariableTest {
   @Test
   public void shouldUpdateVariableByOutputMapping() {
     // given
-    final long workflowKey =
+    final long processDefinitionKey =
         ENGINE_RULE
             .deployment()
             .withXmlResource(
@@ -244,13 +244,13 @@ public final class WorkflowInstanceVariableTest {
                     .done())
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0)
-            .getWorkflowKey();
+            .getProcessDefinitionKey();
 
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId("shouldUpdateVariableByOutputMapping")
             .withVariables("{'y':1}")
             .create();
@@ -258,7 +258,7 @@ public final class WorkflowInstanceVariableTest {
     // when
     ENGINE_RULE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType("test")
         .withVariables("{'x':2}")
         .complete();
@@ -266,11 +266,11 @@ public final class WorkflowInstanceVariableTest {
     // then
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.UPDATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeKey(workflowInstanceKey)
-        .hasWorkflowKey(workflowKey)
+        .hasScopeKey(processInstanceKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
         .hasName("y")
         .hasValue("2");
   }
@@ -278,9 +278,9 @@ public final class WorkflowInstanceVariableTest {
   @Test
   public void shouldUpdateVariableByUpdateVariables() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables("{'x':1}")
             .create();
@@ -288,18 +288,18 @@ public final class WorkflowInstanceVariableTest {
     // when
     ENGINE_RULE
         .variables()
-        .ofScope(workflowInstanceKey)
+        .ofScope(processInstanceKey)
         .withDocument(Maps.of(entry("x", 2)))
         .update();
 
     // then
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.UPDATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeKey(workflowInstanceKey)
-        .hasWorkflowKey(workflowKey)
+        .hasScopeKey(processInstanceKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
         .hasName("x")
         .hasValue("2");
   }
@@ -307,9 +307,9 @@ public final class WorkflowInstanceVariableTest {
   @Test
   public void shouldUpdateMultipleVariables() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables("{'x':1, 'y':2, 'z':3}")
             .create();
@@ -317,7 +317,7 @@ public final class WorkflowInstanceVariableTest {
     // when
     ENGINE_RULE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType("test")
         .withVariables("{'x':1, 'y':4, 'z':5}")
         .complete();
@@ -325,7 +325,7 @@ public final class WorkflowInstanceVariableTest {
     // then
     assertThat(
             RecordingExporter.variableRecords(VariableIntent.UPDATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
@@ -336,22 +336,22 @@ public final class WorkflowInstanceVariableTest {
   @Test
   public void shouldCreateAndUpdateVariables() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables("{'x':1}")
             .create();
 
     final Record<VariableRecordValue> variableCreated =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // when
     ENGINE_RULE
         .variables()
-        .ofScope(workflowInstanceKey)
+        .ofScope(processInstanceKey)
         .withDocument(Maps.of(entry("x", 2), entry("y", 3)))
         .update();
 
@@ -364,41 +364,41 @@ public final class WorkflowInstanceVariableTest {
             record ->
                 tuple(
                     record.getIntent(),
-                    record.getValue().getWorkflowKey(),
+                    record.getValue().getProcessDefinitionKey(),
                     record.getValue().getName(),
                     record.getValue().getValue()))
         .hasSize(2)
         .contains(
-            tuple(VariableIntent.UPDATED, workflowKey, "x", "2"),
-            tuple(VariableIntent.CREATED, workflowKey, "y", "3"));
+            tuple(VariableIntent.UPDATED, processDefinitionKey, "x", "2"),
+            tuple(VariableIntent.CREATED, processDefinitionKey, "y", "3"));
   }
 
   @Test
   public void shouldHaveSameKeyOnVariableUpdate() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables("{'x':1}")
             .create();
 
     final Record<VariableRecordValue> variableCreated =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // when
     ENGINE_RULE
         .variables()
-        .ofScope(workflowInstanceKey)
+        .ofScope(processInstanceKey)
         .withDocument(Maps.of(entry("x", 2)))
         .update();
 
     // then
     final Record<VariableRecordValue> variableUpdated =
         RecordingExporter.variableRecords(VariableIntent.UPDATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     assertThat(variableCreated.getKey()).isEqualTo(variableUpdated.getKey());

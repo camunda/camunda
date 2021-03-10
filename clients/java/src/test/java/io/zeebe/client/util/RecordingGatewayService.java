@@ -24,16 +24,16 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
@@ -51,7 +51,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowMetadata;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -72,18 +72,18 @@ public final class RecordingGatewayService extends GatewayImplBase {
   public RecordingGatewayService() {
     addRequestHandler(TopologyRequest.class, r -> TopologyResponse.getDefaultInstance());
     addRequestHandler(
-        DeployWorkflowRequest.class, r -> DeployWorkflowResponse.getDefaultInstance());
+        DeployProcessRequest.class, r -> DeployProcessResponse.getDefaultInstance());
     addRequestHandler(
         PublishMessageRequest.class, r -> PublishMessageResponse.getDefaultInstance());
     addRequestHandler(
-        CreateWorkflowInstanceRequest.class,
-        r -> CreateWorkflowInstanceResponse.getDefaultInstance());
+        CreateProcessInstanceRequest.class,
+        r -> CreateProcessInstanceResponse.getDefaultInstance());
     addRequestHandler(
-        CreateWorkflowInstanceWithResultRequest.class,
-        r -> CreateWorkflowInstanceWithResultResponse.getDefaultInstance());
+        CreateProcessInstanceWithResultRequest.class,
+        r -> CreateProcessInstanceWithResultResponse.getDefaultInstance());
     addRequestHandler(
-        CancelWorkflowInstanceRequest.class,
-        r -> CancelWorkflowInstanceResponse.getDefaultInstance());
+        CancelProcessInstanceRequest.class,
+        r -> CancelProcessInstanceResponse.getDefaultInstance());
     addRequestHandler(SetVariablesRequest.class, r -> SetVariablesResponse.getDefaultInstance());
     addRequestHandler(
         UpdateJobRetriesRequest.class, r -> UpdateJobRetriesResponse.getDefaultInstance());
@@ -119,15 +119,15 @@ public final class RecordingGatewayService extends GatewayImplBase {
         .build();
   }
 
-  public static WorkflowMetadata deployedWorkflow(
+  public static ProcessMetadata deployedProcess(
       final String bpmnProcessId,
       final int version,
-      final long workflowKey,
+      final long processDefinitionKey,
       final String resourceName) {
-    return WorkflowMetadata.newBuilder()
+    return ProcessMetadata.newBuilder()
         .setBpmnProcessId(bpmnProcessId)
         .setVersion(version)
-        .setWorkflowKey(workflowKey)
+        .setProcessDefinitionKey(processDefinitionKey)
         .setResourceName(resourceName)
         .build();
   }
@@ -152,9 +152,9 @@ public final class RecordingGatewayService extends GatewayImplBase {
   }
 
   @Override
-  public void cancelWorkflowInstance(
-      final CancelWorkflowInstanceRequest request,
-      final StreamObserver<CancelWorkflowInstanceResponse> responseObserver) {
+  public void cancelProcessInstance(
+      final CancelProcessInstanceRequest request,
+      final StreamObserver<CancelProcessInstanceResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
@@ -166,23 +166,23 @@ public final class RecordingGatewayService extends GatewayImplBase {
   }
 
   @Override
-  public void createWorkflowInstance(
-      final CreateWorkflowInstanceRequest request,
-      final StreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
+  public void createProcessInstance(
+      final CreateProcessInstanceRequest request,
+      final StreamObserver<CreateProcessInstanceResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   @Override
-  public void createWorkflowInstanceWithResult(
-      final CreateWorkflowInstanceWithResultRequest request,
-      final StreamObserver<CreateWorkflowInstanceWithResultResponse> responseObserver) {
+  public void createProcessInstanceWithResult(
+      final CreateProcessInstanceWithResultRequest request,
+      final StreamObserver<CreateProcessInstanceWithResultResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   @Override
-  public void deployWorkflow(
-      final DeployWorkflowRequest request,
-      final StreamObserver<DeployWorkflowResponse> responseObserver) {
+  public void deployProcess(
+      final DeployProcessRequest request,
+      final StreamObserver<DeployProcessResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
@@ -250,29 +250,29 @@ public final class RecordingGatewayService extends GatewayImplBase {
                 .build());
   }
 
-  public void onDeployWorkflowRequest(final long key, final WorkflowMetadata... deployedWorkflows) {
+  public void onDeployProcessRequest(final long key, final ProcessMetadata... deployedProcesses) {
     addRequestHandler(
-        DeployWorkflowRequest.class,
+        DeployProcessRequest.class,
         request ->
-            DeployWorkflowResponse.newBuilder()
+            DeployProcessResponse.newBuilder()
                 .setKey(key)
-                .addAllWorkflows(Arrays.asList(deployedWorkflows))
+                .addAllProcesses(Arrays.asList(deployedProcesses))
                 .build());
   }
 
-  public void onCreateWorkflowInstanceRequest(
-      final long workflowKey,
+  public void onCreateProcessInstanceRequest(
+      final long processDefinitionKey,
       final String bpmnProcessId,
       final int version,
-      final long workflowInstanceKey) {
+      final long processInstanceKey) {
     addRequestHandler(
-        CreateWorkflowInstanceRequest.class,
+        CreateProcessInstanceRequest.class,
         request ->
-            CreateWorkflowInstanceResponse.newBuilder()
-                .setWorkflowKey(workflowKey)
+            CreateProcessInstanceResponse.newBuilder()
+                .setProcessDefinitionKey(processDefinitionKey)
                 .setBpmnProcessId(bpmnProcessId)
                 .setVersion(version)
-                .setWorkflowInstanceKey(workflowInstanceKey)
+                .setProcessInstanceKey(processInstanceKey)
                 .build());
   }
 
@@ -282,20 +282,20 @@ public final class RecordingGatewayService extends GatewayImplBase {
         request -> PublishMessageResponse.newBuilder().setKey(key).build());
   }
 
-  public void onCreateWorkflowInstanceWithResultRequest(
-      final long workflowKey,
+  public void onCreateProcessInstanceWithResultRequest(
+      final long processDefinitionKey,
       final String bpmnProcessId,
       final int version,
-      final long workflowInstanceKey,
+      final long processInstanceKey,
       final String variables) {
     addRequestHandler(
-        CreateWorkflowInstanceWithResultRequest.class,
+        CreateProcessInstanceWithResultRequest.class,
         request ->
-            CreateWorkflowInstanceWithResultResponse.newBuilder()
-                .setWorkflowKey(workflowKey)
+            CreateProcessInstanceWithResultResponse.newBuilder()
+                .setProcessDefinitionKey(processDefinitionKey)
                 .setBpmnProcessId(bpmnProcessId)
                 .setVersion(version)
-                .setWorkflowInstanceKey(workflowInstanceKey)
+                .setProcessInstanceKey(processInstanceKey)
                 .setVariables(variables)
                 .build());
   }

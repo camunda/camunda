@@ -17,21 +17,21 @@ package io.zeebe.protocol.record.value.deployment;
 
 import io.zeebe.protocol.record.RecordValue;
 
-/** Represents a deployed workflow. */
-public interface DeployedWorkflow extends RecordValue {
-  /** @return the bpmn process ID of this workflow */
+/** Represents a deployed process. */
+public interface DeployedProcess extends RecordValue {
+  /** @return the bpmn process ID of this process */
   String getBpmnProcessId();
 
-  /** @return the version of this workflow */
+  /** @return the version of this process */
   int getVersion();
 
-  /** @return the key of this workflow */
-  long getWorkflowKey();
+  /** @return the key of this process */
+  long getProcessDefinitionKey();
 
-  /** @return the name of the resource through which this workflow was deployed */
+  /** @return the name of the resource through which this process was deployed */
   String getResourceName();
 
-  /** @return the checksum of the workflow (MD5) */
+  /** @return the checksum of the process (MD5) */
   byte[] getChecksum();
 
   /** @return returns the corresponding binary resource */

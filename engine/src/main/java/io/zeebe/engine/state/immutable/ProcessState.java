@@ -8,26 +8,26 @@
 package io.zeebe.engine.state.immutable;
 
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.zeebe.engine.state.deployment.DeployedWorkflow;
+import io.zeebe.engine.state.deployment.DeployedProcess;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 
-public interface WorkflowState {
+public interface ProcessState {
 
-  DeployedWorkflow getLatestWorkflowVersionByProcessId(DirectBuffer processId);
+  DeployedProcess getLatestProcessVersionByProcessId(DirectBuffer processId);
 
-  DeployedWorkflow getWorkflowByProcessIdAndVersion(DirectBuffer processId, int version);
+  DeployedProcess getProcessByProcessIdAndVersion(DirectBuffer processId, int version);
 
-  DeployedWorkflow getWorkflowByKey(long key);
+  DeployedProcess getProcessByKey(long key);
 
-  Collection<DeployedWorkflow> getWorkflows();
+  Collection<DeployedProcess> getProcesses();
 
-  Collection<DeployedWorkflow> getWorkflowsByBpmnProcessId(DirectBuffer bpmnProcessId);
+  Collection<DeployedProcess> getProcessesByBpmnProcessId(DirectBuffer bpmnProcessId);
 
   DirectBuffer getLatestVersionDigest(DirectBuffer processId);
 
-  int getWorkflowVersion(String bpmnProcessId);
+  int getProcessVersion(String bpmnProcessId);
 
   <T extends ExecutableFlowElement> T getFlowElement(
-      long workflowKey, DirectBuffer elementId, Class<T> elementType);
+      long processDefinitionKey, DirectBuffer elementId, Class<T> elementType);
 }

@@ -11,7 +11,7 @@ import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -19,20 +19,20 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class DeploymentRecord extends UnifiedRecordValue implements DeploymentRecordValue {
 
   public static final String RESOURCES = "resources";
-  public static final String WORKFLOWS = "deployedWorkflows";
+  public static final String PROCESSES = "deployedProcesses";
 
   private final ArrayProperty<DeploymentResource> resourcesProp =
       new ArrayProperty<>(RESOURCES, new DeploymentResource());
 
-  private final ArrayProperty<WorkflowRecord> workflowsProp =
-      new ArrayProperty<>(WORKFLOWS, new WorkflowRecord());
+  private final ArrayProperty<ProcessRecord> processesProp =
+      new ArrayProperty<>(PROCESSES, new ProcessRecord());
 
   public DeploymentRecord() {
-    declareProperty(resourcesProp).declareProperty(workflowsProp);
+    declareProperty(resourcesProp).declareProperty(processesProp);
   }
 
-  public ValueArray<WorkflowRecord> workflows() {
-    return workflowsProp;
+  public ValueArray<ProcessRecord> processes() {
+    return processesProp;
   }
 
   public ValueArray<DeploymentResource> resources() {
@@ -58,19 +58,19 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   }
 
   @Override
-  public List<DeployedWorkflow> getDeployedWorkflows() {
-    final List<DeployedWorkflow> workflows = new ArrayList<>();
+  public List<DeployedProcess> getDeployedProcesses() {
+    final List<DeployedProcess> processes = new ArrayList<>();
 
-    for (final WorkflowRecord workflowRecord : workflowsProp) {
-      final byte[] bytes = new byte[workflowRecord.getLength()];
+    for (final ProcessRecord processRecord : processesProp) {
+      final byte[] bytes = new byte[processRecord.getLength()];
       final UnsafeBuffer copyBuffer = new UnsafeBuffer(bytes);
-      workflowRecord.write(copyBuffer, 0);
+      processRecord.write(copyBuffer, 0);
 
-      final WorkflowRecord copiedWorkflowRecord = new WorkflowRecord();
-      copiedWorkflowRecord.wrap(copyBuffer);
-      workflows.add(copiedWorkflowRecord);
+      final ProcessRecord copiedProcessRecord = new ProcessRecord();
+      copiedProcessRecord.wrap(copyBuffer);
+      processes.add(copiedProcessRecord);
     }
 
-    return workflows;
+    return processes;
   }
 }

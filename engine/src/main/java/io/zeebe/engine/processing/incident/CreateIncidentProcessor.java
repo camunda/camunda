@@ -63,7 +63,7 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
     if (isJobIncident) {
       return tryRejectJobIncident(incidentEvent.getJobKey(), commandControl);
     } else {
-      return tryRejectWorkflowInstanceIncident(
+      return tryRejectProcessInstanceIncident(
           incidentEvent.getElementInstanceKey(), commandControl);
     }
   }
@@ -89,7 +89,7 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
   }
 
   /** @return true if rejected, otherwise false */
-  private boolean tryRejectWorkflowInstanceIncident(
+  private boolean tryRejectProcessInstanceIncident(
       final long elementInstanceKey, final CommandControl<IncidentRecord> commandControl) {
     final IndexedRecord failedRecord = elementInstanceState.getFailedRecord(elementInstanceKey);
     final boolean noFailedRecord = failedRecord == null;

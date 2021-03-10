@@ -12,7 +12,7 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableError;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,35 +21,35 @@ import org.agrona.DirectBuffer;
 
 public final class TransformContext {
 
-  private final Map<DirectBuffer, ExecutableWorkflow> workflows = new HashMap<>();
+  private final Map<DirectBuffer, ExecutableProcess> processes = new HashMap<>();
   private final Map<DirectBuffer, ExecutableMessage> messages = new HashMap<>();
   private final Map<DirectBuffer, ExecutableError> errors = new HashMap<>();
 
   private ExpressionLanguage expressionLanguage;
 
   /*
-   * set whenever parsing a workflow
+   * set whenever parsing a process
    */
-  private ExecutableWorkflow currentWorkflow;
+  private ExecutableProcess currentProcess;
 
-  public ExecutableWorkflow getCurrentWorkflow() {
-    return currentWorkflow;
+  public ExecutableProcess getCurrentProcess() {
+    return currentProcess;
   }
 
-  public void setCurrentWorkflow(final ExecutableWorkflow currentWorkflow) {
-    this.currentWorkflow = currentWorkflow;
+  public void setCurrentProcess(final ExecutableProcess currentProcess) {
+    this.currentProcess = currentProcess;
   }
 
-  public void addWorkflow(final ExecutableWorkflow workflow) {
-    workflows.put(workflow.getId(), workflow);
+  public void addProcess(final ExecutableProcess process) {
+    processes.put(process.getId(), process);
   }
 
-  public ExecutableWorkflow getWorkflow(final String id) {
-    return workflows.get(wrapString(id));
+  public ExecutableProcess getProcess(final String id) {
+    return processes.get(wrapString(id));
   }
 
-  public List<ExecutableWorkflow> getWorkflows() {
-    return new ArrayList<>(workflows.values());
+  public List<ExecutableProcess> getProcesses() {
+    return new ArrayList<>(processes.values());
   }
 
   public void addMessage(final ExecutableMessage message) {

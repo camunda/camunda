@@ -35,7 +35,7 @@ public final class VariableRecordStream
     return valueFilter(v -> v.getValue().equals(value));
   }
 
-  public VariableRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
-    return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
+  public VariableRecordStream withProcessInstanceKey(final long processInstanceKey) {
+    return valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey);
   }
 }

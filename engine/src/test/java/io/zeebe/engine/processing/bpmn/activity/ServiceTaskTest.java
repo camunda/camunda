@@ -18,10 +18,10 @@ import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
@@ -40,7 +40,7 @@ public final class ServiceTaskTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private static BpmnModelInstance workflow(final Consumer<ServiceTaskBuilder> consumer) {
+  private static BpmnModelInstance process(final Consumer<ServiceTaskBuilder> consumer) {
     final var builder = Bpmn.createExecutableProcess(PROCESS_ID).startEvent().serviceTask("task");
 
     consumer.accept(builder);
@@ -53,16 +53,16 @@ public final class ServiceTaskTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(workflow(t -> t.zeebeJobTypeExpression("\"test\"")))
+        .withXmlResource(process(t -> t.zeebeJobTypeExpression("\"test\"")))
         .deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final Record<JobRecordValue> job =
         RecordingExporter.jobRecords(JobIntent.CREATE)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(job.getValue()).hasType("test");
@@ -73,16 +73,16 @@ public final class ServiceTaskTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(workflow(t -> t.zeebeJobType("test").zeebeJobRetriesExpression("5+3")))
+        .withXmlResource(process(t -> t.zeebeJobType("test").zeebeJobRetriesExpression("5+3")))
         .deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final Record<JobRecordValue> job =
         RecordingExporter.jobRecords(JobIntent.CREATE)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(job.getValue()).hasRetries(8);
@@ -91,34 +91,34 @@ public final class ServiceTaskTest {
   @Test
   public void shouldActivateServiceTask() {
     // given
-    ENGINE.deployment().withXmlResource(workflow(t -> t.zeebeJobType("test"))).deploy();
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeJobType("test"))).deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SERVICE_TASK)
                 .limit(2))
         .extracting(Record::getIntent)
         .containsSequence(
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
-    final Record<WorkflowInstanceRecordValue> serviceTask =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+    final Record<ProcessInstanceRecordValue> serviceTask =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
 
     Assertions.assertThat(serviceTask.getValue())
         .hasElementId("task")
         .hasBpmnElementType(BpmnElementType.SERVICE_TASK)
-        .hasFlowScopeKey(workflowInstanceKey)
+        .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId("process")
-        .hasWorkflowInstanceKey(workflowInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey);
   }
 
   @Test
@@ -126,23 +126,23 @@ public final class ServiceTaskTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(workflow(t -> t.zeebeJobType("test").zeebeJobRetries("5")))
+        .withXmlResource(process(t -> t.zeebeJobType("test").zeebeJobRetries("5")))
         .deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    final Record<WorkflowInstanceRecordValue> taskActivated =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+    final Record<ProcessInstanceRecordValue> taskActivated =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
 
     final Record<JobRecordValue> job =
         RecordingExporter.jobRecords(JobIntent.CREATE)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(job.getValue())
@@ -150,28 +150,28 @@ public final class ServiceTaskTest {
         .hasRetries(5)
         .hasElementInstanceKey(taskActivated.getKey())
         .hasElementId(taskActivated.getValue().getElementId())
-        .hasWorkflowKey(taskActivated.getValue().getWorkflowKey())
+        .hasProcessDefinitionKey(taskActivated.getValue().getProcessDefinitionKey())
         .hasBpmnProcessId(taskActivated.getValue().getBpmnProcessId())
-        .hasWorkflowDefinitionVersion(taskActivated.getValue().getVersion());
+        .hasProcessDefinitionVersion(taskActivated.getValue().getVersion());
   }
 
   @Test
-  public void shouldCreateJobWithWorkflowInstanceAndCustomHeaders() {
+  public void shouldCreateJobWithProcessInstanceAndCustomHeaders() {
     // given
     ENGINE
         .deployment()
         .withXmlResource(
-            workflow(
+            process(
                 t -> t.zeebeJobType("test").zeebeTaskHeader("a", "b").zeebeTaskHeader("c", "d")))
         .deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final Record<JobRecordValue> job =
         RecordingExporter.jobRecords(JobIntent.CREATE)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
@@ -181,24 +181,24 @@ public final class ServiceTaskTest {
   @Test
   public void shouldCompleteServiceTask() {
     // given
-    ENGINE.deployment().withXmlResource(workflow(t -> t.zeebeJobType("test"))).deploy();
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeJobType("test"))).deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    ENGINE.job().ofInstance(workflowInstanceKey).withType("test").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("test").complete();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.SEQUENCE_FLOW, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -206,35 +206,35 @@ public final class ServiceTaskTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(workflow(t -> t.zeebeJobTypeExpression("nonexisting_variable")))
+        .withXmlResource(process(t -> t.zeebeJobTypeExpression("nonexisting_variable")))
         .deploy();
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("foo", 10).create();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("foo", 10).create();
     assertThat(
             RecordingExporter.incidentRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .extracting(Record::getIntent)
         .containsExactly(IncidentIntent.CREATE, IncidentIntent.CREATED);
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceTerminated())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
 
     assertThat(
             RecordingExporter.incidentRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
         .extracting(Record::getIntent)
         .containsExactly(IncidentIntent.CREATE, IncidentIntent.CREATED, IncidentIntent.RESOLVED);

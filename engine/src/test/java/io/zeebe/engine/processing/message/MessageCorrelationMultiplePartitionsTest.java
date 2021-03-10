@@ -14,14 +14,14 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.data.MapEntry.entry;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.engine.util.client.WorkflowInstanceClient.WorkflowInstanceCreationClient;
+import io.zeebe.engine.util.client.ProcessInstanceClient.ProcessInstanceCreationClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.WorkflowInstances;
+import io.zeebe.test.util.record.ProcessInstances;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
@@ -41,7 +41,7 @@ public final class MessageCorrelationMultiplePartitionsTest {
 
   private static final String PROCESS_ID = "process";
 
-  private static final BpmnModelInstance WORKFLOW =
+  private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("receive-message")
@@ -60,7 +60,7 @@ public final class MessageCorrelationMultiplePartitionsTest {
     assertThat(getPartitionId(CORRELATION_KEYS.get(START_PARTITION_ID + 2)))
         .isEqualTo(START_PARTITION_ID + 2);
 
-    engine.deployment().withXmlResource(WORKFLOW).deploy();
+    engine.deployment().withXmlResource(PROCESS).deploy();
   }
 
   @Test
@@ -69,15 +69,15 @@ public final class MessageCorrelationMultiplePartitionsTest {
     IntStream.range(0, 10)
         .forEach(
             i -> {
-              final WorkflowInstanceCreationClient workflowInstanceCreationClient =
-                  engine.workflowInstance().ofBpmnProcessId(PROCESS_ID);
-              workflowInstanceCreationClient
+              final ProcessInstanceCreationClient processInstanceCreationClient =
+                  engine.processInstance().ofBpmnProcessId(PROCESS_ID);
+              processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID))
                   .create();
-              workflowInstanceCreationClient
+              processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))
                   .create();
-              workflowInstanceCreationClient
+              processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))
                   .create();
             });
@@ -107,27 +107,27 @@ public final class MessageCorrelationMultiplePartitionsTest {
                 .publish());
 
     // when
-    final WorkflowInstanceCreationClient workflowInstanceCreationClient =
-        engine.workflowInstance().ofBpmnProcessId(PROCESS_ID);
+    final ProcessInstanceCreationClient processInstanceCreationClient =
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID);
     final long wfiKey1 =
-        workflowInstanceCreationClient
+        processInstanceCreationClient
             .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID))
             .create();
     final long wfiKey2 =
-        workflowInstanceCreationClient
+        processInstanceCreationClient
             .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))
             .create();
     final long wfiKey3 =
-        workflowInstanceCreationClient
+        processInstanceCreationClient
             .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))
             .create();
 
     // then
     final List<String> correlatedValues =
         Arrays.asList(
-            WorkflowInstances.getCurrentVariables(wfiKey1).get("p"),
-            WorkflowInstances.getCurrentVariables(wfiKey2).get("p"),
-            WorkflowInstances.getCurrentVariables(wfiKey3).get("p"));
+            ProcessInstances.getCurrentVariables(wfiKey1).get("p"),
+            ProcessInstances.getCurrentVariables(wfiKey2).get("p"),
+            ProcessInstances.getCurrentVariables(wfiKey3).get("p"));
 
     assertThat(correlatedValues).contains("\"p1\"", "\"p2\"", "\"p3\"");
   }
@@ -135,19 +135,19 @@ public final class MessageCorrelationMultiplePartitionsTest {
   @Test
   public void shouldOpenMessageSubscriptionsOnSamePartitionsAfterRestart() {
     // given
-    final WorkflowInstanceCreationClient workflowInstanceCreationClient =
-        engine.workflowInstance().ofBpmnProcessId(PROCESS_ID);
+    final ProcessInstanceCreationClient processInstanceCreationClient =
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID);
 
     IntStream.range(0, 5)
         .forEach(
             i -> {
-              workflowInstanceCreationClient
+              processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID))
                   .create();
-              workflowInstanceCreationClient
+              processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))
                   .create();
-              workflowInstanceCreationClient
+              processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))
                   .create();
             });
@@ -166,13 +166,13 @@ public final class MessageCorrelationMultiplePartitionsTest {
     IntStream.range(0, 5)
         .forEach(
             i -> {
-              workflowInstanceCreationClient
+              processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID))
                   .create();
-              workflowInstanceCreationClient
+              processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))
                   .create();
-              workflowInstanceCreationClient
+              processInstanceCreationClient
                   .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))
                   .create();
             });

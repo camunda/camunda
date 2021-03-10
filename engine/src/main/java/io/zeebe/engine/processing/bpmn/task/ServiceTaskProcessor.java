@@ -147,9 +147,9 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
         .setRetries(retries)
         .setCustomHeaders(serviceTask.getEncodedHeaders())
         .setBpmnProcessId(context.getBpmnProcessId())
-        .setWorkflowDefinitionVersion(context.getWorkflowVersion())
-        .setWorkflowKey(context.getWorkflowKey())
-        .setWorkflowInstanceKey(context.getWorkflowInstanceKey())
+        .setProcessDefinitionVersion(context.getProcessVersion())
+        .setProcessDefinitionKey(context.getProcessDefinitionKey())
+        .setProcessInstanceKey(context.getProcessInstanceKey())
         .setElementId(serviceTask.getId())
         .setElementInstanceKey(context.getElementInstanceKey());
 

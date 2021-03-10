@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.util;
 
-import static io.zeebe.engine.util.Records.workflowInstance;
+import static io.zeebe.engine.util.Records.processInstance;
 
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
@@ -21,7 +21,7 @@ import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.function.Consumer;
 
 public class StreamProcessingComposite {
@@ -119,26 +119,26 @@ public class StreamProcessingComposite {
     return new RecordStream(streams.events(getLogName(partitionId)));
   }
 
-  public long writeWorkflowInstanceEvent(final WorkflowInstanceIntent intent) {
-    return writeWorkflowInstanceEvent(intent, 1);
+  public long writeProcessInstanceEvent(final ProcessInstanceIntent intent) {
+    return writeProcessInstanceEvent(intent, 1);
   }
 
-  public long writeWorkflowInstanceEventWithSource(
-      final WorkflowInstanceIntent intent, final int instanceKey, final long sourceEventPosition) {
+  public long writeProcessInstanceEventWithSource(
+      final ProcessInstanceIntent intent, final int instanceKey, final long sourceEventPosition) {
     return streams
         .newRecord(getLogName(partitionId))
-        .event(workflowInstance(instanceKey))
+        .event(processInstance(instanceKey))
         .recordType(RecordType.EVENT)
         .sourceRecordPosition(sourceEventPosition)
         .intent(intent)
         .write();
   }
 
-  public long writeWorkflowInstanceEvent(
-      final WorkflowInstanceIntent intent, final int instanceKey) {
+  public long writeProcessInstanceEvent(
+      final ProcessInstanceIntent intent, final int instanceKey) {
     return streams
         .newRecord(getLogName(partitionId))
-        .event(workflowInstance(instanceKey))
+        .event(processInstance(instanceKey))
         .recordType(RecordType.EVENT)
         .intent(intent)
         .write();

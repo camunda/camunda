@@ -8,63 +8,63 @@
 package io.zeebe.test.util.record;
 
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
-import io.zeebe.protocol.record.value.WorkflowInstanceCreationRecordValue;
+import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.zeebe.test.util.collection.Maps;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public final class WorkflowInstanceCreationRecordStream
+public final class ProcessInstanceCreationRecordStream
     extends ExporterRecordStream<
-        WorkflowInstanceCreationRecordValue, WorkflowInstanceCreationRecordStream> {
+        ProcessInstanceCreationRecordValue, ProcessInstanceCreationRecordStream> {
 
-  public WorkflowInstanceCreationRecordStream(
-      final Stream<Record<WorkflowInstanceCreationRecordValue>> wrappedStream) {
+  public ProcessInstanceCreationRecordStream(
+      final Stream<Record<ProcessInstanceCreationRecordValue>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
-  protected WorkflowInstanceCreationRecordStream supply(
-      final Stream<Record<WorkflowInstanceCreationRecordValue>> wrappedStream) {
-    return new WorkflowInstanceCreationRecordStream(wrappedStream);
+  protected ProcessInstanceCreationRecordStream supply(
+      final Stream<Record<ProcessInstanceCreationRecordValue>> wrappedStream) {
+    return new ProcessInstanceCreationRecordStream(wrappedStream);
   }
 
-  public WorkflowInstanceCreationRecordStream withBpmnProcessId(final String bpmnProcessId) {
+  public ProcessInstanceCreationRecordStream withBpmnProcessId(final String bpmnProcessId) {
     return valueFilter(v -> v.getBpmnProcessId().equals(bpmnProcessId));
   }
 
-  public WorkflowInstanceCreationRecordStream withVersion(final int version) {
+  public ProcessInstanceCreationRecordStream withVersion(final int version) {
     return valueFilter(v -> v.getVersion() == version);
   }
 
-  public WorkflowInstanceCreationRecordStream withKey(final long key) {
-    return valueFilter(v -> v.getWorkflowKey() == key);
+  public ProcessInstanceCreationRecordStream withKey(final long key) {
+    return valueFilter(v -> v.getProcessDefinitionKey() == key);
   }
 
-  public WorkflowInstanceCreationRecordStream withInstanceKey(final long instanceKey) {
-    return valueFilter(v -> v.getWorkflowInstanceKey() == instanceKey);
+  public ProcessInstanceCreationRecordStream withInstanceKey(final long instanceKey) {
+    return valueFilter(v -> v.getProcessInstanceKey() == instanceKey);
   }
 
-  public WorkflowInstanceCreationRecordStream withVariables(final Map<String, Object> variables) {
+  public ProcessInstanceCreationRecordStream withVariables(final Map<String, Object> variables) {
     return valueFilter(v -> v.getVariables().equals(variables));
   }
 
-  public WorkflowInstanceCreationRecordStream withVariables(
+  public ProcessInstanceCreationRecordStream withVariables(
       final Map.Entry<String, Object>... entries) {
     return withVariables(Maps.of(entries));
   }
 
-  public WorkflowInstanceCreationRecordStream withVariables(
+  public ProcessInstanceCreationRecordStream withVariables(
       final Predicate<Map<String, Object>> matcher) {
     return valueFilter(v -> matcher.test(v.getVariables()));
   }
 
-  public WorkflowInstanceCreationRecordStream limitToWorkflowInstanceCreated(
-      final long workflowInstanceKey) {
+  public ProcessInstanceCreationRecordStream limitToProcessInstanceCreated(
+      final long processInstanceKey) {
     return limit(
         r ->
-            r.getIntent() == WorkflowInstanceCreationIntent.CREATED
-                && r.getValue().getWorkflowInstanceKey() == workflowInstanceKey);
+            r.getIntent() == ProcessInstanceCreationIntent.CREATED
+                && r.getValue().getProcessInstanceKey() == processInstanceKey);
   }
 }

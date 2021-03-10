@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.processing.workflowinstance;
+package io.zeebe.engine.processing.processinstance;
 
-public interface WorkflowInstanceCommandHandler {
+public interface ProcessInstanceCommandHandler {
 
-  void handle(WorkflowInstanceCommandContext commandContext);
+  void handle(ProcessInstanceCommandContext commandContext);
 }

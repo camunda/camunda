@@ -11,17 +11,17 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.Objects;
 
 public class MockRecordMetadata extends ExporterMappedObject implements Cloneable {
 
-  private Intent intent = WorkflowInstanceCreationIntent.CREATE;
+  private Intent intent = ProcessInstanceCreationIntent.CREATE;
   private int partitionId = 0;
   private RecordType recordType = RecordType.COMMAND;
   private RejectionType rejectionType = RejectionType.NULL_VAL;
   private String rejectionReason = "";
-  private ValueType valueType = ValueType.WORKFLOW_INSTANCE_CREATION;
+  private ValueType valueType = ValueType.PROCESS_INSTANCE_CREATION;
   private String brokerVersion = "";
 
   public MockRecordMetadata() {}

@@ -19,53 +19,53 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
-import io.zeebe.engine.state.immutable.WorkflowState;
-import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
-import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
-import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.engine.state.immutable.ProcessState;
+import io.zeebe.engine.state.message.ProcessInstanceSubscription;
+import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
-public final class CorrelateWorkflowInstanceSubscription
-    implements TypedRecordProcessor<WorkflowInstanceSubscriptionRecord> {
+public final class CorrelateProcessInstanceSubscription
+    implements TypedRecordProcessor<ProcessInstanceSubscriptionRecord> {
 
   private static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
   private static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
   private static final String NO_EVENT_OCCURRED_MESSAGE =
-      "Expected to correlate a workflow instance subscription with element key '%d' and message name '%s', "
+      "Expected to correlate a process instance subscription with element key '%d' and message name '%s', "
           + "but the subscription is not active anymore";
   private static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
-      "Expected to correlate workflow instance subscription with element key '%d' and message name '%s', "
+      "Expected to correlate process instance subscription with element key '%d' and message name '%s', "
           + "but no such subscription was found";
   private static final String ALREADY_CLOSING_MESSAGE =
-      "Expected to correlate workflow instance subscription with element key '%d' and message name '%s', "
+      "Expected to correlate process instance subscription with element key '%d' and message name '%s', "
           + "but it is already closing";
 
-  private final MutableWorkflowInstanceSubscriptionState subscriptionState;
+  private final MutableProcessInstanceSubscriptionState subscriptionState;
   private final SubscriptionCommandSender subscriptionCommandSender;
-  private final WorkflowState workflowState;
+  private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
   private final KeyGenerator keyGenerator;
 
   private final EventHandle eventHandle;
 
-  private final WorkflowInstanceRecord eventSubprocessRecord = new WorkflowInstanceRecord();
-  private WorkflowInstanceSubscriptionRecord subscriptionRecord;
+  private final ProcessInstanceRecord eventSubprocessRecord = new ProcessInstanceRecord();
+  private ProcessInstanceSubscriptionRecord subscriptionRecord;
   private DirectBuffer correlationKey;
 
-  public CorrelateWorkflowInstanceSubscription(
-      final MutableWorkflowInstanceSubscriptionState subscriptionState,
+  public CorrelateProcessInstanceSubscription(
+      final MutableProcessInstanceSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender,
       final ZeebeState zeebeState) {
     this.subscriptionState = subscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
-    workflowState = zeebeState.getWorkflowState();
+    processState = zeebeState.getProcessState();
     elementInstanceState = zeebeState.getElementInstanceState();
     keyGenerator = zeebeState.getKeyGenerator();
 
@@ -76,8 +76,8 @@ public final class CorrelateWorkflowInstanceSubscription
   public void onRecovered(final ReadonlyProcessingContext processingContext) {
     final ActorControl actor = processingContext.getActor();
 
-    final PendingWorkflowInstanceSubscriptionChecker pendingSubscriptionChecker =
-        new PendingWorkflowInstanceSubscriptionChecker(
+    final PendingProcessInstanceSubscriptionChecker pendingSubscriptionChecker =
+        new PendingProcessInstanceSubscriptionChecker(
             subscriptionCommandSender, subscriptionState, SUBSCRIPTION_TIMEOUT.toMillis());
     actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
   }
@@ -87,7 +87,7 @@ public final class CorrelateWorkflowInstanceSubscription
 
   @Override
   public void processRecord(
-      final TypedRecord<WorkflowInstanceSubscriptionRecord> record,
+      final TypedRecord<ProcessInstanceSubscriptionRecord> record,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
@@ -95,7 +95,7 @@ public final class CorrelateWorkflowInstanceSubscription
     subscriptionRecord = record.getValue();
     final long elementInstanceKey = subscriptionRecord.getElementInstanceKey();
 
-    final WorkflowInstanceSubscription subscription =
+    final ProcessInstanceSubscription subscription =
         subscriptionState.getSubscription(
             elementInstanceKey, subscriptionRecord.getMessageNameBuffer());
 
@@ -133,7 +133,7 @@ public final class CorrelateWorkflowInstanceSubscription
       sideEffect.accept(this::sendAcknowledgeCommand);
 
       streamWriter.appendFollowUpEvent(
-          record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
+          record.getKey(), ProcessInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
 
     } else {
       correlationKey = subscription.getCorrelationKey();
@@ -151,7 +151,7 @@ public final class CorrelateWorkflowInstanceSubscription
 
   private boolean triggerCatchEvent(
       final TypedStreamWriter streamWriter,
-      final WorkflowInstanceSubscription subscription,
+      final ProcessInstanceSubscription subscription,
       final DirectBuffer variables) {
 
     final var elementInstance =
@@ -160,10 +160,10 @@ public final class CorrelateWorkflowInstanceSubscription
       return false;
     }
 
-    final var workflowKey = elementInstance.getValue().getWorkflowKey();
+    final var processDefinitionKey = elementInstance.getValue().getProcessDefinitionKey();
     final var catchEvent =
-        workflowState.getFlowElement(
-            workflowKey, subscription.getTargetElementId(), ExecutableFlowElement.class);
+        processState.getFlowElement(
+            processDefinitionKey, subscription.getTargetElementId(), ExecutableFlowElement.class);
 
     return eventHandle.triggerEvent(streamWriter, elementInstance, catchEvent, variables);
   }
@@ -171,7 +171,7 @@ public final class CorrelateWorkflowInstanceSubscription
   private boolean sendAcknowledgeCommand() {
     return subscriptionCommandSender.correlateMessageSubscription(
         subscriptionRecord.getSubscriptionPartitionId(),
-        subscriptionRecord.getWorkflowInstanceKey(),
+        subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getBpmnProcessIdBuffer(),
         subscriptionRecord.getMessageNameBuffer());
@@ -179,7 +179,7 @@ public final class CorrelateWorkflowInstanceSubscription
 
   private boolean sendRejectionCommand() {
     return subscriptionCommandSender.rejectCorrelateMessageSubscription(
-        subscriptionRecord.getWorkflowInstanceKey(),
+        subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getBpmnProcessIdBuffer(),
         subscriptionRecord.getMessageKey(),
         subscriptionRecord.getMessageNameBuffer(),

@@ -18,8 +18,8 @@ import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -46,9 +46,9 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbLong, DbByte>, DbLong>, DbNil>
       recordParentChildColumnFamily;
 
-  private final AwaitWorkflowInstanceResultMetadata awaitResultMetadata;
-  private final ColumnFamily<DbLong, AwaitWorkflowInstanceResultMetadata>
-      awaitWorkflowInstanceResultMetadataColumnFamily;
+  private final AwaitProcessInstanceResultMetadata awaitResultMetadata;
+  private final ColumnFamily<DbLong, AwaitProcessInstanceResultMetadata>
+      awaitProcessInstanceResultMetadataColumnFamily;
 
   private final MutableVariableState variableState;
 
@@ -94,8 +94,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             recordParentStateRecordKey,
             DbNil.INSTANCE);
 
-    awaitResultMetadata = new AwaitWorkflowInstanceResultMetadata();
-    awaitWorkflowInstanceResultMetadataColumnFamily =
+    awaitResultMetadata = new AwaitProcessInstanceResultMetadata();
+    awaitProcessInstanceResultMetadataColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.AWAIT_WORKLOW_RESULT,
             transactionContext,
@@ -105,7 +105,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   @Override
   public ElementInstance newInstance(
-      final long key, final WorkflowInstanceRecord value, final WorkflowInstanceIntent state) {
+      final long key, final ProcessInstanceRecord value, final ProcessInstanceIntent state) {
     return newInstance(null, key, value, state);
   }
 
@@ -113,8 +113,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   public ElementInstance newInstance(
       final ElementInstance parent,
       final long key,
-      final WorkflowInstanceRecord value,
-      final WorkflowInstanceIntent state) {
+      final ProcessInstanceRecord value,
+      final ProcessInstanceIntent state) {
 
     final ElementInstance instance;
     if (parent == null) {
@@ -148,7 +148,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
       variableState.removeScope(key);
 
-      awaitWorkflowInstanceResultMetadataColumnFamily.delete(elementInstanceKey);
+      awaitProcessInstanceResultMetadataColumnFamily.delete(elementInstanceKey);
 
       final long parentKey = instance.getParentKey();
       if (parentKey > 0) {
@@ -198,8 +198,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   public void storeRecord(
       final long key,
       final long scopeKey,
-      final WorkflowInstanceRecord value,
-      final WorkflowInstanceIntent intent,
+      final ProcessInstanceRecord value,
+      final ProcessInstanceIntent intent,
       final Purpose purpose) {
     final IndexedRecord indexedRecord = new IndexedRecord(key, intent, value);
     final StoredRecord storedRecord = new StoredRecord(indexedRecord, purpose);
@@ -220,9 +220,9 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   @Override
   public void setAwaitResultRequestMetadata(
-      final long workflowInstanceKey, final AwaitWorkflowInstanceResultMetadata metadata) {
-    elementInstanceKey.wrapLong(workflowInstanceKey);
-    awaitWorkflowInstanceResultMetadataColumnFamily.put(elementInstanceKey, metadata);
+      final long processInstanceKey, final AwaitProcessInstanceResultMetadata metadata) {
+    elementInstanceKey.wrapLong(processInstanceKey);
+    awaitProcessInstanceResultMetadataColumnFamily.put(elementInstanceKey, metadata);
   }
 
   private void writeElementInstance(final ElementInstance instance) {
@@ -283,10 +283,10 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public AwaitWorkflowInstanceResultMetadata getAwaitResultRequestMetadata(
-      final long workflowInstanceKey) {
-    elementInstanceKey.wrapLong(workflowInstanceKey);
-    return awaitWorkflowInstanceResultMetadataColumnFamily.get(elementInstanceKey);
+  public AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(
+      final long processInstanceKey) {
+    elementInstanceKey.wrapLong(processInstanceKey);
+    return awaitProcessInstanceResultMetadataColumnFamily.get(elementInstanceKey);
   }
 
   private void setRecordKeys(final long scopeKey, final long recordKey, final Purpose purpose) {

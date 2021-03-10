@@ -9,43 +9,43 @@ package io.zeebe.test.util.record;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class WorkflowInstances {
-  public static Map<String, String> getCurrentVariables(final long workflowInstanceKey) {
-    final Record<WorkflowInstanceRecordValue> completed =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+public final class ProcessInstances {
+  public static Map<String, String> getCurrentVariables(final long processInstanceKey) {
+    final Record<ProcessInstanceRecordValue> completed =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .withFlowScopeKey(-1)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .getFirst();
 
-    return getCurrentVariables(workflowInstanceKey, -1, completed.getPosition());
+    return getCurrentVariables(processInstanceKey, -1, completed.getPosition());
   }
 
   public static Map<String, String> getCurrentVariables(
-      final long workflowInstanceKey, final long completedPosition) {
-    return getCurrentVariables(workflowInstanceKey, -1, completedPosition);
+      final long processInstanceKey, final long completedPosition) {
+    return getCurrentVariables(processInstanceKey, -1, completedPosition);
   }
 
   /**
    * CAVEAT: as this has no knowledge of the scope hierarchy, it just returns a map-reduce of all
-   * the variable records for the given workflow instance. This means, for example, that two tasks
+   * the variable records for the given process instance. This means, for example, that two tasks
    * running in parallel in different sub-processes would see their respective scopes.
    */
   public static Map<String, String> getCurrentVariables(
-      final long workflowInstanceKey, final long startingPosition, final long stoppingPosition) {
+      final long processInstanceKey, final long startingPosition, final long stoppingPosition) {
     final Map<String, String> document = new HashMap<>();
-    final int partitionId = Protocol.decodePartitionId(workflowInstanceKey);
+    final int partitionId = Protocol.decodePartitionId(processInstanceKey);
 
     return RecordingExporter.records()
         .withPartitionId(partitionId)
         .between(startingPosition, stoppingPosition)
         .variableRecords()
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .map(Record::getValue)
         .reduce(
             document,

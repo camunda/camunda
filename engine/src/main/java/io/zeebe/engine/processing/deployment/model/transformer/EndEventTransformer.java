@@ -22,8 +22,8 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
 
   @Override
   public void transform(final EndEvent element, final TransformContext context) {
-    final var currentWorkflow = context.getCurrentWorkflow();
-    final var endEvent = currentWorkflow.getElementById(element.getId(), ExecutableEndEvent.class);
+    final var currentProcess = context.getCurrentProcess();
+    final var endEvent = currentProcess.getElementById(element.getId(), ExecutableEndEvent.class);
 
     if (!element.getEventDefinitions().isEmpty()) {
       transformEventDefinition(element, context, endEvent);

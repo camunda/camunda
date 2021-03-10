@@ -129,7 +129,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
         message.getCorrelationKeyBuffer(),
         subscription -> {
 
-          // correlate the message only once per workflow
+          // correlate the message only once per process
           if (!subscription.isCorrelating()
               && !correlatingSubscriptions.contains(
                   subscription.getRecord().getBpmnProcessIdBuffer())) {
@@ -161,24 +161,24 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
           final var bpmnProcessIdBuffer = subscription.getBpmnProcessIdBuffer();
           final var correlationKeyBuffer = messageRecord.getCorrelationKeyBuffer();
 
-          // create only one instance of a workflow per correlation key
+          // create only one instance of a process per correlation key
           // - allow multiple instance if correlation key is empty
           if (!correlatingSubscriptions.contains(bpmnProcessIdBuffer)
               && (correlationKeyBuffer.capacity() == 0
-                  || !messageState.existActiveWorkflowInstance(
+                  || !messageState.existActiveProcessInstance(
                       bpmnProcessIdBuffer, correlationKeyBuffer))) {
 
             correlatingSubscriptions.add(subscription);
 
-            final var workflowInstanceKey = keyGenerator.nextKey();
+            final var processInstanceKey = keyGenerator.nextKey();
 
             // TODO (saig0): reuse the subscription record in the state (#6183)
             final var subscriptionRecord =
                 new MessageStartEventSubscriptionRecord()
-                    .setWorkflowKey(subscription.getWorkflowKey())
+                    .setProcessDefinitionKey(subscription.getProcessDefinitionKey())
                     .setBpmnProcessId(subscription.getBpmnProcessIdBuffer())
                     .setStartEventId(subscription.getStartEventIdBuffer())
-                    .setWorkflowInstanceKey(workflowInstanceKey)
+                    .setProcessInstanceKey(processInstanceKey)
                     .setMessageName(subscription.getMessageNameBuffer())
                     .setMessageKey(messageKey)
                     .setCorrelationKey(correlationKeyBuffer)
@@ -190,8 +190,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
             eventHandle.activateStartEvent(
                 streamWriter,
-                subscription.getWorkflowKey(),
-                workflowInstanceKey,
+                subscription.getProcessDefinitionKey(),
+                processInstanceKey,
                 subscription.getStartEventIdBuffer());
           }
         });
@@ -202,8 +202,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     final var success =
         correlatingSubscriptions.visitSubscriptions(
             subscription ->
-                commandSender.correlateWorkflowInstanceSubscription(
-                    subscription.getWorkflowInstanceKey(),
+                commandSender.correlateProcessInstanceSubscription(
+                    subscription.getProcessInstanceKey(),
                     subscription.getElementInstanceKey(),
                     subscription.getBpmnProcessId(),
                     messageRecord.getNameBuffer(),

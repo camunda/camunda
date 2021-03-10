@@ -20,10 +20,10 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.MessageIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.VariableRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
@@ -47,15 +47,15 @@ public final class MessageCorrelationTest {
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
-  private long workflowKey;
+  private long processDefinitionKey;
   private String correlationValue;
 
   @Before
   public void init() {
     correlationValue = helper.getCorrelationValue();
 
-    workflowKey =
-        CLIENT_RULE.deployWorkflow(
+    processDefinitionKey =
+        CLIENT_RULE.deployProcess(
             Bpmn.createExecutableProcess("process")
                 .startEvent()
                 .intermediateCatchEvent(CATCH_EVENT_ELEMENT_ID)
@@ -70,15 +70,15 @@ public final class MessageCorrelationTest {
   @Test
   public void shouldCorrelateMessage() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
-            .workflowKey(workflowKey)
+            .processDefinitionKey(processDefinitionKey)
             .variables(Map.of(CORRELATION_KEY_VARIABLE, correlationValue))
             .send()
             .join()
-            .getWorkflowInstanceKey();
+            .getProcessInstanceKey();
 
     // when
     CLIENT_RULE
@@ -91,39 +91,39 @@ public final class MessageCorrelationTest {
         .join();
 
     // then
-    final Record<WorkflowInstanceRecordValue> workflowInstanceEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> processInstanceEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId(CATCH_EVENT_ELEMENT_ID)
             .getFirst();
 
     final Record<VariableRecordValue> variableEvent =
         RecordingExporter.variableRecords()
             .withName("foo")
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     Assertions.assertThat(variableEvent.getValue())
         .hasValue("\"bar\"")
-        .hasScopeKey(workflowInstanceEvent.getValue().getWorkflowInstanceKey());
+        .hasScopeKey(processInstanceEvent.getValue().getProcessInstanceKey());
   }
 
   @Test
   public void shouldCorrelateMessageWithZeroTTL() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
-            .workflowKey(workflowKey)
+            .processDefinitionKey(processDefinitionKey)
             .variables(Map.of(CORRELATION_KEY_VARIABLE, correlationValue))
             .send()
             .join()
-            .getWorkflowInstanceKey();
+            .getProcessInstanceKey();
 
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.OPENED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.OPENED)
+                .withProcessInstanceKey(processInstanceKey)
                 .withMessageName(MESSAGE_NAME)
                 .exists())
         .isTrue();
@@ -140,8 +140,8 @@ public final class MessageCorrelationTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
                 .withElementId(CATCH_EVENT_ELEMENT_ID)
                 .exists())
         .isTrue();

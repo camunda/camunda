@@ -5,23 +5,23 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.processing.workflowinstance;
+package io.zeebe.engine.processing.processinstance;
 
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class WorkflowInstanceCommandHandlers {
+public final class ProcessInstanceCommandHandlers {
 
-  private final Map<WorkflowInstanceIntent, WorkflowInstanceCommandHandler> handlers =
+  private final Map<ProcessInstanceIntent, ProcessInstanceCommandHandler> handlers =
       new HashMap<>();
 
-  public WorkflowInstanceCommandHandlers() {
-    handlers.put(WorkflowInstanceIntent.CANCEL, new CancelWorkflowInstanceHandler());
+  public ProcessInstanceCommandHandlers() {
+    handlers.put(ProcessInstanceIntent.CANCEL, new CancelProcessInstanceHandler());
   }
 
-  public void handle(final WorkflowInstanceCommandContext context) {
-    final WorkflowInstanceCommandHandler handler = handlers.get(context.getCommand());
+  public void handle(final ProcessInstanceCommandContext context) {
+    final ProcessInstanceCommandHandler handler = handlers.get(context.getCommand());
     if (handler != null) {
       handler.handle(context);
     }

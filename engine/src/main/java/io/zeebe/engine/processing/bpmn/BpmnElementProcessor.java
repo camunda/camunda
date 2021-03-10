@@ -47,7 +47,7 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * </ul>
    *
    * @param element the instance of the BPMN element that is executed
-   * @param context workflow instance-related data of the element that is executed
+   * @param context process instance-related data of the element that is executed
    */
   default void onActivate(final T element, final BpmnElementContext context) {}
 
@@ -64,7 +64,7 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * Next step: activated.
    *
    * @param element the instance of the BPMN element that is executed
-   * @param context workflow instance-related data of the element that is executed
+   * @param context process instance-related data of the element that is executed
    * @deprecated will be replaced by onActivate
    */
   @Deprecated // todo (#6202): remove method
@@ -86,7 +86,7 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * Next step: completing - if not a wait-state.
    *
    * @param element the instance of the BPMN element that is executed
-   * @param context workflow instance-related data of the element that is executed
+   * @param context process instance-related data of the element that is executed
    * @deprecated will be replaced by onActivate
    */
   @Deprecated // todo (#6202): remove method
@@ -111,7 +111,7 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * Next step: none.
    *
    * @param element the instance of the BPMN element that is executed
-   * @param context workflow instance-related data of the element that is executed
+   * @param context process instance-related data of the element that is executed
    */
   default void onComplete(final T element, final BpmnElementContext context) {}
 
@@ -128,7 +128,7 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * <p>Next step: completed.
    *
    * @param element the instance of the BPMN element that is executed
-   * @param context workflow instance-related data of the element that is executed
+   * @param context process instance-related data of the element that is executed
    * @deprecated will be replaced by onComplete
    */
   @Deprecated // todo (#6202): remove method
@@ -150,7 +150,7 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * Next step: none.
    *
    * @param element the instance of the BPMN element that is executed
-   * @param context workflow instance-related data of the element that is executed
+   * @param context process instance-related data of the element that is executed
    * @deprecated will be replaced by onComplete
    */
   @Deprecated // todo (#6202): remove method
@@ -176,7 +176,7 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * Next step: none.
    *
    * @param element the instance of the BPMN element that is executed
-   * @param context workflow instance-related data of the element that is executed
+   * @param context process instance-related data of the element that is executed
    */
   default void onTerminate(final T element, final BpmnElementContext context) {}
 
@@ -192,7 +192,7 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * <p>Next step: terminated.
    *
    * @param element the instance of the BPMN element that is executed
-   * @param context workflow instance-related data of the element that is executed
+   * @param context process instance-related data of the element that is executed
    * @deprecated will be replaced by onTerminate
    */
   @Deprecated // todo (#6202): remove method
@@ -217,7 +217,7 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * Next step: none.
    *
    * @param element the instance of the BPMN element that is executed
-   * @param context workflow instance-related data of the element that is executed
+   * @param context process instance-related data of the element that is executed
    * @deprecated will be replaced by onTerminate
    */
   @Deprecated // todo (#6202): remove method
@@ -239,7 +239,7 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * Next step: completing or terminating.
    *
    * @param element the instance of the BPMN element that is executed
-   * @param context workflow instance-related data of the element that is executed
+   * @param context process instance-related data of the element that is executed
    */
   void onEventOccurred(final T element, final BpmnElementContext context);
 }

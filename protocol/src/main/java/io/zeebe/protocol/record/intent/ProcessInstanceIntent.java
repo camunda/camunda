@@ -18,7 +18,7 @@ package io.zeebe.protocol.record.intent;
 import java.util.EnumSet;
 import java.util.Set;
 
-public enum WorkflowInstanceIntent implements WorkflowInstanceRelatedIntent {
+public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
   CANCEL((short) 0, false),
 
   SEQUENCE_FLOW_TAKEN((short) 1),
@@ -36,18 +36,18 @@ public enum WorkflowInstanceIntent implements WorkflowInstanceRelatedIntent {
   COMPLETE_ELEMENT((short) 10),
   TERMINATE_ELEMENT((short) 11);
 
-  private static final Set<WorkflowInstanceIntent> WORKFLOW_INSTANCE_COMMANDS = EnumSet.of(CANCEL);
-  private static final Set<WorkflowInstanceIntent> BPMN_ELEMENT_COMMANDS =
+  private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS = EnumSet.of(CANCEL);
+  private static final Set<ProcessInstanceIntent> BPMN_ELEMENT_COMMANDS =
       EnumSet.of(ACTIVATE_ELEMENT, COMPLETE_ELEMENT, TERMINATE_ELEMENT);
 
   private final short value;
   private final boolean shouldBlacklist;
 
-  WorkflowInstanceIntent(final short value) {
+  ProcessInstanceIntent(final short value) {
     this(value, true);
   }
 
-  WorkflowInstanceIntent(final short value, final boolean shouldBlacklist) {
+  ProcessInstanceIntent(final short value, final boolean shouldBlacklist) {
     this.value = value;
     this.shouldBlacklist = shouldBlacklist;
   }
@@ -97,15 +97,15 @@ public enum WorkflowInstanceIntent implements WorkflowInstanceRelatedIntent {
     return shouldBlacklist;
   }
 
-  public static boolean isWorkflowInstanceCommand(final WorkflowInstanceIntent intent) {
-    return WORKFLOW_INSTANCE_COMMANDS.contains(intent);
+  public static boolean isProcessInstanceCommand(final ProcessInstanceIntent intent) {
+    return PROCESS_INSTANCE_COMMANDS.contains(intent);
   }
 
-  public static boolean isBpmnElementCommand(final WorkflowInstanceIntent intent) {
+  public static boolean isBpmnElementCommand(final ProcessInstanceIntent intent) {
     return BPMN_ELEMENT_COMMANDS.contains(intent);
   }
 
-  public static boolean isBpmnElementEvent(final WorkflowInstanceIntent intent) {
-    return !isWorkflowInstanceCommand(intent) && !isBpmnElementCommand(intent);
+  public static boolean isBpmnElementEvent(final ProcessInstanceIntent intent) {
+    return !isProcessInstanceCommand(intent) && !isBpmnElementCommand(intent);
   }
 }

@@ -11,27 +11,27 @@ import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.zeebe.protocol.record.value.BpmnElementType;
 
-public final class WorkflowEngineMetrics {
+public final class ProcessEngineMetrics {
 
   private static final Counter ELEMENT_INSTANCE_EVENTS =
       Counter.build()
           .namespace("zeebe")
           .name("element_instance_events_total")
-          .help("Number of workflow element instance events")
+          .help("Number of process element instance events")
           .labelNames("action", "type", "partition")
           .register();
 
-  private static final Gauge RUNNING_WORKFLOW_INSTANCES =
+  private static final Gauge RUNNING_PROCESS_INSTANCES =
       Gauge.build()
           .namespace("zeebe")
-          .name("running_workflow_instances_total")
-          .help("Number of running workflow instances")
+          .name("running_process_instances_total")
+          .help("Number of running process instances")
           .labelNames("partition")
           .register();
 
   private final String partitionIdLabel;
 
-  public WorkflowEngineMetrics(final int partitionId) {
+  public ProcessEngineMetrics(final int partitionId) {
     partitionIdLabel = String.valueOf(partitionId);
   }
 
@@ -39,39 +39,39 @@ public final class WorkflowEngineMetrics {
     ELEMENT_INSTANCE_EVENTS.labels(action, elementType.name(), partitionIdLabel).inc();
   }
 
-  private void workflowInstanceCreated() {
-    RUNNING_WORKFLOW_INSTANCES.labels(partitionIdLabel).inc();
+  private void processInstanceCreated() {
+    RUNNING_PROCESS_INSTANCES.labels(partitionIdLabel).inc();
   }
 
-  private void workflowInstanceFinished() {
-    RUNNING_WORKFLOW_INSTANCES.labels(partitionIdLabel).dec();
+  private void processInstanceFinished() {
+    RUNNING_PROCESS_INSTANCES.labels(partitionIdLabel).dec();
   }
 
   public void elementInstanceActivated(final BpmnElementType elementType) {
     elementInstanceEvent("activated", elementType);
 
-    if (isWorkflowInstance(elementType)) {
-      workflowInstanceCreated();
+    if (isProcessInstance(elementType)) {
+      processInstanceCreated();
     }
   }
 
   public void elementInstanceCompleted(final BpmnElementType elementType) {
     elementInstanceEvent("completed", elementType);
 
-    if (isWorkflowInstance(elementType)) {
-      workflowInstanceFinished();
+    if (isProcessInstance(elementType)) {
+      processInstanceFinished();
     }
   }
 
   public void elementInstanceTerminated(final BpmnElementType elementType) {
     elementInstanceEvent("terminated", elementType);
 
-    if (isWorkflowInstance(elementType)) {
-      workflowInstanceFinished();
+    if (isProcessInstance(elementType)) {
+      processInstanceFinished();
     }
   }
 
-  private boolean isWorkflowInstance(final BpmnElementType elementType) {
+  private boolean isProcessInstance(final BpmnElementType elementType) {
     return BpmnElementType.PROCESS == elementType;
   }
 }

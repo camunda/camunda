@@ -16,20 +16,20 @@
 package io.zeebe.client.impl.response;
 
 import io.zeebe.client.api.response.DeploymentEvent;
-import io.zeebe.client.api.response.Workflow;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
+import io.zeebe.client.api.response.Process;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public final class DeploymentEventImpl implements DeploymentEvent {
 
   private final long key;
-  private final List<Workflow> workflows;
+  private final List<Process> processes;
 
-  public DeploymentEventImpl(final DeployWorkflowResponse response) {
+  public DeploymentEventImpl(final DeployProcessResponse response) {
     key = response.getKey();
-    workflows =
-        response.getWorkflowsList().stream().map(WorkflowImpl::new).collect(Collectors.toList());
+    processes =
+        response.getProcessesList().stream().map(ProcessImpl::new).collect(Collectors.toList());
   }
 
   @Override
@@ -38,12 +38,12 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   }
 
   @Override
-  public List<Workflow> getWorkflows() {
-    return workflows;
+  public List<Process> getProcesses() {
+    return processes;
   }
 
   @Override
   public String toString() {
-    return "DeploymentEventImpl{" + "key=" + key + ", workflows=" + workflows + '}';
+    return "DeploymentEventImpl{" + "key=" + key + ", processes=" + processes + '}';
   }
 }

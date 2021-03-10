@@ -15,8 +15,8 @@
  */
 package io.zeebe.protocol.record.value;
 
-public interface WorkflowInstanceRelated {
+public interface ProcessInstanceRelated {
 
-  /** @return the key of the corresponding workflow instance */
-  long getWorkflowInstanceKey();
+  /** @return the key of the corresponding process instance */
+  long getProcessInstanceKey();
 }

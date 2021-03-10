@@ -10,7 +10,7 @@ package io.zeebe.test.util.bpmn.random;
 import io.zeebe.test.util.bpmn.random.blocks.BlockSequenceBuilder.BlockSequenceBuilderFactory;
 import java.util.Random;
 
-/** This class captures information that are needed during the construction of a random workflow */
+/** This class captures information that are needed during the construction of a random process */
 public final class ConstructionContext {
 
   private final Random random;

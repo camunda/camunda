@@ -7,8 +7,8 @@
  */
 package io.zeebe.protocol.impl.record.value.job;
 
-import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
+import static io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROP_PROCESS_BPMN_PROCESS_ID;
+import static io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROP_PROCESS_INSTANCE_KEY;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -46,13 +46,13 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final StringProperty errorMessageProp = new StringProperty(ERROR_MESSAGE, EMPTY_STRING);
   private final StringProperty errorCodeProp = new StringProperty("errorCode", EMPTY_STRING);
 
-  private final LongProperty workflowInstanceKeyProp =
-      new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
+  private final LongProperty processInstanceKeyProp =
+      new LongProperty(PROP_PROCESS_INSTANCE_KEY, -1L);
   private final StringProperty bpmnProcessIdProp =
-      new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID, EMPTY_STRING);
-  private final IntegerProperty workflowDefinitionVersionProp =
-      new IntegerProperty("workflowDefinitionVersion", -1);
-  private final LongProperty workflowKeyProp = new LongProperty("workflowKey", -1L);
+      new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID, EMPTY_STRING);
+  private final IntegerProperty processDefinitionVersionProp =
+      new IntegerProperty("processDefinitionVersion", -1);
+  private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey", -1L);
   private final StringProperty elementIdProp = new StringProperty("elementId", EMPTY_STRING);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
 
@@ -66,9 +66,9 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(errorMessageProp)
         .declareProperty(errorCodeProp)
         .declareProperty(bpmnProcessIdProp)
-        .declareProperty(workflowDefinitionVersionProp)
-        .declareProperty(workflowKeyProp)
-        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(processDefinitionVersionProp)
+        .declareProperty(processDefinitionKeyProp)
+        .declareProperty(processInstanceKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp);
   }
@@ -83,9 +83,9 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     errorMessageProp.setValue(record.getErrorMessageBuffer());
     errorCodeProp.setValue(record.getErrorCodeBuffer());
     bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
-    workflowDefinitionVersionProp.setValue(record.getWorkflowDefinitionVersion());
-    workflowKeyProp.setValue(record.getWorkflowKey());
-    workflowInstanceKeyProp.setValue(record.getWorkflowInstanceKey());
+    processDefinitionVersionProp.setValue(record.getProcessDefinitionVersion());
+    processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
+    processInstanceKeyProp.setValue(record.getProcessInstanceKey());
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
   }
@@ -161,22 +161,22 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @Override
-  public int getWorkflowDefinitionVersion() {
-    return workflowDefinitionVersionProp.getValue();
+  public int getProcessDefinitionVersion() {
+    return processDefinitionVersionProp.getValue();
   }
 
   @Override
-  public long getWorkflowKey() {
-    return workflowKeyProp.getValue();
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProp.getValue();
   }
 
-  public JobRecord setWorkflowKey(final long workflowKey) {
-    workflowKeyProp.setValue(workflowKey);
+  public JobRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
   }
 
-  public JobRecord setWorkflowDefinitionVersion(final int version) {
-    workflowDefinitionVersionProp.setValue(version);
+  public JobRecord setProcessDefinitionVersion(final int version) {
+    processDefinitionVersionProp.setValue(version);
     return this;
   }
 
@@ -282,12 +282,12 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
-  public JobRecord setWorkflowInstanceKey(final long key) {
-    workflowInstanceKeyProp.setValue(key);
+  public JobRecord setProcessInstanceKey(final long key) {
+    processInstanceKeyProp.setValue(key);
     return this;
   }
 

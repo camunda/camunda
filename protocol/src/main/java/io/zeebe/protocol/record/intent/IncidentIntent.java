@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.record.intent;
 
-public enum IncidentIntent implements WorkflowInstanceRelatedIntent {
+public enum IncidentIntent implements ProcessInstanceRelatedIntent {
   CREATE((short) 0),
   CREATED((short) 1),
 

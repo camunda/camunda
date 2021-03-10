@@ -11,10 +11,10 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.mutable.MutableWorkflowState;
+import io.zeebe.engine.state.mutable.MutableProcessState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -27,82 +27,82 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class WorkflowStateTest {
+public final class ProcessStateTest {
 
-  private static final Long FIRST_WORKFLOW_KEY =
+  private static final Long FIRST_PROCESS_KEY =
       Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1);
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
-  private MutableWorkflowState workflowState;
+  private MutableProcessState processState;
   private ZeebeState zeebeState;
 
   @Before
   public void setUp() {
     zeebeState = stateRule.getZeebeState();
-    workflowState = zeebeState.getWorkflowState();
+    processState = zeebeState.getProcessState();
   }
 
   @Test
-  public void shouldGetInitialWorkflowVersion() {
+  public void shouldGetInitialProcessVersion() {
     // given
 
     // when
-    final long nextWorkflowVersion = workflowState.getWorkflowVersion("foo");
+    final long nextProcessVersion = processState.getProcessVersion("foo");
 
     // then
-    assertThat(nextWorkflowVersion).isZero();
+    assertThat(nextProcessVersion).isZero();
   }
 
   @Test
-  public void shouldGetWorkflowVersion() {
+  public void shouldGetProcessVersion() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
-    final var workflowRecord = deploymentRecord.workflows().iterator().next();
-    workflowState.putWorkflow(workflowRecord.getKey(), workflowRecord);
+    final var processRecord = deploymentRecord.processes().iterator().next();
+    processState.putProcess(processRecord.getKey(), processRecord);
 
     // when
-    final long workflowVersion = workflowState.getWorkflowVersion("processId");
+    final long processVersion = processState.getProcessVersion("processId");
 
     // then
-    assertThat(workflowVersion).isEqualTo(1L);
+    assertThat(processVersion).isEqualTo(1L);
   }
 
   @Test
-  public void shouldIncrementWorkflowVersion() {
+  public void shouldIncrementProcessVersion() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
-    final var workflowRecord = deploymentRecord.workflows().iterator().next();
-    workflowState.putWorkflow(workflowRecord.getKey(), workflowRecord);
+    final var processRecord = deploymentRecord.processes().iterator().next();
+    processState.putProcess(processRecord.getKey(), processRecord);
 
     final DeploymentRecord deploymentRecord2 = creatingDeploymentRecord(zeebeState);
-    final var workflowRecord2 = deploymentRecord2.workflows().iterator().next();
-    workflowState.putWorkflow(workflowRecord2.getKey(), workflowRecord2);
+    final var processRecord2 = deploymentRecord2.processes().iterator().next();
+    processState.putProcess(processRecord2.getKey(), processRecord2);
 
     // when
-    workflowState.putWorkflow(workflowRecord2.getKey(), workflowRecord2);
+    processState.putProcess(processRecord2.getKey(), processRecord2);
 
     // then
-    final long workflowVersion = workflowState.getWorkflowVersion("processId");
-    assertThat(workflowVersion).isEqualTo(2L);
+    final long processVersion = processState.getProcessVersion("processId");
+    assertThat(processVersion).isEqualTo(2L);
   }
 
   @Test
-  public void shouldNotIncrementWorkflowVersionForDifferentProcessId() {
+  public void shouldNotIncrementProcessVersionForDifferentProcessId() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
-    final var workflowRecord = deploymentRecord.workflows().iterator().next();
-    workflowState.putWorkflow(workflowRecord.getKey(), workflowRecord);
+    final var processRecord = deploymentRecord.processes().iterator().next();
+    processState.putProcess(processRecord.getKey(), processRecord);
 
     final DeploymentRecord deploymentRecord2 = creatingDeploymentRecord(zeebeState, "other");
-    final var workflowRecord2 = deploymentRecord2.workflows().iterator().next();
+    final var processRecord2 = deploymentRecord2.processes().iterator().next();
 
     // when
-    workflowState.putWorkflow(workflowRecord2.getKey(), workflowRecord2);
+    processState.putProcess(processRecord2.getKey(), processRecord2);
 
     // then
-    final long workflowVersion = workflowState.getWorkflowVersion("processId");
-    assertThat(workflowVersion).isEqualTo(1L);
-    final long otherversion = workflowState.getWorkflowVersion("other");
+    final long processVersion = processState.getProcessVersion("processId");
+    assertThat(processVersion).isEqualTo(1L);
+    final long otherversion = processState.getProcessVersion("other");
     assertThat(otherversion).isEqualTo(1L);
   }
 
@@ -111,57 +111,57 @@ public final class WorkflowStateTest {
     // given
 
     // when
-    final DeployedWorkflow deployedWorkflow =
-        workflowState.getLatestWorkflowVersionByProcessId(wrapString("deployedWorkflow"));
+    final DeployedProcess deployedProcess =
+        processState.getLatestProcessVersionByProcessId(wrapString("deployedProcess"));
 
     // then
-    Assertions.assertThat(deployedWorkflow).isNull();
+    Assertions.assertThat(deployedProcess).isNull();
   }
 
   @Test
-  public void shouldReturnNullOnGetWorkflowByKey() {
+  public void shouldReturnNullOnGetProcessByKey() {
     // given
 
     // when
-    final DeployedWorkflow deployedWorkflow = workflowState.getWorkflowByKey(0);
+    final DeployedProcess deployedProcess = processState.getProcessByKey(0);
 
     // then
-    Assertions.assertThat(deployedWorkflow).isNull();
+    Assertions.assertThat(deployedProcess).isNull();
   }
 
   @Test
-  public void shouldReturnNullOnGetWorkflowByProcessIdAndVersion() {
+  public void shouldReturnNullOnGetProcessByProcessIdAndVersion() {
     // given
 
     // when
-    final DeployedWorkflow deployedWorkflow =
-        workflowState.getWorkflowByProcessIdAndVersion(wrapString("foo"), 0);
+    final DeployedProcess deployedProcess =
+        processState.getProcessByProcessIdAndVersion(wrapString("foo"), 0);
 
     // then
-    Assertions.assertThat(deployedWorkflow).isNull();
+    Assertions.assertThat(deployedProcess).isNull();
   }
 
   @Test
-  public void shouldReturnEmptyListOnGetWorkflows() {
+  public void shouldReturnEmptyListOnGetProcesses() {
     // given
 
     // when
-    final Collection<DeployedWorkflow> deployedWorkflow = workflowState.getWorkflows();
+    final Collection<DeployedProcess> deployedProcess = processState.getProcesses();
 
     // then
-    Assertions.assertThat(deployedWorkflow).isEmpty();
+    Assertions.assertThat(deployedProcess).isEmpty();
   }
 
   @Test
-  public void shouldReturnEmptyListOnGetWorkflowsByProcessId() {
+  public void shouldReturnEmptyListOnGetProcessesByProcessId() {
     // given
 
     // when
-    final Collection<DeployedWorkflow> deployedWorkflow =
-        workflowState.getWorkflowsByBpmnProcessId(wrapString("foo"));
+    final Collection<DeployedProcess> deployedProcess =
+        processState.getProcessesByBpmnProcessId(wrapString("foo"));
 
     // then
-    Assertions.assertThat(deployedWorkflow).isEmpty();
+    Assertions.assertThat(deployedProcess).isEmpty();
   }
 
   @Test
@@ -170,79 +170,79 @@ public final class WorkflowStateTest {
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
 
     // when
-    workflowState.putDeployment(deploymentRecord);
+    processState.putDeployment(deploymentRecord);
 
     // then
-    final DeployedWorkflow deployedWorkflow =
-        workflowState.getWorkflowByProcessIdAndVersion(wrapString("processId"), 1);
+    final DeployedProcess deployedProcess =
+        processState.getProcessByProcessIdAndVersion(wrapString("processId"), 1);
 
-    Assertions.assertThat(deployedWorkflow).isNotNull();
+    Assertions.assertThat(deployedProcess).isNotNull();
   }
 
   @Test
-  public void shouldPutWorkflowToState() {
+  public void shouldPutProcessToState() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
-    final var workflowRecord = deploymentRecord.workflows().iterator().next();
+    final var processRecord = deploymentRecord.processes().iterator().next();
 
     // when
-    workflowState.putWorkflow(workflowRecord.getKey(), workflowRecord);
+    processState.putProcess(processRecord.getKey(), processRecord);
 
     // then
-    final DeployedWorkflow deployedWorkflow =
-        workflowState.getWorkflowByProcessIdAndVersion(wrapString("processId"), 1);
+    final DeployedProcess deployedProcess =
+        processState.getProcessByProcessIdAndVersion(wrapString("processId"), 1);
 
-    assertThat(deployedWorkflow).isNotNull();
-    assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo(wrapString("processId"));
-    assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
-    assertThat(deployedWorkflow.getKey()).isEqualTo(workflowRecord.getKey());
-    assertThat(deployedWorkflow.getResource()).isEqualTo(workflowRecord.getResourceBuffer());
-    assertThat(deployedWorkflow.getResourceName())
-        .isEqualTo(workflowRecord.getResourceNameBuffer());
+    assertThat(deployedProcess).isNotNull();
+    assertThat(deployedProcess.getBpmnProcessId()).isEqualTo(wrapString("processId"));
+    assertThat(deployedProcess.getVersion()).isEqualTo(1);
+    assertThat(deployedProcess.getKey()).isEqualTo(processRecord.getKey());
+    assertThat(deployedProcess.getResource()).isEqualTo(processRecord.getResourceBuffer());
+    assertThat(deployedProcess.getResourceName())
+        .isEqualTo(processRecord.getResourceNameBuffer());
 
-    final var workflowByKey = workflowState.getWorkflowByKey(workflowRecord.getKey());
-    assertThat(workflowByKey).isNotNull();
-    assertThat(workflowByKey.getBpmnProcessId()).isEqualTo(wrapString("processId"));
-    assertThat(workflowByKey.getVersion()).isEqualTo(1);
-    assertThat(workflowByKey.getKey()).isEqualTo(workflowRecord.getKey());
-    assertThat(workflowByKey.getResource()).isEqualTo(workflowRecord.getResourceBuffer());
-    assertThat(workflowByKey.getResourceName()).isEqualTo(workflowRecord.getResourceNameBuffer());
+    final var processByKey = processState.getProcessByKey(processRecord.getKey());
+    assertThat(processByKey).isNotNull();
+    assertThat(processByKey.getBpmnProcessId()).isEqualTo(wrapString("processId"));
+    assertThat(processByKey.getVersion()).isEqualTo(1);
+    assertThat(processByKey.getKey()).isEqualTo(processRecord.getKey());
+    assertThat(processByKey.getResource()).isEqualTo(processRecord.getResourceBuffer());
+    assertThat(processByKey.getResourceName()).isEqualTo(processRecord.getResourceNameBuffer());
   }
 
   @Test
-  public void shouldUpdateLatestDigestOnPutWorkflowToState() {
+  public void shouldUpdateLatestDigestOnPutProcessToState() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
-    final var workflowRecord = deploymentRecord.workflows().iterator().next();
+    final var processRecord = deploymentRecord.processes().iterator().next();
 
     // when
-    workflowState.putWorkflow(workflowRecord.getKey(), workflowRecord);
+    processState.putProcess(processRecord.getKey(), processRecord);
 
     // then
-    final var checksum = workflowState.getLatestVersionDigest(wrapString("processId"));
-    assertThat(checksum).isEqualTo(workflowRecord.getChecksumBuffer());
+    final var checksum = processState.getLatestVersionDigest(wrapString("processId"));
+    assertThat(checksum).isEqualTo(processRecord.getChecksumBuffer());
   }
 
   @Test
-  public void shouldUpdateLatestWorkflowOnPutWorkflowToState() {
+  public void shouldUpdateLatestProcessOnPutProcessToState() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
-    final var workflowRecord = deploymentRecord.workflows().iterator().next();
+    final var processRecord = deploymentRecord.processes().iterator().next();
 
     // when
-    workflowState.putWorkflow(workflowRecord.getKey(), workflowRecord);
+    processState.putProcess(processRecord.getKey(), processRecord);
 
     // then
-    final DeployedWorkflow deployedWorkflow =
-        workflowState.getLatestWorkflowVersionByProcessId(wrapString("processId"));
+    final DeployedProcess deployedProcess =
+        processState.getLatestProcessVersionByProcessId(wrapString("processId"));
 
-    assertThat(deployedWorkflow).isNotNull();
-    assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo(wrapString("processId"));
-    assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
-    assertThat(deployedWorkflow.getKey()).isEqualTo(workflowRecord.getKey());
-    assertThat(deployedWorkflow.getResource()).isEqualTo(workflowRecord.getResourceBuffer());
-    assertThat(deployedWorkflow.getResourceName())
-        .isEqualTo(workflowRecord.getResourceNameBuffer());
+    assertThat(deployedProcess).isNotNull();
+    assertThat(deployedProcess.getBpmnProcessId()).isEqualTo(wrapString("processId"));
+    assertThat(deployedProcess.getVersion()).isEqualTo(1);
+    assertThat(deployedProcess.getKey()).isEqualTo(processRecord.getKey());
+    assertThat(deployedProcess.getResource()).isEqualTo(processRecord.getResourceBuffer());
+    assertThat(deployedProcess.getResourceName())
+        .isEqualTo(processRecord.getResourceNameBuffer());
   }
 
   @Test
@@ -251,270 +251,270 @@ public final class WorkflowStateTest {
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
 
     // when
-    workflowState.putDeployment(deploymentRecord);
-    deploymentRecord.workflows().iterator().next().setKey(212).setBpmnProcessId("other");
+    processState.putDeployment(deploymentRecord);
+    deploymentRecord.processes().iterator().next().setKey(212).setBpmnProcessId("other");
 
     // then
-    final DeployedWorkflow deployedWorkflow =
-        workflowState.getWorkflowByProcessIdAndVersion(wrapString("processId"), 1);
+    final DeployedProcess deployedProcess =
+        processState.getProcessByProcessIdAndVersion(wrapString("processId"), 1);
 
-    Assertions.assertThat(deployedWorkflow.getKey())
-        .isNotEqualTo(deploymentRecord.workflows().iterator().next().getKey());
-    assertThat(deploymentRecord.workflows().iterator().next().getBpmnProcessIdBuffer())
+    Assertions.assertThat(deployedProcess.getKey())
+        .isNotEqualTo(deploymentRecord.processes().iterator().next().getKey());
+    assertThat(deploymentRecord.processes().iterator().next().getBpmnProcessIdBuffer())
         .isEqualTo(BufferUtil.wrapString("other"));
-    Assertions.assertThat(deployedWorkflow.getBpmnProcessId())
+    Assertions.assertThat(deployedProcess.getBpmnProcessId())
         .isEqualTo(BufferUtil.wrapString("processId"));
   }
 
   @Test
-  public void shouldStoreDifferentWorkflowVersionsOnPutDeployments() {
+  public void shouldStoreDifferentProcessVersionsOnPutDeployments() {
     // given
 
     // when
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState));
 
     // then
-    final DeployedWorkflow deployedWorkflow =
-        workflowState.getWorkflowByProcessIdAndVersion(wrapString("processId"), 1);
+    final DeployedProcess deployedProcess =
+        processState.getProcessByProcessIdAndVersion(wrapString("processId"), 1);
 
-    final DeployedWorkflow secondWorkflow =
-        workflowState.getWorkflowByProcessIdAndVersion(wrapString("processId"), 2);
+    final DeployedProcess secondProcess =
+        processState.getProcessByProcessIdAndVersion(wrapString("processId"), 2);
 
-    Assertions.assertThat(deployedWorkflow).isNotNull();
-    Assertions.assertThat(secondWorkflow).isNotNull();
+    Assertions.assertThat(deployedProcess).isNotNull();
+    Assertions.assertThat(secondProcess).isNotNull();
 
-    Assertions.assertThat(deployedWorkflow.getBpmnProcessId())
-        .isEqualTo(secondWorkflow.getBpmnProcessId());
-    Assertions.assertThat(deployedWorkflow.getResourceName())
-        .isEqualTo(secondWorkflow.getResourceName());
-    Assertions.assertThat(deployedWorkflow.getKey()).isNotEqualTo(secondWorkflow.getKey());
+    Assertions.assertThat(deployedProcess.getBpmnProcessId())
+        .isEqualTo(secondProcess.getBpmnProcessId());
+    Assertions.assertThat(deployedProcess.getResourceName())
+        .isEqualTo(secondProcess.getResourceName());
+    Assertions.assertThat(deployedProcess.getKey()).isNotEqualTo(secondProcess.getKey());
 
-    Assertions.assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
-    Assertions.assertThat(secondWorkflow.getVersion()).isEqualTo(2);
+    Assertions.assertThat(deployedProcess.getVersion()).isEqualTo(1);
+    Assertions.assertThat(secondProcess.getVersion()).isEqualTo(2);
   }
 
   @Test
   public void shouldRestartVersionCountOnDifferentProcessId() {
     // given
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState));
 
     // when
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState, "otherId"));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState, "otherId"));
 
     // then
-    final DeployedWorkflow deployedWorkflow =
-        workflowState.getWorkflowByProcessIdAndVersion(wrapString("processId"), 1);
+    final DeployedProcess deployedProcess =
+        processState.getProcessByProcessIdAndVersion(wrapString("processId"), 1);
 
-    final DeployedWorkflow secondWorkflow =
-        workflowState.getWorkflowByProcessIdAndVersion(wrapString("otherId"), 1);
+    final DeployedProcess secondProcess =
+        processState.getProcessByProcessIdAndVersion(wrapString("otherId"), 1);
 
-    Assertions.assertThat(deployedWorkflow).isNotNull();
-    Assertions.assertThat(secondWorkflow).isNotNull();
+    Assertions.assertThat(deployedProcess).isNotNull();
+    Assertions.assertThat(secondProcess).isNotNull();
 
     // getKey's should increase
-    Assertions.assertThat(deployedWorkflow.getKey()).isEqualTo(FIRST_WORKFLOW_KEY);
-    Assertions.assertThat(secondWorkflow.getKey()).isEqualTo(FIRST_WORKFLOW_KEY + 1);
+    Assertions.assertThat(deployedProcess.getKey()).isEqualTo(FIRST_PROCESS_KEY);
+    Assertions.assertThat(secondProcess.getKey()).isEqualTo(FIRST_PROCESS_KEY + 1);
 
     // but versions should restart
-    Assertions.assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
-    Assertions.assertThat(secondWorkflow.getVersion()).isEqualTo(1);
+    Assertions.assertThat(deployedProcess.getVersion()).isEqualTo(1);
+    Assertions.assertThat(secondProcess.getVersion()).isEqualTo(1);
   }
 
   @Test
-  public void shouldGetLatestDeployedWorkflow() {
+  public void shouldGetLatestDeployedProcess() {
     // given
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState));
 
     // when
-    final DeployedWorkflow latestWorkflow =
-        workflowState.getLatestWorkflowVersionByProcessId(wrapString("processId"));
+    final DeployedProcess latestProcess =
+        processState.getLatestProcessVersionByProcessId(wrapString("processId"));
 
     // then
-    final DeployedWorkflow firstWorkflow =
-        workflowState.getWorkflowByProcessIdAndVersion(wrapString("processId"), 1);
-    final DeployedWorkflow secondWorkflow =
-        workflowState.getWorkflowByProcessIdAndVersion(wrapString("processId"), 2);
+    final DeployedProcess firstProcess =
+        processState.getProcessByProcessIdAndVersion(wrapString("processId"), 1);
+    final DeployedProcess secondProcess =
+        processState.getProcessByProcessIdAndVersion(wrapString("processId"), 2);
 
-    Assertions.assertThat(latestWorkflow).isNotNull();
-    Assertions.assertThat(firstWorkflow).isNotNull();
-    Assertions.assertThat(secondWorkflow).isNotNull();
+    Assertions.assertThat(latestProcess).isNotNull();
+    Assertions.assertThat(firstProcess).isNotNull();
+    Assertions.assertThat(secondProcess).isNotNull();
 
-    Assertions.assertThat(latestWorkflow.getBpmnProcessId())
-        .isEqualTo(secondWorkflow.getBpmnProcessId());
+    Assertions.assertThat(latestProcess.getBpmnProcessId())
+        .isEqualTo(secondProcess.getBpmnProcessId());
 
-    Assertions.assertThat(firstWorkflow.getKey()).isNotEqualTo(latestWorkflow.getKey());
-    Assertions.assertThat(latestWorkflow.getKey()).isEqualTo(secondWorkflow.getKey());
+    Assertions.assertThat(firstProcess.getKey()).isNotEqualTo(latestProcess.getKey());
+    Assertions.assertThat(latestProcess.getKey()).isEqualTo(secondProcess.getKey());
 
-    Assertions.assertThat(latestWorkflow.getResourceName())
-        .isEqualTo(secondWorkflow.getResourceName());
-    Assertions.assertThat(latestWorkflow.getResource()).isEqualTo(secondWorkflow.getResource());
+    Assertions.assertThat(latestProcess.getResourceName())
+        .isEqualTo(secondProcess.getResourceName());
+    Assertions.assertThat(latestProcess.getResource()).isEqualTo(secondProcess.getResource());
 
-    Assertions.assertThat(firstWorkflow.getVersion()).isEqualTo(1);
-    Assertions.assertThat(latestWorkflow.getVersion()).isEqualTo(2);
-    Assertions.assertThat(secondWorkflow.getVersion()).isEqualTo(2);
+    Assertions.assertThat(firstProcess.getVersion()).isEqualTo(1);
+    Assertions.assertThat(latestProcess.getVersion()).isEqualTo(2);
+    Assertions.assertThat(secondProcess.getVersion()).isEqualTo(2);
   }
 
   @Test
-  public void shouldGetLatestDeployedWorkflowAfterDeploymentWasAdded() {
+  public void shouldGetLatestDeployedProcessAfterDeploymentWasAdded() {
     // given
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
-    final DeployedWorkflow firstLatest =
-        workflowState.getLatestWorkflowVersionByProcessId(wrapString("processId"));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState));
+    final DeployedProcess firstLatest =
+        processState.getLatestProcessVersionByProcessId(wrapString("processId"));
 
     // when
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState));
 
     // then
-    final DeployedWorkflow latestWorkflow =
-        workflowState.getLatestWorkflowVersionByProcessId(wrapString("processId"));
+    final DeployedProcess latestProcess =
+        processState.getLatestProcessVersionByProcessId(wrapString("processId"));
 
     Assertions.assertThat(firstLatest).isNotNull();
-    Assertions.assertThat(latestWorkflow).isNotNull();
+    Assertions.assertThat(latestProcess).isNotNull();
 
     Assertions.assertThat(firstLatest.getBpmnProcessId())
-        .isEqualTo(latestWorkflow.getBpmnProcessId());
+        .isEqualTo(latestProcess.getBpmnProcessId());
 
-    Assertions.assertThat(latestWorkflow.getKey()).isNotEqualTo(firstLatest.getKey());
+    Assertions.assertThat(latestProcess.getKey()).isNotEqualTo(firstLatest.getKey());
 
     Assertions.assertThat(firstLatest.getResourceName())
-        .isEqualTo(latestWorkflow.getResourceName());
+        .isEqualTo(latestProcess.getResourceName());
 
-    Assertions.assertThat(latestWorkflow.getVersion()).isEqualTo(2);
+    Assertions.assertThat(latestProcess.getVersion()).isEqualTo(2);
     Assertions.assertThat(firstLatest.getVersion()).isEqualTo(1);
   }
 
   @Test
-  public void shouldGetExecutableWorkflow() {
+  public void shouldGetExecutableProcess() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
-    workflowState.putDeployment(deploymentRecord);
+    processState.putDeployment(deploymentRecord);
 
     // when
-    final DeployedWorkflow deployedWorkflow =
-        workflowState.getWorkflowByProcessIdAndVersion(wrapString("processId"), 1);
+    final DeployedProcess deployedProcess =
+        processState.getProcessByProcessIdAndVersion(wrapString("processId"), 1);
 
     // then
-    final ExecutableWorkflow workflow = deployedWorkflow.getWorkflow();
-    Assertions.assertThat(workflow).isNotNull();
-    final AbstractFlowElement serviceTask = workflow.getElementById(wrapString("test"));
+    final ExecutableProcess process = deployedProcess.getProcess();
+    Assertions.assertThat(process).isNotNull();
+    final AbstractFlowElement serviceTask = process.getElementById(wrapString("test"));
     Assertions.assertThat(serviceTask).isNotNull();
   }
 
   @Test
-  public void shouldGetExecutableWorkflowByKey() {
+  public void shouldGetExecutableProcessByKey() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
-    workflowState.putDeployment(deploymentRecord);
+    processState.putDeployment(deploymentRecord);
 
     // when
-    final long workflowKey = FIRST_WORKFLOW_KEY;
-    final DeployedWorkflow deployedWorkflow = workflowState.getWorkflowByKey(workflowKey);
+    final long processDefinitionKey = FIRST_PROCESS_KEY;
+    final DeployedProcess deployedProcess = processState.getProcessByKey(processDefinitionKey);
 
     // then
-    final ExecutableWorkflow workflow = deployedWorkflow.getWorkflow();
-    Assertions.assertThat(workflow).isNotNull();
-    final AbstractFlowElement serviceTask = workflow.getElementById(wrapString("test"));
+    final ExecutableProcess process = deployedProcess.getProcess();
+    Assertions.assertThat(process).isNotNull();
+    final AbstractFlowElement serviceTask = process.getElementById(wrapString("test"));
     Assertions.assertThat(serviceTask).isNotNull();
   }
 
   @Test
-  public void shouldGetExecutableWorkflowByLatestWorkflow() {
+  public void shouldGetExecutableProcessByLatestProcess() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
-    workflowState.putDeployment(deploymentRecord);
+    processState.putDeployment(deploymentRecord);
 
     // when
-    final DeployedWorkflow deployedWorkflow =
-        workflowState.getLatestWorkflowVersionByProcessId(wrapString("processId"));
+    final DeployedProcess deployedProcess =
+        processState.getLatestProcessVersionByProcessId(wrapString("processId"));
 
     // then
-    final ExecutableWorkflow workflow = deployedWorkflow.getWorkflow();
-    Assertions.assertThat(workflow).isNotNull();
-    final AbstractFlowElement serviceTask = workflow.getElementById(wrapString("test"));
+    final ExecutableProcess process = deployedProcess.getProcess();
+    Assertions.assertThat(process).isNotNull();
+    final AbstractFlowElement serviceTask = process.getElementById(wrapString("test"));
     Assertions.assertThat(serviceTask).isNotNull();
   }
 
   @Test
-  public void shouldGetAllWorkflows() {
+  public void shouldGetAllProcesses() {
     // given
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState, "otherId"));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState, "otherId"));
 
     // when
-    final Collection<DeployedWorkflow> workflows = workflowState.getWorkflows();
+    final Collection<DeployedProcess> processes = processState.getProcesses();
 
     // then
-    assertThat(workflows.size()).isEqualTo(3);
-    Assertions.assertThat(workflows)
-        .extracting(DeployedWorkflow::getBpmnProcessId)
+    assertThat(processes.size()).isEqualTo(3);
+    Assertions.assertThat(processes)
+        .extracting(DeployedProcess::getBpmnProcessId)
         .contains(wrapString("processId"), wrapString("otherId"));
-    Assertions.assertThat(workflows).extracting(DeployedWorkflow::getVersion).contains(1, 2, 1);
+    Assertions.assertThat(processes).extracting(DeployedProcess::getVersion).contains(1, 2, 1);
 
-    Assertions.assertThat(workflows)
-        .extracting(DeployedWorkflow::getKey)
-        .containsOnly(FIRST_WORKFLOW_KEY, FIRST_WORKFLOW_KEY + 1, FIRST_WORKFLOW_KEY + 2);
+    Assertions.assertThat(processes)
+        .extracting(DeployedProcess::getKey)
+        .containsOnly(FIRST_PROCESS_KEY, FIRST_PROCESS_KEY + 1, FIRST_PROCESS_KEY + 2);
   }
 
   @Test
-  public void shouldGetAllWorkflowsWithProcessId() {
+  public void shouldGetAllProcessesWithProcessId() {
     // given
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState));
 
     // when
-    final Collection<DeployedWorkflow> workflows =
-        workflowState.getWorkflowsByBpmnProcessId(wrapString("processId"));
+    final Collection<DeployedProcess> processes =
+        processState.getProcessesByBpmnProcessId(wrapString("processId"));
 
     // then
-    Assertions.assertThat(workflows)
-        .extracting(DeployedWorkflow::getBpmnProcessId)
+    Assertions.assertThat(processes)
+        .extracting(DeployedProcess::getBpmnProcessId)
         .containsOnly(wrapString("processId"));
-    Assertions.assertThat(workflows).extracting(DeployedWorkflow::getVersion).containsOnly(1, 2);
+    Assertions.assertThat(processes).extracting(DeployedProcess::getVersion).containsOnly(1, 2);
 
-    Assertions.assertThat(workflows)
-        .extracting(DeployedWorkflow::getKey)
-        .containsOnly(FIRST_WORKFLOW_KEY, FIRST_WORKFLOW_KEY + 1);
+    Assertions.assertThat(processes)
+        .extracting(DeployedProcess::getKey)
+        .containsOnly(FIRST_PROCESS_KEY, FIRST_PROCESS_KEY + 1);
   }
 
   @Test
-  public void shouldNotGetWorkflowsWithOtherProcessId() {
+  public void shouldNotGetProcessesWithOtherProcessId() {
     // given
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState));
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState, "otherId"));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState, "otherId"));
 
     // when
-    final Collection<DeployedWorkflow> workflows =
-        workflowState.getWorkflowsByBpmnProcessId(wrapString("otherId"));
+    final Collection<DeployedProcess> processes =
+        processState.getProcessesByBpmnProcessId(wrapString("otherId"));
 
     // then
-    assertThat(workflows.size()).isEqualTo(1);
-    Assertions.assertThat(workflows)
-        .extracting(DeployedWorkflow::getBpmnProcessId)
+    assertThat(processes.size()).isEqualTo(1);
+    Assertions.assertThat(processes)
+        .extracting(DeployedProcess::getBpmnProcessId)
         .containsOnly(wrapString("otherId"));
-    Assertions.assertThat(workflows).extracting(DeployedWorkflow::getVersion).containsOnly(1);
+    Assertions.assertThat(processes).extracting(DeployedProcess::getVersion).containsOnly(1);
 
-    final long expectedWorkflowKey = Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 2);
-    Assertions.assertThat(workflows)
-        .extracting(DeployedWorkflow::getKey)
-        .containsOnly(expectedWorkflowKey);
+    final long expectedProcessDefinitionKey = Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 2);
+    Assertions.assertThat(processes)
+        .extracting(DeployedProcess::getKey)
+        .containsOnly(expectedProcessDefinitionKey);
   }
 
   @Test
   public void shouldReturnHighestVersionInsteadOfMostRecent() {
     // given
     final String processId = "process";
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState, processId, 2));
-    workflowState.putDeployment(creatingDeploymentRecord(zeebeState, processId, 1));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState, processId, 2));
+    processState.putDeployment(creatingDeploymentRecord(zeebeState, processId, 1));
 
     // when
-    final DeployedWorkflow latestWorkflow =
-        workflowState.getLatestWorkflowVersionByProcessId(wrapString(processId));
+    final DeployedProcess latestProcess =
+        processState.getLatestProcessVersionByProcessId(wrapString(processId));
 
     // then
-    Assertions.assertThat(latestWorkflow.getVersion()).isEqualTo(2);
+    Assertions.assertThat(latestProcess.getVersion()).isEqualTo(2);
   }
 
   public static DeploymentRecord creatingDeploymentRecord(final ZeebeState zeebeState) {
@@ -523,8 +523,8 @@ public final class WorkflowStateTest {
 
   public static DeploymentRecord creatingDeploymentRecord(
       final ZeebeState zeebeState, final String processId) {
-    final MutableWorkflowState workflowState = zeebeState.getWorkflowState();
-    final int version = workflowState.getWorkflowVersion(processId) + 1;
+    final MutableProcessState processState = zeebeState.getProcessState();
+    final int version = processState.getProcessVersion(processId) + 1;
     return creatingDeploymentRecord(zeebeState, processId, version);
   }
 
@@ -555,7 +555,7 @@ public final class WorkflowStateTest {
     final long key = keyGenerator.nextKey();
 
     deploymentRecord
-        .workflows()
+        .processes()
         .add()
         .setBpmnProcessId(BufferUtil.wrapString(processId))
         .setVersion(version)

@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.workflow;
+package io.zeebe.client.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.util.ClientTest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import java.time.Duration;
 import org.junit.Test;
 
-public final class CancelWorkflowInstanceTest extends ClientTest {
+public final class CancelProcessInstanceTest extends ClientTest {
 
   @Test
   public void shouldSendCancelCommand() {
@@ -32,8 +32,8 @@ public final class CancelWorkflowInstanceTest extends ClientTest {
     client.newCancelInstanceCommand(123).send().join();
 
     // then
-    final CancelWorkflowInstanceRequest request = gatewayService.getLastRequest();
-    assertThat(request.getWorkflowInstanceKey()).isEqualTo(123);
+    final CancelProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getProcessInstanceKey()).isEqualTo(123);
 
     rule.verifyDefaultRequestTimeout();
   }
@@ -42,7 +42,7 @@ public final class CancelWorkflowInstanceTest extends ClientTest {
   public void shouldRaiseExceptionOnError() {
     // given
     gatewayService.errorOnRequest(
-        CancelWorkflowInstanceRequest.class, () -> new ClientException("Invalid request"));
+        CancelProcessInstanceRequest.class, () -> new ClientException("Invalid request"));
 
     assertThatThrownBy(() -> client.newCancelInstanceCommand(123).send().join())
         .isInstanceOf(ClientException.class)

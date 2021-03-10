@@ -103,11 +103,11 @@ public class ElasticsearchClient {
 
     if (size > configuration.index.ignoreVariablesAbove) {
       log.warn(
-          "Variable {key: {}, name: {}, variableScope: {}, workflowInstanceKey: {}} exceeded max size of {} bytes with a size of {} bytes. As a consequence this variable is not index by elasticsearch.",
+          "Variable {key: {}, name: {}, variableScope: {}, processInstanceKey: {}} exceeded max size of {} bytes with a size of {} bytes. As a consequence this variable is not index by elasticsearch.",
           record.getKey(),
           value.getName(),
           value.getScopeKey(),
-          value.getWorkflowInstanceKey(),
+          value.getProcessInstanceKey(),
           configuration.index.ignoreVariablesAbove,
           size);
     }

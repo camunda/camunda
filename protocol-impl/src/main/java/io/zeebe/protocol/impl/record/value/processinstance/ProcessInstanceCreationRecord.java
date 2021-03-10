@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.protocol.impl.record.value.workflowinstance;
+package io.zeebe.protocol.impl.record.value.processinstance;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -18,28 +18,28 @@ import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceCreationRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
-public final class WorkflowInstanceCreationRecord extends UnifiedRecordValue
-    implements WorkflowInstanceCreationRecordValue {
+public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
+    implements ProcessInstanceCreationRecordValue {
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty("bpmnProcessId", "");
-  private final LongProperty workflowKeyProperty = new LongProperty("workflowKey", -1);
+  private final LongProperty processDefinitionKeyProperty = new LongProperty("processDefinitionKey", -1);
   private final IntegerProperty versionProperty = new IntegerProperty("version", -1);
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
-  private final LongProperty workflowInstanceKeyProperty =
-      new LongProperty("workflowInstanceKey", -1);
+  private final LongProperty processInstanceKeyProperty =
+      new LongProperty("processInstanceKey", -1);
   private final ArrayProperty<StringValue> fetchVariablesProperty =
       new ArrayProperty<>("fetchVariables", new StringValue());
 
-  public WorkflowInstanceCreationRecord() {
+  public ProcessInstanceCreationRecord() {
     declareProperty(bpmnProcessIdProperty)
-        .declareProperty(workflowKeyProperty)
-        .declareProperty(workflowInstanceKeyProperty)
+        .declareProperty(processDefinitionKeyProperty)
+        .declareProperty(processInstanceKeyProperty)
         .declareProperty(versionProperty)
         .declareProperty(variablesProperty)
         .declareProperty(fetchVariablesProperty);
@@ -55,37 +55,37 @@ public final class WorkflowInstanceCreationRecord extends UnifiedRecordValue
   }
 
   @Override
-  public long getWorkflowKey() {
-    return workflowKeyProperty.getValue();
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProperty.getValue();
   }
 
-  public WorkflowInstanceCreationRecord setWorkflowKey(final long key) {
-    workflowKeyProperty.setValue(key);
+  public ProcessInstanceCreationRecord setProcessDefinitionKey(final long key) {
+    processDefinitionKeyProperty.setValue(key);
     return this;
   }
 
-  public WorkflowInstanceCreationRecord setVersion(final int version) {
+  public ProcessInstanceCreationRecord setVersion(final int version) {
     versionProperty.setValue(version);
     return this;
   }
 
-  public WorkflowInstanceCreationRecord setBpmnProcessId(final String bpmnProcessId) {
+  public ProcessInstanceCreationRecord setBpmnProcessId(final String bpmnProcessId) {
     bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
   }
 
-  public WorkflowInstanceCreationRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+  public ProcessInstanceCreationRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
   }
 
   @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProperty.getValue();
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProperty.getValue();
   }
 
-  public WorkflowInstanceCreationRecord setWorkflowInstanceKey(final long instanceKey) {
-    workflowInstanceKeyProperty.setValue(instanceKey);
+  public ProcessInstanceCreationRecord setProcessInstanceKey(final long instanceKey) {
+    processInstanceKeyProperty.setValue(instanceKey);
     return this;
   }
 
@@ -94,7 +94,7 @@ public final class WorkflowInstanceCreationRecord extends UnifiedRecordValue
     return MsgPackConverter.convertToMap(variablesProperty.getValue());
   }
 
-  public WorkflowInstanceCreationRecord setVariables(final DirectBuffer variables) {
+  public ProcessInstanceCreationRecord setVariables(final DirectBuffer variables) {
     variablesProperty.setValue(variables);
     return this;
   }
@@ -103,7 +103,7 @@ public final class WorkflowInstanceCreationRecord extends UnifiedRecordValue
     return fetchVariablesProperty;
   }
 
-  public WorkflowInstanceCreationRecord setFetchVariables(final List<String> fetchVariables) {
+  public ProcessInstanceCreationRecord setFetchVariables(final List<String> fetchVariables) {
     fetchVariables.forEach(variable -> fetchVariablesProperty.add().wrap(wrapString(variable)));
     return this;
   }

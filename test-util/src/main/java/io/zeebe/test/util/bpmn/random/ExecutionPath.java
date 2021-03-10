@@ -13,7 +13,7 @@ import java.util.List;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-/** Execution path to execute a random workflow from start to finish. This class is immutable. */
+/** Execution path to execute a random process from start to finish. This class is immutable. */
 public final class ExecutionPath {
   private final List<AbstractExecutionStep> steps = new ArrayList<>();
   private final String processId;

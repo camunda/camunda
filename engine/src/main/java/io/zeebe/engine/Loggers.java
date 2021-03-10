@@ -13,11 +13,11 @@ import org.slf4j.LoggerFactory;
 public final class Loggers {
   public static final Logger STREAM_PROCESSING =
       LoggerFactory.getLogger("io.zeebe.broker.logstreams");
-  public static final Logger WORKFLOW_REPOSITORY_LOGGER =
-      LoggerFactory.getLogger("io.zeebe.broker.workflow.repository");
+  public static final Logger PROCESS_REPOSITORY_LOGGER =
+      LoggerFactory.getLogger("io.zeebe.broker.process.repository");
 
-  public static final Logger WORKFLOW_PROCESSOR_LOGGER =
-      LoggerFactory.getLogger("io.zeebe.broker.workflow");
+  public static final Logger PROCESS_PROCESSOR_LOGGER =
+      LoggerFactory.getLogger("io.zeebe.broker.process");
 
   public static Logger getExporterLogger(final String exporterId) {
     final String loggerName = String.format("io.zeebe.broker.exporter.%s", exporterId);

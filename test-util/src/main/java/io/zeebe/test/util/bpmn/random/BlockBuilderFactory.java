@@ -18,10 +18,10 @@ public interface BlockBuilderFactory {
   BlockBuilder createBlockBuilder(ConstructionContext context);
 
   /**
-   * Returns {@code true} if the block builder is adding depth (nested elements) to the workflow
+   * Returns {@code true} if the block builder is adding depth (nested elements) to the process
    * that will be generated
    *
-   * @return {@code true} if the block builder is adding depth (nested elements) to the workflow *
+   * @return {@code true} if the block builder is adding depth (nested elements) to the process *
    *     that will be generated
    */
   boolean isAddingDepth();

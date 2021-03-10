@@ -9,23 +9,23 @@ package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
-/** Applies state changes for `WorkflowInstance:Element_Terminating` */
-final class WorkflowInstanceElementTerminatingApplier
-    implements TypedEventApplier<WorkflowInstanceIntent, WorkflowInstanceRecord> {
+/** Applies state changes for `ProcessInstance:Element_Terminating` */
+final class ProcessInstanceElementTerminatingApplier
+    implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
 
-  public WorkflowInstanceElementTerminatingApplier(
+  public ProcessInstanceElementTerminatingApplier(
       final MutableElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
   }
 
   @Override
-  public void applyState(final long key, final WorkflowInstanceRecord value) {
+  public void applyState(final long key, final ProcessInstanceRecord value) {
     elementInstanceState.updateInstance(
-        key, instance -> instance.setState(WorkflowInstanceIntent.ELEMENT_TERMINATING));
+        key, instance -> instance.setState(ProcessInstanceIntent.ELEMENT_TERMINATING));
   }
 }

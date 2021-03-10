@@ -7,7 +7,7 @@
  */
 package io.zeebe.broker.it.client.command;
 
-import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCanceled;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertProcessInstanceCanceled;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.grpc.Status.Code;
@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public final class CancelWorkflowInstanceTest {
+public final class CancelProcessInstanceTest {
 
   private static final String PROCESS_ID = "process";
 
@@ -35,12 +35,12 @@ public final class CancelWorkflowInstanceTest {
 
   @Rule public BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
-  private long workflowKey;
+  private long processDefinitionKey;
 
   @Before
   public void init() {
-    workflowKey =
-        CLIENT_RULE.deployWorkflow(
+    processDefinitionKey =
+        CLIENT_RULE.deployProcess(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .serviceTask("task", t -> t.zeebeJobType("test"))
@@ -48,27 +48,27 @@ public final class CancelWorkflowInstanceTest {
   }
 
   @Test
-  public void shouldCancelWorkflowInstance() {
+  public void shouldCancelProcessInstance() {
     // given
-    final long workflowInstanceKey = CLIENT_RULE.createWorkflowInstance(workflowKey);
+    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
 
     // when
-    CLIENT_RULE.getClient().newCancelInstanceCommand(workflowInstanceKey).send().join();
+    CLIENT_RULE.getClient().newCancelInstanceCommand(processInstanceKey).send().join();
 
     // then
-    assertWorkflowInstanceCanceled(PROCESS_ID);
+    assertProcessInstanceCanceled(PROCESS_ID);
   }
 
   @Test
-  public void shouldRejectIfWorkflowInstanceIsEnded() {
+  public void shouldRejectIfProcessInstanceIsEnded() {
     // given
-    final long workflowInstanceKey = CLIENT_RULE.createWorkflowInstance(workflowKey);
+    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
 
-    CLIENT_RULE.getClient().newCancelInstanceCommand(workflowInstanceKey).send().join();
+    CLIENT_RULE.getClient().newCancelInstanceCommand(processInstanceKey).send().join();
 
     // when
     final var command =
-        CLIENT_RULE.getClient().newCancelInstanceCommand(workflowInstanceKey).send();
+        CLIENT_RULE.getClient().newCancelInstanceCommand(processInstanceKey).send();
 
     // then
     assertThatThrownBy(() -> command.join())
@@ -78,13 +78,13 @@ public final class CancelWorkflowInstanceTest {
   }
 
   @Test
-  public void shouldRejectIfNotWorkflowInstanceKey() {
+  public void shouldRejectIfNotProcessInstanceKey() {
     // given
-    final long workflowInstanceKey = CLIENT_RULE.createWorkflowInstance(workflowKey);
+    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
 
     final long elementInstanceKey =
         RecordingExporter.jobRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst()
             .getValue()
             .getElementInstanceKey();

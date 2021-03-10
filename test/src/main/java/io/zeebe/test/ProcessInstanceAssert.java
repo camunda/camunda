@@ -7,14 +7,14 @@
  */
 package io.zeebe.test;
 
-import io.zeebe.client.api.response.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.ProcessInstanceEvent;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.WorkflowInstanceRecordStream;
-import io.zeebe.test.util.record.WorkflowInstances;
+import io.zeebe.test.util.record.ProcessInstanceRecordStream;
+import io.zeebe.test.util.record.ProcessInstances;
 import io.zeebe.test.util.stream.StreamWrapperException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,53 +25,53 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 
-public class WorkflowInstanceAssert
-    extends AbstractAssert<WorkflowInstanceAssert, WorkflowInstanceEvent> {
+public class ProcessInstanceAssert
+    extends AbstractAssert<ProcessInstanceAssert, ProcessInstanceEvent> {
   private static final ZeebeObjectMapper OBJECT_MAPPER = new ZeebeObjectMapper();
 
-  private static final List<WorkflowInstanceIntent> ELEMENT_PASSED_INTENTS =
+  private static final List<ProcessInstanceIntent> ELEMENT_PASSED_INTENTS =
       Arrays.asList(
-          WorkflowInstanceIntent.ELEMENT_COMPLETED, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
+          ProcessInstanceIntent.ELEMENT_COMPLETED, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
-  private static final List<WorkflowInstanceIntent> INSTANCE_ENDED_INTENTS =
+  private static final List<ProcessInstanceIntent> INSTANCE_ENDED_INTENTS =
       Arrays.asList(
-          WorkflowInstanceIntent.ELEMENT_COMPLETED, WorkflowInstanceIntent.ELEMENT_TERMINATED);
+          ProcessInstanceIntent.ELEMENT_COMPLETED, ProcessInstanceIntent.ELEMENT_TERMINATED);
 
-  private final long workflowInstanceKey;
+  private final long processInstanceKey;
 
-  public WorkflowInstanceAssert(final WorkflowInstanceEvent actual) {
-    super(actual, WorkflowInstanceAssert.class);
+  public ProcessInstanceAssert(final ProcessInstanceEvent actual) {
+    super(actual, ProcessInstanceAssert.class);
 
-    workflowInstanceKey = actual.getWorkflowInstanceKey();
+    processInstanceKey = actual.getProcessInstanceKey();
   }
 
-  public static WorkflowInstanceAssert assertThat(final WorkflowInstanceEvent actual) {
-    return new WorkflowInstanceAssert(actual);
+  public static ProcessInstanceAssert assertThat(final ProcessInstanceEvent actual) {
+    return new ProcessInstanceAssert(actual);
   }
 
-  public WorkflowInstanceAssert isEnded() {
+  public ProcessInstanceAssert isEnded() {
 
     final boolean isEnded =
         exists(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .withRecordKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withRecordKey(processInstanceKey)
                 .filter(intent(INSTANCE_ENDED_INTENTS)));
 
     if (!isEnded) {
-      failWithMessage("Expected workflow instance to be <ended> but was <active>");
+      failWithMessage("Expected process instance to be <ended> but was <active>");
     }
 
     return this;
   }
 
-  public WorkflowInstanceAssert hasPassed(final String... elementIds) {
+  public ProcessInstanceAssert hasPassed(final String... elementIds) {
 
     final List<String> ids = Arrays.asList(elementIds);
 
     final List<String> passedElements =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .filter(intent(ELEMENT_PASSED_INTENTS))
             .filter(elementId(ids))
             .map(r -> r.getValue().getElementId())
@@ -88,13 +88,13 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  public WorkflowInstanceAssert hasEntered(final String... elementIds) {
+  public ProcessInstanceAssert hasEntered(final String... elementIds) {
 
     final List<String> ids = Arrays.asList(elementIds);
 
     final List<String> enteredElements =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
             .filter(elementId(ids))
             .map(r -> r.getValue().getElementId())
             .limit(ids.size())
@@ -110,13 +110,13 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  public WorkflowInstanceAssert hasCompleted(final String... elementIds) {
+  public ProcessInstanceAssert hasCompleted(final String... elementIds) {
 
     final List<String> ids = Arrays.asList(elementIds);
 
     final List<String> completedElements =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
             .filter(elementId(ids))
             .map(r -> r.getValue().getElementId())
             .limit(ids.size())
@@ -132,29 +132,29 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  public WorkflowInstanceAssert hasVariable(final String key, final Object expectedValue) {
-    final Optional<Record<WorkflowInstanceRecordValue>> record =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withRecordKey(workflowInstanceKey)
+  public ProcessInstanceAssert hasVariable(final String key, final Object expectedValue) {
+    final Optional<Record<ProcessInstanceRecordValue>> record =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withRecordKey(processInstanceKey)
             .filter(intent(INSTANCE_ENDED_INTENTS))
             .findFirst();
 
     if (record.isPresent()) {
       hasVariable(record.get(), key, expectedValue);
     } else {
-      failWithMessage("Expected workflow instance to contain variables but instance is not ended");
+      failWithMessage("Expected process instance to contain variables but instance is not ended");
     }
 
     return this;
   }
 
-  private WorkflowInstanceAssert hasVariable(
-      final Record<WorkflowInstanceRecordValue> record,
+  private ProcessInstanceAssert hasVariable(
+      final Record<ProcessInstanceRecordValue> record,
       final String key,
       final Object expectedValue) {
     final Map<String, String> variables =
-        WorkflowInstances.getCurrentVariables(workflowInstanceKey, record.getPosition());
+        ProcessInstances.getCurrentVariables(processInstanceKey, record.getPosition());
 
     if (!variables.containsKey(key)) {
       failWithMessage(
@@ -174,7 +174,7 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  private boolean exists(final WorkflowInstanceRecordStream stream) {
+  private boolean exists(final ProcessInstanceRecordStream stream) {
     try {
       return stream.exists();
     } catch (final StreamWrapperException e) {
@@ -182,12 +182,12 @@ public class WorkflowInstanceAssert
     }
   }
 
-  private static Predicate<Record<WorkflowInstanceRecordValue>> intent(
-      final List<WorkflowInstanceIntent> intents) {
+  private static Predicate<Record<ProcessInstanceRecordValue>> intent(
+      final List<ProcessInstanceIntent> intents) {
     return record -> intents.contains(record.getIntent());
   }
 
-  private static Predicate<Record<WorkflowInstanceRecordValue>> elementId(
+  private static Predicate<Record<ProcessInstanceRecordValue>> elementId(
       final List<String> elementIds) {
     return record -> {
       final String elementId = record.getValue().getElementId();

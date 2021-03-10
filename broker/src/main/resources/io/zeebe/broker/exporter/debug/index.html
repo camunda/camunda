@@ -24,7 +24,7 @@
         <li class="nav-item">
           <div class="btn-group-toggle" data-toggle="buttons">
             <label class="btn btn-outline-success active" onclick="fetchRecords()">
-              <input id="filter-workflow-instance" type="checkbox" autocomplete="off" checked>Workfow
+              <input id="filter-process-instance" type="checkbox" autocomplete="off" checked>Workfow
               Instance
             </label>
             <label class="btn btn-outline-success active" onclick="fetchRecords()">
@@ -76,7 +76,7 @@
       <th scope="col">Key</th>
       <th scope="col">BPMN Process Id</th>
       <th scope="col">Element Id</th>
-      <th scope="col">Workflow Instance Key</th>
+      <th scope="col">Process Instance Key</th>
       <th scope="col">Flow Scope Key</th>
       <th scope="col">Element Instance Key</th>
     </tr>
@@ -88,7 +88,7 @@
       <td>{{key}}</td>
       <td>{{_bpmnProcessId}}</td>
       <td>{{_elementId}}</td>
-      <td>{{_workflowInstanceKey}}</td>
+      <td>{{_processInstanceKey}}</td>
       <td>{{_flowScopeKey}}</td>
       <td>{{_elementInstanceKey}}</td>
     </tr>
@@ -130,8 +130,8 @@
 
   function checkboxForRecord(record) {
     switch (record.valueType) {
-      case 'WORKFLOW_INSTANCE':
-        return $('#filter-workflow-instance');
+      case 'PROCESS_INSTANCE':
+        return $('#filter-process-instance');
       case 'JOB':
         return $('#filter-job');
       case 'INCIDENT':
@@ -140,7 +140,7 @@
         return $('#filter-timer');
       case 'MESSAGE':
       case 'MESSAGE_SUBSCRIPTION':
-      case 'WORKFLOW_INSTANCE_SUBSCRIPTION':
+      case 'PROCESS_INSTANCE_SUBSCRIPTION':
       case 'MESSAGE_START_EVENT_SUBSCRIPTION':
         return $('#filter-message');
       case 'DEPLOYMENT':
@@ -158,7 +158,7 @@
 
       r._bpmnProcessId = r.value.bpmnProcessId;
       r._elementId = r.value.elementId;
-      r._workflowInstanceKey = r.value.workflowInstanceKey;
+      r._processInstanceKey = r.value.processInstanceKey;
       r._flowScopeKey = r.value.flowScopeKey;
       r._elementInstanceKey = r.value.elementInstanceKey;
 

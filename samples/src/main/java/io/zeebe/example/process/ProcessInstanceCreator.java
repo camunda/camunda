@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.example.workflow;
+package io.zeebe.example.process;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.response.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.ProcessInstanceEvent;
 
 /**
  * Example application that connects to a cluster on Camunda Cloud, or a locally deployed cluster.
@@ -30,7 +30,7 @@ import io.zeebe.client.api.response.WorkflowInstanceEvent;
  * <p>When {@code ZEEBE_ADDRESS} is not set, it connects to a broker running on localhost with
  * default ports
  */
-public final class WorkflowInstanceCreator {
+public final class ProcessInstanceCreator {
 
   public static void main(final String[] args) {
     final String defaultAddress = "localhost:26500";
@@ -51,9 +51,9 @@ public final class WorkflowInstanceCreator {
 
     try (final ZeebeClient client = clientBuilder.build()) {
 
-      System.out.println("Creating workflow instance");
+      System.out.println("Creating process instance");
 
-      final WorkflowInstanceEvent workflowInstanceEvent =
+      final ProcessInstanceEvent processInstanceEvent =
           client
               .newCreateInstanceCommand()
               .bpmnProcessId(bpmnProcessId)
@@ -62,7 +62,7 @@ public final class WorkflowInstanceCreator {
               .join();
 
       System.out.println(
-          "Workflow instance created with key: " + workflowInstanceEvent.getWorkflowInstanceKey());
+          "Process instance created with key: " + processInstanceEvent.getProcessInstanceKey());
     }
   }
 }

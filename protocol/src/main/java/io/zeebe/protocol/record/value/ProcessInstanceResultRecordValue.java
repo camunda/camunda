@@ -16,24 +16,24 @@
 package io.zeebe.protocol.record.value;
 
 import io.zeebe.protocol.record.RecordValueWithVariables;
-import io.zeebe.protocol.record.intent.WorkflowInstanceResultIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 
 /**
- * Represents a workflow instance related command or event.
+ * Represents a process instance related command or event.
  *
- * <p>See {@link WorkflowInstanceResultIntent} for intents.
+ * <p>See {@link ProcessInstanceResultIntent} for intents.
  */
-public interface WorkflowInstanceResultRecordValue
-    extends RecordValueWithVariables, WorkflowInstanceRelated {
-  /** @return the BPMN process id this workflow instance belongs to. */
+public interface ProcessInstanceResultRecordValue
+    extends RecordValueWithVariables, ProcessInstanceRelated {
+  /** @return the BPMN process id this process instance belongs to. */
   String getBpmnProcessId();
 
-  /** @return the version of the deployed workflow this instance belongs to. */
+  /** @return the version of the deployed process this instance belongs to. */
   int getVersion();
 
-  /** @return the key of the deployed workflow this instance belongs to. */
-  long getWorkflowKey();
+  /** @return the key of the deployed process this instance belongs to. */
+  long getProcessDefinitionKey();
 
-  /** @return the key of the workflow instance */
-  long getWorkflowInstanceKey();
+  /** @return the key of the process instance */
+  long getProcessInstanceKey();
 }

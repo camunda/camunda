@@ -12,10 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.engine.util.WorkflowExecutor;
+import io.zeebe.engine.util.ProcessExecutor;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.bpmn.random.AbstractExecutionStep;
 import io.zeebe.test.util.bpmn.random.ExecutionPath;
@@ -44,7 +44,7 @@ public class ReplayStateRandomizedPropertyTest {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ReplayStateRandomizedPropertyTest.class);
 
-  private static final int WORKFLOW_COUNT = 5;
+  private static final int PROCESS_COUNT = 5;
   private static final int EXECUTION_PATH_COUNT = 5;
 
   @Rule public TestWatcher failedTestDataPrinter = new FailedTestDataPrinter();
@@ -57,7 +57,7 @@ public class ReplayStateRandomizedPropertyTest {
           .withOnProcessedCallback(record -> lastProcessedPosition = record.getPosition())
           .withOnSkippedCallback(record -> lastProcessedPosition = record.getPosition());
 
-  private final WorkflowExecutor workflowExecutor = new WorkflowExecutor(engineRule);
+  private final ProcessExecutor processExecutor = new ProcessExecutor(engineRule);
 
   @Before
   public void init() {
@@ -65,8 +65,8 @@ public class ReplayStateRandomizedPropertyTest {
   }
 
   /**
-   * This test takes a random workflow and execution path in that workflow. A process instance is
-   * started and the workflow is executed step by step according to the random execution path. After
+   * This test takes a random process and execution path in that process. A process instance is
+   * started and the process is executed step by step according to the random execution path. After
    * each step, the current database state is captured and the engine is restarted. After restart
    * the database state is captured and compared to the database state before the restart. After all
    * steps are executed, a final comparison is performed.
@@ -83,21 +83,21 @@ public class ReplayStateRandomizedPropertyTest {
 
     for (final AbstractExecutionStep step : path.getSteps()) {
 
-      workflowExecutor.applyStep(step);
+      processExecutor.applyStep(step);
 
       stopAndRestartEngineAndCompareStates();
     }
 
     // wait for termination of the process
     final var result =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .withElementType(BpmnElementType.PROCESS)
             .withBpmnProcessId(path.getProcessId())
             .getFirst();
 
     final var position = result.getPosition();
 
-    Awaitility.await("await the last workflow record to be processed")
+    Awaitility.await("await the last process record to be processed")
         .untilAsserted(() -> assertThat(lastProcessedPosition).isGreaterThanOrEqualTo(position));
 
     stopAndRestartEngineAndCompareStates();
@@ -167,10 +167,10 @@ public class ReplayStateRandomizedPropertyTest {
   @Parameters(name = "{0}")
   public static Collection<TestDataRecord> getTestRecords() {
     // use the following code to rerun a specific test case:
-    //    final var workflowSeed = 3499044774323385558L;
+    //    final var processSeed = 3499044774323385558L;
     //    final var executionPathSeed = 3627169465144620203L;
-    //    return List.of(TestDataGenerator.regenerateTestRecord(workflowSeed, executionPathSeed));
-    return TestDataGenerator.generateTestRecords(WORKFLOW_COUNT, EXECUTION_PATH_COUNT);
+    //    return List.of(TestDataGenerator.regenerateTestRecord(processSeed, executionPathSeed));
+    return TestDataGenerator.generateTestRecords(PROCESS_COUNT, EXECUTION_PATH_COUNT);
   }
 
   private final class FailedTestDataPrinter extends TestWatcher {
@@ -179,7 +179,7 @@ public class ReplayStateRandomizedPropertyTest {
     protected void failed(final Throwable e, final Description description) {
       LOGGER.info("Data of failed test case: {}", record);
       LOGGER.info(
-          "Workflow of failed test case:{}{}",
+          "Process of failed test case:{}{}",
           System.lineSeparator(),
           Bpmn.convertToString(record.getBpmnModel()));
       LOGGER.info(

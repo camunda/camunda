@@ -54,15 +54,15 @@ public final class UpdateVariableDocumentProcessor
       return;
     }
 
-    final long workflowKey = scope.getValue().getWorkflowKey();
-    final long workflowInstanceKey = scope.getValue().getWorkflowInstanceKey();
+    final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
+    final long processInstanceKey = scope.getValue().getProcessInstanceKey();
     try {
       if (value.getUpdateSemantics() == VariableDocumentUpdateSemantic.LOCAL) {
         variableBehavior.mergeLocalDocument(
-            scope.getKey(), workflowKey, workflowInstanceKey, value.getVariablesBuffer());
+            scope.getKey(), processDefinitionKey, processInstanceKey, value.getVariablesBuffer());
       } else {
         variableBehavior.mergeDocument(
-            scope.getKey(), workflowKey, workflowInstanceKey, value.getVariablesBuffer());
+            scope.getKey(), processDefinitionKey, processInstanceKey, value.getVariablesBuffer());
       }
     } catch (final MsgpackReaderException e) {
       final String reason =

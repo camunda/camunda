@@ -5,39 +5,39 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.processing.workflowinstance;
+package io.zeebe.engine.processing.processinstance;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
-public final class WorkflowInstanceCommandContext {
+public final class ProcessInstanceCommandContext {
 
   private final MutableElementInstanceState elementInstanceState;
 
-  private TypedRecord<WorkflowInstanceRecord> record;
+  private TypedRecord<ProcessInstanceRecord> record;
   private ElementInstance elementInstance;
   private TypedResponseWriter responseWriter;
   private TypedStreamWriter streamWriter;
 
-  public WorkflowInstanceCommandContext(final MutableElementInstanceState elementInstanceState) {
+  public ProcessInstanceCommandContext(final MutableElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
   }
 
-  public WorkflowInstanceIntent getCommand() {
-    return (WorkflowInstanceIntent) record.getIntent();
+  public ProcessInstanceIntent getCommand() {
+    return (ProcessInstanceIntent) record.getIntent();
   }
 
-  public TypedRecord<WorkflowInstanceRecord> getRecord() {
+  public TypedRecord<ProcessInstanceRecord> getRecord() {
     return record;
   }
 
-  public void setRecord(final TypedRecord<WorkflowInstanceRecord> record) {
+  public void setRecord(final TypedRecord<ProcessInstanceRecord> record) {
     this.record = record;
   }
 

@@ -15,10 +15,10 @@
  */
 package io.zeebe.client.api.command;
 
-import io.zeebe.client.api.response.CancelWorkflowInstanceResponse;
+import io.zeebe.client.api.response.CancelProcessInstanceResponse;
 
-public interface CancelWorkflowInstanceCommandStep1
-    extends FinalCommandStep<CancelWorkflowInstanceResponse> {
+public interface CancelProcessInstanceCommandStep1
+    extends FinalCommandStep<CancelProcessInstanceResponse> {
   // the place for new optional parameters
 
 }

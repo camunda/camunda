@@ -9,7 +9,7 @@ package io.zeebe.engine.processing.deployment.model.transformer;
 
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableEventBasedGateway;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.EventBasedGateway;
@@ -26,9 +26,9 @@ public final class EventBasedGatewayTransformer
 
   @Override
   public void transform(final EventBasedGateway element, final TransformContext context) {
-    final ExecutableWorkflow workflow = context.getCurrentWorkflow();
+    final ExecutableProcess process = context.getCurrentProcess();
     final ExecutableEventBasedGateway gateway =
-        workflow.getElementById(element.getId(), ExecutableEventBasedGateway.class);
+        process.getElementById(element.getId(), ExecutableEventBasedGateway.class);
 
     final List<ExecutableCatchEvent> connectedEvents = getConnectedCatchEvents(gateway);
     gateway.setEvents(connectedEvents);

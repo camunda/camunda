@@ -18,7 +18,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.intent.WorkflowIntent;
+import io.zeebe.protocol.record.intent.ProcessIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.stream.Collectors;
@@ -58,7 +58,7 @@ public class MultiPartitionDeploymentLifecycleTest {
         .extracting(Record::getIntent, Record::getRecordType)
         .containsExactly(
             tuple(DeploymentIntent.CREATE, RecordType.COMMAND),
-            tuple(WorkflowIntent.CREATED, RecordType.EVENT),
+            tuple(ProcessIntent.CREATED, RecordType.EVENT),
             tuple(DeploymentIntent.CREATED, RecordType.EVENT),
             tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT),
             tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT),

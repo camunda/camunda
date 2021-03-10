@@ -8,11 +8,11 @@
 package io.zeebe.gateway;
 
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerCancelWorkflowInstanceRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceWithResultRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerDeployWorkflowRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerDeployProcessRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
@@ -20,18 +20,18 @@ import io.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import org.agrona.DirectBuffer;
@@ -39,12 +39,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class RequestMapper {
 
-  public static BrokerDeployWorkflowRequest toDeployWorkflowRequest(
-      final DeployWorkflowRequest grpcRequest) {
-    final BrokerDeployWorkflowRequest brokerRequest = new BrokerDeployWorkflowRequest();
+  public static BrokerDeployProcessRequest toDeployProcessRequest(
+      final DeployProcessRequest grpcRequest) {
+    final BrokerDeployProcessRequest brokerRequest = new BrokerDeployProcessRequest();
 
-    for (final WorkflowRequestObject workflow : grpcRequest.getWorkflowsList()) {
-      brokerRequest.addResource(workflow.getDefinition().toByteArray(), workflow.getName());
+    for (final ProcessRequestObject process : grpcRequest.getProcessesList()) {
+      brokerRequest.addResource(process.getDefinition().toByteArray(), process.getName());
     }
 
     return brokerRequest;
@@ -84,30 +84,30 @@ public final class RequestMapper {
         grpcRequest.getJobKey(), ensureJsonSet(grpcRequest.getVariables()));
   }
 
-  public static BrokerCreateWorkflowInstanceRequest toCreateWorkflowInstanceRequest(
-      final CreateWorkflowInstanceRequest grpcRequest) {
-    final BrokerCreateWorkflowInstanceRequest brokerRequest =
-        new BrokerCreateWorkflowInstanceRequest();
+  public static BrokerCreateProcessInstanceRequest toCreateProcessInstanceRequest(
+      final CreateProcessInstanceRequest grpcRequest) {
+    final BrokerCreateProcessInstanceRequest brokerRequest =
+        new BrokerCreateProcessInstanceRequest();
 
     brokerRequest
         .setBpmnProcessId(grpcRequest.getBpmnProcessId())
-        .setKey(grpcRequest.getWorkflowKey())
+        .setKey(grpcRequest.getProcessDefinitionKey())
         .setVersion(grpcRequest.getVersion())
         .setVariables(ensureJsonSet(grpcRequest.getVariables()));
 
     return brokerRequest;
   }
 
-  public static BrokerCreateWorkflowInstanceWithResultRequest
-      toCreateWorkflowInstanceWithResultRequest(
-          final CreateWorkflowInstanceWithResultRequest grpcRequest) {
-    final BrokerCreateWorkflowInstanceWithResultRequest brokerRequest =
-        new BrokerCreateWorkflowInstanceWithResultRequest();
+  public static BrokerCreateProcessInstanceWithResultRequest
+      toCreateProcessInstanceWithResultRequest(
+          final CreateProcessInstanceWithResultRequest grpcRequest) {
+    final BrokerCreateProcessInstanceWithResultRequest brokerRequest =
+        new BrokerCreateProcessInstanceWithResultRequest();
 
-    final CreateWorkflowInstanceRequest request = grpcRequest.getRequest();
+    final CreateProcessInstanceRequest request = grpcRequest.getRequest();
     brokerRequest
         .setBpmnProcessId(request.getBpmnProcessId())
-        .setKey(request.getWorkflowKey())
+        .setKey(request.getProcessDefinitionKey())
         .setVersion(request.getVersion())
         .setVariables(ensureJsonSet(request.getVariables()))
         .setFetchVariables(grpcRequest.getFetchVariablesList());
@@ -115,12 +115,12 @@ public final class RequestMapper {
     return brokerRequest;
   }
 
-  public static BrokerCancelWorkflowInstanceRequest toCancelWorkflowInstanceRequest(
-      final CancelWorkflowInstanceRequest grpcRequest) {
-    final BrokerCancelWorkflowInstanceRequest brokerRequest =
-        new BrokerCancelWorkflowInstanceRequest();
+  public static BrokerCancelProcessInstanceRequest toCancelProcessInstanceRequest(
+      final CancelProcessInstanceRequest grpcRequest) {
+    final BrokerCancelProcessInstanceRequest brokerRequest =
+        new BrokerCancelProcessInstanceRequest();
 
-    brokerRequest.setWorkflowInstanceKey(grpcRequest.getWorkflowInstanceKey());
+    brokerRequest.setProcessInstanceKey(grpcRequest.getProcessInstanceKey());
 
     return brokerRequest;
   }

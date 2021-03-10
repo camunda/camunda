@@ -26,7 +26,7 @@ public class ErrorTransformer implements ModelElementTransformer<Error> {
 
     final var error = new ExecutableError(element.getId());
 
-    // ignore error events that are not references by the workflow
+    // ignore error events that are not references by the process
     Optional.ofNullable(element.getErrorCode())
         .map(BufferUtil::wrapString)
         .ifPresent(

@@ -16,7 +16,7 @@ import io.zeebe.engine.processing.variable.VariableBehavior;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.util.Either;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -47,8 +47,8 @@ public final class BpmnVariableMappingBehavior {
   public Either<Failure, Void> applyInputMappings(
       final BpmnElementContext context, final ExecutableFlowNode element) {
     final long scopeKey = context.getElementInstanceKey();
-    final long workflowKey = context.getWorkflowKey();
-    final long workflowInstanceKey = context.getWorkflowInstanceKey();
+    final long processDefinitionKey = context.getProcessDefinitionKey();
+    final long processInstanceKey = context.getProcessInstanceKey();
     final Optional<Expression> inputMappingExpression = element.getInputMappings();
     if (inputMappingExpression.isPresent()) {
       return expressionProcessor
@@ -56,7 +56,7 @@ public final class BpmnVariableMappingBehavior {
           .map(
               result -> {
                 variableBehavior.mergeLocalDocument(
-                    scopeKey, workflowKey, workflowInstanceKey, result);
+                    scopeKey, processDefinitionKey, processInstanceKey, result);
                 return null;
               });
     }
@@ -72,10 +72,10 @@ public final class BpmnVariableMappingBehavior {
    */
   public Either<Failure, Void> applyOutputMappings(
       final BpmnElementContext context, final ExecutableFlowNode element) {
-    final WorkflowInstanceRecord record = context.getRecordValue();
+    final ProcessInstanceRecord record = context.getRecordValue();
     final long elementInstanceKey = context.getElementInstanceKey();
-    final long workflowKey = record.getWorkflowKey();
-    final long workflowInstanceKey = record.getWorkflowInstanceKey();
+    final long processDefinitionKey = record.getProcessDefinitionKey();
+    final long processInstanceKey = record.getProcessInstanceKey();
     final Optional<Expression> outputMappingExpression = element.getOutputMappings();
 
     // set variables
@@ -85,10 +85,10 @@ public final class BpmnVariableMappingBehavior {
       outputMappingExpression.ifPresentOrElse(
           expression ->
               variableBehavior.mergeLocalDocument(
-                  elementInstanceKey, workflowKey, workflowInstanceKey, temporaryVariables),
+                  elementInstanceKey, processDefinitionKey, processInstanceKey, temporaryVariables),
           () ->
               variableBehavior.mergeDocument(
-                  elementInstanceKey, workflowKey, workflowInstanceKey, temporaryVariables));
+                  elementInstanceKey, processDefinitionKey, processInstanceKey, temporaryVariables));
       variablesState.removeTemporaryVariables(elementInstanceKey);
     }
 
@@ -98,7 +98,7 @@ public final class BpmnVariableMappingBehavior {
           .evaluateVariableMappingExpression(outputMappingExpression.get(), elementInstanceKey)
           .map(
               result -> {
-                variableBehavior.mergeDocument(scopeKey, workflowKey, workflowInstanceKey, result);
+                variableBehavior.mergeDocument(scopeKey, processDefinitionKey, processInstanceKey, result);
                 return null;
               });
     }

@@ -381,7 +381,7 @@ public final class MessageStateTest {
   public void shouldRemoveMessageCorrelation() {
     // given
     final long messageKey = 6L;
-    final long workflowInstanceKey = 9L;
+    final long processInstanceKey = 9L;
     messageState.putMessageCorrelation(messageKey, wrapString("a"));
 
     // when
@@ -392,62 +392,62 @@ public final class MessageStateTest {
   }
 
   @Test
-  public void shouldExistActiveWorkflowInstance() {
+  public void shouldExistActiveProcessInstance() {
     // when
-    messageState.putActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-1"));
+    messageState.putActiveProcessInstance(wrapString("wf-1"), wrapString("key-1"));
 
     // then
-    assertThat(messageState.existActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-1")))
+    assertThat(messageState.existActiveProcessInstance(wrapString("wf-1"), wrapString("key-1")))
         .isTrue();
 
-    assertThat(messageState.existActiveWorkflowInstance(wrapString("wf-2"), wrapString("key-1")))
+    assertThat(messageState.existActiveProcessInstance(wrapString("wf-2"), wrapString("key-1")))
         .isFalse();
-    assertThat(messageState.existActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-2")))
+    assertThat(messageState.existActiveProcessInstance(wrapString("wf-1"), wrapString("key-2")))
         .isFalse();
   }
 
   @Test
-  public void shouldRemoveActiveWorkflowInstance() {
+  public void shouldRemoveActiveProcessInstance() {
     // given
-    messageState.putActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-1"));
-    messageState.putActiveWorkflowInstance(wrapString("wf-2"), wrapString("key-1"));
-    messageState.putActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-2"));
+    messageState.putActiveProcessInstance(wrapString("wf-1"), wrapString("key-1"));
+    messageState.putActiveProcessInstance(wrapString("wf-2"), wrapString("key-1"));
+    messageState.putActiveProcessInstance(wrapString("wf-1"), wrapString("key-2"));
 
     // when
-    messageState.removeActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-1"));
+    messageState.removeActiveProcessInstance(wrapString("wf-1"), wrapString("key-1"));
 
     // then
-    assertThat(messageState.existActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-1")))
+    assertThat(messageState.existActiveProcessInstance(wrapString("wf-1"), wrapString("key-1")))
         .isFalse();
-    assertThat(messageState.existActiveWorkflowInstance(wrapString("wf-2"), wrapString("key-1")))
+    assertThat(messageState.existActiveProcessInstance(wrapString("wf-2"), wrapString("key-1")))
         .isTrue();
-    assertThat(messageState.existActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-2")))
+    assertThat(messageState.existActiveProcessInstance(wrapString("wf-1"), wrapString("key-2")))
         .isTrue();
   }
 
   @Test
-  public void shouldGetWorkflowInstanceCorrelationKey() {
+  public void shouldGetProcessInstanceCorrelationKey() {
     // when
-    messageState.putWorkflowInstanceCorrelationKey(1L, wrapString("key-1"));
+    messageState.putProcessInstanceCorrelationKey(1L, wrapString("key-1"));
 
     // then
-    assertThat(messageState.getWorkflowInstanceCorrelationKey(1L)).isEqualTo(wrapString("key-1"));
+    assertThat(messageState.getProcessInstanceCorrelationKey(1L)).isEqualTo(wrapString("key-1"));
 
-    assertThat(messageState.getWorkflowInstanceCorrelationKey(2L)).isNull();
+    assertThat(messageState.getProcessInstanceCorrelationKey(2L)).isNull();
   }
 
   @Test
-  public void shouldRemoveWorkflowInstanceCorrelationKey() {
+  public void shouldRemoveProcessInstanceCorrelationKey() {
     // given
-    messageState.putWorkflowInstanceCorrelationKey(1L, wrapString("key-1"));
-    messageState.putWorkflowInstanceCorrelationKey(2L, wrapString("key-2"));
+    messageState.putProcessInstanceCorrelationKey(1L, wrapString("key-1"));
+    messageState.putProcessInstanceCorrelationKey(2L, wrapString("key-2"));
 
     // when
-    messageState.removeWorkflowInstanceCorrelationKey(1L);
+    messageState.removeProcessInstanceCorrelationKey(1L);
 
     // then
-    assertThat(messageState.getWorkflowInstanceCorrelationKey(1L)).isNull();
-    assertThat(messageState.getWorkflowInstanceCorrelationKey(2L)).isEqualTo(wrapString("key-2"));
+    assertThat(messageState.getProcessInstanceCorrelationKey(1L)).isNull();
+    assertThat(messageState.getProcessInstanceCorrelationKey(2L)).isEqualTo(wrapString("key-2"));
   }
 
   private MessageRecord createMessage(final String name, final String correlationKey) {

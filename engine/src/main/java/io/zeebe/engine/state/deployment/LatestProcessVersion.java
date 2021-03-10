@@ -11,18 +11,18 @@ import io.zeebe.db.DbValue;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.LongProperty;
 
-public class LatestWorkflowVersion extends UnpackedObject implements DbValue {
-  private final LongProperty latestWorkflowVersionProp = new LongProperty("latestWorkflowVersion");
+public class LatestProcessVersion extends UnpackedObject implements DbValue {
+  private final LongProperty latestProcessVersionProp = new LongProperty("latestProcessVersion");
 
-  public LatestWorkflowVersion() {
-    declareProperty(latestWorkflowVersionProp);
+  public LatestProcessVersion() {
+    declareProperty(latestProcessVersionProp);
   }
 
   public void set(final long latestVersion) {
-    latestWorkflowVersionProp.setValue(latestVersion);
+    latestProcessVersionProp.setValue(latestVersion);
   }
 
   public long get() {
-    return latestWorkflowVersionProp.getValue();
+    return latestProcessVersionProp.getValue();
   }
 }

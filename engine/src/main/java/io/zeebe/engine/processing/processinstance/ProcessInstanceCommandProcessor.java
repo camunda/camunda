@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.processing.workflowinstance;
+package io.zeebe.engine.processing.processinstance;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -14,24 +14,24 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 
-public final class WorkflowInstanceCommandProcessor
-    implements TypedRecordProcessor<WorkflowInstanceRecord> {
+public final class ProcessInstanceCommandProcessor
+    implements TypedRecordProcessor<ProcessInstanceRecord> {
 
-  private final WorkflowInstanceCommandHandlers commandHandlers;
+  private final ProcessInstanceCommandHandlers commandHandlers;
   private final ElementInstanceState elementInstanceState;
-  private final WorkflowInstanceCommandContext context;
+  private final ProcessInstanceCommandContext context;
 
-  public WorkflowInstanceCommandProcessor(final MutableElementInstanceState elementInstanceState) {
+  public ProcessInstanceCommandProcessor(final MutableElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
-    commandHandlers = new WorkflowInstanceCommandHandlers();
-    context = new WorkflowInstanceCommandContext(elementInstanceState);
+    commandHandlers = new ProcessInstanceCommandHandlers();
+    context = new ProcessInstanceCommandContext(elementInstanceState);
   }
 
   @Override
   public void processRecord(
-      final TypedRecord<WorkflowInstanceRecord> record,
+      final TypedRecord<ProcessInstanceRecord> record,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter) {
     populateCommandContext(record, responseWriter, streamWriter);
@@ -39,7 +39,7 @@ public final class WorkflowInstanceCommandProcessor
   }
 
   private void populateCommandContext(
-      final TypedRecord<WorkflowInstanceRecord> record,
+      final TypedRecord<ProcessInstanceRecord> record,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter) {
     context.setRecord(record);

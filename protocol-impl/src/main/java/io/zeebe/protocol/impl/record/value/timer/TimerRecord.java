@@ -19,19 +19,19 @@ import org.agrona.DirectBuffer;
 public final class TimerRecord extends UnifiedRecordValue implements TimerRecordValue {
 
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
-  private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey");
   private final LongProperty dueDateProp = new LongProperty("dueDate");
   private final StringProperty targetElementId = new StringProperty("targetElementId");
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions");
-  private final LongProperty workflowKeyProp = new LongProperty("workflowKey");
+  private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey");
 
   public TimerRecord() {
     declareProperty(elementInstanceKeyProp)
-        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(processInstanceKeyProp)
         .declareProperty(dueDateProp)
         .declareProperty(targetElementId)
         .declareProperty(repetitionsProp)
-        .declareProperty(workflowKeyProp);
+        .declareProperty(processDefinitionKeyProp);
   }
 
   @JsonIgnore
@@ -39,18 +39,18 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
     return targetElementId.getValue();
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
-  public TimerRecord setWorkflowInstanceKey(final long workflowInstanceKey) {
-    workflowInstanceKeyProp.setValue(workflowInstanceKey);
+  public TimerRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
 
   @Override
-  public long getWorkflowKey() {
-    return workflowKeyProp.getValue();
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProp.getValue();
   }
 
   @Override
@@ -93,8 +93,8 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
     return this;
   }
 
-  public TimerRecord setWorkflowKey(final long workflowKey) {
-    workflowKeyProp.setValue(workflowKey);
+  public TimerRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
   }
 }

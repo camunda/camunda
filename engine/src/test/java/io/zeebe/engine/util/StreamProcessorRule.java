@@ -24,7 +24,7 @@ import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.allocation.DirectBufferAllocator;
@@ -203,19 +203,19 @@ public final class StreamProcessorRule implements TestRule {
     }
   }
 
-  public long writeWorkflowInstanceEvent(final WorkflowInstanceIntent intent) {
-    return writeWorkflowInstanceEvent(intent, 1);
+  public long writeProcessInstanceEvent(final ProcessInstanceIntent intent) {
+    return writeProcessInstanceEvent(intent, 1);
   }
 
-  public long writeWorkflowInstanceEventWithSource(
-      final WorkflowInstanceIntent intent, final int instanceKey, final long sourceEventPosition) {
-    return streamProcessingComposite.writeWorkflowInstanceEventWithSource(
+  public long writeProcessInstanceEventWithSource(
+      final ProcessInstanceIntent intent, final int instanceKey, final long sourceEventPosition) {
+    return streamProcessingComposite.writeProcessInstanceEventWithSource(
         intent, instanceKey, sourceEventPosition);
   }
 
-  public long writeWorkflowInstanceEvent(
-      final WorkflowInstanceIntent intent, final int instanceKey) {
-    return streamProcessingComposite.writeWorkflowInstanceEvent(intent, instanceKey);
+  public long writeProcessInstanceEvent(
+      final ProcessInstanceIntent intent, final int instanceKey) {
+    return streamProcessingComposite.writeProcessInstanceEvent(intent, instanceKey);
   }
 
   public long writeEvent(final long key, final Intent intent, final UnpackedObject value) {

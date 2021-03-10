@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.processing.workflowinstance;
+package io.zeebe.engine.processing.processinstance;
 
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.CANCEL;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.CANCEL;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -22,10 +22,10 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -34,17 +34,17 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class CancelWorkflowInstanceTest {
+public final class CancelProcessInstanceTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-  private static final BpmnModelInstance WORKFLOW =
-      Bpmn.createExecutableProcess("WORKFLOW")
+  private static final BpmnModelInstance PROCESS =
+      Bpmn.createExecutableProcess("PROCESS")
           .startEvent()
           .serviceTask("task", t -> t.zeebeJobType("test").zeebeJobRetries("5"))
           .endEvent()
           .done();
-  private static final BpmnModelInstance SUB_PROCESS_WORKFLOW =
-      Bpmn.createExecutableProcess("SUB_PROCESS_WORKFLOW")
+  private static final BpmnModelInstance SUB_PROCESS_PROCESS =
+      Bpmn.createExecutableProcess("SUB_PROCESS_PROCESS")
           .startEvent()
           .subProcess("subProcess")
           .embeddedSubProcess()
@@ -75,71 +75,71 @@ public final class CancelWorkflowInstanceTest {
 
   @BeforeClass
   public static void init() {
-    ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
-    ENGINE.deployment().withXmlResource(SUB_PROCESS_WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS).deploy();
+    ENGINE.deployment().withXmlResource(SUB_PROCESS_PROCESS).deploy();
     ENGINE.deployment().withXmlResource(FORK_PROCESS).deploy();
   }
 
   @Test
-  public void shouldCancelWorkflowInstance() {
+  public void shouldCancelProcessInstance() {
     // given
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("WORKFLOW").create();
-    RecordingExporter.workflowInstanceRecords()
-        .withWorkflowInstanceKey(workflowInstanceKey)
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("PROCESS").create();
+    RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
         .withElementId("task")
         .withIntent(ELEMENT_ACTIVATED)
         .getFirst();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
-    final Record<WorkflowInstanceRecordValue> workflowInstanceCanceledEvent =
-        RecordingExporter.workflowInstanceRecords()
-            .withRecordKey(workflowInstanceKey)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> processInstanceCanceledEvent =
+        RecordingExporter.processInstanceRecords()
+            .withRecordKey(processInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(ELEMENT_TERMINATED)
             .getFirst();
 
-    Assertions.assertThat(workflowInstanceCanceledEvent.getValue())
-        .hasBpmnProcessId("WORKFLOW")
+    Assertions.assertThat(processInstanceCanceledEvent.getValue())
+        .hasBpmnProcessId("PROCESS")
         .hasVersion(1)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
-        .hasElementId("WORKFLOW");
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasElementId("PROCESS");
 
-    final List<Record<WorkflowInstanceRecordValue>> workflowEvents =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final List<Record<ProcessInstanceRecordValue>> processEvents =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .skipUntil(r -> r.getIntent() == CANCEL)
-            .limit(r -> r.getKey() == workflowInstanceKey && r.getIntent() == ELEMENT_TERMINATED)
+            .limit(r -> r.getKey() == processInstanceKey && r.getIntent() == ELEMENT_TERMINATED)
             .asList();
 
-    assertThat(workflowEvents)
+    assertThat(processEvents)
         .hasSize(5)
         .extracting(e -> e.getValue().getElementId(), e -> e.getIntent())
         .containsSequence(
             tuple("", CANCEL),
-            tuple("WORKFLOW", WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple("PROCESS", ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple("task", ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple("task", ELEMENT_TERMINATED),
-            tuple("WORKFLOW", ELEMENT_TERMINATED));
+            tuple("PROCESS", ELEMENT_TERMINATED));
   }
 
   @Test
   public void shouldNotCancelElementInstance() {
     // given
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("WORKFLOW").create();
-    final Record<WorkflowInstanceRecordValue> task =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("PROCESS").create();
+    final Record<ProcessInstanceRecordValue> task =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("task")
             .withIntent(ELEMENT_ACTIVATED)
             .getFirst();
 
     // when
-    final Record<WorkflowInstanceRecordValue> rejectedCancel =
+    final Record<ProcessInstanceRecordValue> rejectedCancel =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .withInstanceKey(task.getKey())
             .onPartition(1)
             .expectRejection()
@@ -149,64 +149,64 @@ public final class CancelWorkflowInstanceTest {
     assertThat(rejectedCancel.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(rejectedCancel.getRejectionReason())
         .isEqualTo(
-            "Expected to cancel a workflow instance with key '"
+            "Expected to cancel a process instance with key '"
                 + task.getKey()
-                + "', but no such workflow was found");
+                + "', but no such process was found");
   }
 
   @Test
-  public void shouldCancelWorkflowInstanceWithEmbeddedSubProcess() {
+  public void shouldCancelProcessInstanceWithEmbeddedSubProcess() {
     // given
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("SUB_PROCESS_WORKFLOW").create();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("SUB_PROCESS_PROCESS").create();
 
-    RecordingExporter.workflowInstanceRecords()
-        .withWorkflowInstanceKey(workflowInstanceKey)
+    RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
         .withElementId("task")
         .withIntent(ELEMENT_ACTIVATED)
         .getFirst();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> workflowEvents =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .skipUntil(r -> r.getIntent() == WorkflowInstanceIntent.CANCEL)
-            .limitToWorkflowInstanceTerminated()
+    final List<Record<ProcessInstanceRecordValue>> processEvents =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .skipUntil(r -> r.getIntent() == ProcessInstanceIntent.CANCEL)
+            .limitToProcessInstanceTerminated()
             .asList();
 
-    assertThat(workflowEvents)
+    assertThat(processEvents)
         .hasSize(7)
         .extracting(e -> e.getValue().getElementId(), e -> e.getIntent())
         .containsSequence(
-            tuple("", WorkflowInstanceIntent.CANCEL),
-            tuple("SUB_PROCESS_WORKFLOW", WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple("subProcess", WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple("", ProcessInstanceIntent.CANCEL),
+            tuple("SUB_PROCESS_PROCESS", ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple("subProcess", ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple("task", ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple("task", ELEMENT_TERMINATED),
             tuple("subProcess", ELEMENT_TERMINATED),
-            tuple("SUB_PROCESS_WORKFLOW", ELEMENT_TERMINATED));
+            tuple("SUB_PROCESS_PROCESS", ELEMENT_TERMINATED));
   }
 
   @Test
   public void shouldCancelActivityInstance() {
     // given
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("WORKFLOW").create();
-    final Record<WorkflowInstanceRecordValue> activityActivatedEvent =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("PROCESS").create();
+    final Record<ProcessInstanceRecordValue> activityActivatedEvent =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("task")
             .withIntent(ELEMENT_ACTIVATED)
             .getFirst();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
-    final Record<WorkflowInstanceRecordValue> activityTerminatedEvent =
-        RecordingExporter.workflowInstanceRecords()
+    final Record<ProcessInstanceRecordValue> activityTerminatedEvent =
+        RecordingExporter.processInstanceRecords()
             .withElementId("task")
             .withIntent(ELEMENT_TERMINATED)
             .getFirst();
@@ -214,41 +214,41 @@ public final class CancelWorkflowInstanceTest {
     assertThat(activityTerminatedEvent.getKey()).isEqualTo(activityActivatedEvent.getKey());
 
     Assertions.assertThat(activityActivatedEvent.getValue())
-        .hasBpmnProcessId("WORKFLOW")
+        .hasBpmnProcessId("PROCESS")
         .hasVersion(1)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("task");
   }
 
   @Test
-  public void shouldCancelWorkflowInstanceWithParallelExecution() {
+  public void shouldCancelProcessInstanceWithParallelExecution() {
     // given
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("FORK_PROCESS").create();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("FORK_PROCESS").create();
 
-    RecordingExporter.workflowInstanceRecords()
-        .withWorkflowInstanceKey(workflowInstanceKey)
+    RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.SERVICE_TASK)
         .withIntent(ELEMENT_ACTIVATED)
         .limit(2)
         .asList();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> terminatedElements =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .skipUntil(r -> r.getIntent() == WorkflowInstanceIntent.CANCEL)
-            .limitToWorkflowInstanceTerminated()
+    final List<Record<ProcessInstanceRecordValue>> terminatedElements =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .skipUntil(r -> r.getIntent() == ProcessInstanceIntent.CANCEL)
+            .limitToProcessInstanceTerminated()
             .filter(r -> r.getIntent() == ELEMENT_TERMINATED)
             .asList();
 
     assertThat(terminatedElements).hasSize(3);
     assertThat(terminatedElements)
         .extracting(Record::getValue)
-        .extracting(WorkflowInstanceRecordValue::getElementId)
+        .extracting(ProcessInstanceRecordValue::getElementId)
         .containsSubsequence("task1", "FORK_PROCESS")
         .containsSubsequence("task2", "FORK_PROCESS")
         .contains("task1", "task2", "FORK_PROCESS");
@@ -267,26 +267,26 @@ public final class CancelWorkflowInstanceTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId("shouldCancelIntermediateCatchEvent")
             .withVariable("id", "123")
             .create();
 
-    RecordingExporter.workflowInstanceRecords()
-        .withWorkflowInstanceKey(workflowInstanceKey)
+    RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
         .withElementId("catch-event")
         .withIntent(ELEMENT_ACTIVATED)
         .getFirst();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
-    final Record<WorkflowInstanceRecordValue> terminatedEvent =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> terminatedEvent =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("shouldCancelIntermediateCatchEvent")
             .withIntent(ELEMENT_TERMINATED)
             .getFirst();
@@ -294,40 +294,40 @@ public final class CancelWorkflowInstanceTest {
     Assertions.assertThat(terminatedEvent.getValue())
         .hasBpmnProcessId("shouldCancelIntermediateCatchEvent")
         .hasVersion(1)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("shouldCancelIntermediateCatchEvent");
   }
 
   @Test
   public void shouldCancelJobForActivity() {
     // given
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("WORKFLOW").create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("PROCESS").create();
     final Record<JobRecordValue> jobCreatedEvent =
         RecordingExporter.jobRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(JobIntent.CREATED)
             .getFirst();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
-    final Record<WorkflowInstanceRecordValue> terminateActivity =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> terminateActivity =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("task")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_TERMINATING)
+            .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATING)
             .getFirst();
 
     final Record<JobRecordValue> jobCancelCmd =
         RecordingExporter.jobRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .onlyCommands()
             .withIntent(JobIntent.CANCEL)
             .getFirst();
     final Record<JobRecordValue> jobCanceledEvent =
         RecordingExporter.jobRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(JobIntent.CANCELED)
             .getFirst();
 
@@ -336,29 +336,29 @@ public final class CancelWorkflowInstanceTest {
     assertThat(jobCanceledEvent.getSourceRecordPosition()).isEqualTo(jobCancelCmd.getPosition());
 
     final JobRecordValue jobCanceledEventValue = jobCanceledEvent.getValue();
-    assertThat(jobCanceledEventValue.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
+    assertThat(jobCanceledEventValue.getProcessInstanceKey()).isEqualTo(processInstanceKey);
 
     Assertions.assertThat(jobCanceledEventValue)
         .hasElementId("task")
-        .hasWorkflowDefinitionVersion(1)
-        .hasBpmnProcessId("WORKFLOW");
+        .hasProcessDefinitionVersion(1)
+        .hasBpmnProcessId("PROCESS");
   }
 
   @Test
-  public void shouldRejectCancelNonExistingWorkflowInstance() {
+  public void shouldRejectCancelNonExistingProcessInstance() {
     // when
-    final Record<WorkflowInstanceRecordValue> rejectedCancel =
-        ENGINE.workflowInstance().withInstanceKey(-1).onPartition(1).expectRejection().cancel();
+    final Record<ProcessInstanceRecordValue> rejectedCancel =
+        ENGINE.processInstance().withInstanceKey(-1).onPartition(1).expectRejection().cancel();
 
     // then
     assertThat(rejectedCancel.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedCancel.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(rejectedCancel.getRejectionReason())
         .isEqualTo(
-            "Expected to cancel a workflow instance with key '-1', but no such workflow was found");
+            "Expected to cancel a process instance with key '-1', but no such process was found");
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
+            RecordingExporter.processInstanceRecords()
                 .withPosition(rejectedCancel.getSourceRecordPosition())
                 .withIntent(CANCEL)
                 .exists())
@@ -366,43 +366,43 @@ public final class CancelWorkflowInstanceTest {
   }
 
   @Test
-  public void shouldRejectCancelCompletedWorkflowInstance() {
+  public void shouldRejectCancelCompletedProcessInstance() {
     // given
     ENGINE
         .deployment()
         .withXmlResource(
-            Bpmn.createExecutableProcess("shouldRejectCancelCompletedWorkflowInstance")
+            Bpmn.createExecutableProcess("shouldRejectCancelCompletedProcessInstance")
                 .startEvent()
                 .endEvent()
                 .done())
         .deploy();
 
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("shouldRejectCancelCompletedWorkflowInstance")
+            .processInstance()
+            .ofBpmnProcessId("shouldRejectCancelCompletedProcessInstance")
             .create();
 
-    RecordingExporter.workflowInstanceRecords()
-        .withElementId("shouldRejectCancelCompletedWorkflowInstance")
-        .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+    RecordingExporter.processInstanceRecords()
+        .withElementId("shouldRejectCancelCompletedProcessInstance")
+        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
         .getFirst();
 
     // when
-    final Record<WorkflowInstanceRecordValue> rejectedCancel =
-        ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).expectRejection().cancel();
+    final Record<ProcessInstanceRecordValue> rejectedCancel =
+        ENGINE.processInstance().withInstanceKey(processInstanceKey).expectRejection().cancel();
 
     // then
     assertThat(rejectedCancel.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedCancel.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(rejectedCancel.getRejectionReason())
         .isEqualTo(
-            "Expected to cancel a workflow instance with key '"
-                + workflowInstanceKey
-                + "', but no such workflow was found");
+            "Expected to cancel a process instance with key '"
+                + processInstanceKey
+                + "', but no such process was found");
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
+            RecordingExporter.processInstanceRecords()
                 .withPosition(rejectedCancel.getSourceRecordPosition())
                 .withIntent(CANCEL)
                 .exists())
@@ -410,38 +410,38 @@ public final class CancelWorkflowInstanceTest {
   }
 
   @Test
-  public void shouldRejectCancelAlreadyCanceledWorkflowInstance() {
+  public void shouldRejectCancelAlreadyCanceledProcessInstance() {
     // given
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("WORKFLOW").create();
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("PROCESS").create();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // when
-    final Record<WorkflowInstanceRecordValue> rejectedCancel =
-        ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).expectRejection().cancel();
+    final Record<ProcessInstanceRecordValue> rejectedCancel =
+        ENGINE.processInstance().withInstanceKey(processInstanceKey).expectRejection().cancel();
 
     // then
     assertThat(rejectedCancel.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedCancel.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(rejectedCancel.getRejectionReason())
         .isEqualTo(
-            "Expected to cancel a workflow instance with key '"
-                + workflowInstanceKey
-                + "', but no such workflow was found");
+            "Expected to cancel a process instance with key '"
+                + processInstanceKey
+                + "', but no such process was found");
   }
 
   @Test
   public void shouldWriteEntireEventOnCancel() {
     // given
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("WORKFLOW").create();
-    final Record<WorkflowInstanceRecordValue> activatedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withElementId("WORKFLOW")
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("PROCESS").create();
+    final Record<ProcessInstanceRecordValue> activatedEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId("PROCESS")
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // when
-    final Record<WorkflowInstanceRecordValue> canceledRecord =
-        ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    final Record<ProcessInstanceRecordValue> canceledRecord =
+        ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     assertThat(canceledRecord.getValue()).isEqualTo(activatedEvent.getValue());

@@ -15,12 +15,12 @@
  */
 package io.zeebe.protocol.record.intent;
 
-public enum WorkflowIntent implements Intent {
+public enum ProcessIntent implements Intent {
   CREATED((short) 0);
 
   private final short value;
 
-  WorkflowIntent(final short value) {
+  ProcessIntent(final short value) {
     this.value = value;
   }
 

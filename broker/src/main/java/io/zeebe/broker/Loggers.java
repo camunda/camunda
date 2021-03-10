@@ -16,8 +16,8 @@ public final class Loggers {
   public static final Logger SYSTEM_LOGGER = LoggerFactory.getLogger("io.zeebe.broker.system");
   public static final Logger TRANSPORT_LOGGER =
       LoggerFactory.getLogger("io.zeebe.broker.transport");
-  public static final Logger WORKFLOW_REPOSITORY_LOGGER =
-      LoggerFactory.getLogger("io.zeebe.broker.workflow.repository");
+  public static final Logger PROCESS_REPOSITORY_LOGGER =
+      LoggerFactory.getLogger("io.zeebe.broker.process.repository");
 
   public static final Logger EXPORTER_LOGGER = LoggerFactory.getLogger("io.zeebe.broker.exporter");
   public static final Logger DELETION_SERVICE =

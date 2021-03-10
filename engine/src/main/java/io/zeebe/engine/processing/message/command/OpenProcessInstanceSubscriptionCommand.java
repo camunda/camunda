@@ -12,43 +12,43 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class OpenWorkflowInstanceSubscriptionCommand
+public final class OpenProcessInstanceSubscriptionCommand
     extends SbeBufferWriterReader<
-        OpenWorkflowInstanceSubscriptionEncoder, OpenWorkflowInstanceSubscriptionDecoder> {
+        OpenProcessInstanceSubscriptionEncoder, OpenProcessInstanceSubscriptionDecoder> {
 
-  private final OpenWorkflowInstanceSubscriptionEncoder encoder =
-      new OpenWorkflowInstanceSubscriptionEncoder();
-  private final OpenWorkflowInstanceSubscriptionDecoder decoder =
-      new OpenWorkflowInstanceSubscriptionDecoder();
+  private final OpenProcessInstanceSubscriptionEncoder encoder =
+      new OpenProcessInstanceSubscriptionEncoder();
+  private final OpenProcessInstanceSubscriptionDecoder decoder =
+      new OpenProcessInstanceSubscriptionDecoder();
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
-  private long workflowInstanceKey;
+  private long processInstanceKey;
   private long elementInstanceKey;
   private boolean closeOnCorrelate;
 
   @Override
-  protected OpenWorkflowInstanceSubscriptionEncoder getBodyEncoder() {
+  protected OpenProcessInstanceSubscriptionEncoder getBodyEncoder() {
     return encoder;
   }
 
   @Override
-  protected OpenWorkflowInstanceSubscriptionDecoder getBodyDecoder() {
+  protected OpenProcessInstanceSubscriptionDecoder getBodyDecoder() {
     return decoder;
   }
 
   @Override
   public void reset() {
     subscriptionPartitionId =
-        OpenWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    workflowInstanceKey = OpenWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue();
-    elementInstanceKey = OpenWorkflowInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
+        OpenProcessInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
+    processInstanceKey = OpenProcessInstanceSubscriptionDecoder.processInstanceKeyNullValue();
+    elementInstanceKey = OpenProcessInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
     messageName.wrap(0, 0);
   }
 
   @Override
   public int getLength() {
     return super.getLength()
-        + OpenWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength()
+        + OpenProcessInstanceSubscriptionDecoder.messageNameHeaderLength()
         + messageName.capacity();
   }
 
@@ -58,7 +58,7 @@ public final class OpenWorkflowInstanceSubscriptionCommand
 
     encoder
         .subscriptionPartitionId(subscriptionPartitionId)
-        .workflowInstanceKey(workflowInstanceKey)
+        .processInstanceKey(processInstanceKey)
         .elementInstanceKey(elementInstanceKey)
         .closeOnCorrelate(closeOnCorrelate ? BooleanType.TRUE : BooleanType.FALSE)
         .putMessageName(messageName, 0, messageName.capacity());
@@ -69,13 +69,13 @@ public final class OpenWorkflowInstanceSubscriptionCommand
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
-    workflowInstanceKey = decoder.workflowInstanceKey();
+    processInstanceKey = decoder.processInstanceKey();
     elementInstanceKey = decoder.elementInstanceKey();
     closeOnCorrelate = decoder.closeOnCorrelate() == BooleanType.TRUE;
 
     offset = decoder.limit();
 
-    offset += OpenWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength();
+    offset += OpenProcessInstanceSubscriptionDecoder.messageNameHeaderLength();
     final int messageNameLength = decoder.messageNameLength();
     messageName.wrap(buffer, offset, messageNameLength);
   }
@@ -88,12 +88,12 @@ public final class OpenWorkflowInstanceSubscriptionCommand
     this.subscriptionPartitionId = subscriptionPartitionId;
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(final long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public long getElementInstanceKey() {

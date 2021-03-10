@@ -27,11 +27,11 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.JsonMapper;
 import io.zeebe.client.api.command.ActivateJobsCommandStep1;
-import io.zeebe.client.api.command.CancelWorkflowInstanceCommandStep1;
+import io.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.zeebe.client.api.command.CreateWorkflowInstanceCommandStep1;
-import io.zeebe.client.api.command.DeployWorkflowCommandStep1;
+import io.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.zeebe.client.api.command.FailJobCommandStep1;
 import io.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.zeebe.client.api.command.ResolveIncidentCommandStep1;
@@ -42,9 +42,9 @@ import io.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.zeebe.client.api.worker.JobClient;
 import io.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.zeebe.client.impl.command.ActivateJobsCommandImpl;
-import io.zeebe.client.impl.command.CancelWorkflowInstanceCommandImpl;
-import io.zeebe.client.impl.command.CreateWorkflowInstanceCommandImpl;
-import io.zeebe.client.impl.command.DeployWorkflowCommandImpl;
+import io.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
+import io.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
+import io.zeebe.client.impl.command.DeployProcessCommandImpl;
 import io.zeebe.client.impl.command.JobUpdateRetriesCommandImpl;
 import io.zeebe.client.impl.command.PublishMessageCommandImpl;
 import io.zeebe.client.impl.command.ResolveIncidentCommandImpl;
@@ -230,14 +230,14 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public DeployWorkflowCommandStep1 newDeployCommand() {
-    return new DeployWorkflowCommandImpl(
+  public DeployProcessCommandStep1 newDeployCommand() {
+    return new DeployProcessCommandImpl(
         asyncStub, config.getDefaultRequestTimeout(), credentialsProvider::shouldRetryRequest);
   }
 
   @Override
-  public CreateWorkflowInstanceCommandStep1 newCreateInstanceCommand() {
-    return new CreateWorkflowInstanceCommandImpl(
+  public CreateProcessInstanceCommandStep1 newCreateInstanceCommand() {
+    return new CreateProcessInstanceCommandImpl(
         asyncStub,
         jsonMapper,
         config.getDefaultRequestTimeout(),
@@ -245,11 +245,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(
-      final long workflowInstanceKey) {
-    return new CancelWorkflowInstanceCommandImpl(
+  public CancelProcessInstanceCommandStep1 newCancelInstanceCommand(
+      final long processInstanceKey) {
+    return new CancelProcessInstanceCommandImpl(
         asyncStub,
-        workflowInstanceKey,
+        processInstanceKey,
         config.getDefaultRequestTimeout(),
         credentialsProvider::shouldRetryRequest);
   }

@@ -15,7 +15,7 @@ import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import java.util.Objects;
 
-public final class AwaitWorkflowInstanceResultMetadata extends UnifiedRecordValue
+public final class AwaitProcessInstanceResultMetadata extends UnifiedRecordValue
     implements DbValue {
 
   private final LongProperty requestIdProperty = new LongProperty("requestId", -1);
@@ -24,7 +24,7 @@ public final class AwaitWorkflowInstanceResultMetadata extends UnifiedRecordValu
   private final ArrayProperty<StringValue> fetchVariablesProperty =
       new ArrayProperty<>("fetchVariables", new StringValue());
 
-  public AwaitWorkflowInstanceResultMetadata() {
+  public AwaitProcessInstanceResultMetadata() {
     declareProperty(requestIdProperty)
         .declareProperty(requestStreamIdProperty)
         .declareProperty(fetchVariablesProperty);
@@ -34,7 +34,7 @@ public final class AwaitWorkflowInstanceResultMetadata extends UnifiedRecordValu
     return requestIdProperty.getValue();
   }
 
-  public AwaitWorkflowInstanceResultMetadata setRequestId(final long requestId) {
+  public AwaitProcessInstanceResultMetadata setRequestId(final long requestId) {
     requestIdProperty.setValue(requestId);
     return this;
   }
@@ -43,7 +43,7 @@ public final class AwaitWorkflowInstanceResultMetadata extends UnifiedRecordValu
     return requestStreamIdProperty.getValue();
   }
 
-  public AwaitWorkflowInstanceResultMetadata setRequestStreamId(final int requestStreamId) {
+  public AwaitProcessInstanceResultMetadata setRequestStreamId(final int requestStreamId) {
     requestStreamIdProperty.setValue(requestStreamId);
     return this;
   }
@@ -52,7 +52,7 @@ public final class AwaitWorkflowInstanceResultMetadata extends UnifiedRecordValu
     return fetchVariablesProperty;
   }
 
-  public AwaitWorkflowInstanceResultMetadata setFetchVariables(
+  public AwaitProcessInstanceResultMetadata setFetchVariables(
       final ArrayProperty<StringValue> variables) {
     fetchVariablesProperty.reset();
     variables.forEach(variable -> fetchVariablesProperty.add().wrap(variable));
@@ -76,7 +76,7 @@ public final class AwaitWorkflowInstanceResultMetadata extends UnifiedRecordValu
     if (!super.equals(o)) {
       return false;
     }
-    final AwaitWorkflowInstanceResultMetadata that = (AwaitWorkflowInstanceResultMetadata) o;
+    final AwaitProcessInstanceResultMetadata that = (AwaitProcessInstanceResultMetadata) o;
     return requestIdProperty.equals(that.requestIdProperty)
         && requestStreamIdProperty.equals(that.requestStreamIdProperty)
         && fetchVariablesProperty.equals(that.fetchVariablesProperty);

@@ -509,7 +509,7 @@ def templatePodspec(String podspecPath, flags = [:]) {
     def nodePoolName = "agents-n1-standard-32-netssd-${effectiveFlags.useStableNodePool ? 'stable' : 'preempt'}"
 
     // Needs no workspace, see:
-    // https://www.jenkins.io/doc/pipeline/steps/workflow-multibranch/#readtrusted-read-trusted-file-from-scm
+    // https://www.jenkins.io/doc/pipeline/steps/process-multibranch/#readtrusted-read-trusted-file-from-scm
     String templateString = readTrusted(podspecPath)
 
     // Note: Templating is currently done via simple string substitution as this

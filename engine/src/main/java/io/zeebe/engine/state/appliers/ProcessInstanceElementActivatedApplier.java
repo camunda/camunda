@@ -9,36 +9,36 @@ package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.immutable.WorkflowState;
+import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 
-/** Applies state changes for `WorkflowInstance:Element_Activated` */
-final class WorkflowInstanceElementActivatedApplier
-    implements TypedEventApplier<WorkflowInstanceIntent, WorkflowInstanceRecord> {
+/** Applies state changes for `ProcessInstance:Element_Activated` */
+final class ProcessInstanceElementActivatedApplier
+    implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
-  private final WorkflowState workflowState;
+  private final ProcessState processState;
 
-  public WorkflowInstanceElementActivatedApplier(
+  public ProcessInstanceElementActivatedApplier(
       final MutableElementInstanceState elementInstanceState,
-      final WorkflowState workflowState,
+      final ProcessState processState,
       final MutableEventScopeInstanceState eventScopeInstanceState) {
     this.elementInstanceState = elementInstanceState;
-    this.workflowState = workflowState;
+    this.processState = processState;
     this.eventScopeInstanceState = eventScopeInstanceState;
   }
 
   @Override
-  public void applyState(final long key, final WorkflowInstanceRecord value) {
+  public void applyState(final long key, final ProcessInstanceRecord value) {
     elementInstanceState.updateInstance(
-        key, instance -> instance.setState(WorkflowInstanceIntent.ELEMENT_ACTIVATED));
+        key, instance -> instance.setState(ProcessInstanceIntent.ELEMENT_ACTIVATED));
 
     // We store the record to use it on resolving the incident, which is no longer used after
     // migrating the incident processor.
@@ -49,8 +49,8 @@ final class WorkflowInstanceElementActivatedApplier
     if (value.getBpmnElementType() == BpmnElementType.SUB_PROCESS) {
 
       final var executableFlowElementContainer =
-          workflowState.getFlowElement(
-              value.getWorkflowKey(),
+          processState.getFlowElement(
+              value.getProcessDefinitionKey(),
               value.getElementIdBuffer(),
               ExecutableFlowElementContainer.class);
 

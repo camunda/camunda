@@ -17,7 +17,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.el.ExpressionLanguageFactory;
-import io.zeebe.engine.processing.WorkflowEventProcessors;
+import io.zeebe.engine.processing.ProcessEventProcessors;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.job.JobEventProcessors;
@@ -25,7 +25,7 @@ import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.CopiedRecords;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
-import io.zeebe.engine.state.mutable.MutableWorkflowState;
+import io.zeebe.engine.state.mutable.MutableProcessState;
 import io.zeebe.engine.util.Records;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.engine.util.TypedRecordStream;
@@ -36,17 +36,17 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
@@ -61,20 +61,20 @@ import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
-public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
+public final class ProcessInstanceStreamProcessorRule extends ExternalResource
     implements StreamProcessorLifecycleAware {
 
   public static final int VERSION = 1;
-  public static final int WORKFLOW_KEY = 123;
+  public static final int PROCESS_KEY = 123;
   public static final int DEPLOYMENT_KEY = 1;
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   private final StreamProcessorRule environmentRule;
   private SubscriptionCommandSender mockSubscriptionCommandSender;
 
-  private MutableWorkflowState workflowState;
+  private MutableProcessState processState;
   private ActorControl actor;
 
-  public WorkflowInstanceStreamProcessorRule(final StreamProcessorRule streamProcessorRule) {
+  public ProcessInstanceStreamProcessorRule(final StreamProcessorRule streamProcessorRule) {
     environmentRule = streamProcessorRule;
   }
 
@@ -103,7 +103,7 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
         (typedRecordProcessors, processingContext) -> {
           final var zeebeState = processingContext.getZeebeState();
           actor = processingContext.getActor();
-          workflowState = zeebeState.getWorkflowState();
+          processState = zeebeState.getProcessState();
 
           final var variablesState = zeebeState.getVariableState();
           final ExpressionProcessor expressionProcessor =
@@ -112,7 +112,7 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
                   variablesState::getVariable);
 
           final var writers = processingContext.getWriters();
-          WorkflowEventProcessors.addWorkflowProcessors(
+          ProcessEventProcessors.addProcessProcessors(
               zeebeState,
               expressionProcessor,
               typedRecordProcessors,
@@ -142,46 +142,46 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
     record.resources().add().setResource(xmlBuffer).setResourceName(resourceName);
 
     record
-        .workflows()
+        .processes()
         .add()
-        .setKey(WORKFLOW_KEY)
+        .setKey(PROCESS_KEY)
         .setResourceName(resourceName)
         .setBpmnProcessId(BufferUtil.wrapString(process.getId()))
         .setVersion(version)
         .setChecksum(wrapString("checksum"))
         .setResource(xmlBuffer);
 
-    actor.call(() -> workflowState.putDeployment(record)).join();
+    actor.call(() -> processState.putDeployment(record)).join();
   }
 
   public void deploy(final BpmnModelInstance modelInstance) {
     deploy(modelInstance, VERSION);
   }
 
-  public Record<WorkflowInstanceRecord> createAndReceiveWorkflowInstance(
-      final Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
-    final Record<WorkflowInstanceCreationRecord> createdRecord =
-        createWorkflowInstance(transformer);
+  public Record<ProcessInstanceRecord> createAndReceiveProcessInstance(
+      final Function<ProcessInstanceCreationRecord, ProcessInstanceCreationRecord> transformer) {
+    final Record<ProcessInstanceCreationRecord> createdRecord =
+        createProcessInstance(transformer);
 
-    return awaitAndGetFirstWorkflowInstanceRecord(
+    return awaitAndGetFirstProcessInstanceRecord(
         r ->
-            r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING
-                && r.getKey() == createdRecord.getValue().getWorkflowInstanceKey());
+            r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING
+                && r.getKey() == createdRecord.getValue().getProcessInstanceKey());
   }
 
-  public Record<WorkflowInstanceCreationRecord> createWorkflowInstance(
-      final Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
+  public Record<ProcessInstanceCreationRecord> createProcessInstance(
+      final Function<ProcessInstanceCreationRecord, ProcessInstanceCreationRecord> transformer) {
     final long position =
         environmentRule.writeCommand(
-            WorkflowInstanceCreationIntent.CREATE,
-            transformer.apply(new WorkflowInstanceCreationRecord()));
+            ProcessInstanceCreationIntent.CREATE,
+            transformer.apply(new ProcessInstanceCreationRecord()));
 
     return awaitAndGetFirstRecord(
-        ValueType.WORKFLOW_INSTANCE_CREATION,
+        ValueType.PROCESS_INSTANCE_CREATION,
         (e) ->
             e.getSourceRecordPosition() == position
-                && e.getIntent() == WorkflowInstanceCreationIntent.CREATED,
-        new WorkflowInstanceCreationRecord());
+                && e.getIntent() == ProcessInstanceCreationIntent.CREATED,
+        new ProcessInstanceCreationRecord());
   }
 
   public void completeFirstJob() {
@@ -191,10 +191,10 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
     environmentRule.writeEvent(jobKey, JobIntent.COMPLETED, createCommand.getValue());
   }
 
-  public Record<WorkflowInstanceRecord> awaitAndGetFirstWorkflowInstanceRecord(
-      final Predicate<Record<WorkflowInstanceRecord>> matcher) {
+  public Record<ProcessInstanceRecord> awaitAndGetFirstProcessInstanceRecord(
+      final Predicate<Record<ProcessInstanceRecord>> matcher) {
     return awaitAndGetFirstRecord(
-        ValueType.WORKFLOW_INSTANCE, matcher, WorkflowInstanceRecord.class);
+        ValueType.PROCESS_INSTANCE, matcher, ProcessInstanceRecord.class);
   }
 
   public <T extends UnifiedRecordValue> Record<T> awaitAndGetFirstRecord(
@@ -240,33 +240,33 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
     waitUntil(() -> environmentRule.events().withIntent(state).findFirst().isPresent());
   }
 
-  public Record<WorkflowInstanceSubscriptionRecord> awaitAndGetFirstSubscriptionRejection() {
+  public Record<ProcessInstanceSubscriptionRecord> awaitAndGetFirstSubscriptionRejection() {
     waitUntil(
         () ->
             environmentRule
                 .events()
-                .onlyWorkflowInstanceSubscriptionRecords()
+                .onlyProcessInstanceSubscriptionRecords()
                 .onlyRejections()
                 .findFirst()
                 .isPresent());
 
     return environmentRule
         .events()
-        .onlyWorkflowInstanceSubscriptionRecords()
+        .onlyProcessInstanceSubscriptionRecords()
         .onlyRejections()
         .findFirst()
         .get();
   }
 
-  public Record<WorkflowInstanceRecord> awaitElementInState(
-      final String elementId, final WorkflowInstanceIntent intent) {
+  public Record<ProcessInstanceRecord> awaitElementInState(
+      final String elementId, final ProcessInstanceIntent intent) {
     final DirectBuffer elementIdAsBuffer = BufferUtil.wrapString(elementId);
 
     return TestUtil.doRepeatedly(
             () ->
                 environmentRule
                     .events()
-                    .onlyWorkflowInstanceRecords()
+                    .onlyProcessInstanceRecords()
                     .withIntent(intent)
                     .filter(r -> elementIdAsBuffer.equals(r.getValue().getElementIdBuffer()))
                     .findFirst())

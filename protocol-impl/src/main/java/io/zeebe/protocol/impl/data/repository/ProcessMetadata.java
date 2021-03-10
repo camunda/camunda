@@ -13,25 +13,25 @@ import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
-public class WorkflowMetadata extends UnpackedObject {
-  private final LongProperty workflowKeyProp = new LongProperty("workflowKey", -1);
+public class ProcessMetadata extends UnpackedObject {
+  private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey", -1);
   private final IntegerProperty versionProp = new IntegerProperty("version", -1);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
 
-  public WorkflowMetadata() {
-    declareProperty(workflowKeyProp)
+  public ProcessMetadata() {
+    declareProperty(processDefinitionKeyProp)
         .declareProperty(versionProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(resourceNameProp);
   }
 
-  public long getWorkflowKey() {
-    return workflowKeyProp.getValue();
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProp.getValue();
   }
 
-  public WorkflowMetadata setWorkflowKey(final long key) {
-    workflowKeyProp.setValue(key);
+  public ProcessMetadata setProcessDefinitionKey(final long key) {
+    processDefinitionKeyProp.setValue(key);
     return this;
   }
 
@@ -39,7 +39,7 @@ public class WorkflowMetadata extends UnpackedObject {
     return versionProp.getValue();
   }
 
-  public WorkflowMetadata setVersion(final int version) {
+  public ProcessMetadata setVersion(final int version) {
     versionProp.setValue(version);
     return this;
   }
@@ -48,12 +48,12 @@ public class WorkflowMetadata extends UnpackedObject {
     return bpmnProcessIdProp.getValue();
   }
 
-  public WorkflowMetadata setBpmnProcessId(final DirectBuffer directBuffer) {
+  public ProcessMetadata setBpmnProcessId(final DirectBuffer directBuffer) {
     bpmnProcessIdProp.setValue(directBuffer);
     return this;
   }
 
-  public WorkflowMetadata setBpmnProcessId(final String value) {
+  public ProcessMetadata setBpmnProcessId(final String value) {
     bpmnProcessIdProp.setValue(value);
     return this;
   }
@@ -62,12 +62,12 @@ public class WorkflowMetadata extends UnpackedObject {
     return resourceNameProp.getValue();
   }
 
-  public WorkflowMetadata setResourceName(final DirectBuffer resourceName) {
+  public ProcessMetadata setResourceName(final DirectBuffer resourceName) {
     resourceNameProp.setValue(resourceName);
     return this;
   }
 
-  public WorkflowMetadata setResourceName(final String resourceName) {
+  public ProcessMetadata setResourceName(final String resourceName) {
     resourceNameProp.setValue(resourceName);
     return this;
   }

@@ -8,35 +8,35 @@
 package io.zeebe.test.util.record;
 
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
 import java.util.stream.Stream;
 
-public final class WorkflowInstanceSubscriptionRecordStream
+public final class ProcessInstanceSubscriptionRecordStream
     extends ExporterRecordWithVariablesStream<
-        WorkflowInstanceSubscriptionRecordValue, WorkflowInstanceSubscriptionRecordStream> {
+        ProcessInstanceSubscriptionRecordValue, ProcessInstanceSubscriptionRecordStream> {
 
-  public WorkflowInstanceSubscriptionRecordStream(
-      final Stream<Record<WorkflowInstanceSubscriptionRecordValue>> wrappedStream) {
+  public ProcessInstanceSubscriptionRecordStream(
+      final Stream<Record<ProcessInstanceSubscriptionRecordValue>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
-  protected WorkflowInstanceSubscriptionRecordStream supply(
-      final Stream<Record<WorkflowInstanceSubscriptionRecordValue>> wrappedStream) {
-    return new WorkflowInstanceSubscriptionRecordStream(wrappedStream);
+  protected ProcessInstanceSubscriptionRecordStream supply(
+      final Stream<Record<ProcessInstanceSubscriptionRecordValue>> wrappedStream) {
+    return new ProcessInstanceSubscriptionRecordStream(wrappedStream);
   }
 
-  public WorkflowInstanceSubscriptionRecordStream withWorkflowInstanceKey(
-      final long workflowInstanceKey) {
-    return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
+  public ProcessInstanceSubscriptionRecordStream withProcessInstanceKey(
+      final long processInstanceKey) {
+    return valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey);
   }
 
-  public WorkflowInstanceSubscriptionRecordStream withElementInstanceKey(
+  public ProcessInstanceSubscriptionRecordStream withElementInstanceKey(
       final long elementInstanceKey) {
     return valueFilter(v -> v.getElementInstanceKey() == elementInstanceKey);
   }
 
-  public WorkflowInstanceSubscriptionRecordStream withMessageName(final String messageName) {
+  public ProcessInstanceSubscriptionRecordStream withMessageName(final String messageName) {
     return valueFilter(v -> messageName.equals(v.getMessageName()));
   }
 }

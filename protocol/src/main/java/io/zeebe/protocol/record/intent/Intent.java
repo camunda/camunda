@@ -25,17 +25,17 @@ public interface Intent {
           DeploymentIntent.class,
           IncidentIntent.class,
           JobIntent.class,
-          WorkflowInstanceIntent.class,
+          ProcessInstanceIntent.class,
           MessageIntent.class,
           MessageSubscriptionIntent.class,
-          WorkflowInstanceSubscriptionIntent.class,
+          ProcessInstanceSubscriptionIntent.class,
           JobBatchIntent.class,
           TimerIntent.class,
           VariableIntent.class,
           VariableDocumentIntent.class,
-          WorkflowInstanceCreationIntent.class,
+          ProcessInstanceCreationIntent.class,
           ErrorIntent.class,
-          WorkflowIntent.class,
+          ProcessIntent.class,
           DeploymentDistributionIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN =
@@ -63,16 +63,16 @@ public interface Intent {
         return IncidentIntent.from(intent);
       case JOB:
         return JobIntent.from(intent);
-      case WORKFLOW_INSTANCE:
-        return WorkflowInstanceIntent.from(intent);
+      case PROCESS_INSTANCE:
+        return ProcessInstanceIntent.from(intent);
       case MESSAGE:
         return MessageIntent.from(intent);
       case MESSAGE_SUBSCRIPTION:
         return MessageSubscriptionIntent.from(intent);
       case MESSAGE_START_EVENT_SUBSCRIPTION:
         return MessageStartEventSubscriptionIntent.from(intent);
-      case WORKFLOW_INSTANCE_SUBSCRIPTION:
-        return WorkflowInstanceSubscriptionIntent.from(intent);
+      case PROCESS_INSTANCE_SUBSCRIPTION:
+        return ProcessInstanceSubscriptionIntent.from(intent);
       case JOB_BATCH:
         return JobBatchIntent.from(intent);
       case TIMER:
@@ -81,14 +81,14 @@ public interface Intent {
         return VariableIntent.from(intent);
       case VARIABLE_DOCUMENT:
         return VariableDocumentIntent.from(intent);
-      case WORKFLOW_INSTANCE_CREATION:
-        return WorkflowInstanceCreationIntent.from(intent);
+      case PROCESS_INSTANCE_CREATION:
+        return ProcessInstanceCreationIntent.from(intent);
       case ERROR:
         return ErrorIntent.from(intent);
-      case WORKFLOW_INSTANCE_RESULT:
-        return WorkflowInstanceResultIntent.from(intent);
-      case WORKFLOW:
-        return WorkflowIntent.from(intent);
+      case PROCESS_INSTANCE_RESULT:
+        return ProcessInstanceResultIntent.from(intent);
+      case PROCESS:
+        return ProcessIntent.from(intent);
       case DEPLOYMENT_DISTRIBUTION:
         return DeploymentDistributionIntent.from(intent);
       case NULL_VAL:
@@ -110,16 +110,16 @@ public interface Intent {
         return IncidentIntent.valueOf(intent);
       case JOB:
         return JobIntent.valueOf(intent);
-      case WORKFLOW_INSTANCE:
-        return WorkflowInstanceIntent.valueOf(intent);
+      case PROCESS_INSTANCE:
+        return ProcessInstanceIntent.valueOf(intent);
       case MESSAGE:
         return MessageIntent.valueOf(intent);
       case MESSAGE_SUBSCRIPTION:
         return MessageSubscriptionIntent.valueOf(intent);
       case MESSAGE_START_EVENT_SUBSCRIPTION:
         return MessageStartEventSubscriptionIntent.valueOf(intent);
-      case WORKFLOW_INSTANCE_SUBSCRIPTION:
-        return WorkflowInstanceSubscriptionIntent.valueOf(intent);
+      case PROCESS_INSTANCE_SUBSCRIPTION:
+        return ProcessInstanceSubscriptionIntent.valueOf(intent);
       case JOB_BATCH:
         return JobBatchIntent.valueOf(intent);
       case TIMER:
@@ -128,14 +128,14 @@ public interface Intent {
         return VariableIntent.valueOf(intent);
       case VARIABLE_DOCUMENT:
         return VariableDocumentIntent.valueOf(intent);
-      case WORKFLOW_INSTANCE_CREATION:
-        return WorkflowInstanceCreationIntent.valueOf(intent);
+      case PROCESS_INSTANCE_CREATION:
+        return ProcessInstanceCreationIntent.valueOf(intent);
       case ERROR:
         return ErrorIntent.valueOf(intent);
-      case WORKFLOW_INSTANCE_RESULT:
-        return WorkflowInstanceResultIntent.valueOf(intent);
-      case WORKFLOW:
-        return WorkflowIntent.valueOf(intent);
+      case PROCESS_INSTANCE_RESULT:
+        return ProcessInstanceResultIntent.valueOf(intent);
+      case PROCESS:
+        return ProcessIntent.valueOf(intent);
       case DEPLOYMENT_DISTRIBUTION:
         return DeploymentDistributionIntent.valueOf(intent);
       case NULL_VAL:

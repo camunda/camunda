@@ -71,9 +71,9 @@ public class ElasticsearchExporterTest {
     config.index.messageSubscription = true;
     config.index.variable = true;
     config.index.variableDocument = true;
-    config.index.workflowInstance = true;
-    config.index.workflowInstanceCreation = true;
-    config.index.workflowInstanceSubscription = true;
+    config.index.processInstance = true;
+    config.index.processInstanceCreation = true;
+    config.index.processInstanceSubscription = true;
 
     // when
     createAndOpenExporter();
@@ -91,9 +91,9 @@ public class ElasticsearchExporterTest {
     verify(esClient).putIndexTemplate(ValueType.MESSAGE_SUBSCRIPTION);
     verify(esClient).putIndexTemplate(ValueType.VARIABLE);
     verify(esClient).putIndexTemplate(ValueType.VARIABLE_DOCUMENT);
-    verify(esClient).putIndexTemplate(ValueType.WORKFLOW_INSTANCE);
-    verify(esClient).putIndexTemplate(ValueType.WORKFLOW_INSTANCE_CREATION);
-    verify(esClient).putIndexTemplate(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+    verify(esClient).putIndexTemplate(ValueType.PROCESS_INSTANCE);
+    verify(esClient).putIndexTemplate(ValueType.PROCESS_INSTANCE_CREATION);
+    verify(esClient).putIndexTemplate(ValueType.PROCESS_INSTANCE_SUBSCRIPTION);
   }
 
   @Test
@@ -109,9 +109,9 @@ public class ElasticsearchExporterTest {
     config.index.messageSubscription = true;
     config.index.variable = true;
     config.index.variableDocument = true;
-    config.index.workflowInstance = true;
-    config.index.workflowInstanceCreation = true;
-    config.index.workflowInstanceSubscription = true;
+    config.index.processInstance = true;
+    config.index.processInstanceCreation = true;
+    config.index.processInstanceSubscription = true;
 
     createAndOpenExporter();
 
@@ -126,9 +126,9 @@ public class ElasticsearchExporterTest {
           ValueType.MESSAGE_SUBSCRIPTION,
           ValueType.VARIABLE,
           ValueType.VARIABLE_DOCUMENT,
-          ValueType.WORKFLOW_INSTANCE,
-          ValueType.WORKFLOW_INSTANCE_CREATION,
-          ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION
+          ValueType.PROCESS_INSTANCE,
+          ValueType.PROCESS_INSTANCE_CREATION,
+          ValueType.PROCESS_INSTANCE_SUBSCRIPTION
         };
 
     // when - then
@@ -150,9 +150,9 @@ public class ElasticsearchExporterTest {
     config.index.messageSubscription = false;
     config.index.variable = false;
     config.index.variableDocument = false;
-    config.index.workflowInstance = false;
-    config.index.workflowInstanceCreation = false;
-    config.index.workflowInstanceSubscription = false;
+    config.index.processInstance = false;
+    config.index.processInstanceCreation = false;
+    config.index.processInstanceSubscription = false;
 
     createAndOpenExporter();
 
@@ -167,9 +167,9 @@ public class ElasticsearchExporterTest {
           ValueType.MESSAGE_SUBSCRIPTION,
           ValueType.VARIABLE,
           ValueType.VARIABLE_DOCUMENT,
-          ValueType.WORKFLOW_INSTANCE,
-          ValueType.WORKFLOW_INSTANCE_CREATION,
-          ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION
+          ValueType.PROCESS_INSTANCE,
+          ValueType.PROCESS_INSTANCE_CREATION,
+          ValueType.PROCESS_INSTANCE_SUBSCRIPTION
         };
 
     // when - then
@@ -227,7 +227,7 @@ public class ElasticsearchExporterTest {
         testHarness.export(
             r ->
                 r.getMetadata()
-                    .setValueType(ValueType.WORKFLOW_INSTANCE)
+                    .setValueType(ValueType.PROCESS_INSTANCE)
                     .setRecordType(RecordType.EVENT));
 
     // then
@@ -250,7 +250,7 @@ public class ElasticsearchExporterTest {
   public void shouldFlushAfterDelay() {
     // given
     config.index.event = true;
-    config.index.workflowInstance = true;
+    config.index.processInstance = true;
     config.bulk.delay = 10;
 
     // scenario: bulk size is not reached still we want to flush
@@ -262,7 +262,7 @@ public class ElasticsearchExporterTest {
     testHarness.export(
         r ->
             r.getMetadata()
-                .setValueType(ValueType.WORKFLOW_INSTANCE)
+                .setValueType(ValueType.PROCESS_INSTANCE)
                 .setRecordType(RecordType.EVENT));
 
     // then
@@ -286,7 +286,7 @@ public class ElasticsearchExporterTest {
         testHarness.stream(
                 r ->
                     r.getMetadata()
-                        .setValueType(ValueType.WORKFLOW_INSTANCE)
+                        .setValueType(ValueType.PROCESS_INSTANCE)
                         .setRecordType(RecordType.EVENT))
             .export(4);
     testHarness.getController().runScheduledTasks(Duration.ofSeconds(config.bulk.delay));

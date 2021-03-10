@@ -26,7 +26,7 @@ type ResolveIncidentResponseWrapper struct {
 }
 
 func (r ResolveIncidentResponseWrapper) human() (string, error) {
-	return fmt.Sprint("Resolved an incident of a workflow instance with key '", incidentKey, "'"), nil
+	return fmt.Sprint("Resolved an incident of a process instance with key '", incidentKey, "'"), nil
 }
 
 func (r ResolveIncidentResponseWrapper) json() (string, error) {
@@ -39,7 +39,7 @@ var (
 
 var resolveIncidentCommand = &cobra.Command{
 	Use:     "incident <key>",
-	Short:   "Resolve an existing incident of a workflow instance",
+	Short:   "Resolve an existing incident of a process instance",
 	Args:    keyArg(&incidentKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {

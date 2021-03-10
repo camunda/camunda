@@ -11,14 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Test;
 
 public final class PartitionAwareRateLimiterTest {
   private static final int PARTITIONS = 3;
-  private final Intent context = WorkflowInstanceCreationIntent.CREATE;
+  private final Intent context = ProcessInstanceCreationIntent.CREATE;
   private PartitionAwareRequestLimiter partitionedLimiter;
 
   @Before

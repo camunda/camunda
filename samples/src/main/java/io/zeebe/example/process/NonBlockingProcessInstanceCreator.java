@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.example.workflow;
+package io.zeebe.example.process;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.response.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.ProcessInstanceEvent;
 
 /**
  * Example application that connects to a cluster on Camunda Cloud, or a locally deployed cluster.
@@ -31,7 +31,7 @@ import io.zeebe.client.api.response.WorkflowInstanceEvent;
  * <p>When {@code ZEEBE_ADDRESS} is not set, it connects to a broker running on localhost with
  * default ports
  */
-public final class NonBlockingWorkflowInstanceCreator {
+public final class NonBlockingProcessInstanceCreator {
   public static void main(final String[] args) {
     final String defaultAddress = "localhost:26500";
     final String envVarAddress = System.getenv("ZEEBE_ADDRESS");
@@ -51,7 +51,7 @@ public final class NonBlockingWorkflowInstanceCreator {
     final String bpmnProcessId = "demoProcess";
 
     try (final ZeebeClient client = clientBuilder.build()) {
-      System.out.println("Creating " + numberOfInstances + " workflow instances");
+      System.out.println("Creating " + numberOfInstances + " process instances");
 
       final long startTime = System.currentTimeMillis();
 
@@ -59,7 +59,7 @@ public final class NonBlockingWorkflowInstanceCreator {
 
       while (instancesCreating < numberOfInstances) {
         // this is non-blocking/async => returns a future
-        final ZeebeFuture<WorkflowInstanceEvent> future =
+        final ZeebeFuture<ProcessInstanceEvent> future =
             client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion().send();
 
         // could put the future somewhere and eventually wait for its completion

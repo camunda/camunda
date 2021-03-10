@@ -18,67 +18,67 @@ package io.zeebe.client.impl.command;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.JsonMapper;
 import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.command.CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceWithResultCommandStep1;
+import io.zeebe.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceWithResultCommandStep1;
 import io.zeebe.client.api.command.FinalCommandStep;
-import io.zeebe.client.api.response.WorkflowInstanceResult;
+import io.zeebe.client.api.response.ProcessInstanceResult;
 import io.zeebe.client.impl.RetriableClientFutureImpl;
-import io.zeebe.client.impl.response.CreateWorkflowInstanceWithResultResponseImpl;
+import io.zeebe.client.impl.response.CreateProcessInstanceWithResultResponseImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultRequest.Builder;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest.Builder;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public final class CreateWorkflowInstanceWithResultCommandImpl
-    implements CreateWorkflowInstanceWithResultCommandStep1 {
+public final class CreateProcessInstanceWithResultCommandImpl
+    implements CreateProcessInstanceWithResultCommandStep1 {
 
   private static final Duration DEADLINE_OFFSET = Duration.ofSeconds(10);
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
-  private final CreateWorkflowInstanceRequest.Builder createWorkflowInstanceRequestBuilder;
+  private final CreateProcessInstanceRequest.Builder createProcessInstanceRequestBuilder;
   private final Builder builder;
   private final Predicate<Throwable> retryPredicate;
   private Duration requestTimeout;
 
-  public CreateWorkflowInstanceWithResultCommandImpl(
+  public CreateProcessInstanceWithResultCommandImpl(
       final JsonMapper jsonMapper,
       final GatewayStub asyncStub,
-      final CreateWorkflowInstanceRequest.Builder builder,
+      final CreateProcessInstanceRequest.Builder builder,
       final Predicate<Throwable> retryPredicate,
       final Duration requestTimeout) {
     this.jsonMapper = jsonMapper;
     this.asyncStub = asyncStub;
-    createWorkflowInstanceRequestBuilder = builder;
+    createProcessInstanceRequestBuilder = builder;
     this.retryPredicate = retryPredicate;
     this.requestTimeout = requestTimeout;
-    this.builder = CreateWorkflowInstanceWithResultRequest.newBuilder();
+    this.builder = CreateProcessInstanceWithResultRequest.newBuilder();
   }
 
   @Override
-  public FinalCommandStep<WorkflowInstanceResult> requestTimeout(final Duration requestTimeout) {
+  public FinalCommandStep<ProcessInstanceResult> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     builder.setRequestTimeout(requestTimeout.toMillis());
     return this;
   }
 
   @Override
-  public ZeebeFuture<WorkflowInstanceResult> send() {
-    final CreateWorkflowInstanceWithResultRequest request =
+  public ZeebeFuture<ProcessInstanceResult> send() {
+    final CreateProcessInstanceWithResultRequest request =
         builder
-            .setRequest(createWorkflowInstanceRequestBuilder)
+            .setRequest(createProcessInstanceRequestBuilder)
             .setRequestTimeout(requestTimeout.toMillis())
             .build();
 
     final RetriableClientFutureImpl<
-            WorkflowInstanceResult, GatewayOuterClass.CreateWorkflowInstanceWithResultResponse>
+            ProcessInstanceResult, GatewayOuterClass.CreateProcessInstanceWithResultResponse>
         future =
             new RetriableClientFutureImpl<>(
-                response -> new CreateWorkflowInstanceWithResultResponseImpl(jsonMapper, response),
+                response -> new CreateProcessInstanceWithResultResponseImpl(jsonMapper, response),
                 retryPredicate,
                 streamObserver -> send(request, streamObserver));
 
@@ -87,22 +87,22 @@ public final class CreateWorkflowInstanceWithResultCommandImpl
   }
 
   private void send(
-      final CreateWorkflowInstanceWithResultRequest request,
-      final StreamObserver<GatewayOuterClass.CreateWorkflowInstanceWithResultResponse> future) {
+      final CreateProcessInstanceWithResultRequest request,
+      final StreamObserver<GatewayOuterClass.CreateProcessInstanceWithResultResponse> future) {
     asyncStub
         .withDeadlineAfter(requestTimeout.plus(DEADLINE_OFFSET).toMillis(), TimeUnit.MILLISECONDS)
-        .createWorkflowInstanceWithResult(request, future);
+        .createProcessInstanceWithResult(request, future);
   }
 
   @Override
-  public CreateWorkflowInstanceWithResultCommandStep1 fetchVariables(
+  public CreateProcessInstanceWithResultCommandStep1 fetchVariables(
       final List<String> fetchVariables) {
     builder.addAllFetchVariables(fetchVariables);
     return this;
   }
 
   @Override
-  public CreateWorkflowInstanceWithResultCommandStep1 fetchVariables(
+  public CreateProcessInstanceWithResultCommandStep1 fetchVariables(
       final String... fetchVariables) {
     builder.addAllFetchVariables(Arrays.asList(fetchVariables));
     return this;

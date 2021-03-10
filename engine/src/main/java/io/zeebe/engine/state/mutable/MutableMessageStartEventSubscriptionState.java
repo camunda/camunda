@@ -15,5 +15,5 @@ public interface MutableMessageStartEventSubscriptionState
 
   void put(MessageStartEventSubscriptionRecord subscription);
 
-  void removeSubscriptionsOfWorkflow(long workflowKey);
+  void removeSubscriptionsOfProcess(long processDefinitionKey);
 }

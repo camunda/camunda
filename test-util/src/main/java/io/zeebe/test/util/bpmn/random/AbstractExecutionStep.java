@@ -19,7 +19,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  * when process is created)
  *
  * <p>New implementations should also extends the execution logic in {@link
- * io.zeebe.engine.util.WorkflowExecutor}
+ * io.zeebe.engine.util.ProcessExecutor}
  *
  * <p>Contract: each implementing class must implement {@code equals(...)/hashCode()} This is mostly
  * in order to be able to compare two randomly generated execution paths to see if they are the same

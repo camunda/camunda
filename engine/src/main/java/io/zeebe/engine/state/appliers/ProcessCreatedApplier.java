@@ -11,32 +11,32 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventE
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableWorkflowState;
-import io.zeebe.protocol.impl.record.value.deployment.WorkflowRecord;
-import io.zeebe.protocol.record.intent.WorkflowIntent;
+import io.zeebe.engine.state.mutable.MutableProcessState;
+import io.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.zeebe.protocol.record.intent.ProcessIntent;
 import java.util.Collections;
 
-public class WorkflowCreatedApplier implements TypedEventApplier<WorkflowIntent, WorkflowRecord> {
+public class ProcessCreatedApplier implements TypedEventApplier<ProcessIntent, ProcessRecord> {
 
-  private final MutableWorkflowState workflowState;
+  private final MutableProcessState processState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
-  public WorkflowCreatedApplier(final ZeebeState state) {
-    workflowState = state.getWorkflowState();
+  public ProcessCreatedApplier(final ZeebeState state) {
+    processState = state.getProcessState();
     eventScopeInstanceState = state.getEventScopeInstanceState();
   }
 
   @Override
-  public void applyState(final long workflowKey, final WorkflowRecord value) {
-    workflowState.putWorkflow(workflowKey, value);
+  public void applyState(final long processDefinitionKey, final ProcessRecord value) {
+    processState.putProcess(processDefinitionKey, value);
 
     // timer start events
     final var hasAtLeastOneTimer =
-        workflowState.getWorkflowByKey(workflowKey).getWorkflow().getStartEvents().stream()
+        processState.getProcessByKey(processDefinitionKey).getProcess().getStartEvents().stream()
             .anyMatch(ExecutableCatchEventElement::isTimer);
 
     if (hasAtLeastOneTimer) {
-      eventScopeInstanceState.createIfNotExists(workflowKey, Collections.emptyList());
+      eventScopeInstanceState.createIfNotExists(processDefinitionKey, Collections.emptyList());
     }
   }
 }

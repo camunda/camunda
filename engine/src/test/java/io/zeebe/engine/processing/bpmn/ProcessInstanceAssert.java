@@ -7,10 +7,10 @@
  */
 package io.zeebe.engine.processing.bpmn;
 
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Optional;
@@ -20,46 +20,46 @@ import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.util.Lists;
 
-public final class WorkflowInstanceAssert
+public final class ProcessInstanceAssert
     extends AbstractListAssert<
-        WorkflowInstanceAssert,
-        List<Record<WorkflowInstanceRecord>>,
-        Record<WorkflowInstanceRecord>,
-        ObjectAssert<Record<WorkflowInstanceRecord>>> {
+        ProcessInstanceAssert,
+        List<Record<ProcessInstanceRecord>>,
+        Record<ProcessInstanceRecord>,
+        ObjectAssert<Record<ProcessInstanceRecord>>> {
 
-  public WorkflowInstanceAssert(final List<Record<WorkflowInstanceRecord>> actual) {
-    super(actual, WorkflowInstanceAssert.class);
+  public ProcessInstanceAssert(final List<Record<ProcessInstanceRecord>> actual) {
+    super(actual, ProcessInstanceAssert.class);
   }
 
   @Override
-  protected ObjectAssert<Record<WorkflowInstanceRecord>> toAssert(
-      final Record<WorkflowInstanceRecord> value, final String description) {
+  protected ObjectAssert<Record<ProcessInstanceRecord>> toAssert(
+      final Record<ProcessInstanceRecord> value, final String description) {
     return new ObjectAssert<>(value).describedAs(description);
   }
 
   @Override
-  protected WorkflowInstanceAssert newAbstractIterableAssert(
-      final Iterable<? extends Record<WorkflowInstanceRecord>> iterable) {
-    return new WorkflowInstanceAssert(Lists.newArrayList(iterable));
+  protected ProcessInstanceAssert newAbstractIterableAssert(
+      final Iterable<? extends Record<ProcessInstanceRecord>> iterable) {
+    return new ProcessInstanceAssert(Lists.newArrayList(iterable));
   }
 
-  public static WorkflowInstanceAssert assertThat(
-      final List<Record<WorkflowInstanceRecord>> workflowInstanceEvents) {
-    return new WorkflowInstanceAssert(workflowInstanceEvents);
+  public static ProcessInstanceAssert assertThat(
+      final List<Record<ProcessInstanceRecord>> processInstanceEvents) {
+    return new ProcessInstanceAssert(processInstanceEvents);
   }
 
   /**
    * Asserts that once an element is in state terminating, no flow-related events in its scope are
    * evaluated anymore
    */
-  public WorkflowInstanceAssert doesNotEvaluateFlowAfterTerminatingElement(final String elementId) {
+  public ProcessInstanceAssert doesNotEvaluateFlowAfterTerminatingElement(final String elementId) {
     final DirectBuffer elementIdBuffer = BufferUtil.wrapString(elementId);
 
-    final Optional<Record<WorkflowInstanceRecord>> terminatingRecordOptional =
+    final Optional<Record<ProcessInstanceRecord>> terminatingRecordOptional =
         actual.stream()
             .filter(
                 r ->
-                    r.getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATING
+                    r.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
                         && elementIdBuffer.equals(r.getValue().getElementIdBuffer()))
             .findFirst();
 
@@ -71,7 +71,7 @@ public final class WorkflowInstanceAssert
     final Record terminatingRecord = terminatingRecordOptional.get();
     final long instanceKey = terminatingRecord.getKey();
 
-    final Long2ObjectHashMap<Record<WorkflowInstanceRecord>> recordsByPosition =
+    final Long2ObjectHashMap<Record<ProcessInstanceRecord>> recordsByPosition =
         new Long2ObjectHashMap<>();
     actual.forEach(r -> recordsByPosition.put(r.getPosition(), r));
 
@@ -80,7 +80,7 @@ public final class WorkflowInstanceAssert
     //   - was handled (has a follow-up event)
     //   - is in an event in the terminating flow scope
     //   - is a non-terminating event
-    final Optional<Record<WorkflowInstanceRecord>> firstViolatingRecord =
+    final Optional<Record<ProcessInstanceRecord>> firstViolatingRecord =
         actual.stream()
             .map(r -> (Record) r)
             .filter(r -> r.getSourceRecordPosition() > terminatingRecord.getPosition())
@@ -99,8 +99,8 @@ public final class WorkflowInstanceAssert
   }
 
   private static boolean isFlowEvaluatingState(final Intent state) {
-    return state == WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN
-        || state == WorkflowInstanceIntent.ELEMENT_COMPLETED
-        || state == WorkflowInstanceIntent.ELEMENT_ACTIVATING;
+    return state == ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN
+        || state == ProcessInstanceIntent.ELEMENT_COMPLETED
+        || state == ProcessInstanceIntent.ELEMENT_ACTIVATING;
   }
 }

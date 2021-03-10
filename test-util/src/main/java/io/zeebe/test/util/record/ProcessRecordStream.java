@@ -8,26 +8,26 @@
 package io.zeebe.test.util.record;
 
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import java.util.stream.Stream;
 
-public final class WorkflowRecordStream
-    extends ExporterRecordStream<DeployedWorkflow, WorkflowRecordStream> {
+public final class ProcessRecordStream
+    extends ExporterRecordStream<DeployedProcess, ProcessRecordStream> {
 
-  public WorkflowRecordStream(final Stream<Record<DeployedWorkflow>> wrappedStream) {
+  public ProcessRecordStream(final Stream<Record<DeployedProcess>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
-  protected WorkflowRecordStream supply(final Stream<Record<DeployedWorkflow>> wrappedStream) {
-    return new WorkflowRecordStream(wrappedStream);
+  protected ProcessRecordStream supply(final Stream<Record<DeployedProcess>> wrappedStream) {
+    return new ProcessRecordStream(wrappedStream);
   }
 
-  public WorkflowRecordStream withResourceName(final String resourceName) {
+  public ProcessRecordStream withResourceName(final String resourceName) {
     return valueFilter(v -> v.getResourceName().equals(resourceName));
   }
 
-  public WorkflowRecordStream withBpmnProcessId(final String bpmnProcessId) {
+  public ProcessRecordStream withBpmnProcessId(final String bpmnProcessId) {
     return valueFilter(v -> v.getBpmnProcessId().equals(bpmnProcessId));
   }
 }

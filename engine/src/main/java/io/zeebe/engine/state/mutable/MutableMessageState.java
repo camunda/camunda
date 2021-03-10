@@ -19,13 +19,13 @@ public interface MutableMessageState extends MessageState {
 
   void removeMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId);
 
-  void putActiveWorkflowInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
+  void putActiveProcessInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
 
-  void removeActiveWorkflowInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
+  void removeActiveProcessInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
 
-  void putWorkflowInstanceCorrelationKey(long workflowInstanceKey, DirectBuffer correlationKey);
+  void putProcessInstanceCorrelationKey(long processInstanceKey, DirectBuffer correlationKey);
 
-  void removeWorkflowInstanceCorrelationKey(long workflowInstanceKey);
+  void removeProcessInstanceCorrelationKey(long processInstanceKey);
 
   void remove(long messageKey);
 }

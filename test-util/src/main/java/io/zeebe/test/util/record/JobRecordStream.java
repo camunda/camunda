@@ -31,8 +31,8 @@ public final class JobRecordStream
     return valueFilter(v -> v.getRetries() == retries);
   }
 
-  public JobRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
-    return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
+  public JobRecordStream withProcessInstanceKey(final long processInstanceKey) {
+    return valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey);
   }
 
   public JobRecordStream withElementId(final String elementId) {

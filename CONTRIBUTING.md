@@ -69,7 +69,7 @@ describes:
 ## Create a Pull Request
 
 Zeebe follows a
-[gitflow](https://nvie.com/posts/a-successful-git-branching-model/) workflow.
+[gitflow](https://nvie.com/posts/a-successful-git-branching-model/) process.
 The `develop` branch contains the current in-development state of the project. The `master` branch contains the latest stable release.
 
 To work on an issue, follow the following steps:

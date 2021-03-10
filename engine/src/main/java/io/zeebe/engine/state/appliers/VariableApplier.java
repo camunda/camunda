@@ -25,7 +25,7 @@ final class VariableApplier implements TypedEventApplier<VariableIntent, Variabl
     variableState.setVariableLocal(
         key,
         value.getScopeKey(),
-        value.getWorkflowKey(),
+        value.getProcessDefinitionKey(),
         value.getNameBuffer(),
         value.getValueBuffer());
   }

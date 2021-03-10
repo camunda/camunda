@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.gateway.api.workflow;
+package io.zeebe.gateway.api.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

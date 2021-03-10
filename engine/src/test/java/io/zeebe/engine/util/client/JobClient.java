@@ -37,7 +37,7 @@ public final class JobClient {
 
   private final JobRecord jobRecord;
   private final StreamProcessorRule environmentRule;
-  private long workflowInstanceKey;
+  private long processInstanceKey;
   private long jobKey = DEFAULT_KEY;
 
   private Function<Long, Record<JobRecordValue>> expectation = SUCCESS_SUPPLIER;
@@ -47,8 +47,8 @@ public final class JobClient {
     jobRecord = new JobRecord();
   }
 
-  public JobClient ofInstance(final long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public JobClient ofInstance(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
@@ -108,7 +108,7 @@ public final class JobClient {
           RecordingExporter.jobRecords()
               .withType(jobRecord.getType())
               .withIntent(JobIntent.CREATED)
-              .withWorkflowInstanceKey(workflowInstanceKey)
+              .withProcessInstanceKey(processInstanceKey)
               .getFirst();
 
       return createdJob.getKey();

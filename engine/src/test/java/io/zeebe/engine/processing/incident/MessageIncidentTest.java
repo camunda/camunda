@@ -16,11 +16,11 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -33,7 +33,7 @@ public final class MessageIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
-  private static final BpmnModelInstance WORKFLOW =
+  private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent(
@@ -47,10 +47,10 @@ public final class MessageIncidentTest {
 
   @BeforeClass
   public static void init() {
-    ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS).deploy();
   }
 
-  private BpmnModelInstance createWorkflowWithMessageNameFeelExpression(final String processId) {
+  private BpmnModelInstance createProcessWithMessageNameFeelExpression(final String processId) {
     return Bpmn.createExecutableProcess(processId)
         .startEvent()
         .intermediateCatchEvent(
@@ -66,23 +66,23 @@ public final class MessageIncidentTest {
     ENGINE
         .deployment()
         .withXmlResource(
-            createWorkflowWithMessageNameFeelExpression("UNRESOLVABLE_NAME_EXPRESSION"))
+            createProcessWithMessageNameFeelExpression("UNRESOLVABLE_NAME_EXPRESSION"))
         .deploy();
 
     // when
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("UNRESOLVABLE_NAME_EXPRESSION").create();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("UNRESOLVABLE_NAME_EXPRESSION").create();
 
-    final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+    final Record<ProcessInstanceRecordValue> failureEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("catch")
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
@@ -90,7 +90,7 @@ public final class MessageIncidentTest {
         .hasErrorMessage(
             "failed to evaluate expression 'nameLookup': no variable found for name 'nameLookup'")
         .hasBpmnProcessId("UNRESOLVABLE_NAME_EXPRESSION")
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("catch")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L)
@@ -102,27 +102,27 @@ public final class MessageIncidentTest {
     ENGINE
         .deployment()
         .withXmlResource(
-            createWorkflowWithMessageNameFeelExpression("NAME_EXPRESSION_INVALID_TYPE"))
+            createProcessWithMessageNameFeelExpression("NAME_EXPRESSION_INVALID_TYPE"))
         .deploy();
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId("NAME_EXPRESSION_INVALID_TYPE")
             .withVariable("nameLookup", 25)
             .create();
 
-    final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+    final Record<ProcessInstanceRecordValue> failureEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("catch")
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
@@ -130,7 +130,7 @@ public final class MessageIncidentTest {
         .hasErrorMessage(
             "Expected result of the expression 'nameLookup' to be 'STRING', but was 'NUMBER'.")
         .hasBpmnProcessId("NAME_EXPRESSION_INVALID_TYPE")
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("catch")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L)
@@ -143,15 +143,15 @@ public final class MessageIncidentTest {
     ENGINE
         .deployment()
         .withXmlResource(
-            createWorkflowWithMessageNameFeelExpression("UNRESOLVABLE_NAME_EXPRESSION2"))
+            createProcessWithMessageNameFeelExpression("UNRESOLVABLE_NAME_EXPRESSION2"))
         .deploy();
 
-    final long workflowInstance =
-        ENGINE.workflowInstance().ofBpmnProcessId("UNRESOLVABLE_NAME_EXPRESSION2").create();
+    final long processInstance =
+        ENGINE.processInstance().ofBpmnProcessId("UNRESOLVABLE_NAME_EXPRESSION2").create();
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstance)
+            .withProcessInstanceKey(processInstance)
             .getFirst();
 
     ENGINE
@@ -164,15 +164,15 @@ public final class MessageIncidentTest {
     final Record<IncidentRecordValue> incidentResolvedEvent =
         ENGINE
             .incident()
-            .ofInstance(workflowInstance)
+            .ofInstance(processInstance)
             .withKey(incidentCreatedRecord.getKey())
             .resolve();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.OPENED)
-                .withWorkflowInstanceKey(workflowInstance)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.OPENED)
+                .withProcessInstanceKey(processInstance)
                 .exists())
         .isTrue();
 
@@ -182,18 +182,18 @@ public final class MessageIncidentTest {
   @Test
   public void shouldCreateIncidentIfCorrelationKeyNotFound() {
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+    final Record<ProcessInstanceRecordValue> failureEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("catch")
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
@@ -201,7 +201,7 @@ public final class MessageIncidentTest {
         .hasErrorMessage(
             "failed to evaluate expression 'orderId': no variable found for name 'orderId'")
         .hasBpmnProcessId(PROCESS_ID)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("catch")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L)
@@ -211,23 +211,23 @@ public final class MessageIncidentTest {
   @Test
   public void shouldCreateIncidentIfCorrelationKeyOfInvalidType() {
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("orderId", true)
             .create();
 
-    final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> failureEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("catch")
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
@@ -235,7 +235,7 @@ public final class MessageIncidentTest {
         .hasErrorMessage(
             "Failed to extract the correlation key for 'orderId': The value must be either a string or a number, but was BOOLEAN.")
         .hasBpmnProcessId(PROCESS_ID)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("catch")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L)
@@ -245,11 +245,11 @@ public final class MessageIncidentTest {
   @Test
   public void shouldResolveIncidentIfCorrelationKeyNotFound() {
     // given
-    final long workflowInstance = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstance = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstance)
+            .withProcessInstanceKey(processInstance)
             .getFirst();
 
     ENGINE
@@ -262,15 +262,15 @@ public final class MessageIncidentTest {
     final Record<IncidentRecordValue> incidentResolvedEvent =
         ENGINE
             .incident()
-            .ofInstance(workflowInstance)
+            .ofInstance(processInstance)
             .withKey(incidentCreatedRecord.getKey())
             .resolve();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.OPENED)
-                .withWorkflowInstanceKey(workflowInstance)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.OPENED)
+                .withProcessInstanceKey(processInstance)
                 .exists())
         .isTrue();
 

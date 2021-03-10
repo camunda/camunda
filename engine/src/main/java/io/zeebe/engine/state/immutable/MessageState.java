@@ -14,9 +14,9 @@ public interface MessageState {
 
   boolean existMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId);
 
-  boolean existActiveWorkflowInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
+  boolean existActiveProcessInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
 
-  DirectBuffer getWorkflowInstanceCorrelationKey(long workflowInstanceKey);
+  DirectBuffer getProcessInstanceCorrelationKey(long processInstanceKey);
 
   void visitMessages(DirectBuffer name, DirectBuffer correlationKey, MessageVisitor visitor);
 

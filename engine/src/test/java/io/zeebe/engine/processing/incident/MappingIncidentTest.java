@@ -10,7 +10,7 @@ package io.zeebe.engine.processing.incident;
 import static io.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 import static io.zeebe.protocol.record.intent.IncidentIntent.RESOLVE;
 import static io.zeebe.protocol.record.intent.IncidentIntent.RESOLVED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -20,11 +20,11 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -37,13 +37,13 @@ import org.junit.Test;
 public final class MappingIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-  private static final BpmnModelInstance WORKFLOW_INPUT_MAPPING =
+  private static final BpmnModelInstance PROCESS_INPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
           .serviceTask(
               "failingTask", t -> t.zeebeJobType("test").zeebeInputExpression("foo", "foo"))
           .done();
-  private static final BpmnModelInstance WORKFLOW_OUTPUT_MAPPING =
+  private static final BpmnModelInstance PROCESS_OUTPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
           .serviceTask(
@@ -60,37 +60,37 @@ public final class MappingIncidentTest {
   @Test
   public void shouldCreateIncidentForInputMappingFailure() {
     // given
-    final long workflowKey =
+    final long processDefinitionKey =
         ENGINE
             .deployment()
-            .withXmlResource(WORKFLOW_INPUT_MAPPING)
+            .withXmlResource(PROCESS_INPUT_MAPPING)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0)
-            .getWorkflowKey();
+            .getProcessDefinitionKey();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
     // then
     final Record failureEvent =
-        RecordingExporter.workflowInstanceRecords()
+        RecordingExporter.processInstanceRecords()
             .withElementId("failingTask")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     final Record createIncidentEvent =
         RecordingExporter.incidentRecords()
             .onlyCommands()
             .withIntent(IncidentIntent.CREATE)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .onlyEvents()
             .withIntent(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
@@ -103,8 +103,8 @@ public final class MappingIncidentTest {
     Assertions.assertThat(incidentEventValue)
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasBpmnProcessId("process")
-        .hasWorkflowKey(workflowKey)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasVariableScopeKey(failureEvent.getKey());
@@ -131,19 +131,19 @@ public final class MappingIncidentTest {
         .deploy();
 
     // when
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("process").withVariables(VARIABLES_JSON).create();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process").withVariables(VARIABLES_JSON).create();
 
-    final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords()
+    final Record<ProcessInstanceRecordValue> failureEvent =
+        RecordingExporter.processInstanceRecords()
             .withElementId("service")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
@@ -154,7 +154,7 @@ public final class MappingIncidentTest {
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasBpmnProcessId("process")
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("service")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasVariableScopeKey(failureEvent.getKey());
@@ -166,34 +166,34 @@ public final class MappingIncidentTest {
   @Test
   public void shouldCreateIncidentForOutputMappingFailure() {
     // given
-    ENGINE.deployment().withXmlResource(WORKFLOW_OUTPUT_MAPPING).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_OUTPUT_MAPPING).deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
     ENGINE
         .job()
         .withType("test")
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withVariables(VARIABLES_JSON)
         .complete();
 
     // then
     final Record failureEvent =
-        RecordingExporter.workflowInstanceRecords()
+        RecordingExporter.processInstanceRecords()
             .withElementType(BpmnElementType.SERVICE_TASK)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETING)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record createIncidentEvent =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.CREATE)
             .getFirst();
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
@@ -205,7 +205,7 @@ public final class MappingIncidentTest {
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasBpmnProcessId("process")
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasVariableScopeKey(failureEvent.getKey());
@@ -217,21 +217,21 @@ public final class MappingIncidentTest {
   @Test
   public void shouldResolveIncidentForInputMappingFailure() {
     // given
-    ENGINE.deployment().withXmlResource(WORKFLOW_INPUT_MAPPING).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
-    final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords()
+    final Record<ProcessInstanceRecordValue> failureEvent =
+        RecordingExporter.processInstanceRecords()
             .withElementId("failingTask")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .withIntent(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // when
@@ -241,14 +241,14 @@ public final class MappingIncidentTest {
         .withDocument(VARIABLES)
         .update();
     final Record<IncidentRecordValue> incidentResolvedEvent =
-        ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incidentEvent.getKey()).resolve();
+        ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
 
     // then
-    final Record<WorkflowInstanceRecordValue> followUpEvent =
-        RecordingExporter.workflowInstanceRecords()
+    final Record<ProcessInstanceRecordValue> followUpEvent =
+        RecordingExporter.processInstanceRecords()
             .withElementId("failingTask")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record incidentResolveCommand =
@@ -266,7 +266,7 @@ public final class MappingIncidentTest {
     Assertions.assertThat(incidentResolvedEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasBpmnProcessId("process")
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasVariableScopeKey(failureEvent.getKey());
@@ -278,40 +278,40 @@ public final class MappingIncidentTest {
   @Test
   public void shouldResolveIncidentForOutputMappingFailure() {
     // given
-    ENGINE.deployment().withXmlResource(WORKFLOW_OUTPUT_MAPPING).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_OUTPUT_MAPPING).deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
     ENGINE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType("test")
         .withVariables(VARIABLES_JSON)
         .complete();
 
     final Record failureEvent =
-        RecordingExporter.workflowInstanceRecords()
+        RecordingExporter.processInstanceRecords()
             .withElementType(BpmnElementType.SERVICE_TASK)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETING)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record incidentEvent =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(CREATED)
             .getFirst();
 
     // when
     ENGINE.variables().ofScope(failureEvent.getKey()).withDocument(VARIABLES).update();
     final Record<IncidentRecordValue> incidentResolvedEvent =
-        ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incidentEvent.getKey()).resolve();
+        ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
 
     // then
-    final Record<WorkflowInstanceRecordValue> followUpEvent =
-        RecordingExporter.workflowInstanceRecords()
+    final Record<ProcessInstanceRecordValue> followUpEvent =
+        RecordingExporter.processInstanceRecords()
             .withElementType(BpmnElementType.SERVICE_TASK)
             .withIntent(ELEMENT_COMPLETED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record incidentResolveCommand =
@@ -329,7 +329,7 @@ public final class MappingIncidentTest {
     Assertions.assertThat(incidentResolvedEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasBpmnProcessId("process")
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasVariableScopeKey(failureEvent.getKey());
@@ -353,18 +353,18 @@ public final class MappingIncidentTest {
             .done();
 
     ENGINE.deployment().withXmlResource(modelInstance).deploy();
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
     final Record failureEvent =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("failingTask")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .getFirst();
 
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
@@ -374,7 +374,7 @@ public final class MappingIncidentTest {
     // when
     ENGINE.variables().ofScope(failureEvent.getKey()).withDocument(VARIABLES).update();
     final Record<IncidentRecordValue> resolvedEvent =
-        ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incidentEvent.getKey()).resolve();
+        ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
 
     // then
     assertThat(resolvedEvent.getKey()).isEqualTo(incidentEvent.getKey());
@@ -382,7 +382,7 @@ public final class MappingIncidentTest {
     final Record<IncidentRecordValue> secondIncidentEvent =
         RecordingExporter.incidentRecords()
             .onlyEvents()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .skipUntil(e -> e.getIntent() == RESOLVED)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
@@ -390,7 +390,7 @@ public final class MappingIncidentTest {
     Assertions.assertThat(secondIncidentEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasBpmnProcessId("process")
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasVariableScopeKey(failureEvent.getKey());
@@ -402,29 +402,29 @@ public final class MappingIncidentTest {
   @Test
   public void shouldResolveIncidentAfterPreviousResolvingFailed() {
     // given
-    ENGINE.deployment().withXmlResource(WORKFLOW_INPUT_MAPPING).deploy();
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    ENGINE.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
     final Record failureEvent =
-        RecordingExporter.workflowInstanceRecords()
+        RecordingExporter.processInstanceRecords()
             .withElementId("failingTask")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record firstIncident =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
     ENGINE.variables().ofScope(failureEvent.getKey()).withDocument(new HashMap<>()).update();
-    ENGINE.incident().ofInstance(workflowInstanceKey).withKey(firstIncident.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(firstIncident.getKey()).resolve();
 
     final Record<IncidentRecordValue> secondIncident =
         RecordingExporter.incidentRecords()
             .onlyEvents()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .skipUntil(e -> e.getIntent() == RESOLVED)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
@@ -435,7 +435,7 @@ public final class MappingIncidentTest {
     final Record<IncidentRecordValue> secondResolvedIncident =
         ENGINE
             .incident()
-            .ofInstance(workflowInstanceKey)
+            .ofInstance(processInstanceKey)
             .withKey(secondIncident.getKey())
             .resolve();
 
@@ -444,7 +444,7 @@ public final class MappingIncidentTest {
     Assertions.assertThat(secondResolvedIncident.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasBpmnProcessId("process")
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasVariableScopeKey(failureEvent.getKey());
@@ -456,39 +456,39 @@ public final class MappingIncidentTest {
   @Test
   public void shouldResolveMultipleIncidents() {
     // given
-    ENGINE.deployment().withXmlResource(WORKFLOW_INPUT_MAPPING).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();
 
     // create and resolve an first incident
-    long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
     Record failureEvent =
-        RecordingExporter.workflowInstanceRecords()
+        RecordingExporter.processInstanceRecords()
             .withElementId("failingTask")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     ENGINE.variables().ofScope(failureEvent.getKey()).withDocument(VARIABLES).update();
-    ENGINE.incident().ofInstance(workflowInstanceKey).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).resolve();
 
     // create a second incident
-    workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
     failureEvent =
-        RecordingExporter.workflowInstanceRecords()
+        RecordingExporter.processInstanceRecords()
             .withElementId("failingTask")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final long secondIncidentKey =
         RecordingExporter.incidentRecords(CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst()
             .getKey();
 
     // when
     ENGINE.variables().ofScope(failureEvent.getKey()).withDocument(VARIABLES).update();
     final Record incidentResolvedEvent =
-        ENGINE.incident().ofInstance(workflowInstanceKey).resolve();
+        ENGINE.incident().ofInstance(processInstanceKey).resolve();
 
     // then
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(secondIncidentKey);
@@ -497,31 +497,31 @@ public final class MappingIncidentTest {
   @Test
   public void shouldResolveIncidentIfActivityTerminated() {
     // given
-    ENGINE.deployment().withXmlResource(WORKFLOW_INPUT_MAPPING).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
     final Record incidentCreatedEvent =
         RecordingExporter.incidentRecords()
             .withIntent(CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     final Record activityTerminated =
-        RecordingExporter.workflowInstanceRecords()
+        RecordingExporter.processInstanceRecords()
             .withElementId("failingTask")
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_TERMINATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
             .getFirst();
 
     final Record<IncidentRecordValue> incidentResolvedEvent =
         RecordingExporter.incidentRecords()
             .withIntent(RESOLVED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
@@ -531,7 +531,7 @@ public final class MappingIncidentTest {
     Assertions.assertThat(incidentResolvedEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasBpmnProcessId("process")
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(incidentResolvedEvent.getValue().getElementInstanceKey())
         .hasVariableScopeKey(incidentResolvedEvent.getValue().getElementInstanceKey());
@@ -543,33 +543,33 @@ public final class MappingIncidentTest {
   @Test
   public void shouldProcessIncidentsAfterMultipleTerminations() {
     // given
-    ENGINE.deployment().withXmlResource(WORKFLOW_INPUT_MAPPING).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();
 
     // create and cancel instance with incident
-    long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // create and cancel instance without incident
-    workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("process").withVariables(VARIABLES_JSON).create();
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process").withVariables(VARIABLES_JSON).create();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
-    // create another instance which creates an incidentworkflowInstanceKey =
-    workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    // create another instance which creates an incidentprocessInstanceKey =
+    processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
     final Record incidentCreatedEvent =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .withIntent(RESOLVED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     assertThat(incidentEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
@@ -577,7 +577,7 @@ public final class MappingIncidentTest {
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasBpmnProcessId("process")
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasElementInstanceKey(incidentEvent.getValue().getElementInstanceKey())
         .hasVariableScopeKey(incidentEvent.getValue().getElementInstanceKey());

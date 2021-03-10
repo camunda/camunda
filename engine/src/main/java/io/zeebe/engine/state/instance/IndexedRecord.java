@@ -12,18 +12,18 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.ObjectProperty;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class IndexedRecord extends UnpackedObject implements DbValue {
   private final LongProperty keyProp = new LongProperty("key", 0L);
-  private final EnumProperty<WorkflowInstanceIntent> stateProp =
-      new EnumProperty<>("state", WorkflowInstanceIntent.class);
-  private final ObjectProperty<WorkflowInstanceRecord> valueProp =
-      new ObjectProperty<>("workflowInstanceRecord", new WorkflowInstanceRecord());
+  private final EnumProperty<ProcessInstanceIntent> stateProp =
+      new EnumProperty<>("state", ProcessInstanceIntent.class);
+  private final ObjectProperty<ProcessInstanceRecord> valueProp =
+      new ObjectProperty<>("processInstanceRecord", new ProcessInstanceRecord());
 
   IndexedRecord() {
     declareProperty(keyProp).declareProperty(stateProp).declareProperty(valueProp);
@@ -31,8 +31,8 @@ public final class IndexedRecord extends UnpackedObject implements DbValue {
 
   public IndexedRecord(
       final long key,
-      final WorkflowInstanceIntent instanceState,
-      final WorkflowInstanceRecord record) {
+      final ProcessInstanceIntent instanceState,
+      final ProcessInstanceRecord record) {
     this();
     keyProp.setValue(key);
     stateProp.setValue(instanceState);
@@ -48,24 +48,24 @@ public final class IndexedRecord extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public WorkflowInstanceIntent getState() {
+  public ProcessInstanceIntent getState() {
     return stateProp.getValue();
   }
 
-  public IndexedRecord setState(final WorkflowInstanceIntent state) {
+  public IndexedRecord setState(final ProcessInstanceIntent state) {
     stateProp.setValue(state);
     return this;
   }
 
-  public boolean hasState(final WorkflowInstanceIntent state) {
+  public boolean hasState(final ProcessInstanceIntent state) {
     return getState() == state;
   }
 
-  public WorkflowInstanceRecord getValue() {
+  public ProcessInstanceRecord getValue() {
     return valueProp.getValue();
   }
 
-  public IndexedRecord setValue(final WorkflowInstanceRecord value) {
+  public IndexedRecord setValue(final ProcessInstanceRecord value) {
     final MutableDirectBuffer valueBuffer = new UnsafeBuffer(0, 0);
     final int encodedLength = value.getLength();
     valueBuffer.wrap(new byte[encodedLength]);

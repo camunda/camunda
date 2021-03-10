@@ -9,7 +9,7 @@ package io.zeebe.engine.processing.deployment.model.transformer;
 
 import io.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Activity;
@@ -23,22 +23,22 @@ public final class BoundaryEventTransformer implements ModelElementTransformer<B
 
   @Override
   public void transform(final BoundaryEvent event, final TransformContext context) {
-    final ExecutableWorkflow workflow = context.getCurrentWorkflow();
+    final ExecutableProcess process = context.getCurrentProcess();
     final ExecutableBoundaryEvent element =
-        workflow.getElementById(event.getId(), ExecutableBoundaryEvent.class);
+        process.getElementById(event.getId(), ExecutableBoundaryEvent.class);
 
     element.setInterrupting(event.cancelActivity());
 
-    attachToActivity(event, workflow, element);
+    attachToActivity(event, process, element);
   }
 
   private void attachToActivity(
       final BoundaryEvent event,
-      final ExecutableWorkflow workflow,
+      final ExecutableProcess process,
       final ExecutableBoundaryEvent element) {
     final Activity attachedToActivity = event.getAttachedTo();
     final ExecutableActivity attachedToElement =
-        workflow.getElementById(attachedToActivity.getId(), ExecutableActivity.class);
+        process.getElementById(attachedToActivity.getId(), ExecutableActivity.class);
 
     attachedToElement.attach(element);
   }

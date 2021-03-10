@@ -23,22 +23,22 @@ import io.zeebe.protocol.record.intent.TimerIntent;
  *
  * <p>See {@link TimerIntent} for intents.
  */
-public interface TimerRecordValue extends RecordValue, WorkflowInstanceRelated {
+public interface TimerRecordValue extends RecordValue, ProcessInstanceRelated {
 
-  /** @return the key of the workflow in which this timer was created */
-  long getWorkflowKey();
+  /** @return the key of the process in which this timer was created */
+  long getProcessDefinitionKey();
 
   /** @return the key of the related element instance. */
   long getElementInstanceKey();
 
-  /** @return the key of the related workflow instance */
-  long getWorkflowInstanceKey();
+  /** @return the key of the related process instance */
+  long getProcessInstanceKey();
 
   /** @return the due date of the timer as Unix timestamp in millis. */
   long getDueDate();
 
   /**
-   * The handlerFlowNodeID property represent the ID, from the BPMN XML of the workflow, of the flow
+   * The handlerFlowNodeID property represent the ID, from the BPMN XML of the process, of the flow
    * node which will handle the timer trigger's event. In normal flow, this is usually the same as
    * the related activity's ID, but when the timer was created due to a boundary event, it will be
    * that event's ID.

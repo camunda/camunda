@@ -7,9 +7,9 @@
  */
 package io.zeebe.protocol.impl.record.value.deployment;
 
-import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_KEY;
-import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
+import static io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROP_PROCESS_BPMN_PROCESS_ID;
+import static io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROP_PROCESS_KEY;
+import static io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROP_PROCESS_VERSION;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.BinaryProperty;
@@ -17,20 +17,20 @@ import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public final class WorkflowRecord extends UnifiedRecordValue implements DeployedWorkflow {
+public final class ProcessRecord extends UnifiedRecordValue implements DeployedProcess {
   private final StringProperty bpmnProcessIdProp =
-      new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID);
-  private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION);
-  private final LongProperty keyProp = new LongProperty(PROP_WORKFLOW_KEY);
+      new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID);
+  private final IntegerProperty versionProp = new IntegerProperty(PROP_PROCESS_VERSION);
+  private final LongProperty keyProp = new LongProperty(PROP_PROCESS_KEY);
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum");
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
 
-  public WorkflowRecord() {
+  public ProcessRecord() {
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
@@ -49,7 +49,7 @@ public final class WorkflowRecord extends UnifiedRecordValue implements Deployed
   }
 
   @Override
-  public long getWorkflowKey() {
+  public long getProcessDefinitionKey() {
     return getKey();
   }
 
@@ -73,27 +73,27 @@ public final class WorkflowRecord extends UnifiedRecordValue implements Deployed
     return BufferUtil.bufferAsArray(resourceProp.getValue());
   }
 
-  public WorkflowRecord setResourceName(final String resourceName) {
+  public ProcessRecord setResourceName(final String resourceName) {
     resourceNameProp.setValue(resourceName);
     return this;
   }
 
-  public WorkflowRecord setResourceName(final DirectBuffer resourceName) {
+  public ProcessRecord setResourceName(final DirectBuffer resourceName) {
     resourceNameProp.setValue(resourceName);
     return this;
   }
 
-  public WorkflowRecord setVersion(final int version) {
+  public ProcessRecord setVersion(final int version) {
     versionProp.setValue(version);
     return this;
   }
 
-  public WorkflowRecord setBpmnProcessId(final String bpmnProcessId) {
+  public ProcessRecord setBpmnProcessId(final String bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
-  public WorkflowRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+  public ProcessRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
@@ -103,12 +103,12 @@ public final class WorkflowRecord extends UnifiedRecordValue implements Deployed
     return keyProp.getValue();
   }
 
-  public WorkflowRecord setKey(final long key) {
+  public ProcessRecord setKey(final long key) {
     keyProp.setValue(key);
     return this;
   }
 
-  public WorkflowRecord setChecksum(final DirectBuffer checksumBuffer) {
+  public ProcessRecord setChecksum(final DirectBuffer checksumBuffer) {
     checksumProp.setValue(checksumBuffer);
     return this;
   }
@@ -135,17 +135,17 @@ public final class WorkflowRecord extends UnifiedRecordValue implements Deployed
     return resourceNameProp.getValue();
   }
 
-  public WorkflowRecord setBpmnProcessId(
+  public ProcessRecord setBpmnProcessId(
       final DirectBuffer bpmnProcessId, final int offset, final int length) {
     bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
     return this;
   }
 
-  public WorkflowRecord setResource(final DirectBuffer resource) {
+  public ProcessRecord setResource(final DirectBuffer resource) {
     return setResource(resource, 0, resource.capacity());
   }
 
-  public WorkflowRecord setResource(
+  public ProcessRecord setResource(
       final DirectBuffer resource, final int offset, final int length) {
     resourceProp.setValue(resource, offset, length);
     return this;

@@ -23,24 +23,24 @@ import (
 
 var resourceNamesFlag []string
 
-var deployWorkflowCmd = &cobra.Command{
-	Use:     "deploy <workflowPath>...",
-	Short:   "Creates a new workflow for each BPMN or YAML resource provided",
+var deployProcessCmd = &cobra.Command{
+	Use:     "deploy <processPath>...",
+	Short:   "Creates a new process for each BPMN or YAML resource provided",
 	Args:    cobra.MinimumNArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(resourceNamesFlag) > len(args) {
-			return fmt.Errorf("there are more resource names (%d) than workflow paths (%d)", len(resourceNamesFlag), len(args))
+			return fmt.Errorf("there are more resource names (%d) than process paths (%d)", len(resourceNamesFlag), len(args))
 		}
 
-		zbCmd := client.NewDeployWorkflowCommand()
+		zbCmd := client.NewDeployProcessCommand()
 		for i := 0; i < len(resourceNamesFlag); i++ {
 			bytes, err := ioutil.ReadFile(args[i])
 			if err != nil {
 				return err
 			}
 
-			zbCmd.AddResource(bytes, resourceNamesFlag[i], pb.WorkflowRequestObject_FILE)
+			zbCmd.AddResource(bytes, resourceNamesFlag[i], pb.ProcessRequestObject_FILE)
 		}
 
 		for i := len(resourceNamesFlag); i < len(args); i++ {
@@ -60,9 +60,9 @@ var deployWorkflowCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(deployWorkflowCmd)
+	rootCmd.AddCommand(deployProcessCmd)
 
-	deployWorkflowCmd.Flags().StringSliceVar(&resourceNamesFlag, "resourceNames", nil, "Resource names"+
-		" for the workflows paths passed as arguments. The resource names are matched to workflows by position. If a"+
-		" workflow does not have a matching resource name, the workflow path is used instead")
+	deployProcessCmd.Flags().StringSliceVar(&resourceNamesFlag, "resourceNames", nil, "Resource names"+
+		" for the processes paths passed as arguments. The resource names are matched to processes by position. If a"+
+		" process does not have a matching resource name, the process path is used instead")
 }

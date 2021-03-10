@@ -63,13 +63,13 @@ public class BlockSequenceBuilder implements BlockBuilder {
   @Override
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
-    AbstractFlowNodeBuilder<?, ?> workflowWorkInProgress = nodeBuilder;
+    AbstractFlowNodeBuilder<?, ?> processWorkInProgress = nodeBuilder;
 
     for (final BlockBuilder builder : blockBuilders) {
-      workflowWorkInProgress = builder.buildFlowNodes(workflowWorkInProgress);
+      processWorkInProgress = builder.buildFlowNodes(processWorkInProgress);
     }
 
-    return workflowWorkInProgress;
+    return processWorkInProgress;
   }
 
   @Override

@@ -35,7 +35,7 @@ public final class SnapshotReplicationTest {
 
   private static final int PARTITION_COUNT = 1;
   private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
-  private static final BpmnModelInstance WORKFLOW =
+  private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
   private final ClusteringRule clusteringRule =
@@ -97,7 +97,7 @@ public final class SnapshotReplicationTest {
   }
 
   private void triggerSnapshotCreation() {
-    clientRule.deployWorkflow(WORKFLOW);
+    clientRule.deployProcess(PROCESS);
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
   }
 

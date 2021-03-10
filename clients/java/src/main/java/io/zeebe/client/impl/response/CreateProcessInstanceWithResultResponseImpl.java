@@ -16,32 +16,32 @@
 package io.zeebe.client.impl.response;
 
 import io.zeebe.client.api.JsonMapper;
-import io.zeebe.client.api.response.WorkflowInstanceResult;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultResponse;
+import io.zeebe.client.api.response.ProcessInstanceResult;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import java.util.Map;
 
-public final class CreateWorkflowInstanceWithResultResponseImpl implements WorkflowInstanceResult {
+public final class CreateProcessInstanceWithResultResponseImpl implements ProcessInstanceResult {
 
   private final JsonMapper jsonMapper;
-  private final long workflowKey;
+  private final long processDefinitionKey;
   private final String bpmnProcessId;
   private final int version;
-  private final long workflowInstanceKey;
+  private final long processInstanceKey;
   private final String variables;
 
-  public CreateWorkflowInstanceWithResultResponseImpl(
-      final JsonMapper jsonMapper, final CreateWorkflowInstanceWithResultResponse response) {
+  public CreateProcessInstanceWithResultResponseImpl(
+      final JsonMapper jsonMapper, final CreateProcessInstanceWithResultResponse response) {
     this.jsonMapper = jsonMapper;
-    workflowKey = response.getWorkflowKey();
+    processDefinitionKey = response.getProcessDefinitionKey();
     bpmnProcessId = response.getBpmnProcessId();
     version = response.getVersion();
-    workflowInstanceKey = response.getWorkflowInstanceKey();
+    processInstanceKey = response.getProcessInstanceKey();
     variables = response.getVariables();
   }
 
   @Override
-  public long getWorkflowKey() {
-    return workflowKey;
+  public long getProcessDefinitionKey() {
+    return processDefinitionKey;
   }
 
   @Override
@@ -55,8 +55,8 @@ public final class CreateWorkflowInstanceWithResultResponseImpl implements Workf
   }
 
   @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
   @Override
@@ -76,16 +76,16 @@ public final class CreateWorkflowInstanceWithResultResponseImpl implements Workf
 
   @Override
   public String toString() {
-    return "CreateWorkflowInstanceWithResultResponseImpl{"
-        + "workflowKey="
-        + workflowKey
+    return "CreateProcessInstanceWithResultResponseImpl{"
+        + "processDefinitionKey="
+        + processDefinitionKey
         + ", bpmnProcessId='"
         + bpmnProcessId
         + '\''
         + ", version="
         + version
-        + ", workflowInstanceKey="
-        + workflowInstanceKey
+        + ", processInstanceKey="
+        + processInstanceKey
         + ", variables='"
         + variables
         + '\''

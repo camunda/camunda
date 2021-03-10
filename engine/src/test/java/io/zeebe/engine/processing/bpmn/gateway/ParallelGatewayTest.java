@@ -15,9 +15,9 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -59,12 +59,12 @@ public final class ParallelGatewayTest {
     engine.deployment().withXmlResource(FORK_PROCESS).deploy();
 
     // when
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> taskEvents =
-        RecordingExporter.workflowInstanceRecords()
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+    final List<Record<ProcessInstanceRecordValue>> taskEvents =
+        RecordingExporter.processInstanceRecords()
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .filter(e -> isServiceTaskInProcess(e.getValue().getElementId(), FORK_PROCESS))
             .limit(2)
             .collect(Collectors.toList());
@@ -80,17 +80,17 @@ public final class ParallelGatewayTest {
   public void shouldCompleteScopeWhenAllPathsCompleted() {
     // given
     engine.deployment().withXmlResource(FORK_PROCESS).deploy();
-    final long workflowInstanceKey = engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
-    engine.job().ofInstance(workflowInstanceKey).withType("type1").complete();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    engine.job().ofInstance(processInstanceKey).withType("type1").complete();
 
     // when
-    engine.job().ofInstance(workflowInstanceKey).withType("type2").complete();
+    engine.job().ofInstance(processInstanceKey).withType("type2").complete();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> completedEvents =
-        RecordingExporter.workflowInstanceRecords()
+    final List<Record<ProcessInstanceRecordValue>> completedEvents =
+        RecordingExporter.processInstanceRecords()
             .withElementType(BpmnElementType.END_EVENT)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .limit(2)
             .collect(Collectors.toList());
 
@@ -98,9 +98,9 @@ public final class ParallelGatewayTest {
         .extracting(e -> e.getValue().getElementId())
         .containsExactly("end1", "end2");
 
-    RecordingExporter.workflowInstanceRecords()
+    RecordingExporter.processInstanceRecords()
         .withElementId(PROCESS_ID)
-        .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
         .getFirst();
   }
 
@@ -120,20 +120,20 @@ public final class ParallelGatewayTest {
     engine.deployment().withXmlResource(process).deploy();
 
     // when
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        RecordingExporter.workflowInstanceRecords()
-            .limitToWorkflowInstanceCompleted()
+    final List<Record<ProcessInstanceRecordValue>> processInstanceEvents =
+        RecordingExporter.processInstanceRecords()
+            .limitToProcessInstanceCompleted()
             .collect(Collectors.toList());
 
-    assertThat(workflowInstanceEvents)
+    assertThat(processInstanceEvents)
         .extracting(e -> e.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
-            tuple("end", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple("end", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple("end", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("end", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -151,28 +151,28 @@ public final class ParallelGatewayTest {
     engine.deployment().withXmlResource(process).deploy();
 
     // when
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        RecordingExporter.workflowInstanceRecords()
-            .limitToWorkflowInstanceCompleted()
+    final List<Record<ProcessInstanceRecordValue>> processInstanceEvents =
+        RecordingExporter.processInstanceRecords()
+            .limitToProcessInstanceCompleted()
             .collect(Collectors.toList());
 
-    assertThat(workflowInstanceEvents)
+    assertThat(processInstanceEvents)
         .extracting(e -> e.getValue().getElementId(), Record::getIntent)
         .containsSequence(
-            tuple("fork", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple("fork", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("fork", WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple("fork", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple("flow2", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("end", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple("end", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("end", WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple("end", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple("fork", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("fork", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("fork", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("fork", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("flow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("end", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("end", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("end", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("end", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -188,19 +188,19 @@ public final class ParallelGatewayTest {
     engine.deployment().withXmlResource(process).deploy();
 
     // when
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        RecordingExporter.workflowInstanceRecords()
-            .limitToWorkflowInstanceCompleted()
+    final List<Record<ProcessInstanceRecordValue>> processInstanceEvents =
+        RecordingExporter.processInstanceRecords()
+            .limitToProcessInstanceCompleted()
             .collect(Collectors.toList());
 
-    assertThat(workflowInstanceEvents)
+    assertThat(processInstanceEvents)
         .extracting(e -> e.getValue().getElementId(), Record::getIntent)
         .containsSequence(
-            tuple("fork", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETING));
+            tuple("fork", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETING));
   }
 
   @Test
@@ -209,23 +209,23 @@ public final class ParallelGatewayTest {
     engine.deployment().withXmlResource(FORK_JOIN_PROCESS).deploy();
 
     // when
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> events =
-        RecordingExporter.workflowInstanceRecords()
-            .limitToWorkflowInstanceCompleted()
+    final List<Record<ProcessInstanceRecordValue>> events =
+        RecordingExporter.processInstanceRecords()
+            .limitToProcessInstanceCompleted()
             .collect(Collectors.toList());
 
     assertThat(events)
         .extracting(e -> e.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
-            tuple("flow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("join", WorkflowInstanceIntent.ELEMENT_ACTIVATING))
+            tuple("flow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
         .containsSubsequence(
-            tuple("flow2", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("join", WorkflowInstanceIntent.ELEMENT_ACTIVATING))
-        .containsOnlyOnce(tuple("join", WorkflowInstanceIntent.ELEMENT_ACTIVATING));
+            tuple("flow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
   }
 
   @Test
@@ -249,11 +249,11 @@ public final class ParallelGatewayTest {
 
     engine.deployment().withXmlResource(process).deploy();
 
-    final long workflowInstanceKey = engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // waiting until we have signalled the first incoming sequence flow twice
     // => this should not trigger the gateway yet
-    RecordingExporter.workflowInstanceRecords()
+    RecordingExporter.processInstanceRecords()
         .limit(r -> "joinFlow1".equals(r.getValue().getElementId()))
         .limit(2)
         .skip(1)
@@ -261,24 +261,24 @@ public final class ParallelGatewayTest {
 
     // when
     // we complete the job
-    engine.job().ofInstance(workflowInstanceKey).withType("type").complete();
+    engine.job().ofInstance(processInstanceKey).withType("type").complete();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> events =
-        RecordingExporter.workflowInstanceRecords()
+    final List<Record<ProcessInstanceRecordValue>> events =
+        RecordingExporter.processInstanceRecords()
             .limit(
                 r ->
                     "join".equals(r.getValue().getElementId())
-                        && WorkflowInstanceIntent.ELEMENT_COMPLETED == r.getIntent())
+                        && ProcessInstanceIntent.ELEMENT_COMPLETED == r.getIntent())
             .collect(Collectors.toList());
 
     assertThat(events)
         .extracting(e -> e.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
-            tuple("joinFlow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("joinFlow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("joinFlow2", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("join", WorkflowInstanceIntent.ELEMENT_ACTIVATING));
+            tuple("joinFlow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("joinFlow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("joinFlow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
   }
 
   @Test
@@ -299,14 +299,14 @@ public final class ParallelGatewayTest {
     engine.deployment().withXmlResource(process).deploy();
 
     // when
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> elementInstances =
-        RecordingExporter.workflowInstanceRecords()
+    final List<Record<ProcessInstanceRecordValue>> elementInstances =
+        RecordingExporter.processInstanceRecords()
             .filter(
                 r ->
-                    r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
+                    r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED
                         && r.getValue().getBpmnElementType() == BpmnElementType.SERVICE_TASK)
             .limit(2)
             .collect(Collectors.toList());
@@ -330,12 +330,12 @@ public final class ParallelGatewayTest {
     engine.deployment().withXmlResource(process).deploy();
 
     // when
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> taskEvents =
-        RecordingExporter.workflowInstanceRecords()
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+    final List<Record<ProcessInstanceRecordValue>> taskEvents =
+        RecordingExporter.processInstanceRecords()
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .filter(e -> isServiceTaskInProcess(e.getValue().getElementId(), process))
             .limit(2)
             .collect(Collectors.toList());

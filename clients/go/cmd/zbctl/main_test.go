@@ -90,7 +90,7 @@ var tests = []testCase{
 		jsonOutput: true,
 	},
 	{
-		name:       "deploy workflow",
+		name:       "deploy process",
 		cmd:        "--insecure deploy testdata/model.bpmn testdata/job_model.bpmn --resourceNames=model.bpmn,job.bpmn",
 		goldenFile: "testdata/deploy.golden",
 		jsonOutput: true,

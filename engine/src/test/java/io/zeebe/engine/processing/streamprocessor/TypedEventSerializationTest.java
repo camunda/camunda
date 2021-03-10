@@ -52,17 +52,17 @@ public final class TypedEventSerializationTest {
     final String resourceName = "resource";
     final DirectBuffer resource = wrapString("contents");
     final String bpmnProcessId = "testProcess";
-    final long workflowKey = 123;
-    final int workflowVersion = 12;
+    final long processDefinitionKey = 123;
+    final int processVersion = 12;
     final DeploymentRecord record = new DeploymentRecord();
     record.resources().add().setResourceName(wrapString(resourceName)).setResource(resource);
     record
-        .workflows()
+        .processes()
         .add()
         .setBpmnProcessId(wrapString(bpmnProcessId))
-        .setKey(workflowKey)
+        .setKey(processDefinitionKey)
         .setResourceName(wrapString(resourceName))
-        .setVersion(workflowVersion)
+        .setVersion(processVersion)
         .setChecksum(wrapString("checksum"))
         .setResource(resource);
 

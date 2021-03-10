@@ -16,47 +16,47 @@
 package io.zeebe.protocol.record.value;
 
 import io.zeebe.protocol.record.RecordValue;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
 /**
- * Represents a workflow instance related command or event.
+ * Represents a process instance related command or event.
  *
- * <p>See {@link WorkflowInstanceIntent} for intents.
+ * <p>See {@link ProcessInstanceIntent} for intents.
  */
-public interface WorkflowInstanceRecordValue extends RecordValue, WorkflowInstanceRelated {
-  /** @return the BPMN process id this workflow instance belongs to. */
+public interface ProcessInstanceRecordValue extends RecordValue, ProcessInstanceRelated {
+  /** @return the BPMN process id this process instance belongs to. */
   String getBpmnProcessId();
 
-  /** @return the version of the deployed workflow this instance belongs to. */
+  /** @return the version of the deployed process this instance belongs to. */
   int getVersion();
 
-  /** @return the key of the deployed workflow this instance belongs to. */
-  long getWorkflowKey();
+  /** @return the key of the deployed process this instance belongs to. */
+  long getProcessDefinitionKey();
 
-  /** @return the key of the workflow instance */
-  long getWorkflowInstanceKey();
+  /** @return the key of the process instance */
+  long getProcessInstanceKey();
 
-  /** @return the id of the current workflow element, or empty if the id is not specified. */
+  /** @return the id of the current process element, or empty if the id is not specified. */
   String getElementId();
 
   /**
    * @return the key of the activity instance that is the flow scope of this flow element instance;
-   *     -1 for records of the workflow instance itself.
+   *     -1 for records of the process instance itself.
    */
   long getFlowScopeKey();
 
-  /** @return the BPMN type of the current workflow element. */
+  /** @return the BPMN type of the current process element. */
   BpmnElementType getBpmnElementType();
 
   /**
-   * @return the key of the workflow instance that created this instance, or -1 if it was not
-   *     created by another workflow instance.
+   * @return the key of the process instance that created this instance, or -1 if it was not
+   *     created by another process instance.
    */
-  long getParentWorkflowInstanceKey();
+  long getParentProcessInstanceKey();
 
   /**
    * @return the key of the element instance that created this instance, or -1 if it was not created
-   *     by another workflow instance.
+   *     by another process instance.
    */
   long getParentElementInstanceKey();
 }

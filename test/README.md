@@ -39,12 +39,12 @@ Use the `ZeebeTestRule` in your test case to start an embedded broker and client
 
 ```java
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.response.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.ProcessInstanceEvent;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class WorkflowTest {
+public class ProcessTest {
   @Rule public final ZeebeTestRule testRule = new ZeebeTestRule();
 
   private ZeebeClient client;
@@ -54,7 +54,7 @@ public class WorkflowTest {
     client = testRule.getClient();
 
     client
-        .workflowClient()
+        .processClient()
         .newDeployCommand()
         .addResourceFromClasspath("process.bpmn")
         .send()
@@ -62,10 +62,10 @@ public class WorkflowTest {
   }
 
   @Test
-  public void shouldCompleteWorkflowInstance() {
-    final WorkflowInstanceEvent workflowInstance =
+  public void shouldCompleteProcessInstance() {
+    final ProcessInstanceEvent processInstance =
         client
-            .workflowClient()
+            .processClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
@@ -80,7 +80,7 @@ public class WorkflowTest {
         .name("test")
         .open();
 
-    ZeebeTestRule.assertThat(workflowInstance)
+    ZeebeTestRule.assertThat(processInstance)
         .isEnded()
         .hasPassed("start", "task", "end");
   }

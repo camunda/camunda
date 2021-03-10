@@ -14,7 +14,7 @@
   "errorType": "IO_MAPPING_ERROR",
   "errorMessage": "No data found for query $.baz.",
   "bpmnProcessId": "process",
-  "workflowInstanceKey": 4294967408,
+  "processInstanceKey": 4294967408,
   "elementId": "task",
   "elementInstanceKey": 4294968296,
   "jobKey": null

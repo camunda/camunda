@@ -115,7 +115,7 @@ public final class GrpcErrorMapper {
     String message = error.getMessage();
 
     switch (error.getCode()) {
-      case WORKFLOW_NOT_FOUND:
+      case PROCESS_NOT_FOUND:
         builder.setCode(Code.NOT_FOUND_VALUE);
         break;
       case RESOURCE_EXHAUSTED:

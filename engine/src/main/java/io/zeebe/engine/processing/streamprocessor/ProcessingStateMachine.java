@@ -357,7 +357,7 @@ public final class ProcessingStateMachine {
 
           zeebeState
               .getBlackListState()
-              .tryToBlacklist(typedEvent, errorRecord::setWorkflowInstanceKey);
+              .tryToBlacklist(typedEvent, errorRecord::setProcessInstanceKey);
 
           logStreamWriter.appendFollowUpEvent(
               typedEvent.getKey(), ErrorIntent.CREATED, errorRecord);

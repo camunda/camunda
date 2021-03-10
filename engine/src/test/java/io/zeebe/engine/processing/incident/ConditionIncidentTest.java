@@ -15,11 +15,11 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -42,7 +42,7 @@ public final class ConditionIncidentTest {
     ENGINE
         .deployment()
         .withXmlResource(
-            Bpmn.createExecutableProcess("workflow")
+            Bpmn.createExecutableProcess("process")
                 .startEvent()
                 .exclusiveGateway("xor")
                 .sequenceFlowId("s1")
@@ -61,20 +61,20 @@ public final class ConditionIncidentTest {
     // given
 
     // when
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("workflow").withVariable("foo", 9).create();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process").withVariable("foo", 9).create();
 
     // then
-    final Record<WorkflowInstanceRecordValue> failingEvent =
-        RecordingExporter.workflowInstanceRecords()
+    final Record<ProcessInstanceRecordValue> failingEvent =
+        RecordingExporter.processInstanceRecords()
             .withElementType(BpmnElementType.EXCLUSIVE_GATEWAY)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
@@ -83,7 +83,7 @@ public final class ConditionIncidentTest {
         .hasErrorMessage(
             "Expected at least one condition to evaluate to true, or to have a default flow")
         .hasBpmnProcessId(failingEvent.getValue().getBpmnProcessId())
-        .hasWorkflowInstanceKey(failingEvent.getValue().getWorkflowInstanceKey())
+        .hasProcessInstanceKey(failingEvent.getValue().getProcessInstanceKey())
         .hasElementId(failingEvent.getValue().getElementId())
         .hasElementInstanceKey(failingEvent.getKey())
         .hasVariableScopeKey(failingEvent.getKey());
@@ -94,20 +94,20 @@ public final class ConditionIncidentTest {
     // given
 
     // when
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("workflow").withVariable("foo", "bar").create();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process").withVariable("foo", "bar").create();
 
     // then
-    final Record<WorkflowInstanceRecordValue> failingEvent =
-        RecordingExporter.workflowInstanceRecords()
+    final Record<ProcessInstanceRecordValue> failingEvent =
+        RecordingExporter.processInstanceRecords()
             .withElementType(BpmnElementType.EXCLUSIVE_GATEWAY)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
@@ -116,7 +116,7 @@ public final class ConditionIncidentTest {
         .hasErrorMessage(
             "failed to evaluate expression 'foo > 10': ValString(bar) can not be compared to ValNumber(10)")
         .hasBpmnProcessId(failingEvent.getValue().getBpmnProcessId())
-        .hasWorkflowInstanceKey(failingEvent.getValue().getWorkflowInstanceKey())
+        .hasProcessInstanceKey(failingEvent.getValue().getProcessInstanceKey())
         .hasElementId(failingEvent.getValue().getElementId())
         .hasElementInstanceKey(failingEvent.getKey())
         .hasVariableScopeKey(failingEvent.getKey());
@@ -125,12 +125,12 @@ public final class ConditionIncidentTest {
   @Test
   public void shouldResolveIncidentForFailedCondition() {
     // given
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("workflow").withVariable("foo", "bar").create();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process").withVariable("foo", "bar").create();
 
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
@@ -141,21 +141,21 @@ public final class ConditionIncidentTest {
         .withDocument(Maps.of(entry("foo", 11)))
         .update();
 
-    ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incidentEvent.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
+            RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withRecordKey(incidentEvent.getValue().getElementInstanceKey())
                 .limit(2))
         .extracting(Record::getIntent)
-        .contains(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     assertThat(
             RecordingExporter.records()
                 .onlyEvents()
-                .limitToWorkflowInstance(workflowInstanceKey)
+                .limitToProcessInstance(processInstanceKey)
                 .incidentRecords())
         .extracting(Record::getIntent)
         .hasSize(2)
@@ -165,12 +165,12 @@ public final class ConditionIncidentTest {
   @Test
   public void shouldResolveIncidentForExclusiveGatewayWithoutMatchingCondition() {
     // given
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("workflow").withVariable("foo", 7).create();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process").withVariable("foo", 7).create();
 
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
     // when
@@ -180,21 +180,21 @@ public final class ConditionIncidentTest {
         .withDocument(Maps.of(entry("foo", 11)))
         .update();
 
-    ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incidentEvent.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
+            RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withRecordKey(incidentEvent.getValue().getElementInstanceKey())
                 .limit(2))
         .extracting(Record::getIntent)
-        .contains(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     assertThat(
             RecordingExporter.records()
                 .onlyEvents()
-                .limitToWorkflowInstance(workflowInstanceKey)
+                .limitToProcessInstance(processInstanceKey)
                 .incidentRecords())
         .extracting(Record::getIntent)
         .hasSize(2)

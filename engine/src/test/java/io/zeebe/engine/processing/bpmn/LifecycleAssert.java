@@ -7,14 +7,14 @@
  */
 package io.zeebe.engine.processing.bpmn;
 
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETING;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATING;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETING;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATING;
 
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
@@ -25,31 +25,31 @@ import org.assertj.core.util.Lists;
 public final class LifecycleAssert
     extends AbstractListAssert<
         LifecycleAssert,
-        List<WorkflowInstanceIntent>,
-        WorkflowInstanceIntent,
-        ObjectAssert<WorkflowInstanceIntent>> {
+        List<ProcessInstanceIntent>,
+        ProcessInstanceIntent,
+        ObjectAssert<ProcessInstanceIntent>> {
 
   /*
    * Contains all valid lifecycle transitions
    */
-  private static final EnumMap<WorkflowInstanceIntent, EnumSet<WorkflowInstanceIntent>>
+  private static final EnumMap<ProcessInstanceIntent, EnumSet<ProcessInstanceIntent>>
       ELEMENT_LIFECYCLE;
-  private static final EnumSet<WorkflowInstanceIntent> FINAL_STATES =
+  private static final EnumSet<ProcessInstanceIntent> FINAL_STATES =
       EnumSet.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
-  private static final WorkflowInstanceIntent INITIAL_STATE = ELEMENT_ACTIVATING;
+  private static final ProcessInstanceIntent INITIAL_STATE = ELEMENT_ACTIVATING;
 
   static {
-    ELEMENT_LIFECYCLE = new EnumMap<>(WorkflowInstanceIntent.class);
+    ELEMENT_LIFECYCLE = new EnumMap<>(ProcessInstanceIntent.class);
 
     ELEMENT_LIFECYCLE.put(ELEMENT_ACTIVATING, EnumSet.of(ELEMENT_ACTIVATED, ELEMENT_TERMINATING));
     ELEMENT_LIFECYCLE.put(ELEMENT_ACTIVATED, EnumSet.of(ELEMENT_COMPLETING, ELEMENT_TERMINATING));
     ELEMENT_LIFECYCLE.put(ELEMENT_COMPLETING, EnumSet.of(ELEMENT_COMPLETED, ELEMENT_TERMINATING));
-    ELEMENT_LIFECYCLE.put(ELEMENT_COMPLETED, EnumSet.noneOf(WorkflowInstanceIntent.class));
+    ELEMENT_LIFECYCLE.put(ELEMENT_COMPLETED, EnumSet.noneOf(ProcessInstanceIntent.class));
     ELEMENT_LIFECYCLE.put(ELEMENT_TERMINATING, EnumSet.of(ELEMENT_TERMINATED));
-    ELEMENT_LIFECYCLE.put(ELEMENT_TERMINATED, EnumSet.noneOf(WorkflowInstanceIntent.class));
+    ELEMENT_LIFECYCLE.put(ELEMENT_TERMINATED, EnumSet.noneOf(ProcessInstanceIntent.class));
   }
 
-  public LifecycleAssert(final List<WorkflowInstanceIntent> actual) {
+  public LifecycleAssert(final List<ProcessInstanceIntent> actual) {
     super(actual, LifecycleAssert.class);
   }
 
@@ -61,14 +61,14 @@ public final class LifecycleAssert
       return this;
     }
 
-    final WorkflowInstanceIntent initialState = actual.get(0);
+    final ProcessInstanceIntent initialState = actual.get(0);
     if (INITIAL_STATE != initialState) {
       failWithMessage("Wrong initial state. Expected %s, was %s.", INITIAL_STATE, initialState);
     }
 
     compliesWithLifecycle();
 
-    final WorkflowInstanceIntent finalState = actual.get(actual.size() - 1);
+    final ProcessInstanceIntent finalState = actual.get(actual.size() - 1);
 
     if (!FINAL_STATES.contains(finalState)) {
       failWithMessage("Wrong final state. Expected one of %s, was %s.", FINAL_STATES, finalState);
@@ -79,8 +79,8 @@ public final class LifecycleAssert
 
   public LifecycleAssert compliesWithLifecycle() {
     for (int i = 0; i < actual.size() - 1; i++) {
-      final WorkflowInstanceIntent from = actual.get(i);
-      final WorkflowInstanceIntent to = actual.get(i + 1);
+      final ProcessInstanceIntent from = actual.get(i);
+      final ProcessInstanceIntent to = actual.get(i + 1);
 
       if (!ELEMENT_LIFECYCLE.get(from).contains(to)) {
         failWithMessage(
@@ -94,18 +94,18 @@ public final class LifecycleAssert
   }
 
   @Override
-  protected ObjectAssert<WorkflowInstanceIntent> toAssert(
-      final WorkflowInstanceIntent value, final String description) {
+  protected ObjectAssert<ProcessInstanceIntent> toAssert(
+      final ProcessInstanceIntent value, final String description) {
     return new ObjectAssert<>(value).describedAs(description);
   }
 
   @Override
   protected LifecycleAssert newAbstractIterableAssert(
-      final Iterable<? extends WorkflowInstanceIntent> iterable) {
+      final Iterable<? extends ProcessInstanceIntent> iterable) {
     return new LifecycleAssert(Lists.newArrayList(iterable));
   }
 
-  public static LifecycleAssert assertThat(final List<WorkflowInstanceIntent> trajectory) {
+  public static LifecycleAssert assertThat(final List<ProcessInstanceIntent> trajectory) {
     return new LifecycleAssert(trajectory);
   }
 }

@@ -18,7 +18,7 @@ import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.KeyGeneratorControls;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
-import io.zeebe.engine.state.mutable.MutableWorkflowState;
+import io.zeebe.engine.state.mutable.MutableProcessState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -26,7 +26,7 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -93,7 +93,7 @@ public final class ReProcessingStateMachine {
   private static final String LOG_STMT_REPROCESSING_FINISHED =
       "Processor finished reprocessing at event position {}";
   private static final String LOG_STMT_FAILED_ON_PROCESSING =
-      "Event {} failed on processing last time, will call #onError to update workflow instance blacklist.";
+      "Event {} failed on processing last time, will call #onError to update process instance blacklist.";
 
   private static final String ERROR_INCONSISTENT_LOG =
       "Expected that position '%d' of current event is higher then position '%d' of last event, but was not. Inconsistent log detected!";
@@ -148,7 +148,7 @@ public final class ReProcessingStateMachine {
   private TypedRecordProcessor eventProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
   private final boolean detectReprocessingInconsistency;
-  private final MutableWorkflowState workflowState;
+  private final MutableProcessState processState;
 
   public ReProcessingStateMachine(final ProcessingContext context) {
     actor = context.getActor();
@@ -161,7 +161,7 @@ public final class ReProcessingStateMachine {
     eventApplier = context.getEventApplier();
     keyGeneratorControls = context.getKeyGeneratorControls();
     lastProcessedPositionState = context.getLastProcessedPositionState();
-    workflowState = context.getZeebeState().getWorkflowState();
+    processState = context.getZeebeState().getProcessState();
 
     typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
     updateStateRetryStrategy = new EndlessRetryStrategy(actor);
@@ -376,7 +376,7 @@ public final class ReProcessingStateMachine {
   private void reprocessRecord(final TypedRecord<?> currentEvent) {
     final long recordPosition = currentEvent.getPosition();
 
-    if (typedEvent.getValueType() == ValueType.WORKFLOW_INSTANCE) {
+    if (typedEvent.getValueType() == ValueType.PROCESS_INSTANCE) {
       dirtySequenceFlowReplayHack();
     }
 
@@ -418,11 +418,11 @@ public final class ReProcessingStateMachine {
    */
   // todo (#6190): this should be removed once the sequence flow processor is removed
   private void dirtySequenceFlowReplayHack() {
-    final var value = (WorkflowInstanceRecord) typedEvent.getValue();
+    final var value = (ProcessInstanceRecord) typedEvent.getValue();
     if (value.getBpmnElementType() == BpmnElementType.SEQUENCE_FLOW) {
       final var sequenceFlow =
-          workflowState.getFlowElement(
-              value.getWorkflowKey(), value.getElementIdBuffer(), ExecutableSequenceFlow.class);
+          processState.getFlowElement(
+              value.getProcessDefinitionKey(), value.getElementIdBuffer(), ExecutableSequenceFlow.class);
       if (MigratedStreamProcessors.isMigrated(sequenceFlow.getSource().getElementType())) {
         eventApplier.applyState(typedEvent.getKey(), typedEvent.getIntent(), typedEvent.getValue());
       }

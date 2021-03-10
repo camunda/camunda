@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.processing.workflowinstance;
+package io.zeebe.engine.processing.processinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -14,9 +14,9 @@ import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
@@ -24,7 +24,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class CreateWorkflowInstanceTest {
+public final class CreateProcessInstanceTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -41,22 +41,22 @@ public final class CreateWorkflowInstanceTest {
         .deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted()
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
                 .withElementType(BpmnElementType.PROCESS))
         .extracting(Record::getIntent)
         .containsSequence(
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
-    final Record<WorkflowInstanceRecordValue> process =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+    final Record<ProcessInstanceRecordValue> process =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementType(BpmnElementType.PROCESS)
             .getFirst();
 
@@ -65,11 +65,11 @@ public final class CreateWorkflowInstanceTest {
         .hasBpmnElementType(BpmnElementType.PROCESS)
         .hasFlowScopeKey(-1)
         .hasBpmnProcessId("process")
-        .hasWorkflowInstanceKey(workflowInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey);
   }
 
   @Test
-  public void shouldCreateWorkflowInstanceWithVariables() {
+  public void shouldCreateProcessInstanceWithVariables() {
     // given
     ENGINE
         .deployment()
@@ -77,9 +77,9 @@ public final class CreateWorkflowInstanceTest {
         .deploy();
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId("process")
             .withVariables(Map.of("x", 1, "y", 2))
             .create();
@@ -87,10 +87,10 @@ public final class CreateWorkflowInstanceTest {
     // then
     assertThat(
             RecordingExporter.variableRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .extracting(Record::getValue)
-        .allMatch(v -> v.getScopeKey() == workflowInstanceKey)
+        .allMatch(v -> v.getScopeKey() == processInstanceKey)
         .extracting(v -> tuple(v.getName(), v.getValue()))
         .contains(tuple("x", "1"), tuple("y", "2"));
   }
@@ -105,34 +105,34 @@ public final class CreateWorkflowInstanceTest {
         .deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSequence(
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
-    final Record<WorkflowInstanceRecordValue> startEvent =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+    final Record<ProcessInstanceRecordValue> startEvent =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementType(BpmnElementType.START_EVENT)
             .getFirst();
 
     Assertions.assertThat(startEvent.getValue())
         .hasElementId("start")
         .hasBpmnElementType(BpmnElementType.START_EVENT)
-        .hasFlowScopeKey(workflowInstanceKey)
+        .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId("process")
-        .hasWorkflowInstanceKey(workflowInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey);
   }
 
   @Test
@@ -146,13 +146,13 @@ public final class CreateWorkflowInstanceTest {
     ENGINE.deployment().withXmlResource(processBuilder.done()).deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted()
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
                 .withElementType(BpmnElementType.START_EVENT))
         .extracting(r -> r.getValue().getElementId())
         .containsOnly("none-start");
@@ -172,30 +172,30 @@ public final class CreateWorkflowInstanceTest {
         .deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSequence(
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.SEQUENCE_FLOW, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING));
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING));
 
-    final Record<WorkflowInstanceRecordValue> sequenceFlow =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> sequenceFlow =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.SEQUENCE_FLOW)
             .getFirst();
 
     Assertions.assertThat(sequenceFlow.getValue())
         .hasElementId("flow")
         .hasBpmnElementType(BpmnElementType.SEQUENCE_FLOW)
-        .hasFlowScopeKey(workflowInstanceKey)
+        .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId("process")
-        .hasWorkflowInstanceKey(workflowInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey);
   }
 }

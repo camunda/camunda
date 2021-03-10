@@ -11,39 +11,39 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
-import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
 import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 
-public final class CloseWorkflowInstanceSubscription
-    implements TypedRecordProcessor<WorkflowInstanceSubscriptionRecord> {
+public final class CloseProcessInstanceSubscription
+    implements TypedRecordProcessor<ProcessInstanceSubscriptionRecord> {
   public static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
-      "Expected to close workflow instance subscription for element with key '%d' and message name '%s', "
+      "Expected to close process instance subscription for element with key '%d' and message name '%s', "
           + "but no such subscription was found";
 
-  private final MutableWorkflowInstanceSubscriptionState subscriptionState;
+  private final MutableProcessInstanceSubscriptionState subscriptionState;
 
-  public CloseWorkflowInstanceSubscription(
-      final MutableWorkflowInstanceSubscriptionState subscriptionState) {
+  public CloseProcessInstanceSubscription(
+      final MutableProcessInstanceSubscriptionState subscriptionState) {
     this.subscriptionState = subscriptionState;
   }
 
   @Override
   public void processRecord(
-      final TypedRecord<WorkflowInstanceSubscriptionRecord> record,
+      final TypedRecord<ProcessInstanceSubscriptionRecord> record,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter) {
 
-    final WorkflowInstanceSubscriptionRecord subscription = record.getValue();
+    final ProcessInstanceSubscriptionRecord subscription = record.getValue();
 
     final boolean removed =
         subscriptionState.remove(
             subscription.getElementInstanceKey(), subscription.getMessageNameBuffer());
     if (removed) {
       streamWriter.appendFollowUpEvent(
-          record.getKey(), WorkflowInstanceSubscriptionIntent.CLOSED, subscription);
+          record.getKey(), ProcessInstanceSubscriptionIntent.CLOSED, subscription);
 
     } else {
       streamWriter.appendRejection(

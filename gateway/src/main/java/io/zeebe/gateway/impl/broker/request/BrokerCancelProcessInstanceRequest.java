@@ -7,34 +7,34 @@
  */
 package io.zeebe.gateway.impl.broker.request;
 
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerCancelWorkflowInstanceRequest
-    extends BrokerExecuteCommand<WorkflowInstanceRecord> {
+public class BrokerCancelProcessInstanceRequest
+    extends BrokerExecuteCommand<ProcessInstanceRecord> {
 
-  private final WorkflowInstanceRecord requestDto = new WorkflowInstanceRecord();
+  private final ProcessInstanceRecord requestDto = new ProcessInstanceRecord();
 
-  public BrokerCancelWorkflowInstanceRequest() {
-    super(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCEL);
+  public BrokerCancelProcessInstanceRequest() {
+    super(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL);
   }
 
-  public BrokerCancelWorkflowInstanceRequest setWorkflowInstanceKey(
-      final long workflowInstanceKey) {
-    request.setKey(workflowInstanceKey);
+  public BrokerCancelProcessInstanceRequest setProcessInstanceKey(
+      final long processInstanceKey) {
+    request.setKey(processInstanceKey);
     return this;
   }
 
   @Override
-  public WorkflowInstanceRecord getRequestWriter() {
+  public ProcessInstanceRecord getRequestWriter() {
     return requestDto;
   }
 
   @Override
-  protected WorkflowInstanceRecord toResponseDto(final DirectBuffer buffer) {
-    final WorkflowInstanceRecord responseDto = new WorkflowInstanceRecord();
+  protected ProcessInstanceRecord toResponseDto(final DirectBuffer buffer) {
+    final ProcessInstanceRecord responseDto = new ProcessInstanceRecord();
     responseDto.wrap(buffer);
     return responseDto;
   }

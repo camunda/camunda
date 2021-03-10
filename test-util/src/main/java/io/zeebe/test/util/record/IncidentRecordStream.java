@@ -40,8 +40,8 @@ public final class IncidentRecordStream
     return valueFilter(v -> elementId.equals(v.getElementId()));
   }
 
-  public IncidentRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
-    return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
+  public IncidentRecordStream withProcessInstanceKey(final long processInstanceKey) {
+    return valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey);
   }
 
   public IncidentRecordStream withJobKey(final long jobKey) {

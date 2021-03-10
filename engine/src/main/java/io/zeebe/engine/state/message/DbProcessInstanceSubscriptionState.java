@@ -15,20 +15,20 @@ import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
 import org.agrona.DirectBuffer;
 
-public final class DbWorkflowInstanceSubscriptionState
-    implements MutableWorkflowInstanceSubscriptionState {
+public final class DbProcessInstanceSubscriptionState
+    implements MutableProcessInstanceSubscriptionState {
 
   private final TransactionContext transactionContext;
 
-  // (elementInstanceKey, messageName) => WorkflowInstanceSubscription
+  // (elementInstanceKey, messageName) => ProcessInstanceSubscription
   private final DbLong elementInstanceKey;
   private final DbString messageName;
   private final DbCompositeKey<DbLong, DbString> elementKeyAndMessageName;
-  private final WorkflowInstanceSubscription workflowInstanceSubscription;
-  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, WorkflowInstanceSubscription>
+  private final ProcessInstanceSubscription processInstanceSubscription;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, ProcessInstanceSubscription>
       subscriptionColumnFamily;
 
   // (sentTime, elementInstanceKey, messageName) => \0
@@ -37,33 +37,33 @@ public final class DbWorkflowInstanceSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>>, DbNil>
       sentTimeColumnFamily;
 
-  public DbWorkflowInstanceSubscriptionState(
+  public DbProcessInstanceSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     this.transactionContext = transactionContext;
     elementInstanceKey = new DbLong();
     messageName = new DbString();
     elementKeyAndMessageName = new DbCompositeKey<>(elementInstanceKey, messageName);
-    workflowInstanceSubscription = new WorkflowInstanceSubscription();
+    processInstanceSubscription = new ProcessInstanceSubscription();
 
     subscriptionColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.WORKFLOW_SUBSCRIPTION_BY_KEY,
+            ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_KEY,
             transactionContext,
             elementKeyAndMessageName,
-            workflowInstanceSubscription);
+            processInstanceSubscription);
 
     sentTime = new DbLong();
     sentTimeCompositeKey = new DbCompositeKey<>(sentTime, elementKeyAndMessageName);
     sentTimeColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.WORKFLOW_SUBSCRIPTION_BY_SENT_TIME,
+            ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_SENT_TIME,
             transactionContext,
             sentTimeCompositeKey,
             DbNil.INSTANCE);
   }
 
   @Override
-  public void put(final WorkflowInstanceSubscription subscription) {
+  public void put(final ProcessInstanceSubscription subscription) {
     wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
     subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
@@ -73,7 +73,7 @@ public final class DbWorkflowInstanceSubscriptionState
   }
 
   @Override
-  public WorkflowInstanceSubscription getSubscription(
+  public ProcessInstanceSubscription getSubscription(
       final long elementInstanceKey, final DirectBuffer messageName) {
     wrapSubscriptionKeys(elementInstanceKey, messageName);
 
@@ -82,7 +82,7 @@ public final class DbWorkflowInstanceSubscriptionState
 
   @Override
   public void visitElementSubscriptions(
-      final long elementInstanceKey, final WorkflowInstanceSubscriptionVisitor visitor) {
+      final long elementInstanceKey, final ProcessInstanceSubscriptionVisitor visitor) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
 
     subscriptionColumnFamily.whileEqualPrefix(
@@ -94,16 +94,16 @@ public final class DbWorkflowInstanceSubscriptionState
 
   @Override
   public void visitSubscriptionBefore(
-      final long deadline, final WorkflowInstanceSubscriptionVisitor visitor) {
+      final long deadline, final ProcessInstanceSubscriptionVisitor visitor) {
 
     sentTimeColumnFamily.whileTrue(
         (compositeKey, nil) -> {
           final long sentTime = compositeKey.getFirst().getValue();
           if (sentTime < deadline) {
-            final WorkflowInstanceSubscription workflowInstanceSubscription =
+            final ProcessInstanceSubscription processInstanceSubscription =
                 subscriptionColumnFamily.get(compositeKey.getSecond());
 
-            return visitor.visit(workflowInstanceSubscription);
+            return visitor.visit(processInstanceSubscription);
           }
           return false;
         });
@@ -111,7 +111,7 @@ public final class DbWorkflowInstanceSubscriptionState
 
   @Override
   public void updateToOpenedState(
-      final WorkflowInstanceSubscription subscription, final int subscriptionPartitionId) {
+      final ProcessInstanceSubscription subscription, final int subscriptionPartitionId) {
     subscription.setOpened();
     subscription.setSubscriptionPartitionId(subscriptionPartitionId);
     updateSentTime(subscription, 0);
@@ -119,19 +119,19 @@ public final class DbWorkflowInstanceSubscriptionState
 
   @Override
   public void updateToClosingState(
-      final WorkflowInstanceSubscription subscription, final long sentTime) {
+      final ProcessInstanceSubscription subscription, final long sentTime) {
     subscription.setClosing();
     updateSentTime(subscription, sentTime);
   }
 
   @Override
   public void updateSentTimeInTransaction(
-      final WorkflowInstanceSubscription subscription, final long sentTime) {
+      final ProcessInstanceSubscription subscription, final long sentTime) {
     transactionContext.runInTransaction(() -> updateSentTime(subscription, sentTime));
   }
 
   @Override
-  public void updateSentTime(final WorkflowInstanceSubscription subscription, final long sentTime) {
+  public void updateSentTime(final ProcessInstanceSubscription subscription, final long sentTime) {
     wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
     if (subscription.getCommandSentTime() > 0) {
@@ -158,7 +158,7 @@ public final class DbWorkflowInstanceSubscriptionState
 
   @Override
   public boolean remove(final long elementInstanceKey, final DirectBuffer messageName) {
-    final WorkflowInstanceSubscription subscription =
+    final ProcessInstanceSubscription subscription =
         getSubscription(elementInstanceKey, messageName);
     final boolean found = subscription != null;
     if (found) {
@@ -168,7 +168,7 @@ public final class DbWorkflowInstanceSubscriptionState
   }
 
   @Override
-  public void remove(final WorkflowInstanceSubscription subscription) {
+  public void remove(final ProcessInstanceSubscription subscription) {
     wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
     subscriptionColumnFamily.delete(elementKeyAndMessageName);

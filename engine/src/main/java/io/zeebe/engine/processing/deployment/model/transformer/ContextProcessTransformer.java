@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.processing.deployment.model.transformer;
 
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Process;
@@ -21,7 +21,7 @@ public final class ContextProcessTransformer implements ModelElementTransformer<
 
   @Override
   public void transform(final Process element, final TransformContext context) {
-    final ExecutableWorkflow workflow = context.getWorkflow(element.getId());
-    context.setCurrentWorkflow(workflow);
+    final ExecutableProcess process = context.getProcess(element.getId());
+    context.setCurrentProcess(process);
   }
 }

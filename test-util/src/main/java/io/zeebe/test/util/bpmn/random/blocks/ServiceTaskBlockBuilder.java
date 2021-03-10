@@ -100,7 +100,7 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
    * This method build the step that results in a successful execution of the service task.
    * Successful execution here does not necessarily mean that the job is completed orderly.
    * Successful execution is any execution which moves the token past the service task, so that the
-   * workflow can continue.
+   * process can continue.
    */
   private AbstractExecutionStep buildStepForSuccessfulExecution(final Random random) {
     final AbstractExecutionStep result;

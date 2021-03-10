@@ -23,7 +23,7 @@ import org.agrona.DirectBuffer;
 public final class MessageSubscriptionRecord extends UnifiedRecordValue
     implements MessageSubscriptionRecordValue {
 
-  private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey");
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
@@ -34,7 +34,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
 
   public MessageSubscriptionRecord() {
-    declareProperty(workflowInstanceKeyProp)
+    declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(messageKeyProp)
         .declareProperty(messageNameProp)
@@ -45,7 +45,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   }
 
   public void wrap(final MessageSubscriptionRecord record) {
-    setWorkflowInstanceKey(record.getWorkflowInstanceKey());
+    setProcessInstanceKey(record.getProcessInstanceKey());
     setElementInstanceKey(record.getElementInstanceKey());
     setMessageKey(record.getMessageKey());
     setMessageName(record.getMessageNameBuffer());
@@ -120,12 +120,12 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
-  public MessageSubscriptionRecord setWorkflowInstanceKey(final long key) {
-    workflowInstanceKeyProp.setValue(key);
+  public MessageSubscriptionRecord setProcessInstanceKey(final long key) {
+    processInstanceKeyProp.setValue(key);
     return this;
   }
 

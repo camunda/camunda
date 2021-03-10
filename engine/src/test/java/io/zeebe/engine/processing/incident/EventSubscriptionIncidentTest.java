@@ -15,12 +15,12 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
@@ -184,10 +184,10 @@ public final class EventSubscriptionIncidentTest {
   public String elementId;
 
   @Parameter(3)
-  public WorkflowInstanceIntent failureEventIntent;
+  public ProcessInstanceIntent failureEventIntent;
 
   @Parameter(4)
-  public WorkflowInstanceIntent resolvedEventIntent;
+  public ProcessInstanceIntent resolvedEventIntent;
 
   private String correlationKey1;
   private String correlationKey2;
@@ -199,49 +199,49 @@ public final class EventSubscriptionIncidentTest {
         "boundary catch event (first event)",
         WF_BOUNDARY_EVENT_ID,
         "task",
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED
+        ProcessInstanceIntent.ELEMENT_ACTIVATING,
+        ProcessInstanceIntent.ELEMENT_ACTIVATED
       },
       {
         "boundary catch event (second event)",
         WF_BOUNDARY_EVENT_2_ID,
         "task",
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED
+        ProcessInstanceIntent.ELEMENT_ACTIVATING,
+        ProcessInstanceIntent.ELEMENT_ACTIVATED
       },
       {
         "receive task (boundary event)",
         WF_RECEIVE_TASK_ID,
         "task",
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED
+        ProcessInstanceIntent.ELEMENT_ACTIVATING,
+        ProcessInstanceIntent.ELEMENT_ACTIVATED
       },
       {
         "receive task (task)",
         WF_RECEIVE_TASK_2_ID,
         "task",
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED
+        ProcessInstanceIntent.ELEMENT_ACTIVATING,
+        ProcessInstanceIntent.ELEMENT_ACTIVATED
       },
       {
         "event-based gateway (first event)",
         WF_EVENT_BASED_GATEWAY_ID,
         "gateway",
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+        ProcessInstanceIntent.ELEMENT_ACTIVATING,
         null
       },
       {
         "event-based gateway (second event)",
         WF_EVENT_BASED_GATEWAY_2_ID,
         "gateway",
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+        ProcessInstanceIntent.ELEMENT_ACTIVATING,
         null
       }
     };
   }
 
   @BeforeClass
-  public static void deployWorkflows() {
+  public static void deployProcesses() {
     for (final BpmnModelInstance modelInstance :
         Arrays.asList(
             WF_RECEIVE_TASK,
@@ -263,23 +263,23 @@ public final class EventSubscriptionIncidentTest {
   @Test
   public void shouldCreateIncidentIfMessageCorrelationKeyNotFound() {
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable(CORRELATION_VARIABLE_1, correlationKey1)
             .create();
 
-    final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords(failureEventIntent)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> failureEvent =
+        RecordingExporter.processInstanceRecords(failureEventIntent)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId(elementId)
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
@@ -291,7 +291,7 @@ public final class EventSubscriptionIncidentTest {
                 + CORRELATION_VARIABLE_2
                 + "'")
         .hasBpmnProcessId(processId)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId(failureEvent.getValue().getElementId())
         .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L);
@@ -304,19 +304,19 @@ public final class EventSubscriptionIncidentTest {
     variables.put(CORRELATION_VARIABLE_1, correlationKey1);
     variables.put(CORRELATION_VARIABLE_2, Arrays.asList(1, 2, 3));
 
-    final long workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariables(variables).create();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariables(variables).create();
 
-    final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords(failureEventIntent)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> failureEvent =
+        RecordingExporter.processInstanceRecords(failureEventIntent)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId(elementId)
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
@@ -326,7 +326,7 @@ public final class EventSubscriptionIncidentTest {
                 + CORRELATION_VARIABLE_2
                 + "': The value must be either a string or a number, but was ARRAY.")
         .hasBpmnProcessId(processId)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId(failureEvent.getValue().getElementId())
         .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L);
@@ -338,16 +338,16 @@ public final class EventSubscriptionIncidentTest {
     final String correlationKey1 = UUID.randomUUID().toString();
     final String correlationKey2 = UUID.randomUUID().toString();
 
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable(CORRELATION_VARIABLE_1, correlationKey1)
             .create();
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // when
@@ -362,26 +362,26 @@ public final class EventSubscriptionIncidentTest {
 
     ENGINE
         .incident()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withKey(incidentCreatedRecord.getKey())
         .resolve();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.OPENED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.OPENED)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .extracting(Record::getValue)
-        .extracting(WorkflowInstanceSubscriptionRecordValue::getMessageName)
+        .extracting(ProcessInstanceSubscriptionRecordValue::getMessageName)
         .containsExactlyInAnyOrder(MESSAGE_NAME_1, MESSAGE_NAME_2);
 
     // and
     ENGINE.message().withName(MESSAGE_NAME_2).withCorrelationKey(correlationKey2).publish();
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
                 .withElementId(processId)
                 .exists())
         .isTrue();
@@ -390,16 +390,16 @@ public final class EventSubscriptionIncidentTest {
   @Test
   public void shouldNotOpenSubscriptionsWhenIncidentIsCreated() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable(CORRELATION_VARIABLE_1, correlationKey1)
             .create();
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // when
@@ -414,28 +414,28 @@ public final class EventSubscriptionIncidentTest {
 
     ENGINE
         .incident()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withKey(incidentCreatedRecord.getKey())
         .resolve();
 
     // then
     final Record<IncidentRecordValue> incidentResolvedRecord =
         RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.OPENED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.OPENED)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .allMatch(r -> r.getPosition() > incidentResolvedRecord.getPosition());
 
     // and
     if (resolvedEventIntent != null) {
       assertThat(
-              RecordingExporter.workflowInstanceRecords(resolvedEventIntent)
-                  .withWorkflowInstanceKey(workflowInstanceKey)
+              RecordingExporter.processInstanceRecords(resolvedEventIntent)
+                  .withProcessInstanceKey(processInstanceKey)
                   .withElementId(elementId)
                   .getFirst()
                   .getPosition())

@@ -25,25 +25,25 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.variable.VariableBehavior;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.immutable.WorkflowState;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.engine.state.immutable.ProcessState;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
-public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowInstanceRecord> {
+public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
 
-  private static final Logger LOGGER = Loggers.WORKFLOW_PROCESSOR_LOGGER;
+  private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;
 
   private final TypedStreamWriterProxy streamWriterProxy = new TypedStreamWriterProxy();
   private final TypedResponseWriterProxy responseWriterProxy = new TypedResponseWriterProxy();
   private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
   private final BpmnElementContextImpl context = new BpmnElementContextImpl();
 
-  private final WorkflowState workflowState;
+  private final ProcessState processState;
   private final BpmnElementProcessors processors;
-  private final WorkflowInstanceStateTransitionGuard stateTransitionGuard;
+  private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
 
   public BpmnStreamProcessor(
@@ -52,7 +52,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
       final VariableBehavior variableBehavior,
       final ZeebeState zeebeState,
       final Writers writers) {
-    workflowState = zeebeState.getWorkflowState();
+    processState = zeebeState.getProcessState();
 
     final var bpmnBehaviors =
         new BpmnBehaviorsImpl(
@@ -78,7 +78,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
 
   @Override
   public void processRecord(
-      final TypedRecord<WorkflowInstanceRecord> record,
+      final TypedRecord<ProcessInstanceRecord> record,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
@@ -90,7 +90,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
     sideEffectQueue.clear();
     sideEffect.accept(sideEffectQueue);
 
-    final var intent = (WorkflowInstanceIntent) record.getIntent();
+    final var intent = (ProcessInstanceIntent) record.getIntent();
     final var recordValue = record.getValue();
 
     context.init(record.getKey(), recordValue, intent);
@@ -101,14 +101,14 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
 
     // process the event
     if (stateTransitionGuard.isValidStateTransition(context)) {
-      LOGGER.trace("Process workflow instance event [context: {}]", context);
+      LOGGER.trace("Process process instance event [context: {}]", context);
 
       processEvent(intent, processor, element);
     }
   }
 
   private void processEvent(
-      final WorkflowInstanceIntent intent,
+      final ProcessInstanceIntent intent,
       final BpmnElementProcessor<ExecutableFlowElement> processor,
       final ExecutableFlowElement element) {
 
@@ -174,10 +174,10 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
   }
 
   private ExecutableFlowElement getElement(
-      final WorkflowInstanceRecord recordValue,
+      final ProcessInstanceRecord recordValue,
       final BpmnElementProcessor<ExecutableFlowElement> processor) {
 
-    return workflowState.getFlowElement(
-        recordValue.getWorkflowKey(), recordValue.getElementIdBuffer(), processor.getType());
+    return processState.getFlowElement(
+        recordValue.getProcessDefinitionKey(), recordValue.getElementIdBuffer(), processor.getType());
   }
 }

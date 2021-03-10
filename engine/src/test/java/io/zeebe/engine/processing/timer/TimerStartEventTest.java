@@ -17,11 +17,11 @@ import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.TimerIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.TimerRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.time.Instant;
@@ -92,24 +92,24 @@ public final class TimerStartEventTest {
   @Test
   public void shouldCreateTimer() {
     // when
-    final DeployedWorkflow deployedWorkflow =
+    final DeployedProcess deployedProcess =
         engine
             .deployment()
             .withXmlResource(SIMPLE_MODEL)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
 
     // then
     final TimerRecordValue timerRecord =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
-            .withWorkflowKey(deployedWorkflow.getWorkflowKey())
+            .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
             .getFirst()
             .getValue();
 
     Assertions.assertThat(timerRecord)
-        .hasWorkflowInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE)
+        .hasProcessInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE)
         .hasTargetElementId("start_1")
         .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
 
@@ -120,24 +120,24 @@ public final class TimerStartEventTest {
   @Test
   public void shouldCreateTimerFromFeelExpression() {
     // when
-    final DeployedWorkflow deployedWorkflow =
+    final DeployedProcess deployedProcess =
         engine
             .deployment()
             .withXmlResource(FEEL_DATE_TIME_EXPRESSION_MODEL)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
 
     // then
     final TimerRecordValue timerRecord =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
-            .withWorkflowKey(deployedWorkflow.getWorkflowKey())
+            .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
             .getFirst()
             .getValue();
 
     Assertions.assertThat(timerRecord)
-        .hasWorkflowInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE)
+        .hasProcessInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE)
         .hasTargetElementId("start_5")
         .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
 
@@ -151,24 +151,24 @@ public final class TimerStartEventTest {
   @Test
   public void shouldCreateRepeatingTimerFromFeelExpression() {
     // when
-    final DeployedWorkflow deployedWorkflow =
+    final DeployedProcess deployedProcess =
         engine
             .deployment()
             .withXmlResource(FEEL_CYCLE_EXPRESSION_MODEL)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
 
     // then
     final TimerRecordValue timerRecord =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
-            .withWorkflowKey(deployedWorkflow.getWorkflowKey())
+            .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
             .getFirst()
             .getValue();
 
     Assertions.assertThat(timerRecord)
-        .hasWorkflowInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE)
+        .hasProcessInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE)
         .hasTargetElementId("start_6")
         .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
 
@@ -177,21 +177,21 @@ public final class TimerStartEventTest {
   }
 
   @Test
-  public void shouldTriggerAndCreateWorkflowInstance() {
+  public void shouldTriggerAndCreateProcessInstance() {
     // given
-    final DeployedWorkflow deployedWorkflow =
+    final DeployedProcess deployedProcess =
         engine
             .deployment()
             .withXmlResource(SIMPLE_MODEL)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
 
-    final long workflowKey = deployedWorkflow.getWorkflowKey();
+    final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowKey(workflowKey)
+                .withProcessDefinitionKey(processDefinitionKey)
                 .exists())
         .isTrue();
 
@@ -199,63 +199,63 @@ public final class TimerStartEventTest {
     engine.increaseTime(Duration.ofSeconds(2));
 
     // then
-    final WorkflowInstanceRecordValue startEventActivating =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+    final ProcessInstanceRecordValue startEventActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementType(BpmnElementType.START_EVENT)
-            .withWorkflowKey(workflowKey)
+            .withProcessDefinitionKey(processDefinitionKey)
             .getFirst()
             .getValue();
 
     Assertions.assertThat(startEventActivating)
         .hasElementId("start_1")
         .hasBpmnProcessId("process")
-        .hasVersion(deployedWorkflow.getVersion())
-        .hasWorkflowKey(workflowKey);
+        .hasVersion(deployedProcess.getVersion())
+        .hasProcessDefinitionKey(processDefinitionKey);
 
     final long triggerRecordPosition =
         RecordingExporter.timerRecords(TimerIntent.TRIGGER)
-            .withWorkflowKey(workflowKey)
+            .withProcessDefinitionKey(processDefinitionKey)
             .getFirst()
             .getPosition();
 
     assertThat(
             RecordingExporter.timerRecords()
-                .withWorkflowKey(workflowKey)
+                .withProcessDefinitionKey(processDefinitionKey)
                 .skipUntil(r -> r.getPosition() >= triggerRecordPosition)
                 .limit(2))
         .extracting(Record::getIntent)
         .containsExactly(TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowKey(workflowKey)
+            RecordingExporter.processInstanceRecords()
+                .withProcessDefinitionKey(processDefinitionKey)
                 .skipUntil(r -> r.getPosition() >= triggerRecordPosition)
                 .limit(4))
         .extracting(Record::getIntent)
         .containsExactly(
-            WorkflowInstanceIntent.EVENT_OCCURRED, // causes the instance creation
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING, // causes the flow node activation
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED, // input mappings applied
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING); // triggers the start event
+            ProcessInstanceIntent.EVENT_OCCURRED, // causes the instance creation
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, // causes the flow node activation
+            ProcessInstanceIntent.ELEMENT_ACTIVATED, // input mappings applied
+            ProcessInstanceIntent.ELEMENT_ACTIVATING); // triggers the start event
   }
 
   @Test
-  public void shouldCreateMultipleWorkflowInstancesWithRepeatingTimer() {
+  public void shouldCreateMultipleProcessInstancesWithRepeatingTimer() {
     // given
-    final DeployedWorkflow deployedWorkflow =
+    final DeployedProcess deployedProcess =
         engine
             .deployment()
             .withXmlResource(THREE_SEC_MODEL)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
-    final long workflowKey = deployedWorkflow.getWorkflowKey();
+    final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
 
     // when
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowKey(workflowKey)
+                .withProcessDefinitionKey(processDefinitionKey)
                 .exists())
         .isTrue();
     engine.increaseTime(Duration.ofSeconds(3));
@@ -263,18 +263,18 @@ public final class TimerStartEventTest {
     // then
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                .withWorkflowKey(workflowKey)
+                .withProcessDefinitionKey(processDefinitionKey)
                 .exists())
         .isTrue();
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
                 .withElementId("process_3")
-                .withWorkflowKey(workflowKey)
+                .withProcessDefinitionKey(processDefinitionKey)
                 .exists())
         .isTrue();
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowKey(workflowKey)
+                .withProcessDefinitionKey(processDefinitionKey)
                 .limit(2)
                 .count())
         .isEqualTo(2);
@@ -285,29 +285,29 @@ public final class TimerStartEventTest {
     // then
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                .withWorkflowKey(workflowKey)
+                .withProcessDefinitionKey(processDefinitionKey)
                 .limit(2)
                 .count())
         .isEqualTo(2);
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
                 .withElementId("process_3")
-                .withWorkflowKey(workflowKey)
+                .withProcessDefinitionKey(processDefinitionKey)
                 .limit(2)
                 .count())
         .isEqualTo(2);
   }
 
   @Test
-  public void shouldCompleteWorkflow() {
+  public void shouldCompleteProcess() {
     // given
-    final DeployedWorkflow deployedWorkflow =
+    final DeployedProcess deployedProcess =
         engine
             .deployment()
             .withXmlResource(SIMPLE_MODEL)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).exists()).isTrue();
 
@@ -315,9 +315,9 @@ public final class TimerStartEventTest {
     engine.increaseTime(Duration.ofSeconds(1));
 
     // then
-    final WorkflowInstanceRecordValue instanceCompleted =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withWorkflowKey(deployedWorkflow.getWorkflowKey())
+    final ProcessInstanceRecordValue instanceCompleted =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
             .withElementId("process")
             .getFirst()
             .getValue();
@@ -325,58 +325,58 @@ public final class TimerStartEventTest {
     Assertions.assertThat(instanceCompleted)
         .hasBpmnProcessId("process")
         .hasVersion(1)
-        .hasWorkflowKey(deployedWorkflow.getWorkflowKey());
+        .hasProcessDefinitionKey(deployedProcess.getProcessDefinitionKey());
   }
 
   @Test
-  public void shouldUpdateWorkflow() {
+  public void shouldUpdateProcess() {
     // when
-    final DeployedWorkflow deployedWorkflow =
+    final DeployedProcess deployedProcess =
         engine
             .deployment()
             .withXmlResource(SIMPLE_MODEL)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowKey(deployedWorkflow.getWorkflowKey())
+                .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
                 .exists())
         .isTrue();
     engine.increaseTime(Duration.ofSeconds(1));
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementId("end_1")
                 .withBpmnProcessId("process")
-                .withWorkflowKey(deployedWorkflow.getWorkflowKey())
+                .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
                 .withVersion(1)
                 .exists())
         .isTrue();
 
     // when
-    final DeployedWorkflow repeatingWorkflow =
+    final DeployedProcess repeatingProcess =
         engine
             .deployment()
             .withXmlResource(REPEATING_MODEL)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowKey(repeatingWorkflow.getWorkflowKey())
+                .withProcessDefinitionKey(repeatingProcess.getProcessDefinitionKey())
                 .exists())
         .isTrue();
     engine.increaseTime(Duration.ofSeconds(2));
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementId("end_2")
                 .withBpmnProcessId("process")
-                .withWorkflowKey(repeatingWorkflow.getWorkflowKey())
+                .withProcessDefinitionKey(repeatingProcess.getProcessDefinitionKey())
                 .withVersion(2)
                 .exists())
         .isTrue();
@@ -385,18 +385,18 @@ public final class TimerStartEventTest {
   @Test
   public void shouldReplaceTimerStartWithNoneStart() {
     // when
-    final DeployedWorkflow repeatingWorkflow =
+    final DeployedProcess repeatingProcess =
         engine
             .deployment()
             .withXmlResource(REPEATING_MODEL)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
-    final long repeatingWorkflowkey = repeatingWorkflow.getWorkflowKey();
+    final long repeatingProcessDefinitionKey = repeatingProcess.getProcessDefinitionKey();
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowKey(repeatingWorkflowkey)
+                .withProcessDefinitionKey(repeatingProcessDefinitionKey)
                 .exists())
         .isTrue();
     engine.increaseTime(Duration.ofSeconds(1));
@@ -404,66 +404,66 @@ public final class TimerStartEventTest {
     // then
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                .withWorkflowKey(repeatingWorkflowkey)
+                .withProcessDefinitionKey(repeatingProcessDefinitionKey)
                 .exists())
         .isTrue();
 
     // when
     final BpmnModelInstance nonTimerModel =
         Bpmn.createExecutableProcess("process").startEvent("start_4").endEvent("end_4").done();
-    final DeployedWorkflow notTimerDeployment =
+    final DeployedProcess notTimerDeployment =
         engine
             .deployment()
             .withXmlResource(nonTimerModel)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
     engine.increaseTime(Duration.ofSeconds(2));
 
     // then
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CANCELED)
-                .withWorkflowKey(repeatingWorkflowkey)
+                .withProcessDefinitionKey(repeatingProcessDefinitionKey)
                 .exists())
         .isTrue();
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                .withWorkflowKey(repeatingWorkflowkey)
+                .withProcessDefinitionKey(repeatingProcessDefinitionKey)
                 .exists())
         .isTrue();
 
-    final long workflowInstanceKey = engine.workflowInstance().ofBpmnProcessId("process").create();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId("process").create();
 
-    final WorkflowInstanceRecordValue lastRecord =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+    final ProcessInstanceRecordValue lastRecord =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementId("end_4")
-            .withWorkflowKey(notTimerDeployment.getWorkflowKey())
+            .withProcessDefinitionKey(notTimerDeployment.getProcessDefinitionKey())
             .getFirst()
             .getValue();
 
     Assertions.assertThat(lastRecord)
         .hasVersion(2)
         .hasBpmnProcessId("process")
-        .hasWorkflowInstanceKey(workflowInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey);
   }
 
   @Test
   public void shouldUpdateTimerPeriod() {
     // given
-    final DeployedWorkflow deployedWorkflow =
+    final DeployedProcess deployedProcess =
         engine
             .deployment()
             .withXmlResource(THREE_SEC_MODEL)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
 
-    final long workflowKey = deployedWorkflow.getWorkflowKey();
+    final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowKey(workflowKey)
+                .withProcessDefinitionKey(processDefinitionKey)
                 .exists())
         .isTrue();
 
@@ -474,7 +474,7 @@ public final class TimerStartEventTest {
     // then
     TimerRecordValue timerRecord =
         RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-            .withWorkflowKey(workflowKey)
+            .withProcessDefinitionKey(processDefinitionKey)
             .getFirst()
             .getValue();
 
@@ -487,25 +487,25 @@ public final class TimerStartEventTest {
             .timerWithCycle("R2/PT4S")
             .endEvent("end_4")
             .done();
-    final DeployedWorkflow slowerDeployment =
+    final DeployedProcess slowerDeployment =
         engine
             .deployment()
             .withXmlResource(slowerModel)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
 
     // then
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CANCELED)
-                .withWorkflowKey(workflowKey)
+                .withProcessDefinitionKey(processDefinitionKey)
                 .getFirst())
         .isNotNull();
 
     final Record<TimerRecordValue> slowTimerRecord =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
-            .withWorkflowKey(slowerDeployment.getWorkflowKey())
+            .withProcessDefinitionKey(slowerDeployment.getProcessDefinitionKey())
             .getFirst();
     timerRecord = slowTimerRecord.getValue();
     final long writtenTime = slowTimerRecord.getTimestamp();
@@ -517,41 +517,41 @@ public final class TimerStartEventTest {
     // then
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                .withWorkflowKey(slowerDeployment.getWorkflowKey())
+                .withProcessDefinitionKey(slowerDeployment.getProcessDefinitionKey())
                 .exists())
         .isTrue();
   }
 
   @Test
-  public void shouldTriggerDifferentWorkflowsSeparately() {
+  public void shouldTriggerDifferentProcessesSeparately() {
     // given
-    final DeployedWorkflow firstDeployment =
+    final DeployedProcess firstDeployment =
         engine
             .deployment()
             .withXmlResource(THREE_SEC_MODEL)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
 
-    final DeployedWorkflow secondDeployment =
+    final DeployedProcess secondDeployment =
         engine
             .deployment()
             .withXmlResource(REPEATING_MODEL)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
 
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowKey(firstDeployment.getWorkflowKey())
+                .withProcessDefinitionKey(firstDeployment.getProcessDefinitionKey())
                 .exists())
         .isTrue();
 
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowKey(secondDeployment.getWorkflowKey())
+                .withProcessDefinitionKey(secondDeployment.getProcessDefinitionKey())
                 .exists())
         .isTrue();
 
@@ -560,7 +560,7 @@ public final class TimerStartEventTest {
 
     // then
     final long firstModelTimestamp =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("process")
             .getFirst()
             .getTimestamp();
@@ -570,17 +570,17 @@ public final class TimerStartEventTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
                 .withElementId("process")
-                .withWorkflowKey(secondDeployment.getWorkflowKey())
+                .withProcessDefinitionKey(secondDeployment.getProcessDefinitionKey())
                 .limit(2)
                 .count())
         .isEqualTo(2);
 
     final long secondModelTimestamp =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("process_3")
-            .withWorkflowKey(firstDeployment.getWorkflowKey())
+            .withProcessDefinitionKey(firstDeployment.getProcessDefinitionKey())
             .getFirst()
             .getTimestamp();
     assertThat(secondModelTimestamp).isGreaterThan(firstModelTimestamp);
@@ -589,17 +589,17 @@ public final class TimerStartEventTest {
   @Test
   public void shouldCreateMultipleInstanceAtTheCorrectTimes() {
     // given
-    final DeployedWorkflow deployedWorkflow =
+    final DeployedProcess deployedProcess =
         engine
             .deployment()
             .withXmlResource(MULTI_TIMER_START_MODEL)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowKey(deployedWorkflow.getWorkflowKey())
+                .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
                 .limit(2)
                 .count())
         .isEqualTo(2);
@@ -609,18 +609,18 @@ public final class TimerStartEventTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .withElementId("end_4")
-                .withWorkflowKey(deployedWorkflow.getWorkflowKey())
+                .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
                 .exists())
         .isTrue();
 
     // when
     engine.increaseTime(Duration.ofSeconds(1));
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .withElementId("end_4_2")
-                .withWorkflowKey(deployedWorkflow.getWorkflowKey())
+                .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
                 .exists())
         .isTrue();
   }
@@ -636,13 +636,13 @@ public final class TimerStartEventTest {
             .endEvent("end_2")
             .done();
 
-    final DeployedWorkflow deployedWorkflow =
+    final DeployedProcess deployedProcess =
         engine
             .deployment()
             .withXmlResource(model)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
 
     // when
@@ -651,7 +651,7 @@ public final class TimerStartEventTest {
     // then
     final TimerRecordValue timerRecord =
         RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-            .withWorkflowKey(deployedWorkflow.getWorkflowKey())
+            .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
             .getFirst()
             .getValue();
 
@@ -661,9 +661,9 @@ public final class TimerStartEventTest {
         .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementId("end_2")
-                .withWorkflowKey(deployedWorkflow.getWorkflowKey())
+                .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
                 .exists())
         .isTrue();
   }
@@ -679,13 +679,13 @@ public final class TimerStartEventTest {
             .endEvent("end_2")
             .done();
 
-    final DeployedWorkflow deployedWorkflow =
+    final DeployedProcess deployedProcess =
         engine
             .deployment()
             .withXmlResource(model)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
 
     // when
@@ -694,7 +694,7 @@ public final class TimerStartEventTest {
     // then
     final TimerRecordValue timerRecord =
         RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-            .withWorkflowKey(deployedWorkflow.getWorkflowKey())
+            .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
             .getFirst()
             .getValue();
 
@@ -707,26 +707,26 @@ public final class TimerStartEventTest {
   @Test
   public void shouldTriggerOnlyTimerStartEvent() {
     // given
-    final DeployedWorkflow deployedWorkflow =
+    final DeployedProcess deployedProcess =
         engine
             .deployment()
             .withXmlResource(MULTIPLE_START_EVENTS_MODEL)
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0);
-    final long workflowKey = deployedWorkflow.getWorkflowKey();
+    final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
 
-    RecordingExporter.timerRecords(TimerIntent.CREATED).withWorkflowKey(workflowKey).await();
+    RecordingExporter.timerRecords(TimerIntent.CREATED).withProcessDefinitionKey(processDefinitionKey).await();
 
     // when
     engine.increaseTime(Duration.ofSeconds(1));
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowKey(workflowKey)
-                .limitToWorkflowInstanceCompleted()
+            RecordingExporter.processInstanceRecords()
+                .withProcessDefinitionKey(processDefinitionKey)
+                .limitToProcessInstanceCompleted()
                 .withElementType(BpmnElementType.START_EVENT))
         .extracting(r -> r.getValue().getElementId())
         .containsOnly("timer_start");

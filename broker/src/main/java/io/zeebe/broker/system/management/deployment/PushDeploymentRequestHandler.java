@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 public final class PushDeploymentRequestHandler
     implements Function<byte[], CompletableFuture<byte[]>>, DeploymentResponder {
 
-  private static final Logger LOG = Loggers.WORKFLOW_REPOSITORY_LOGGER;
+  private static final Logger LOG = Loggers.PROCESS_REPOSITORY_LOGGER;
 
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
 

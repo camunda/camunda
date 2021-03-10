@@ -16,7 +16,7 @@ import io.zeebe.model.bpmn.builder.IntermediateCatchEventBuilder;
 import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.VariableIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -153,18 +153,18 @@ public final class MessageOutputMappingTest {
                 .done())
         .deploy()
         .getValue()
-        .getDeployedWorkflows()
+        .getDeployedProcesses()
         .get(0)
-        .getWorkflowKey();
+        .getProcessDefinitionKey();
 
     final Map<String, Object> variables = new HashMap<>();
     variables.put("i", 0);
     variables.put(CORRELATION_VARIABLE, correlationKey);
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables("{'i':0,'key':'" + correlationKey + "'}")
             .create();
@@ -177,15 +177,15 @@ public final class MessageOutputMappingTest {
 
     // then
     final long elementInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("catch-event")
             .getFirst()
             .getKey();
 
     final long latestPayloadVariablePosition =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .filter(r -> variables.containsKey(r.getValue().getName()))
             .limit(variables.size())
             .map(Record::getPosition)
@@ -194,7 +194,7 @@ public final class MessageOutputMappingTest {
 
     assertThat(
             RecordingExporter.variableRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .skipUntil(r -> r.getPosition() > latestPayloadVariablePosition)
                 .withScopeKey(elementInstanceKey)
                 .limit(expectedActivityVariables.size()))
@@ -205,9 +205,9 @@ public final class MessageOutputMappingTest {
 
     assertThat(
             RecordingExporter.variableRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .skipUntil(r -> r.getPosition() > latestPayloadVariablePosition)
-                .withScopeKey(workflowInstanceKey)
+                .withScopeKey(processInstanceKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> variable(v.getName(), v.getValue()))

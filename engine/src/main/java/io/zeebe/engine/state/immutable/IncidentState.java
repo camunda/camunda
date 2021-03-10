@@ -16,12 +16,12 @@ public interface IncidentState {
 
   IncidentRecord getIncidentRecord(long incidentKey);
 
-  long getWorkflowInstanceIncidentKey(long workflowInstanceKey);
+  long getProcessInstanceIncidentKey(long processInstanceKey);
 
   long getJobIncidentKey(long jobKey);
 
   boolean isJobIncident(IncidentRecord record);
 
-  void forExistingWorkflowIncident(
+  void forExistingProcessIncident(
       long elementInstanceKey, ObjLongConsumer<IncidentRecord> resolver);
 }

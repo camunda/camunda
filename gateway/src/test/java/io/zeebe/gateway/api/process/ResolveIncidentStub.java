@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.gateway.api.workflow;
+package io.zeebe.gateway.api.process;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -20,7 +20,7 @@ import org.agrona.DirectBuffer;
 public final class ResolveIncidentStub
     implements RequestStub<BrokerResolveIncidentRequest, BrokerResponse<IncidentRecord>> {
 
-  public static final long WORKFLOW_INSTANCE_KEY = 123;
+  public static final long PROCESS_INSTANCE_KEY = 123;
   public static final long INCIDENT_KEY = 11;
   public static final DirectBuffer PROCESS_ID = wrapString("process");
 
@@ -37,13 +37,13 @@ public final class ResolveIncidentStub
   public BrokerResponse<IncidentRecord> handle(final BrokerResolveIncidentRequest request) {
 
     final IncidentRecord response = new IncidentRecord();
-    response.setElementInstanceKey(WORKFLOW_INSTANCE_KEY);
-    response.setWorkflowInstanceKey(WORKFLOW_INSTANCE_KEY);
+    response.setElementInstanceKey(PROCESS_INSTANCE_KEY);
+    response.setProcessInstanceKey(PROCESS_INSTANCE_KEY);
     response.setElementId(PROCESS_ID);
     response.setBpmnProcessId(PROCESS_ID);
     response.setErrorMessage("Error in IO mapping");
     response.setErrorType(ErrorType.IO_MAPPING_ERROR);
 
-    return new BrokerResponse<>(response, 0, WORKFLOW_INSTANCE_KEY);
+    return new BrokerResponse<>(response, 0, PROCESS_INSTANCE_KEY);
   }
 }

@@ -15,24 +15,24 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.immutable.VariableState;
-import io.zeebe.engine.state.instance.AwaitWorkflowInstanceResultMetadata;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceResultRecord;
+import io.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.WorkflowInstanceResultIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.HashSet;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 
-public final class BpmnWorkflowResultSenderBehavior {
+public final class BpmnProcessResultSenderBehavior {
 
-  private final WorkflowInstanceResultRecord resultRecord = new WorkflowInstanceResultRecord();
+  private final ProcessInstanceResultRecord resultRecord = new ProcessInstanceResultRecord();
 
   private final ElementInstanceState elementInstanceState;
   private final VariableState variableState;
   private final TypedResponseWriter responseWriter;
 
-  public BpmnWorkflowResultSenderBehavior(
+  public BpmnProcessResultSenderBehavior(
       final ZeebeState zeebeState, final TypedResponseWriter responseWriter) {
     elementInstanceState = zeebeState.getElementInstanceState();
     variableState = zeebeState.getVariableState();
@@ -44,11 +44,11 @@ public final class BpmnWorkflowResultSenderBehavior {
     if (context.getBpmnElementType() != BpmnElementType.PROCESS) {
       throw new BpmnProcessingException(
           context,
-          "Expected to send the result of the workflow instance but was not called from the process element");
+          "Expected to send the result of the process instance but was not called from the process element");
     }
 
-    final AwaitWorkflowInstanceResultMetadata requestMetadata =
-        elementInstanceState.getAwaitResultRequestMetadata(context.getWorkflowInstanceKey());
+    final AwaitProcessInstanceResultMetadata requestMetadata =
+        elementInstanceState.getAwaitResultRequestMetadata(context.getProcessInstanceKey());
 
     if (requestMetadata != null) {
       sendResult(context, requestMetadata);
@@ -56,22 +56,22 @@ public final class BpmnWorkflowResultSenderBehavior {
   }
 
   private void sendResult(
-      final BpmnElementContext context, final AwaitWorkflowInstanceResultMetadata requestMetadata) {
+      final BpmnElementContext context, final AwaitProcessInstanceResultMetadata requestMetadata) {
 
     final DirectBuffer variablesAsDocument = collectVariables(context, requestMetadata);
 
     resultRecord
-        .setWorkflowInstanceKey(context.getWorkflowInstanceKey())
-        .setWorkflowKey(context.getWorkflowKey())
+        .setProcessInstanceKey(context.getProcessInstanceKey())
+        .setProcessDefinitionKey(context.getProcessDefinitionKey())
         .setBpmnProcessId(context.getBpmnProcessId())
-        .setVersion(context.getWorkflowVersion())
+        .setVersion(context.getProcessVersion())
         .setVariables(variablesAsDocument);
 
     responseWriter.writeResponse(
-        context.getWorkflowInstanceKey(),
-        WorkflowInstanceResultIntent.COMPLETED,
+        context.getProcessInstanceKey(),
+        ProcessInstanceResultIntent.COMPLETED,
         resultRecord,
-        ValueType.WORKFLOW_INSTANCE_RESULT,
+        ValueType.PROCESS_INSTANCE_RESULT,
         requestMetadata.getRequestId(),
         requestMetadata.getRequestStreamId());
 
@@ -79,7 +79,7 @@ public final class BpmnWorkflowResultSenderBehavior {
   }
 
   private DirectBuffer collectVariables(
-      final BpmnElementContext context, final AwaitWorkflowInstanceResultMetadata requestMetadata) {
+      final BpmnElementContext context, final AwaitProcessInstanceResultMetadata requestMetadata) {
 
     final Set<DirectBuffer> variablesToCollect = new HashSet<>();
     requestMetadata
@@ -91,12 +91,12 @@ public final class BpmnWorkflowResultSenderBehavior {
             });
 
     if (variablesToCollect.isEmpty()) {
-      // collect all workflow instance variables
-      return variableState.getVariablesAsDocument(context.getWorkflowInstanceKey());
+      // collect all process instance variables
+      return variableState.getVariablesAsDocument(context.getProcessInstanceKey());
 
     } else {
       return variableState.getVariablesAsDocument(
-          context.getWorkflowInstanceKey(), variablesToCollect);
+          context.getProcessInstanceKey(), variablesToCollect);
     }
   }
 }

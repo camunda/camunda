@@ -85,7 +85,7 @@ public final class TimerInstanceStateTest {
     // given
     final TimerInstance timer = new TimerInstance();
     timer.setElementInstanceKey(1L);
-    timer.setWorkflowInstanceKey(1L);
+    timer.setProcessInstanceKey(1L);
     timer.setKey(2L);
     timer.setDueDate(1000L);
     state.put(timer);
@@ -97,7 +97,7 @@ public final class TimerInstanceStateTest {
     Assertions.assertThat(readTimer).isNotNull();
     Assertions.assertThat(readTimer.getElementInstanceKey()).isEqualTo(1L);
     Assertions.assertThat(readTimer.getKey()).isEqualTo(2L);
-    Assertions.assertThat(readTimer.getWorkflowInstanceKey()).isEqualTo(1L);
+    Assertions.assertThat(readTimer.getProcessInstanceKey()).isEqualTo(1L);
     Assertions.assertThat(readTimer.getDueDate()).isEqualTo(1000L);
 
     // and

@@ -22,16 +22,16 @@ import com.google.protobuf.ByteString;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.command.DeployWorkflowCommandStep1;
-import io.zeebe.client.api.command.DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2;
+import io.zeebe.client.api.command.DeployProcessCommandStep1;
+import io.zeebe.client.api.command.DeployProcessCommandStep1.DeployProcessCommandBuilderStep2;
 import io.zeebe.client.api.command.FinalCommandStep;
 import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.client.impl.response.DeploymentEventImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayOutputStream;
@@ -45,15 +45,15 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public final class DeployWorkflowCommandImpl
-    implements DeployWorkflowCommandStep1, DeployWorkflowCommandBuilderStep2 {
+public final class DeployProcessCommandImpl
+    implements DeployProcessCommandStep1, DeployProcessCommandBuilderStep2 {
 
-  private final DeployWorkflowRequest.Builder requestBuilder = DeployWorkflowRequest.newBuilder();
+  private final DeployProcessRequest.Builder requestBuilder = DeployProcessRequest.newBuilder();
   private final GatewayStub asyncStub;
   private final Predicate<Throwable> retryPredicate;
   private Duration requestTimeout;
 
-  public DeployWorkflowCommandImpl(
+  public DeployProcessCommandImpl(
       final GatewayStub asyncStub,
       final Duration requestTimeout,
       final Predicate<Throwable> retryPredicate) {
@@ -63,11 +63,11 @@ public final class DeployWorkflowCommandImpl
   }
 
   @Override
-  public DeployWorkflowCommandBuilderStep2 addResourceBytes(
+  public DeployProcessCommandBuilderStep2 addResourceBytes(
       final byte[] resource, final String resourceName) {
 
-    requestBuilder.addWorkflows(
-        WorkflowRequestObject.newBuilder()
+    requestBuilder.addProcesses(
+        ProcessRequestObject.newBuilder()
             .setName(resourceName)
             .setDefinition(ByteString.copyFrom(resource)));
 
@@ -75,19 +75,19 @@ public final class DeployWorkflowCommandImpl
   }
 
   @Override
-  public DeployWorkflowCommandBuilderStep2 addResourceString(
+  public DeployProcessCommandBuilderStep2 addResourceString(
       final String resource, final Charset charset, final String resourceName) {
     return addResourceBytes(resource.getBytes(charset), resourceName);
   }
 
   @Override
-  public DeployWorkflowCommandBuilderStep2 addResourceStringUtf8(
+  public DeployProcessCommandBuilderStep2 addResourceStringUtf8(
       final String resourceString, final String resourceName) {
     return addResourceString(resourceString, StandardCharsets.UTF_8, resourceName);
   }
 
   @Override
-  public DeployWorkflowCommandBuilderStep2 addResourceStream(
+  public DeployProcessCommandBuilderStep2 addResourceStream(
       final InputStream resourceStream, final String resourceName) {
     ensureNotNull("resource stream", resourceStream);
 
@@ -103,7 +103,7 @@ public final class DeployWorkflowCommandImpl
   }
 
   @Override
-  public DeployWorkflowCommandBuilderStep2 addResourceFromClasspath(
+  public DeployProcessCommandBuilderStep2 addResourceFromClasspath(
       final String classpathResource) {
     ensureNotNull("classpath resource", classpathResource);
 
@@ -123,7 +123,7 @@ public final class DeployWorkflowCommandImpl
   }
 
   @Override
-  public DeployWorkflowCommandBuilderStep2 addResourceFile(final String filename) {
+  public DeployProcessCommandBuilderStep2 addResourceFile(final String filename) {
     ensureNotNull("filename", filename);
 
     try (final InputStream resourceStream = new FileInputStream(filename)) {
@@ -136,12 +136,12 @@ public final class DeployWorkflowCommandImpl
   }
 
   @Override
-  public DeployWorkflowCommandBuilderStep2 addWorkflowModel(
-      final BpmnModelInstance workflowDefinition, final String resourceName) {
-    ensureNotNull("workflow model", workflowDefinition);
+  public DeployProcessCommandBuilderStep2 addProcessModel(
+      final BpmnModelInstance processDefinition, final String resourceName) {
+    ensureNotNull("process model", processDefinition);
 
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-    Bpmn.writeModelToStream(outStream, workflowDefinition);
+    Bpmn.writeModelToStream(outStream, processDefinition);
     return addResourceBytes(outStream.toByteArray(), resourceName);
   }
 
@@ -153,9 +153,9 @@ public final class DeployWorkflowCommandImpl
 
   @Override
   public ZeebeFuture<DeploymentEvent> send() {
-    final DeployWorkflowRequest request = requestBuilder.build();
+    final DeployProcessRequest request = requestBuilder.build();
 
-    final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployWorkflowResponse>
+    final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployProcessResponse>
         future =
             new RetriableClientFutureImpl<>(
                 DeploymentEventImpl::new,
@@ -167,9 +167,9 @@ public final class DeployWorkflowCommandImpl
     return future;
   }
 
-  private void send(final DeployWorkflowRequest request, final StreamObserver streamObserver) {
+  private void send(final DeployProcessRequest request, final StreamObserver streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
-        .deployWorkflow(request, streamObserver);
+        .deployProcess(request, streamObserver);
   }
 }

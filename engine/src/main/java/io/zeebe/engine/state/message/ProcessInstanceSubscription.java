@@ -16,13 +16,13 @@ import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
-public final class WorkflowInstanceSubscription extends UnpackedObject implements DbValue {
+public final class ProcessInstanceSubscription extends UnpackedObject implements DbValue {
 
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
   private final StringProperty targetElementIdProp = new StringProperty("targetElementId", "");
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
-  private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final IntegerProperty subscriptionPartitionIdProp =
       new IntegerProperty("subscriptionPartitionId", -1);
@@ -32,12 +32,12 @@ public final class WorkflowInstanceSubscription extends UnpackedObject implement
   private final EnumProperty<State> stateProp =
       new EnumProperty<>("state", State.class, State.STATE_OPENING);
 
-  public WorkflowInstanceSubscription() {
+  public ProcessInstanceSubscription() {
     declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(targetElementIdProp)
         .declareProperty(bpmnProcessIdProp)
-        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(subscriptionPartitionIdProp)
         .declareProperty(commandSentTimeProp)
@@ -45,8 +45,8 @@ public final class WorkflowInstanceSubscription extends UnpackedObject implement
         .declareProperty(stateProp);
   }
 
-  public WorkflowInstanceSubscription(
-      final long workflowInstanceKey,
+  public ProcessInstanceSubscription(
+      final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer targetElementId,
       final DirectBuffer bpmnProcessId,
@@ -56,7 +56,7 @@ public final class WorkflowInstanceSubscription extends UnpackedObject implement
       final boolean closeOnCorrelate) {
     this();
 
-    workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    processInstanceKeyProp.setValue(processInstanceKey);
     elementInstanceKeyProp.setValue(elementInstanceKey);
     bpmnProcessIdProp.setValue(bpmnProcessId);
     targetElementIdProp.setValue(targetElementId);
@@ -90,12 +90,12 @@ public final class WorkflowInstanceSubscription extends UnpackedObject implement
     targetElementIdProp.setValue(targetElementId);
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
-  public void setWorkflowInstanceKey(final long workflowInstanceKey) {
-    workflowInstanceKeyProp.setValue(workflowInstanceKey);
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
   }
 
   public long getElementInstanceKey() {

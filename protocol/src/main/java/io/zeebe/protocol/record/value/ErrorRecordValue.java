@@ -30,8 +30,8 @@ public interface ErrorRecordValue extends RecordValue {
   long getErrorEventPosition();
 
   /**
-   * @return the workflow instance key, which is related to the failed event. If the event is not
-   *     workflow instance related, then this will return -1
+   * @return the process instance key, which is related to the failed event. If the event is not
+   *     process instance related, then this will return -1
    */
-  long getWorkflowInstanceKey();
+  long getProcessInstanceKey();
 }

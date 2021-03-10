@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.protocol.impl.record.value.workflowinstance;
+package io.zeebe.protocol.impl.record.value.processinstance;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
@@ -16,61 +16,61 @@ import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import org.agrona.DirectBuffer;
 
-public final class WorkflowInstanceRecord extends UnifiedRecordValue
-    implements WorkflowInstanceRecordValue {
+public final class ProcessInstanceRecord extends UnifiedRecordValue
+    implements ProcessInstanceRecordValue {
 
-  public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
-  public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
-  public static final String PROP_WORKFLOW_ELEMENT_ID = "elementId";
-  public static final String PROP_WORKFLOW_VERSION = "version";
-  public static final String PROP_WORKFLOW_KEY = "workflowKey";
-  public static final String PROP_WORKFLOW_BPMN_TYPE = "bpmnElementType";
-  public static final String PROP_WORKFLOW_SCOPE_KEY = "flowScopeKey";
+  public static final String PROP_PROCESS_BPMN_PROCESS_ID = "bpmnProcessId";
+  public static final String PROP_PROCESS_INSTANCE_KEY = "processInstanceKey";
+  public static final String PROP_PROCESS_ELEMENT_ID = "elementId";
+  public static final String PROP_PROCESS_VERSION = "version";
+  public static final String PROP_PROCESS_KEY = "processDefinitionKey";
+  public static final String PROP_PROCESS_BPMN_TYPE = "bpmnElementType";
+  public static final String PROP_PROCESS_SCOPE_KEY = "flowScopeKey";
 
   private final StringProperty bpmnProcessIdProp =
-      new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID, "");
-  private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION, -1);
-  private final LongProperty workflowKeyProp = new LongProperty(PROP_WORKFLOW_KEY, -1L);
+      new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID, "");
+  private final IntegerProperty versionProp = new IntegerProperty(PROP_PROCESS_VERSION, -1);
+  private final LongProperty processDefinitionKeyProp = new LongProperty(PROP_PROCESS_KEY, -1L);
 
-  private final LongProperty workflowInstanceKeyProp =
-      new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
-  private final StringProperty elementIdProp = new StringProperty(PROP_WORKFLOW_ELEMENT_ID, "");
+  private final LongProperty processInstanceKeyProp =
+      new LongProperty(PROP_PROCESS_INSTANCE_KEY, -1L);
+  private final StringProperty elementIdProp = new StringProperty(PROP_PROCESS_ELEMENT_ID, "");
 
-  private final LongProperty flowScopeKeyProp = new LongProperty(PROP_WORKFLOW_SCOPE_KEY, -1L);
+  private final LongProperty flowScopeKeyProp = new LongProperty(PROP_PROCESS_SCOPE_KEY, -1L);
 
   private final EnumProperty<BpmnElementType> bpmnElementTypeProp =
       new EnumProperty<>(
-          PROP_WORKFLOW_BPMN_TYPE, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
+          PROP_PROCESS_BPMN_TYPE, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
-  private final LongProperty parentWorkflowInstanceKeyProp =
-      new LongProperty("parentWorkflowInstanceKey", -1L);
+  private final LongProperty parentProcessInstanceKeyProp =
+      new LongProperty("parentProcessInstanceKey", -1L);
   private final LongProperty parentElementInstanceKeyProp =
       new LongProperty("parentElementInstanceKey", -1L);
 
-  public WorkflowInstanceRecord() {
+  public ProcessInstanceRecord() {
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
-        .declareProperty(workflowKeyProp)
-        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(processDefinitionKeyProp)
+        .declareProperty(processInstanceKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(flowScopeKeyProp)
         .declareProperty(bpmnElementTypeProp)
-        .declareProperty(parentWorkflowInstanceKeyProp)
+        .declareProperty(parentProcessInstanceKeyProp)
         .declareProperty(parentElementInstanceKeyProp);
   }
 
-  public void wrap(final WorkflowInstanceRecord record) {
+  public void wrap(final ProcessInstanceRecord record) {
     elementIdProp.setValue(record.getElementIdBuffer());
     bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
     flowScopeKeyProp.setValue(record.getFlowScopeKey());
     versionProp.setValue(record.getVersion());
-    workflowKeyProp.setValue(record.getWorkflowKey());
-    workflowInstanceKeyProp.setValue(record.getWorkflowInstanceKey());
+    processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
+    processInstanceKeyProp.setValue(record.getProcessInstanceKey());
     bpmnElementTypeProp.setValue(record.getBpmnElementType());
-    parentWorkflowInstanceKeyProp.setValue(record.getParentWorkflowInstanceKey());
+    parentProcessInstanceKeyProp.setValue(record.getParentProcessInstanceKey());
     parentElementInstanceKeyProp.setValue(record.getParentElementInstanceKey());
   }
 
@@ -85,16 +85,16 @@ public final class WorkflowInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
-  public WorkflowInstanceRecord setWorkflowInstanceKey(final long workflowInstanceKey) {
-    workflowInstanceKeyProp.setValue(workflowInstanceKey);
+  public ProcessInstanceRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
 
-  public WorkflowInstanceRecord setBpmnProcessId(
+  public ProcessInstanceRecord setBpmnProcessId(
       final DirectBuffer directBuffer, final int offset, final int length) {
     bpmnProcessIdProp.setValue(directBuffer, offset, length);
     return this;
@@ -111,8 +111,8 @@ public final class WorkflowInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  public long getWorkflowKey() {
-    return workflowKeyProp.getValue();
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProp.getValue();
   }
 
   @Override
@@ -131,8 +131,8 @@ public final class WorkflowInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  public long getParentWorkflowInstanceKey() {
-    return parentWorkflowInstanceKeyProp.getValue();
+  public long getParentProcessInstanceKey() {
+    return parentProcessInstanceKeyProp.getValue();
   }
 
   @Override
@@ -140,56 +140,56 @@ public final class WorkflowInstanceRecord extends UnifiedRecordValue
     return parentElementInstanceKeyProp.getValue();
   }
 
-  public WorkflowInstanceRecord setParentElementInstanceKey(final long parentElementInstanceKey) {
+  public ProcessInstanceRecord setParentElementInstanceKey(final long parentElementInstanceKey) {
     parentElementInstanceKeyProp.setValue(parentElementInstanceKey);
     return this;
   }
 
-  public WorkflowInstanceRecord setParentWorkflowInstanceKey(final long parentWorkflowInstanceKey) {
-    parentWorkflowInstanceKeyProp.setValue(parentWorkflowInstanceKey);
+  public ProcessInstanceRecord setParentProcessInstanceKey(final long parentProcessInstanceKey) {
+    parentProcessInstanceKeyProp.setValue(parentProcessInstanceKey);
     return this;
   }
 
-  public WorkflowInstanceRecord setBpmnElementType(final BpmnElementType bpmnType) {
+  public ProcessInstanceRecord setBpmnElementType(final BpmnElementType bpmnType) {
     bpmnElementTypeProp.setValue(bpmnType);
     return this;
   }
 
-  public WorkflowInstanceRecord setFlowScopeKey(final long flowScopeKey) {
+  public ProcessInstanceRecord setFlowScopeKey(final long flowScopeKey) {
     flowScopeKeyProp.setValue(flowScopeKey);
     return this;
   }
 
-  public WorkflowInstanceRecord setElementId(final String elementId) {
+  public ProcessInstanceRecord setElementId(final String elementId) {
     elementIdProp.setValue(elementId);
     return this;
   }
 
-  public WorkflowInstanceRecord setElementId(final DirectBuffer elementId) {
+  public ProcessInstanceRecord setElementId(final DirectBuffer elementId) {
     return setElementId(elementId, 0, elementId.capacity());
   }
 
-  public WorkflowInstanceRecord setWorkflowKey(final long workflowKey) {
-    workflowKeyProp.setValue(workflowKey);
+  public ProcessInstanceRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
   }
 
-  public WorkflowInstanceRecord setVersion(final int version) {
+  public ProcessInstanceRecord setVersion(final int version) {
     versionProp.setValue(version);
     return this;
   }
 
-  public WorkflowInstanceRecord setBpmnProcessId(final String bpmnProcessId) {
+  public ProcessInstanceRecord setBpmnProcessId(final String bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
-  public WorkflowInstanceRecord setBpmnProcessId(final DirectBuffer directBuffer) {
+  public ProcessInstanceRecord setBpmnProcessId(final DirectBuffer directBuffer) {
     bpmnProcessIdProp.setValue(directBuffer);
     return this;
   }
 
-  public WorkflowInstanceRecord setElementId(
+  public ProcessInstanceRecord setElementId(
       final DirectBuffer elementId, final int offset, final int length) {
     elementIdProp.setValue(elementId, offset, length);
     return this;

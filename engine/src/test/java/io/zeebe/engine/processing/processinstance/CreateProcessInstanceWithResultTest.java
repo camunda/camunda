@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.processing.workflowinstance;
+package io.zeebe.engine.processing.processinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -17,9 +17,9 @@ import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceResultRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.WorkflowInstanceResultIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import java.util.Set;
@@ -31,22 +31,22 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
-public final class CreateWorkflowInstanceWithResultTest {
+public final class CreateProcessInstanceWithResultTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-  private static final BpmnModelInstance WORKFLOW =
-      Bpmn.createExecutableProcess("WORKFLOW").startEvent().endEvent().done();
+  private static final BpmnModelInstance PROCESS =
+      Bpmn.createExecutableProcess("PROCESS").startEvent().endEvent().done();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private WorkflowInstanceResultRecord response;
+  private ProcessInstanceResultRecord response;
   private CommandResponseWriter mockCommandResponseWriter;
 
   @BeforeClass
   public static void init() {
-    ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS).deploy();
   }
 
   @Before
@@ -59,10 +59,10 @@ public final class CreateWorkflowInstanceWithResultTest {
   @Test
   public void shouldSendResultAfterCompletion() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("WORKFLOW")
+            .processInstance()
+            .ofBpmnProcessId("PROCESS")
             .withVariables(Map.of("x", "foo"))
             .withResult()
             .withRequestId(1L)
@@ -71,20 +71,20 @@ public final class CreateWorkflowInstanceWithResultTest {
 
     // then
     verify(mockCommandResponseWriter, timeout(1000).times(1))
-        .intent(WorkflowInstanceResultIntent.COMPLETED);
+        .intent(ProcessInstanceResultIntent.COMPLETED);
     verify(mockCommandResponseWriter, timeout(1000).times(1)).tryWriteResponse(1, 1L);
     assertThat(response.getVariables()).containsExactly(Map.entry("x", "foo"));
-    assertThat(response.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
-    assertThat(response.getBpmnProcessId()).isEqualTo("WORKFLOW");
+    assertThat(response.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(response.getBpmnProcessId()).isEqualTo("PROCESS");
   }
 
   @Test
   public void shouldSendResultWithNoVariablesAfterCompletion() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
-            .ofBpmnProcessId("WORKFLOW")
+            .processInstance()
+            .ofBpmnProcessId("PROCESS")
             .withResult()
             .withRequestId(1L)
             .withRequestStreamId(1)
@@ -92,11 +92,11 @@ public final class CreateWorkflowInstanceWithResultTest {
 
     // then
     verify(mockCommandResponseWriter, timeout(1000).times(1))
-        .intent(WorkflowInstanceResultIntent.COMPLETED);
+        .intent(ProcessInstanceResultIntent.COMPLETED);
     verify(mockCommandResponseWriter, timeout(1000).times(1)).tryWriteResponse(1, 1L);
     assertThat(response.getVariables()).isEmpty();
-    assertThat(response.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
-    assertThat(response.getBpmnProcessId()).isEqualTo("WORKFLOW");
+    assertThat(response.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(response.getBpmnProcessId()).isEqualTo("PROCESS");
   }
 
   @Test
@@ -105,8 +105,8 @@ public final class CreateWorkflowInstanceWithResultTest {
     final Set<String> fetchVariables = Set.of("x", "y");
 
     ENGINE
-        .workflowInstance()
-        .ofBpmnProcessId("WORKFLOW")
+        .processInstance()
+        .ofBpmnProcessId("PROCESS")
         .withVariables(Map.of("x", "foo", "y", "bar", "z", "foo-bar"))
         .withResult()
         .withFetchVariables(fetchVariables)
@@ -116,7 +116,7 @@ public final class CreateWorkflowInstanceWithResultTest {
 
     // then
     verify(mockCommandResponseWriter, timeout(1000).times(1))
-        .intent(WorkflowInstanceResultIntent.COMPLETED);
+        .intent(ProcessInstanceResultIntent.COMPLETED);
     verify(mockCommandResponseWriter, timeout(1000).times(1)).tryWriteResponse(1, 1L);
     assertThat(response.getVariables())
         .containsExactlyInAnyOrderEntriesOf(Map.of("x", "foo", "y", "bar"));
@@ -128,8 +128,8 @@ public final class CreateWorkflowInstanceWithResultTest {
     final Set<String> fetchVariables = Set.of("x", "none-existing");
 
     ENGINE
-        .workflowInstance()
-        .ofBpmnProcessId("WORKFLOW")
+        .processInstance()
+        .ofBpmnProcessId("PROCESS")
         .withVariables(Map.of("x", "foo", "y", "bar", "z", "foo-bar"))
         .withResult()
         .withFetchVariables(fetchVariables)
@@ -146,8 +146,8 @@ public final class CreateWorkflowInstanceWithResultTest {
   public void shouldSendRejectionImmediately() {
     // when
     ENGINE
-        .workflowInstance()
-        .ofBpmnProcessId("INVALID-WORKFLOW")
+        .processInstance()
+        .ofBpmnProcessId("INVALID-PROCESS")
         .withResult()
         .withRequestId(3L)
         .withRequestStreamId(3)
@@ -167,8 +167,8 @@ public final class CreateWorkflowInstanceWithResultTest {
                   if (arguments != null
                       && arguments.length == 1
                       && arguments[0] != null
-                      && arguments[0] instanceof WorkflowInstanceResultRecord) {
-                    response = (WorkflowInstanceResultRecord) arguments[0];
+                      && arguments[0] instanceof ProcessInstanceResultRecord) {
+                    response = (ProcessInstanceResultRecord) arguments[0];
                   }
                   return mockCommandResponseWriter;
                 }))

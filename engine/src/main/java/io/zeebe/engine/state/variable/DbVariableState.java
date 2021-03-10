@@ -90,18 +90,18 @@ public class DbVariableState implements MutableVariableState {
   public void setVariableLocal(
       final long key,
       final long scopeKey,
-      final long workflowKey,
+      final long processDefinitionKey,
       final DirectBuffer name,
       final DirectBuffer value) {
     setVariableLocal(
-        key, scopeKey, workflowKey, name, 0, name.capacity(), value, 0, value.capacity());
+        key, scopeKey, processDefinitionKey, name, 0, name.capacity(), value, 0, value.capacity());
   }
 
   @Override
   public void setVariableLocal(
       final long key,
       final long scopeKey,
-      final long workflowKey,
+      final long processDefinitionKey,
       final DirectBuffer name,
       final int nameOffset,
       final int nameLength,

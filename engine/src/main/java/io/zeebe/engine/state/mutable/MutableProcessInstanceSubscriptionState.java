@@ -7,24 +7,24 @@
  */
 package io.zeebe.engine.state.mutable;
 
-import io.zeebe.engine.state.immutable.WorkflowInstanceSubscriptionState;
-import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
+import io.zeebe.engine.state.immutable.ProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.message.ProcessInstanceSubscription;
 import org.agrona.DirectBuffer;
 
-public interface MutableWorkflowInstanceSubscriptionState
-    extends WorkflowInstanceSubscriptionState {
+public interface MutableProcessInstanceSubscriptionState
+    extends ProcessInstanceSubscriptionState {
 
-  void put(WorkflowInstanceSubscription subscription);
+  void put(ProcessInstanceSubscription subscription);
 
-  void updateToOpenedState(WorkflowInstanceSubscription subscription, int subscriptionPartitionId);
+  void updateToOpenedState(ProcessInstanceSubscription subscription, int subscriptionPartitionId);
 
-  void updateToClosingState(WorkflowInstanceSubscription subscription, long sentTime);
+  void updateToClosingState(ProcessInstanceSubscription subscription, long sentTime);
 
-  void updateSentTimeInTransaction(WorkflowInstanceSubscription subscription, long sentTime);
+  void updateSentTimeInTransaction(ProcessInstanceSubscription subscription, long sentTime);
 
-  void updateSentTime(WorkflowInstanceSubscription subscription, long sentTime);
+  void updateSentTime(ProcessInstanceSubscription subscription, long sentTime);
 
   boolean remove(long elementInstanceKey, DirectBuffer messageName);
 
-  void remove(WorkflowInstanceSubscription subscription);
+  void remove(ProcessInstanceSubscription subscription);
 }

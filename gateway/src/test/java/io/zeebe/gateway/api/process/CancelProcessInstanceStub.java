@@ -5,27 +5,27 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.gateway.api.workflow;
+package io.zeebe.gateway.api.process;
 
 import io.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
-import io.zeebe.gateway.impl.broker.request.BrokerCancelWorkflowInstanceRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 
-public final class CancelWorkflowInstanceStub
+public final class CancelProcessInstanceStub
     implements RequestStub<
-        BrokerCancelWorkflowInstanceRequest, BrokerResponse<WorkflowInstanceRecord>> {
+        BrokerCancelProcessInstanceRequest, BrokerResponse<ProcessInstanceRecord>> {
 
   @Override
   public void registerWith(final StubbedBrokerClient gateway) {
-    gateway.registerHandler(BrokerCancelWorkflowInstanceRequest.class, this);
+    gateway.registerHandler(BrokerCancelProcessInstanceRequest.class, this);
   }
 
   @Override
-  public BrokerResponse<WorkflowInstanceRecord> handle(
-      final BrokerCancelWorkflowInstanceRequest request) throws Exception {
+  public BrokerResponse<ProcessInstanceRecord> handle(
+      final BrokerCancelProcessInstanceRequest request) throws Exception {
     return new BrokerResponse<>(
-        new WorkflowInstanceRecord(), request.getPartitionId(), request.getKey());
+        new ProcessInstanceRecord(), request.getPartitionId(), request.getKey());
   }
 }

@@ -7,38 +7,38 @@
  */
 package io.zeebe.broker.it.util;
 
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.VariableDocumentIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.WorkflowInstanceRecordStream;
+import io.zeebe.test.util.record.ProcessInstanceRecordStream;
 import java.util.function.Consumer;
 
 public final class ZeebeAssertHelper {
 
-  public static void assertWorkflowInstanceCreated() {
-    assertWorkflowInstanceCreated((e) -> {});
+  public static void assertProcessInstanceCreated() {
+    assertProcessInstanceCreated((e) -> {});
   }
 
-  public static void assertWorkflowInstanceCreated(final long workflowInstanceKey) {
-    assertWorkflowInstanceCreated(workflowInstanceKey, w -> {});
+  public static void assertProcessInstanceCreated(final long processInstanceKey) {
+    assertProcessInstanceCreated(processInstanceKey, w -> {});
   }
 
-  public static void assertWorkflowInstanceCreated(
-      final Consumer<WorkflowInstanceRecordValue> consumer) {
-    assertWorkflowInstanceState(WorkflowInstanceIntent.ELEMENT_ACTIVATING, consumer);
+  public static void assertProcessInstanceCreated(
+      final Consumer<ProcessInstanceRecordValue> consumer) {
+    assertProcessInstanceState(ProcessInstanceIntent.ELEMENT_ACTIVATING, consumer);
   }
 
   public static void assertJobCreated(final String jobType) {
@@ -63,11 +63,11 @@ public final class ZeebeAssertHelper {
     assertThat(RecordingExporter.incidentRecords(IncidentIntent.CREATED).exists()).isTrue();
   }
 
-  public static void assertWorkflowInstanceCompleted(
-      final long workflowInstanceKey, final Consumer<WorkflowInstanceRecordValue> consumer) {
-    final Record<WorkflowInstanceRecordValue> record =
-        RecordingExporter.workflowInstanceRecords(ELEMENT_COMPLETED)
-            .withRecordKey(workflowInstanceKey)
+  public static void assertProcessInstanceCompleted(
+      final long processInstanceKey, final Consumer<ProcessInstanceRecordValue> consumer) {
+    final Record<ProcessInstanceRecordValue> record =
+        RecordingExporter.processInstanceRecords(ELEMENT_COMPLETED)
+            .withRecordKey(processInstanceKey)
             .findFirst()
             .orElse(null);
 
@@ -78,8 +78,8 @@ public final class ZeebeAssertHelper {
     }
   }
 
-  public static void assertWorkflowInstanceCompleted(final long workflowInstanceKey) {
-    assertWorkflowInstanceCompleted(workflowInstanceKey, r -> {});
+  public static void assertProcessInstanceCompleted(final long processInstanceKey) {
+    assertProcessInstanceCompleted(processInstanceKey, r -> {});
   }
 
   public static void assertElementActivated(final String element) {
@@ -90,26 +90,26 @@ public final class ZeebeAssertHelper {
     assertElementInState(ELEMENT_ACTIVATING, element, (e) -> {});
   }
 
-  public static void assertWorkflowInstanceCanceled(final String bpmnId) {
+  public static void assertProcessInstanceCanceled(final String bpmnId) {
     assertThat(
-            RecordingExporter.workflowInstanceRecords(ELEMENT_TERMINATED)
+            RecordingExporter.processInstanceRecords(ELEMENT_TERMINATED)
                 .withBpmnProcessId(bpmnId)
                 .withElementId(bpmnId)
                 .exists())
         .isTrue();
   }
 
-  public static void assertWorkflowInstanceCompleted(
-      final String workflow, final long workflowInstanceKey) {
-    assertElementCompleted(workflowInstanceKey, workflow, (e) -> {});
+  public static void assertProcessInstanceCompleted(
+      final String process, final long processInstanceKey) {
+    assertElementCompleted(processInstanceKey, process, (e) -> {});
   }
 
-  public static void assertWorkflowInstanceCompleted(final String bpmnId) {
-    assertWorkflowInstanceCompleted(bpmnId, (e) -> {});
+  public static void assertProcessInstanceCompleted(final String bpmnId) {
+    assertProcessInstanceCompleted(bpmnId, (e) -> {});
   }
 
-  public static void assertWorkflowInstanceCompleted(
-      final String bpmnId, final Consumer<WorkflowInstanceRecordValue> eventConsumer) {
+  public static void assertProcessInstanceCompleted(
+      final String bpmnId, final Consumer<ProcessInstanceRecordValue> eventConsumer) {
     assertElementCompleted(bpmnId, bpmnId, eventConsumer);
   }
 
@@ -145,65 +145,65 @@ public final class ZeebeAssertHelper {
   public static void assertElementCompleted(
       final String bpmnId,
       final String activity,
-      final Consumer<WorkflowInstanceRecordValue> eventConsumer) {
-    final Record<WorkflowInstanceRecordValue> workflowInstanceRecordValueRecord =
-        RecordingExporter.workflowInstanceRecords(ELEMENT_COMPLETED)
+      final Consumer<ProcessInstanceRecordValue> eventConsumer) {
+    final Record<ProcessInstanceRecordValue> processInstanceRecordValueRecord =
+        RecordingExporter.processInstanceRecords(ELEMENT_COMPLETED)
             .withBpmnProcessId(bpmnId)
             .withElementId(activity)
             .findFirst()
             .orElse(null);
 
-    assertThat(workflowInstanceRecordValueRecord).isNotNull();
+    assertThat(processInstanceRecordValueRecord).isNotNull();
 
-    eventConsumer.accept(workflowInstanceRecordValueRecord.getValue());
+    eventConsumer.accept(processInstanceRecordValueRecord.getValue());
   }
 
   public static void assertElementCompleted(
-      final long workflowInstanceKey,
+      final long processInstanceKey,
       final String activity,
-      final Consumer<WorkflowInstanceRecordValue> eventConsumer) {
-    final Record<WorkflowInstanceRecordValue> workflowInstanceRecordValueRecord =
-        RecordingExporter.workflowInstanceRecords(ELEMENT_COMPLETED)
+      final Consumer<ProcessInstanceRecordValue> eventConsumer) {
+    final Record<ProcessInstanceRecordValue> processInstanceRecordValueRecord =
+        RecordingExporter.processInstanceRecords(ELEMENT_COMPLETED)
             .withElementId(activity)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .findFirst()
             .orElse(null);
 
-    assertThat(workflowInstanceRecordValueRecord).isNotNull();
+    assertThat(processInstanceRecordValueRecord).isNotNull();
 
-    eventConsumer.accept(workflowInstanceRecordValueRecord.getValue());
+    eventConsumer.accept(processInstanceRecordValueRecord.getValue());
   }
 
-  public static void assertWorkflowInstanceState(
-      final long workflowInstanceKey,
-      final WorkflowInstanceIntent intent,
-      final Consumer<WorkflowInstanceRecordValue> consumer) {
-    consumeFirstWorkflowInstanceRecord(
-        RecordingExporter.workflowInstanceRecords(intent)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .filter(r -> r.getKey() == r.getValue().getWorkflowInstanceKey()),
+  public static void assertProcessInstanceState(
+      final long processInstanceKey,
+      final ProcessInstanceIntent intent,
+      final Consumer<ProcessInstanceRecordValue> consumer) {
+    consumeFirstProcessInstanceRecord(
+        RecordingExporter.processInstanceRecords(intent)
+            .withProcessInstanceKey(processInstanceKey)
+            .filter(r -> r.getKey() == r.getValue().getProcessInstanceKey()),
         consumer);
   }
 
-  public static void assertWorkflowInstanceCreated(
-      final long workflowInstanceKey, final Consumer<WorkflowInstanceRecordValue> consumer) {
-    assertWorkflowInstanceState(
-        workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, consumer);
+  public static void assertProcessInstanceCreated(
+      final long processInstanceKey, final Consumer<ProcessInstanceRecordValue> consumer) {
+    assertProcessInstanceState(
+        processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, consumer);
   }
 
-  public static void assertWorkflowInstanceState(
-      final WorkflowInstanceIntent intent, final Consumer<WorkflowInstanceRecordValue> consumer) {
-    consumeFirstWorkflowInstanceRecord(
-        RecordingExporter.workflowInstanceRecords(intent)
-            .filter(r -> r.getKey() == r.getValue().getWorkflowInstanceKey()),
+  public static void assertProcessInstanceState(
+      final ProcessInstanceIntent intent, final Consumer<ProcessInstanceRecordValue> consumer) {
+    consumeFirstProcessInstanceRecord(
+        RecordingExporter.processInstanceRecords(intent)
+            .filter(r -> r.getKey() == r.getValue().getProcessInstanceKey()),
         consumer);
   }
 
   public static void assertElementInState(
-      final long workflowInstanceKey, final String elementId, final WorkflowInstanceIntent intent) {
-    final Record<WorkflowInstanceRecordValue> record =
-        RecordingExporter.workflowInstanceRecords(intent)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+      final long processInstanceKey, final String elementId, final ProcessInstanceIntent intent) {
+    final Record<ProcessInstanceRecordValue> record =
+        RecordingExporter.processInstanceRecords(intent)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId(elementId)
             .findFirst()
             .orElse(null);
@@ -212,13 +212,13 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertElementInState(
-      final long workflowInstanceKey,
+      final long processInstanceKey,
       final String elementId,
       final BpmnElementType elementType,
-      final WorkflowInstanceIntent intent) {
+      final ProcessInstanceIntent intent) {
     assertThat(
-            RecordingExporter.workflowInstanceRecords(intent)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords(intent)
+                .withProcessInstanceKey(processInstanceKey)
                 .withElementType(elementType)
                 .withElementId(elementId)
                 .exists())
@@ -226,18 +226,18 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertElementInState(
-      final WorkflowInstanceIntent intent,
+      final ProcessInstanceIntent intent,
       final String element,
-      final Consumer<WorkflowInstanceRecordValue> consumer) {
-    consumeFirstWorkflowInstanceRecord(
-        RecordingExporter.workflowInstanceRecords(intent).withElementId(element), consumer);
+      final Consumer<ProcessInstanceRecordValue> consumer) {
+    consumeFirstProcessInstanceRecord(
+        RecordingExporter.processInstanceRecords(intent).withElementId(element), consumer);
   }
 
-  private static void consumeFirstWorkflowInstanceRecord(
-      final WorkflowInstanceRecordStream stream,
-      final Consumer<WorkflowInstanceRecordValue> consumer) {
+  private static void consumeFirstProcessInstanceRecord(
+      final ProcessInstanceRecordStream stream,
+      final Consumer<ProcessInstanceRecordValue> consumer) {
 
-    final WorkflowInstanceRecordValue value = stream.findFirst().map(Record::getValue).orElse(null);
+    final ProcessInstanceRecordValue value = stream.findFirst().map(Record::getValue).orElse(null);
 
     assertThat(value).isNotNull();
 

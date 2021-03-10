@@ -12,7 +12,7 @@ import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.CatchEvent;
@@ -35,9 +35,9 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
 
   @Override
   public void transform(final CatchEvent element, final TransformContext context) {
-    final ExecutableWorkflow workflow = context.getCurrentWorkflow();
+    final ExecutableProcess process = context.getCurrentProcess();
     final ExecutableCatchEventElement executableElement =
-        workflow.getElementById(element.getId(), ExecutableCatchEventElement.class);
+        process.getElementById(element.getId(), ExecutableCatchEventElement.class);
 
     if (!element.getEventDefinitions().isEmpty()) {
       transformEventDefinition(element, context, executableElement);

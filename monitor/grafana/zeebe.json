@@ -2647,7 +2647,7 @@
               "refId": "A"
             }
           ],
-          "title": "Workflow Instance Events per second (range = 1m)",
+          "title": "Process Instance Events per second (range = 1m)",
           "transform": "table",
           "type": "table-old"
         },
@@ -2755,7 +2755,7 @@
               "expr": "sum(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", type=\"PROCESS\"}) by (action)",
               "format": "time_series",
               "intervalFactor": 1,
-              "legendFormat": "Workflow Instance ({{action}})",
+              "legendFormat": "Process Instance ({{action}})",
               "refId": "A"
             },
             {
@@ -2770,7 +2770,7 @@
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Workflow Instance Events",
+          "title": "Process Instance Events",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -2852,7 +2852,7 @@
               "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", type=\"PROCESS\"}[1m])) by (action)",
               "format": "time_series",
               "intervalFactor": 1,
-              "legendFormat": "Workflow Instance ({{action}})",
+              "legendFormat": "Process Instance ({{action}})",
               "refId": "A"
             },
             {
@@ -2867,7 +2867,7 @@
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Workflow Instance Events per second (range = 1m)",
+          "title": "Process Instance Events per second (range = 1m)",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -3140,10 +3140,10 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(zeebe_running_workflow_instances_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"})",
+              "expr": "sum(zeebe_running_process_instances_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"})",
               "format": "time_series",
               "intervalFactor": 1,
-              "legendFormat": "Workflow Instance",
+              "legendFormat": "Process Instance",
               "refId": "A"
             },
             {
@@ -3165,7 +3165,7 @@
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Running Workflow Instances",
+          "title": "Running Process Instances",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -5165,7 +5165,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(zeebe_workflow_instance_execution_time_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
+              "expr": "sum(increase(zeebe_process_instance_execution_time_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -5240,7 +5240,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(zeebe_workflow_instance_execution_time_sum{namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) / sum(rate(zeebe_workflow_instance_execution_time_count{namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m]))",
+              "expr": "sum(rate(zeebe_process_instance_execution_time_sum{namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) / sum(rate(zeebe_process_instance_execution_time_count{namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m]))",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -5248,7 +5248,7 @@
               "refId": "A"
             },
             {
-              "expr": "histogram_quantile(0.99, sum(rate(zeebe_workflow_instance_execution_time_bucket{namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le))",
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le))",
               "interval": "",
               "legendFormat": "quantile-99th",
               "refId": "B"
@@ -5852,7 +5852,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{namespace=~\"$namespace\", pod=~\"$pod\", grpc_method=\"CreateWorkflowInstance\"}[30s])) by (le)",
+              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{namespace=~\"$namespace\", pod=~\"$pod\", grpc_method=\"CreateProcessInstance\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -5860,7 +5860,7 @@
               "refId": "A"
             }
           ],
-          "title": "Create Workflow Instance Latency (gRPC)",
+          "title": "Create Process Instance Latency (gRPC)",
           "tooltip": {
             "show": true,
             "showHistogram": false

@@ -17,16 +17,16 @@ import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
-public final class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
-    implements WorkflowInstanceSubscriptionRecordValue {
+public final class ProcessInstanceSubscriptionRecord extends UnifiedRecordValue
+    implements ProcessInstanceSubscriptionRecordValue {
 
   private final IntegerProperty subscriptionPartitionIdProp =
       new IntegerProperty("subscriptionPartitionId");
-  private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey");
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
@@ -36,9 +36,9 @@ public final class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
       new BooleanProperty("closeOnCorrelate", true);
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
 
-  public WorkflowInstanceSubscriptionRecord() {
+  public ProcessInstanceSubscriptionRecord() {
     declareProperty(subscriptionPartitionIdProp)
-        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(messageKeyProp)
         .declareProperty(messageNameProp)
@@ -57,7 +57,7 @@ public final class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     return elementInstanceKeyProp.getValue();
   }
 
-  public WorkflowInstanceSubscriptionRecord setElementInstanceKey(final long key) {
+  public ProcessInstanceSubscriptionRecord setElementInstanceKey(final long key) {
     elementInstanceKeyProp.setValue(key);
     return this;
   }
@@ -67,7 +67,7 @@ public final class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     return bufferAsString(bpmnProcessIdProp.getValue());
   }
 
-  public WorkflowInstanceSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+  public ProcessInstanceSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
@@ -87,17 +87,17 @@ public final class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     return bufferAsString(correlationKeyProp.getValue());
   }
 
-  public WorkflowInstanceSubscriptionRecord setCorrelationKey(final DirectBuffer correlationKey) {
+  public ProcessInstanceSubscriptionRecord setCorrelationKey(final DirectBuffer correlationKey) {
     correlationKeyProp.setValue(correlationKey);
     return this;
   }
 
-  public WorkflowInstanceSubscriptionRecord setMessageName(final DirectBuffer messageName) {
+  public ProcessInstanceSubscriptionRecord setMessageName(final DirectBuffer messageName) {
     messageNameProp.setValue(messageName);
     return this;
   }
 
-  public WorkflowInstanceSubscriptionRecord setMessageKey(final long messageKey) {
+  public ProcessInstanceSubscriptionRecord setMessageKey(final long messageKey) {
     messageKeyProp.setValue(messageKey);
     return this;
   }
@@ -117,7 +117,7 @@ public final class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     return subscriptionPartitionIdProp.getValue();
   }
 
-  public WorkflowInstanceSubscriptionRecord setSubscriptionPartitionId(final int partitionId) {
+  public ProcessInstanceSubscriptionRecord setSubscriptionPartitionId(final int partitionId) {
     subscriptionPartitionIdProp.setValue(partitionId);
     return this;
   }
@@ -127,7 +127,7 @@ public final class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     return MsgPackConverter.convertToMap(variablesProp.getValue());
   }
 
-  public WorkflowInstanceSubscriptionRecord setVariables(final DirectBuffer variables) {
+  public ProcessInstanceSubscriptionRecord setVariables(final DirectBuffer variables) {
     variablesProp.setValue(variables);
     return this;
   }
@@ -138,16 +138,16 @@ public final class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
-  public WorkflowInstanceSubscriptionRecord setWorkflowInstanceKey(final long key) {
-    workflowInstanceKeyProp.setValue(key);
+  public ProcessInstanceSubscriptionRecord setProcessInstanceKey(final long key) {
+    processInstanceKeyProp.setValue(key);
     return this;
   }
 
-  public WorkflowInstanceSubscriptionRecord setCloseOnCorrelate(final boolean closeOnCorrelate) {
+  public ProcessInstanceSubscriptionRecord setCloseOnCorrelate(final boolean closeOnCorrelate) {
     closeOnCorrelateProp.setValue(closeOnCorrelate);
     return this;
   }

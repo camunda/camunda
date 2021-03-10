@@ -11,7 +11,7 @@ import static io.zeebe.protocol.record.Assertions.assertThat;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
-import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecords;
+import static io.zeebe.test.util.record.RecordingExporter.processInstanceRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -23,7 +23,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.Strings;
@@ -135,12 +135,12 @@ public final class ActivateJobsTest {
   public void shouldActivateSingleJob() {
     // given
     ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
-    final long firstInstanceKey = createWorkflowInstances(3, "{'foo':'bar'}").get(0);
+    final long firstInstanceKey = createProcessInstances(3, "{'foo':'bar'}").get(0);
 
     final long expectedJobKey =
         jobRecords(JobIntent.CREATED)
             .withType(taskType)
-            .filter(r -> r.getValue().getWorkflowInstanceKey() == firstInstanceKey)
+            .filter(r -> r.getValue().getProcessInstanceKey() == firstInstanceKey)
             .getFirst()
             .getKey();
 
@@ -256,7 +256,7 @@ public final class ActivateJobsTest {
   }
 
   @Test
-  public void shouldActivateJobsFromWorkflow() {
+  public void shouldActivateJobsFromProcess() {
     // given
     final int jobAmount = 10;
     final String jobType = taskType;
@@ -271,26 +271,26 @@ public final class ActivateJobsTest {
     }
     ENGINE.deployment().withXmlResource(PROCESS_ID, builder.done()).deploy();
 
-    final List<Long> workflowInstanceKeys = createWorkflowInstances(jobAmount, "{}");
+    final List<Long> processInstanceKeys = createProcessInstances(jobAmount, "{}");
 
     // when activating and completing all jobs
-    waitForJobs(jobType, jobAmount, workflowInstanceKeys);
+    waitForJobs(jobType, jobAmount, processInstanceKeys);
     activateJobs(jobType, jobAmount).forEach(this::completeJob);
 
-    waitForJobs(jobType2, jobAmount, workflowInstanceKeys);
+    waitForJobs(jobType2, jobAmount, processInstanceKeys);
     activateJobs(jobType2, jobAmount).forEach(this::completeJob);
 
-    waitForJobs(jobType3, jobAmount, workflowInstanceKeys);
+    waitForJobs(jobType3, jobAmount, processInstanceKeys);
     activateJobs(jobType3, jobAmount).forEach(this::completeJob);
 
-    // then all workflow instances are completed
+    // then all process instances are completed
     assertThat(
-        workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .withBpmnProcessId(PROCESS_ID)
-                .filter(r -> workflowInstanceKeys.contains(r.getKey()))
+                .filter(r -> processInstanceKeys.contains(r.getKey()))
                 .limit(jobAmount)
                 .count()
-            == workflowInstanceKeys.size());
+            == processInstanceKeys.size());
   }
 
   @Test
@@ -306,12 +306,12 @@ public final class ActivateJobsTest {
             .done();
 
     ENGINE.deployment().withXmlResource(PROCESS_ID, modelInstance).deploy();
-    final long workflowInstanceKey = createWorkflowInstances(1, "{}").get(0);
-    jobRecords(JobIntent.CREATED).withWorkflowInstanceKey(workflowInstanceKey).getFirst();
+    final long processInstanceKey = createProcessInstances(1, "{}").get(0);
+    jobRecords(JobIntent.CREATED).withProcessInstanceKey(processInstanceKey).getFirst();
 
     // when
     activateJob(taskType);
-    ENGINE.job().ofInstance(workflowInstanceKey).withType(taskType).complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType(taskType).complete();
 
     // then
     final var jobRecordValue = getActivatedJobBatch().getJobs().get(0);
@@ -319,7 +319,7 @@ public final class ActivateJobsTest {
   }
 
   @Test
-  public void shouldFetchFullJobRecordFromWorkflow() {
+  public void shouldFetchFullJobRecordFromProcess() {
     // given
     final ControlledActorClock clock = ENGINE.getClock();
     clock.pinCurrentTime();
@@ -328,7 +328,7 @@ public final class ActivateJobsTest {
     final Duration timeout = Duration.ofMinutes(4);
 
     ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
-    createWorkflowInstances(1, "{'foo':'bar'}");
+    createProcessInstances(1, "{'foo':'bar'}");
     final Record<JobRecordValue> jobRecord =
         jobRecords(JobIntent.CREATED).withType(taskType).getFirst();
 
@@ -359,12 +359,12 @@ public final class ActivateJobsTest {
     assertThat(jobActivated.getVariables()).containsExactly(entry("foo", "bar"));
 
     final JobRecordValue jobRecordValue = jobRecord.getValue();
-    assertThat(jobActivated.getWorkflowInstanceKey())
-        .isEqualTo(jobRecordValue.getWorkflowInstanceKey());
+    assertThat(jobActivated.getProcessInstanceKey())
+        .isEqualTo(jobRecordValue.getProcessInstanceKey());
     assertThat(jobActivated)
         .hasBpmnProcessId(jobRecordValue.getBpmnProcessId())
-        .hasWorkflowDefinitionVersion(jobRecordValue.getWorkflowDefinitionVersion())
-        .hasWorkflowKey(jobRecordValue.getWorkflowKey())
+        .hasProcessDefinitionVersion(jobRecordValue.getProcessDefinitionVersion())
+        .hasProcessDefinitionKey(jobRecordValue.getProcessDefinitionKey())
         .hasElementId(jobRecordValue.getElementId())
         .hasElementInstanceKey(jobRecordValue.getElementInstanceKey());
 
@@ -419,13 +419,13 @@ public final class ActivateJobsTest {
     return activateJobs(taskType, amount);
   }
 
-  private List<Long> createWorkflowInstances(final int amount, final String variables) {
+  private List<Long> createProcessInstances(final int amount, final String variables) {
     return IntStream.range(0, amount)
         .boxed()
         .map(
             i ->
                 ENGINE
-                    .workflowInstance()
+                    .processInstance()
                     .ofBpmnProcessId(PROCESS_ID)
                     .withVariables(variables)
                     .create())
@@ -435,11 +435,11 @@ public final class ActivateJobsTest {
   private List<Long> deployAndCreateJobs(
       final String type, final int amount, final String variables) {
     ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(type)).deploy();
-    final List<Long> instanceKeys = createWorkflowInstances(amount, variables);
+    final List<Long> instanceKeys = createProcessInstances(amount, variables);
 
     return jobRecords(JobIntent.CREATED)
         .withType(type)
-        .filter(r -> instanceKeys.contains(r.getValue().getWorkflowInstanceKey()))
+        .filter(r -> instanceKeys.contains(r.getValue().getProcessInstanceKey()))
         .limit(amount)
         .map(Record::getKey)
         .collect(Collectors.toList());
@@ -450,12 +450,12 @@ public final class ActivateJobsTest {
   }
 
   private void waitForJobs(
-      final String jobType, final int jobAmount, final List<Long> workflowInstanceKeys) {
+      final String jobType, final int jobAmount, final List<Long> processInstanceKeys) {
     waitUntil(
         () ->
             jobRecords(JobIntent.CREATED)
                     .filter(
-                        r -> workflowInstanceKeys.contains(r.getValue().getWorkflowInstanceKey()))
+                        r -> processInstanceKeys.contains(r.getValue().getProcessInstanceKey()))
                     .withType(jobType)
                     .limit(jobAmount)
                     .count()

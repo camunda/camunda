@@ -14,9 +14,9 @@ import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.ParallelGateway;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -31,8 +31,8 @@ public final class ParallelGatewayStreamProcessorTest {
   public static final DirectBuffer PROCESS_ID_BUFFER = BufferUtil.wrapString("process");
 
   public final StreamProcessorRule envRule = new StreamProcessorRule();
-  public final WorkflowInstanceStreamProcessorRule streamProcessorRule =
-      new WorkflowInstanceStreamProcessorRule(envRule);
+  public final ProcessInstanceStreamProcessorRule streamProcessorRule =
+      new ProcessInstanceStreamProcessorRule(envRule);
 
   @Rule public RuleChain chain = RuleChain.outerRule(envRule).around(streamProcessorRule);
 
@@ -67,9 +67,9 @@ public final class ParallelGatewayStreamProcessorTest {
 
     streamProcessorRule.deploy(process);
 
-    streamProcessorRule.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    streamProcessorRule.createProcessInstance(r -> r.setBpmnProcessId(PROCESS_ID));
     streamProcessorRule.awaitElementInState(
-        "flowToJoin", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
+        "flowToJoin", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
     // when
     // waiting until the end event has been reached
@@ -77,11 +77,11 @@ public final class ParallelGatewayStreamProcessorTest {
 
     // then
     // there should be no scope completing event
-    final Optional<Record<WorkflowInstanceRecord>> processCompleting =
+    final Optional<Record<ProcessInstanceRecord>> processCompleting =
         envRule
             .events()
-            .onlyWorkflowInstanceRecords()
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETING)
+            .onlyProcessInstanceRecords()
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETING)
             .filter(r -> PROCESS_ID_BUFFER.equals(r.getValue().getElementIdBuffer()))
             .findFirst();
 

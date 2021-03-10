@@ -9,8 +9,8 @@ package io.zeebe.engine.processing.streamprocessor;
 
 import static io.zeebe.engine.processing.streamprocessor.StreamProcessor.HEALTH_CHECK_TICK_DURATION;
 import static io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors.processors;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.mockito.Mockito.mock;
 
@@ -70,7 +70,7 @@ public class StreamProcessorHealthTest {
         streamProcessorRule.startTypedStreamProcessor(
             (processors, context) ->
                 processors.onEvent(
-                    ValueType.WORKFLOW_INSTANCE,
+                    ValueType.PROCESS_INSTANCE,
                     ELEMENT_ACTIVATING,
                     mock(TypedRecordProcessor.class)));
 
@@ -83,14 +83,14 @@ public class StreamProcessorHealthTest {
     // given
     shouldProcessingThrowException.set(true);
     final long firstPosition =
-        streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
-    streamProcessorRule.writeWorkflowInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
+        streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeProcessInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
 
     waitUntil(
         () ->
             streamProcessorRule
                 .events()
-                .onlyWorkflowInstanceRecords()
+                .onlyProcessInstanceRecords()
                 .withIntent(ELEMENT_ACTIVATED)
                 .exists());
 
@@ -123,7 +123,7 @@ public class StreamProcessorHealthTest {
 
     // when
     shouldFlushThrowException.set(true);
-    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
 
     // then
     waitUntil(() -> healthStatusCheck.hasHealthStatus(HealthStatus.UNHEALTHY));
@@ -138,7 +138,7 @@ public class StreamProcessorHealthTest {
     // when
     shouldProcessingThrowException.set(false);
     shouldFlushThrowException.set(true);
-    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
 
     // then
     waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.UNHEALTHY);
@@ -157,7 +157,7 @@ public class StreamProcessorHealthTest {
     // since processing fails we will write error event
     // we want to fail error even transaction
     shouldFailErrorHandlingInTransaction.set(true);
-    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
 
     // then
     waitUntil(() -> healthStatusCheck.hasHealthStatus(HealthStatus.UNHEALTHY));
@@ -169,7 +169,7 @@ public class StreamProcessorHealthTest {
     shouldFlushThrowException.set(true);
     streamProcessor = getErrorProneStreamProcessor();
     waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.HEALTHY);
-    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
     waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.UNHEALTHY);
 
     // when
@@ -189,7 +189,7 @@ public class StreamProcessorHealthTest {
               processingContext.logStreamWriter(mockedLogStreamWriter);
               return processors(zeebeState.getKeyGenerator(), processingContext.getWriters())
                   .onEvent(
-                      ValueType.WORKFLOW_INSTANCE,
+                      ValueType.PROCESS_INSTANCE,
                       ELEMENT_ACTIVATING,
                       new TypedRecordProcessor<>() {
                         @Override

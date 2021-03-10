@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.processing.bpmn.behavior;
 
-import io.zeebe.engine.processing.bpmn.WorkflowInstanceStateTransitionGuard;
+import io.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 
@@ -31,9 +31,9 @@ public interface BpmnBehaviors {
 
   BpmnDeferredRecordsBehavior deferredRecordsBehavior();
 
-  WorkflowInstanceStateTransitionGuard stateTransitionGuard();
+  ProcessInstanceStateTransitionGuard stateTransitionGuard();
 
-  BpmnWorkflowResultSenderBehavior workflowResultSenderBehavior();
+  BpmnProcessResultSenderBehavior processResultSenderBehavior();
 
   BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior();
 }

@@ -29,10 +29,10 @@ public class ActivateJobsStub
   public static final int RETRIES = 12;
   public static final long DEADLINE = 123123123L;
 
-  public static final long WORKFLOW_INSTANCE_KEY = 123L;
+  public static final long PROCESS_INSTANCE_KEY = 123L;
   public static final String BPMN_PROCESS_ID = "stubProcess";
-  public static final int WORKFLOW_DEFINITION_VERSION = 23;
-  public static final long WORKFLOW_KEY = 4532L;
+  public static final int PROCESS_DEFINITION_VERSION = 23;
+  public static final long PROCESS_KEY = 4532L;
   public static final String ELEMENT_ID = "stubActivity";
   public static final long ELEMENT_INSTANCE_KEY = 459L;
 
@@ -65,20 +65,20 @@ public class ActivateJobsStub
     return VARIABLES;
   }
 
-  public long getWorkflowInstanceKey() {
-    return WORKFLOW_INSTANCE_KEY;
+  public long getProcessInstanceKey() {
+    return PROCESS_INSTANCE_KEY;
   }
 
   public String getBpmnProcessId() {
     return BPMN_PROCESS_ID;
   }
 
-  public int getWorkflowDefinitionVersion() {
-    return WORKFLOW_DEFINITION_VERSION;
+  public int getProcessDefinitionVersion() {
+    return PROCESS_DEFINITION_VERSION;
   }
 
-  public long getWorkflowKey() {
-    return WORKFLOW_KEY;
+  public long getProcessDefinitionKey() {
+    return PROCESS_KEY;
   }
 
   public String getElementId() {
@@ -139,10 +139,10 @@ public class ActivateJobsStub
                   .setDeadline(DEADLINE)
                   .setCustomHeaders(CUSTOM_HEADERS_MSGPACK)
                   .setVariables(VARIABLES_MSGPACK)
-                  .setWorkflowInstanceKey(WORKFLOW_INSTANCE_KEY)
+                  .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
                   .setBpmnProcessId(BPMN_PROCESS_ID)
-                  .setWorkflowDefinitionVersion(WORKFLOW_DEFINITION_VERSION)
-                  .setWorkflowKey(WORKFLOW_KEY)
+                  .setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION)
+                  .setProcessDefinitionKey(PROCESS_KEY)
                   .setElementId(ELEMENT_ID)
                   .setElementInstanceKey(ELEMENT_INSTANCE_KEY);
             });

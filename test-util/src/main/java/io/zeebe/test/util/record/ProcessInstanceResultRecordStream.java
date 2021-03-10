@@ -8,30 +8,30 @@
 package io.zeebe.test.util.record;
 
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.value.WorkflowInstanceResultRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import java.util.stream.Stream;
 
-public final class WorkflowInstanceResultRecordStream
+public final class ProcessInstanceResultRecordStream
     extends ExporterRecordStream<
-        WorkflowInstanceResultRecordValue, WorkflowInstanceResultRecordStream> {
+        ProcessInstanceResultRecordValue, ProcessInstanceResultRecordStream> {
 
-  public WorkflowInstanceResultRecordStream(
-      final Stream<Record<WorkflowInstanceResultRecordValue>> wrappedStream) {
+  public ProcessInstanceResultRecordStream(
+      final Stream<Record<ProcessInstanceResultRecordValue>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
-  protected WorkflowInstanceResultRecordStream supply(
-      final Stream<Record<WorkflowInstanceResultRecordValue>> wrappedStream) {
-    return new WorkflowInstanceResultRecordStream(wrappedStream);
+  protected ProcessInstanceResultRecordStream supply(
+      final Stream<Record<ProcessInstanceResultRecordValue>> wrappedStream) {
+    return new ProcessInstanceResultRecordStream(wrappedStream);
   }
 
-  public WorkflowInstanceResultRecordStream withBpmnProcessId(final String bpmnProcessId) {
+  public ProcessInstanceResultRecordStream withBpmnProcessId(final String bpmnProcessId) {
     return valueFilter(v -> bpmnProcessId.equals(v.getBpmnProcessId()));
   }
 
-  public WorkflowInstanceResultRecordStream withWorkflowInstanceKey(
-      final long workflowInstanceKey) {
-    return valueFilter(v -> workflowInstanceKey == v.getWorkflowInstanceKey());
+  public ProcessInstanceResultRecordStream withProcessInstanceKey(
+      final long processInstanceKey) {
+    return valueFilter(v -> processInstanceKey == v.getProcessInstanceKey());
   }
 }

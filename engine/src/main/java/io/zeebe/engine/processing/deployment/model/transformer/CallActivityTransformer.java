@@ -9,7 +9,7 @@ package io.zeebe.engine.processing.deployment.model.transformer;
 
 import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.CallActivity;
@@ -25,9 +25,9 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
   @Override
   public void transform(final CallActivity element, final TransformContext context) {
 
-    final ExecutableWorkflow workflow = context.getCurrentWorkflow();
+    final ExecutableProcess process = context.getCurrentProcess();
     final ExecutableCallActivity callActivity =
-        workflow.getElementById(element.getId(), ExecutableCallActivity.class);
+        process.getElementById(element.getId(), ExecutableCallActivity.class);
 
     transformProcessId(element, callActivity, context.getExpressionLanguage());
   }

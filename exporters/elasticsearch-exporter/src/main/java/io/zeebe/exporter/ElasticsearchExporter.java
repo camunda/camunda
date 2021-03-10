@@ -159,14 +159,14 @@ public class ElasticsearchExporter implements Exporter {
       if (index.variableDocument) {
         createValueIndexTemplate(ValueType.VARIABLE_DOCUMENT);
       }
-      if (index.workflowInstance) {
-        createValueIndexTemplate(ValueType.WORKFLOW_INSTANCE);
+      if (index.processInstance) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE);
       }
-      if (index.workflowInstanceCreation) {
-        createValueIndexTemplate(ValueType.WORKFLOW_INSTANCE_CREATION);
+      if (index.processInstanceCreation) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_CREATION);
       }
-      if (index.workflowInstanceSubscription) {
-        createValueIndexTemplate(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+      if (index.processInstanceSubscription) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_SUBSCRIPTION);
       }
     }
 

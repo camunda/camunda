@@ -9,7 +9,7 @@ package io.zeebe.engine.processing.deployment.model.transformer;
 
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.FlowNode;
@@ -24,29 +24,29 @@ public final class SubProcessTransformer implements ModelElementTransformer<SubP
 
   @Override
   public void transform(final SubProcess element, final TransformContext context) {
-    final ExecutableWorkflow currentWorkflow = context.getCurrentWorkflow();
+    final ExecutableProcess currentProcess = context.getCurrentProcess();
     final ExecutableFlowElementContainer subprocess =
-        currentWorkflow.getElementById(element.getId(), ExecutableFlowElementContainer.class);
+        currentProcess.getElementById(element.getId(), ExecutableFlowElementContainer.class);
 
     if (element.triggeredByEvent()) {
-      transformEventSubprocess(element, currentWorkflow, subprocess);
+      transformEventSubprocess(element, currentProcess, subprocess);
     }
   }
 
   private void transformEventSubprocess(
       final SubProcess element,
-      final ExecutableWorkflow currentWorkflow,
+      final ExecutableProcess currentProcess,
       final ExecutableFlowElementContainer subprocess) {
 
     if (element.getScope() instanceof FlowNode) {
       final FlowNode scope = (FlowNode) element.getScope();
       final ExecutableFlowElementContainer parentSubProc =
-          currentWorkflow.getElementById(scope.getId(), ExecutableFlowElementContainer.class);
+          currentProcess.getElementById(scope.getId(), ExecutableFlowElementContainer.class);
 
       parentSubProc.attach(subprocess);
     } else {
       // top-level start event
-      currentWorkflow.attach(subprocess);
+      currentProcess.attach(subprocess);
     }
 
     final ExecutableStartEvent startEvent = subprocess.getStartEvents().iterator().next();

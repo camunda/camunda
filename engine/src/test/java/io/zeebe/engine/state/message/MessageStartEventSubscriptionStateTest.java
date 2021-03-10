@@ -47,7 +47,7 @@ public final class MessageStartEventSubscriptionStateTest {
         createSubscription("messageName", "startEventID", 1);
     state.put(subscription);
 
-    subscription.setWorkflowKey(2);
+    subscription.setProcessDefinitionKey(2);
     assertThat(state.exists(subscription)).isFalse();
   }
 
@@ -90,7 +90,7 @@ public final class MessageStartEventSubscriptionStateTest {
         createSubscription("message1", "startEvent1", 1);
     state.put(subscription1);
 
-    // more subscriptions for same workflow
+    // more subscriptions for same process
     final MessageStartEventSubscriptionRecord subscription2 =
         createSubscription("message2", "startEvent2", 1);
     state.put(subscription2);
@@ -99,7 +99,7 @@ public final class MessageStartEventSubscriptionStateTest {
         createSubscription("message3", "startEvent3", 1);
     state.put(subscription3);
 
-    state.removeSubscriptionsOfWorkflow(1);
+    state.removeSubscriptionsOfProcess(1);
 
     assertThat(state.exists(subscription1)).isFalse();
     assertThat(state.exists(subscription2)).isFalse();
@@ -116,7 +116,7 @@ public final class MessageStartEventSubscriptionStateTest {
         createSubscription("message1", "startEvent1", 4);
     state.put(subscription2);
 
-    state.removeSubscriptionsOfWorkflow(1);
+    state.removeSubscriptionsOfProcess(1);
 
     assertThat(state.exists(subscription1)).isFalse();
     assertThat(state.exists(subscription2)).isTrue();
@@ -155,6 +155,6 @@ public final class MessageStartEventSubscriptionStateTest {
     return new MessageStartEventSubscriptionRecord()
         .setStartEventId(wrapString(startEventId))
         .setMessageName(wrapString(messageName))
-        .setWorkflowKey(key);
+        .setProcessDefinitionKey(key);
   }
 }

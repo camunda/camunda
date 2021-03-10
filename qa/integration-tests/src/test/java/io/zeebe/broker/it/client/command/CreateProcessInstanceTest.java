@@ -13,9 +13,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.response.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.ProcessInstanceEvent;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
@@ -25,7 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public final class CreateWorkflowInstanceTest {
+public final class CreateProcessInstanceTest {
 
   private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
@@ -36,23 +36,23 @@ public final class CreateWorkflowInstanceTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   private String processId;
-  private long firstWorkflowKey;
-  private Long secondWorkflowKey;
+  private long firstProcessDefinitionKey;
+  private Long secondProcessDefinitionKey;
 
   @Before
   public void deployProcess() {
     processId = helper.getBpmnProcessId();
 
-    firstWorkflowKey =
-        CLIENT_RULE.deployWorkflow(Bpmn.createExecutableProcess(processId).startEvent("v1").done());
-    secondWorkflowKey =
-        CLIENT_RULE.deployWorkflow(Bpmn.createExecutableProcess(processId).startEvent("v2").done());
+    firstProcessDefinitionKey =
+        CLIENT_RULE.deployProcess(Bpmn.createExecutableProcess(processId).startEvent("v1").done());
+    secondProcessDefinitionKey =
+        CLIENT_RULE.deployProcess(Bpmn.createExecutableProcess(processId).startEvent("v2").done());
   }
 
   @Test
   public void shouldCreateBpmnProcessById() {
     // when
-    final WorkflowInstanceEvent workflowInstance =
+    final ProcessInstanceEvent processInstance =
         CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
@@ -62,15 +62,15 @@ public final class CreateWorkflowInstanceTest {
             .join();
 
     // then
-    assertThat(workflowInstance.getBpmnProcessId()).isEqualTo(processId);
-    assertThat(workflowInstance.getVersion()).isEqualTo(2);
-    assertThat(workflowInstance.getWorkflowKey()).isEqualTo(secondWorkflowKey);
+    assertThat(processInstance.getBpmnProcessId()).isEqualTo(processId);
+    assertThat(processInstance.getVersion()).isEqualTo(2);
+    assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(secondProcessDefinitionKey);
   }
 
   @Test
   public void shouldCreateBpmnProcessByIdAndVersion() {
     // when
-    final WorkflowInstanceEvent workflowInstance =
+    final ProcessInstanceEvent processInstance =
         CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
@@ -79,27 +79,27 @@ public final class CreateWorkflowInstanceTest {
             .send()
             .join();
 
-    // then instance is created of first workflow version
-    assertThat(workflowInstance.getBpmnProcessId()).isEqualTo(processId);
-    assertThat(workflowInstance.getVersion()).isEqualTo(1);
-    assertThat(workflowInstance.getWorkflowKey()).isEqualTo(firstWorkflowKey);
+    // then instance is created of first process version
+    assertThat(processInstance.getBpmnProcessId()).isEqualTo(processId);
+    assertThat(processInstance.getVersion()).isEqualTo(1);
+    assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(firstProcessDefinitionKey);
   }
 
   @Test
   public void shouldCreateBpmnProcessByKey() {
     // when
-    final WorkflowInstanceEvent workflowInstance =
+    final ProcessInstanceEvent processInstance =
         CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
-            .workflowKey(firstWorkflowKey)
+            .processDefinitionKey(firstProcessDefinitionKey)
             .send()
             .join();
 
     // then
-    assertThat(workflowInstance.getBpmnProcessId()).isEqualTo(processId);
-    assertThat(workflowInstance.getVersion()).isEqualTo(1);
-    assertThat(workflowInstance.getWorkflowKey()).isEqualTo(firstWorkflowKey);
+    assertThat(processInstance.getBpmnProcessId()).isEqualTo(processId);
+    assertThat(processInstance.getVersion()).isEqualTo(1);
+    assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(firstProcessDefinitionKey);
   }
 
   @Test
@@ -108,7 +108,7 @@ public final class CreateWorkflowInstanceTest {
     final Map<String, Object> variables = Map.of("foo", 123);
 
     // when
-    final WorkflowInstanceEvent event =
+    final ProcessInstanceEvent event =
         CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
@@ -120,9 +120,9 @@ public final class CreateWorkflowInstanceTest {
 
     // then
     final var createdEvent =
-        RecordingExporter.workflowInstanceCreationRecords()
-            .withIntent(WorkflowInstanceCreationIntent.CREATED)
-            .withInstanceKey(event.getWorkflowInstanceKey())
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withInstanceKey(event.getProcessInstanceKey())
             .getFirst();
 
     assertThat(createdEvent.getValue().getVariables()).containsExactlyEntriesOf(variables);
@@ -131,7 +131,7 @@ public final class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateWithoutVariables() {
     // when
-    final WorkflowInstanceEvent event =
+    final ProcessInstanceEvent event =
         CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
@@ -142,9 +142,9 @@ public final class CreateWorkflowInstanceTest {
 
     // then
     final var createdEvent =
-        RecordingExporter.workflowInstanceCreationRecords()
-            .withIntent(WorkflowInstanceCreationIntent.CREATED)
-            .withInstanceKey(event.getWorkflowInstanceKey())
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withInstanceKey(event.getProcessInstanceKey())
             .getFirst();
 
     assertThat(createdEvent.getValue().getVariables()).isEmpty();
@@ -153,7 +153,7 @@ public final class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateWithNullVariables() {
     // when
-    final WorkflowInstanceEvent event =
+    final ProcessInstanceEvent event =
         CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
@@ -165,9 +165,9 @@ public final class CreateWorkflowInstanceTest {
 
     // then
     final var createdEvent =
-        RecordingExporter.workflowInstanceCreationRecords()
-            .withIntent(WorkflowInstanceCreationIntent.CREATED)
-            .withInstanceKey(event.getWorkflowInstanceKey())
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withInstanceKey(event.getProcessInstanceKey())
             .getFirst();
 
     assertThat(createdEvent.getValue().getVariables()).isEmpty();
@@ -205,17 +205,17 @@ public final class CreateWorkflowInstanceTest {
     assertThatThrownBy(() -> command.join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
-            "Expected to find workflow definition with process ID 'non-existing', but none found");
+            "Expected to find process definition with process ID 'non-existing', but none found");
   }
 
   @Test
   public void shouldRejectCreateBpmnProcessByNonExistingKey() {
     // when
-    final var command = CLIENT_RULE.getClient().newCreateInstanceCommand().workflowKey(123L).send();
+    final var command = CLIENT_RULE.getClient().newCreateInstanceCommand().processDefinitionKey(123L).send();
 
     assertThatThrownBy(() -> command.join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
-            "Expected to find workflow definition with key '123', but none found");
+            "Expected to find process definition with key '123', but none found");
   }
 }

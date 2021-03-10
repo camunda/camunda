@@ -14,10 +14,10 @@ import io.zeebe.engine.util.RecordToWrite;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.health.HealthStatus;
@@ -37,10 +37,10 @@ public final class ReprocessingIssueDetectionTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private long workflowInstanceKey;
+  private long processInstanceKey;
   private Record<JobRecordValue> jobCreated;
-  private Record<WorkflowInstanceRecordValue> serviceTaskActivated;
-  private Record<WorkflowInstanceRecordValue> processActivated;
+  private Record<ProcessInstanceRecordValue> serviceTaskActivated;
+  private Record<ProcessInstanceRecordValue> processActivated;
 
   @Before
   public void setup() {
@@ -53,17 +53,17 @@ public final class ReprocessingIssueDetectionTest {
                 .done())
         .deploy();
 
-    workflowInstanceKey = engine.workflowInstance().ofBpmnProcessId("process").create();
+    processInstanceKey = engine.processInstance().ofBpmnProcessId("process").create();
 
     processActivated =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementType(BpmnElementType.PROCESS)
             .getFirst();
 
     jobCreated = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
 
     serviceTaskActivated =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
 
@@ -82,8 +82,8 @@ public final class ReprocessingIssueDetectionTest {
             .key(jobCreated.getKey())
             .causedBy(0),
         RecordToWrite.event()
-            .workflowInstance(
-                WorkflowInstanceIntent.ELEMENT_COMPLETING, serviceTaskActivated.getValue())
+            .processInstance(
+                ProcessInstanceIntent.ELEMENT_COMPLETING, serviceTaskActivated.getValue())
             .key(serviceTaskActivated.getKey())
             .causedBy(1));
 
@@ -92,12 +92,12 @@ public final class ReprocessingIssueDetectionTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .filterRootScope()
-                .limitToWorkflowInstanceCompleted())
+                .limitToProcessInstanceCompleted())
         .extracting(Record::getIntent)
-        .contains(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        .contains(ProcessInstanceIntent.ELEMENT_COMPLETED);
 
     final var streamProcessor = engine.getStreamProcessor(1);
     assertThat(streamProcessor.isFailed()).isFalse();
@@ -117,8 +117,8 @@ public final class ReprocessingIssueDetectionTest {
             .causedBy(0),
         // expected the key to be serviceTaskActivated.getKey()
         RecordToWrite.event()
-            .workflowInstance(
-                WorkflowInstanceIntent.ELEMENT_COMPLETING, serviceTaskActivated.getValue())
+            .processInstance(
+                ProcessInstanceIntent.ELEMENT_COMPLETING, serviceTaskActivated.getValue())
             .key(123L)
             .causedBy(1));
 
@@ -149,8 +149,8 @@ public final class ReprocessingIssueDetectionTest {
             .causedBy(0),
         // expected the intent to be ELEMENT_COMPLETING
         RecordToWrite.event()
-            .workflowInstance(
-                WorkflowInstanceIntent.ELEMENT_TERMINATING, serviceTaskActivated.getValue())
+            .processInstance(
+                ProcessInstanceIntent.ELEMENT_TERMINATING, serviceTaskActivated.getValue())
             .key(serviceTaskActivated.getKey())
             .causedBy(1));
 
@@ -173,12 +173,12 @@ public final class ReprocessingIssueDetectionTest {
     // given
     engine.writeRecords(
         RecordToWrite.command()
-            .workflowInstance(WorkflowInstanceIntent.CANCEL, processActivated.getValue())
-            .key(workflowInstanceKey),
+            .processInstance(ProcessInstanceIntent.CANCEL, processActivated.getValue())
+            .key(processInstanceKey),
         RecordToWrite.event()
-            .workflowInstance(
-                WorkflowInstanceIntent.ELEMENT_TERMINATING, processActivated.getValue())
-            .key(workflowInstanceKey)
+            .processInstance(
+                ProcessInstanceIntent.ELEMENT_TERMINATING, processActivated.getValue())
+            .key(processInstanceKey)
             .causedBy(0),
         // expected the follow-up event with intent ELEMENT_TERMINATING for the service task
         RecordToWrite.command()

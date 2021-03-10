@@ -5,7 +5,7 @@
       "def": {
         "enums": [
           {
-            "name": "WorkflowRequestObject.ResourceType",
+            "name": "ProcessRequestObject.ResourceType",
             "enum_fields": [
               {
                 "name": "FILE"
@@ -118,7 +118,7 @@
               },
               {
                 "id": 3,
-                "name": "workflowInstanceKey",
+                "name": "processInstanceKey",
                 "type": "int64"
               },
               {
@@ -128,12 +128,12 @@
               },
               {
                 "id": 5,
-                "name": "workflowDefinitionVersion",
+                "name": "processDefinitionVersion",
                 "type": "int32"
               },
               {
                 "id": 6,
-                "name": "workflowKey",
+                "name": "processDefinitionKey",
                 "type": "int64"
               },
               {
@@ -174,17 +174,17 @@
             ]
           },
           {
-            "name": "CancelWorkflowInstanceRequest",
+            "name": "CancelProcessInstanceRequest",
             "fields": [
               {
                 "id": 1,
-                "name": "workflowInstanceKey",
+                "name": "processInstanceKey",
                 "type": "int64"
               }
             ]
           },
           {
-            "name": "CancelWorkflowInstanceResponse"
+            "name": "CancelProcessInstanceResponse"
           },
           {
             "name": "CompleteJobRequest",
@@ -205,11 +205,11 @@
             "name": "CompleteJobResponse"
           },
           {
-            "name": "CreateWorkflowInstanceRequest",
+            "name": "CreateProcessInstanceRequest",
             "fields": [
               {
                 "id": 1,
-                "name": "workflowKey",
+                "name": "processDefinitionKey",
                 "type": "int64"
               },
               {
@@ -230,11 +230,11 @@
             ]
           },
           {
-            "name": "CreateWorkflowInstanceResponse",
+            "name": "CreateProcessInstanceResponse",
             "fields": [
               {
                 "id": 1,
-                "name": "workflowKey",
+                "name": "processDefinitionKey",
                 "type": "int64"
               },
               {
@@ -249,18 +249,18 @@
               },
               {
                 "id": 4,
-                "name": "workflowInstanceKey",
+                "name": "processInstanceKey",
                 "type": "int64"
               }
             ]
           },
           {
-            "name": "CreateWorkflowInstanceWithResultRequest",
+            "name": "CreateProcessInstanceWithResultRequest",
             "fields": [
               {
                 "id": 1,
                 "name": "request",
-                "type": "CreateWorkflowInstanceRequest"
+                "type": "CreateProcessInstanceRequest"
               },
               {
                 "id": 2,
@@ -276,11 +276,11 @@
             ]
           },
           {
-            "name": "CreateWorkflowInstanceWithResultResponse",
+            "name": "CreateProcessInstanceWithResultResponse",
             "fields": [
               {
                 "id": 1,
-                "name": "workflowKey",
+                "name": "processDefinitionKey",
                 "type": "int64"
               },
               {
@@ -295,7 +295,7 @@
               },
               {
                 "id": 4,
-                "name": "workflowInstanceKey",
+                "name": "processInstanceKey",
                 "type": "int64"
               },
               {
@@ -306,18 +306,18 @@
             ]
           },
           {
-            "name": "DeployWorkflowRequest",
+            "name": "DeployProcessRequest",
             "fields": [
               {
                 "id": 1,
-                "name": "workflows",
-                "type": "WorkflowRequestObject",
+                "name": "processes",
+                "type": "ProcessRequestObject",
                 "is_repeated": true
               }
             ]
           },
           {
-            "name": "WorkflowRequestObject",
+            "name": "ProcessRequestObject",
             "fields": [
               {
                 "id": 1,
@@ -343,7 +343,7 @@
             ]
           },
           {
-            "name": "DeployWorkflowResponse",
+            "name": "DeployProcessResponse",
             "fields": [
               {
                 "id": 1,
@@ -352,14 +352,14 @@
               },
               {
                 "id": 2,
-                "name": "workflows",
-                "type": "WorkflowMetadata",
+                "name": "processes",
+                "type": "ProcessMetadata",
                 "is_repeated": true
               }
             ]
           },
           {
-            "name": "WorkflowMetadata",
+            "name": "ProcessMetadata",
             "fields": [
               {
                 "id": 1,
@@ -373,7 +373,7 @@
               },
               {
                 "id": 3,
-                "name": "workflowKey",
+                "name": "processDefinitionKey",
                 "type": "int64"
               },
               {
@@ -627,9 +627,9 @@
                 "out_streamed": true
               },
               {
-                "name": "CancelWorkflowInstance",
-                "in_type": "CancelWorkflowInstanceRequest",
-                "out_type": "CancelWorkflowInstanceResponse"
+                "name": "CancelProcessInstance",
+                "in_type": "CancelProcessInstanceRequest",
+                "out_type": "CancelProcessInstanceResponse"
               },
               {
                 "name": "CompleteJob",
@@ -637,19 +637,19 @@
                 "out_type": "CompleteJobResponse"
               },
               {
-                "name": "CreateWorkflowInstance",
-                "in_type": "CreateWorkflowInstanceRequest",
-                "out_type": "CreateWorkflowInstanceResponse"
+                "name": "CreateProcessInstance",
+                "in_type": "CreateProcessInstanceRequest",
+                "out_type": "CreateProcessInstanceResponse"
               },
               {
-                "name": "CreateWorkflowInstanceWithResult",
-                "in_type": "CreateWorkflowInstanceWithResultRequest",
-                "out_type": "CreateWorkflowInstanceWithResultResponse"
+                "name": "CreateProcessInstanceWithResult",
+                "in_type": "CreateProcessInstanceWithResultRequest",
+                "out_type": "CreateProcessInstanceWithResultResponse"
               },
               {
-                "name": "DeployWorkflow",
-                "in_type": "DeployWorkflowRequest",
-                "out_type": "DeployWorkflowResponse"
+                "name": "DeployProcess",
+                "in_type": "DeployProcessRequest",
+                "out_type": "DeployProcessResponse"
               },
               {
                 "name": "FailJob",

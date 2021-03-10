@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.example.workflow;
+package io.zeebe.example.process;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.response.WorkflowInstanceResult;
+import io.zeebe.client.api.response.ProcessInstanceResult;
 import java.time.Duration;
 import java.util.Map;
 
@@ -32,7 +32,7 @@ import java.util.Map;
  * <p>When {@code ZEEBE_ADDRESS} is not set, it connects to a broker running on localhost with
  * default ports
  */
-public class WorkflowInstanceWithResultCreator {
+public class ProcessInstanceWithResultCreator {
   public static void main(final String[] args) {
     final String defaultAddress = "localhost:26500";
     final String envVarAddress = System.getenv("ZEEBE_ADDRESS");
@@ -52,23 +52,23 @@ public class WorkflowInstanceWithResultCreator {
 
     try (final ZeebeClient client = clientBuilder.build()) {
 
-      openJobWorker(client); // open job workers so that task are executed and workflow is completed
-      System.out.println("Creating workflow instance");
+      openJobWorker(client); // open job workers so that task are executed and process is completed
+      System.out.println("Creating process instance");
 
-      final WorkflowInstanceResult workflowInstanceResult =
+      final ProcessInstanceResult processInstanceResult =
           client
               .newCreateInstanceCommand()
               .bpmnProcessId(bpmnProcessId)
               .latestVersion()
-              .withResult() // to await the completion of workflow execution and return result
+              .withResult() // to await the completion of process execution and return result
               .send()
               .join();
 
       System.out.println(
-          "Workflow instance created with key: "
-              + workflowInstanceResult.getWorkflowInstanceKey()
+          "Process instance created with key: "
+              + processInstanceResult.getProcessInstanceKey()
               + " and completed with results: "
-              + workflowInstanceResult.getVariables());
+              + processInstanceResult.getVariables());
     }
   }
 

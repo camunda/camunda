@@ -32,7 +32,7 @@ import io.zeebe.engine.util.client.JobActivationClient;
 import io.zeebe.engine.util.client.JobClient;
 import io.zeebe.engine.util.client.PublishMessageClient;
 import io.zeebe.engine.util.client.VariableClient;
-import io.zeebe.engine.util.client.WorkflowInstanceClient;
+import io.zeebe.engine.util.client.ProcessInstanceClient;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -279,8 +279,8 @@ public final class EngineRule extends ExternalResource {
     return new DeploymentClient(environmentRule, this::forEachPartition);
   }
 
-  public WorkflowInstanceClient workflowInstance() {
-    return new WorkflowInstanceClient(environmentRule);
+  public ProcessInstanceClient processInstance() {
+    return new ProcessInstanceClient(environmentRule);
   }
 
   public PublishMessageClient message() {
@@ -314,11 +314,11 @@ public final class EngineRule extends ExternalResource {
                 .done())
         .deploy();
 
-    final long instanceKey = workflowInstance().ofBpmnProcessId(processId).create();
+    final long instanceKey = processInstance().ofBpmnProcessId(processId).create();
 
     return jobRecords(JobIntent.CREATED)
         .withType(type)
-        .filter(r -> r.getValue().getWorkflowInstanceKey() == instanceKey)
+        .filter(r -> r.getValue().getProcessInstanceKey() == instanceKey)
         .getFirst();
   }
 

@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.record.intent;
 
-public enum WorkflowInstanceSubscriptionIntent implements WorkflowInstanceRelatedIntent {
+public enum ProcessInstanceSubscriptionIntent implements ProcessInstanceRelatedIntent {
   OPEN((short) 0),
   OPENED((short) 1),
 
@@ -28,11 +28,11 @@ public enum WorkflowInstanceSubscriptionIntent implements WorkflowInstanceRelate
   private final short value;
   private final boolean shouldBlacklist;
 
-  WorkflowInstanceSubscriptionIntent(final short value) {
+  ProcessInstanceSubscriptionIntent(final short value) {
     this(value, true);
   }
 
-  WorkflowInstanceSubscriptionIntent(final short value, final boolean shouldBlacklist) {
+  ProcessInstanceSubscriptionIntent(final short value, final boolean shouldBlacklist) {
     this.value = value;
     this.shouldBlacklist = shouldBlacklist;
   }

@@ -115,7 +115,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
 
   private int numberOfShardsForIndex(final String indexName) {
     if (indexName.startsWith(
-            esClient.indexPrefixForValueTypeWithDelimiter(ValueType.WORKFLOW_INSTANCE))
+            esClient.indexPrefixForValueTypeWithDelimiter(ValueType.PROCESS_INSTANCE))
         || indexName.startsWith(esClient.indexPrefixForValueTypeWithDelimiter(ValueType.JOB))) {
       return 3;
     } else {
@@ -146,9 +146,9 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     configuration.index.messageSubscription = true;
     configuration.index.variable = true;
     configuration.index.variableDocument = true;
-    configuration.index.workflowInstance = true;
-    configuration.index.workflowInstanceCreation = true;
-    configuration.index.workflowInstanceSubscription = true;
+    configuration.index.processInstance = true;
+    configuration.index.processInstanceCreation = true;
+    configuration.index.processInstanceSubscription = true;
 
     return configuration;
   }

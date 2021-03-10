@@ -35,7 +35,7 @@ public class JobErrorThrownApplier implements TypedEventApplier<JobIntent, JobRe
     eventScopeInstanceState = state.getEventScopeInstanceState();
 
     stateAnalyzer =
-        new CatchEventAnalyzer(state.getWorkflowState(), state.getElementInstanceState());
+        new CatchEventAnalyzer(state.getProcessState(), state.getElementInstanceState());
   }
 
   @Override

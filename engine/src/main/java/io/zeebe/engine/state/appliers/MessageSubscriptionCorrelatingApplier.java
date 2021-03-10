@@ -33,7 +33,7 @@ public final class MessageSubscriptionCorrelatingApplier
     final var sentTime = ActorClock.currentTimeMillis();
     messageSubscriptionState.updateToCorrelatingState(value, sentTime);
 
-    // avoid correlating this message to one instance of this workflow again
+    // avoid correlating this message to one instance of this process again
     messageState.putMessageCorrelation(value.getMessageKey(), value.getBpmnProcessIdBuffer());
   }
 }

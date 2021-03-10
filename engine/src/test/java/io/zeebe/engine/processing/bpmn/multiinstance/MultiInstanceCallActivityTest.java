@@ -15,7 +15,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.CallActivityBuilder;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.JsonUtil;
@@ -44,55 +44,55 @@ public final class MultiInstanceCallActivityTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
   private String jobType;
 
-  private static BpmnModelInstance parentWorkflowWithCallActivity(
+  private static BpmnModelInstance parentProcessWithCallActivity(
       final Consumer<CallActivityBuilder> callActivityBuilder) {
-    final CallActivityBuilder workflow =
+    final CallActivityBuilder process =
         Bpmn.createExecutableProcess(PROCESS_ID_PARENT)
             .startEvent()
             .callActivity(CALL_ACTIVITY_ID, c -> c.zeebeProcessId(PROCESS_ID_CHILD));
 
-    callActivityBuilder.accept(workflow);
+    callActivityBuilder.accept(process);
 
-    return workflow.endEvent().done();
+    return process.endEvent().done();
   }
 
   @Before
   public void init() {
     jobType = helper.getJobType();
 
-    final var childWorkflow =
+    final var childProcess =
         Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
             .startEvent()
             .serviceTask("task", t -> t.zeebeJobType(jobType))
             .endEvent()
             .done();
 
-    final var parentWorkflow =
-        parentWorkflowWithCallActivity(
+    final var parentProcess =
+        parentProcessWithCallActivity(
             callActivity ->
                 callActivity.multiInstance(
                     b -> b.zeebeInputCollectionExpression(INPUT_COLLECTION_VARIABLE)));
 
     ENGINE
         .deployment()
-        .withXmlResource("wf-parent.bpmn", parentWorkflow)
-        .withXmlResource("wf-child.bpmn", childWorkflow)
+        .withXmlResource("wf-parent.bpmn", parentProcess)
+        .withXmlResource("wf-child.bpmn", childProcess)
         .deploy();
   }
 
   @Test
   public void shouldCreateChildInstanceForEachElement() {
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID_PARENT)
             .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
             .create();
 
     final List<Long> callActivityInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.CALL_ACTIVITY)
             .limit(INPUT_COLLECTION.size())
             .map(Record::getKey)
@@ -100,8 +100,8 @@ public final class MultiInstanceCallActivityTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-                .withParentWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withParentProcessInstanceKey(processInstanceKey)
                 .withBpmnProcessId(PROCESS_ID_CHILD)
                 .filterRootScope()
                 .limit(INPUT_COLLECTION.size()))
@@ -115,9 +115,9 @@ public final class MultiInstanceCallActivityTest {
   @Test
   public void shouldCompleteBodyWhenAllChildInstancesAreCompleted() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID_PARENT)
             .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
             .create();
@@ -135,18 +135,18 @@ public final class MultiInstanceCallActivityTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .withParentWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withParentProcessInstanceKey(processInstanceKey)
                 .filterRootScope()
                 .limit(INPUT_COLLECTION.size())
                 .count())
-        .describedAs("Expected child workflow instances to be completed")
+        .describedAs("Expected child process instances to be completed")
         .isEqualTo(INPUT_COLLECTION.size());
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted())
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType())
         .containsSequence(
             BpmnElementType.CALL_ACTIVITY,
@@ -160,9 +160,9 @@ public final class MultiInstanceCallActivityTest {
   @Test
   public void shouldCancelChildInstancesOnTermination() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID_PARENT)
             .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
             .create();
@@ -170,22 +170,22 @@ public final class MultiInstanceCallActivityTest {
     awaitJobsCreated(INPUT_COLLECTION.size());
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_TERMINATED)
-                .withParentWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withParentProcessInstanceKey(processInstanceKey)
                 .filterRootScope()
                 .limit(INPUT_COLLECTION.size())
                 .count())
-        .describedAs("Expected child workflow instances to be terminated")
+        .describedAs("Expected child process instances to be terminated")
         .isEqualTo(INPUT_COLLECTION.size());
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_TERMINATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceTerminated())
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
         .extracting(r -> r.getValue().getBpmnElementType())
         .containsExactly(
             BpmnElementType.CALL_ACTIVITY,
@@ -198,8 +198,8 @@ public final class MultiInstanceCallActivityTest {
   @Test
   public void shouldCollectOutputFromChildInstance() {
     // given
-    final BpmnModelInstance parentWorkflow =
-        parentWorkflowWithCallActivity(
+    final BpmnModelInstance parentProcess =
+        parentProcessWithCallActivity(
             callActivity ->
                 callActivity
                     .zeebeOutputExpression("x", "result")
@@ -209,11 +209,11 @@ public final class MultiInstanceCallActivityTest {
                                 .zeebeOutputElementExpression("result")
                                 .zeebeOutputCollection("results")));
 
-    ENGINE.deployment().withXmlResource("wf-parent.bpmn", parentWorkflow).deploy();
+    ENGINE.deployment().withXmlResource("wf-parent.bpmn", parentProcess).deploy();
 
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID_PARENT)
             .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
             .create();
@@ -237,8 +237,8 @@ public final class MultiInstanceCallActivityTest {
                     .withVariable("x", jobCounter.incrementAndGet())
                     .complete());
 
-    RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
         .await();
 
@@ -249,10 +249,10 @@ public final class MultiInstanceCallActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToWorkflowInstance(workflowInstanceKey)
+                .limitToProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withName("results")
-                .withScopeKey(workflowInstanceKey))
+                .withScopeKey(processInstanceKey))
         .extracting(r -> r.getValue().getValue())
         .containsExactly(expectedOutputCollection);
   }

@@ -26,13 +26,13 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
   private final StringProperty stacktraceProp = new StringProperty("stacktrace", "");
   private final LongProperty errorEventPositionProp = new LongProperty("errorEventPosition");
 
-  private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
 
   public ErrorRecord() {
     declareProperty(exceptionMessageProp)
         .declareProperty(stacktraceProp)
         .declareProperty(errorEventPositionProp)
-        .declareProperty(workflowInstanceKeyProp);
+        .declareProperty(processInstanceKeyProp);
   }
 
   public void initErrorRecord(final Throwable throwable, final long position) {
@@ -73,12 +73,12 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
     return errorEventPositionProp.getValue();
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
-  public ErrorRecord setWorkflowInstanceKey(final long workflowInstanceKey) {
-    workflowInstanceKeyProp.setValue(workflowInstanceKey);
+  public ErrorRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
 }

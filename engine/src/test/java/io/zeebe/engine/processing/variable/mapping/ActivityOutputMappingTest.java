@@ -15,8 +15,8 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
@@ -120,32 +120,32 @@ public final class ActivityOutputMappingTest {
                 .done())
         .deploy()
         .getValue()
-        .getDeployedWorkflows()
+        .getDeployedProcesses()
         .get(0)
-        .getWorkflowKey();
+        .getProcessDefinitionKey();
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables(initialVariables)
             .create();
 
-    ENGINE_RULE.job().ofInstance(workflowInstanceKey).withType(jobType).complete();
+    ENGINE_RULE.job().ofInstance(processInstanceKey).withType(jobType).complete();
 
     // then
-    final Record<WorkflowInstanceRecordValue> taskCompleted =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> taskCompleted =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("task")
             .getFirst();
 
     assertThat(
             RecordingExporter.variableRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .skipUntil(r -> r.getPosition() > taskCompleted.getPosition())
-                .withScopeKey(workflowInstanceKey)
+                .withScopeKey(processInstanceKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> variable(v.getName(), v.getValue()))

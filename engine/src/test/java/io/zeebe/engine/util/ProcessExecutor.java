@@ -25,12 +25,12 @@ import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivat
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 
-/** This class executes individual {@link AbstractExecutionStep} for a given workflow */
-public class WorkflowExecutor {
+/** This class executes individual {@link AbstractExecutionStep} for a given process */
+public class ProcessExecutor {
 
   private final EngineRule engineRule;
 
-  public WorkflowExecutor(final EngineRule engineRule) {
+  public ProcessExecutor(final EngineRule engineRule) {
     this.engineRule = engineRule;
   }
 
@@ -38,7 +38,7 @@ public class WorkflowExecutor {
 
     if (step instanceof StepStartProcessInstance) {
       final StepStartProcessInstance startProcess = (StepStartProcessInstance) step;
-      createWorkflowInstance(startProcess);
+      createProcessInstance(startProcess);
     } else if (step instanceof StepPublishStartMessage) {
       final StepPublishStartMessage publishMessage = (StepPublishStartMessage) step;
       publishStartMessage(publishMessage);
@@ -61,7 +61,7 @@ public class WorkflowExecutor {
     } else if ((step instanceof StepPickDefaultCase) || (step instanceof StepPickConditionCase)) {
       /*
        * Nothing to do here, as the choice is made by the engine. The default case is for debugging
-       * purposes only The condition case is implemented by starting the workflow with the right
+       * purposes only The condition case is implemented by starting the process with the right
        * variables;
        *
        * One thing that might be a useful addition here is to wait until a certain path was taken to improve debugging
@@ -107,7 +107,7 @@ public class WorkflowExecutor {
 
                 engineRule
                     .incident()
-                    .ofInstance(incidentRecord.getValue().getWorkflowInstanceKey())
+                    .ofInstance(incidentRecord.getValue().getProcessInstanceKey())
                     .withKey(incidentRecord.getKey())
                     .resolve();
                 RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
@@ -205,9 +205,9 @@ public class WorkflowExecutor {
         .await();
   }
 
-  private void createWorkflowInstance(final StepStartProcessInstance startProcess) {
+  private void createProcessInstance(final StepStartProcessInstance startProcess) {
     engineRule
-        .workflowInstance()
+        .processInstance()
         .ofBpmnProcessId(startProcess.getProcessId())
         .withVariables(startProcess.getVariables())
         .create();

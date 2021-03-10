@@ -21,7 +21,7 @@ public final class OpenMessageSubscriptionCommand
   private final UnsafeBuffer correlationKey = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
-  private long workflowInstanceKey;
+  private long processInstanceKey;
   private long elementInstanceKey;
   private boolean closeOnCorrelate;
 
@@ -38,7 +38,7 @@ public final class OpenMessageSubscriptionCommand
   @Override
   public void reset() {
     subscriptionPartitionId = OpenMessageSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    workflowInstanceKey = OpenMessageSubscriptionDecoder.workflowInstanceKeyNullValue();
+    processInstanceKey = OpenMessageSubscriptionDecoder.processInstanceKeyNullValue();
     elementInstanceKey = OpenMessageSubscriptionDecoder.elementInstanceKeyNullValue();
     messageName.wrap(0, 0);
     correlationKey.wrap(0, 0);
@@ -62,7 +62,7 @@ public final class OpenMessageSubscriptionCommand
 
     encoder
         .subscriptionPartitionId(subscriptionPartitionId)
-        .workflowInstanceKey(workflowInstanceKey)
+        .processInstanceKey(processInstanceKey)
         .elementInstanceKey(elementInstanceKey)
         .closeOnCorrelate(closeOnCorrelate ? BooleanType.TRUE : BooleanType.FALSE)
         .putMessageName(messageName, 0, messageName.capacity())
@@ -75,7 +75,7 @@ public final class OpenMessageSubscriptionCommand
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
-    workflowInstanceKey = decoder.workflowInstanceKey();
+    processInstanceKey = decoder.processInstanceKey();
     elementInstanceKey = decoder.elementInstanceKey();
     closeOnCorrelate = decoder.closeOnCorrelate() == BooleanType.TRUE;
 
@@ -108,12 +108,12 @@ public final class OpenMessageSubscriptionCommand
     this.subscriptionPartitionId = subscriptionPartitionId;
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(final long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public long getElementInstanceKey() {

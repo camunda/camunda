@@ -8,13 +8,13 @@
 package io.zeebe.engine.state.instance;
 
 import io.zeebe.db.DbValue;
-import io.zeebe.engine.processing.bpmn.WorkflowInstanceLifecycle;
+import io.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.ObjectProperty;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
 public final class ElementInstance extends UnpackedObject implements DbValue {
 
@@ -45,8 +45,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   public ElementInstance(
       final long key,
       final ElementInstance parent,
-      final WorkflowInstanceIntent state,
-      final WorkflowInstanceRecord value) {
+      final ProcessInstanceIntent state,
+      final ProcessInstanceRecord value) {
     this();
 
     recordProp.getValue().setKey(key);
@@ -59,7 +59,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   }
 
   public ElementInstance(
-      final long key, final WorkflowInstanceIntent state, final WorkflowInstanceRecord value) {
+      final long key, final ProcessInstanceIntent state, final ProcessInstanceRecord value) {
     this(key, null, state, value);
   }
 
@@ -67,19 +67,19 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     return recordProp.getValue().getKey();
   }
 
-  public WorkflowInstanceIntent getState() {
+  public ProcessInstanceIntent getState() {
     return recordProp.getValue().getState();
   }
 
-  public void setState(final WorkflowInstanceIntent state) {
+  public void setState(final ProcessInstanceIntent state) {
     recordProp.getValue().setState(state);
   }
 
-  public WorkflowInstanceRecord getValue() {
+  public ProcessInstanceRecord getValue() {
     return recordProp.getValue().getValue();
   }
 
-  public void setValue(final WorkflowInstanceRecord value) {
+  public void setValue(final ProcessInstanceRecord value) {
     recordProp.getValue().setValue(value);
   }
 
@@ -101,19 +101,19 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   }
 
   public boolean canTerminate() {
-    return WorkflowInstanceLifecycle.canTerminate(getState());
+    return ProcessInstanceLifecycle.canTerminate(getState());
   }
 
   public boolean isActive() {
-    return WorkflowInstanceLifecycle.isActive(getState());
+    return ProcessInstanceLifecycle.isActive(getState());
   }
 
   public boolean isTerminating() {
-    return WorkflowInstanceLifecycle.isTerminating(getState());
+    return ProcessInstanceLifecycle.isTerminating(getState());
   }
 
   public boolean isInFinalState() {
-    return WorkflowInstanceLifecycle.isFinalState(getState());
+    return ProcessInstanceLifecycle.isFinalState(getState());
   }
 
   public void spawnToken() {

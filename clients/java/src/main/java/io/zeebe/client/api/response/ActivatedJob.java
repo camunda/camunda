@@ -25,19 +25,19 @@ public interface ActivatedJob {
   /** @return the type of the job */
   String getType();
 
-  /** @return key of the workflow instance */
-  long getWorkflowInstanceKey();
+  /** @return key of the process instance */
+  long getProcessInstanceKey();
 
-  /** @return BPMN process id of the workflow */
+  /** @return BPMN process id of the process */
   String getBpmnProcessId();
 
-  /** @return version of the workflow */
-  int getWorkflowDefinitionVersion();
+  /** @return version of the process */
+  int getProcessDefinitionVersion();
 
-  /** @return key of the workflow */
-  long getWorkflowKey();
+  /** @return key of the process */
+  long getProcessDefinitionKey();
 
-  /** @return id of the workflow element */
+  /** @return id of the process element */
   String getElementId();
 
   /** @return key of the element instance */

@@ -5,25 +5,25 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.processing.workflowinstance;
+package io.zeebe.engine.processing.processinstance;
 
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.CANCEL;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.CANCEL;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.engine.util.RecordToWrite;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
@@ -38,7 +38,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public final class CancelWorkflowInstanceConcurrentlyTest {
+public final class CancelProcessInstanceConcurrentlyTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -104,7 +104,7 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
   public String description;
 
   @Parameter(1)
-  public BpmnModelInstance workflow;
+  public BpmnModelInstance process;
 
   @Parameter(2)
   public int expectedActivatableJobs;
@@ -112,9 +112,9 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
   @Parameter(3)
   public List<String> expectedTerminatedElementIds;
 
-  private long workflowInstanceKey;
+  private long processInstanceKey;
   private Record<JobRecordValue> createdJob;
-  private Record<WorkflowInstanceRecordValue> activityActivated;
+  private Record<ProcessInstanceRecordValue> activityActivated;
 
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
@@ -128,18 +128,18 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
 
   @Before
   public void init() {
-    ENGINE.deployment().withXmlResource(workflow).deploy();
+    ENGINE.deployment().withXmlResource(process).deploy();
 
-    workflowInstanceKey =
+    processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(INPUT_COLLECTION_VARIABLE, Arrays.asList("one", "two"))
             .create();
 
     activityActivated =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId(ELEMENT_ID)
             .withIntent(ELEMENT_ACTIVATED)
             .withElementType(BpmnElementType.SERVICE_TASK)
@@ -148,13 +148,13 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
     // wait for all jobs to appear
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(expectedActivatableJobs))
         .hasSize(expectedActivatableJobs);
 
     createdJob =
         RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withType(JOB_TYPE)
             .getFirst();
 
@@ -169,17 +169,17 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
             .job(JobIntent.COMPLETE, createdJob.getValue())
             .key(createdJob.getKey()),
         RecordToWrite.command()
-            .workflowInstance(CANCEL, new WorkflowInstanceRecord())
-            .key(workflowInstanceKey));
+            .processInstance(CANCEL, new ProcessInstanceRecord())
+            .key(processInstanceKey));
 
     // when
     ENGINE.start();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceTerminated()
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated()
                 .filter(
                     r -> r.getIntent() == ELEMENT_TERMINATED || r.getIntent() == ELEMENT_COMPLETED))
         .extracting(r -> r.getValue().getElementId())
@@ -199,17 +199,17 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
             .key(createdJob.getKey())
             .causedBy(0),
         RecordToWrite.command()
-            .workflowInstance(CANCEL, new WorkflowInstanceRecord())
-            .key(workflowInstanceKey));
+            .processInstance(CANCEL, new ProcessInstanceRecord())
+            .key(processInstanceKey));
 
     // when
     ENGINE.start();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceTerminated()
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated()
                 .filter(r -> r.getIntent() == ELEMENT_TERMINATED))
         .extracting(r -> r.getValue().getElementId())
         .containsSubsequence(expectedTerminatedElementIds);
@@ -227,22 +227,22 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
             .key(createdJob.getKey())
             .causedBy(0),
         RecordToWrite.event()
-            .workflowInstance(
-                WorkflowInstanceIntent.ELEMENT_COMPLETING, activityActivated.getValue())
+            .processInstance(
+                ProcessInstanceIntent.ELEMENT_COMPLETING, activityActivated.getValue())
             .key(activityActivated.getKey())
             .causedBy(1),
         RecordToWrite.command()
-            .workflowInstance(CANCEL, new WorkflowInstanceRecord())
-            .key(workflowInstanceKey));
+            .processInstance(CANCEL, new ProcessInstanceRecord())
+            .key(processInstanceKey));
 
     // when
     ENGINE.start();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceTerminated()
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated()
                 .filter(r -> r.getIntent() == ELEMENT_TERMINATED))
         .extracting(r -> r.getValue().getElementId())
         .containsSubsequence(expectedTerminatedElementIds);
@@ -260,27 +260,27 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
             .key(createdJob.getKey())
             .causedBy(0),
         RecordToWrite.event()
-            .workflowInstance(
-                WorkflowInstanceIntent.ELEMENT_COMPLETING, activityActivated.getValue())
+            .processInstance(
+                ProcessInstanceIntent.ELEMENT_COMPLETING, activityActivated.getValue())
             .key(activityActivated.getKey())
             .causedBy(1),
         RecordToWrite.event()
-            .workflowInstance(
-                WorkflowInstanceIntent.ELEMENT_COMPLETED, activityActivated.getValue())
+            .processInstance(
+                ProcessInstanceIntent.ELEMENT_COMPLETED, activityActivated.getValue())
             .key(activityActivated.getKey())
             .causedBy(2),
         RecordToWrite.command()
-            .workflowInstance(CANCEL, new WorkflowInstanceRecord())
-            .key(workflowInstanceKey));
+            .processInstance(CANCEL, new ProcessInstanceRecord())
+            .key(processInstanceKey));
 
     // when
     ENGINE.start();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceTerminated()
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated()
                 .filter(r -> r.getIntent() == ELEMENT_TERMINATED))
         .extracting(r -> r.getValue().getElementId())
         .containsSubsequence(expectedTerminatedElementIds);

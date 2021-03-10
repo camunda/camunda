@@ -7,22 +7,22 @@
  */
 package io.zeebe.engine.state.immutable;
 
-import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
+import io.zeebe.engine.state.message.ProcessInstanceSubscription;
 import org.agrona.DirectBuffer;
 
-public interface WorkflowInstanceSubscriptionState {
+public interface ProcessInstanceSubscriptionState {
 
-  WorkflowInstanceSubscription getSubscription(long elementInstanceKey, DirectBuffer messageName);
+  ProcessInstanceSubscription getSubscription(long elementInstanceKey, DirectBuffer messageName);
 
   void visitElementSubscriptions(
-      long elementInstanceKey, WorkflowInstanceSubscriptionVisitor visitor);
+      long elementInstanceKey, ProcessInstanceSubscriptionVisitor visitor);
 
-  void visitSubscriptionBefore(long deadline, WorkflowInstanceSubscriptionVisitor visitor);
+  void visitSubscriptionBefore(long deadline, ProcessInstanceSubscriptionVisitor visitor);
 
   boolean existSubscriptionForElementInstance(long elementInstanceKey, DirectBuffer messageName);
 
   @FunctionalInterface
-  interface WorkflowInstanceSubscriptionVisitor {
-    boolean visit(WorkflowInstanceSubscription subscription);
+  interface ProcessInstanceSubscriptionVisitor {
+    boolean visit(ProcessInstanceSubscription subscription);
   }
 }

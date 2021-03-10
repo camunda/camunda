@@ -8,7 +8,7 @@
 package io.zeebe.engine.processing.bpmn;
 
 /**
- * Something went wrong during the workflow processing. This kind of exception should not be
+ * Something went wrong during the process processing. This kind of exception should not be
  * handled.
  */
 public final class BpmnProcessingException extends RuntimeException {
@@ -18,7 +18,7 @@ public final class BpmnProcessingException extends RuntimeException {
   /**
    * The failure message of the exception is build from the given context and the message.
    *
-   * @param context workflow instance-related data of the element that is executed
+   * @param context process instance-related data of the element that is executed
    * @param message the failure message
    */
   public BpmnProcessingException(final BpmnElementContext context, final String message) {

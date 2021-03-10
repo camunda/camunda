@@ -91,8 +91,8 @@ public final class MessageSubscriptionStateTest {
 
     // then
     assertThat(subscriptions).hasSize(1);
-    assertThat(subscriptions.get(0).getRecord().getWorkflowInstanceKey())
-        .isEqualTo(subscription.getWorkflowInstanceKey());
+    assertThat(subscriptions.get(0).getRecord().getProcessInstanceKey())
+        .isEqualTo(subscription.getProcessInstanceKey());
     assertThat(subscriptions.get(0).getRecord().getElementInstanceKey())
         .isEqualTo(subscription.getElementInstanceKey());
     assertThat(subscriptions.get(0).getRecord().getMessageName())
@@ -355,9 +355,9 @@ public final class MessageSubscriptionStateTest {
   private MessageSubscriptionRecord subscription(
       final String name, final String correlationKey, final long elementInstanceKey) {
     return new MessageSubscriptionRecord()
-        .setWorkflowInstanceKey(1L)
+        .setProcessInstanceKey(1L)
         .setElementInstanceKey(elementInstanceKey)
-        .setBpmnProcessId(wrapString("workflow"))
+        .setBpmnProcessId(wrapString("process"))
         .setMessageName(wrapString(name))
         .setCorrelationKey(wrapString(correlationKey))
         .setInterrupting(true);

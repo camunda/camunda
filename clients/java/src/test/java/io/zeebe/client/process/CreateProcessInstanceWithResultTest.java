@@ -13,48 +13,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.workflow;
+package io.zeebe.client.process;
 
 import static io.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.client.api.response.WorkflowInstanceResult;
+import io.zeebe.client.api.response.ProcessInstanceResult;
 import io.zeebe.client.util.ClientTest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import java.time.Duration;
 import org.junit.Test;
 
-public final class CreateWorkflowInstanceWithResultTest extends ClientTest {
+public final class CreateProcessInstanceWithResultTest extends ClientTest {
 
   @Test
-  public void shouldCreateWorkflowInstanceByWorkflowInstanceKey() {
+  public void shouldCreateProcessInstanceByProcessInstanceKey() {
     // given
     final String variables = "{\"key\": \"val\"}";
-    gatewayService.onCreateWorkflowInstanceWithResultRequest(123, "testProcess", 12, 32, variables);
+    gatewayService.onCreateProcessInstanceWithResultRequest(123, "testProcess", 12, 32, variables);
 
     // when
-    final WorkflowInstanceResult response =
+    final ProcessInstanceResult response =
         client
             .newCreateInstanceCommand()
-            .workflowKey(123)
+            .processDefinitionKey(123)
             .withResult()
             .requestTimeout(Duration.ofSeconds(123))
             .send()
             .join();
 
     // then
-    assertThat(response.getWorkflowKey()).isEqualTo(123);
+    assertThat(response.getProcessDefinitionKey()).isEqualTo(123);
     assertThat(response.getBpmnProcessId()).isEqualTo("testProcess");
     assertThat(response.getVersion()).isEqualTo(12);
-    assertThat(response.getWorkflowInstanceKey()).isEqualTo(32);
+    assertThat(response.getProcessInstanceKey()).isEqualTo(32);
     assertThat(response.getVariablesAsMap()).containsExactly(entry("key", "val"));
     assertThat(response.getVariables()).isEqualTo(variables);
     final VariablesPojo result = response.getVariablesAsType(VariablesPojo.class);
     assertThat(result.getKey()).isEqualTo("val");
 
-    final CreateWorkflowInstanceWithResultRequest request = gatewayService.getLastRequest();
-    assertThat(request.getRequest().getWorkflowKey()).isEqualTo(123);
+    final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
+    assertThat(request.getRequest().getProcessDefinitionKey()).isEqualTo(123);
     assertThat(request.getRequestTimeout()).isEqualTo(Duration.ofSeconds(123).toMillis());
     assertThat(request.getFetchVariablesList()).isEmpty();
   }
@@ -63,13 +63,13 @@ public final class CreateWorkflowInstanceWithResultTest extends ClientTest {
   public void shouldBeAbleToSpecifyFetchVariables() {
     // given
     final String variables = "{\"key\": \"val\"}";
-    gatewayService.onCreateWorkflowInstanceWithResultRequest(123, "testProcess", 12, 32, variables);
+    gatewayService.onCreateProcessInstanceWithResultRequest(123, "testProcess", 12, 32, variables);
 
     // when
-    final WorkflowInstanceResult response =
+    final ProcessInstanceResult response =
         client
             .newCreateInstanceCommand()
-            .workflowKey(123)
+            .processDefinitionKey(123)
             .withResult()
             .fetchVariables("x")
             .requestTimeout(Duration.ofSeconds(123))
@@ -77,14 +77,14 @@ public final class CreateWorkflowInstanceWithResultTest extends ClientTest {
             .join();
 
     // then
-    final CreateWorkflowInstanceWithResultRequest request = gatewayService.getLastRequest();
-    assertThat(request.getRequest().getWorkflowKey()).isEqualTo(123);
+    final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
+    assertThat(request.getRequest().getProcessDefinitionKey()).isEqualTo(123);
     assertThat(request.getRequestTimeout()).isEqualTo(Duration.ofSeconds(123).toMillis());
     assertThat(request.getFetchVariablesList()).containsExactly("x");
   }
 
   @Test
-  public void shouldCreateWorkflowInstanceByBpmnProcessIdAndVersion() {
+  public void shouldCreateProcessInstanceByBpmnProcessIdAndVersion() {
     // when
     client
         .newCreateInstanceCommand()
@@ -95,24 +95,24 @@ public final class CreateWorkflowInstanceWithResultTest extends ClientTest {
         .join();
 
     // then
-    final CreateWorkflowInstanceWithResultRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
     assertThat(request.getRequest().getBpmnProcessId()).isEqualTo("testProcess");
     assertThat(request.getRequest().getVersion()).isEqualTo(123);
   }
 
   @Test
-  public void shouldCreateWorkflowInstanceWithStringVariables() {
+  public void shouldCreateProcessInstanceWithStringVariables() {
     // when
     client
         .newCreateInstanceCommand()
-        .workflowKey(123)
+        .processDefinitionKey(123)
         .variables("{\"foo\": \"bar\"}")
         .withResult()
         .send()
         .join();
 
     // then
-    final CreateWorkflowInstanceWithResultRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
     assertThat(fromJsonAsMap(request.getRequest().getVariables()))
         .containsOnly(entry("foo", "bar"));
   }

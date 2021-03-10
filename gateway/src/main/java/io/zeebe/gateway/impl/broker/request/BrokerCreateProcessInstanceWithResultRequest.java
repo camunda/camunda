@@ -7,64 +7,64 @@
  */
 package io.zeebe.gateway.impl.broker.request;
 
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceResultRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public final class BrokerCreateWorkflowInstanceWithResultRequest
-    extends BrokerExecuteCommand<WorkflowInstanceResultRecord> {
-  private final WorkflowInstanceCreationRecord requestDto = new WorkflowInstanceCreationRecord();
+public final class BrokerCreateProcessInstanceWithResultRequest
+    extends BrokerExecuteCommand<ProcessInstanceResultRecord> {
+  private final ProcessInstanceCreationRecord requestDto = new ProcessInstanceCreationRecord();
 
-  public BrokerCreateWorkflowInstanceWithResultRequest() {
+  public BrokerCreateProcessInstanceWithResultRequest() {
     super(
-        ValueType.WORKFLOW_INSTANCE_CREATION,
-        WorkflowInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT);
+        ValueType.PROCESS_INSTANCE_CREATION,
+        ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT);
   }
 
-  public BrokerCreateWorkflowInstanceWithResultRequest setBpmnProcessId(
+  public BrokerCreateProcessInstanceWithResultRequest setBpmnProcessId(
       final String bpmnProcessId) {
     requestDto.setBpmnProcessId(bpmnProcessId);
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceWithResultRequest setKey(final long key) {
-    requestDto.setWorkflowKey(key);
+  public BrokerCreateProcessInstanceWithResultRequest setKey(final long key) {
+    requestDto.setProcessDefinitionKey(key);
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceWithResultRequest setVersion(final int version) {
+  public BrokerCreateProcessInstanceWithResultRequest setVersion(final int version) {
     requestDto.setVersion(version);
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceWithResultRequest setVariables(final DirectBuffer variables) {
+  public BrokerCreateProcessInstanceWithResultRequest setVariables(final DirectBuffer variables) {
     requestDto.setVariables(variables);
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceWithResultRequest setFetchVariables(
+  public BrokerCreateProcessInstanceWithResultRequest setFetchVariables(
       final List<String> fetchVariables) {
     requestDto.setFetchVariables(fetchVariables);
     return this;
   }
 
   @Override
-  public WorkflowInstanceCreationRecord getRequestWriter() {
+  public ProcessInstanceCreationRecord getRequestWriter() {
     return requestDto;
   }
 
   @Override
-  protected WorkflowInstanceResultRecord toResponseDto(final DirectBuffer buffer) {
-    final WorkflowInstanceResultRecord responseDto = new WorkflowInstanceResultRecord();
+  protected ProcessInstanceResultRecord toResponseDto(final DirectBuffer buffer) {
+    final ProcessInstanceResultRecord responseDto = new ProcessInstanceResultRecord();
     responseDto.wrap(buffer);
     return responseDto;
   }
 
   @Override
   protected boolean isValidResponse() {
-    return response.getValueType() == ValueType.WORKFLOW_INSTANCE_RESULT;
+    return response.getValueType() == ValueType.PROCESS_INSTANCE_RESULT;
   }
 }

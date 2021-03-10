@@ -17,12 +17,12 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.stream.Stream;
@@ -61,9 +61,9 @@ public final class RecordStream extends StreamWrapper<LoggedEvent, RecordStream>
             .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
-  public TypedRecordStream<WorkflowInstanceRecord> onlyWorkflowInstanceRecords() {
+  public TypedRecordStream<ProcessInstanceRecord> onlyProcessInstanceRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isWorkflowInstanceRecord)
+        filter(Records::isProcessInstanceRecord)
             .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
@@ -86,10 +86,10 @@ public final class RecordStream extends StreamWrapper<LoggedEvent, RecordStream>
             .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
-  public TypedRecordStream<WorkflowInstanceSubscriptionRecord>
-      onlyWorkflowInstanceSubscriptionRecords() {
+  public TypedRecordStream<ProcessInstanceSubscriptionRecord>
+      onlyProcessInstanceSubscriptionRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isWorkflowInstanceSubscriptionRecord)
+        filter(Records::isProcessInstanceSubscriptionRecord)
             .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
@@ -99,9 +99,9 @@ public final class RecordStream extends StreamWrapper<LoggedEvent, RecordStream>
             .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
-  public TypedRecordStream<WorkflowInstanceCreationRecord> onlyWorkflowInstanceCreationRecords() {
+  public TypedRecordStream<ProcessInstanceCreationRecord> onlyProcessInstanceCreationRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isWorkflowInstanceCreationRecord)
+        filter(Records::isProcessInstanceCreationRecord)
             .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
@@ -112,15 +112,15 @@ public final class RecordStream extends StreamWrapper<LoggedEvent, RecordStream>
   }
 
   /**
-   * This method makes only sense when the stream contains only entries of one workflow instance and
+   * This method makes only sense when the stream contains only entries of one process instance and
    * the element is only instantiated once within that instance.
    */
-  public Stream<WorkflowInstanceIntent> onlyStatesOf(final String elementId) {
+  public Stream<ProcessInstanceIntent> onlyStatesOf(final String elementId) {
     final DirectBuffer elementIdBuffer = BufferUtil.wrapString(elementId);
 
-    return onlyWorkflowInstanceRecords()
+    return onlyProcessInstanceRecords()
         .onlyEvents()
         .filter(r -> elementIdBuffer.equals(r.getValue().getElementIdBuffer()))
-        .map(r -> (WorkflowInstanceIntent) r.getIntent());
+        .map(r -> (ProcessInstanceIntent) r.getIntent());
   }
 }

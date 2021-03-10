@@ -45,7 +45,7 @@ public final class JobWorkerTest {
   @Test
   public void shouldActivateJob() {
     // given
-    final var workflow =
+    final var process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
@@ -56,10 +56,10 @@ public final class JobWorkerTest {
                         .zeebeTaskHeader("x", "1")
                         .zeebeTaskHeader("y", "2"))
             .done();
-    final var workflowKey = CLIENT_RULE.deployWorkflow(workflow);
+    final var processDefinitionKey = CLIENT_RULE.deployProcess(process);
 
-    final var workflowInstanceKey =
-        CLIENT_RULE.createWorkflowInstance(workflowKey, "{\"a\":1, \"b\":2}");
+    final var processInstanceKey =
+        CLIENT_RULE.createProcessInstance(processDefinitionKey, "{\"a\":1, \"b\":2}");
 
     // when
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
@@ -74,9 +74,9 @@ public final class JobWorkerTest {
     assertThat(job.getRetries()).isEqualTo(5);
     assertThat(job.getDeadline()).isGreaterThan(Instant.now().toEpochMilli());
     assertThat(job.getWorker()).isEqualTo("test");
-    assertThat(job.getWorkflowKey()).isEqualTo(workflowKey);
+    assertThat(job.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(job.getBpmnProcessId()).isEqualTo("process");
-    assertThat(job.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
+    assertThat(job.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(job.getElementId()).isEqualTo("task");
     assertThat(job.getCustomHeaders()).containsExactly(entry("x", "1"), entry("y", "2"));
     assertThat(job.getVariablesAsMap()).containsExactly(entry("a", 1), entry("b", 2));

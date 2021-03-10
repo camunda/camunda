@@ -22,29 +22,29 @@ import org.agrona.DirectBuffer;
 public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValue
     implements MessageStartEventSubscriptionRecordValue {
 
-  private final LongProperty workflowKeyProp = new LongProperty("workflowKey", -1L);
+  private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey", -1L);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final StringProperty startEventIdProp = new StringProperty("startEventId", "");
 
-  private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
 
   public MessageStartEventSubscriptionRecord() {
-    declareProperty(workflowKeyProp)
+    declareProperty(processDefinitionKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(startEventIdProp)
         .declareProperty(bpmnProcessIdProp)
-        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(processInstanceKeyProp)
         .declareProperty(messageKeyProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(variablesProp);
   }
 
   public void wrap(final MessageStartEventSubscriptionRecord record) {
-    workflowKeyProp.setValue(record.getWorkflowKey());
+    processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
     bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
     messageNameProp.setValue(record.getMessageNameBuffer());
     startEventIdProp.setValue(record.getStartEventIdBuffer());
@@ -61,12 +61,12 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   }
 
   @Override
-  public long getWorkflowKey() {
-    return workflowKeyProp.getValue();
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProp.getValue();
   }
 
-  public MessageStartEventSubscriptionRecord setWorkflowKey(final long key) {
-    workflowKeyProp.setValue(key);
+  public MessageStartEventSubscriptionRecord setProcessDefinitionKey(final long key) {
+    processDefinitionKeyProp.setValue(key);
     return this;
   }
 
@@ -131,12 +131,12 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   }
 
   @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
-  public MessageStartEventSubscriptionRecord setWorkflowInstanceKey(final long key) {
-    workflowInstanceKeyProp.setValue(key);
+  public MessageStartEventSubscriptionRecord setProcessInstanceKey(final long key) {
+    processInstanceKeyProp.setValue(key);
     return this;
   }
 

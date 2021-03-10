@@ -19,9 +19,9 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
@@ -42,7 +42,7 @@ public final class CallActivityTest {
 
   private String jobType;
 
-  private static BpmnModelInstance parentWorkflow(final Consumer<CallActivityBuilder> consumer) {
+  private static BpmnModelInstance parentProcess(final Consumer<CallActivityBuilder> consumer) {
     final var builder =
         Bpmn.createExecutableProcess(PROCESS_ID_PARENT)
             .startEvent()
@@ -57,9 +57,9 @@ public final class CallActivityTest {
   public void init() {
     jobType = helper.getJobType();
 
-    final var parentWorkflow = parentWorkflow(CallActivityBuilder::done);
+    final var parentProcess = parentProcess(CallActivityBuilder::done);
 
-    final var childWorkflow =
+    final var childProcess =
         Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
             .startEvent()
             .serviceTask("child-task", t -> t.zeebeJobType(jobType))
@@ -68,118 +68,118 @@ public final class CallActivityTest {
 
     ENGINE
         .deployment()
-        .withXmlResource("wf-parent.bpmn", parentWorkflow)
-        .withXmlResource("wf-child.bpmn", childWorkflow)
+        .withXmlResource("wf-parent.bpmn", parentProcess)
+        .withXmlResource("wf-child.bpmn", childProcess)
         .deploy();
   }
 
   @Test
   public void shouldActivateCallActivity() {
     // when
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .withElementId("call")
                 .limit(2))
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsExactly(
-            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_ACTIVATED));
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   @Test
   public void shouldCreateInstanceOfCalledElement() {
     // when
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withParentWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords()
+                .withParentProcessInstanceKey(processInstanceKey)
                 .limit(4))
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsExactly(
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED));
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   @Test
   public void shouldCreateInstanceOfLatestVersionOfCalledElement() {
     // given
-    final var workflowChildV2 =
+    final var processChildV2 =
         Bpmn.createExecutableProcess(PROCESS_ID_CHILD).startEvent("v2").endEvent().done();
 
     final var secondDeployment =
-        ENGINE.deployment().withXmlResource("wf-child.bpmn", workflowChildV2).deploy();
-    final var secondVersion = secondDeployment.getValue().getDeployedWorkflows().get(0);
+        ENGINE.deployment().withXmlResource("wf-child.bpmn", processChildV2).deploy();
+    final var secondVersion = secondDeployment.getValue().getDeployedProcesses().get(0);
 
     // when
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     // then
-    Assertions.assertThat(getChildInstanceOf(workflowInstanceKey))
+    Assertions.assertThat(getChildInstanceOf(processInstanceKey))
         .hasVersion(secondVersion.getVersion())
-        .hasWorkflowKey(secondVersion.getWorkflowKey());
+        .hasProcessDefinitionKey(secondVersion.getProcessDefinitionKey());
   }
 
   @Test
   public void shouldHaveReferenceToParentInstance() {
     // when
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     completeJobWith(Map.of());
 
     // then
-    final var callActivityInstanceKey = getCallActivityInstanceKey(workflowInstanceKey);
+    final var callActivityInstanceKey = getCallActivityInstanceKey(processInstanceKey);
 
     assertThat(
             RecordingExporter.records()
-                .limitToWorkflowInstance(workflowInstanceKey)
-                .workflowInstanceRecords()
-                .withParentWorkflowInstanceKey(workflowInstanceKey))
+                .limitToProcessInstance(processInstanceKey)
+                .processInstanceRecords()
+                .withParentProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
-        .extracting(v -> tuple(v.getParentWorkflowInstanceKey(), v.getParentElementInstanceKey()))
-        .containsOnly(tuple(workflowInstanceKey, callActivityInstanceKey));
+        .extracting(v -> tuple(v.getParentProcessInstanceKey(), v.getParentElementInstanceKey()))
+        .containsOnly(tuple(processInstanceKey, callActivityInstanceKey));
   }
 
   @Test
   public void shouldCompleteCallActivity() {
     // when
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     completeJobWith(Map.of());
 
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToWorkflowInstance(workflowInstanceKey)
-                .workflowInstanceRecords())
+                .limitToProcessInstance(processInstanceKey)
+                .processInstanceRecords())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
-            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.SEQUENCE_FLOW, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
   public void shouldCopyVariablesToChild() {
     // when
-    final var workflowInstanceKey =
+    final var processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID_PARENT)
             .withVariables(
                 Map.of(
@@ -188,16 +188,16 @@ public final class CallActivityTest {
             .create();
 
     // then
-    final var childInstance = getChildInstanceOf(workflowInstanceKey);
+    final var childInstance = getChildInstanceOf(processInstanceKey);
 
     assertThat(
             RecordingExporter.variableRecords()
-                .withWorkflowInstanceKey(childInstance.getWorkflowInstanceKey())
+                .withProcessInstanceKey(childInstance.getProcessInstanceKey())
                 .limit(2))
         .extracting(Record::getValue)
-        .allMatch(v -> v.getWorkflowKey() == childInstance.getWorkflowKey())
-        .allMatch(v -> v.getWorkflowInstanceKey() == childInstance.getWorkflowInstanceKey())
-        .allMatch(v -> v.getScopeKey() == childInstance.getWorkflowInstanceKey())
+        .allMatch(v -> v.getProcessDefinitionKey() == childInstance.getProcessDefinitionKey())
+        .allMatch(v -> v.getProcessInstanceKey() == childInstance.getProcessInstanceKey())
+        .allMatch(v -> v.getScopeKey() == childInstance.getProcessInstanceKey())
         .extracting(v -> tuple(v.getName(), v.getValue()))
         .contains(tuple("x", "1"), tuple("y", "2"));
   }
@@ -205,8 +205,8 @@ public final class CallActivityTest {
   @Test
   public void shouldPropagateVariablesToParent() {
     // given
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     // when
     completeJobWith(Map.of("y", 2));
@@ -214,12 +214,12 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToWorkflowInstance(workflowInstanceKey)
+                .limitToProcessInstance(processInstanceKey)
                 .variableRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey))
+                .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getScopeKey(), v.getName(), v.getValue()))
-        .containsExactly(tuple(workflowInstanceKey, "y", "2"));
+        .containsExactly(tuple(processInstanceKey, "y", "2"));
   }
 
   @Test
@@ -228,13 +228,13 @@ public final class CallActivityTest {
     ENGINE
         .deployment()
         .withXmlResource(
-            "wf-parent.bpmn", parentWorkflow(c -> c.zeebePropagateAllChildVariables(false)))
+            "wf-parent.bpmn", parentProcess(c -> c.zeebePropagateAllChildVariables(false)))
         .deploy();
 
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
-    final var childInstanceKey = getChildInstanceOf(workflowInstanceKey).getWorkflowInstanceKey();
+    final var childInstanceKey = getChildInstanceOf(processInstanceKey).getProcessInstanceKey();
 
     // when
     completeJobWith(Map.of("y", 2));
@@ -242,12 +242,12 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToWorkflowInstance(workflowInstanceKey)
+                .limitToProcessInstance(processInstanceKey)
                 .variableRecords())
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getScopeKey(), v.getName()))
         .contains(tuple(childInstanceKey, "y"))
-        .doesNotContain(tuple(workflowInstanceKey, "y"));
+        .doesNotContain(tuple(processInstanceKey, "y"));
   }
 
   @Test
@@ -255,19 +255,19 @@ public final class CallActivityTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeInputExpression("x", "y")))
+        .withXmlResource("wf-parent.bpmn", parentProcess(c -> c.zeebeInputExpression("x", "y")))
         .deploy();
 
     // when
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).withVariable("x", 1).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).withVariable("x", 1).create();
 
     // then
-    final var childInstance = getChildInstanceOf(workflowInstanceKey);
+    final var childInstance = getChildInstanceOf(processInstanceKey);
 
     assertThat(
             RecordingExporter.variableRecords()
-                .withWorkflowInstanceKey(childInstance.getWorkflowInstanceKey())
+                .withProcessInstanceKey(childInstance.getProcessInstanceKey())
                 .limit(2))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
@@ -281,28 +281,28 @@ public final class CallActivityTest {
         .deployment()
         .withXmlResource(
             "wf-parent.bpmn",
-            parentWorkflow(
+            parentProcess(
                 c -> c.zeebePropagateAllChildVariables(false).zeebeOutputExpression("x", "y")))
         .deploy();
 
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     // when
     completeJobWith(Map.of("x", 2));
 
     // then
-    final long callActivityInstanceKey = getCallActivityInstanceKey(workflowInstanceKey);
+    final long callActivityInstanceKey = getCallActivityInstanceKey(processInstanceKey);
 
     assertThat(
             RecordingExporter.records()
-                .limitToWorkflowInstance(workflowInstanceKey)
+                .limitToProcessInstance(processInstanceKey)
                 .variableRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey))
+                .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getScopeKey(), v.getName(), v.getValue()))
         .hasSize(2)
-        .contains(tuple(callActivityInstanceKey, "x", "2"), tuple(workflowInstanceKey, "y", "2"));
+        .contains(tuple(callActivityInstanceKey, "x", "2"), tuple(processInstanceKey, "y", "2"));
   }
 
   @Test
@@ -312,31 +312,31 @@ public final class CallActivityTest {
         .deployment()
         .withXmlResource(
             "wf-parent.bpmn",
-            parentWorkflow(
+            parentProcess(
                 c -> c.zeebePropagateAllChildVariables(true).zeebeOutputExpression("x", "x")))
         .deploy();
 
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     // when
     completeJobWith(Map.of("x", 1, "y", 2));
 
     // then
-    final long callActivityInstanceKey = getCallActivityInstanceKey(workflowInstanceKey);
+    final long callActivityInstanceKey = getCallActivityInstanceKey(processInstanceKey);
 
     assertThat(
             RecordingExporter.records()
-                .limitToWorkflowInstance(workflowInstanceKey)
+                .limitToProcessInstance(processInstanceKey)
                 .variableRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey))
+                .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getScopeKey(), v.getName(), v.getValue()))
         .hasSize(3)
         .contains(
             tuple(callActivityInstanceKey, "x", "1"),
             tuple(callActivityInstanceKey, "y", "2"),
-            tuple(workflowInstanceKey, "x", "1"));
+            tuple(processInstanceKey, "x", "1"));
   }
 
   @Test
@@ -346,19 +346,19 @@ public final class CallActivityTest {
         .deployment()
         .withXmlResource(
             "wf-parent.bpmn",
-            parentWorkflow(callActivity -> callActivity.zeebeProcessIdExpression("processId")))
+            parentProcess(callActivity -> callActivity.zeebeProcessIdExpression("processId")))
         .deploy();
 
     // when
-    final var workflowInstanceKey =
+    final var processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID_PARENT)
             .withVariable("processId", PROCESS_ID_CHILD)
             .create();
 
     // then
-    Assertions.assertThat(getChildInstanceOf(workflowInstanceKey))
+    Assertions.assertThat(getChildInstanceOf(processInstanceKey))
         .hasBpmnProcessId(PROCESS_ID_CHILD);
   }
 
@@ -369,7 +369,7 @@ public final class CallActivityTest {
         .deployment()
         .withXmlResource(
             "parent-wf.bpmn",
-            parentWorkflow(
+            parentProcess(
                 callActivity ->
                     callActivity
                         .boundaryEvent(
@@ -378,54 +378,54 @@ public final class CallActivityTest {
         .deploy();
 
     // when
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToWorkflowInstance(workflowInstanceKey)
-                .workflowInstanceRecords())
+                .limitToProcessInstance(processInstanceKey)
+                .processInstanceRecords())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
-            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.EVENT_OCCURRED),
-            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.SEQUENCE_FLOW, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
   public void shouldTerminateChildInstance() {
     // given
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     assertThat(RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).exists())
         .describedAs("Expected job in child instance to be created")
         .isTrue();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToWorkflowInstance(workflowInstanceKey)
-                .workflowInstanceRecords())
+                .limitToProcessInstance(processInstanceKey)
+                .processInstanceRecords())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
   @Test
@@ -433,36 +433,36 @@ public final class CallActivityTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeOutputExpression("x", "y")))
+        .withXmlResource("wf-parent.bpmn", parentProcess(c -> c.zeebeOutputExpression("x", "y")))
         .deploy();
 
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     completeJobWith(Map.of());
 
     assertThat(
             RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .exists())
         .describedAs("Expected incident to be created")
         .isTrue();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceTerminated())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
-            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
   @Test
@@ -472,26 +472,26 @@ public final class CallActivityTest {
         .deployment()
         .withXmlResource(
             "wf-parent.bpmn",
-            parentWorkflow(callActivity -> callActivity.zeebeInputExpression("x", "y")))
+            parentProcess(callActivity -> callActivity.zeebeInputExpression("x", "y")))
         .deploy();
 
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).withVariable("x", 1).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).withVariable("x", 1).create();
 
-    final var childInstanceKey = getChildInstanceOf(workflowInstanceKey).getWorkflowInstanceKey();
+    final var childInstanceKey = getChildInstanceOf(processInstanceKey).getProcessInstanceKey();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToWorkflowInstance(workflowInstanceKey)
+                .limitToProcessInstance(processInstanceKey)
                 .variableRecords())
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getScopeKey(), v.getName()))
         .contains(tuple(childInstanceKey, "y"))
-        .doesNotContain(tuple(workflowInstanceKey, "y"));
+        .doesNotContain(tuple(processInstanceKey, "y"));
   }
 
   @Test
@@ -507,16 +507,16 @@ public final class CallActivityTest {
                 .done())
         .deploy();
 
-    final var rootInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("root").create();
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId("root").create();
 
     final var parentInstance = getChildInstanceOf(rootInstanceKey);
-    final var childInstance = getChildInstanceOf(parentInstance.getWorkflowInstanceKey());
+    final var childInstance = getChildInstanceOf(parentInstance.getProcessInstanceKey());
 
     // when
     final var rejection =
         ENGINE
-            .workflowInstance()
-            .withInstanceKey(childInstance.getWorkflowInstanceKey())
+            .processInstance()
+            .withInstanceKey(childInstance.getProcessInstanceKey())
             .expectRejection()
             .cancel();
 
@@ -525,10 +525,10 @@ public final class CallActivityTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
             String.format(
-                "Expected to cancel a workflow instance with key '%d', "
-                    + "but it is created by a parent workflow instance. "
-                    + "Cancel the root workflow instance '%d' instead.",
-                childInstance.getWorkflowInstanceKey(), rootInstanceKey));
+                "Expected to cancel a process instance with key '%d', "
+                    + "but it is created by a parent process instance. "
+                    + "Cancel the root process instance '%d' instead.",
+                childInstance.getProcessInstanceKey(), rootInstanceKey));
   }
 
   @Test
@@ -536,28 +536,28 @@ public final class CallActivityTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeInputExpression("x", "y")))
+        .withXmlResource("wf-parent.bpmn", parentProcess(c -> c.zeebeInputExpression("x", "y")))
         .deploy();
 
     // when
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     // then
     final var incidentKey =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst()
             .getKey();
 
-    ENGINE.variables().ofScope(workflowInstanceKey).withDocument(Map.of("x", 1)).update();
+    ENGINE.variables().ofScope(processInstanceKey).withDocument(Map.of("x", 1)).update();
 
     final var incidentResolved =
-        ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incidentKey).resolve();
+        ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentKey).resolve();
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.CALL_ACTIVITY)
                 .getFirst()
                 .getPosition())
@@ -576,14 +576,14 @@ public final class CallActivityTest {
     ENGINE.deployment().withXmlResource("wf-child.bpmn", processBuilder.done()).deploy();
 
     // when
-    final var workflowInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withParentWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted()
+            RecordingExporter.processInstanceRecords()
+                .withParentProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
                 .withElementType(BpmnElementType.START_EVENT))
         .extracting(r -> r.getValue().getElementId())
         .containsOnly("none-start");
@@ -602,18 +602,18 @@ public final class CallActivityTest {
         .forEach(jobKey -> ENGINE.job().withKey(jobKey).withVariables(variables).complete());
   }
 
-  private WorkflowInstanceRecordValue getChildInstanceOf(final long workflowInstanceKey) {
+  private ProcessInstanceRecordValue getChildInstanceOf(final long processInstanceKey) {
 
-    return RecordingExporter.workflowInstanceRecords()
-        .withParentWorkflowInstanceKey(workflowInstanceKey)
+    return RecordingExporter.processInstanceRecords()
+        .withParentProcessInstanceKey(processInstanceKey)
         .getFirst()
         .getValue();
   }
 
-  private long getCallActivityInstanceKey(final long workflowInstanceKey) {
+  private long getCallActivityInstanceKey(final long processInstanceKey) {
 
-    return RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.CALL_ACTIVITY)
         .getFirst()
         .getKey();

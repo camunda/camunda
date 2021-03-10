@@ -20,15 +20,15 @@ import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
-import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
-import io.zeebe.engine.state.mutable.MutableWorkflowState;
+import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessState;
 import java.util.function.BiConsumer;
 
 public interface ZeebeState {
 
   MutableDeploymentState getDeploymentState();
 
-  MutableWorkflowState getWorkflowState();
+  MutableProcessState getProcessState();
 
   MutableJobState getJobState();
 
@@ -38,7 +38,7 @@ public interface ZeebeState {
 
   MutableMessageStartEventSubscriptionState getMessageStartEventSubscriptionState();
 
-  MutableWorkflowInstanceSubscriptionState getWorkflowInstanceSubscriptionState();
+  MutableProcessInstanceSubscriptionState getProcessInstanceSubscriptionState();
 
   MutableIncidentState getIncidentState();
 

@@ -23,23 +23,23 @@ public final class IncidentClient {
     this.environmentRule = environmentRule;
   }
 
-  public ResolveIncidentClient ofInstance(final long workflowInstanceKey) {
-    return new ResolveIncidentClient(environmentRule, workflowInstanceKey);
+  public ResolveIncidentClient ofInstance(final long processInstanceKey) {
+    return new ResolveIncidentClient(environmentRule, processInstanceKey);
   }
 
   public static class ResolveIncidentClient {
     private static final long DEFAULT_KEY = -1L;
 
     private final StreamProcessorRule environmentRule;
-    private final long workflowInstanceKey;
+    private final long processInstanceKey;
     private final IncidentRecord incidentRecord;
 
     private long incidentKey = DEFAULT_KEY;
 
     public ResolveIncidentClient(
-        final StreamProcessorRule environmentRule, final long workflowInstanceKey) {
+        final StreamProcessorRule environmentRule, final long processInstanceKey) {
       this.environmentRule = environmentRule;
-      this.workflowInstanceKey = workflowInstanceKey;
+      this.processInstanceKey = processInstanceKey;
       incidentRecord = new IncidentRecord();
     }
 
@@ -52,7 +52,7 @@ public final class IncidentClient {
       if (incidentKey == DEFAULT_KEY) {
         incidentKey =
             RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .getFirst()
                 .getKey();
       }
@@ -65,7 +65,7 @@ public final class IncidentClient {
               incidentRecord);
 
       return RecordingExporter.incidentRecords()
-          .withWorkflowInstanceKey(workflowInstanceKey)
+          .withProcessInstanceKey(processInstanceKey)
           .withRecordKey(incidentKey)
           .withSourceRecordPosition(position)
           .withIntent(IncidentIntent.RESOLVED)

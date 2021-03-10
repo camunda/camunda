@@ -23,12 +23,12 @@ public final class BpmnEventPublicationBehavior {
 
   public BpmnEventPublicationBehavior(
       final ZeebeState zeebeState, final TypedStreamWriter streamWriter) {
-    final var workflowState = zeebeState.getWorkflowState();
+    final var processState = zeebeState.getProcessState();
     final var keyGenerator = zeebeState.getKeyGenerator();
     elementInstanceState = zeebeState.getElementInstanceState();
     errorEventHandler =
         new ErrorEventHandler(
-            zeebeState.getWorkflowState(),
+            zeebeState.getProcessState(),
             zeebeState.getElementInstanceState(),
             zeebeState.getEventScopeInstanceState(),
             zeebeState.getKeyGenerator());

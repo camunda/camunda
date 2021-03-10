@@ -15,17 +15,17 @@
  */
 package io.zeebe.protocol.record.intent;
 
-public enum WorkflowInstanceResultIntent implements Intent, WorkflowInstanceRelatedIntent {
+public enum ProcessInstanceResultIntent implements Intent, ProcessInstanceRelatedIntent {
   COMPLETED(0, false);
 
   private final short value;
   private final boolean shouldBlacklist;
 
-  WorkflowInstanceResultIntent(final int value, final boolean shouldBlacklist) {
+  ProcessInstanceResultIntent(final int value, final boolean shouldBlacklist) {
     this((short) value, shouldBlacklist);
   }
 
-  WorkflowInstanceResultIntent(final short value, final boolean shouldBlacklist) {
+  ProcessInstanceResultIntent(final short value, final boolean shouldBlacklist) {
     this.value = value;
     this.shouldBlacklist = shouldBlacklist;
   }

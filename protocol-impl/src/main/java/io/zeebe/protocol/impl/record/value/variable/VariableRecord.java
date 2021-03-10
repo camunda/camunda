@@ -22,15 +22,15 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private final StringProperty nameProp = new StringProperty("name");
   private final BinaryProperty valueProp = new BinaryProperty("value");
   private final LongProperty scopeKeyProp = new LongProperty("scopeKey");
-  private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
-  private final LongProperty workflowKeyProp = new LongProperty("workflowKey");
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey");
+  private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey");
 
   public VariableRecord() {
     declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeKeyProp)
-        .declareProperty(workflowInstanceKeyProp)
-        .declareProperty(workflowKeyProp);
+        .declareProperty(processInstanceKeyProp)
+        .declareProperty(processDefinitionKeyProp);
   }
 
   @Override
@@ -47,12 +47,12 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
     return scopeKeyProp.getValue();
   }
 
-  public long getWorkflowKey() {
-    return workflowKeyProp.getValue();
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProp.getValue();
   }
 
-  public VariableRecord setWorkflowKey(final long workflowKey) {
-    workflowKeyProp.setValue(workflowKey);
+  public VariableRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
   }
 
@@ -86,12 +86,12 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
     return valueProp.getValue();
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
-  public VariableRecord setWorkflowInstanceKey(final long workflowInstanceKey) {
-    workflowInstanceKeyProp.setValue(workflowInstanceKey);
+  public VariableRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
 }

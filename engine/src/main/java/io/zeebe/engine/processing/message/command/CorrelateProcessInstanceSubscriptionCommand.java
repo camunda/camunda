@@ -12,42 +12,42 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class CorrelateWorkflowInstanceSubscriptionCommand
+public final class CorrelateProcessInstanceSubscriptionCommand
     extends SbeBufferWriterReader<
-        CorrelateWorkflowInstanceSubscriptionEncoder,
-        CorrelateWorkflowInstanceSubscriptionDecoder> {
+        CorrelateProcessInstanceSubscriptionEncoder,
+        CorrelateProcessInstanceSubscriptionDecoder> {
 
-  private final CorrelateWorkflowInstanceSubscriptionEncoder encoder =
-      new CorrelateWorkflowInstanceSubscriptionEncoder();
-  private final CorrelateWorkflowInstanceSubscriptionDecoder decoder =
-      new CorrelateWorkflowInstanceSubscriptionDecoder();
+  private final CorrelateProcessInstanceSubscriptionEncoder encoder =
+      new CorrelateProcessInstanceSubscriptionEncoder();
+  private final CorrelateProcessInstanceSubscriptionDecoder decoder =
+      new CorrelateProcessInstanceSubscriptionDecoder();
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer variables = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer correlationKey = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
-  private long workflowInstanceKey;
+  private long processInstanceKey;
   private long elementInstanceKey;
   private long messageKey;
 
   @Override
-  protected CorrelateWorkflowInstanceSubscriptionEncoder getBodyEncoder() {
+  protected CorrelateProcessInstanceSubscriptionEncoder getBodyEncoder() {
     return encoder;
   }
 
   @Override
-  protected CorrelateWorkflowInstanceSubscriptionDecoder getBodyDecoder() {
+  protected CorrelateProcessInstanceSubscriptionDecoder getBodyDecoder() {
     return decoder;
   }
 
   @Override
   public void reset() {
     subscriptionPartitionId =
-        CorrelateWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    workflowInstanceKey =
-        CorrelateWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue();
-    elementInstanceKey = CorrelateWorkflowInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
-    messageKey = CorrelateWorkflowInstanceSubscriptionDecoder.messageKeyNullValue();
+        CorrelateProcessInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
+    processInstanceKey =
+        CorrelateProcessInstanceSubscriptionDecoder.processInstanceKeyNullValue();
+    elementInstanceKey = CorrelateProcessInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
+    messageKey = CorrelateProcessInstanceSubscriptionDecoder.messageKeyNullValue();
 
     messageName.wrap(0, 0);
     variables.wrap(0, 0);
@@ -58,13 +58,13 @@ public final class CorrelateWorkflowInstanceSubscriptionCommand
   @Override
   public int getLength() {
     return super.getLength()
-        + CorrelateWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength()
+        + CorrelateProcessInstanceSubscriptionDecoder.messageNameHeaderLength()
         + messageName.capacity()
-        + CorrelateWorkflowInstanceSubscriptionDecoder.variablesHeaderLength()
+        + CorrelateProcessInstanceSubscriptionDecoder.variablesHeaderLength()
         + variables.capacity()
-        + CorrelateWorkflowInstanceSubscriptionDecoder.bpmnProcessIdHeaderLength()
+        + CorrelateProcessInstanceSubscriptionDecoder.bpmnProcessIdHeaderLength()
         + bpmnProcessId.capacity()
-        + CorrelateWorkflowInstanceSubscriptionDecoder.correlationKeyHeaderLength()
+        + CorrelateProcessInstanceSubscriptionDecoder.correlationKeyHeaderLength()
         + correlationKey.capacity();
   }
 
@@ -74,7 +74,7 @@ public final class CorrelateWorkflowInstanceSubscriptionCommand
 
     encoder
         .subscriptionPartitionId(subscriptionPartitionId)
-        .workflowInstanceKey(workflowInstanceKey)
+        .processInstanceKey(processInstanceKey)
         .elementInstanceKey(elementInstanceKey)
         .messageKey(messageKey)
         .putMessageName(messageName, 0, messageName.capacity())
@@ -88,31 +88,31 @@ public final class CorrelateWorkflowInstanceSubscriptionCommand
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
-    workflowInstanceKey = decoder.workflowInstanceKey();
+    processInstanceKey = decoder.processInstanceKey();
     elementInstanceKey = decoder.elementInstanceKey();
     messageKey = decoder.messageKey();
 
     offset = decoder.limit();
 
-    offset += CorrelateWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength();
+    offset += CorrelateProcessInstanceSubscriptionDecoder.messageNameHeaderLength();
     final int messageNameLength = decoder.messageNameLength();
     messageName.wrap(buffer, offset, messageNameLength);
     offset += messageNameLength;
     decoder.limit(offset);
 
-    offset += CorrelateWorkflowInstanceSubscriptionDecoder.variablesHeaderLength();
+    offset += CorrelateProcessInstanceSubscriptionDecoder.variablesHeaderLength();
     final int variablesLength = decoder.variablesLength();
     variables.wrap(buffer, offset, variablesLength);
     offset += variablesLength;
     decoder.limit(offset);
 
-    offset += CorrelateWorkflowInstanceSubscriptionDecoder.bpmnProcessIdHeaderLength();
+    offset += CorrelateProcessInstanceSubscriptionDecoder.bpmnProcessIdHeaderLength();
     final int bpmnProcessIdLength = decoder.bpmnProcessIdLength();
     bpmnProcessId.wrap(buffer, offset, bpmnProcessIdLength);
     offset += bpmnProcessIdLength;
     decoder.limit(offset);
 
-    offset += CorrelateWorkflowInstanceSubscriptionDecoder.correlationKeyHeaderLength();
+    offset += CorrelateProcessInstanceSubscriptionDecoder.correlationKeyHeaderLength();
     final int correlationKeyLength = decoder.correlationKeyLength();
     correlationKey.wrap(buffer, offset, correlationKeyLength);
     offset += correlationKeyLength;
@@ -127,12 +127,12 @@ public final class CorrelateWorkflowInstanceSubscriptionCommand
     this.subscriptionPartitionId = subscriptionPartitionId;
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(final long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public long getElementInstanceKey() {

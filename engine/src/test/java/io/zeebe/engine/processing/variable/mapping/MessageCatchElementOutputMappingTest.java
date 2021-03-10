@@ -45,21 +45,21 @@ public final class MessageCatchElementOutputMappingTest {
   private static final String CORRELATION_VARIABLE = "key";
   private static final String MAPPING_ELEMENT_ID = "catch";
 
-  private static final BpmnModelInstance CATCH_EVENT_WORKFLOW =
+  private static final BpmnModelInstance CATCH_EVENT_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent(MAPPING_ELEMENT_ID)
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .done();
 
-  private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
+  private static final BpmnModelInstance RECEIVE_TASK_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .receiveTask(MAPPING_ELEMENT_ID)
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .done();
 
-  private static final BpmnModelInstance INTERRUPTING_BOUNDARY_EVENT_WORKFLOW =
+  private static final BpmnModelInstance INTERRUPTING_BOUNDARY_EVENT_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .serviceTask("task", b -> b.zeebeJobType("type"))
@@ -68,7 +68,7 @@ public final class MessageCatchElementOutputMappingTest {
           .endEvent()
           .done();
 
-  private static final BpmnModelInstance NON_INTERRUPTING_BOUNDARY_EVENT_WORKFLOW =
+  private static final BpmnModelInstance NON_INTERRUPTING_BOUNDARY_EVENT_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .serviceTask("task", b -> b.zeebeJobType("type"))
@@ -77,7 +77,7 @@ public final class MessageCatchElementOutputMappingTest {
           .endEvent()
           .done();
 
-  private static final BpmnModelInstance EVENT_BASED_GATEWAY_WORKFLOW =
+  private static final BpmnModelInstance EVENT_BASED_GATEWAY_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
           .eventBasedGateway()
@@ -96,7 +96,7 @@ public final class MessageCatchElementOutputMappingTest {
           .endEvent("end2")
           .done();
 
-  private static final BpmnModelInstance INTERRUPTING_EVENT_SUBPROCESS_WORKFLOW =
+  private static final BpmnModelInstance INTERRUPTING_EVENT_SUBPROCESS_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .eventSubProcess(
               "event-subprocess",
@@ -115,7 +115,7 @@ public final class MessageCatchElementOutputMappingTest {
           .endEvent()
           .done();
 
-  private static final BpmnModelInstance NON_INTERRUPTING_EVENT_SUBPROCESS_WORKFLOW =
+  private static final BpmnModelInstance NON_INTERRUPTING_EVENT_SUBPROCESS_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .eventSubProcess(
               "event-subprocess",
@@ -142,20 +142,20 @@ public final class MessageCatchElementOutputMappingTest {
   public String elementType;
 
   @Parameter(1)
-  public BpmnModelInstance workflow;
+  public BpmnModelInstance process;
 
   private String correlationKey;
 
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
     return new Object[][] {
-      {"intermediate catch event", CATCH_EVENT_WORKFLOW},
-      {"receive task", RECEIVE_TASK_WORKFLOW},
-      {"event-based gateway", EVENT_BASED_GATEWAY_WORKFLOW},
-      {"interrupting boundary event", INTERRUPTING_BOUNDARY_EVENT_WORKFLOW},
-      {"non-interrupting boundary event", NON_INTERRUPTING_BOUNDARY_EVENT_WORKFLOW},
-      {"interrupting event subprocess", INTERRUPTING_EVENT_SUBPROCESS_WORKFLOW},
-      {"non-interrupting event subprocess", NON_INTERRUPTING_EVENT_SUBPROCESS_WORKFLOW}
+      {"intermediate catch event", CATCH_EVENT_PROCESS},
+      {"receive task", RECEIVE_TASK_PROCESS},
+      {"event-based gateway", EVENT_BASED_GATEWAY_PROCESS},
+      {"interrupting boundary event", INTERRUPTING_BOUNDARY_EVENT_PROCESS},
+      {"non-interrupting boundary event", NON_INTERRUPTING_BOUNDARY_EVENT_PROCESS},
+      {"interrupting event subprocess", INTERRUPTING_EVENT_SUBPROCESS_PROCESS},
+      {"non-interrupting event subprocess", NON_INTERRUPTING_EVENT_SUBPROCESS_PROCESS}
     };
   }
 
@@ -174,12 +174,12 @@ public final class MessageCatchElementOutputMappingTest {
   @Test
   public void shouldMergeMessageVariablesByDefault() {
     // given
-    deployWorkflowWithMapping(e -> {});
+    deployProcessWithMapping(e -> {});
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(CORRELATION_VARIABLE, correlationKey)
             .create();
@@ -187,24 +187,24 @@ public final class MessageCatchElementOutputMappingTest {
     // then
     final Record<VariableRecordValue> variableEvent =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withName("foo")
             .getFirst();
 
     Assertions.assertThat(variableEvent.getValue())
         .hasValue("\"bar\"")
-        .hasScopeKey(workflowInstanceKey);
+        .hasScopeKey(processInstanceKey);
   }
 
   @Test
   public void shouldMergeMessageVariables() {
     // given
-    deployWorkflowWithMapping(e -> {});
+    deployProcessWithMapping(e -> {});
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(CORRELATION_VARIABLE, correlationKey)
             .create();
@@ -212,24 +212,24 @@ public final class MessageCatchElementOutputMappingTest {
     // then
     final Record<VariableRecordValue> variableEvent =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withName("foo")
             .getFirst();
 
     Assertions.assertThat(variableEvent.getValue())
         .hasValue("\"bar\"")
-        .hasScopeKey(workflowInstanceKey);
+        .hasScopeKey(processInstanceKey);
   }
 
   @Test
   public void shouldMapMessageVariablesIntoInstanceVariables() {
     // given
-    deployWorkflowWithMapping(e -> e.zeebeOutputExpression("foo", MESSAGE_NAME));
+    deployProcessWithMapping(e -> e.zeebeOutputExpression("foo", MESSAGE_NAME));
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(CORRELATION_VARIABLE, correlationKey)
             .create();
@@ -237,18 +237,18 @@ public final class MessageCatchElementOutputMappingTest {
     // then
     final Record<VariableRecordValue> variableEvent =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withName(MESSAGE_NAME)
             .getFirst();
 
     Assertions.assertThat(variableEvent.getValue())
         .hasValue("\"bar\"")
-        .hasScopeKey(workflowInstanceKey);
+        .hasScopeKey(processInstanceKey);
   }
 
-  private void deployWorkflowWithMapping(final Consumer<ZeebeVariablesMappingBuilder<?>> c) {
-    final BpmnModelInstance modifiedWorkflow = workflow.clone();
-    final ModelElementInstance element = modifiedWorkflow.getModelElementById(MAPPING_ELEMENT_ID);
+  private void deployProcessWithMapping(final Consumer<ZeebeVariablesMappingBuilder<?>> c) {
+    final BpmnModelInstance modifiedProcess = process.clone();
+    final ModelElementInstance element = modifiedProcess.getModelElementById(MAPPING_ELEMENT_ID);
     if (element instanceof IntermediateCatchEvent) {
       c.accept(((IntermediateCatchEvent) element).builder());
     } else if (element instanceof StartEvent) {
@@ -261,6 +261,6 @@ public final class MessageCatchElementOutputMappingTest {
       c.accept(((ReceiveTask) element).builder());
     }
 
-    ENGINE_RULE.deployment().withXmlResource(modifiedWorkflow).deploy();
+    ENGINE_RULE.deployment().withXmlResource(modifiedProcess).deploy();
   }
 }

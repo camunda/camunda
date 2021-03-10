@@ -21,6 +21,6 @@ public interface DeploymentEvent {
   /** @return the unique key of the deployment */
   long getKey();
 
-  /** @return the workflows which are deployed */
-  List<Workflow> getWorkflows();
+  /** @return the processes which are deployed */
+  List<Process> getProcesses();
 }

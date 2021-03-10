@@ -15,16 +15,16 @@
  */
 package io.zeebe.client.api.response;
 
-public interface Workflow {
-  /** @return the BPMN process id of the workflow */
+public interface Process {
+  /** @return the BPMN process id of the process */
   String getBpmnProcessId();
 
-  /** @return the version of the deployed workflow */
+  /** @return the version of the deployed process */
   int getVersion();
 
-  /** @return the key of the deployed workflow */
-  long getWorkflowKey();
+  /** @return the key of the deployed process */
+  long getProcessDefinitionKey();
 
-  /** @return the name of the deployment resource which contains the workflow */
+  /** @return the name of the deployment resource which contains the process */
   String getResourceName();
 }

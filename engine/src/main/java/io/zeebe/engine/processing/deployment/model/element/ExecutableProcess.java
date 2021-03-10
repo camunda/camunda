@@ -16,11 +16,11 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 
 /** Executable* prefix in order to avoid confusion with model API classes. */
-public class ExecutableWorkflow extends ExecutableFlowElementContainer {
+public class ExecutableProcess extends ExecutableFlowElementContainer {
 
   private final Map<DirectBuffer, AbstractFlowElement> flowElements = new HashMap<>();
 
-  public ExecutableWorkflow(final String id) {
+  public ExecutableProcess(final String id) {
     super(id);
     addFlowElement(this);
   }

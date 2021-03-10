@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
 
-public final class WorkflowBuilder {
+public final class ProcessBuilder {
 
   private static final List<Function<ConstructionContext, StartEventBlockBuilder>>
       START_EVENT_BUILDER_FACTORIES =
@@ -31,7 +31,7 @@ public final class WorkflowBuilder {
   private final String processId;
   private final String endEventId;
 
-  public WorkflowBuilder(final ConstructionContext context) {
+  public ProcessBuilder(final ConstructionContext context) {
     blockBuilder = context.getBlockSequenceBuilderFactory().createBlockSequenceBuilder(context);
 
     final var idGenerator = context.getIdGenerator();
@@ -45,15 +45,15 @@ public final class WorkflowBuilder {
     endEventId = idGenerator.nextId();
   }
 
-  public BpmnModelInstance buildWorkflow() {
+  public BpmnModelInstance buildProcess() {
 
     final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(processId);
-    AbstractFlowNodeBuilder<?, ?> workflowWorkInProgress =
+    AbstractFlowNodeBuilder<?, ?> processWorkInProgress =
         startEventBuilder.buildStartEvent(processBuilder);
 
-    workflowWorkInProgress = blockBuilder.buildFlowNodes(workflowWorkInProgress);
+    processWorkInProgress = blockBuilder.buildFlowNodes(processWorkInProgress);
 
-    return workflowWorkInProgress.endEvent(endEventId).done();
+    return processWorkInProgress.endEvent(endEventId).done();
   }
 
   public ExecutionPath findRandomExecutionPath(final Random random) {

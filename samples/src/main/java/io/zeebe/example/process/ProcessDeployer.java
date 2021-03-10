@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.example.workflow;
+package io.zeebe.example.process;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
@@ -30,7 +30,7 @@ import io.zeebe.client.api.response.DeploymentEvent;
  * <p>When {@code ZEEBE_ADDRESS} is not set, it connects to a broker running on localhost with
  * default ports
  */
-public final class WorkflowDeployer {
+public final class ProcessDeployer {
 
   public static void main(final String[] args) {
     final String defaultAddress = "localhost:26500";
