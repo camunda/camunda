@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {ZBClient, IWorkflowVariables} from 'zeebe-node';
+import {ZBClient, IWorkflowVariables, ZBWorkerTaskHandler} from 'zeebe-node';
 const zbc = new ZBClient({
   onReady: () => console.log('zeebe-node connected!'),
   onConnectionError: () => console.log('zeebe-node disconnected!'),
@@ -46,17 +46,18 @@ function createSingleInstance<Variables = IWorkflowVariables>(
 function completeTask(
   taskType: string,
   shouldFail: boolean,
-  variables?: IWorkflowVariables
+  variables?: IWorkflowVariables,
+  taskHandler: ZBWorkerTaskHandler = (_, complete) => {
+    if (shouldFail) {
+      complete.failure('task failed');
+    } else {
+      complete.success(variables);
+    }
+  }
 ) {
   zbc.createWorker({
     taskType,
-    taskHandler: (_, complete) => {
-      if (shouldFail) {
-        complete.failure('task failed');
-      } else {
-        complete.success(variables);
-      }
-    },
+    taskHandler,
   });
 }
 

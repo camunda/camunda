@@ -144,6 +144,9 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
         <TBody>
           <TransitionGroup component={null}>
             {sortedIncidents.map((incident: any, index: any) => {
+              const isSelected = selection.treeRowIds.includes(
+                incident.flowNodeInstanceId
+              );
               return (
                 <Styled.Transition
                   key={incident.id}
@@ -153,11 +156,10 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                 >
                   <Styled.IncidentTR
                     data-testid={`tr-incident-${incident.id}`}
-                    isSelected={selection.treeRowIds.includes(
-                      incident.flowNodeInstanceId
-                    )}
                     // @ts-expect-error ts-migrate(2683) FIXME: 'this' implicitly has type 'any' because it does n... Remove this comment to see the full error message
                     onClick={handleIncidentSelection.bind(this, incident)}
+                    aria-selected={isSelected}
+                    isSelected={isSelected}
                   >
                     <TD>
                       <Styled.FirstCell>

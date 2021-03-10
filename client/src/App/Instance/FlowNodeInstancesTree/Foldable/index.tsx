@@ -66,7 +66,7 @@ const Summary: React.FC<SummaryProps> = ({
   ...props
 }) => {
   return (
-    <SummaryContainer {...props}>
+    <SummaryContainer {...props} role="row" aria-selected={isSelected}>
       {isFoldable && onToggle !== undefined ? (
         <ExpandButton
           onClick={onToggle}
