@@ -250,7 +250,7 @@ public final class MessageStreamProcessorTest {
     // given
     final MessageSubscriptionRecord subscription = messageSubscription();
     final MessageRecord message = message();
-    subscription.setCloseOnCorrelate(false);
+    subscription.setInterrupting(false);
 
     // when
     rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
@@ -297,7 +297,7 @@ public final class MessageStreamProcessorTest {
   @Test
   public void shouldCorrelateMultipleMessagesOneBeforeOpenOneAfter() {
     // given
-    final MessageSubscriptionRecord subscription = messageSubscription().setCloseOnCorrelate(false);
+    final MessageSubscriptionRecord subscription = messageSubscription().setInterrupting(false);
     final MessageRecord first = message().setVariables(asMsgPack("foo", "bar"));
     final MessageRecord second = message().setVariables(asMsgPack("foo", "baz"));
 
@@ -322,7 +322,7 @@ public final class MessageStreamProcessorTest {
   @Test
   public void shouldCorrelateMultipleMessagesTwoBeforeOpen() {
     // given
-    final MessageSubscriptionRecord subscription = messageSubscription().setCloseOnCorrelate(false);
+    final MessageSubscriptionRecord subscription = messageSubscription().setInterrupting(false);
     final MessageRecord first = message().setVariables(asMsgPack("foo", "bar"));
     final MessageRecord second = message().setVariables(asMsgPack("foo", "baz"));
 
@@ -439,7 +439,7 @@ public final class MessageStreamProcessorTest {
         .setMessageKey(-1L)
         .setMessageName(wrapString("order canceled"))
         .setCorrelationKey(wrapString("order-123"))
-        .setCloseOnCorrelate(true);
+        .setInterrupting(true);
 
     return subscription;
   }

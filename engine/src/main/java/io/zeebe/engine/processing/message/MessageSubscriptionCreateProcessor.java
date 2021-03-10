@@ -15,6 +15,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.MessageState;
 import io.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -34,6 +35,7 @@ public final class MessageSubscriptionCreateProcessor
   private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
+  private final KeyGenerator keyGenerator;
 
   private MessageSubscriptionRecord subscriptionRecord;
 
@@ -41,10 +43,12 @@ public final class MessageSubscriptionCreateProcessor
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
-      final Writers writers) {
+      final Writers writers,
+      final KeyGenerator keyGenerator) {
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
     stateWriter = writers.state();
+    this.keyGenerator = keyGenerator;
     messageCorrelator = new MessageCorrelator(messageState, commandSender, stateWriter);
   }
 
@@ -75,11 +79,12 @@ public final class MessageSubscriptionCreateProcessor
 
   private void handleNewSubscription(final Consumer<SideEffectProducer> sideEffect) {
 
-    // TODO (saig0): the subscription should have a key (#2805)
-    stateWriter.appendFollowUpEvent(-1L, MessageSubscriptionIntent.CREATED, subscriptionRecord);
+    final var subscriptionKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(
+        subscriptionKey, MessageSubscriptionIntent.CREATED, subscriptionRecord);
 
     final var isMessageCorrelated =
-        messageCorrelator.correlateNextMessage(subscriptionRecord, sideEffect);
+        messageCorrelator.correlateNextMessage(subscriptionKey, subscriptionRecord, sideEffect);
 
     if (!isMessageCorrelated) {
       sideEffect.accept(this::sendAcknowledgeCommand);
@@ -91,6 +96,6 @@ public final class MessageSubscriptionCreateProcessor
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getMessageNameBuffer(),
-        subscriptionRecord.shouldCloseOnCorrelate());
+        subscriptionRecord.isInterrupting());
   }
 }

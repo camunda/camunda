@@ -27,7 +27,6 @@ import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
@@ -132,25 +131,21 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
           // correlate the message only once per workflow
           if (!subscription.isCorrelating()
-              && !correlatingSubscriptions.contains(subscription.getBpmnProcessId())) {
+              && !correlatingSubscriptions.contains(
+                  subscription.getRecord().getBpmnProcessIdBuffer())) {
 
-            correlatingSubscriptions.add(subscription);
-
-            // TODO (saig0): reuse the subscription record in the state (#6180)
-            final var messageSubscriptionRecord =
-                new MessageSubscriptionRecord()
-                    .setBpmnProcessId(subscription.getBpmnProcessId())
-                    .setWorkflowInstanceKey(subscription.getWorkflowInstanceKey())
-                    .setElementInstanceKey(subscription.getElementInstanceKey())
-                    .setMessageName(subscription.getMessageName())
+            final var correlatingSubscription =
+                subscription
+                    .getRecord()
                     .setMessageKey(messageKey)
-                    .setCorrelationKey(subscription.getCorrelationKey())
-                    .setVariables(message.getVariablesBuffer())
-                    .setCloseOnCorrelate(subscription.shouldCloseOnCorrelate());
+                    .setVariables(message.getVariablesBuffer());
 
-            // TODO (saig0): the subscription should have a key (#2805)
             stateWriter.appendFollowUpEvent(
-                -1L, MessageSubscriptionIntent.CORRELATING, messageSubscriptionRecord);
+                subscription.getKey(),
+                MessageSubscriptionIntent.CORRELATING,
+                correlatingSubscription);
+
+            correlatingSubscriptions.add(correlatingSubscription);
           }
 
           return true;

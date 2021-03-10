@@ -7,8 +7,9 @@
  */
 package io.zeebe.engine.processing.message;
 
-import io.zeebe.engine.state.message.MessageSubscription;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.Reusable;
 import io.zeebe.util.collection.ReusableObjectList;
 import java.util.function.Consumer;
@@ -35,9 +36,9 @@ public final class Subscriptions {
     return false;
   }
 
-  public void add(final MessageSubscription subscription) {
+  public void add(final MessageSubscriptionRecord subscription) {
     final var newSubscription = subscriptions.add();
-    newSubscription.setBpmnProcessId(subscription.getBpmnProcessId());
+    newSubscription.setBpmnProcessId(BufferUtil.cloneBuffer(subscription.getBpmnProcessIdBuffer()));
     newSubscription.workflowInstanceKey = subscription.getWorkflowInstanceKey();
     newSubscription.elementInstanceKey = subscription.getElementInstanceKey();
   }

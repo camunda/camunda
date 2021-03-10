@@ -55,13 +55,15 @@ public final class MessageSubscriptionDeleteProcessor
       final Consumer<SideEffectProducer> sideEffect) {
     subscriptionRecord = record.getValue();
 
-    final boolean exists =
-        subscriptionState.existSubscriptionForElementInstance(
+    final var messageSubscription =
+        subscriptionState.get(
             subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
 
-    if (exists) {
+    if (messageSubscription != null) {
       stateWriter.appendFollowUpEvent(
-          record.getKey(), MessageSubscriptionIntent.DELETED, subscriptionRecord);
+          messageSubscription.getKey(),
+          MessageSubscriptionIntent.DELETED,
+          messageSubscription.getRecord());
 
     } else {
       rejectCommand(record);

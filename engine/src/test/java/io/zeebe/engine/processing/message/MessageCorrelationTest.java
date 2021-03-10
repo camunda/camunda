@@ -850,29 +850,28 @@ public final class MessageCorrelationTest {
     engine.deployment().withXmlResource(twoMessages).deploy();
 
     // when
-    engine.workflowInstance().ofBpmnProcessId("process").withVariable("key", "123").create();
+    final var workflowInstanceKey =
+        engine.workflowInstance().ofBpmnProcessId("process").withVariable("key", "123").create();
 
     // then
-    assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.CORRELATE)
-                .withRecordType(RecordType.COMMAND_REJECTION)
-                .limit(1))
-        .isNotEmpty();
-    assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.REJECT).limit(1))
-        .isNotEmpty();
+    assertThat(RecordingExporter.records().limitToWorkflowInstance(workflowInstanceKey))
+        .extracting(Record::getRecordType, Record::getIntent)
+        .containsSubsequence(
+            tuple(RecordType.COMMAND_REJECTION, WorkflowInstanceSubscriptionIntent.CORRELATE),
+            tuple(RecordType.COMMAND, MessageSubscriptionIntent.REJECT),
+            tuple(RecordType.EVENT, MessageSubscriptionIntent.REJECTED),
+            tuple(RecordType.COMMAND, WorkflowInstanceSubscriptionIntent.CORRELATE));
+
     assertThat(
             RecordingExporter.workflowInstanceSubscriptionRecords(
                     WorkflowInstanceSubscriptionIntent.CORRELATED)
                 .limit(2))
         .extracting(r -> r.getValue().getMessageName())
         .containsExactlyInAnyOrder("a", "b");
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .withElementId("process")
-                .limit(1))
-        .isNotEmpty();
+
+    RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
   }
 
   @Test

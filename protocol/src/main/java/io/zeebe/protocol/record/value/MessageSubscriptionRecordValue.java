@@ -44,4 +44,10 @@ public interface MessageSubscriptionRecordValue
 
   /** @return the key of the correlated message */
   long getMessageKey();
+
+  /**
+   * @return {@code true} if the event tied to the subscription is interrupting. Otherwise, it
+   *     returns {@code false} if the event is non-interrupting.
+   */
+  boolean isInterrupting();
 }

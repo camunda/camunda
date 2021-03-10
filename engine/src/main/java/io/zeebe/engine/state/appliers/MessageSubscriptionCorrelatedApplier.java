@@ -29,7 +29,7 @@ public final class MessageSubscriptionCorrelatedApplier
     final var subscription =
         messageSubscriptionState.get(value.getElementInstanceKey(), value.getMessageNameBuffer());
 
-    if (value.shouldCloseOnCorrelate()) {
+    if (value.isInterrupting()) {
       messageSubscriptionState.remove(subscription);
     } else {
       messageSubscriptionState.resetSentTime(subscription);

@@ -55,26 +55,22 @@ public final class MessageSubscriptionCorrelateProcessor
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
-    final MessageSubscriptionRecord subscriptionRecord = record.getValue();
+    final MessageSubscriptionRecord command = record.getValue();
     final MessageSubscription subscription =
-        subscriptionState.get(
-            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
+        subscriptionState.get(command.getElementInstanceKey(), command.getMessageNameBuffer());
 
     if (subscription == null) {
       rejectCommand(record);
       return;
     }
 
-    // TODO (saig0): not all values are written in the command (#3346)
-    subscriptionRecord
-        .setCorrelationKey(subscription.getCorrelationKey())
-        .setCloseOnCorrelate(subscription.shouldCloseOnCorrelate());
-
+    final var messageSubscription = subscription.getRecord();
     stateWriter.appendFollowUpEvent(
-        record.getKey(), MessageSubscriptionIntent.CORRELATED, subscriptionRecord);
+        subscription.getKey(), MessageSubscriptionIntent.CORRELATED, messageSubscription);
 
-    if (!subscription.shouldCloseOnCorrelate()) {
-      messageCorrelator.correlateNextMessage(subscriptionRecord, sideEffect);
+    if (!messageSubscription.isInterrupting()) {
+      messageCorrelator.correlateNextMessage(
+          subscription.getKey(), messageSubscription, sideEffect);
     }
   }
 

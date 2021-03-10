@@ -25,7 +25,6 @@ public final class MessageCorrelator {
   private final StateWriter stateWriter;
 
   private Consumer<SideEffectProducer> sideEffect;
-  private MessageSubscriptionRecord subscriptionRecord;
 
   public MessageCorrelator(
       final MessageState messageState,
@@ -37,9 +36,9 @@ public final class MessageCorrelator {
   }
 
   public boolean correlateNextMessage(
+      final long subscriptionKey,
       final MessageSubscriptionRecord subscriptionRecord,
       final Consumer<SideEffectProducer> sideEffect) {
-    this.subscriptionRecord = subscriptionRecord;
     this.sideEffect = sideEffect;
 
     final var isMessageCorrelated = new MutableBoolean(false);
@@ -49,7 +48,8 @@ public final class MessageCorrelator {
         subscriptionRecord.getCorrelationKeyBuffer(),
         storedMessage -> {
           // correlate the first message which is not correlated to the workflow instance yet
-          final var isCorrelated = correlateMessage(storedMessage);
+          final var isCorrelated =
+              correlateMessage(subscriptionKey, subscriptionRecord, storedMessage);
           isMessageCorrelated.set(isCorrelated);
           return !isCorrelated;
         });
@@ -57,7 +57,10 @@ public final class MessageCorrelator {
     return isMessageCorrelated.get();
   }
 
-  private boolean correlateMessage(final StoredMessage storedMessage) {
+  private boolean correlateMessage(
+      final long subscriptionKey,
+      final MessageSubscriptionRecord subscriptionRecord,
+      final StoredMessage storedMessage) {
     final long messageKey = storedMessage.getMessageKey();
     final var message = storedMessage.getMessage();
 
@@ -70,15 +73,15 @@ public final class MessageCorrelator {
       subscriptionRecord.setMessageKey(messageKey).setVariables(message.getVariablesBuffer());
 
       stateWriter.appendFollowUpEvent(
-          -1, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
+          subscriptionKey, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
 
-      sideEffect.accept(this::sendCorrelateCommand);
+      sideEffect.accept(() -> sendCorrelateCommand(subscriptionRecord));
     }
 
     return correlateMessage;
   }
 
-  private boolean sendCorrelateCommand() {
+  private boolean sendCorrelateCommand(final MessageSubscriptionRecord subscriptionRecord) {
     return commandSender.correlateWorkflowInstanceSubscription(
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),

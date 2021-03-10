@@ -488,7 +488,7 @@ public final class JsonSerializableToJsonTest {
                   .setCorrelationKey(wrapString(correlationKey))
                   .setVariables(VARIABLES_MSGPACK);
             },
-        "{'workflowInstanceKey':2,'elementInstanceKey':1,'messageName':'name','correlationKey':'key','bpmnProcessId':'workflow','messageKey':3,'variables':{'foo':'bar'}}"
+        "{'workflowInstanceKey':2,'elementInstanceKey':1,'messageName':'name','correlationKey':'key','bpmnProcessId':'workflow','messageKey':3,'variables':{'foo':'bar'},'interrupting':true}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// Empty MessageSubscriptionRecord
@@ -505,7 +505,7 @@ public final class JsonSerializableToJsonTest {
                   .setWorkflowInstanceKey(workflowInstanceKey)
                   .setElementInstanceKey(elementInstanceKey);
             },
-        "{'workflowInstanceKey':1,'elementInstanceKey':13,'messageName':'','correlationKey':'','bpmnProcessId':'','messageKey':-1,'variables':{}}"
+        "{'workflowInstanceKey':1,'elementInstanceKey':13,'messageName':'','correlationKey':'','bpmnProcessId':'','messageKey':-1,'variables':{},'interrupting':true}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////

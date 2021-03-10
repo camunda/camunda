@@ -8,7 +8,6 @@
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.message.MessageSubscription;
 import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -30,19 +29,9 @@ public final class MessageSubscriptionCorrelatingApplier
 
   @Override
   public void applyState(final long key, final MessageSubscriptionRecord value) {
-    final var subscription =
-        new MessageSubscription(
-            value.getWorkflowInstanceKey(),
-            value.getElementInstanceKey(),
-            value.getBpmnProcessIdBuffer(),
-            value.getMessageNameBuffer(),
-            value.getCorrelationKeyBuffer(),
-            value.shouldCloseOnCorrelate());
-
     // TODO (saig0): the send time for the retry should be deterministic (#6364)
     final var sentTime = ActorClock.currentTimeMillis();
-    messageSubscriptionState.updateToCorrelatingState(
-        subscription, value.getVariablesBuffer(), sentTime, value.getMessageKey());
+    messageSubscriptionState.updateToCorrelatingState(value, sentTime);
 
     // avoid correlating this message to one instance of this workflow again
     messageState.putMessageCorrelation(value.getMessageKey(), value.getBpmnProcessIdBuffer());

@@ -124,7 +124,7 @@ public final class SubscriptionCommandMessageHandler
         .setMessageKey(-1)
         .setMessageName(openMessageSubscriptionCommand.getMessageName())
         .setCorrelationKey(openMessageSubscriptionCommand.getCorrelationKey())
-        .setCloseOnCorrelate(openMessageSubscriptionCommand.shouldCloseOnCorrelate());
+        .setInterrupting(openMessageSubscriptionCommand.shouldCloseOnCorrelate());
 
     return writeCommand(
         openMessageSubscriptionCommand.getSubscriptionPartitionId(),
@@ -259,7 +259,7 @@ public final class SubscriptionCommandMessageHandler
         .setMessageName(resetMessageCorrelationCommand.getMessageName())
         .setCorrelationKey(resetMessageCorrelationCommand.getCorrelationKey())
         .setMessageKey(resetMessageCorrelationCommand.getMessageKey())
-        .setCloseOnCorrelate(false);
+        .setInterrupting(false);
 
     return writeCommand(
         resetMessageCorrelationCommand.getSubscriptionPartitionId(),
