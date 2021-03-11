@@ -50,6 +50,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
           processorLookup,
       final Writers writers) {
 
+    final var stateWriter = writers.state();
+    final var commandWriter = writers.command();
     this.streamWriter = streamWriter;
     this.expressionBehavior = expressionBehavior;
 
@@ -71,7 +73,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             stateTransitionBehavior,
             catchEventBehavior,
-            streamWriter,
+            stateWriter,
+            commandWriter,
             sideEffects,
             zeebeState);
     incidentBehavior = new BpmnIncidentBehavior(zeebeState, streamWriter);
