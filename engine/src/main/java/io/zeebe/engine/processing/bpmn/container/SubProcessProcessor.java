@@ -64,11 +64,12 @@ public final class SubProcessProcessor
     } else {
       // event sub-process is activated
       final var startEvent = element.getStartEvents().get(0);
-      final var childInstance = stateTransitionBehavior.activateChildInstance(context, startEvent);
+      final var childInstanceKey =
+          stateTransitionBehavior.activateChildInstance(context, startEvent);
 
       // the event variables are stored as temporary variables in the scope of the subprocess
       // - move them to the scope of the start event to apply the output variable mappings
-      stateBehavior.transferTemporaryVariables(context, childInstance.getKey());
+      stateBehavior.transferTemporaryVariables(context, childInstanceKey);
     }
   }
 

@@ -12,6 +12,7 @@ import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 
 /** Applies state changes for `ProcessInstance:Element_Activating` */
 final class ProcessInstanceElementActivatingApplier
@@ -30,6 +31,14 @@ final class ProcessInstanceElementActivatingApplier
     elementInstanceState.newInstance(
         flowScopeInstance, elementInstanceKey, value, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
+    final var flowScopeElementType = flowScopeInstance.getValue().getBpmnElementType();
+    final var currentElementType = value.getBpmnElementType();
+    if (isContainerElement(flowScopeElementType, currentElementType)) {
+      // we currently spawn new tokens only for container elements
+      // we might spawn tokens for other bpmn element types as well later, then we can improve here
+      elementInstanceState.spawnToken(flowScopeInstance.getKey());
+    }
+
     // We store the record to use it on resolving the incident, which is no longer used after
     // migrating the incident processor.
     // In order to migrate the other processors we need to write the record in an event applier. The
@@ -42,5 +51,13 @@ final class ProcessInstanceElementActivatingApplier
         value,
         ProcessInstanceIntent.ACTIVATE_ELEMENT,
         Purpose.FAILED);
+  }
+
+  private boolean isContainerElement(
+      final BpmnElementType flowScopeElementType, final BpmnElementType currentElementType) {
+    return (currentElementType == BpmnElementType.START_EVENT
+            && (flowScopeElementType == BpmnElementType.SUB_PROCESS
+                || flowScopeElementType == BpmnElementType.PROCESS))
+        || flowScopeElementType == BpmnElementType.MULTI_INSTANCE_BODY;
   }
 }
