@@ -97,9 +97,11 @@ public final class EventAppliers implements EventApplier {
     final var elementInstanceState = state.getElementInstanceState();
     final var eventScopeInstanceState = state.getEventScopeInstanceState();
     final var processState = state.getProcessState();
+    final var variableState = state.getVariableState();
     register(
         ProcessInstanceIntent.ELEMENT_ACTIVATING,
-        new ProcessInstanceElementActivatingApplier(elementInstanceState));
+        new ProcessInstanceElementActivatingApplier(
+            elementInstanceState, processState, variableState));
     register(
         ProcessInstanceIntent.ELEMENT_ACTIVATED,
         new ProcessInstanceElementActivatedApplier(

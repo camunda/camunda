@@ -249,16 +249,4 @@ public final class BpmnStateBehavior {
         variablesState.getVariablesAsDocument(sourceContext.getElementInstanceKey());
     variablesState.setTemporaryVariables(targetContext.getElementInstanceKey(), variables);
   }
-
-  public void transferTemporaryVariables(
-      final BpmnElementContext sourceContext, final long targetElementInstanceKey) {
-
-    final var variables =
-        variablesState.getTemporaryVariables(sourceContext.getElementInstanceKey());
-
-    if (variables != null) {
-      variablesState.setTemporaryVariables(targetElementInstanceKey, variables);
-      variablesState.removeTemporaryVariables(sourceContext.getElementInstanceKey());
-    }
-  }
 }
