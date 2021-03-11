@@ -78,7 +78,10 @@ public final class CatchEventBehavior {
     unsubscribeFromTimerEvents(context, streamWriter);
     unsubscribeFromMessageEvents(context, sideEffects);
 
-    eventScopeInstanceState.deleteInstance(context.getElementInstanceKey());
+    // todo: remove after all are migrated
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      eventScopeInstanceState.deleteInstance(context.getElementInstanceKey());
+    }
   }
 
   public void subscribeToEvents(
