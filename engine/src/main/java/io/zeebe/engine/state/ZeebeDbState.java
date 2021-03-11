@@ -170,6 +170,28 @@ public class ZeebeDbState implements MutableZeebeState {
   }
 
   @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public boolean isEmpty(final ZbColumnFamilies column) {
+    final var newContext = zeebeDb.createContext();
+    return zeebeDb.isEmpty(column, newContext);
+  }
+
+  /**
+   * Iterates over all entries for a given column family and presents each entry to the consumer.
+   *
+   * <p><strong>Hint</strong> Should only be used in tests.
+   *
+   * @param columnFamily the enum instance of the column family
+   * @param keyInstance this instance defines the type of the column family key type
+   * @param valueInstance this instance defines the type of the column family value type
+   * @param visitor the visitor that will be called for each entry
+   * @param <KeyType> the key type of the column family
+   * @param <ValueType> the value type of the column family
+   */
   public <KeyType extends DbKey, ValueType extends DbValue> void forEach(
       final ZbColumnFamilies columnFamily,
       final KeyType keyInstance,
@@ -181,17 +203,6 @@ public class ZeebeDbState implements MutableZeebeState {
     zeebeDb
         .createColumnFamily(columnFamily, newContext, keyInstance, valueInstance)
         .forEach(visitor);
-  }
-
-  @Override
-  public int getPartitionId() {
-    return partitionId;
-  }
-
-  @Override
-  public boolean isEmpty(final ZbColumnFamilies column) {
-    final var newContext = zeebeDb.createContext();
-    return zeebeDb.isEmpty(column, newContext);
   }
 
   public KeyGeneratorControls getKeyGeneratorControls() {

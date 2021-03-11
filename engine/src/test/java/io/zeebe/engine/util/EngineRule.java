@@ -25,6 +25,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
+import io.zeebe.engine.state.ZeebeDbState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.client.DeploymentClient;
 import io.zeebe.engine.util.client.IncidentClient;
@@ -349,7 +350,7 @@ public final class EngineRule extends ExternalResource {
                 Function.identity(),
                 columnFamily -> {
                   final var entries = new HashMap<>();
-                  getZeebeState()
+                  ((ZeebeDbState) getZeebeState())
                       .forEach(
                           columnFamily,
                           keyInstance,

@@ -7,12 +7,8 @@
  */
 package io.zeebe.engine.state.mutable;
 
-import io.zeebe.db.DbKey;
-import io.zeebe.db.DbValue;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.ZeebeState;
-import java.util.function.BiConsumer;
 
 public interface MutableZeebeState extends ZeebeState {
 
@@ -56,22 +52,4 @@ public interface MutableZeebeState extends ZeebeState {
   MutableEventScopeInstanceState getEventScopeInstanceState();
 
   KeyGenerator getKeyGenerator();
-
-  /**
-   * Iterates over all entries for a given column family and presents each entry to the consumer.
-   *
-   * <p><strong>Hint</strong> Should only be used in tests.
-   *
-   * @param columnFamily the enum instance of the column family
-   * @param keyInstance this instance defines the type of the column family key type
-   * @param valueInstance this instance defines the type of the column family value type
-   * @param visitor the visitor that will be called for each entry
-   * @param <KeyType> the key type of the column family
-   * @param <ValueType> the value type of the column family
-   */
-  <KeyType extends DbKey, ValueType extends DbValue> void forEach(
-      final ZbColumnFamilies columnFamily,
-      final KeyType keyInstance,
-      final ValueType valueInstance,
-      final BiConsumer<KeyType, ValueType> visitor);
 }
