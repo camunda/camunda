@@ -194,7 +194,7 @@ public final class BpmnStateTransitionBehavior {
     }
   }
 
-  public ElementInstance activateChildInstance(
+  public long activateChildInstance(
       final BpmnElementContext context, final ExecutableFlowElement childElement) {
 
     final var childInstanceRecord =
@@ -206,12 +206,10 @@ public final class BpmnStateTransitionBehavior {
 
     final var childInstanceKey = keyGenerator.nextKey();
 
-    streamWriter.appendFollowUpEvent(
+    stateWriter.appendFollowUpEvent(
         childInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, childInstanceRecord);
 
-    stateBehavior.updateElementInstance(context, ElementInstance::spawnToken);
-
-    return stateBehavior.createChildElementInstance(context, childInstanceKey, childInstanceRecord);
+    return childInstanceKey;
   }
 
   public void activateElementInstanceInFlowScope(
@@ -290,6 +288,7 @@ public final class BpmnStateTransitionBehavior {
     final var outgoingSequenceFlows = element.getOutgoing();
     if (outgoingSequenceFlows.isEmpty()) {
       // behaves like an implicit end event
+
       onElementCompleted(element, context);
 
     } else {

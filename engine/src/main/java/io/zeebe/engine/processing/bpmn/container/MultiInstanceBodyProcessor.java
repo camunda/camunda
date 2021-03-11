@@ -231,13 +231,16 @@ public final class MultiInstanceBodyProcessor
       final BpmnElementContext context,
       final DirectBuffer item) {
 
-    final var innerInstance =
+    final var innerInstanceKey =
         stateTransitionBehavior.activateChildInstance(
             context, multiInstanceBody.getInnerActivity());
+
+    final var innerInstance = stateBehavior.getElementInstance(innerInstanceKey);
     final var innerInstanceContext =
-        context.copy(innerInstance.getKey(), innerInstance.getValue(), innerInstance.getState());
+        context.copy(innerInstanceKey, innerInstance.getValue(), innerInstance.getState());
 
     // update loop counters
+    // todo(zell): updating the elemint instance can be moved in the activating of the child
     final var bodyInstance = stateBehavior.getElementInstance(context);
     bodyInstance.incrementMultiInstanceLoopCounter();
     stateBehavior.updateElementInstance(bodyInstance);

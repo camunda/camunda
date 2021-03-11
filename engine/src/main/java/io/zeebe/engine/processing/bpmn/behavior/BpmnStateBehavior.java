@@ -47,7 +47,11 @@ public final class BpmnStateBehavior {
   }
 
   public ElementInstance getElementInstance(final BpmnElementContext context) {
-    return elementInstanceState.getInstance(context.getElementInstanceKey());
+    return getElementInstance(context.getElementInstanceKey());
+  }
+
+  public ElementInstance getElementInstance(final long elementInstanceKey) {
+    return elementInstanceState.getInstance(elementInstanceKey);
   }
 
   public void updateElementInstance(final ElementInstance elementInstance) {
