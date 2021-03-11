@@ -78,7 +78,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
           .setJobKey(key)
           .setVariableScopeKey(value.getElementInstanceKey());
 
-      commandWriter.appendFollowUpCommand(key, IncidentIntent.CREATE, incidentEvent);
+      commandWriter.appendNewCommand(IncidentIntent.CREATE, incidentEvent);
     }
   }
 }

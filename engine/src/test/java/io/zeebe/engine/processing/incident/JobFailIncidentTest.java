@@ -84,6 +84,30 @@ public final class JobFailIncidentTest {
     ENGINE.jobs().withType(JOB_TYPE).withMaxJobsToActivate(1).activate();
   }
 
+  // regression test for https://github.com/camunda-cloud/zeebe/issues/6516
+  @Test
+  public void shouldCreateIncidentWithANewKey() {
+    // given
+    final Record<JobRecordValue> failedEvent =
+        ENGINE.job().withType(JOB_TYPE).ofInstance(processInstanceKey).withRetries(0).fail();
+    final Record<IncidentRecordValue> firstIncident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withJobKey(failedEvent.getKey())
+            .getFirst();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(firstIncident.getKey()).resolve();
+
+    // when
+    ENGINE.job().withType(JOB_TYPE).ofInstance(processInstanceKey).withRetries(0).fail();
+    final Record<IncidentRecordValue> nextIncident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .filter(r -> r.getPosition() > firstIncident.getPosition())
+            .withJobKey(failedEvent.getKey())
+            .getFirst();
+
+    // then
+    assertThat(nextIncident.getKey()).isGreaterThan(firstIncident.getKey());
+  }
+
   @Test
   public void shouldCreateIncidentIfJobHasNoRetriesLeft() {
     // given
