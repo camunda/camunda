@@ -237,6 +237,29 @@ public class RaftFailOverTest {
   }
 
   @Test
+  public void shouldReplicateEntriesAfterDataLoss() throws Exception {
+    // given
+    raftRule.appendEntries(128);
+    final var follower = raftRule.shutdownFollower();
+
+    // when
+    raftRule.triggerDataLossOnNode(follower);
+    raftRule.bootstrapNode(follower);
+
+    // then
+    final var memberLogs = raftRule.getMemberLogs();
+    final var entries = memberLogs.get(follower);
+
+    for (final String member : memberLogs.keySet()) {
+      if (!follower.equals(member)) {
+        final var memberEntries = memberLogs.get(member);
+        assertThat(memberEntries.size()).isEqualTo(entries.size());
+        assertThat(memberEntries).isEqualTo(entries);
+      }
+    }
+  }
+
+  @Test
   public void shouldReplicateSnapshotMultipleTimesAfterMultipleDataLoss() throws Exception {
     // given
     raftRule.appendEntries(128);
