@@ -21,6 +21,7 @@ import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.intent.ProcessIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
 import java.util.HashMap;
@@ -74,6 +75,10 @@ public final class EventAppliers implements EventApplier {
         MessageStartEventSubscriptionIntent.CORRELATED,
         new MessageStartEventSubscriptionCorrelatedApplier(
             state.getMessageState(), state.getEventScopeInstanceState()));
+
+    register(
+        ProcessInstanceSubscriptionIntent.CREATED,
+        new ProcessInstanceSubscriptionCreatedApplier(state.getProcessInstanceSubscriptionState()));
 
     registerJobIntentEventAppliers(state);
     registerVariableEventAppliers(state);

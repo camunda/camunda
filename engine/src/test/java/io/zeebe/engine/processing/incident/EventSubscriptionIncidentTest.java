@@ -369,7 +369,7 @@ public final class EventSubscriptionIncidentTest {
     // then
     assertThat(
             RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.OPENED)
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .extracting(Record::getValue)
@@ -426,7 +426,7 @@ public final class EventSubscriptionIncidentTest {
 
     assertThat(
             RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.OPENED)
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .allMatch(r -> r.getPosition() > incidentResolvedRecord.getPosition());

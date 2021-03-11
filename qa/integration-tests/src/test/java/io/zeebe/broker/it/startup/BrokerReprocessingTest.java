@@ -512,7 +512,7 @@ public final class BrokerReprocessingTest {
 
     assertThat(
             RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.OPENED)
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .exists())
         .isTrue();
 

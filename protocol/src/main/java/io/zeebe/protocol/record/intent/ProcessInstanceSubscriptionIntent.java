@@ -16,8 +16,8 @@
 package io.zeebe.protocol.record.intent;
 
 public enum ProcessInstanceSubscriptionIntent implements ProcessInstanceRelatedIntent {
-  OPEN((short) 0),
-  OPENED((short) 1),
+  CREATE((short) 0),
+  CREATED((short) 1),
 
   CORRELATE((short) 2),
   CORRELATED((short) 3),
@@ -45,9 +45,9 @@ public enum ProcessInstanceSubscriptionIntent implements ProcessInstanceRelatedI
   public static Intent from(final short value) {
     switch (value) {
       case 0:
-        return OPEN;
+        return CREATE;
       case 1:
-        return OPENED;
+        return CREATED;
       case 2:
         return CORRELATE;
       case 3:

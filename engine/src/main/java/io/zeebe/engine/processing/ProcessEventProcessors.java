@@ -12,7 +12,7 @@ import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.message.CloseProcessInstanceSubscription;
 import io.zeebe.engine.processing.message.CorrelateProcessInstanceSubscription;
-import io.zeebe.engine.processing.message.OpenProcessInstanceSubscriptionProcessor;
+import io.zeebe.engine.processing.message.ProcessInstanceSubscriptionCreateProcessor;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.processinstance.CreateProcessInstanceProcessor;
 import io.zeebe.engine.processing.processinstance.CreateProcessInstanceWithResultProcessor;
@@ -65,7 +65,7 @@ public final class ProcessEventProcessors {
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
     addMessageStreamProcessors(
-        typedRecordProcessors, subscriptionState, subscriptionCommandSender, zeebeState);
+        typedRecordProcessors, subscriptionState, subscriptionCommandSender, zeebeState, writers);
     addTimerStreamProcessors(
         typedRecordProcessors, timerChecker, zeebeState, catchEventBehavior, expressionProcessor);
     addVariableDocumentStreamProcessors(
@@ -117,12 +117,14 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessInstanceSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final ZeebeState zeebeState) {
+      final ZeebeState zeebeState,
+      final Writers writers) {
     typedRecordProcessors
         .onCommand(
             ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
-            ProcessInstanceSubscriptionIntent.OPEN,
-            new OpenProcessInstanceSubscriptionProcessor(subscriptionState))
+            ProcessInstanceSubscriptionIntent.CREATE,
+            new ProcessInstanceSubscriptionCreateProcessor(
+                zeebeState.getProcessInstanceSubscriptionState(), writers))
         .onCommand(
             ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
             ProcessInstanceSubscriptionIntent.CORRELATE,

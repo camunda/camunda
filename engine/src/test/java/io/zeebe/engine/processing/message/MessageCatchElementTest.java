@@ -193,7 +193,7 @@ public final class MessageCatchElementTest {
         getFirstElementRecord(enteredState);
 
     final Record<ProcessInstanceSubscriptionRecordValue> processInstanceSubscription =
-        getFirstProcessInstanceSubscriptionRecord(ProcessInstanceSubscriptionIntent.OPENED);
+        getFirstProcessInstanceSubscriptionRecord(ProcessInstanceSubscriptionIntent.CREATED);
 
     assertThat(processInstanceSubscription.getValueType())
         .isEqualTo(ValueType.PROCESS_INSTANCE_SUBSCRIPTION);
@@ -325,7 +325,7 @@ public final class MessageCatchElementTest {
   @Test
   public void shouldCorrelateMessageAndContinue() {
     // given
-    RecordingExporter.processInstanceSubscriptionRecords(ProcessInstanceSubscriptionIntent.OPENED)
+    RecordingExporter.processInstanceSubscriptionRecords(ProcessInstanceSubscriptionIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .withMessageName(MESSAGE_NAME)
         .await();

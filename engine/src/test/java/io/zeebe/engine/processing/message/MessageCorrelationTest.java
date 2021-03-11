@@ -517,7 +517,7 @@ public final class MessageCorrelationTest {
     // when
     assertThat(
             RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.OPENED)
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .exists())
         .isTrue();
 
@@ -528,7 +528,7 @@ public final class MessageCorrelationTest {
 
     assertThat(
             RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.OPENED)
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .limit(2)
                 .count())
         .isEqualTo(2);
@@ -573,7 +573,7 @@ public final class MessageCorrelationTest {
     // when
     assertThat(
             RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.OPENED)
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .limit(2)
                 .count())
         .isEqualTo(2);
@@ -606,7 +606,7 @@ public final class MessageCorrelationTest {
 
     assertThat(
             RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.OPENED)
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .exists())
         .isTrue();
 
@@ -942,7 +942,7 @@ public final class MessageCorrelationTest {
   private List<Record<ProcessInstanceSubscriptionRecordValue>> awaitSubscriptionsOpened(
       final int subscriptionsCount) {
     return RecordingExporter.processInstanceSubscriptionRecords()
-        .withIntent(ProcessInstanceSubscriptionIntent.OPENED)
+        .withIntent(ProcessInstanceSubscriptionIntent.CREATED)
         .limit(subscriptionsCount)
         .asList();
   }
