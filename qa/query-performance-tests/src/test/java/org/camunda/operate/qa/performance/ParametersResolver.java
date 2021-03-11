@@ -15,6 +15,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import org.apache.http.HttpHost;
+import org.camunda.operate.schema.indices.IndexDescriptor;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.schema.indices.WorkflowIndex;
@@ -64,17 +65,20 @@ public class ParametersResolver {
   @Value("${camunda.operate.qa.queries.elasticsearch.prefix:operate}")
   private String prefix;
 
-  @Value("${camunda.operate.qa.queries.operate.schemaVersion:}")
-  private String schemaVersion;
-
   @Autowired
   private ObjectMapper objectMapper;
+
+  @Autowired
+  private WorkflowIndex workflowIndex;
+
+  @Autowired
+  private ListViewTemplate listViewTemplate;
 
   private List<String> workflowInstanceIds = new ArrayList<>();
   private List<String> workflowIds = new ArrayList<>();
   private String startDateBefore;
   private String startDateAfter;
-  
+
   private final ConstantScoreQueryBuilder isWorkflowInstanceQuery = constantScoreQuery(termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION));
 
   private Random random = new Random();
@@ -89,7 +93,7 @@ public class ParametersResolver {
 
   private void initStartDates() {
     try {
-      final String listViewAlias = getAlias(ListViewTemplate.INDEX_NAME);
+      final String listViewAlias = getAlias(listViewTemplate);
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()
               .query(isWorkflowInstanceQuery)
@@ -113,7 +117,7 @@ public class ParametersResolver {
 
   private void initWorkflowInstanceIds() {
     try {
-      final String listViewAlias = getAlias(ListViewTemplate.INDEX_NAME);
+      final String listViewAlias = getAlias(listViewTemplate);
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()
               .query(isWorkflowInstanceQuery)
@@ -126,11 +130,11 @@ public class ParametersResolver {
       throw new RuntimeException("Error occurred when reading workflowInstanceIds from Elasticsearch", ex);
     }
   }
-  
+
   private void initWorkflowIds() {
-    workflowIds = org.camunda.operate.qa.util.ElasticsearchUtil.getWorkflowIds(esClient, getAlias(WorkflowIndex.INDEX_NAME), 2);
+    workflowIds = org.camunda.operate.qa.util.ElasticsearchUtil.getWorkflowIds(esClient, getAlias(workflowIndex), 2);
   }
-  
+
   private List<String> requestIdsFor(SearchRequest searchRequest) throws IOException{
     final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
     return Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2));
@@ -156,7 +160,7 @@ public class ParametersResolver {
       throw new RuntimeException("Error occurred when replacing placeholders in queries", e);
     }
   }
-  
+
   private boolean contains(String str, String substr) {
       return str!=null && str.contains(substr);
   }
@@ -199,8 +203,8 @@ public class ParametersResolver {
     return body;
   }
 
-  private String getAlias(String indexName) {
-    return String.format("%s-%s-%s_alias", prefix, indexName, schemaVersion.toLowerCase());
+  private String getAlias(IndexDescriptor descriptor) {
+    return String.format("%s-%s-%s_alias", prefix, descriptor.getIndexName(), descriptor.getVersion().toLowerCase());
   }
 
 }

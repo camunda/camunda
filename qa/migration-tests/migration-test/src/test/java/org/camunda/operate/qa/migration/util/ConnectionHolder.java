@@ -11,15 +11,11 @@ import org.apache.http.HttpHost;
 import org.camunda.operate.qa.util.migration.TestContext;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ConnectionHolder {
-
-  @Value("${current.version}")
-  private String schemaVersion;
 
   @Autowired
   private ElasticsearchContainerUtil testContainerUtil;
@@ -40,7 +36,7 @@ public class ConnectionHolder {
 
   @Bean
   public EntityReader getEntityReader(RestHighLevelClient esClient) {
-    return new EntityReader(esClient, schemaVersion);
+    return new EntityReader(esClient);
   }
 
 

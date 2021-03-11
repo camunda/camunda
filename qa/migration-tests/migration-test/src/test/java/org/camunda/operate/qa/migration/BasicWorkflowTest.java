@@ -33,6 +33,7 @@ import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.junit.Before;
 import org.junit.Test;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static org.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
@@ -54,7 +55,7 @@ public class BasicWorkflowTest extends AbstractMigrationTest {
     assumeThatWorkflowIsUnderTest(bpmnProcessId);
     if (workflowInstanceIds == null) {
       sleepFor(5_000);
-      SearchRequest searchRequest = new SearchRequest(entityReader.getAliasFor(ListViewTemplate.INDEX_NAME));
+      SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
       // Workflow instances list
       searchRequest.source()
           .query(joinWithAnd(termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION), termQuery(ListViewTemplate.BPMN_PROCESS_ID, bpmnProcessId)));
@@ -69,13 +70,13 @@ public class BasicWorkflowTest extends AbstractMigrationTest {
 
   @Test
   public void testImportPositions() {
-    List<ImportPositionEntity> importPositions = entityReader.getEntitiesFor("import-position", ImportPositionEntity.class);
+    List<ImportPositionEntity> importPositions = entityReader.getEntitiesFor(importPositionIndex.getAlias(), ImportPositionEntity.class);
     assertThat(importPositions.isEmpty()).describedAs("There should exists at least 1 ImportPosition").isFalse();
   }
 
   @Test
   public void testEvents() {
-    SearchRequest searchRequest = new SearchRequest(entityReader.getAliasFor(EventTemplate.INDEX_NAME));
+    SearchRequest searchRequest = new SearchRequest(eventTemplate.getAlias());
     searchRequest.source().query(termsQuery(EventTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceIds));
     List<EventEntity> events = entityReader.searchEntitiesFor(searchRequest, EventEntity.class);
     assertThat(events.isEmpty()).isFalse();
@@ -86,7 +87,7 @@ public class BasicWorkflowTest extends AbstractMigrationTest {
 
   @Test
   public void testSequenceFlows() {
-    SearchRequest searchRequest = new SearchRequest(entityReader.getAliasFor(SequenceFlowTemplate.INDEX_NAME));
+    SearchRequest searchRequest = new SearchRequest(sequenceFlowTemplate.getAlias());
     searchRequest.source().query(termsQuery(SequenceFlowTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceIds));
     List<SequenceFlowEntity> sequenceFlows = entityReader.searchEntitiesFor(searchRequest, SequenceFlowEntity.class);
     assertThat(sequenceFlows.size()).isEqualTo(BasicWorkflowDataGenerator.WORKFLOW_INSTANCE_COUNT * 2);
@@ -94,7 +95,7 @@ public class BasicWorkflowTest extends AbstractMigrationTest {
 
   @Test
   public void testActivityInstances() {
-    SearchRequest searchRequest = new SearchRequest(entityReader.getAliasFor(ActivityInstanceTemplate.INDEX_NAME));
+    SearchRequest searchRequest = new SearchRequest(activityInstanceTemplate.getAlias());
     searchRequest.source().query(termsQuery(ActivityInstanceTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceIds));
     List<ActivityInstanceEntity> activityInstances = entityReader.searchEntitiesFor(searchRequest, ActivityInstanceEntity.class);
     assertThat(activityInstances.size()).isEqualTo(BasicWorkflowDataGenerator.WORKFLOW_INSTANCE_COUNT * 3);
@@ -104,7 +105,7 @@ public class BasicWorkflowTest extends AbstractMigrationTest {
 
   @Test
   public void testVariables() {
-    SearchRequest searchRequest = new SearchRequest(entityReader.getAliasFor(VariableTemplate.INDEX_NAME));
+    SearchRequest searchRequest = new SearchRequest(variableTemplate.getAlias());
     searchRequest.source().query(termsQuery(VariableTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceIds));
     List<VariableEntity> variableEntities = entityReader.searchEntitiesFor(searchRequest, VariableEntity.class);
     assertThat(variableEntities.size()).isEqualTo(BasicWorkflowDataGenerator.WORKFLOW_INSTANCE_COUNT * 4);
@@ -113,13 +114,13 @@ public class BasicWorkflowTest extends AbstractMigrationTest {
   @Test
   public void testOperations() {
     //TODO narrow down the search criteria
-    List<OperationEntity> operations = entityReader.getEntitiesFor(OperationTemplate.INDEX_NAME, OperationEntity.class);
+    List<OperationEntity> operations = entityReader.getEntitiesFor(operationTemplate.getAlias(), OperationEntity.class);
     assertThat(operations.size()).describedAs("At least one operation is active").isGreaterThan(0);
   }
 
   @Test
   public void testListViews() {
-    SearchRequest searchRequest = new SearchRequest(entityReader.getAliasFor(ListViewTemplate.INDEX_NAME));
+    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
     int workflowInstancesCount = BasicWorkflowDataGenerator.WORKFLOW_INSTANCE_COUNT;
 
     //  Variables list
@@ -137,7 +138,7 @@ public class BasicWorkflowTest extends AbstractMigrationTest {
 
   @Test
   public void testIncidents() {
-    SearchRequest searchRequest = new SearchRequest(entityReader.getAliasFor(IncidentTemplate.INDEX_NAME));
+    SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias());
     searchRequest.source().query(termsQuery(IncidentTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceIds));
     List<IncidentEntity> incidents = entityReader.searchEntitiesFor(searchRequest, IncidentEntity.class);
     assertThat(incidents.size()).isBetween(
@@ -152,7 +153,7 @@ public class BasicWorkflowTest extends AbstractMigrationTest {
 
   @Test
   public void testUsers() {
-    final List<UserEntity> users = entityReader.getEntitiesFor("user", UserEntity.class);
+    final List<UserEntity> users = entityReader.getEntitiesFor(userIndex.getAlias(), UserEntity.class);
     assertThat(users.size()).isEqualTo(2);
     assertThat(users).extracting(UserIndex.FIRSTNAME).containsOnly("Demo");
     assertThat(users).extracting(UserIndex.LASTNAME).containsOnly("user");

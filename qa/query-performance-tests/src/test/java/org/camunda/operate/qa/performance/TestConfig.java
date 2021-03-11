@@ -25,7 +25,11 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 @Configuration
-@ComponentScan(basePackages = {"org.camunda.operate.util.rest", "org.camunda.operate.qa.performance"})
+@ComponentScan(basePackages = {
+    "org.camunda.operate.util.rest","org.camunda.operate.property",
+    "org.camunda.operate.schema.indices",
+    "org.camunda.operate.schema.templates",
+    "org.camunda.operate.qa.performance"})
 @EnableConfigurationProperties
 public class TestConfig {
 

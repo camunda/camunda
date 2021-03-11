@@ -12,7 +12,6 @@ import static org.camunda.operate.schema.templates.ListViewTemplate.WORKFLOW_INS
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import java.io.IOException;
 import java.util.List;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.qa.migration.util.AbstractMigrationTest;
@@ -32,12 +31,11 @@ public class Workflow0240Test extends AbstractMigrationTest {
   private EntityReader entityReader;
 
   @Test
-  public void testBigInstanceIsCompleted() throws IOException {
+  public void testBigInstanceIsCompleted() {
     assumeThatWorkflowIsUnderTest(bpmnProcessId);
 
     ThreadUtil.sleepFor(10_000);
-    SearchRequest searchRequest = new SearchRequest(
-        entityReader.getAliasFor(ListViewTemplate.INDEX_NAME));
+    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
     searchRequest.source()
         .query(joinWithAnd(termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION),
             termQuery(ListViewTemplate.BPMN_PROCESS_ID, bpmnProcessId)));

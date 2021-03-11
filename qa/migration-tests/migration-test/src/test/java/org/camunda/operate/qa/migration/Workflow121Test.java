@@ -38,7 +38,7 @@ public class Workflow121Test extends AbstractMigrationTest {
     assumeThatWorkflowIsUnderTest(bpmnProcessId);
     if (workflowInstanceIds == null) {
       sleepFor(5_000);
-      SearchRequest searchRequest = new SearchRequest(entityReader.getAliasFor(ListViewTemplate.INDEX_NAME));
+      SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
       // Workflow instances list
       searchRequest.source()
           .query(joinWithAnd(termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION), termQuery(ListViewTemplate.BPMN_PROCESS_ID, bpmnProcessId)));
@@ -53,7 +53,7 @@ public class Workflow121Test extends AbstractMigrationTest {
 
   @Test
   public void testIncidents() {
-    SearchRequest searchRequest = new SearchRequest(entityReader.getAliasFor(IncidentTemplate.INDEX_NAME));
+    SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias());
     searchRequest.source().query(termsQuery(IncidentTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceIds));
     List<IncidentEntity> incidents = entityReader.searchEntitiesFor(searchRequest, IncidentEntity.class);
     assertThat(incidents.size()).isEqualTo(Workflow121DataGenerator.INCIDENT_COUNT);

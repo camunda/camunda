@@ -7,6 +7,9 @@ package org.camunda.operate.qa.migration.util;
 
 import org.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import org.camunda.operate.qa.util.migration.TestContext;
+import org.camunda.operate.schema.indices.ImportPositionIndex;
+import org.camunda.operate.schema.indices.UserIndex;
+import org.camunda.operate.schema.templates.*;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -33,6 +36,33 @@ public abstract class AbstractMigrationTest {
   protected EntityReader entityReader;
 
   @Autowired
+  protected ListViewTemplate listViewTemplate;
+
+  @Autowired
+  protected EventTemplate eventTemplate;
+
+  @Autowired
+  protected SequenceFlowTemplate sequenceFlowTemplate;
+
+  @Autowired
+  protected ActivityInstanceTemplate activityInstanceTemplate;
+
+  @Autowired
+  protected VariableTemplate variableTemplate;
+
+  @Autowired
+  protected IncidentTemplate incidentTemplate;
+
+  @Autowired
+  protected ImportPositionIndex importPositionIndex;
+
+  @Autowired
+  protected OperationTemplate operationTemplate;
+
+  @Autowired
+  protected UserIndex userIndex;
+
+  @Autowired
   protected RestHighLevelClient esClient;
 
   @Autowired
@@ -43,7 +73,11 @@ public abstract class AbstractMigrationTest {
   }
 
   @Configuration
-  @ComponentScan(basePackages = {"org.camunda.operate.qa.migration", "org.camunda.operate.util.rest"},
+  @ComponentScan(basePackages = {
+      "org.camunda.operate.property",
+      "org.camunda.operate.schema.indices","org.camunda.operate.schema.templates",
+      "org.camunda.operate.qa.migration",
+      "org.camunda.operate.util.rest"},
       nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
   public static class SpringConfig {
   }
