@@ -11,7 +11,6 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.snapshots.broker.ConstructableSnapshotStore;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import io.zeebe.util.FileUtil;
@@ -68,7 +67,7 @@ public class ReceivedSnapshotTest {
     // given
 
     // when
-    final var receivedSnapshot = receiverSnapshotStore.newReceivedSnapshot("1-0-123");
+    final var receivedSnapshot = receiverSnapshotStore.newReceivedSnapshot("1-0-123-121");
 
     // then
     assertThat(receivedSnapshot.index()).isEqualTo(1L);
@@ -79,7 +78,7 @@ public class ReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var time = WallClockTimestamp.from(123);
+
     final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
@@ -104,8 +103,6 @@ public class ReceivedSnapshotTest {
     assertThat(receivedPersistedSnapshot.getTerm()).isEqualTo(persistedSnapshot.getTerm());
     assertThat(receivedPersistedSnapshot.getCompactionBound())
         .isEqualTo(persistedSnapshot.getCompactionBound());
-    assertThat(receivedPersistedSnapshot.getTimestamp())
-        .isEqualTo(persistedSnapshot.getTimestamp());
     assertThat(receivedPersistedSnapshot.getId()).isEqualTo(persistedSnapshot.getId());
   }
 
@@ -114,7 +111,6 @@ public class ReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var time = WallClockTimestamp.from(123);
     final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
@@ -137,7 +133,6 @@ public class ReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var time = WallClockTimestamp.from(123);
     final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
@@ -162,7 +157,6 @@ public class ReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var time = WallClockTimestamp.from(123);
     final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
@@ -194,7 +188,6 @@ public class ReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var time = WallClockTimestamp.from(123);
     final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
@@ -229,7 +222,7 @@ public class ReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var time = WallClockTimestamp.from(123);
+
     final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
@@ -247,7 +240,7 @@ public class ReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var time = WallClockTimestamp.from(123);
+
     final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));

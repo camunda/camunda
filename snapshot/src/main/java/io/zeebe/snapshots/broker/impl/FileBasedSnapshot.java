@@ -7,7 +7,6 @@
  */
 package io.zeebe.snapshots.broker.impl;
 
-import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.SnapshotChunkReader;
 import io.zeebe.util.FileUtil;
@@ -38,11 +37,6 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
 
   public Path getDirectory() {
     return directory;
-  }
-
-  @Override
-  public WallClockTimestamp getTimestamp() {
-    return metadata.getTimestamp();
   }
 
   @Override

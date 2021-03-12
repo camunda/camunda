@@ -7,7 +7,6 @@
  */
 package io.zeebe.snapshots.broker;
 
-import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import java.util.Comparator;
 
@@ -26,9 +25,6 @@ public interface SnapshotId extends Comparable<SnapshotId> {
   /** @return the exported position when the snapshot was taken */
   long getExportedPosition();
 
-  /** @return the timestamp when the snapshot was taken */
-  WallClockTimestamp getTimestamp();
-
   /**
    * The string representation of the snapshot identifier, looks like 'index-term-timestamp'.
    *
@@ -39,8 +35,8 @@ public interface SnapshotId extends Comparable<SnapshotId> {
   /**
    * A snapshot is considered "lower" if its term is less than that of the other snapshot. If they
    * are the same, then it is considered "lower" if its index is less then the other, if they are
-   * equal then the timestamps are compared. If they are the same then these snapshots are the same
-   * order-wise.
+   * equal then the processed positions are compared, and then exported positions are compared. If
+   * they are the same then these snapshots are the same order-wise.
    *
    * @param other the snapshot to compare against
    * @return -1 if {@code this} is less than {@code other}, 0 if they are the same, 1 if it is
