@@ -7,7 +7,6 @@
  */
 package io.zeebe.snapshots.broker.impl;
 
-import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.snapshots.broker.ConstructableSnapshotStore;
 import io.zeebe.snapshots.broker.SnapshotId;
 import io.zeebe.snapshots.raft.PersistableSnapshot;
@@ -85,6 +84,11 @@ public final class FileBasedSnapshotStore extends Actor
   @Override
   public String getName() {
     return actorName;
+  }
+
+  @Override
+  public void close() {
+    listeners.clear();
   }
 
   private FileBasedSnapshot loadLatestSnapshot(final Path snapshotDirectory) {
@@ -232,7 +236,7 @@ public final class FileBasedSnapshotStore extends Actor
         optMetadata.orElseThrow(
             () ->
                 new IllegalArgumentException(
-                    "Expected snapshot id in a format like 'index-term-timestamp', got '"
+                    "Expected snapshot id in a format like 'index-term-processedPosition-exportedPosition', got '"
                         + snapshotId
                         + "'."));
 
@@ -254,9 +258,8 @@ public final class FileBasedSnapshotStore extends Actor
       final long processedPosition,
       final long exportedPosition) {
 
-    final WallClockTimestamp timestamp = WallClockTimestamp.from(System.currentTimeMillis());
     final var newSnapshotId =
-        new FileBasedSnapshotMetadata(index, term, timestamp, processedPosition, exportedPosition);
+        new FileBasedSnapshotMetadata(index, term, processedPosition, exportedPosition);
     final FileBasedSnapshot currentSnapshot = currentPersistedSnapshotRef.get();
     if (currentSnapshot != null && currentSnapshot.getMetadata().compareTo(newSnapshotId) == 0) {
       LOGGER.debug(
@@ -341,11 +344,6 @@ public final class FileBasedSnapshotStore extends Actor
 
   public Path getPath() {
     return snapshotsDirectory;
-  }
-
-  @Override
-  public void close() {
-    listeners.clear();
   }
 
   private boolean isCurrentSnapshotNewer(final FileBasedSnapshotMetadata metadata) {

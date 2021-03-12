@@ -7,7 +7,6 @@
  */
 package io.zeebe.broker.logstreams;
 
-import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.PersistedSnapshotListener;
 import io.zeebe.snapshots.raft.PersistedSnapshotStore;
@@ -28,11 +27,6 @@ public class NoopSnapshotStore implements PersistedSnapshotStore {
         l ->
             l.onNewSnapshot(
                 new PersistedSnapshot() {
-                  @Override
-                  public WallClockTimestamp getTimestamp() {
-                    return null;
-                  }
-
                   @Override
                   public int version() {
                     return 0;

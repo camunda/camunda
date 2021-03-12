@@ -190,10 +190,11 @@ public final class SnapshotReplicationTest {
         FileBasedSnapshotMetadata.ofPath(validSnapshotDir.getFileName()).orElseThrow();
     final String prefix =
         String.format(
-            "%d-%d-%d",
+            "%d-%d-%d-%d",
             snapshotMetadata.getIndex(),
             snapshotMetadata.getTerm(),
-            snapshotMetadata.getTimestamp().unixTimestamp());
+            snapshotMetadata.getProcessedPosition(),
+            snapshotMetadata.getExportedPosition());
     try (final var files = Files.list(validSnapshotDir)) {
       return files.collect(
           Collectors.toMap(

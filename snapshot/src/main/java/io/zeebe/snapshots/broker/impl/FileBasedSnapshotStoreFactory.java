@@ -25,7 +25,7 @@ import org.agrona.collections.Int2ObjectHashMap;
  * possible skip them (and print out a warning).
  *
  * <p>The metadata extraction is done by parsing the directory name using '%d-%d-%d-%d', where in
- * order we expect: index, term, timestamp, and position.
+ * order we expect: index, term, processed position and exported position.
  */
 public final class FileBasedSnapshotStoreFactory
     implements SnapshotStoreSupplier, ReceivableSnapshotStoreFactory {

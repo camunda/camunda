@@ -481,7 +481,6 @@ abstract class AbstractAppender implements AutoCloseable {
               .withLeader(leader.memberId())
               .withIndex(persistedSnapshot.getIndex())
               .withTerm(persistedSnapshot.getTerm())
-              .withTimestamp(persistedSnapshot.getTimestamp().unixTimestamp())
               .withVersion(persistedSnapshot.version())
               .withData(new SnapshotChunkImpl(chunk).toByteBuffer())
               .withChunkId(ByteBuffer.wrap(chunk.getChunkName().getBytes()))

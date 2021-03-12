@@ -15,7 +15,6 @@
  */
 package io.atomix.raft.snapshot;
 
-import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.snapshots.broker.SnapshotId;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.ReceivedSnapshot;
@@ -38,7 +37,6 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
   private final TestSnapshotStore testSnapshotStore;
   private final long index;
   private final long term;
-  private final WallClockTimestamp timestamp;
   private final String id;
   private final NavigableMap<String, String> chunks = new TreeMap<>();
 
@@ -48,24 +46,18 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
     final var parts = snapshotId.split("-");
     index = Long.parseLong(parts[0]);
     term = Long.parseLong(parts[1]);
-    timestamp = WallClockTimestamp.from(Long.parseLong(parts[2]));
   }
 
-  InMemorySnapshot(
-      final TestSnapshotStore testSnapshotStore,
-      final long index,
-      final long term,
-      final WallClockTimestamp timestamp) {
+  InMemorySnapshot(final TestSnapshotStore testSnapshotStore, final long index, final long term) {
     this.testSnapshotStore = testSnapshotStore;
     this.index = index;
     this.term = term;
-    this.timestamp = timestamp;
-    id = String.format("%d-%d-%d", index, term, timestamp.unixTimestamp());
+    id = String.format("%d-%d", index, term);
   }
 
   public static InMemorySnapshot newPersistedSnapshot(
       final long index, final long term, final int size, final TestSnapshotStore snapshotStore) {
-    final var snapshot = new InMemorySnapshot(snapshotStore, index, term, new WallClockTimestamp());
+    final var snapshot = new InMemorySnapshot(snapshotStore, index, term);
     for (int i = 0; i < size; i++) {
       snapshot.writeChunks("chunk-" + i, "test".getBytes());
     }
@@ -75,11 +67,6 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
 
   void writeChunks(final String id, final byte[] chunk) {
     chunks.put(id, StringUtil.fromBytes(chunk));
-  }
-
-  @Override
-  public WallClockTimestamp getTimestamp() {
-    return timestamp;
   }
 
   @Override
@@ -200,11 +187,6 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
       @Override
       public long getExportedPosition() {
         return 0;
-      }
-
-      @Override
-      public WallClockTimestamp getTimestamp() {
-        return timestamp;
       }
 
       @Override

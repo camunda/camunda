@@ -9,7 +9,6 @@ package io.zeebe.snapshots.broker.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import io.zeebe.util.sched.ActorScheduler;
 import org.junit.Before;
@@ -96,10 +95,9 @@ public class PersistedSnapshotStoreTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var time = WallClockTimestamp.from(123);
 
     // when
-    final var transientSnapshot = persistedSnapshotStore.newReceivedSnapshot("1-0-123");
+    final var transientSnapshot = persistedSnapshotStore.newReceivedSnapshot("1-0-123-121");
 
     // then
     assertThat(transientSnapshot.index()).isEqualTo(index);
