@@ -197,7 +197,7 @@ export default withErrorHandling(
         change.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
       }
 
-      this.props.updateReport(change, true);
+      await this.props.updateReport(change, true);
       this.props.setLoading(false);
     };
 

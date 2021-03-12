@@ -139,7 +139,7 @@ export class DecisionControlPanel extends React.Component {
       };
     }
 
-    this.props.updateReport(change, true);
+    await this.props.updateReport(change, true);
     this.props.setLoading(false);
   };
 
