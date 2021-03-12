@@ -9,12 +9,12 @@ package io.zeebe.broker.system.partitions;
 
 import io.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.util.sched.ActorControl;
 
 @FunctionalInterface
 public interface TypedRecordProcessorsFactory {
 
   TypedRecordProcessors createTypedStreamProcessor(
-      ActorControl actor, ZeebeState zeebeState, ProcessingContext processingContext);
+      ActorControl actor, MutableZeebeState zeebeState, ProcessingContext processingContext);
 }

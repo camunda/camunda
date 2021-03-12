@@ -24,7 +24,7 @@ import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -431,7 +431,7 @@ public final class StreamProcessorTest {
     streamProcessorRule.startTypedStreamProcessor(
         processingContext -> {
           processingContextActor = processingContext.getActor();
-          final ZeebeState state = processingContext.getZeebeState();
+          final MutableZeebeState state = processingContext.getZeebeState();
           return processors(state.getKeyGenerator(), processingContext.getWriters())
               .onEvent(
                   ValueType.PROCESS_INSTANCE,
@@ -490,7 +490,7 @@ public final class StreamProcessorTest {
     streamProcessorRule.startTypedStreamProcessor(
         processingContext -> {
           processingContextActor = processingContext.getActor();
-          final ZeebeState state = processingContext.getZeebeState();
+          final MutableZeebeState state = processingContext.getZeebeState();
           return processors(state.getKeyGenerator(), processingContext.getWriters())
               .onEvent(
                   ValueType.PROCESS_INSTANCE,

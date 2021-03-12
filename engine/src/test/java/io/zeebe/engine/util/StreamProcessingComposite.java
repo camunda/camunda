@@ -15,8 +15,8 @@ import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.LastProcessedPositionState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.RecordType;
@@ -31,7 +31,7 @@ public class StreamProcessingComposite {
   private final TestStreams streams;
   private final int partitionId;
   private final ZeebeDbFactory zeebeDbFactory;
-  private ZeebeState zeebeState;
+  private MutableZeebeState zeebeState;
   private LastProcessedPositionState lastProcessedPositionState;
 
   public StreamProcessingComposite(
@@ -107,7 +107,7 @@ public class StreamProcessingComposite {
     return streams.getStreamProcessor(getLogName(partitionId));
   }
 
-  public ZeebeState getZeebeState() {
+  public MutableZeebeState getZeebeState() {
     return zeebeState;
   }
 

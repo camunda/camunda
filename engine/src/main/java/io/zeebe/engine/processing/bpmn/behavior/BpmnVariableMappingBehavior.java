@@ -13,9 +13,9 @@ import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processing.variable.VariableBehavior;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.util.Either;
 import java.util.Optional;
@@ -29,7 +29,7 @@ public final class BpmnVariableMappingBehavior {
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final VariableBehavior variableBehavior) {
     this.expressionProcessor = expressionProcessor;
     elementInstanceState = zeebeState.getElementInstanceState();

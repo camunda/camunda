@@ -36,6 +36,7 @@ import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableProcessState;
 import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.state.processing.DbBlackListState;
 import io.zeebe.engine.state.processing.DbKeyGenerator;
 import io.zeebe.engine.state.processing.DbLastProcessedPositionState;
@@ -43,7 +44,7 @@ import io.zeebe.engine.state.variable.DbVariableState;
 import io.zeebe.protocol.Protocol;
 import java.util.function.BiConsumer;
 
-public class ZeebeDbState implements ZeebeState {
+public class ZeebeDbState implements MutableZeebeState {
 
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
   private final DbKeyGenerator keyGenerator;
@@ -139,11 +140,6 @@ public class ZeebeDbState implements ZeebeState {
   }
 
   @Override
-  public KeyGenerator getKeyGenerator() {
-    return keyGenerator;
-  }
-
-  @Override
   public MutableBlackListState getBlackListState() {
     return blackListState;
   }
@@ -169,6 +165,11 @@ public class ZeebeDbState implements ZeebeState {
   }
 
   @Override
+  public KeyGenerator getKeyGenerator() {
+    return keyGenerator;
+  }
+
+  @Override
   public int getPartitionId() {
     return partitionId;
   }
@@ -179,7 +180,18 @@ public class ZeebeDbState implements ZeebeState {
     return zeebeDb.isEmpty(column, newContext);
   }
 
-  @Override
+  /**
+   * Iterates over all entries for a given column family and presents each entry to the consumer.
+   *
+   * <p><strong>Hint</strong> Should only be used in tests.
+   *
+   * @param columnFamily the enum instance of the column family
+   * @param keyInstance this instance defines the type of the column family key type
+   * @param valueInstance this instance defines the type of the column family value type
+   * @param visitor the visitor that will be called for each entry
+   * @param <KeyType> the key type of the column family
+   * @param <ValueType> the value type of the column family
+   */
   public <KeyType extends DbKey, ValueType extends DbValue> void forEach(
       final ZbColumnFamilies columnFamily,
       final KeyType keyInstance,

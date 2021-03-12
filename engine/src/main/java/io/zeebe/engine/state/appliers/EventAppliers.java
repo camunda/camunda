@@ -10,7 +10,7 @@ package io.zeebe.engine.state.appliers;
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
@@ -31,7 +31,7 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 
 /**
- * Applies state changes from events to the {@link io.zeebe.engine.state.ZeebeState}.
+ * Applies state changes from events to the {@link MutableZeebeState}.
  *
  * <p>Finds the correct {@link TypedEventApplier} and delegates.
  */
@@ -51,7 +51,7 @@ public final class EventAppliers implements EventApplier {
   @SuppressWarnings("rawtypes")
   private final Map<Intent, TypedEventApplier> mapping = new HashMap<>();
 
-  public EventAppliers(final ZeebeState state) {
+  public EventAppliers(final MutableZeebeState state) {
     registerProcessInstanceEventAppliers(state);
 
     register(ProcessIntent.CREATED, new ProcessCreatedApplier(state));
@@ -87,13 +87,13 @@ public final class EventAppliers implements EventApplier {
     registerIncidentEventAppliers(state);
   }
 
-  private void registerVariableEventAppliers(final ZeebeState state) {
+  private void registerVariableEventAppliers(final MutableZeebeState state) {
     final VariableApplier variableApplier = new VariableApplier(state.getVariableState());
     register(VariableIntent.CREATED, variableApplier);
     register(VariableIntent.UPDATED, variableApplier);
   }
 
-  private void registerProcessInstanceEventAppliers(final ZeebeState state) {
+  private void registerProcessInstanceEventAppliers(final MutableZeebeState state) {
     final var elementInstanceState = state.getElementInstanceState();
     final var eventScopeInstanceState = state.getEventScopeInstanceState();
     final var processState = state.getProcessState();
@@ -123,7 +123,7 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState));
   }
 
-  private void registerJobIntentEventAppliers(final ZeebeState state) {
+  private void registerJobIntentEventAppliers(final MutableZeebeState state) {
     register(JobIntent.CANCELED, new JobCanceledApplier(state));
     register(JobIntent.COMPLETED, new JobCompletedApplier(state));
     register(JobIntent.CREATED, new JobCreatedApplier(state));
@@ -133,7 +133,7 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.TIMED_OUT, new JobTimedOutApplier(state));
   }
 
-  private void registerMessageSubscriptionAppliers(final ZeebeState state) {
+  private void registerMessageSubscriptionAppliers(final MutableZeebeState state) {
     register(
         MessageSubscriptionIntent.CREATED,
         new MessageSubscriptionCreatedApplier(state.getMessageSubscriptionState()));
@@ -152,7 +152,7 @@ public final class EventAppliers implements EventApplier {
         new MessageSubscriptionDeletedApplier(state.getMessageSubscriptionState()));
   }
 
-  private void registerIncidentEventAppliers(final ZeebeState state) {
+  private void registerIncidentEventAppliers(final MutableZeebeState state) {
     register(
         IncidentIntent.CREATED,
         new IncidentCreatedApplier(state.getIncidentState(), state.getJobState()));

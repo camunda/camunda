@@ -11,7 +11,7 @@ import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
@@ -21,18 +21,22 @@ public final class JobEventProcessors {
 
   public static void addJobProcessors(
       final TypedRecordProcessors typedRecordProcessors,
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final Consumer<String> onJobsAvailableCallback,
       final int maxRecordSize,
       final Writers writers) {
 
     final var jobState = zeebeState.getJobState();
+    final var keyGenerator = zeebeState.getKeyGenerator();
 
     typedRecordProcessors
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor())
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new JobCompleteProcessor(zeebeState, writers))
         .onCommand(ValueType.JOB, JobIntent.FAIL, new JobFailProcessor(zeebeState))
-        .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, new JobThrowErrorProcessor(zeebeState))
+        .onCommand(
+            ValueType.JOB,
+            JobIntent.THROW_ERROR,
+            new JobThrowErrorProcessor(zeebeState, keyGenerator))
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new JobTimeOutProcessor(zeebeState))
         .onCommand(
             ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(zeebeState))

@@ -9,9 +9,9 @@ package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableProcessState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.zeebe.protocol.record.intent.ProcessIntent;
 import java.util.Collections;
@@ -21,7 +21,7 @@ public class ProcessCreatedApplier implements TypedEventApplier<ProcessIntent, P
   private final MutableProcessState processState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
-  public ProcessCreatedApplier(final ZeebeState state) {
+  public ProcessCreatedApplier(final MutableZeebeState state) {
     processState = state.getProcessState();
     eventScopeInstanceState = state.getEventScopeInstanceState();
   }

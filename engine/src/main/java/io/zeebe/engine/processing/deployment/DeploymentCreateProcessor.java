@@ -26,9 +26,9 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.immutable.TimerInstanceState;
+import io.zeebe.engine.state.immutable.ZeebeState;
 import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -63,12 +63,14 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final int partitionsCount,
       final Writers writers,
       final ActorControl actor,
-      final DeploymentDistributor deploymentDistributor) {
+      final DeploymentDistributor deploymentDistributor,
+      final KeyGenerator keyGenerator) {
     processState = zeebeState.getProcessState();
     timerInstanceState = zeebeState.getTimerState();
-    keyGenerator = zeebeState.getKeyGenerator();
+    this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
-    deploymentTransformer = new DeploymentTransformer(stateWriter, zeebeState, expressionProcessor);
+    deploymentTransformer =
+        new DeploymentTransformer(stateWriter, zeebeState, expressionProcessor, keyGenerator);
     this.catchEventBehavior = catchEventBehavior;
     this.expressionProcessor = expressionProcessor;
     messageStartEventSubscriptionManager = new MessageStartEventSubscriptionManager(processState);

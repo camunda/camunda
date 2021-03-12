@@ -17,7 +17,7 @@ import static org.mockito.Mockito.mock;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -182,7 +182,7 @@ public class StreamProcessorHealthTest {
     streamProcessor =
         streamProcessorRule.startTypedStreamProcessor(
             processingContext -> {
-              final ZeebeState zeebeState = processingContext.getZeebeState();
+              final MutableZeebeState zeebeState = processingContext.getZeebeState();
               mockedLogStreamWriter =
                   new WrappedStreamWriter(processingContext.getLogStreamWriter());
               processingContext.logStreamWriter(mockedLogStreamWriter);

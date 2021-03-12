@@ -15,10 +15,10 @@ import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.ZeebeDbState;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.appliers.EventAppliers;
 import io.zeebe.engine.state.immutable.VariableState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.RecordingTypedEventWriter;
 import io.zeebe.engine.util.RecordingTypedEventWriter.RecordedEvent;
 import io.zeebe.protocol.record.intent.VariableIntent;
@@ -48,7 +48,7 @@ final class VariableBehaviorTest {
   @BeforeEach
   void beforeEach(final @TempDir File directory) {
     db = DefaultZeebeDbFactory.defaultFactory().createDb(directory);
-    final ZeebeState zeebeState = new ZeebeDbState(db, db.createContext());
+    final MutableZeebeState zeebeState = new ZeebeDbState(db, db.createContext());
     final StateWriter stateWriter =
         new EventApplyingStateWriter(eventWriter, new EventAppliers(zeebeState));
 

@@ -12,10 +12,10 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.immutable.VariableState;
 import io.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
@@ -33,7 +33,7 @@ public final class BpmnProcessResultSenderBehavior {
   private final TypedResponseWriter responseWriter;
 
   public BpmnProcessResultSenderBehavior(
-      final ZeebeState zeebeState, final TypedResponseWriter responseWriter) {
+      final MutableZeebeState zeebeState, final TypedResponseWriter responseWriter) {
     elementInstanceState = zeebeState.getElementInstanceState();
     variableState = zeebeState.getVariableState();
     this.responseWriter = responseWriter;

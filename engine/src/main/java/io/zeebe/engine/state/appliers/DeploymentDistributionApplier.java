@@ -8,8 +8,8 @@
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableDeploymentState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 
@@ -18,7 +18,7 @@ public class DeploymentDistributionApplier
 
   private final MutableDeploymentState deploymentState;
 
-  public DeploymentDistributionApplier(final ZeebeState zeebeState) {
+  public DeploymentDistributionApplier(final MutableZeebeState zeebeState) {
     deploymentState = zeebeState.getDeploymentState();
   }
 

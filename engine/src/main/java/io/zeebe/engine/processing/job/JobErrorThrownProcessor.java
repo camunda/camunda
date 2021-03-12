@@ -14,9 +14,9 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableJobState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.IncidentIntent;
@@ -32,7 +32,7 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
   private final MutableJobState jobState;
   private final ErrorEventHandler errorEventHandler;
 
-  public JobErrorThrownProcessor(final ZeebeState zeebeState) {
+  public JobErrorThrownProcessor(final MutableZeebeState zeebeState) {
     elementInstanceState = zeebeState.getElementInstanceState();
     jobState = zeebeState.getJobState();
     errorEventHandler =

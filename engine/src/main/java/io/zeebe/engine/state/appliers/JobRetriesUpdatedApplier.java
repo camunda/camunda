@@ -8,8 +8,8 @@
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableJobState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
 
@@ -17,7 +17,7 @@ public class JobRetriesUpdatedApplier implements TypedEventApplier<JobIntent, Jo
 
   private final MutableJobState jobState;
 
-  JobRetriesUpdatedApplier(final ZeebeState state) {
+  JobRetriesUpdatedApplier(final MutableZeebeState state) {
     jobState = state.getJobState();
   }
 

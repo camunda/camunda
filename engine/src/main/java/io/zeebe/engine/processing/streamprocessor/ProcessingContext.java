@@ -17,8 +17,8 @@ import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.KeyGeneratorControls;
 import io.zeebe.engine.state.ZeebeDbState;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -177,7 +177,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   }
 
   @Override
-  public ZeebeState getZeebeState() {
+  public MutableZeebeState getZeebeState() {
     return zeebeState;
   }
 

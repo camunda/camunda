@@ -18,9 +18,9 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.engine.state.immutable.VariableState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.msgpack.value.StringValue;
@@ -57,7 +57,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
   public JobBatchActivateProcessor(
-      final Writers writers, final ZeebeState state, final long maxRecordLength) {
+      final Writers writers, final MutableZeebeState state, final long maxRecordLength) {
 
     stateWriter = writers.state();
     commandWriter = writers.command();

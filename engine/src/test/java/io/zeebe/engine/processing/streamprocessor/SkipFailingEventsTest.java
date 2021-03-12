@@ -23,8 +23,8 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.TimerInstance;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.MockTypedRecord;
 import io.zeebe.engine.util.RecordStream;
 import io.zeebe.engine.util.Records;
@@ -79,7 +79,7 @@ public final class SkipFailingEventsTest {
 
   @Mock protected CommandResponseWriter commandResponseWriter;
   private KeyGenerator keyGenerator;
-  private ZeebeState zeebeState;
+  private MutableZeebeState zeebeState;
 
   @Before
   public void setUp() {

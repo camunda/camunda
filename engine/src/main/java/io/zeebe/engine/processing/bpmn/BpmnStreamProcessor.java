@@ -24,8 +24,8 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.variable.VariableBehavior;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ProcessState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -50,7 +50,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final ExpressionProcessor expressionProcessor,
       final CatchEventBehavior catchEventBehavior,
       final VariableBehavior variableBehavior,
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final Writers writers) {
     processState = zeebeState.getProcessState();
 

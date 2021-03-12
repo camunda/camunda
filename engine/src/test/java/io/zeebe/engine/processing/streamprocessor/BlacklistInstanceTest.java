@@ -12,7 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -215,7 +215,7 @@ public final class BlacklistInstanceTest {
     typedEvent.wrap(loggedEvent, metadata, new Value());
 
     // when
-    final ZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
+    final MutableZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
     zeebeState.getBlackListState().tryToBlacklist(typedEvent, (processInstanceKey) -> {});
 
     // then

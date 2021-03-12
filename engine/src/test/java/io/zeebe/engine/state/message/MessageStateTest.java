@@ -10,8 +10,8 @@ package io.zeebe.engine.state.message;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableMessageState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.test.util.MsgPackUtil;
@@ -27,7 +27,7 @@ public final class MessageStateTest {
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private MutableMessageState messageState;
-  private ZeebeState zeebeState;
+  private MutableZeebeState zeebeState;
 
   @Before
   public void setUp() {
