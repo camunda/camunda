@@ -153,7 +153,7 @@ public class MappingMetadataUtil {
         new GetAliasesRequest(dynamicIndexPrefix + "*"), RequestOptions.DEFAULT
       );
     } catch (IOException e) {
-      throw new OptimizeRuntimeException("Failed retrieving aliases for dynamic index prefix " + dynamicIndexPrefix);
+      throw new OptimizeRuntimeException("Failed retrieving aliases for dynamic index prefix " + dynamicIndexPrefix, e);
     }
     return aliases.getAliases()
       .values()
