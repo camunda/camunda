@@ -8,7 +8,7 @@
 package io.zeebe.engine.state.mutable;
 
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.immutable.ZeebeState;
 
 public interface MutableZeebeState extends ZeebeState {
 

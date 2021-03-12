@@ -9,9 +9,9 @@ package io.zeebe.engine.processing.job;
 
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.engine.state.immutable.JobState.State;
+import io.zeebe.engine.state.immutable.ZeebeState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;

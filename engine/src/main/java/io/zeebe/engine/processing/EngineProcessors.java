@@ -28,7 +28,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.immutable.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
