@@ -8,6 +8,7 @@
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
+import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -31,17 +32,30 @@ final class ProcessInstanceElementActivatingApplier
     elementInstanceState.newInstance(
         flowScopeInstance, elementInstanceKey, value, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
+    if (flowScopeInstance == null) {
+      // process instance level
+      return;
+    }
+
     final var flowScopeElementType = flowScopeInstance.getValue().getBpmnElementType();
     final var currentElementType = value.getBpmnElementType();
-    if (isContainerElement(flowScopeElementType, currentElementType)) {
-      // we currently spawn new tokens only for container elements
-      // we might spawn tokens for other bpmn element types as well later, then we can improve here
+
+    if (isContainerElement(flowScopeElementType, currentElementType)
+        || isNonInterruptingEventSubprocess(flowScopeInstance, currentElementType)
+        || currentElementType == BpmnElementType.BOUNDARY_EVENT
+        || currentElementType == BpmnElementType.INTERMEDIATE_CATCH_EVENT) {
+      // we currently spawn new tokens only for:
+      // container elements, non interrupting event sub process, boundary events and intermediate
+      // catch events
+      // we might spawn tokens for other bpmn element types as well later, then we can improve
+      // here
       elementInstanceState.spawnToken(flowScopeInstance.getKey());
     }
 
     // We store the record to use it on resolving the incident, which is no longer used after
     // migrating the incident processor.
-    // In order to migrate the other processors we need to write the record in an event applier. The
+    // In order to migrate the other processors we need to write the record in an event applier.
+    // The
     // record is removed in the ACTIVATED again
     // (which happens either after resolving or immediately)
     // todo: we need to remove it later
@@ -51,6 +65,21 @@ final class ProcessInstanceElementActivatingApplier
         value,
         ProcessInstanceIntent.ACTIVATE_ELEMENT,
         Purpose.FAILED);
+  }
+
+  private boolean isNonInterruptingEventSubprocess(
+      final ElementInstance flowScopeInstance, final BpmnElementType currentElementType) {
+    final var flowScopeElementType = flowScopeInstance.getValue().getBpmnElementType();
+
+    return currentElementType == BpmnElementType.SUB_PROCESS
+        && flowScopeElementType == BpmnElementType.PROCESS
+        && !isInterrupted(flowScopeInstance);
+  }
+
+  private boolean isInterrupted(final ElementInstance elementInstance) {
+    return elementInstance.getNumberOfActiveTokens() == 2
+        && elementInstance.isInterrupted()
+        && elementInstance.isActive();
   }
 
   private boolean isContainerElement(

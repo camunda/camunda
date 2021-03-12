@@ -25,7 +25,8 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.message.MessageCorrelationKeyException;
 import io.zeebe.engine.processing.message.MessageNameException;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedProcess;
@@ -59,24 +60,27 @@ public final class BpmnEventSubscriptionBehavior {
   private final MutableElementInstanceState elementInstanceState;
   private final CatchEventBehavior catchEventBehavior;
 
-  private final TypedStreamWriter streamWriter;
+  private final StateWriter stateWriter;
   private final SideEffects sideEffects;
 
   private final KeyGenerator keyGenerator;
   private final ProcessState processState;
   private final MutableVariableState variablesState;
+  private final TypedCommandWriter commandWriter;
 
   public BpmnEventSubscriptionBehavior(
       final BpmnStateBehavior stateBehavior,
       final BpmnStateTransitionBehavior stateTransitionBehavior,
       final CatchEventBehavior catchEventBehavior,
-      final TypedStreamWriter streamWriter,
+      final StateWriter stateWriter,
+      final TypedCommandWriter commandWriter,
       final SideEffects sideEffects,
       final ZeebeState zeebeState) {
     this.stateBehavior = stateBehavior;
     this.stateTransitionBehavior = stateTransitionBehavior;
     this.catchEventBehavior = catchEventBehavior;
-    this.streamWriter = streamWriter;
+    this.stateWriter = stateWriter;
+    this.commandWriter = commandWriter;
     this.sideEffects = sideEffects;
 
     processState = zeebeState.getProcessState();
@@ -90,7 +94,7 @@ public final class BpmnEventSubscriptionBehavior {
       final T element, final BpmnElementContext context) {
 
     try {
-      catchEventBehavior.subscribeToEvents(context, element, streamWriter, sideEffects);
+      catchEventBehavior.subscribeToEvents(context, element, commandWriter, sideEffects);
       return Either.right(null);
 
     } catch (final MessageCorrelationKeyException e) {
@@ -107,7 +111,7 @@ public final class BpmnEventSubscriptionBehavior {
   }
 
   public void unsubscribeFromEvents(final BpmnElementContext context) {
-    catchEventBehavior.unsubscribeFromEvents(context, streamWriter, sideEffects);
+    catchEventBehavior.unsubscribeFromEvents(context, commandWriter, sideEffects);
   }
 
   public void triggerBoundaryOrIntermediateEvent(
@@ -165,7 +169,7 @@ public final class BpmnEventSubscriptionBehavior {
       stateTransitionBehavior.transitionToTerminating(context);
 
     } else {
-      publishActivatingEvent(context, boundaryElementInstanceKey, record);
+      publishActivatingEvent(boundaryElementInstanceKey, record);
     }
 
     return boundaryElementInstanceKey;
@@ -223,20 +227,14 @@ public final class BpmnEventSubscriptionBehavior {
         .findFirst()
         .ifPresent(
             deferredRecord ->
-                publishActivatingEvent(
-                    context, deferredRecord.getKey(), deferredRecord.getValue()));
+                publishActivatingEvent(deferredRecord.getKey(), deferredRecord.getValue()));
   }
 
   private void publishActivatingEvent(
-      final BpmnElementContext context,
-      final long elementInstanceKey,
-      final ProcessInstanceRecord eventRecord) {
+      final long elementInstanceKey, final ProcessInstanceRecord eventRecord) {
 
-    streamWriter.appendFollowUpEvent(
+    stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
-
-    stateBehavior.createElementInstanceInFlowScope(context, elementInstanceKey, eventRecord);
-    stateBehavior.spawnToken(context);
   }
 
   public void triggerEventBasedGateway(
@@ -353,10 +351,7 @@ public final class BpmnEventSubscriptionBehavior {
         .setElementId(process.getProcess().getId())
         .setBpmnElementType(process.getProcess().getElementType());
 
-    elementInstanceState.newInstance(
-        processInstanceKey, recordForWFICreation, ProcessInstanceIntent.ELEMENT_ACTIVATING);
-
-    streamWriter.appendFollowUpEvent(
+    stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, recordForWFICreation);
   }
 
@@ -372,14 +367,10 @@ public final class BpmnEventSubscriptionBehavior {
         deferredRecord -> {
           final var elementInstanceKey = deferredRecord.getKey();
 
-          streamWriter.appendFollowUpEvent(
+          stateWriter.appendFollowUpEvent(
               elementInstanceKey,
               ProcessInstanceIntent.ELEMENT_ACTIVATING,
               deferredRecord.getValue());
-
-          stateBehavior.createChildElementInstance(
-              context, elementInstanceKey, deferredRecord.getValue());
-          stateBehavior.updateElementInstance(context, ElementInstance::spawnToken);
         });
 
     return deferredStartEvent.isPresent();
@@ -411,7 +402,7 @@ public final class BpmnEventSubscriptionBehavior {
 
           } else {
             // activate non-interrupting event sub-process
-            publishActivatingEvent(context, eventElementInstanceKey, record);
+            publishActivatingEvent(eventElementInstanceKey, record);
           }
 
           return eventElementInstanceKey;
@@ -430,7 +421,7 @@ public final class BpmnEventSubscriptionBehavior {
         stateTransitionBehavior.terminateChildInstances(flowScopeContext);
     if (noActiveChildInstances) {
       // activate interrupting event sub-process
-      publishActivatingEvent(context, eventElementInstanceKey, eventRecord);
+      publishActivatingEvent(eventElementInstanceKey, eventRecord);
 
     } else {
       // wait until child instances are terminated
@@ -458,13 +449,10 @@ public final class BpmnEventSubscriptionBehavior {
                 final var elementInstanceKey = record.getKey();
                 final var interruptingRecord = record.getValue();
 
-                streamWriter.appendFollowUpEvent(
+                stateWriter.appendFollowUpEvent(
                     elementInstanceKey,
                     ProcessInstanceIntent.ELEMENT_ACTIVATING,
                     interruptingRecord);
-
-                stateBehavior.createChildElementInstance(
-                    context, elementInstanceKey, interruptingRecord);
               });
     }
   }

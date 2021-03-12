@@ -21,7 +21,7 @@ import io.zeebe.engine.processing.message.MessageNameException;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.TimerInstanceState;
 import io.zeebe.engine.state.instance.TimerInstance;
@@ -72,10 +72,10 @@ public final class CatchEventBehavior {
 
   public void unsubscribeFromEvents(
       final BpmnElementContext context,
-      final TypedStreamWriter streamWriter,
+      final TypedCommandWriter commandWriter,
       final SideEffects sideEffects) {
 
-    unsubscribeFromTimerEvents(context, streamWriter);
+    unsubscribeFromTimerEvents(context, commandWriter);
     unsubscribeFromMessageEvents(context, sideEffects);
 
     // todo: remove after all are migrated
@@ -87,7 +87,7 @@ public final class CatchEventBehavior {
   public void subscribeToEvents(
       final BpmnElementContext context,
       final ExecutableCatchEventSupplier supplier,
-      final TypedStreamWriter streamWriter,
+      final TypedCommandWriter commandWriter,
       final SideEffects sideEffects)
       throws MessageCorrelationKeyException {
 
@@ -113,7 +113,7 @@ public final class CatchEventBehavior {
             context.getProcessDefinitionKey(),
             event.getId(),
             evaluatedTimers.get(event.getId()),
-            streamWriter);
+            commandWriter);
       } else if (event.isMessage()) {
         subscribeToMessageEvent(
             context,
@@ -137,7 +137,7 @@ public final class CatchEventBehavior {
       final long processDefinitionKey,
       final DirectBuffer handlerNodeId,
       final Timer timer,
-      final TypedStreamWriter writer) {
+      final TypedCommandWriter commandWriter) {
     timerRecord.reset();
     timerRecord
         .setRepetitions(timer.getRepetitions())
@@ -146,16 +146,17 @@ public final class CatchEventBehavior {
         .setProcessInstanceKey(processInstanceKey)
         .setTargetElementId(handlerNodeId)
         .setProcessDefinitionKey(processDefinitionKey);
-    writer.appendNewCommand(TimerIntent.CREATE, timerRecord);
+    commandWriter.appendNewCommand(TimerIntent.CREATE, timerRecord);
   }
 
   private void unsubscribeFromTimerEvents(
-      final BpmnElementContext context, final TypedStreamWriter streamWriter) {
+      final BpmnElementContext context, final TypedCommandWriter commandWriter) {
     timerInstanceState.forEachTimerForElementInstance(
-        context.getElementInstanceKey(), t -> unsubscribeFromTimerEvent(t, streamWriter));
+        context.getElementInstanceKey(), t -> unsubscribeFromTimerEvent(t, commandWriter));
   }
 
-  public void unsubscribeFromTimerEvent(final TimerInstance timer, final TypedStreamWriter writer) {
+  public void unsubscribeFromTimerEvent(
+      final TimerInstance timer, final TypedCommandWriter commandWriter) {
     timerRecord.reset();
     timerRecord
         .setElementInstanceKey(timer.getElementInstanceKey())
@@ -165,7 +166,7 @@ public final class CatchEventBehavior {
         .setTargetElementId(timer.getHandlerNodeId())
         .setProcessDefinitionKey(timer.getProcessDefinitionKey());
 
-    writer.appendFollowUpCommand(timer.getKey(), TimerIntent.CANCEL, timerRecord);
+    commandWriter.appendFollowUpCommand(timer.getKey(), TimerIntent.CANCEL, timerRecord);
   }
 
   private void subscribeToMessageEvent(
