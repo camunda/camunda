@@ -68,6 +68,7 @@ public final class EventAppliers implements EventApplier {
     registerIncidentEventAppliers(state);
     registerProcessMessageSubscriptionEventAppliers(state);
     register(TimerIntent.CREATED, new TimerCreatedApplier(state.getTimerState()));
+    register(TimerIntent.CANCELED, new TimerCancelledApplier(state.getTimerState()));
   }
 
   private void registerDeploymentAppliers(final MutableZeebeState state) {

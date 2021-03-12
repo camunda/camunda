@@ -165,7 +165,8 @@ public final class ProcessEventProcessors {
         .onCommand(
             ValueType.TIMER,
             TimerIntent.CANCEL,
-            new CancelTimerProcessor(zeebeState.getTimerState()))
+            new CancelTimerProcessor(
+                zeebeState.getTimerState(), writers.state(), writers.rejection()))
         .withListener(timerChecker);
   }
 
