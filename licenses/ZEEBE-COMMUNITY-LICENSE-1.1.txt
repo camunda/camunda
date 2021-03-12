@@ -1,6 +1,6 @@
-Zeebe Community License v1.0
+Zeebe Community License v1.1
 
-This Zeebe Community License v1.0 ("this Agreement") sets forth the terms and
+This Zeebe Community License v1.1 ("this Agreement") sets forth the terms and
 conditions on which Camunda Services GmbH ("the Licensor") makes available this
 software ("the Software"). BY INSTALLING, DOWNLOADING, ACCESSING, USING OR
 DISTRIBUTING THE SOFTWARE YOU INDICATE YOUR ACCEPTANCE TO, AND ARE ENTERING

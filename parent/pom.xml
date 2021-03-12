@@ -26,7 +26,7 @@
 
   <properties>
 
-    <!-- Zeebe Community License v1.0 header -->
+    <!-- Zeebe Community License v1.1 header -->
     <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
 
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
