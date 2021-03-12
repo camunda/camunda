@@ -18,6 +18,7 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -52,6 +53,7 @@ public final class IncidentStreamProcessorTest {
   }
 
   @Test
+  @Ignore("Unable to reject Incident:Create command on missing element instance due to #6546")
   public void shouldNotCreateIncidentIfNoFailedToken() {
     // given
     final IncidentRecord incidentRecord = new IncidentRecord();

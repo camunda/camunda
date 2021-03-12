@@ -61,7 +61,7 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
       return tryRejectJobIncident(incidentEvent.getJobKey(), commandControl, command);
     }
 
-    return true;
+    return false;
   }
 
   /** @return true if rejected, otherwise false */

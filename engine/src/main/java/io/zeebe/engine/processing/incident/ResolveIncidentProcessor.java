@@ -20,6 +20,8 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.immutable.IncidentState;
+import io.zeebe.engine.state.immutable.JobState;
+import io.zeebe.engine.state.immutable.JobState.State;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -49,6 +51,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   private final IncidentState incidentState;
   private final ElementInstanceState elementInstanceState;
+  private final JobState jobState;
 
   public ResolveIncidentProcessor(
       final MutableZeebeState zeebeState,
@@ -59,6 +62,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     rejectionWriter = writers.rejection();
     incidentState = zeebeState.getIncidentState();
     elementInstanceState = zeebeState.getElementInstanceState();
+    jobState = zeebeState.getJobState();
   }
 
   @Override
@@ -72,7 +76,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     final IncidentRecord incidentRecord = incidentState.getIncidentRecord(incidentKey);
     if (incidentRecord == null) {
       final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, incidentKey);
-      rejectResolveCommand(command, responseWriter, errorMessage);
+      rejectResolveCommand(command, responseWriter, errorMessage, RejectionType.NOT_FOUND);
       return;
     }
 
@@ -87,9 +91,10 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private void rejectResolveCommand(
       final TypedRecord<IncidentRecord> command,
       final TypedResponseWriter responseWriter,
-      final String errorMessage) {
+      final String errorMessage,
+      final RejectionType rejectionType) {
 
-    rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+    rejectionWriter.appendRejection(command, rejectionType, errorMessage);
     responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
   }
 
@@ -103,10 +108,13 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     final boolean isJobIncident = jobKey > 0;
 
     if (isJobIncident) {
-      // todo (#6000): resolve incident for UNHANDLED_ERROR_EVENT
-      // at time of writing the process cannot be fixed, so this incident cannot be resolved
-      final var message = String.format(RESOLVE_UNHANDLED_ERROR_INCIDENT_MESSAGE, jobKey);
-      rejectResolveCommand(command, responseWriter, message);
+      final State stateOfJob = jobState.getState(jobKey);
+      if (stateOfJob == State.ERROR_THROWN) {
+        // todo (#6000): resolve incident for UNHANDLED_ERROR_EVENT
+        // at time of writing the process cannot be fixed, so this incident cannot be resolved
+        final var message = String.format(RESOLVE_UNHANDLED_ERROR_INCIDENT_MESSAGE, jobKey);
+        rejectResolveCommand(command, responseWriter, message, RejectionType.PROCESSING_ERROR);
+      }
     } else {
       attemptToContinueProcessProcessing(
           command, responseWriter, streamWriter, sideEffect, incidentRecord);
@@ -131,7 +139,8 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
               sideEffect.accept(sideEffects);
             },
-            failure -> rejectResolveCommand(command, responseWriter, failure));
+            failure ->
+                rejectResolveCommand(command, responseWriter, failure, RejectionType.NOT_FOUND));
   }
 
   private Either<String, TypedRecord<ProcessInstanceRecord>> getFailedCommand(
