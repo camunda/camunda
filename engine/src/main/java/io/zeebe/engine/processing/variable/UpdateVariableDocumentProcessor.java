@@ -12,6 +12,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.msgpack.spec.MsgpackReaderException;
@@ -24,14 +25,17 @@ public final class UpdateVariableDocumentProcessor
     implements TypedRecordProcessor<VariableDocumentRecord> {
 
   private final ElementInstanceState elementInstanceState;
+  private final KeyGenerator keyGenerator;
   private final VariableBehavior variableBehavior;
   private final StateWriter stateWriter;
 
   public UpdateVariableDocumentProcessor(
       final ElementInstanceState elementInstanceState,
+      final KeyGenerator keyGenerator,
       final VariableBehavior variableBehavior,
       final StateWriter stateWriter) {
     this.elementInstanceState = elementInstanceState;
+    this.keyGenerator = keyGenerator;
     this.variableBehavior = variableBehavior;
     this.stateWriter = stateWriter;
   }
@@ -74,8 +78,9 @@ public final class UpdateVariableDocumentProcessor
       return;
     }
 
-    stateWriter.appendFollowUpEvent(record.getKey(), VariableDocumentIntent.UPDATED, value);
-    responseWriter.writeEventOnCommand(
-        record.getKey(), VariableDocumentIntent.UPDATED, value, record);
+    final long key = keyGenerator.nextKey();
+
+    stateWriter.appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
+    responseWriter.writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
   }
 }
