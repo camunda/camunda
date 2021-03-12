@@ -19,15 +19,8 @@ package io.atomix.raft.storage.log.entry;
 /**
  * Indicates a leader change has occurred.
  *
- * <p>The {@code InitializeEntry} is logged by a leader at the beginning of its term to indicate
- * that a leadership change has occurred. Importantly, initialize entries are logged with a {@link
- * #timestamp() timestamp} which can be used by server state machines to reset session timeouts
- * following leader changes. Initialize entries are always the first entry to be committed at the
- * start of a leader's term.
+ * <p>The {@code InitialEntry} is logged by a leader at the beginning of its term to indicate that a
+ * leadership change has occurred. Initialize entries are always the first entry to be committed at
+ * the start of a leader's term.
  */
-public class InitializeEntry extends TimestampedEntry {
-
-  public InitializeEntry(final long term, final long timestamp) {
-    super(term, timestamp);
-  }
-}
+public class InitialEntry implements RaftEntry {}
