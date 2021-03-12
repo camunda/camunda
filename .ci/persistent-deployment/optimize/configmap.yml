@@ -145,8 +145,8 @@ data:
 ######################## CAM BPM ########################
   configure-and-run.sh: |
     #!/bin/bash -ex
-    # remove unneeded webapps
-    for webapp in camunda-invoice camunda-welcome docs examples host-manager manager h2 ROOT
+    # remove unneeded webapps. We keep camunda-invoice so we have a demo user with some process data
+    for webapp in camunda-welcome docs examples host-manager manager h2 ROOT
     do
        rm -rf ${HOME}/webapps/${webapp}
     done
