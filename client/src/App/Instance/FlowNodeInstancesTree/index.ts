@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {IS_NEXT_FLOW_NODE_INSTANCES} from 'modules/constants';
+import {IS_NEXT_FLOW_NODE_INSTANCES} from 'modules/feature-flags';
 import {FlowNodeInstancesTree as FlowNodeInstancesTreeNext} from './index.next';
 import {FlowNodeInstancesTree as FlowNodeInstancesTreeLegacy} from './index.legacy';
 

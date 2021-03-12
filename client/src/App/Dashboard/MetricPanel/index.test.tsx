@@ -17,7 +17,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MetricPanel} from './index';
 import {statisticsStore} from 'modules/stores/statistics';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 function createWrapper(history = createMemoryHistory()) {
   const Wrapper: React.FC = ({children}) => {

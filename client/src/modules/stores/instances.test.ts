@@ -11,7 +11,7 @@ import {DEFAULT_FILTER, DEFAULT_SORTING} from 'modules/constants';
 import {createMemoryHistory} from 'history';
 import {groupedWorkflowsMock} from 'modules/testUtils';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
 
 const instance: WorkflowInstanceEntity = {

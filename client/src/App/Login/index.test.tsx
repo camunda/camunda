@@ -15,7 +15,7 @@ import {
 import {Router} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import {Login} from './index';

@@ -18,7 +18,7 @@ import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
 
 import {User} from './index';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 const mockUser = {
   firstname: 'Franz',

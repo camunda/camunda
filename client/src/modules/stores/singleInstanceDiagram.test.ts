@@ -7,7 +7,7 @@
 import {singleInstanceDiagramStore} from './singleInstanceDiagram';
 import {currentInstanceStore} from './currentInstance';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {mockWorkflowXML} from 'modules/testUtils';
 import {waitFor} from '@testing-library/react';
 

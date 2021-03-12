@@ -19,11 +19,8 @@ import {
 } from 'modules/api/instances';
 import {filtersStore} from 'modules/stores/filters';
 import {logger} from 'modules/logger';
-import {
-  getRequestFilters,
-  IS_FILTERS_V2,
-  getSorting,
-} from 'modules/utils/filter';
+import {getRequestFilters, getSorting} from 'modules/utils/filter';
+import {IS_FILTERS_V2} from 'modules/feature-flags';
 
 type Payload = Parameters<typeof fetchWorkflowInstances>['0'];
 

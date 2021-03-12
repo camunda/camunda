@@ -21,7 +21,7 @@ import {
   mockEmptyResponse,
 } from './index.setup';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 const createWrapper = (historyMock = createMemoryHistory()) => ({

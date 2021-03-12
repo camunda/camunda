@@ -20,7 +20,7 @@ import {
   mockWorkflowInstances,
 } from 'modules/testUtils';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {isEqual} from 'lodash';
 
 const OPERATION_TYPE = 'RESOLVE_INCIDENT';

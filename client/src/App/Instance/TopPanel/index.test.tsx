@@ -18,7 +18,7 @@ import {TopPanel} from './index';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 jest.mock('modules/utils/bpmn');
 jest.mock('./InstanceHeader', () => {

@@ -18,7 +18,7 @@ import OperationsPanel from './index';
 import * as CONSTANTS from './constants';
 import {mockOperationFinished, mockOperationRunning} from './index.setup';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 type Props = {
   children?: React.ReactNode;

@@ -23,7 +23,7 @@ import {ListPanel} from './index';
 import {MemoryRouter} from 'react-router-dom';
 import {DEFAULT_FILTER} from 'modules/constants';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {instancesStore} from 'modules/stores/instances';
 import {NotificationProvider} from 'modules/notifications';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';

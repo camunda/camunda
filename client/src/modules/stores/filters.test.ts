@@ -18,7 +18,7 @@ import {workflowStatisticsStore} from './workflowStatistics';
 import {instanceSelectionStore} from './instanceSelection';
 import {DEFAULT_FILTER, DEFAULT_SORTING, SORT_ORDER} from 'modules/constants';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 describe('stores/filters', () => {
   const fetchInstancesSpy = jest.spyOn(instancesStore, 'fetchInstances');

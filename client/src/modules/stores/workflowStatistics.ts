@@ -16,7 +16,8 @@ import {filtersStore} from 'modules/stores/filters';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {instancesStore} from 'modules/stores/instances';
 import {isEmpty, isEqual} from 'lodash';
-import {getRequestFilters, IS_FILTERS_V2} from 'modules/utils/filter';
+import {getRequestFilters} from 'modules/utils/filter';
+import {IS_FILTERS_V2} from 'modules/feature-flags';
 
 type NodeStatistics = {
   active: number;

@@ -21,7 +21,7 @@ import {
 } from 'modules/testUtils';
 
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 jest.mock('modules/utils/bpmn');
 jest.mock('modules/api/instances');

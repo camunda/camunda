@@ -11,7 +11,7 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {rest} from 'msw';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {FlowNodeInstancesTree} from './index.next';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {
   flowNodeInstanceStore,

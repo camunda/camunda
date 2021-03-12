@@ -14,7 +14,7 @@ import {Router, Route} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
 import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 jest.mock('modules/components/IncidentOperation', () => {
   return {

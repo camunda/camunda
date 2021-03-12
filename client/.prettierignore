@@ -8,3 +8,6 @@ coverage/
 **/*.xml
 src/fonts/
 yarn.lock
+.eslintignore
+public/
+.prettierignore

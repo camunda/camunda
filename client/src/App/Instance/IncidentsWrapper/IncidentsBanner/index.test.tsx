@@ -12,7 +12,7 @@ import {MemoryRouter, Route} from 'react-router-dom';
 import {render, screen} from '@testing-library/react';
 import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 const mockProps = {
   onClick: jest.fn(),

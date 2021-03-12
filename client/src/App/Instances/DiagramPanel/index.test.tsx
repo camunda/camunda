@@ -25,7 +25,7 @@ import {DiagramPanel} from './index';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {filtersStore} from 'modules/stores/filters';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 jest.mock('modules/utils/bpmn');
 

@@ -582,8 +582,6 @@ function getSorting(): {sortBy: string; sortOrder: 'asc' | 'desc'} {
   };
 }
 
-const IS_FILTERS_V2 = false;
-
 export {
   decodeFields,
   isVariableEmpty,
@@ -591,7 +589,6 @@ export {
   parseIds,
   parseFilterDate,
   getRequestFilters,
-  IS_FILTERS_V2,
   updateFiltersSearchString,
   getSorting,
 };

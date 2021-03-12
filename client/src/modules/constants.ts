@@ -214,5 +214,3 @@ export const INSTANCE_SELECTION_MODE = {
   EXCLUDE: 'EXCLUDE',
   ALL: 'ALL',
 } as const;
-
-export const IS_NEXT_FLOW_NODE_INSTANCES = false;

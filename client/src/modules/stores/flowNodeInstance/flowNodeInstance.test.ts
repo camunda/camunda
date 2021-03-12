@@ -9,7 +9,7 @@
 import {waitFor} from '@testing-library/react';
 import {rest} from 'msw';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {createMultiInstanceFlowNodeInstances} from 'modules/testUtils';
 import {flowNodeInstanceStore} from './flowNodeInstance';
 

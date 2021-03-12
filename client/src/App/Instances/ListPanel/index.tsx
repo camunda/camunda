@@ -14,7 +14,8 @@ import List from './List';
 import ListFooter from './ListFooter';
 import {Spinner, PaneBody} from './styled';
 import {StatusMessage} from 'modules/components/StatusMessage';
-import {getFilters, IS_FILTERS_V2} from 'modules/utils/filter';
+import {getFilters} from 'modules/utils/filter';
+import {IS_FILTERS_V2} from 'modules/feature-flags';
 
 const ListPanel = observer((props: any) => {
   const {

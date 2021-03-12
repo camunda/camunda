@@ -11,7 +11,7 @@ import {createMemoryHistory} from 'history';
 import {filtersStore} from 'modules/stores/filters';
 import {instancesStore} from 'modules/stores/instances';
 import {Operations} from './index';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {groupedWorkflowsMock} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';

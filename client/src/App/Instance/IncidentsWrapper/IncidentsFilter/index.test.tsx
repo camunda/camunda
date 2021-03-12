@@ -16,7 +16,7 @@ import {
 } from './index.setup';
 import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('IncidentsFilter', () => {

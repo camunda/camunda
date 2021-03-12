@@ -11,7 +11,7 @@ import {PAGE_TITLE} from 'modules/constants';
 import {statisticsStore} from 'modules/stores/statistics';
 import {Dashboard} from './index';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockIncidentsByError} from './IncidentsByError/index.setup';
 import {mockWithSingleVersion} from './InstancesByWorkflow/index.setup';

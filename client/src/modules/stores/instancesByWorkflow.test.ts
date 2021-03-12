@@ -6,7 +6,7 @@
 
 import {instancesByWorkflowStore} from './instancesByWorkflow';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 describe('stores/instancesByWorkflow', () => {
   const mockInstancesByWorkflow = [

@@ -8,7 +8,7 @@ import {variablesStore} from './variables';
 import {currentInstanceStore} from './currentInstance';
 import {flowNodeInstanceStore} from './flowNodeInstance';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
 
 describe('stores/variables', () => {

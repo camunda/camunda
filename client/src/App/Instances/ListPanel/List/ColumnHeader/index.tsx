@@ -5,8 +5,9 @@
  */
 
 import * as Styled from './styled';
-import {IS_FILTERS_V2, getSorting} from 'modules/utils/filter';
+import {getSorting} from 'modules/utils/filter';
 import {useHistory} from 'react-router-dom';
+import {IS_FILTERS_V2} from 'modules/feature-flags';
 
 function toggleSorting(search: string, column: string) {
   const params = new URLSearchParams(search);

@@ -9,7 +9,7 @@ import Adapter from 'enzyme-adapter-react-16';
 import 'jest-enzyme';
 import 'jest-styled-components';
 import '@testing-library/jest-dom';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 // configure enzyme
 Enzyme.configure({adapter: new Adapter()});

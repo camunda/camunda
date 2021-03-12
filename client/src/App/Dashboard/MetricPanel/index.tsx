@@ -20,7 +20,7 @@ import {StatusMessage} from 'modules/components/StatusMessage';
 import {generateQueryParams} from './generateQueryParams';
 import {mergeQueryParams} from 'modules/utils/mergeQueryParams';
 import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
-import {IS_FILTERS_V2} from 'modules/utils/filter';
+import {IS_FILTERS_V2} from 'modules/feature-flags';
 import {Locations} from 'modules/routes';
 
 const MetricPanel = observer(() => {

@@ -16,7 +16,8 @@ import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {useHistory} from 'react-router-dom';
 import {Location} from 'history';
-import {getFilters, IS_FILTERS_V2} from 'modules/utils/filter';
+import {getFilters} from 'modules/utils/filter';
+import {IS_FILTERS_V2} from 'modules/feature-flags';
 
 const Message: React.FC = ({children}) => {
   return (

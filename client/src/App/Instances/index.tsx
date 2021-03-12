@@ -21,8 +21,9 @@ import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {workflowsStore} from 'modules/stores/workflows';
 import {Filters as FiltersV2} from './FiltersV2';
-import {getFilters, IS_FILTERS_V2} from 'modules/utils/filter';
+import {getFilters} from 'modules/utils/filter';
 import {Location, History} from 'history';
+import {IS_FILTERS_V2} from 'modules/feature-flags';
 
 import {observer} from 'mobx-react';
 import * as Styled from './styled';

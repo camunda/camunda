@@ -9,7 +9,7 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import {rest} from 'msw';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {FlowNodeInstancesTree} from './index.legacy';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';

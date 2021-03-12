@@ -15,7 +15,7 @@ import {instancesStore} from 'modules/stores/instances';
 import {filtersStore} from 'modules/stores/filters';
 import {INSTANCE_SELECTION_MODE} from 'modules/constants';
 import {isEqual} from 'lodash';
-import {IS_FILTERS_V2} from 'modules/utils/filter';
+import {IS_FILTERS_V2} from 'modules/feature-flags';
 
 type Mode = 'INCLUDE' | 'EXCLUDE' | 'ALL';
 type State = {

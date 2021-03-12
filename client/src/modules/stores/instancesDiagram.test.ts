@@ -10,7 +10,7 @@ import {createMemoryHistory} from 'history';
 import {instancesDiagramStore} from './instancesDiagram';
 import {DEFAULT_FILTER} from 'modules/constants';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
 
 describe('stores/instancesDiagram', () => {

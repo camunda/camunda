@@ -17,7 +17,7 @@ import {InstanceHeader} from './index';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {variablesStore} from 'modules/stores/variables';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {operationsStore} from 'modules/stores/operations';
 import {
   mockInstanceWithActiveOperation,

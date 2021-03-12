@@ -20,7 +20,7 @@ import Variables from './index';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {mockVariables} from './index.setup';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no variables.';
 

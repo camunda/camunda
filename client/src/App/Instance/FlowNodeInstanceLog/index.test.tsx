@@ -18,7 +18,7 @@ import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 jest.mock('modules/utils/bpmn');
 

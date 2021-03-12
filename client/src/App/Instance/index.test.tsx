@@ -20,7 +20,7 @@ import {PAGE_TITLE} from 'modules/constants';
 import {getWorkflowName} from 'modules/utils/instance';
 import {Instance} from './index';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 jest.mock('modules/utils/bpmn');
 

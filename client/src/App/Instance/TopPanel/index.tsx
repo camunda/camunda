@@ -27,7 +27,7 @@ import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {eventsStore} from 'modules/stores/events';
 import {StatusMessage} from 'modules/components/StatusMessage';
 
-import {IS_NEXT_FLOW_NODE_INSTANCES} from 'modules/constants';
+import {IS_NEXT_FLOW_NODE_INSTANCES} from 'modules/feature-flags';
 
 type Props = {
   incidents?: unknown;

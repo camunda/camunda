@@ -14,7 +14,7 @@ import {variablesStore} from 'modules/stores/variables';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {MemoryRouter, Route} from 'react-router-dom';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 jest.mock('../Variables', () => {
   return {

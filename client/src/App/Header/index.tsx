@@ -28,7 +28,7 @@ import * as Styled from './styled';
 import {mergeQueryParams} from 'modules/utils/mergeQueryParams';
 import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 import {Locations} from 'modules/routes';
-import {IS_FILTERS_V2} from 'modules/utils/filter';
+import {IS_FILTERS_V2} from 'modules/feature-flags';
 
 type Props = {
   location: Location;

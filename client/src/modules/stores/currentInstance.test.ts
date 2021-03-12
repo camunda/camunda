@@ -7,7 +7,7 @@
 import {currentInstanceStore} from './currentInstance';
 import {createInstance} from 'modules/testUtils';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
 
 const currentInstanceMock = createInstance();

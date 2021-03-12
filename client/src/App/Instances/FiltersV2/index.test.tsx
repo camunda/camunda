@@ -9,7 +9,7 @@ import {History, createMemoryHistory} from 'history';
 import userEvent from '@testing-library/user-event';
 import {render, screen, waitFor} from '@testing-library/react';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {Filters} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {workflowsStore} from 'modules/stores/workflows';

@@ -17,7 +17,7 @@ import {isOperationRunning} from '../service';
 import ProgressBar from './ProgressBar';
 import {filtersStore} from 'modules/stores/filters';
 import {useHistory} from 'react-router-dom';
-import {IS_FILTERS_V2} from 'modules/utils/filter';
+import {IS_FILTERS_V2} from 'modules/feature-flags';
 import {Locations} from 'modules/routes';
 
 const {

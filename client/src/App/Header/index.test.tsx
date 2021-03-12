@@ -16,7 +16,7 @@ import {location, mockCollapsablePanelProps} from './index.setup';
 import {instancesStore} from 'modules/stores/instances';
 import {statisticsStore} from 'modules/stores/statistics';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 
 // Header component fetches user information in the background, which is an async action and might complete after the tests finished.
 // Tests also depend on the statistics fetch to be completed, in order to test the results that are rendered in the screen.

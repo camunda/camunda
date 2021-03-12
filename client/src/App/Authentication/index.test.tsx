@@ -7,7 +7,7 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {Router, Route} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import Authentication from './index';

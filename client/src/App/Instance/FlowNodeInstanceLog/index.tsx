@@ -7,7 +7,6 @@
 import React from 'react';
 import {Skeleton} from './Skeleton';
 import EmptyPanel from 'modules/components/EmptyPanel';
-// @ts-expect-error
 import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
 import {observer} from 'mobx-react';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
@@ -64,7 +63,9 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
           <Styled.NodeContainer>
             <ul>
               <FlowNodeInstancesTree
+                // @ts-expect-error
                 node={instanceExecutionHistory}
+                // @ts-expect-error
                 flowNodeInstance={instanceExecutionHistory}
                 treeDepth={1}
               />

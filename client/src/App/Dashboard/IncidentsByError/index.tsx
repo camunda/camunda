@@ -20,7 +20,7 @@ import {incidentsByErrorStore} from 'modules/stores/incidentsByError';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {Skeleton} from '../Skeleton';
 import {observer} from 'mobx-react';
-import {IS_FILTERS_V2} from 'modules/utils/filter';
+import {IS_FILTERS_V2} from 'modules/feature-flags';
 import {Locations} from 'modules/routes';
 import {mergeQueryParams} from 'modules/utils/mergeQueryParams';
 import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';

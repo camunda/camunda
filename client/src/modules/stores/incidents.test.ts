@@ -7,7 +7,7 @@
 import {incidentsStore} from './incidents';
 import {currentInstanceStore} from './currentInstance';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
 
 describe('stores/incidents', () => {

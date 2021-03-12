@@ -11,7 +11,7 @@ import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {rest} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 jest.mock('modules/utils/bpmn');

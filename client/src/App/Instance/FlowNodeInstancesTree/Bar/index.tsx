@@ -9,7 +9,7 @@ import React from 'react';
 import {TYPE} from 'modules/constants';
 import {TimeStampLabel} from '../TimeStampLabel';
 import {Container, NodeIcon, NodeName} from './styled';
-import {IS_NEXT_FLOW_NODE_INSTANCES} from 'modules/constants';
+import {IS_NEXT_FLOW_NODE_INSTANCES} from 'modules/feature-flags';
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {FlowNodeMetaData} from 'modules/stores/singleInstanceDiagram';
 
