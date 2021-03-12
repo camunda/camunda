@@ -123,7 +123,11 @@ public final class ProcessInstanceStreamProcessorRule extends ExternalResource
               writers);
 
           JobEventProcessors.addJobProcessors(
-              typedRecordProcessors, zeebeState, type -> {}, Integer.MAX_VALUE, writers);
+              typedRecordProcessors,
+              zeebeState,
+              type -> {},
+              Integer.MAX_VALUE,
+              processingContext.getWriters());
           typedRecordProcessors.withListener(this);
           return typedRecordProcessors;
         });

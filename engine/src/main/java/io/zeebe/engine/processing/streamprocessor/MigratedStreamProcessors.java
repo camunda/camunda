@@ -61,6 +61,7 @@ public final class MigratedStreamProcessors {
                 JobIntent.RETRIES_UPDATED,
                 JobIntent.CANCEL,
                 JobIntent.CANCELED)));
+    MIGRATED_VALUE_TYPES.put(ValueType.JOB_BATCH, MIGRATED);
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.TESTING_ONLY);
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.EXCLUSIVE_GATEWAY);
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.PARALLEL_GATEWAY);

@@ -12,12 +12,10 @@ public final class Writers {
 
   private final TypedStreamWriter stream;
   private final StateWriter state;
-  private final CommandResponseWriter response;
+  private final TypedResponseWriter response;
 
   public Writers(
-      final TypedStreamWriter stream,
-      final StateWriter state,
-      final CommandResponseWriter response) {
+      final TypedStreamWriter stream, final StateWriter state, final TypedResponseWriter response) {
     this.stream = stream;
     this.state = state;
     this.response = response;
@@ -38,8 +36,12 @@ public final class Writers {
     return state;
   }
 
-  /** @return the response writer, which is used during processing */
-  public CommandResponseWriter response() {
+  /**
+   * Note: {@code flush()} must not be called on the response writer object. This is done centrally
+   *
+   * @return the response writer, which is used during processing
+   */
+  public TypedResponseWriter response() {
     return response;
   }
 

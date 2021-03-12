@@ -27,7 +27,6 @@ public final class JobEventProcessors {
       final Writers writers) {
 
     final var jobState = zeebeState.getJobState();
-    final var keyGenerator = zeebeState.getKeyGenerator();
 
     typedRecordProcessors
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor())
@@ -41,8 +40,7 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
-            new JobBatchActivateProcessor(
-                jobState, zeebeState.getVariableState(), keyGenerator, maxRecordSize))
+            new JobBatchActivateProcessor(writers, zeebeState, maxRecordSize))
         .withListener(new JobTimeoutTrigger(jobState))
         .withListener(
             new StreamProcessorLifecycleAware() {

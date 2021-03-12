@@ -8,12 +8,13 @@
 package io.zeebe.engine.processing.streamprocessor.writers;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 
-public interface TypedResponseWriter {
+public interface TypedResponseWriter extends SideEffectProducer {
 
   void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason);
 
@@ -36,4 +37,6 @@ public interface TypedResponseWriter {
    * @return false in case of backpressure, else true
    */
   boolean flush();
+
+  void reset();
 }

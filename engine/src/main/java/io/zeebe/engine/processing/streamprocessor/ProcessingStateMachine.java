@@ -11,7 +11,7 @@ import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDbTransaction;
 import io.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriterImpl;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
@@ -118,7 +118,7 @@ public final class ProcessingStateMachine {
   private final ZeebeState zeebeState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
-  private final TypedResponseWriterImpl responseWriter;
+  private final TypedResponseWriter responseWriter;
   private final ActorControl actor;
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
@@ -173,7 +173,7 @@ public final class ProcessingStateMachine {
 
     final int partitionId = logStream.getPartitionId();
     typedEvent = new TypedEventImpl(partitionId);
-    responseWriter = new TypedResponseWriterImpl(context.getWriters().response(), partitionId);
+    responseWriter = context.getWriters().response();
 
     metrics = new StreamProcessorMetrics(partitionId);
     onProcessedListener = context.getOnProcessedListener();
