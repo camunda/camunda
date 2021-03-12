@@ -122,7 +122,7 @@ public final class MessageCorrelationTest {
 
     assertThat(
             RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.OPENED)
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName(MESSAGE_NAME)
                 .exists())

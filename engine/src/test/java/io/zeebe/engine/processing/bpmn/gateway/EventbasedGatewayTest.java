@@ -204,7 +204,7 @@ public final class EventbasedGatewayTest {
 
     final List<Record<ProcessInstanceSubscriptionRecordValue>> subscriptionEvents =
         RecordingExporter.processInstanceSubscriptionRecords(
-                ProcessInstanceSubscriptionIntent.OPENED)
+                ProcessInstanceSubscriptionIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .limit(2)
             .asList();
@@ -385,7 +385,7 @@ public final class EventbasedGatewayTest {
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).exists()).isTrue();
     assertThat(
             RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.OPENED)
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .exists())
         .isTrue();
 

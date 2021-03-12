@@ -153,7 +153,7 @@ public final class SubscriptionCommandMessageHandler
     return writeCommand(
         processInstancePartitionId,
         ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
-        ProcessInstanceSubscriptionIntent.OPEN,
+        ProcessInstanceSubscriptionIntent.CREATE,
         processInstanceSubscriptionRecord);
   }
 

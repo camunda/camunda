@@ -242,14 +242,14 @@ public final class ProcessInstanceStreamProcessorTest {
     // when
     final ProcessInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
 
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.OPEN, subscription);
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.OPEN, subscription);
+    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CREATE, subscription);
+    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CREATE, subscription);
 
     // then
     final Record<ProcessInstanceSubscriptionRecord> rejection =
         streamProcessorRule.awaitAndGetFirstSubscriptionRejection();
 
-    assertThat(rejection.getIntent()).isEqualTo(ProcessInstanceSubscriptionIntent.OPEN);
+    assertThat(rejection.getIntent()).isEqualTo(ProcessInstanceSubscriptionIntent.CREATE);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
   }
 
@@ -266,13 +266,13 @@ public final class ProcessInstanceStreamProcessorTest {
             "catch-event", ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     final ProcessInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.OPEN, subscription);
+    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CREATE, subscription);
     waitUntil(
         () ->
             envRule
                 .events()
                 .onlyProcessInstanceSubscriptionRecords()
-                .withIntent(ProcessInstanceSubscriptionIntent.OPENED)
+                .withIntent(ProcessInstanceSubscriptionIntent.CREATED)
                 .exists());
 
     // when
@@ -322,14 +322,14 @@ public final class ProcessInstanceStreamProcessorTest {
             "catch-event", ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     final ProcessInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.OPEN, subscription);
+    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CREATE, subscription);
 
     waitUntil(
         () ->
             envRule
                 .events()
                 .onlyProcessInstanceSubscriptionRecords()
-                .withIntent(ProcessInstanceSubscriptionIntent.OPENED)
+                .withIntent(ProcessInstanceSubscriptionIntent.CREATED)
                 .exists());
 
     envRule.writeCommand(
@@ -396,14 +396,14 @@ public final class ProcessInstanceStreamProcessorTest {
             "catch-event", ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     final ProcessInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.OPEN, subscription);
+    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CREATE, subscription);
 
     waitUntil(
         () ->
             envRule
                 .events()
                 .onlyProcessInstanceSubscriptionRecords()
-                .withIntent(ProcessInstanceSubscriptionIntent.OPENED)
+                .withIntent(ProcessInstanceSubscriptionIntent.CREATED)
                 .exists());
 
     // when

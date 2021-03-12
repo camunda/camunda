@@ -169,7 +169,7 @@ public final class MessageIncidentTest {
     // then
     assertThat(
             RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.OPENED)
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .withProcessInstanceKey(processInstance)
                 .exists())
         .isTrue();
@@ -263,7 +263,7 @@ public final class MessageIncidentTest {
     // then
     assertThat(
             RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.OPENED)
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .withProcessInstanceKey(processInstance)
                 .exists())
         .isTrue();
