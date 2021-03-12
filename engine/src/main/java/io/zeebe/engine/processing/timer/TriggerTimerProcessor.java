@@ -14,6 +14,8 @@ import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
@@ -29,6 +31,7 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.util.Either;
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -65,7 +68,8 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   public void processRecord(
       final TypedRecord<TimerRecord> record,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffects) {
     final TimerRecord timer = record.getValue();
     final long elementInstanceKey = timer.getElementInstanceKey();
 
@@ -98,7 +102,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
 
       if (shouldReschedule(timer)) {
-        rescheduleTimer(timer, streamWriter, catchEvent);
+        rescheduleTimer(timer, catchEvent, streamWriter);
       }
     } else {
       streamWriter.appendRejection(
@@ -139,7 +143,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   }
 
   private void rescheduleTimer(
-      final TimerRecord record, final TypedStreamWriter writer, final ExecutableCatchEvent event) {
+      final TimerRecord record, final ExecutableCatchEvent event, final TypedCommandWriter writer) {
     final Either<Failure, Timer> timer =
         event.getTimerFactory().apply(expressionProcessor, record.getElementInstanceKey());
     if (timer.isLeft()) {

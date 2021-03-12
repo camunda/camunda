@@ -94,8 +94,8 @@ public final class CatchEventBehavior {
   public void subscribeToEvents(
       final BpmnElementContext context,
       final ExecutableCatchEventSupplier supplier,
-      final TypedCommandWriter commandWriter,
-      final SideEffects sideEffects)
+      final SideEffects sideEffects,
+      final TypedCommandWriter commandWriter)
       throws MessageCorrelationKeyException {
 
     final List<ExecutableCatchEvent> events = supplier.getEvents();
@@ -145,14 +145,16 @@ public final class CatchEventBehavior {
       final DirectBuffer handlerNodeId,
       final Timer timer,
       final TypedCommandWriter commandWriter) {
+    final long dueDate = timer.getDueDate(ActorClock.currentTimeMillis());
     timerRecord.reset();
     timerRecord
         .setRepetitions(timer.getRepetitions())
-        .setDueDate(timer.getDueDate(ActorClock.currentTimeMillis()))
+        .setDueDate(dueDate)
         .setElementInstanceKey(elementInstanceKey)
         .setProcessInstanceKey(processInstanceKey)
         .setTargetElementId(handlerNodeId)
         .setProcessDefinitionKey(processDefinitionKey);
+
     commandWriter.appendNewCommand(TimerIntent.CREATE, timerRecord);
   }
 

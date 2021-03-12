@@ -24,6 +24,7 @@ import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.ProcessIntent;
 import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,6 +67,7 @@ public final class EventAppliers implements EventApplier {
     register(JobBatchIntent.ACTIVATED, new JobBatchActivatedApplier(state));
     registerIncidentEventAppliers(state);
     registerProcessMessageSubscriptionEventAppliers(state);
+    register(TimerIntent.CREATED, new TimerCreatedApplier(state.getTimerState()));
   }
 
   private void registerDeploymentAppliers(final MutableZeebeState state) {
