@@ -54,10 +54,8 @@ export default withErrorHandling(
         (reports) =>
           this.setState({
             reports: reports.filter(
-              ({combined, reportType, data: {visualization, view}}) =>
-                !combined &&
-                visualization === 'number' &&
-                (reportType === 'decision' || view?.properties?.length === 1)
+              ({combined, data: {visualization, view}}) =>
+                !combined && visualization === 'number' && view?.properties?.length === 1
             ),
           }),
         (error) => {

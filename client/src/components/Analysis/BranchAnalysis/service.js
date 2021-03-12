@@ -41,7 +41,7 @@ function createFlowNodeFrequencyReport(
       filter,
       view: {
         entity: 'flowNode',
-        property: 'frequency',
+        properties: ['frequency'],
       },
       groupBy: {
         type: 'flowNodes',
