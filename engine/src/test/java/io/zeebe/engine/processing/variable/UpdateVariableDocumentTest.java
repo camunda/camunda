@@ -20,6 +20,7 @@ import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordStream;
@@ -86,6 +87,14 @@ public final class UpdateVariableDocumentTest {
                 .withVariables(document)
                 .getFirst())
         .isNotNull();
+
+    final Record<VariableDocumentRecordValue> updatedRecord =
+        records
+            .get()
+            .variableDocumentRecords()
+            .withIntent(VariableDocumentIntent.UPDATED)
+            .getFirst();
+    assertThat(updatedRecord.getKey()).isGreaterThan(0);
   }
 
   private void assertVariableRecordsProduced(

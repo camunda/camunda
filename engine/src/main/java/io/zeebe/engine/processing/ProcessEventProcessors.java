@@ -72,6 +72,7 @@ public final class ProcessEventProcessors {
         typedRecordProcessors,
         variableBehavior,
         zeebeState.getElementInstanceState(),
+        zeebeState.getKeyGenerator(),
         writers.state());
     addProcessInstanceCreationStreamProcessors(
         typedRecordProcessors, zeebeState, writers, variableBehavior);
@@ -161,11 +162,13 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final VariableBehavior variableBehavior,
       final ElementInstanceState elementInstanceState,
+      final KeyGenerator keyGenerator,
       final StateWriter stateWriter) {
     typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
-        new UpdateVariableDocumentProcessor(elementInstanceState, variableBehavior, stateWriter));
+        new UpdateVariableDocumentProcessor(
+            elementInstanceState, keyGenerator, variableBehavior, stateWriter));
   }
 
   private static void addProcessInstanceCreationStreamProcessors(
