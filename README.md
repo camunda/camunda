@@ -3,7 +3,7 @@
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.camunda.zeebe/camunda-cloud-zeebe/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.camunda.zeebe/camunda-cloud-zeebe)
 
-Zeebe provides visibility into and control over business processes that span multiple microservices.
+Zeebe provides visibility into and control over business processes that span multiple microservices. It is the engine that powers [Camunda Cloud](https://camunda.com/products/cloud/workflow-engine/).
 
 **Why Zeebe?**
 
@@ -16,20 +16,32 @@ Zeebe provides visibility into and control over business processes that span mul
 * Export process data for monitoring and analysis
 * Engage with an active community
 
-[Learn more at zeebe.io](https://zeebe.io)
+[Learn more at camunda.com](https://camunda.com/products/cloud/workflow-engine/)
+
+## Release Lifecycle
+
+Our release cadence within major releases is a minor release every three months, with an alpha release on each of the two months between minor releases. Releases happen on the second Tuesday of the month, Berlin time.
+
+Minor releases are supported with patches for six months after their release.
+
+Here is a diagram illustrating the lifecycle of minor releases over a 13-month period:
+
+![](img/release-cadence.png)
 
 ## Status
 
-Starting with Zeebe 0.20.0, the "developer preview" label was removed from Zeebe and the first production-ready version was released  .
+We are currently working on Zeebe 1.0.
 
-To learn more about what we're currently working on, please visit the [roadmap](https://zeebe.io/roadmap).
+To learn more about what we're currently working on, check the [GitHub issues](https://github.com/camunda-cloud/zeebe/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc) and the [latest commits](https://github.com/camunda-cloud/zeebe/commits/develop).
 
 ## Helpful Links
 
-* [Blog](https://zeebe.io/blog)
+* [Releases](https://github.com/camunda-cloud/zeebe/releases)
+* [Docker images](https://hub.docker.com/r/camunda/zeebe/tags?page=1&ordering=last_updated)
+* [Blog](https://camunda.com/blog/category/process-automation-as-a-service/)
 * [Documentation Home](https://docs.camunda.io)
-* [Issue Tracker](https://github.com/zeebe-io/zeebe/issues)
-* [User Forum](https://forum.zeebe.io)
+* [Issue Tracker](https://github.com/camunda-cloud/zeebe/issues)
+* [User Forum](https://forum.camunda.io)
 * [Slack Channel](https://zeebe-slack-invite.herokuapp.com/)
 * [Contribution Guidelines](/CONTRIBUTING.md)
 
