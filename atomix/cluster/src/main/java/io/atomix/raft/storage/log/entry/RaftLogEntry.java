@@ -19,6 +19,7 @@ package io.atomix.raft.storage.log.entry;
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 import io.atomix.raft.storage.log.RaftLog;
+import java.util.Objects;
 
 /** Stores a state change in a {@link RaftLog}. */
 public class RaftLogEntry {
@@ -70,6 +71,23 @@ public class RaftLogEntry {
 
   @Override
   public String toString() {
-    return toStringHelper(this).add("term", term).toString();
+    return toStringHelper(this).add("term", term).add("entry", entry).toString();
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final RaftLogEntry that = (RaftLogEntry) o;
+    return term == that.term && Objects.equals(entry, that.entry);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(term, entry);
   }
 }
