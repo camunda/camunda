@@ -8,7 +8,6 @@
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -29,18 +28,5 @@ final class ProcessInstanceElementCompletingApplier
     elementInstanceState.updateInstance(
         elementInstanceKey,
         instance -> instance.setState(ProcessInstanceIntent.ELEMENT_COMPLETING));
-
-    // We store the record to use it on resolving the incident, which is no longer used after
-    // migrating the incident processor.
-    // In order to migrate the other processors we need to write the record in an event applier. The
-    // record is removed in the COMPLETED again
-    // (which happens either after resolving or immediately)
-    // todo: we need to remove it later
-    elementInstanceState.storeRecord(
-        elementInstanceKey,
-        value.getFlowScopeKey(),
-        value,
-        ProcessInstanceIntent.COMPLETE_ELEMENT,
-        Purpose.FAILED);
   }
 }

@@ -8,20 +8,25 @@
 package io.zeebe.engine.processing.incident;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
 final class IncidentRecordWrapper implements TypedRecord<ProcessInstanceRecord> {
 
-  private IndexedRecord failedRecord;
+  private final long key;
+  private final ProcessInstanceIntent intent;
+  private final ProcessInstanceRecord record;
 
-  public void wrap(final IndexedRecord failedRecord) {
-    this.failedRecord = failedRecord;
+  IncidentRecordWrapper(
+      final long key, final ProcessInstanceIntent intent, final ProcessInstanceRecord record) {
+    this.key = key;
+    this.intent = intent;
+    this.record = record;
   }
 
   @Override
@@ -46,7 +51,7 @@ final class IncidentRecordWrapper implements TypedRecord<ProcessInstanceRecord> 
 
   @Override
   public Intent getIntent() {
-    return failedRecord.getState();
+    return intent;
   }
 
   @Override
@@ -81,12 +86,12 @@ final class IncidentRecordWrapper implements TypedRecord<ProcessInstanceRecord> 
 
   @Override
   public long getKey() {
-    return failedRecord.getKey();
+    return key;
   }
 
   @Override
   public ProcessInstanceRecord getValue() {
-    return failedRecord.getValue();
+    return record;
   }
 
   @Override

@@ -31,7 +31,6 @@ final class ProcessInstanceElementCompletedApplier
   public void applyState(final long key, final ProcessInstanceRecord value) {
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.consumeToken(value.getFlowScopeKey());
-    // stored records for incidents are removed when the instance is deleted
     elementInstanceState.removeInstance(key);
   }
 }
