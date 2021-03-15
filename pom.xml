@@ -437,8 +437,8 @@
 
   <scm>
     <url>https://github.com/camunda-cloud/tasklist</url>
-    <connection>scm:git:https://${env.GITHUB_CLOUD_USERNAME}:${env.GITHUB_CLOUD_TOKEN}@github.com/camunda-cloud/tasklist.git</connection>
-    <developerConnection>scm:git:https://${env.GITHUB_CLOUD_USERNAME}:${env.GITHUB_CLOUD_TOKEN}@github.com/camunda-cloud/tasklist.git</developerConnection>
+    <connection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda-cloud/tasklist.git</connection>
+    <developerConnection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda-cloud/tasklist.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
