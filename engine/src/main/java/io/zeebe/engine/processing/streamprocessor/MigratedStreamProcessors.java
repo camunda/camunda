@@ -81,7 +81,9 @@ public final class MigratedStreamProcessors {
             List.of(
                 ProcessInstanceSubscriptionIntent.CREATING,
                 ProcessInstanceSubscriptionIntent.CREATE,
-                ProcessInstanceSubscriptionIntent.CREATED)));
+                ProcessInstanceSubscriptionIntent.CREATED,
+                ProcessInstanceSubscriptionIntent.DELETE,
+                ProcessInstanceSubscriptionIntent.DELETED)));
 
     MIGRATED_VALUE_TYPES.put(ValueType.VARIABLE_DOCUMENT, MIGRATED);
     MIGRATED_VALUE_TYPES.put(ValueType.VARIABLE, MIGRATED);

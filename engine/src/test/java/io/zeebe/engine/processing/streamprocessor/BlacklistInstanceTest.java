@@ -191,8 +191,8 @@ public final class BlacklistInstanceTest {
       {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CREATED, true},
       {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CORRELATE, true},
       {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CORRELATED, true},
-      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CLOSE, true},
-      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CLOSED, true}
+      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.DELETE, true},
+      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.DELETED, true}
     };
   }
 

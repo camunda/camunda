@@ -239,7 +239,7 @@ public final class SubscriptionCommandMessageHandler
     return writeCommand(
         processInstancePartitionId,
         ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
-        ProcessInstanceSubscriptionIntent.CLOSE,
+        ProcessInstanceSubscriptionIntent.DELETE,
         processInstanceSubscriptionRecord);
   }
 

@@ -312,7 +312,7 @@ public final class MessageCatchElementTest {
 
     // then
     final Record<ProcessInstanceSubscriptionRecordValue> subscription =
-        getFirstProcessInstanceSubscriptionRecord(ProcessInstanceSubscriptionIntent.CLOSED);
+        getFirstProcessInstanceSubscriptionRecord(ProcessInstanceSubscriptionIntent.DELETED);
 
     assertThat(subscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
