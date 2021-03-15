@@ -12,6 +12,7 @@ import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.EventMetadataEntity;
 import org.camunda.operate.util.ConversionUtils;
 
+@Deprecated
 public class EventMetadataDto {
 
   /**

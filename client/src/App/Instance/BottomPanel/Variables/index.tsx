@@ -9,8 +9,8 @@ import React, {useRef, useEffect, useState} from 'react';
 import {isValidJSON} from 'modules/utils';
 import {isRunning} from 'modules/utils/instance';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {variablesStore} from 'modules/stores/variables';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useNotifications} from 'modules/notifications';
 
 import * as Styled from './styled';
@@ -18,16 +18,15 @@ import {observer} from 'mobx-react';
 import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 import {Skeleton} from './Skeleton';
 import {VARIABLE_MODE} from './constants';
-import {STATE} from 'modules/constants';
 import {Table, TH, TR} from './VariablesTable';
-import {useParams} from 'react-router-dom';
+import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 
 const Variables: React.FC = observer(function Variables() {
   const {
     state: {items, status},
     hasNoVariables,
   } = variablesStore;
-  const {id: workflowInstanceId} = useParams<{id: string}>();
+  const {workflowInstanceId} = useInstancePageParams();
   const notifications = useNotifications();
 
   useEffect(() => {
@@ -277,30 +276,6 @@ const Variables: React.FC = observer(function Variables() {
     );
   }
 
-  function isInstanceRunning() {
-    const {
-      state: {
-        selection: {flowNodeId, treeRowIds},
-      },
-      // @ts-expect-error
-      flowNodeIdToFlowNodeInstanceMap,
-    } = flowNodeInstanceStore;
-
-    const {instance} = currentInstanceStore.state;
-
-    if (instance === null && flowNodeId === null) {
-      return false;
-    }
-
-    const selectedRowState = !flowNodeId
-      ? // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-        instance.state
-      : flowNodeIdToFlowNodeInstanceMap.get(flowNodeId).get(treeRowIds[0])
-          .state;
-
-    return [STATE.ACTIVE, STATE.INCIDENT].includes(selectedRowState);
-  }
-
   function handleOpenAddVariable() {
     setEditMode(VARIABLE_MODE.ADD);
   }
@@ -330,7 +305,12 @@ const Variables: React.FC = observer(function Variables() {
           size="small"
           onClick={() => handleOpenAddVariable()}
           disabled={
-            status === 'first-fetch' || !!editMode || !isInstanceRunning()
+            status === 'first-fetch' ||
+            editMode !== '' ||
+            !(
+              flowNodeMetaDataStore.isSelectedInstanceRunning ||
+              currentInstanceStore.isRunning
+            )
           }
         >
           <Styled.Plus /> Add Variable

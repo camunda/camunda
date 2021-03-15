@@ -7,7 +7,7 @@
 import React from 'react';
 import {render} from '@testing-library/react';
 
-import Overlay from './index';
+import {Overlay} from './index';
 
 const mockProps = {
   onOverlayAdd: jest.fn(),

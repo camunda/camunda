@@ -5,8 +5,7 @@
  */
 
 import React from 'react';
-import {STATE} from 'modules/constants';
-import {FlowNodeInstance} from './stores/flowNodeInstance';
+import {FlowNodeInstances} from './stores/flowNodeInstance';
 
 /**
  * flushes promises in queue
@@ -71,7 +70,6 @@ const randomActivityIdIterator = createRandomId('activityId');
 const randomWorkflowIdInterator = createRandomId('workflowId');
 const randomJobIdIterator = createRandomId('jobId');
 const eventIdIterator = createRandomId('eventId');
-const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeId');
 const randomActivityInstanceIdIterator = createRandomId('activityInstanceId');
 
 /**
@@ -459,22 +457,6 @@ export const createMetadata = (activityId: any) => ({
   incidentErrorType: 'JOB_NO_RETRIES',
 });
 
-// TODO (paddy): remove when legacy FlowNodeInstancesTree is removed
-export const createFlowNodeInstance = (options = {}) => {
-  return {
-    activityId: 'startEvent',
-    children: [],
-    endDate: '2019-02-07T09:02:34.779+0000',
-    id: randomFlowNodeInstanceIdIterator.next().value,
-    parentId: '1684',
-    isLastChild: false,
-    startDate: '2019-02-07T09:02:34.760+0000',
-    state: STATE.ACTIVE,
-    type: 'bpmn:StartEvent',
-    ...options,
-  };
-};
-
 export const createRawTreeNode = (options = {}) => {
   return {
     activityId: 'Unspecified_1234',
@@ -820,56 +802,99 @@ export const multiInstanceWorkflow = `<?xml version="1.0" encoding="UTF-8"?>
 export const createMultiInstanceFlowNodeInstances = (
   workflowInstanceId: string
 ): {
-  level1: FlowNodeInstance[];
-  level2: FlowNodeInstance[];
-  level3: FlowNodeInstance[];
+  level1: FlowNodeInstances;
+  level1Poll: FlowNodeInstances;
+  level2: FlowNodeInstances;
+  level3: FlowNodeInstances;
 } => {
   return {
-    level1: [
-      {
-        id: '2251799813686130',
-        type: 'PARALLEL_GATEWAY',
-        state: 'COMPLETED',
-        flowNodeId: 'peterFork',
-        startDate: '2020-08-18T12:07:33.953+0000',
-        endDate: '2020-08-18T12:07:34.034+0000',
-        treePath: `${workflowInstanceId}/2251799813686130`,
-        sortValues: [1606300828415, '2251799813686130'],
+    level1: {
+      [workflowInstanceId]: {
+        running: null,
+        children: [
+          {
+            id: '2251799813686130',
+            type: 'PARALLEL_GATEWAY',
+            state: 'COMPLETED',
+            flowNodeId: 'peterFork',
+            startDate: '2020-08-18T12:07:33.953+0000',
+            endDate: '2020-08-18T12:07:34.034+0000',
+            treePath: `${workflowInstanceId}/2251799813686130`,
+            sortValues: [1606300828415, '2251799813686130'],
+          },
+          {
+            id: '2251799813686156',
+            type: 'MULTI_INSTANCE_BODY',
+            state: 'INCIDENT',
+            flowNodeId: 'filterMapSubProcess',
+            startDate: '2020-08-18T12:07:34.205+0000',
+            endDate: null,
+            treePath: `${workflowInstanceId}/2251799813686156`,
+            sortValues: [1606300828415, '2251799813686156'],
+          },
+        ],
       },
-      {
-        id: '2251799813686156',
-        type: 'MULTI_INSTANCE_BODY',
-        state: 'INCIDENT',
-        flowNodeId: 'filterMapSubProcess',
-        startDate: '2020-08-18T12:07:34.205+0000',
-        endDate: null,
-        treePath: `${workflowInstanceId}/2251799813686156`,
-        sortValues: [1606300828415, '2251799813686156'],
+    },
+    level1Poll: {
+      [workflowInstanceId]: {
+        running: null,
+        children: [
+          {
+            id: '2251799813686130',
+            type: 'PARALLEL_GATEWAY',
+            state: 'COMPLETED',
+            flowNodeId: 'peterFork',
+            startDate: '2020-08-18T12:07:33.953+0000',
+            endDate: '2020-08-18T12:07:34.034+0000',
+            treePath: `${workflowInstanceId}/2251799813686130`,
+            sortValues: [1606300828415, '2251799813686130'],
+          },
+          {
+            id: '2251799813686156',
+            type: 'MULTI_INSTANCE_BODY',
+            state: 'COMPLETED',
+            flowNodeId: 'filterMapSubProcess',
+            startDate: '2020-08-18T12:07:34.205+0000',
+            endDate: '2020-08-18T12:07:34.034+0000',
+            treePath: `${workflowInstanceId}/2251799813686156`,
+            sortValues: [1606300828415, '2251799813686156'],
+          },
+        ],
       },
-    ],
-    level2: [
-      {
-        id: '2251799813686166',
-        type: 'SUB_PROCESS',
-        state: 'INCIDENT',
-        flowNodeId: 'filterMapSubProcess',
-        startDate: '2020-08-18T12:07:34.281+0000',
-        endDate: null,
-        treePath: `${workflowInstanceId}/2251799813686156/2251799813686166`,
-        sortValues: [1606300828415, '2251799813686166'],
+    },
+    level2: {
+      [`${workflowInstanceId}/2251799813686156`]: {
+        running: true,
+        children: [
+          {
+            id: '2251799813686166',
+            type: 'SUB_PROCESS',
+            state: 'INCIDENT',
+            flowNodeId: 'filterMapSubProcess',
+            startDate: '2020-08-18T12:07:34.281+0000',
+            endDate: null,
+            treePath: `${workflowInstanceId}/2251799813686156/2251799813686166`,
+            sortValues: [1606300828415, '2251799813686166'],
+          },
+        ],
       },
-    ],
-    level3: [
-      {
-        id: '2251799813686204',
-        type: 'START_EVENT',
-        state: 'COMPLETED',
-        flowNodeId: 'startFilterMap',
-        startDate: '2020-08-18T12:07:34.337+0000',
-        endDate: '2020-08-18T12:07:34.445+0000',
-        treePath: `${workflowInstanceId}/2251799813686156/2251799813686166/2251799813686204`,
-        sortValues: [1606300828415, '2251799813686204'],
+    },
+    level3: {
+      [`${workflowInstanceId}/2251799813686156/2251799813686166`]: {
+        running: false,
+        children: [
+          {
+            id: '2251799813686204',
+            type: 'START_EVENT',
+            state: 'COMPLETED',
+            flowNodeId: 'startFilterMap',
+            startDate: '2020-08-18T12:07:34.337+0000',
+            endDate: '2020-08-18T12:07:34.445+0000',
+            treePath: `${workflowInstanceId}/2251799813686156/2251799813686166/2251799813686204`,
+            sortValues: [1606300828415, '2251799813686204'],
+          },
+        ],
       },
-    ],
+    },
   };
 };

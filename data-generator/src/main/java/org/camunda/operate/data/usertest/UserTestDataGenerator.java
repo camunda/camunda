@@ -287,6 +287,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     jobWorkers.add(progressAlwaysFailingTask());
 
+    jobWorkers.add(progressSimpleTask("peterTask"));
+
     jobWorkers.addAll(progressMultiInstanceTasks());
 
     //start more instances after 1 minute
@@ -605,7 +607,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     ZeebeTestUtil.deployWorkflow(client, "usertest/registerPassenger_v_1.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "usertest/multiInstance.bpmn");
+    ZeebeTestUtil.deployWorkflow(client, "usertest/multiInstance_v_1.bpmn");
   }
 
   protected void startWorkflowInstances(int version) {
@@ -613,11 +615,11 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     for (int i = 0; i < instancesCount; i++) {
       if (version < 2) {
         workflowInstanceKeys.add(startLoanProcess());
-        workflowInstanceKeys.add(startMultiInstanceProcess());
       }
       if (version < 3) {
         workflowInstanceKeys.add(startOrderProcess());
         workflowInstanceKeys.add(startFlightRegistrationProcess());
+        workflowInstanceKeys.add(startMultiInstanceProcess());
       }
 
     }
@@ -693,6 +695,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     ZeebeTestUtil.deployWorkflow(client, "usertest/orderProcess_v_2.bpmn");
 
     ZeebeTestUtil.deployWorkflow(client, "usertest/registerPassenger_v_2.bpmn");
+
+    ZeebeTestUtil.deployWorkflow(client, "usertest/multiInstance_v_2.bpmn");
 
   }
 

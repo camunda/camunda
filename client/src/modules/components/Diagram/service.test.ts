@@ -5,7 +5,6 @@
  */
 
 import {getPopoverPosition} from './service';
-import {POPOVER_SIDE} from 'modules/constants';
 
 function generateBoundary({top, left, height, width}: any) {
   return {
@@ -51,17 +50,20 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPosition({
-        diagramContainer,
-        flowNode,
-        minHeight: 100,
-        minWidth: 190,
-      });
+      const position = getPopoverPosition(
+        {
+          diagramContainer,
+          flowNode,
+          minHeight: 100,
+          minWidth: 190,
+        },
+        false
+      );
 
       // then
-      expect(position.bottom).toBe(-16);
-      expect(position.left).toBe(25);
-      expect(position.side).toBe(POPOVER_SIDE.BOTTOM);
+      expect(position.overlay.bottom).toBe(-16);
+      expect(position.overlay.left).toBe(25);
+      expect(position.side).toBe('BOTTOM');
     });
 
     it('should give LEFT position', () => {
@@ -95,17 +97,20 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPosition({
-        diagramContainer,
-        flowNode,
-        minHeight: 100,
-        minWidth: 190,
-      });
+      const position = getPopoverPosition(
+        {
+          diagramContainer,
+          flowNode,
+          minHeight: 100,
+          minWidth: 190,
+        },
+        false
+      );
 
       // then
-      expect(position.left).toBe(-16);
-      expect(position.top).toBe(190);
-      expect(position.side).toBe(POPOVER_SIDE.LEFT);
+      expect(position.overlay.left).toBe(-16);
+      expect(position.overlay.top).toBe(190);
+      expect(position.side).toBe('LEFT');
     });
 
     it('should give TOP position', () => {
@@ -139,17 +144,20 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPosition({
-        diagramContainer,
-        flowNode,
-        minHeight: 100,
-        minWidth: 190,
-      });
+      const position = getPopoverPosition(
+        {
+          diagramContainer,
+          flowNode,
+          minHeight: 100,
+          minWidth: 190,
+        },
+        false
+      );
 
       // then
-      expect(position.top).toBe(-16);
-      expect(position.left).toBe(25);
-      expect(position.side).toBe(POPOVER_SIDE.TOP);
+      expect(position.overlay.top).toBe(-16);
+      expect(position.overlay.left).toBe(25);
+      expect(position.side).toBe('TOP');
     });
 
     it('should give RIGHT position', () => {
@@ -183,17 +191,20 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPosition({
-        diagramContainer,
-        flowNode,
-        minHeight: 100,
-        minWidth: 190,
-      });
+      const position = getPopoverPosition(
+        {
+          diagramContainer,
+          flowNode,
+          minHeight: 100,
+          minWidth: 190,
+        },
+        false
+      );
 
       // then
-      expect(position.right).toBe(-16);
-      expect(position.top).toBe(190);
-      expect(position.side).toBe(POPOVER_SIDE.RIGHT);
+      expect(position.overlay.right).toBe(-16);
+      expect(position.overlay.top).toBe(190);
+      expect(position.side).toBe('RIGHT');
     });
 
     it('should give BOTTOM MIRROR position', () => {
@@ -227,17 +238,20 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPosition({
-        diagramContainer,
-        flowNode,
-        minHeight: 100,
-        minWidth: 190,
-      });
+      const position = getPopoverPosition(
+        {
+          diagramContainer,
+          flowNode,
+          minHeight: 100,
+          minWidth: 190,
+        },
+        false
+      );
 
       // then
-      expect(position.bottom).toBe(16);
-      expect(position.left).toBe(190);
-      expect(position.side).toBe(POPOVER_SIDE.BOTTOM_MIRROR);
+      expect(position.overlay.bottom).toBe(16);
+      expect(position.overlay.left).toBe(190);
+      expect(position.side).toBe('BOTTOM_MIRROR');
     });
   });
 });

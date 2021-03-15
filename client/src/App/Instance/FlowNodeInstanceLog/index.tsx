@@ -14,59 +14,26 @@ import * as Styled from './styled';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {StatusMessage} from 'modules/components/StatusMessage';
 
-const ROW_HEIGHT = 27;
-
 const FlowNodeInstanceLog: React.FC = observer(() => {
   const {
     instanceExecutionHistory,
     isInstanceExecutionHistoryAvailable,
-    // @ts-expect-error
-    fetchNextInstances,
-    // @ts-expect-error
-    fetchPreviousInstances,
-    state: {
-      status: flowNodeInstanceStatus,
-      // @ts-expect-error
-      shouldFetchPreviousInstances,
-      // @ts-expect-error
-      shouldFetchNextInstances,
-    },
+    state: {status: flowNodeInstanceStatus},
   } = flowNodeInstanceStore;
   const {
     areDiagramDefinitionsAvailable,
     state: {status: diagramStatus},
   } = singleInstanceDiagramStore;
-  const LOADING_STATES = ['initial', 'first-fetch', 'fetching'];
+  const LOADING_STATES = ['initial', 'first-fetch'];
 
   return (
     <Styled.Panel>
       {areDiagramDefinitionsAvailable && isInstanceExecutionHistoryAvailable ? (
-        <Styled.FlowNodeInstanceLog
-          data-testid="instance-history"
-          onScroll={async (event) => {
-            const target = event.target as HTMLDivElement;
-
-            if (
-              target.scrollHeight - target.clientHeight - target.scrollTop <=
-                0 &&
-              shouldFetchNextInstances
-            ) {
-              fetchNextInstances();
-            }
-
-            if (target.scrollTop === 0 && shouldFetchPreviousInstances) {
-              const newInstances = await fetchPreviousInstances();
-              target.scrollTop = ROW_HEIGHT * newInstances.length;
-            }
-          }}
-        >
+        <Styled.FlowNodeInstanceLog data-testid="instance-history">
           <Styled.NodeContainer>
             <ul>
               <FlowNodeInstancesTree
-                // @ts-expect-error
-                node={instanceExecutionHistory}
-                // @ts-expect-error
-                flowNodeInstance={instanceExecutionHistory}
+                flowNodeInstance={instanceExecutionHistory!}
                 treeDepth={1}
               />
             </ul>

@@ -5,18 +5,18 @@
  */
 
 import React, {useEffect} from 'react';
-import {useParams} from 'react-router-dom';
 import Variables from '../Variables';
 import {FAILED_PLACEHOLDER, MULTI_SCOPE_PLACEHOLDER} from './constants';
 import {variablesStore} from 'modules/stores/variables';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
+import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 
 import * as Styled from './styled';
 
 const VariablePanel = observer(function VariablePanel() {
-  const {id: workflowInstanceId} = useParams<{id: string}>();
+  const {workflowInstanceId} = useInstancePageParams();
 
   useEffect(() => {
     variablesStore.init(workflowInstanceId);
@@ -37,8 +37,7 @@ const VariablePanel = observer(function VariablePanel() {
         <StatusMessage variant="error">{FAILED_PLACEHOLDER}</StatusMessage>
       ) : (
         <>
-          {/* @ts-expect-error */}
-          {flowNodeInstanceStore.areMultipleNodesSelected ? (
+          {flowNodeSelectionStore.areMultipleInstancesSelected ? (
             <StatusMessage variant="default">
               {MULTI_SCOPE_PLACEHOLDER}
             </StatusMessage>

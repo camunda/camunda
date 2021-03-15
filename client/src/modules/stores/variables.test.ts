@@ -6,7 +6,7 @@
 
 import {variablesStore} from './variables';
 import {currentInstanceStore} from './currentInstance';
-import {flowNodeInstanceStore} from './flowNodeInstance';
+import {flowNodeSelectionStore} from './flowNodeSelection';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
@@ -66,7 +66,7 @@ describe('stores/variables', () => {
   afterEach(() => {
     variablesStore.reset();
     currentInstanceStore.reset();
-    flowNodeInstanceStore.reset();
+    flowNodeSelectionStore.reset();
   });
 
   it('should remove variables with active operations if instance is canceled', async () => {
@@ -445,10 +445,9 @@ describe('stores/variables', () => {
 
   it('should get scopeId', async () => {
     expect(variablesStore.scopeId).toBe(undefined);
-    // @ts-expect-error
-    flowNodeInstanceStore.setCurrentSelection({
-      treeRowIds: ['123', '456'],
-      flowNodeId: null,
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'StartEvent_1',
+      flowNodeInstanceId: '123',
     });
     expect(variablesStore.scopeId).toBe('123');
   });

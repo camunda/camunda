@@ -15,12 +15,12 @@ import {
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {testData} from './index.setup';
 import {mockSequenceFlows, mockEvents} from './TopPanel/index.setup';
-import {mockSuccessResponseForActivityTree} from './FlowNodeInstanceLog/index.setup';
 import {PAGE_TITLE} from 'modules/constants';
 import {getWorkflowName} from 'modules/utils/instance';
 import {Instance} from './index';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {createMultiInstanceFlowNodeInstances} from 'modules/testUtils';
 
 jest.mock('modules/utils/bpmn');
 
@@ -28,11 +28,15 @@ type Props = {
   children?: React.ReactNode;
 };
 
+const workFlowInstancesMock = createMultiInstanceFlowNodeInstances(
+  '4294980768'
+);
+
 const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/4294980768']}>
-        <Route path="/instances/:id">{children}</Route>
+        <Route path="/instances/:workflowInstanceId">{children}</Route>
       </MemoryRouter>
     </ThemeProvider>
   );
@@ -49,8 +53,12 @@ describe('Instance', () => {
         (_, res, ctx) => res(ctx.json(mockSequenceFlows))
       ),
       rest.post('/api/events', (_, res, ctx) => res(ctx.json(mockEvents))),
-      rest.post('/api/activity-instances', (_, res, ctx) =>
-        res(ctx.json(mockSuccessResponseForActivityTree))
+      rest.post('/api/flow-node-instances', (_, res, ctx) =>
+        res(ctx.json(workFlowInstancesMock.level1))
+      ),
+      rest.get(
+        '/api/workflow-instances/:instanceId/flow-node-states',
+        (_, rest, ctx) => rest(ctx.json({}))
       ),
       rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
         res(

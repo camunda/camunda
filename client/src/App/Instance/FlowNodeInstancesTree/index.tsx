@@ -10,6 +10,7 @@ import {TYPE} from 'modules/constants';
 import {getWorkflowName} from 'modules/utils/instance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
   flowNodeInstanceStore,
   FlowNodeInstance,
@@ -20,23 +21,20 @@ import {Li, NodeDetails, NodeStateIcon, Ul} from './styled';
 
 type Props = {
   flowNodeInstance: FlowNodeInstance;
-  isSelected: boolean;
   treeDepth: number;
-  isLastChild: boolean;
+  isLastChild?: boolean;
 };
 
-const FlowNodeInstancesTree = observer(
-  ({isSelected, flowNodeInstance, treeDepth, isLastChild = true}: Props) => {
+const FlowNodeInstancesTree: React.FC<Props> = observer(
+  ({flowNodeInstance, treeDepth, isLastChild = true}) => {
     const {
-      // @ts-expect-error
       state: {flowNodeInstances},
-      // @ts-expect-error
       fetchSubTree,
-      // @ts-expect-error
       removeSubTree,
     } = flowNodeInstanceStore;
     const visibleChildNodes =
-      flowNodeInstances[flowNodeInstance.treePath || flowNodeInstance.id];
+      flowNodeInstances[flowNodeInstance.treePath || flowNodeInstance.id]
+        ?.children;
 
     const metaData = singleInstanceDiagramStore.getMetaData(
       flowNodeInstance.flowNodeId || null
@@ -48,9 +46,15 @@ const FlowNodeInstancesTree = observer(
       type: {elementType: 'WORKFLOW'},
     };
 
-    const isFoldable =
-      flowNodeInstance?.type !== undefined &&
-      ['SUB_PROCESS', TYPE.MULTI_INSTANCE_BODY].includes(flowNodeInstance.type);
+    const isMultiInstance = flowNodeInstance.type === TYPE.MULTI_INSTANCE_BODY;
+    const isSubProcess = flowNodeInstance.type === 'SUB_PROCESS';
+    const isFoldable = isMultiInstance || isSubProcess;
+
+    const isSelected = flowNodeSelectionStore.isSelected({
+      flowNodeInstanceId: flowNodeInstance.id,
+      flowNodeId: flowNodeInstance.flowNodeId,
+      isMultiInstance,
+    });
 
     return (
       <Li
@@ -73,9 +77,9 @@ const FlowNodeInstancesTree = observer(
             isFoldable
               ? () => {
                   visibleChildNodes === undefined
-                    ? fetchSubTree({parentTreePath: flowNodeInstance.treePath})
+                    ? fetchSubTree({treePath: flowNodeInstance.treePath})
                     : removeSubTree({
-                        parentTreePath: flowNodeInstance.treePath,
+                        treePath: flowNodeInstance.treePath,
                       });
                 }
               : undefined
@@ -84,8 +88,19 @@ const FlowNodeInstancesTree = observer(
           {metaData !== undefined && (
             <Foldable.Summary
               data-testid={flowNodeInstance.id}
-              onSelection={() => {}}
-              isSelected={false}
+              onSelection={() => {
+                const isWorkflowInstance =
+                  flowNodeInstance.id ===
+                  currentInstanceStore.state.instance?.id;
+                flowNodeSelectionStore.selectFlowNode({
+                  flowNodeId: isWorkflowInstance
+                    ? undefined
+                    : flowNodeInstance.flowNodeId,
+                  flowNodeInstanceId: flowNodeInstance.id,
+                  isMultiInstance,
+                });
+              }}
+              isSelected={isSelected}
               isLastChild={isLastChild}
               nodeName={`${metaData.name}${
                 flowNodeInstance.type === TYPE.MULTI_INSTANCE_BODY
@@ -93,11 +108,10 @@ const FlowNodeInstancesTree = observer(
                   : ''
               }`}
             >
-              {/* @ts-expect-error */}
               <Bar
                 flowNodeInstance={flowNodeInstance}
                 metaData={metaData}
-                isSelected={false}
+                isSelected={isSelected}
                 isBold={isFoldable || metaData.type.elementType === 'WORKFLOW'}
               />
             </Foldable.Summary>
@@ -112,7 +126,6 @@ const FlowNodeInstancesTree = observer(
                   (childNode: FlowNodeInstance, index: number) => {
                     return (
                       <FlowNodeInstancesTree
-                        isSelected={false}
                         flowNodeInstance={childNode}
                         treeDepth={treeDepth + 1}
                         isLastChild={visibleChildNodes.length === index + 1}

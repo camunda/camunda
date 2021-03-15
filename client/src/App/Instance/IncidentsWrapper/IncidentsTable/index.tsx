@@ -15,9 +15,9 @@ import {IncidentOperation} from 'modules/components/IncidentOperation';
 import {formatDate} from 'modules/utils/date';
 import {SORT_ORDER} from 'modules/constants';
 import {sortData} from './service';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
-import {useParams} from 'react-router-dom';
+import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 import {ErrorMessageModal} from './ErrorMessageModal';
 
 import * as Styled from './styled';
@@ -40,10 +40,7 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
     sortBy: 'errorType',
     sortOrder: SORT_ORDER.DESC,
   });
-  const {id: instanceId} = useParams<{id: string}>();
-  const {
-    state: {selection},
-  } = flowNodeInstanceStore;
+  const {workflowInstanceId} = useInstancePageParams();
 
   const handleModalClose = () => {
     setIsModalVisible(false);
@@ -57,23 +54,6 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
     setIsModalVisible(true);
     setModalContent(incident.errorMessage);
     setModalTitle(`Flow Node "${incident.flowNodeName}" Error`);
-  };
-
-  const handleIncidentSelection = ({flowNodeInstanceId, flowNodeId}: any) => {
-    let newSelection;
-
-    const isTheOnlySelectedIncident =
-      selection.treeRowIds.length === 1 &&
-      selection.treeRowIds[0] === flowNodeInstanceId;
-
-    if (isTheOnlySelectedIncident) {
-      newSelection = {id: instanceId, activityId: null};
-    } else {
-      newSelection = {id: flowNodeInstanceId, activityId: flowNodeId};
-    }
-
-    // @ts-expect-error
-    flowNodeInstanceStore.changeCurrentSelection(newSelection);
   };
 
   const handleSort = (key: any) => {
@@ -144,9 +124,11 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
         <TBody>
           <TransitionGroup component={null}>
             {sortedIncidents.map((incident: any, index: any) => {
-              const isSelected = selection.treeRowIds.includes(
-                incident.flowNodeInstanceId
-              );
+              const isSelected = flowNodeSelectionStore.isSelected({
+                flowNodeId: incident.flowNodeId,
+                flowNodeInstanceId: incident.flowNodeInstanceId,
+                isMultiInstance: false,
+              });
               return (
                 <Styled.Transition
                   key={incident.id}
@@ -156,10 +138,15 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                 >
                   <Styled.IncidentTR
                     data-testid={`tr-incident-${incident.id}`}
-                    // @ts-expect-error ts-migrate(2683) FIXME: 'this' implicitly has type 'any' because it does n... Remove this comment to see the full error message
-                    onClick={handleIncidentSelection.bind(this, incident)}
                     aria-selected={isSelected}
                     isSelected={isSelected}
+                    onClick={() =>
+                      flowNodeSelectionStore.selectFlowNode({
+                        flowNodeId: incident.flowNodeId,
+                        flowNodeInstanceId: incident.flowNodeInstanceId,
+                        isMultiInstance: false,
+                      })
+                    }
                   >
                     <TD>
                       <Styled.FirstCell>
@@ -194,7 +181,7 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                     </TD>
                     <TD>
                       <IncidentOperation
-                        instanceId={instanceId}
+                        instanceId={workflowInstanceId}
                         incident={incident}
                         showSpinner={incident.hasActiveOperation}
                       />

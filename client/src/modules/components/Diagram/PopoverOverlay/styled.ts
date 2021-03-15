@@ -9,19 +9,19 @@ import styled, {
   createGlobalStyle,
   ThemedInterpolationFunction,
 } from 'styled-components';
-import {POPOVER_SIDE} from 'modules/constants';
 
 import Modal from 'modules/components/Modal';
+import {PopoverPosition} from '../service';
 
 type Props = {
-  side?: 'TOP' | 'RIGHT' | 'BOTTOM' | 'LEFT' | 'BOTTOM_MIRROR';
+  side?: PopoverPosition['side'];
 };
 
 const arrowStyle: ThemedInterpolationFunction<Props> = ({side, theme}) => {
   const colors = theme.colors.modules.diagram.popoverOverlay.arrowStyle;
 
   switch (side) {
-    case POPOVER_SIDE.BOTTOM:
+    case 'BOTTOM':
       return css`
         &:before,
         &:after {
@@ -45,7 +45,7 @@ const arrowStyle: ThemedInterpolationFunction<Props> = ({side, theme}) => {
         }
       `;
 
-    case POPOVER_SIDE.LEFT:
+    case 'LEFT':
       return css`
         &:before,
         &:after {
@@ -69,7 +69,7 @@ const arrowStyle: ThemedInterpolationFunction<Props> = ({side, theme}) => {
         }
       `;
 
-    case POPOVER_SIDE.RIGHT:
+    case 'RIGHT':
       return css`
         &:before,
         &:after {
@@ -142,19 +142,19 @@ const PopoverOverlayStyle = createGlobalStyle<Props>`
   .djs-overlay.djs-overlay-popover {
     z-index: 2;
     ${({side}) => {
-      if (side === POPOVER_SIDE.RIGHT) {
+      if (side === 'RIGHT') {
         return css`
           transform: translate(0, calc(-6px - 50%));
         `;
       }
 
-      if (side === POPOVER_SIDE.BOTTOM) {
+      if (side === 'BOTTOM') {
         return css`
           transform: translate(calc(-6px - 50%), 0);
         `;
       }
 
-      if (side === POPOVER_SIDE.LEFT) {
+      if (side === 'LEFT') {
         return css`
           transform: translate(-100%, calc(-6px - 50%));
         `;

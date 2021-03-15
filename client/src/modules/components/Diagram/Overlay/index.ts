@@ -4,20 +4,21 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {OverlayType} from 'modules/types/modeler';
 import React from 'react';
 import {createPortal} from 'react-dom';
 
 type Props = {
-  onOverlayAdd: () => void;
-  onOverlayClear: () => void;
+  onOverlayAdd: (id: string, type: string, overlay: OverlayType) => void;
+  onOverlayClear: ({element}: {element: HTMLDivElement}) => void;
   isViewerLoaded: boolean;
   id: string;
   type: string;
-  position: unknown;
+  position: OverlayType['position'];
   children?: React.ReactNode;
 };
 
-export default class Overlay extends React.PureComponent<Props, {}> {
+class Overlay extends React.PureComponent<Props, {}> {
   domElement = document.createElement('div');
 
   componentDidMount() {
@@ -43,7 +44,6 @@ export default class Overlay extends React.PureComponent<Props, {}> {
   addOverlay = () => {
     const {id, type, position} = this.props;
 
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'onOverlayAdd' does not exist on type 'Re... Remove this comment to see the full error message
     this.props.onOverlayAdd(id, type, {
       position,
       html: this.domElement,
@@ -51,7 +51,6 @@ export default class Overlay extends React.PureComponent<Props, {}> {
   };
 
   clearOverlay = () => {
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'onOverlayClear' does not exist on type '... Remove this comment to see the full error message
     this.props.onOverlayClear({element: this.domElement});
   };
 
@@ -59,3 +58,5 @@ export default class Overlay extends React.PureComponent<Props, {}> {
     return createPortal(this.props.children, this.domElement);
   }
 }
+
+export {Overlay};

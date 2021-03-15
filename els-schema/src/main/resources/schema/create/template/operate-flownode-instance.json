@@ -58,7 +58,8 @@
 			},
 			"treePath": {
 				"type": "text",
-				"analyzer": "flownode_path_tree"
+				"analyzer": "flownode_path_tree",
+        "fielddata": true
 			},
 			"level": {
 				"type": "long"

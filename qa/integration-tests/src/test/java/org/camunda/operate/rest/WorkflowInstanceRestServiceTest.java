@@ -12,6 +12,7 @@ import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
 import org.camunda.operate.webapp.es.reader.ActivityStatisticsReader;
+import org.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.es.reader.SequenceFlowReader;
@@ -52,6 +53,9 @@ public class WorkflowInstanceRestServiceTest extends OperateIntegrationTest {
 
   @MockBean
   private SequenceFlowReader sequenceFlowReader;
+
+  @MockBean
+  private FlowNodeInstanceReader flowNodeInstanceReader;
 
   @MockBean
   private BatchOperationWriter batchOperationWriter;

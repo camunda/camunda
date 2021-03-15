@@ -45,11 +45,6 @@ public class OperateProperties {
 
   private boolean enterprise = false;
 
-  /**
-   * Temporary flag to enable/disable new flow node instances functionality.
-   */
-  private boolean isNextFlowNodeInstances = false;
-
   @NestedConfigurationProperty
   private OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
 
@@ -201,15 +196,6 @@ public class OperateProperties {
 
   public void setEnterprise(boolean enterprise) {
     this.enterprise = enterprise;
-  }
-
-  public boolean isNextFlowNodeInstances() {
-    return isNextFlowNodeInstances;
-  }
-
-  public OperateProperties setNextFlowNodeInstances(final boolean nextFlowNodeInstances) {
-    isNextFlowNodeInstances = nextFlowNodeInstances;
-    return this;
   }
 
   public Auth0Properties getAuth0() {

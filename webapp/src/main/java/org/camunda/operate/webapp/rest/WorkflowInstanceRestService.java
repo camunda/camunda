@@ -5,14 +5,25 @@
  */
 package org.camunda.operate.webapp.rest;
 
+import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+
+import io.micrometer.core.annotation.Timed;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.SwaggerDefinition;
+import io.swagger.annotations.Tag;
 import java.util.Collection;
 import java.util.List;
 
+import java.util.Map;
 import org.camunda.operate.Metrics;
 import org.camunda.operate.entities.BatchOperationEntity;
+import org.camunda.operate.entities.FlowNodeState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.SequenceFlowEntity;
+import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.webapp.es.reader.ActivityStatisticsReader;
+import org.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.es.reader.SequenceFlowReader;
@@ -28,10 +39,11 @@ import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
+import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
+import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
-import org.camunda.operate.util.CollectionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,12 +52,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import io.micrometer.core.annotation.Timed;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.SwaggerDefinition;
-import io.swagger.annotations.Tag;
-import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 
 @Api(tags = {"Workflow instances"})
 @SwaggerDefinition(tags = {
@@ -74,6 +80,9 @@ public class WorkflowInstanceRestService {
 
   @Autowired
   private VariableReader variableReader;
+
+  @Autowired
+  private FlowNodeInstanceReader flowNodeInstanceReader;
 
   @Autowired
   private SequenceFlowReader sequenceFlowReader;
@@ -153,6 +162,29 @@ public class WorkflowInstanceRestService {
   @GetMapping("/{workflowInstanceId}/variables")
   public List<VariableDto> getVariables(@PathVariable String workflowInstanceId, @RequestParam String scopeId) {
     return variableReader.getVariables(Long.valueOf(workflowInstanceId), Long.valueOf(scopeId));
+  }
+
+  @ApiOperation("Get flow node states by workflow instance id")
+  @GetMapping("/{workflowInstanceId}/flow-node-states")
+  public Map<String, FlowNodeState> getFlowNodeStates(@PathVariable String workflowInstanceId) {
+    return flowNodeInstanceReader.getFlowNodeStates(workflowInstanceId);
+  }
+
+  @ApiOperation("Get flow node metadata.")
+  @PostMapping("/{workflowInstanceId}/flow-node-metadata")
+  public FlowNodeMetadataDto getFlowNodeMetadata(@PathVariable String workflowInstanceId,
+      @RequestBody FlowNodeMetadataRequestDto request) {
+    validateRequest(request);
+    return flowNodeInstanceReader.getFlowNodeMetadata(workflowInstanceId, request);
+  }
+
+  private void validateRequest(final FlowNodeMetadataRequestDto request) {
+    if (request.getFlowNodeId() == null && request.getFlowNodeType() ==null && request.getFlowNodeInstanceId()==null) {
+      throw new InvalidRequestException("At least flowNodeId or flowNodeInstanceId must be specifies in the request.");
+    }
+    if (request.getFlowNodeId() != null && request.getFlowNodeInstanceId() != null) {
+      throw new InvalidRequestException("Only one of flowNodeId or flowNodeInstanceId must be specifies in the request.");
+    }
   }
 
   @ApiOperation("Get activity instance statistics")

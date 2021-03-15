@@ -4,429 +4,73 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {flowNodeInstanceStore} from './flowNodeInstance';
-import {currentInstanceStore} from './currentInstance';
-import {createInstance} from 'modules/testUtils';
+import {waitFor} from '@testing-library/react';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {waitFor} from '@testing-library/react';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {createMultiInstanceFlowNodeInstances} from 'modules/testUtils';
+import {flowNodeInstanceStore} from './flowNodeInstance';
 
-const currentInstanceMock = createInstance();
-
-const activityInstancesMock = {
-  children: [
-    {
-      id: '2251799813685475',
-      type: 'START_EVENT',
-      state: 'COMPLETED',
-      activityId: 'start',
-      startDate: '2020-10-06T11:11:13.496+0000',
-      endDate: '2020-10-06T11:11:13.605+0000',
-      parentId: '2251799813685471',
-      children: [],
-    },
-    {
-      id: '2251799813685486',
-      type: 'SERVICE_TASK',
-      state: 'ACTIVE',
-      activityId: 'neverFails',
-      startDate: '2020-10-06T11:11:13.717+0000',
-      endDate: null,
-      parentId: '2251799813685471',
-      children: [],
-    },
-  ],
-};
+const WORKFLOW_INSTANCE_ID = 'workflowInstance';
+const mockFlowNodeInstances = createMultiInstanceFlowNodeInstances(
+  WORKFLOW_INSTANCE_ID
+);
 
 describe('stores/flowNodeInstance', () => {
-  afterEach(() => {
-    flowNodeInstanceStore.reset();
-    currentInstanceStore.reset();
-  });
-
   beforeEach(() => {
     mockServer.use(
-      rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json(activityInstancesMock))
+      rest.post('/api/flow-node-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockFlowNodeInstances.level1))
+      ),
+      rest.post('/api/flow-node-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockFlowNodeInstances.level2))
+      ),
+      rest.post('/api/flow-node-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockFlowNodeInstances.level3))
       )
     );
-  });
-
-  it('should set current selection and fetch instance execution history when current instance is available', async () => {
-    currentInstanceStore.setCurrentInstance({id: 123, state: 'CANCELED'});
-    flowNodeInstanceStore.init();
-
-    expect(flowNodeInstanceStore.state.selection).toEqual({
-      flowNodeId: null,
-      treeRowIds: [123],
+    currentInstanceStore.setCurrentInstance({
+      id: WORKFLOW_INSTANCE_ID,
+      state: 'ACTIVE',
     });
-
-    await waitFor(() =>
-      // @ts-expect-error
-      expect(flowNodeInstanceStore.state.response).toEqual(
-        activityInstancesMock
-      )
-    );
-
-    expect(flowNodeInstanceStore.state.status).toBe('fetched');
   });
 
-  it('should poll if current instance is running', async () => {
-    jest.useFakeTimers();
-    currentInstanceStore.setCurrentInstance(currentInstanceMock);
+  it('should initialize, add and remove nested sub trees from store', async () => {
     flowNodeInstanceStore.init();
-
-    await waitFor(() =>
-      // @ts-expect-error
-      expect(flowNodeInstanceStore.state.response).toEqual(
-        activityInstancesMock
-      )
-    );
-
-    const secondActivityInstancesMock = {
-      children: [
-        {
-          id: '111',
-          type: 'START_EVENT',
-          state: 'COMPLETED',
-          activityId: 'start',
-          startDate: '2020-10-06T11:11:13.496+0000',
-          endDate: '2020-10-06T11:11:13.605+0000',
-          parentId: '2251799813685471',
-          children: [],
-        },
-        {
-          id: '222',
-          type: 'SERVICE_TASK',
-          state: 'ACTIVE',
-          activityId: 'neverFails',
-          startDate: '2020-10-06T11:11:13.717+0000',
-          endDate: null,
-          parentId: '2251799813685471',
-          children: [],
-        },
-      ],
-    };
-
-    mockServer.use(
-      rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json(secondActivityInstancesMock))
-      )
-    );
-
-    jest.runOnlyPendingTimers();
 
     await waitFor(() => {
-      // @ts-expect-error
-      expect(flowNodeInstanceStore.state.response).toEqual(
-        secondActivityInstancesMock
-      );
+      expect(flowNodeInstanceStore.state.status).toBe('fetched');
     });
 
-    currentInstanceStore.setCurrentInstance(
-      createInstance({state: 'CANCELED'})
+    expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual(
+      mockFlowNodeInstances.level1
     );
 
-    jest.runOnlyPendingTimers();
-    jest.runOnlyPendingTimers();
-
-    await waitFor(() => {
-      // @ts-expect-error
-      expect(flowNodeInstanceStore.state.response).toEqual(
-        secondActivityInstancesMock
-      );
+    await flowNodeInstanceStore.fetchSubTree({
+      treePath: `${WORKFLOW_INSTANCE_ID}/2251799813686156`,
     });
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
-  });
-
-  it('should set current selection', async () => {
-    expect(flowNodeInstanceStore.state.selection).toEqual({
-      treeRowIds: [],
-      flowNodeId: null,
+    expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual({
+      ...mockFlowNodeInstances.level1,
+      ...mockFlowNodeInstances.level2,
     });
 
-    // @ts-expect-error
-    flowNodeInstanceStore.setCurrentSelection({
-      treeRowIds: ['1', '2'],
-      flowNodeId: '2',
-    });
-    expect(flowNodeInstanceStore.state.selection).toEqual({
-      treeRowIds: ['1', '2'],
-      flowNodeId: '2',
-    });
-  });
-
-  it('should reset store', async () => {
-    currentInstanceStore.setCurrentInstance({id: 123, state: 'CANCELED'});
-    flowNodeInstanceStore.init();
-
-    expect(flowNodeInstanceStore.state.selection).toEqual({
-      flowNodeId: null,
-      treeRowIds: [123],
+    await flowNodeInstanceStore.fetchSubTree({
+      treePath: `${WORKFLOW_INSTANCE_ID}/2251799813686156/2251799813686166`,
     });
 
-    await waitFor(() =>
-      // @ts-expect-error
-      expect(flowNodeInstanceStore.state.response).toEqual(
-        activityInstancesMock
-      )
-    );
-    expect(flowNodeInstanceStore.state.status).toBe('fetched');
-
-    flowNodeInstanceStore.reset();
-    expect(flowNodeInstanceStore.state.selection).toEqual({
-      treeRowIds: [],
-      flowNodeId: null,
-    });
-    // @ts-expect-error
-    expect(flowNodeInstanceStore.state.response).toEqual(null);
-    expect(flowNodeInstanceStore.state.status).toEqual('initial');
-  });
-
-  it('should handle request failure', async () => {
-    mockServer.use(
-      rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json({}), ctx.status(500))
-      )
-    );
-    currentInstanceStore.setCurrentInstance({id: 123, state: 'CANCELED'});
-    flowNodeInstanceStore.init();
-
-    await waitFor(() =>
-      expect(flowNodeInstanceStore.state.status).toBe('error')
-    );
-  });
-
-  it('should change current selection', async () => {
-    currentInstanceStore.setCurrentInstance({id: 111, state: 'CANCELED'});
-    // @ts-expect-error
-    flowNodeInstanceStore.setCurrentSelection({
-      flowNodeId: '222',
-      treeRowIds: ['222'],
+    expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual({
+      ...mockFlowNodeInstances.level1,
+      ...mockFlowNodeInstances.level2,
+      ...mockFlowNodeInstances.level3,
     });
 
-    // select root node if we try to set current selection to a node that is already selected
-    // @ts-expect-error
-    flowNodeInstanceStore.changeCurrentSelection({
-      id: '222',
-      activityId: 'nodeActivityId2',
-      children: [],
-      endDate: null,
-      isLastChild: true,
-      name: 'Never fails',
-      parentId: '2251799813685376',
-      startDate: '2020-11-26T00:54:05.188+0000',
-      state: 'ACTIVE',
-      type: 'SERVICE_TASK',
+    await flowNodeInstanceStore.removeSubTree({
+      treePath: `${WORKFLOW_INSTANCE_ID}/2251799813686156`,
     });
 
-    expect(flowNodeInstanceStore.state.selection).toEqual({
-      flowNodeId: null,
-      treeRowIds: [111],
-    });
-
-    // set current selection to something other than root node
-    // @ts-expect-error
-    flowNodeInstanceStore.changeCurrentSelection({
-      id: '333',
-      activityId: 'nodeActivityId3',
-      children: [],
-      endDate: null,
-      isLastChild: true,
-      name: 'Never fails',
-      parentId: '2251799813685376',
-      startDate: '2020-11-26T00:54:05.188+0000',
-      state: 'ACTIVE',
-      type: 'SERVICE_TASK',
-    });
-    expect(flowNodeInstanceStore.state.selection).toEqual({
-      flowNodeId: 'nodeActivityId3',
-      treeRowIds: ['333'],
-    });
-
-    // set current selection to root node again
-    // @ts-expect-error
-    flowNodeInstanceStore.changeCurrentSelection({
-      id: '111',
-      activityId: 'nodeActivityId1',
-      children: [],
-      endDate: null,
-      isLastChild: true,
-      name: 'Never fails',
-      parentId: '2251799813685376',
-      startDate: '2020-11-26T00:54:05.188+0000',
-      state: 'ACTIVE',
-      type: 'SERVICE_TASK',
-    });
-    expect(flowNodeInstanceStore.state.selection).toEqual({
-      flowNodeId: 'nodeActivityId1',
-      treeRowIds: ['111'],
-    });
-  });
-
-  it('should get instance execution history availability', async () => {
-    mockServer.use(
-      rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json({}), ctx.status(500))
-      )
+    expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual(
+      mockFlowNodeInstances.level1
     );
-    currentInstanceStore.setCurrentInstance({id: 123, state: 'ACTIVE'});
-    jest.useFakeTimers();
-    flowNodeInstanceStore.init();
-
-    expect(flowNodeInstanceStore.isInstanceExecutionHistoryAvailable).toBe(
-      false
-    );
-    await waitFor(() =>
-      expect(flowNodeInstanceStore.state.status).toBe('error')
-    );
-    expect(flowNodeInstanceStore.isInstanceExecutionHistoryAvailable).toBe(
-      false
-    );
-
-    mockServer.use(
-      rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json(activityInstancesMock))
-      )
-    );
-
-    jest.runOnlyPendingTimers();
-    await waitFor(() =>
-      // @ts-expect-error
-      expect(flowNodeInstanceStore.state.response).toEqual(
-        activityInstancesMock
-      )
-    );
-
-    expect(flowNodeInstanceStore.isInstanceExecutionHistoryAvailable).toBe(
-      true
-    );
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
-  });
-
-  it('should get instance execution history', async () => {
-    currentInstanceStore.setCurrentInstance({id: 123, state: 'ACTIVE'});
-    jest.useFakeTimers();
-    flowNodeInstanceStore.init();
-
-    expect(flowNodeInstanceStore.instanceExecutionHistory).toEqual(null);
-    await waitFor(() =>
-      // @ts-expect-error
-      expect(flowNodeInstanceStore.state.response).toEqual(
-        activityInstancesMock
-      )
-    );
-
-    expect(flowNodeInstanceStore.instanceExecutionHistory).toEqual({
-      ...activityInstancesMock,
-      id: 123,
-      type: 'WORKFLOW',
-      state: 'ACTIVE',
-    });
-    currentInstanceStore.setCurrentInstance(null);
-    expect(flowNodeInstanceStore.instanceExecutionHistory).toEqual(null);
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
-  });
-
-  it('should get mapped flow nodes', async () => {
-    mockServer.use(
-      rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json({}), ctx.status(500))
-      )
-    );
-    currentInstanceStore.setCurrentInstance({id: 123, state: 'ACTIVE'});
-    jest.useFakeTimers();
-    flowNodeInstanceStore.init();
-
-    // @ts-expect-error
-    expect(flowNodeInstanceStore.flowNodeIdToFlowNodeInstanceMap).toEqual(
-      new Map()
-    );
-
-    await waitFor(() =>
-      expect(flowNodeInstanceStore.state.status).toBe('error')
-    );
-    // @ts-expect-error
-    expect(flowNodeInstanceStore.flowNodeIdToFlowNodeInstanceMap).toEqual(
-      new Map()
-    );
-
-    mockServer.use(
-      rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json(activityInstancesMock))
-      )
-    );
-    jest.runOnlyPendingTimers();
-    await waitFor(() =>
-      // @ts-expect-error
-      expect(flowNodeInstanceStore.state.response).toEqual(
-        activityInstancesMock
-      )
-    );
-
-    // @ts-expect-error
-    expect(flowNodeInstanceStore.flowNodeIdToFlowNodeInstanceMap).not.toEqual(
-      new Map()
-    );
-    expect(
-      // @ts-expect-error
-      flowNodeInstanceStore.flowNodeIdToFlowNodeInstanceMap.has('start')
-    ).toBe(true);
-    expect(
-      // @ts-expect-error
-      flowNodeInstanceStore.flowNodeIdToFlowNodeInstanceMap.has('neverFails')
-    ).toBe(true);
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
-  });
-
-  it('should handle fetching flow nodes', async () => {
-    expect(flowNodeInstanceStore.state.status).toBe('initial');
-    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
-    expect(flowNodeInstanceStore.state.status).toBe('first-fetch');
-
-    await waitFor(() =>
-      expect(flowNodeInstanceStore.state.status).toBe('fetched')
-    );
-
-    mockServer.use(
-      rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json(activityInstancesMock))
-      )
-    );
-    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
-    expect(flowNodeInstanceStore.state.status).toBe('fetching');
-
-    await waitFor(() =>
-      expect(flowNodeInstanceStore.state.status).toBe('fetched')
-    );
-  });
-
-  it('should get areMultipleNodesSelected', async () => {
-    // @ts-expect-error
-    expect(flowNodeInstanceStore.areMultipleNodesSelected).toBe(false);
-
-    // @ts-expect-error
-    flowNodeInstanceStore.setCurrentSelection({
-      treeRowIds: ['1'],
-      flowNodeId: '1',
-    });
-    // @ts-expect-error
-    expect(flowNodeInstanceStore.areMultipleNodesSelected).toBe(false);
-
-    // @ts-expect-error
-    flowNodeInstanceStore.setCurrentSelection({
-      treeRowIds: ['1', '2'],
-      flowNodeId: '1',
-    });
-    // @ts-expect-error
-    expect(flowNodeInstanceStore.areMultipleNodesSelected).toBe(true);
   });
 });

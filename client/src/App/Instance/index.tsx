@@ -17,15 +17,17 @@ import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {autorun} from 'mobx';
-import {useParams} from 'react-router-dom';
+import {useInstancePageParams} from './useInstancePageParams';
 
 import * as Styled from './styled';
+
 const Instance = observer(() => {
-  const {id} = useParams<{id: string}>();
+  const {workflowInstanceId} = useInstancePageParams();
   useEffect(() => {
-    currentInstanceStore.init(id);
+    currentInstanceStore.init(workflowInstanceId);
     flowNodeInstanceStore.init();
 
     let disposer = autorun(() => {
@@ -34,18 +36,20 @@ const Instance = observer(() => {
     });
 
     singleInstanceDiagramStore.init();
+    flowNodeSelectionStore.init();
 
     return () => {
       currentInstanceStore.reset();
       flowNodeInstanceStore.reset();
       singleInstanceDiagramStore.reset();
       flowNodeTimeStampStore.reset();
+      flowNodeSelectionStore.reset();
 
       if (disposer !== undefined) {
         disposer();
       }
     };
-  }, [id]);
+  }, [workflowInstanceId]);
 
   const {instance} = currentInstanceStore.state;
   return (

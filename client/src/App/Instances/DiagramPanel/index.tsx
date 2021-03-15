@@ -113,7 +113,7 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
             definitions={diagramModel.definitions}
             onFlowNodeSelection={(flowNodeId) => {
               if (IS_FILTERS_V2) {
-                if (flowNodeId === null) {
+                if (flowNodeId === null || flowNodeId === undefined) {
                   history.push(
                     deleteSearchParam(history.location, 'flowNodeId')
                   );

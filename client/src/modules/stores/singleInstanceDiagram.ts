@@ -88,11 +88,11 @@ class SingleInstanceDiagram {
     this.state.status = 'fetched';
   };
 
-  getMetaData = (flowNodeInstanceId: string | null) => {
-    if (flowNodeInstanceId === null) {
+  getMetaData = (flowNodeId: string | null) => {
+    if (flowNodeId === null) {
       return;
     }
-    return this.state.nodeMetaDataMap?.get(flowNodeInstanceId);
+    return this.state.nodeMetaDataMap?.get(flowNodeId);
   };
 
   get areDiagramDefinitionsAvailable() {

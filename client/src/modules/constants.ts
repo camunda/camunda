@@ -199,14 +199,6 @@ export const PILL_TYPE = {
   FILTER: 'FILTER',
 } as const;
 
-export const POPOVER_SIDE = {
-  TOP: 'TOP',
-  RIGHT: 'RIGHT',
-  BOTTOM: 'BOTTOM',
-  LEFT: 'LEFT',
-  BOTTOM_MIRROR: 'BOTTOM_MIRROR',
-};
-
 export const INCIDENTS_BAR_HEIGHT = 42;
 
 export const INSTANCE_SELECTION_MODE = {

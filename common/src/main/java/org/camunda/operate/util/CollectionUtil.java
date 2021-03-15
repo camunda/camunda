@@ -5,6 +5,8 @@
  */
 package org.camunda.operate.util;
 
+import static org.camunda.operate.util.ConversionUtils.stringToLong;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,9 +21,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.camunda.operate.util.ConversionUtils.*;
-
 import org.camunda.operate.exceptions.OperateRuntimeException;
 
 public abstract class CollectionUtil {
@@ -159,5 +158,9 @@ public abstract class CollectionUtil {
       }
     }
     return true;
+  }
+
+  public static long countNonNullObjects(Object... objects) {
+    return Arrays.stream(objects).filter(o -> o != null).count();
   }
 }

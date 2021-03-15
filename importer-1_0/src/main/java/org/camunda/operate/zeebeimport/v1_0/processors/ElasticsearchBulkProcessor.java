@@ -42,7 +42,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
   @Autowired
   private ActivityInstanceZeebeRecordProcessor activityInstanceZeebeRecordProcessor;
 
-  @Autowired(required = false)
+  @Autowired
   private FlowNodeInstanceZeebeRecordProcessor flowNodeInstanceZeebeRecordProcessor;
 
   @Autowired
@@ -74,7 +74,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
     ImportValueType importValueType = importBatch.getImportValueType();
 
-    logger.debug("Writing {} Zeebe records to Elasticsearch, version={}, importValueType={}, partition={}", zeebeRecords.size(), "0.27", importBatch.getImportValueType(), importBatch.getPartitionId());
+    logger.debug("Writing {} Zeebe records to Elasticsearch, version={}, importValueType={}, partition={}", zeebeRecords.size(), "0.26", importBatch.getImportValueType(), importBatch.getPartitionId());
 
     switch (importValueType) {
     case WORKFLOW_INSTANCE:
@@ -87,11 +87,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
       List<Long> flowNodeInstanceKeysOrdered = zeebeRecords.stream()
           .map(Record::getKey)
           .collect(Collectors.toList());
-      if (flowNodeInstanceZeebeRecordProcessor != null) {
-        flowNodeInstanceZeebeRecordProcessor
-            .processWorkflowInstanceRecord(groupedWIRecordsPerActivityInst,
-                flowNodeInstanceKeysOrdered, bulkRequest);
-      }
+      flowNodeInstanceZeebeRecordProcessor.processWorkflowInstanceRecord(groupedWIRecordsPerActivityInst, flowNodeInstanceKeysOrdered, bulkRequest);
       eventZeebeRecordProcessor.processWorkflowInstanceRecords(groupedWIRecordsPerActivityInst, bulkRequest);
       for (Record record : zeebeRecords) {
         sequenceFlowZeebeRecordProcessor.processSequenceFlowRecord(record, bulkRequest);
@@ -102,9 +98,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
       for (Record record : zeebeRecords) {
         listViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
         activityInstanceZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
-        if (flowNodeInstanceZeebeRecordProcessor != null) {
-          flowNodeInstanceZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
-        }
+        flowNodeInstanceZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
       }
       incidentZeebeRecordProcessor.processIncidentRecord(zeebeRecords, bulkRequest);
       Map<Long, List<RecordImpl<IncidentRecordValueImpl>>> groupedIncidentRecordsPerActivityInst = zeebeRecords.stream()

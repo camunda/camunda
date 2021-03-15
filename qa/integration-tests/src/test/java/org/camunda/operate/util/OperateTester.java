@@ -10,6 +10,9 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,7 +20,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
-
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.archiver.AbstractArchiverJob;
@@ -45,10 +47,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class OperateTester {
@@ -64,6 +62,7 @@ public class OperateTester {
 
   private Long workflowKey;
   private Long workflowInstanceKey;
+  private Long jobKey;
 
   @Autowired
   @Qualifier("workflowIsDeployedCheck")
@@ -166,7 +165,7 @@ public class OperateTester {
   }
 
   public OperateTester workflowInstanceIsFinished() {
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreFinishedCheck,Arrays.asList(workflowInstanceKey));
+    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreFinishedCheck, Arrays.asList(workflowInstanceKey));
     return this;
   }
 
@@ -176,12 +175,18 @@ public class OperateTester {
   }
 
   public OperateTester failTask(String taskName, String errorMessage) {
-    ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(), 3,errorMessage);
+    jobKey = ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(), 3,errorMessage);
     return this;
   }
 
   public OperateTester throwError(String taskName,String errorCode,String errorMessage) {
     ZeebeTestUtil.throwErrorInTask(zeebeClient, taskName, UUID.randomUUID().toString(), 1, errorCode, errorMessage);
+    return this;
+  }
+
+  public OperateTester resolveIncident() {
+    zeebeClient.newUpdateRetriesCommand(jobKey).retries(3).send().join();
+    zeebeClient.newResolveIncidentCommand(getIncidents().get(0).getKey()).send().join();
     return this;
   }
 
@@ -280,11 +285,15 @@ public class OperateTester {
   }
 
   private int executeOneBatch() throws Exception {
-    if(!operationExecutorEnabled) return 0;
-      List<Future<?>> futures = operationExecutor.executeOneBatch();
-      //wait till all scheduled tasks are executed
-      for(Future f: futures) { f.get();}
-      return 0;//return futures.size()
+    if (!operationExecutorEnabled) {
+      return 0;
+    }
+    List<Future<?>> futures = operationExecutor.executeOneBatch();
+    //wait till all scheduled tasks are executed
+    for (Future f : futures) {
+      f.get();
+    }
+    return 0;//return futures.size()
   }
 
   public int importOneType(ImportValueType importValueType) throws IOException {

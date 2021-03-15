@@ -66,10 +66,10 @@ public class ElasticsearchChecks {
   @Autowired
   private ActivityInstanceReader activityInstanceReader;
 
-  @Autowired(required = false)
+  @Autowired
   private FlowNodeInstanceReader flowNodeInstanceReader;
 
-  @Autowired(required = false)
+  @Autowired
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired
@@ -201,7 +201,41 @@ public class ElasticsearchChecks {
         if (flowNodes.size() == 0) {
           return false;
         } else {
-          return flowNodes.get(0).getState().equals(FlowNodeState.COMPLETED);
+          return flowNodes.stream().map(FlowNodeInstanceEntity::getState).anyMatch(fns -> fns.equals(FlowNodeState.COMPLETED));
+        }
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  /**
+   * Checks whether the flow nodes of given args[0] workflowInstanceKey (Long) and args[1] flowNodeId (String) is in state COMPLETED
+   * and the amount of such flow node instances is args[2]
+   * @return
+   */
+  @Bean(name = "flowNodesAreCompletedCheck")
+  public Predicate<Object[]> getFlowNodesAreCompletedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(3);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      assertThat(objects[2]).isInstanceOf(Integer.class);
+      Long workflowInstanceKey = (Long) objects[0];
+      String flowNodeId = (String) objects[1];
+      Integer instancesCount = (Integer) objects[2];
+      try {
+        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances(
+            workflowInstanceKey);
+        final List<FlowNodeInstanceEntity> flowNodes = flowNodeInstances.stream()
+            .filter(a -> a.getFlowNodeId().equals(flowNodeId))
+            .collect(Collectors.toList());
+        if (flowNodes.size() == 0) {
+          return false;
+        } else {
+          return
+              flowNodes.stream().filter(fn -> fn.getState().equals(FlowNodeState.COMPLETED)).count()
+                  >= instancesCount;
         }
       } catch (NotFoundException ex) {
         return false;

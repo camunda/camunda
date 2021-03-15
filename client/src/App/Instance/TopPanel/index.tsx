@@ -5,29 +5,22 @@
  */
 
 import React, {useEffect} from 'react';
-import {
-  getSelectedFlowNodeName,
-  getFlowNodeStateOverlays,
-  getMultiInstanceBodies,
-  getMultiInstanceChildren,
-  getCurrentMetadata,
-} from './service';
-
-import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
-import Diagram from 'modules/components/Diagram';
-import {IncidentsWrapper} from '../IncidentsWrapper';
-
-import {InstanceHeader} from './InstanceHeader';
-import * as Styled from './styled';
+import {computed} from 'mobx';
 import {observer} from 'mobx-react';
+import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {eventsStore} from 'modules/stores/events';
+import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import Diagram from 'modules/components/Diagram';
+import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 import {StatusMessage} from 'modules/components/StatusMessage';
-
-import {IS_NEXT_FLOW_NODE_INSTANCES} from 'modules/feature-flags';
+import {IncidentsWrapper} from '../IncidentsWrapper';
+import {InstanceHeader} from './InstanceHeader';
+import * as Styled from './styled';
 
 type Props = {
   incidents?: unknown;
@@ -35,67 +28,50 @@ type Props = {
   expandState?: 'DEFAULT' | 'EXPANDED' | 'COLLAPSED';
 };
 
-const TopPanel: React.FC<Props> = observer((props) => {
+const TopPanel: React.FC<Props> = observer(({expandState}) => {
+  const {
+    selectableFlowNodes,
+    state: {flowNodes},
+  } = flowNodeStatesStore;
+
+  const {workflowInstanceId} = useInstancePageParams();
+  const flowNodeSelection = flowNodeSelectionStore.state.selection;
+
   useEffect(() => {
     eventsStore.init();
     sequenceFlowsStore.init();
+    flowNodeMetaDataStore.init();
+    flowNodeStatesStore.init(workflowInstanceId);
 
     return () => {
       eventsStore.reset();
       sequenceFlowsStore.reset();
+      flowNodeStatesStore.reset();
+      flowNodeMetaDataStore.reset();
     };
-  }, []);
+  }, [workflowInstanceId]);
 
-  /**
-   * Handles selecting a flow node from the diagram
-   * @param {string} flowNodeId: id of the selected flow node
-   * @param {Object} options: refine, which instances to select
-   */
-  const handleFlowNodeSelection = async (
-    flowNodeId: any,
-    options = {
-      selectMultiInstanceChildrenOnly: false,
-    }
-  ) => {
-    // @ts-expect-error
-    const {flowNodeIdToFlowNodeInstanceMap} = flowNodeInstanceStore;
-    const {instance} = currentInstanceStore.state;
-    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-    let treeRowIds = [instance.id];
-    if (flowNodeId) {
-      const flowNodeInstancesMap = flowNodeIdToFlowNodeInstanceMap.get(
-        flowNodeId
-      );
+  const flowNodeStateOverlays = computed(() =>
+    Object.entries(flowNodes).reduce<
+      {id: string; state: InstanceEntityState}[]
+    >((flowNodeStates, [flowNodeId, state]) => {
+      const metaData = singleInstanceDiagramStore.getMetaData(flowNodeId);
 
-      treeRowIds = options.selectMultiInstanceChildrenOnly
-        ? getMultiInstanceChildren(flowNodeInstancesMap)
-        : getMultiInstanceBodies(flowNodeInstancesMap);
-    }
-    // @ts-expect-error
-    flowNodeInstanceStore.setCurrentSelection({flowNodeId, treeRowIds});
-  };
-
-  const {expandState} = props;
-
-  const {
-    state: {selection},
-    // @ts-expect-error
-    flowNodeIdToFlowNodeInstanceMap,
-    // @ts-expect-error
-    areMultipleNodesSelected,
-  } = flowNodeInstanceStore;
+      if (state === 'COMPLETED' && metaData?.type.elementType !== 'END') {
+        return flowNodeStates;
+      } else {
+        return [...flowNodeStates, {id: flowNodeId, state}];
+      }
+    }, [])
+  );
 
   const {items: processedSequenceFlows} = sequenceFlowsStore.state;
   const {instance} = currentInstanceStore.state;
 
   const {
     state: {status, diagramModel},
-    getMetaData,
   } = singleInstanceDiagramStore;
 
-  const selectedFlowNodeId = selection?.flowNodeId;
-
-  const {items: eventList} = eventsStore.state;
   return (
     <Styled.Pane expandState={expandState}>
       <InstanceHeader />
@@ -117,45 +93,18 @@ const TopPanel: React.FC<Props> = observer((props) => {
             {diagramModel?.definitions && (
               <Diagram
                 expandState={expandState}
-                onFlowNodeSelection={
-                  IS_NEXT_FLOW_NODE_INSTANCES
-                    ? () => {}
-                    : handleFlowNodeSelection
-                }
-                selectableFlowNodes={
-                  IS_NEXT_FLOW_NODE_INSTANCES
-                    ? []
-                    : [...flowNodeIdToFlowNodeInstanceMap.keys()]
-                }
+                onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
+                  flowNodeSelectionStore.selectFlowNode({
+                    flowNodeId,
+                    isMultiInstance,
+                  });
+                }}
+                selectableFlowNodes={selectableFlowNodes}
                 processedSequenceFlows={processedSequenceFlows}
-                // @ts-expect-error ts-migrate(2322) FIXME: Type 'null' is not assignable to type 'string | un... Remove this comment to see the full error message
-                selectedFlowNodeId={selection.flowNodeId}
-                selectedFlowNodeName={getSelectedFlowNodeName(
-                  selectedFlowNodeId,
-                  getMetaData(selectedFlowNodeId)
-                )}
-                flowNodeStateOverlays={
-                  IS_NEXT_FLOW_NODE_INSTANCES
-                    ? []
-                    : getFlowNodeStateOverlays(flowNodeIdToFlowNodeInstanceMap)
-                }
+                selectedFlowNodeId={flowNodeSelection?.flowNodeId}
+                flowNodeStateOverlays={flowNodeStateOverlays.get()}
                 // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
                 definitions={diagramModel.definitions}
-                metadata={
-                  !selection.flowNodeId
-                    ? null
-                    : getCurrentMetadata(
-                        eventList,
-                        selectedFlowNodeId,
-                        selection?.treeRowIds,
-                        IS_NEXT_FLOW_NODE_INSTANCES
-                          ? {}
-                          : flowNodeIdToFlowNodeInstanceMap,
-                        IS_NEXT_FLOW_NODE_INSTANCES
-                          ? false
-                          : areMultipleNodesSelected
-                      )
-                }
               />
             )}
           </>

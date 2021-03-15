@@ -15,8 +15,8 @@ import {
 } from 'mobx';
 import {fetchVariables, applyOperation} from 'modules/api/instances';
 import {differenceWith, differenceBy} from 'lodash';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {STATE} from 'modules/constants';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 import {logger} from 'modules/logger';
@@ -114,14 +114,7 @@ class Variables {
   };
 
   get scopeId() {
-    const {
-      state: {selection},
-    } = flowNodeInstanceStore;
-    if (selection.treeRowIds.length > 0) {
-      return selection.treeRowIds[0];
-    }
-
-    return undefined;
+    return flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
   }
 
   handlePolling = async (workflowInstanceId: WorkflowInstanceEntity['id']) => {

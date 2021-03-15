@@ -5,20 +5,19 @@
  */
 package org.camunda.operate.webapp.rest;
 
+import static org.camunda.operate.util.CollectionUtil.countNonNullObjects;
+
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.SwaggerDefinition;
 import io.swagger.annotations.Tag;
-import java.util.List;
+import java.util.Map;
 import org.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
-import org.camunda.operate.webapp.rest.dto.FlowNodeInstanceMetadataDto;
-import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
+import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
+import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,7 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 })
 @RestController
 @RequestMapping(value = FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL)
-@ConditionalOnProperty(value = "camunda.operate.isNextFlowNodeInstances", havingValue = "true", matchIfMissing = false)
 public class FlowNodeInstanceRestService {
 
   public static final String FLOW_NODE_INSTANCE_URL = "/api/flow-node-instances";
@@ -38,19 +36,27 @@ public class FlowNodeInstanceRestService {
   @Autowired
   private FlowNodeInstanceReader flowNodeInstanceReader;
 
-  @ApiOperation("Query flow node instance tree")
+  @ApiOperation("Query flow node instance tree. Returns map treePath <-> list of children.")
   @PostMapping
-  public List<FlowNodeInstanceDto> queryFlowNodeInstanceTree(@RequestBody FlowNodeInstanceRequestDto request) {
-    if (request == null || request.getWorkflowInstanceId() == null) {
-      throw new InvalidRequestException("Workflow instance id must be provided when requesting for activity instance tree.");
-    }
-    return FlowNodeInstanceDto.createFrom(flowNodeInstanceReader.getFlowNodeInstances(request));
+  public Map<String, FlowNodeInstanceResponseDto> queryFlowNodeInstanceTree(@RequestBody FlowNodeInstanceRequestDto request) {
+    validateRequest(request);
+    return flowNodeInstanceReader.getFlowNodeInstances(request);
   }
 
-  @ApiOperation("Get metadata by flow node instance id")
-  @GetMapping("/{flowNodeInstanceId}/metadata")
-  public FlowNodeInstanceMetadataDto queryFlowNodeInstanceMetadata(@PathVariable Long flowNodeInstanceId) {
-    return FlowNodeInstanceMetadataDto.createFrom(flowNodeInstanceReader.getFlowNodeInstanceMetadata(String.valueOf(flowNodeInstanceId)));
+  private void validateRequest(final FlowNodeInstanceRequestDto request) {
+    if (request.getQueries() == null || request.getQueries().size() == 0) {
+      throw new InvalidRequestException("At least one query must be provided when requesting for flow node instance tree.");
+    }
+    for (FlowNodeInstanceQueryDto query: request.getQueries()) {
+      if (query == null || query.getWorkflowInstanceId() == null || query.getTreePath() == null) {
+        throw new InvalidRequestException("Workflow instance id and tree path must be provided when requesting for flow node instance tree.");
+      }
+      if (countNonNullObjects(query.getSearchAfter(), query.getSearchAfterOrEqual(),
+          query.getSearchBefore(), query.getSearchBeforeOrEqual()) > 1) {
+        throw new InvalidRequestException(
+            "Only one of [searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual] must be present in request.");
+      }
+    }
   }
 
 }

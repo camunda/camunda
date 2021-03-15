@@ -17,7 +17,6 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {variablesStore} from 'modules/stores/variables';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import Variables from './index';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {mockVariables} from './index.setup';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
@@ -32,7 +31,7 @@ const Wrapper = ({children}: Props) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={[`/instances/1`]}>
-        <Route path="/instances/:id">{children} </Route>
+        <Route path="/instances/:workflowInstanceId">{children} </Route>
       </MemoryRouter>
     </ThemeProvider>
   );
@@ -495,13 +494,6 @@ describe('Variables', () => {
   });
 
   describe('Footer', () => {
-    beforeAll(async () => {
-      // @ts-expect-error
-      flowNodeInstanceStore.setCurrentSelection({
-        flowNodeId: null,
-        treeRowIds: [],
-      });
-    });
     it('should disable add variable button when loading', async () => {
       currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
 

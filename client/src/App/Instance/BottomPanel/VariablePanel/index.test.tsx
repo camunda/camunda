@@ -9,7 +9,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {VariablePanel} from './index';
 import {render, screen} from '@testing-library/react';
 import {FAILED_PLACEHOLDER, MULTI_SCOPE_PLACEHOLDER} from './constants';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {MemoryRouter, Route} from 'react-router-dom';
@@ -33,7 +33,7 @@ const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/1']}>
-        <Route path="/instances/:id">{children} </Route>
+        <Route path="/instances/:workflowInstanceId">{children} </Route>
       </MemoryRouter>
     </ThemeProvider>
   );
@@ -58,14 +58,12 @@ describe('VariablePanel', () => {
   });
 
   afterEach(() => {
-    flowNodeInstanceStore.reset();
+    flowNodeSelectionStore.reset();
   });
 
   it('should show multiple scope placeholder when multiple nodes are selected', () => {
-    // @ts-expect-error
-    flowNodeInstanceStore.setCurrentSelection({
+    flowNodeSelectionStore.setSelection({
       flowNodeId: '1',
-      treeRowIds: ['1', '2'],
     });
     render(<VariablePanel />, {wrapper: Wrapper});
 
@@ -83,11 +81,6 @@ describe('VariablePanel', () => {
       )
     );
 
-    // @ts-expect-error
-    flowNodeInstanceStore.setCurrentSelection({
-      flowNodeId: null,
-      treeRowIds: [],
-    });
     const {unmount} = render(<VariablePanel />, {wrapper: Wrapper});
     variablesStore.fetchVariables('invalid_instance');
 

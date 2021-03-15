@@ -37,7 +37,7 @@ const Wrapper = ({children}: Props) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/1']}>
-        <Route path="/instances/:id">
+        <Route path="/instances/:workflowInstanceId">
           <SplitPane>
             {children}
             <SplitPane.Pane />
@@ -79,6 +79,10 @@ describe('TopPanel', () => {
         '/api/workflow-instances/:instanceId/sequence-flows',
         (_, res, ctx) => res.once(ctx.json(mockSequenceFlows))
       ),
+      rest.get(
+        '/api/workflow-instances/:instanceId/flow-node-states',
+        (_, res, ctx) => res.once(ctx.json({}))
+      ),
       rest.post('/api/events', (_, res, ctx) => res.once(ctx.json(mockEvents)))
     );
   });
@@ -89,7 +93,9 @@ describe('TopPanel', () => {
   });
 
   it('should render spinner while loading', async () => {
-    render(<TopPanel />, {wrapper: Wrapper});
+    render(<TopPanel />, {
+      wrapper: Wrapper,
+    });
 
     currentInstanceStore.init('active_instance');
     singleInstanceDiagramStore.fetchWorkflowXml('1');
@@ -98,7 +104,9 @@ describe('TopPanel', () => {
   });
 
   it('should render incident bar', async () => {
-    render(<TopPanel />, {wrapper: Wrapper});
+    render(<TopPanel />, {
+      wrapper: Wrapper,
+    });
 
     currentInstanceStore.init('instance_with_incident');
     await singleInstanceDiagramStore.fetchWorkflowXml('1');
@@ -113,7 +121,9 @@ describe('TopPanel', () => {
         res.once(ctx.text(''), ctx.status(500))
       )
     );
-    render(<TopPanel />, {wrapper: Wrapper});
+    render(<TopPanel />, {
+      wrapper: Wrapper,
+    });
 
     currentInstanceStore.init('instance_with_incident');
     singleInstanceDiagramStore.fetchWorkflowXml('1');
@@ -129,7 +139,9 @@ describe('TopPanel', () => {
         res.networkError('A network error')
       )
     );
-    render(<TopPanel />, {wrapper: Wrapper});
+    render(<TopPanel />, {
+      wrapper: Wrapper,
+    });
 
     currentInstanceStore.init('instance_with_incident');
     singleInstanceDiagramStore.fetchWorkflowXml('1');

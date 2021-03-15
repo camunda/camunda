@@ -51,11 +51,9 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(value = "camunda.operate.isNextFlowNodeInstances", havingValue = "true", matchIfMissing = false)
 public class FlowNodeInstanceZeebeRecordProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(FlowNodeInstanceZeebeRecordProcessor.class);
@@ -164,13 +162,20 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     } else {
       //find parent flow node instance
       parentTreePath = null;
+      //search in cache
       if (treePathCache.get(ConversionUtils.toStringOrNull(recordValue.getFlowScopeKey()))
           != null) {
         parentTreePath = treePathCache
             .get(ConversionUtils.toStringOrNull(recordValue.getFlowScopeKey()));
       }
+      //query from ELS
       if (parentTreePath == null) {
         parentTreePath = findParentTreePath(recordValue.getFlowScopeKey());
+      }
+      //still not found - smth is wrong
+      if (parentTreePath == null) {
+        throw new OperateRuntimeException(
+            "Unable to find parent tree path for flow node instance id " + record.getKey());
       }
     }
     treePathCache.put(ConversionUtils.toStringOrNull(record.getKey()),
@@ -197,8 +202,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
         ThreadUtil.sleepFor(2000L);
         return findParentTreePath(parentFlowNodeInstanceKey, attemptCount + 1);
       } else {
-        throw new OperateRuntimeException(
-            "Unable to find parent flow node instance: " + parentFlowNodeInstanceKey);
+        return null;
       }
     } catch (IOException e) {
       final String message = String

@@ -4,15 +4,20 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {POPOVER_SIDE} from 'modules/constants';
+import {OverlayType} from 'modules/types/modeler';
 import {isFlowNode} from 'modules/utils/flowNodes';
 
 const POPOVER_TO_FLOWNODE_SPACE = 16;
 
+type PopoverPosition = {
+  overlay: OverlayType['position'];
+  side: 'TOP' | 'RIGHT' | 'BOTTOM' | 'LEFT' | 'BOTTOM_MIRROR';
+};
+
 function getPopoverPosition(
   {diagramContainer, flowNode}: any,
-  isSummaryPopover?: boolean
-) {
+  isSummaryPopover: boolean
+): PopoverPosition {
   // we only know the popover dimensions after it's render, so we approximate
   const POPOVER_APROXIMATE_HEIGHT = isSummaryPopover
     ? POPOVER_TO_FLOWNODE_SPACE + 54 // 80
@@ -57,9 +62,11 @@ function getPopoverPosition(
     verticalPopoverSpaceToRight > POPOVER_APROXIMATE_WIDTH / 2
   ) {
     return {
-      bottom: -POPOVER_TO_FLOWNODE_SPACE,
-      left: flowNodeBBox.width / 2,
-      side: POPOVER_SIDE.BOTTOM,
+      overlay: {
+        bottom: -POPOVER_TO_FLOWNODE_SPACE,
+        left: flowNodeBBox.width / 2,
+      },
+      side: 'BOTTOM',
     };
   }
 
@@ -70,9 +77,11 @@ function getPopoverPosition(
     horizontalPopoverSpaceToTOP > POPOVER_APROXIMATE_HEIGHT / 2
   ) {
     return {
-      left: -POPOVER_TO_FLOWNODE_SPACE,
-      top: flowNodeBBox.height / 2,
-      side: POPOVER_SIDE.LEFT,
+      overlay: {
+        left: -POPOVER_TO_FLOWNODE_SPACE,
+        top: flowNodeBBox.height / 2,
+      },
+      side: 'LEFT',
     };
   }
 
@@ -83,9 +92,11 @@ function getPopoverPosition(
     verticalPopoverSpaceToRight > POPOVER_APROXIMATE_WIDTH / 2
   ) {
     return {
-      top: -POPOVER_TO_FLOWNODE_SPACE,
-      left: flowNodeBBox.width / 2,
-      side: POPOVER_SIDE.TOP,
+      overlay: {
+        top: -POPOVER_TO_FLOWNODE_SPACE,
+        left: flowNodeBBox.width / 2,
+      },
+      side: 'TOP',
     };
   }
 
@@ -96,17 +107,21 @@ function getPopoverPosition(
     horizontalPopoverSpaceToTOP > POPOVER_APROXIMATE_HEIGHT
   ) {
     return {
-      top: flowNodeBBox.height / 2,
-      right: -POPOVER_TO_FLOWNODE_SPACE,
-      side: POPOVER_SIDE.RIGHT,
+      overlay: {
+        top: flowNodeBBox.height / 2,
+        right: -POPOVER_TO_FLOWNODE_SPACE,
+      },
+      side: 'RIGHT',
     };
   }
 
   // position the popover in a mirrored position (from bottom to top) at the bottom of the flow node
   return {
-    bottom: POPOVER_TO_FLOWNODE_SPACE,
-    left: flowNodeBBox.width / 2,
-    side: POPOVER_SIDE.BOTTOM_MIRROR,
+    overlay: {
+      bottom: POPOVER_TO_FLOWNODE_SPACE,
+      left: flowNodeBBox.width / 2,
+    },
+    side: 'BOTTOM_MIRROR',
   };
 }
 
@@ -119,3 +134,4 @@ function isNonSelectableFlowNode(element: any, selectableFlowNodes: any) {
 }
 
 export {getPopoverPosition, isNonSelectableFlowNode};
+export type {PopoverPosition};

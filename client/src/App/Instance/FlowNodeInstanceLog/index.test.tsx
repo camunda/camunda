@@ -12,15 +12,17 @@ import {
 } from '@testing-library/react';
 
 import {FlowNodeInstanceLog} from './index';
-import {mockSuccessResponseForActivityTree} from './index.setup';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {createMultiInstanceFlowNodeInstances} from 'modules/testUtils';
 
 jest.mock('modules/utils/bpmn');
+
+const workFlowInstancesMock = createMultiInstanceFlowNodeInstances('1');
 
 mockServer.use(
   rest.get('/api/workflow-instances/:instanceId', (_, res, ctx) =>
@@ -52,8 +54,8 @@ describe('FlowNodeInstanceLog', () => {
 
   it('should render skeleton when instance tree is not loaded', async () => {
     mockServer.use(
-      rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockSuccessResponseForActivityTree))
+      rest.post('/api/flow-node-instances', (_, res, ctx) =>
+        res.once(ctx.json(workFlowInstancesMock.level1))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
@@ -74,8 +76,8 @@ describe('FlowNodeInstanceLog', () => {
 
   it('should render skeleton when instance diagram is not loaded', async () => {
     mockServer.use(
-      rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockSuccessResponseForActivityTree))
+      rest.post('/api/flow-node-instances', (_, res, ctx) =>
+        res.once(ctx.json(workFlowInstancesMock.level1))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
@@ -98,7 +100,7 @@ describe('FlowNodeInstanceLog', () => {
 
   it('should display error when instance tree data could not be fetched', async () => {
     mockServer.use(
-      rest.post('/api/activity-instances', (_, res, ctx) =>
+      rest.post('/api/flow-node-instances', (_, res, ctx) =>
         res.once(ctx.json({}), ctx.status(500))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
@@ -117,8 +119,8 @@ describe('FlowNodeInstanceLog', () => {
 
   it('should display error when instance diagram could not be fetched', async () => {
     mockServer.use(
-      rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockSuccessResponseForActivityTree))
+      rest.post('/api/flow-node-instances', (_, res, ctx) =>
+        res.once(ctx.json(workFlowInstancesMock.level1))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
         res.once(ctx.status(500), ctx.text(''))
@@ -137,8 +139,8 @@ describe('FlowNodeInstanceLog', () => {
 
   it('should render flow node instances tree', async () => {
     mockServer.use(
-      rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockSuccessResponseForActivityTree))
+      rest.post('/api/flow-node-instances', (_, res, ctx) =>
+        res.once(ctx.json(workFlowInstancesMock.level1))
       ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))

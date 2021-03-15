@@ -15,7 +15,8 @@ import {ReactComponent as CanceledLightIcon} from 'modules/components/Icon/diagr
 import {ReactComponent as CanceledDarkIcon} from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
 import {STATISTICS_OVERLAY_ID} from 'modules/constants';
 import {currentTheme, THEME_NAME} from 'modules/stores/currentTheme';
-import Overlay from '../Overlay';
+import {OverlayType} from 'modules/types/modeler';
+import {Overlay} from '../Overlay';
 
 import * as Styled from './styled';
 
@@ -47,8 +48,8 @@ type Props = {
     completed?: string;
   };
   state: 'active' | 'incidents' | 'canceled' | 'completed';
-  onOverlayAdd: (...args: any[]) => any;
-  onOverlayClear: (...args: any[]) => any;
+  onOverlayAdd: (id: string, type: string, overlay: OverlayType) => void;
+  onOverlayClear: ({element}: {element: HTMLDivElement}) => void;
   isViewerLoaded: boolean;
 };
 

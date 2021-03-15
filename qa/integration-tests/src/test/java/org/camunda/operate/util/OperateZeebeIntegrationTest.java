@@ -142,6 +142,10 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected Predicate<Object[]> flowNodeIsCompletedCheck;
 
   @Autowired
+  @Qualifier("flowNodesAreCompletedCheck")
+  protected Predicate<Object[]> flowNodesAreCompletedCheck;
+
+  @Autowired
   @Qualifier("flowNodeIsActiveCheck")
   protected Predicate<Object[]> flowNodeIsActiveCheck;
 

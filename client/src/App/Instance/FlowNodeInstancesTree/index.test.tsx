@@ -4,13 +4,16 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-// TODO (paddy): rename to index.test.tsx, when FlowNodeInstancesTree is done
-
 import React from 'react';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import {rest} from 'msw';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {FlowNodeInstancesTree} from './index.next';
 import {mockServer} from 'modules/mock-server/node';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {
@@ -18,6 +21,7 @@ import {
   FlowNodeInstance,
 } from 'modules/stores/flowNodeInstance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {FlowNodeInstancesTree} from './index';
 
 import {CURRENT_INSTANCE} from './index.setup';
 import {
@@ -49,12 +53,6 @@ describe('<FlowNodeInstancesTree />', () => {
       rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
         res.once(ctx.json(flowNodeInstances.level1))
       ),
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(flowNodeInstances.level2))
-      ),
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(flowNodeInstances.level3))
-      ),
       rest.get(`/api/workflow-instances/:workflowInstanceId`, (_, res, ctx) =>
         res.once(ctx.json(CURRENT_INSTANCE))
       ),
@@ -64,16 +62,22 @@ describe('<FlowNodeInstancesTree />', () => {
     );
 
     await Promise.all([
-      flowNodeInstanceStore.init(),
       currentInstanceStore.init(workflowInstanceId),
       singleInstanceDiagramStore.fetchWorkflowXml(workflowId),
     ]);
+
+    jest.useFakeTimers();
+
+    await flowNodeInstanceStore.init();
   });
 
   afterEach(() => {
     currentInstanceStore.reset();
     singleInstanceDiagramStore.reset();
     flowNodeInstanceStore.reset();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should load the instance history', async () => {
@@ -82,10 +86,10 @@ describe('<FlowNodeInstancesTree />', () => {
     });
 
     render(
-      // @ts-expect-error
       <FlowNodeInstancesTree
         treeDepth={1}
         flowNodeInstance={mockFlowNodeInstance}
+        isLastChild={false}
       />,
       {
         wrapper: ThemeProvider,
@@ -100,15 +104,23 @@ describe('<FlowNodeInstancesTree />', () => {
   });
 
   it('should be able to unfold and fold subprocesses', async () => {
+    mockServer.use(
+      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
+        res.once(ctx.json(flowNodeInstances.level2))
+      ),
+      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
+        res.once(ctx.json(flowNodeInstances.level3))
+      )
+    );
     await waitFor(() => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
     });
 
     render(
-      // @ts-expect-error
       <FlowNodeInstancesTree
         treeDepth={1}
         flowNodeInstance={mockFlowNodeInstance}
+        isLastChild={false}
       />,
       {
         wrapper: ThemeProvider,
@@ -129,10 +141,15 @@ describe('<FlowNodeInstancesTree />', () => {
     );
 
     expect(
-      await screen.findByRole('button', {
-        name: 'Fold Filter-Map Sub Process (Multi Instance)',
-      })
+      await screen.findByRole(
+        'button',
+        {
+          name: 'Fold Filter-Map Sub Process (Multi Instance)',
+        },
+        {timeout: 2000}
+      )
     ).toBeInTheDocument();
+
     expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
 
     fireEvent.click(
@@ -141,7 +158,15 @@ describe('<FlowNodeInstancesTree />', () => {
       })
     );
 
-    expect(await screen.findByText('Start Filter-Map')).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'Start Filter-Map',
+        {},
+        {
+          timeout: 2000,
+        }
+      )
+    ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: 'Fold Filter-Map Sub Process (Multi Instance)',
@@ -160,5 +185,51 @@ describe('<FlowNodeInstancesTree />', () => {
     );
 
     expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
+  });
+
+  it('should poll for instances on root level', async () => {
+    // poll request
+    mockServer.use(
+      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
+        res.once(ctx.json(flowNodeInstances.level1Poll))
+      )
+    );
+
+    await waitFor(() => {
+      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    });
+
+    render(
+      <FlowNodeInstancesTree
+        treeDepth={1}
+        flowNodeInstance={mockFlowNodeInstance}
+        isLastChild={false}
+      />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
+
+    const withinMultiInstanceFlowNode = within(
+      screen.getByTestId(
+        `tree-node-${flowNodeInstances.level1Poll[workflowInstanceId].children[1].id}`
+      )
+    );
+
+    expect(
+      await withinMultiInstanceFlowNode.findByTestId('INCIDENT-icon')
+    ).toBeInTheDocument();
+    expect(
+      withinMultiInstanceFlowNode.queryByTestId('COMPLETED-icon')
+    ).not.toBeInTheDocument();
+
+    jest.runOnlyPendingTimers();
+
+    expect(
+      await withinMultiInstanceFlowNode.findByTestId('COMPLETED-icon')
+    ).toBeInTheDocument();
+    expect(
+      withinMultiInstanceFlowNode.queryByTestId('INCIDENT-icon')
+    ).not.toBeInTheDocument();
   });
 });

@@ -88,6 +88,16 @@ class CurrentInstance {
     );
   }
 
+  get isRunning() {
+    const {instance} = this.state;
+
+    if (instance === null) {
+      return false;
+    } else {
+      return ['ACTIVE', 'INCIDENT'].includes(instance.state);
+    }
+  }
+
   handlePolling = async (instanceId: any) => {
     const response = await fetchWorkflowInstance(instanceId);
 

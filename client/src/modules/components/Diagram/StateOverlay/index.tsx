@@ -14,7 +14,8 @@ import {ReactComponent as CompletedDarkIcon} from 'modules/components/Icon/diagr
 import {ReactComponent as CanceledLightIcon} from 'modules/components/Icon/diagram-badge-single-instance-canceled-light.svg';
 import {ReactComponent as CanceledDarkIcon} from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
 import {FLOW_NODE_STATE_OVERLAY_ID, STATE} from 'modules/constants';
-import Overlay from '../Overlay';
+import {OverlayType} from 'modules/types/modeler';
+import {Overlay} from '../Overlay';
 import {currentTheme} from 'modules/stores/currentTheme';
 
 const position = {
@@ -25,8 +26,8 @@ const position = {
 type Props = {
   id: string;
   state: InstanceEntityState;
-  onOverlayAdd: (...args: any[]) => any;
-  onOverlayClear: (...args: any[]) => any;
+  onOverlayAdd: (id: string, type: string, overlay: OverlayType) => void;
+  onOverlayClear: ({element}: {element: HTMLDivElement}) => void;
   isViewerLoaded: boolean;
 };
 

@@ -8,7 +8,7 @@ import React from 'react';
 // @ts-expect-error ts-migrate(7016) FIXME: Try `npm install @types/bpmn-js` if it exists or a... Remove this comment to see the full error message
 import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
 import {flatMap, isEqual} from 'lodash';
-import {withTheme} from 'styled-components';
+import {withTheme, DefaultTheme} from 'styled-components';
 
 import {EXPAND_STATE} from 'modules/constants';
 
@@ -16,20 +16,33 @@ import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
 import StateOverlay from './StateOverlay';
 import StatisticOverlay from './StatisticOverlay';
-import PopoverOverlay from './PopoverOverlay';
+import {PopoverOverlay} from './PopoverOverlay';
 
 import {getPopoverPosition, isNonSelectableFlowNode} from './service';
 
+type BpmnJSElement = {
+  id: string;
+  businessObject: {di: {set: Function}; loopCharacteristics?: {$type: string}};
+};
+
+function isMultiInstance(element: BpmnJSElement) {
+  return (
+    element.businessObject.loopCharacteristics?.$type ===
+    'bpmn:MultiInstanceLoopCharacteristics'
+  );
+}
+
 type Props = {
-  theme?: any;
+  theme: DefaultTheme;
   definitions: any;
-  onDiagramLoaded?: (...args: any[]) => any;
   clickableFlowNodes?: string[];
   selectableFlowNodes?: string[];
   processedSequenceFlows?: string[];
   selectedFlowNodeId?: string;
-  selectedFlowNodeName?: string;
-  onFlowNodeSelection?: (...args: any[]) => any;
+  onFlowNodeSelection?: (
+    elementId: BpmnJSElement['id'] | undefined,
+    isMultiInstance?: boolean
+  ) => void;
   flowNodeStateOverlays?: {
     id: string;
     state: InstanceEntityState;
@@ -41,17 +54,16 @@ type Props = {
     completed?: number;
     canceled?: number;
   }[];
-  metadata?: any;
   expandState?: 'DEFAULT' | 'EXPANDED' | 'COLLAPSED';
 };
 
-type State = any;
+type State = {
+  isViewerLoaded: boolean;
+};
 
 class Diagram extends React.PureComponent<Props, State> {
-  containerNode: any;
-
   Viewer = null;
-  myRef = React.createRef<HTMLDivElement>();
+  containerRef = React.createRef<HTMLDivElement>();
 
   state = {
     isViewerLoaded: false,
@@ -111,7 +123,12 @@ class Diagram extends React.PureComponent<Props, State> {
         selectedFlowNodeId
       );
     }
-    if (this.state.isViewerLoaded && hasProcessedSequenceFlowsChanged) {
+    if (
+      this.state.isViewerLoaded &&
+      hasProcessedSequenceFlowsChanged &&
+      prevSequenceFlows !== undefined &&
+      currentSequenceFlows !== undefined
+    ) {
       this.handleProcessedSequenceFlowsChange(
         prevSequenceFlows,
         currentSequenceFlows
@@ -130,19 +147,12 @@ class Diagram extends React.PureComponent<Props, State> {
       this.handleZoomReset();
     }
 
-    // in case onDiagramLoaded callback function is provided
-    // call it with flowNodesDetails
-    if (typeof this.props.onDiagramLoaded === 'function') {
-      this.props.onDiagramLoaded();
-    }
-
     if (this.props.selectableFlowNodes) {
       this.props.onFlowNodeSelection && this.addElementClickListeners();
       this.handleSelectableFlowNodes(this.props.selectableFlowNodes);
     }
 
     if (this.props.selectedFlowNodeId) {
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
       this.handleSelectedFlowNode(this.props.selectedFlowNodeId);
     }
 
@@ -155,9 +165,8 @@ class Diagram extends React.PureComponent<Props, State> {
 
   initViewer = () => {
     // colors config for bpmnRenderer
-
     this.Viewer = new BPMNViewer({
-      container: this.myRef.current,
+      container: this.containerRef.current,
       bpmnRenderer: this.props.theme.colors.modules.diagram,
     });
 
@@ -183,11 +192,7 @@ class Diagram extends React.PureComponent<Props, State> {
     }
   };
 
-  containerRef = (node: any) => {
-    this.containerNode = node;
-  };
-
-  handleZoom = (step: any) => {
+  handleZoom = (step: number) => {
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
     this.Viewer.get('zoomScroll').stepZoom(step);
   };
@@ -207,7 +212,7 @@ class Diagram extends React.PureComponent<Props, State> {
     canvas.zoom('fit-viewport', 'auto');
   };
 
-  addMarker = (id: any, className: any) => {
+  addMarker = (id: string, className: string) => {
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
     const canvas = this.Viewer.get('canvas');
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
@@ -221,7 +226,7 @@ class Diagram extends React.PureComponent<Props, State> {
     }
   };
 
-  removeMarker = (id: any, className: any) => {
+  removeMarker = (id: string, className: string) => {
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
     const canvas = this.Viewer.get('canvas');
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
@@ -232,12 +237,12 @@ class Diagram extends React.PureComponent<Props, State> {
     }
   };
 
-  colorElement = (id: any, color: any) => {
+  colorElement = (id: string, color?: string) => {
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
     var elementRegistry = this.Viewer.get('elementRegistry');
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
     var graphicsFactory = this.Viewer.get('graphicsFactory');
-    var element = elementRegistry.get(id);
+    var element: BpmnJSElement = elementRegistry.get(id);
     if (element.businessObject && element.businessObject.di) {
       element.businessObject.di.set('stroke', color);
 
@@ -255,15 +260,14 @@ class Diagram extends React.PureComponent<Props, State> {
   };
 
   handleProcessedSequenceFlowsChange = (
-    prevSequenceFlows: any,
-    currentSequenceFlows: any
+    prevSequenceFlows: string[],
+    currentSequenceFlows: string[]
   ) => {
-    prevSequenceFlows.forEach((id: any) => {
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
+    prevSequenceFlows?.forEach((id: string) => {
       this.colorElement(id);
     });
 
-    currentSequenceFlows.forEach((id: any) => {
+    currentSequenceFlows.forEach((id: string) => {
       const {theme} = this.props;
 
       this.colorElement(id, theme.colors.selections);
@@ -280,7 +284,7 @@ class Diagram extends React.PureComponent<Props, State> {
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
     const elementRegistry = this.Viewer.get('elementRegistry');
 
-    elementRegistry.forEach((element: any) => {
+    elementRegistry.forEach((element: BpmnJSElement) => {
       if (isNonSelectableFlowNode(element, this.props.selectableFlowNodes)) {
         const gfx = elementRegistry.getGraphics(element);
         gfx.style.cursor = 'not-allowed';
@@ -289,8 +293,8 @@ class Diagram extends React.PureComponent<Props, State> {
   };
 
   handleSelectedFlowNode = (
-    selectedFlowNodeId: any,
-    prevSelectedFlowNodeId: any
+    selectedFlowNodeId?: string,
+    prevSelectedFlowNodeId?: string
   ) => {
     // clear previously selected flow node marker is there is one
     if (prevSelectedFlowNodeId) {
@@ -303,26 +307,28 @@ class Diagram extends React.PureComponent<Props, State> {
     }
   };
 
-  handleElementClick = ({element = {}}) => {
+  handleElementClick = ({element}: {element: BpmnJSElement}) => {
     const {selectedFlowNodeId, selectableFlowNodes} = this.props;
 
-    if (isNonSelectableFlowNode(element, selectableFlowNodes)) {
+    if (
+      isNonSelectableFlowNode(element, selectableFlowNodes) ||
+      selectableFlowNodes === undefined
+    ) {
       // Don't handle click if flow node is not selectable.
       return;
     }
 
     const isSelectableElement =
-      // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
       selectableFlowNodes.filter((id) => id === element.id).length > 0;
 
     // Only select the flownode if it's selectable and if it's not already selected.
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'id' does not exist on type '{}'.
     if (isSelectableElement && element.id !== selectedFlowNodeId) {
-      // @ts-expect-error ts-migrate(2722) FIXME: Cannot invoke an object which is possibly 'undefin... Remove this comment to see the full error message
-      return this.props.onFlowNodeSelection(element.id);
+      return this.props.onFlowNodeSelection?.(
+        element.id,
+        isMultiInstance(element)
+      );
     } else if (selectedFlowNodeId) {
-      // @ts-expect-error ts-migrate(2722) FIXME: Cannot invoke an object which is possibly 'undefin... Remove this comment to see the full error message
-      this.props.onFlowNodeSelection(null);
+      this.props.onFlowNodeSelection?.(undefined);
     }
   };
 
@@ -384,7 +390,7 @@ class Diagram extends React.PureComponent<Props, State> {
 
     return getPopoverPosition(
       {
-        diagramContainer: this.myRef.current,
+        diagramContainer: this.containerRef.current,
         flowNode,
       },
       isSummaryPopover
@@ -399,36 +405,26 @@ class Diagram extends React.PureComponent<Props, State> {
       theme: this.props.theme,
     };
 
-    const {
-      metadata,
-      selectedFlowNodeId,
-      onFlowNodeSelection,
-      selectedFlowNodeName,
-    } = this.props;
-
+    const {selectedFlowNodeId} = this.props;
     return (
       <Styled.Diagram data-testid="diagram">
-        <Styled.DiagramCanvas ref={this.myRef} />
-        <DiagramControls
-          handleZoomIn={this.handleZoomIn}
-          handleZoomOut={this.handleZoomOut}
-          handleZoomReset={this.handleZoomReset}
-        />
-        {selectedFlowNodeId &&
-          metadata &&
-          this.state.isViewerLoaded &&
-          this.Viewer && (
-            // @ts-expect-error ts-migrate(2769) FIXME: Type '{ bottom: number; left: number; side: string... Remove this comment to see the full error message
-            <PopoverOverlay
-              key={selectedFlowNodeId}
-              selectedFlowNodeId={selectedFlowNodeId}
-              selectedFlowNodeName={selectedFlowNodeName}
-              metadata={metadata}
-              onFlowNodeSelection={onFlowNodeSelection}
-              position={this.getPopoverPosition(metadata.isMultiRowPeterCase)}
-              {...overlayProps}
-            />
-          )}
+        <Styled.DiagramCanvas ref={this.containerRef} />
+        {this.Viewer && (
+          <DiagramControls
+            handleZoomIn={this.handleZoomIn}
+            handleZoomOut={this.handleZoomOut}
+            handleZoomReset={this.handleZoomReset}
+          />
+        )}
+
+        {selectedFlowNodeId && this.state.isViewerLoaded && this.Viewer && (
+          <PopoverOverlay
+            position={this.getPopoverPosition(
+              false /*metadata.isMultiRowPeterCase*/
+            )}
+            {...overlayProps}
+          />
+        )}
         {this.renderFlowNodeStateOverlays(overlayProps)}
         {this.renderStatisticsOverlays(overlayProps)}
       </Styled.Diagram>

@@ -53,7 +53,7 @@ const Wrapper = ({children}: Props) => {
   return (
     <ThemeProvider>
       <Router history={history}>
-        <Route path="/instances/:id">{children}</Route>
+        <Route path="/instances/:workflowInstanceId">{children}</Route>
       </Router>
     </ThemeProvider>
   );

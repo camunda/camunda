@@ -9,21 +9,8 @@ import React from 'react';
 import {TYPE} from 'modules/constants';
 import {TimeStampLabel} from '../TimeStampLabel';
 import {Container, NodeIcon, NodeName} from './styled';
-import {IS_NEXT_FLOW_NODE_INSTANCES} from 'modules/feature-flags';
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {FlowNodeMetaData} from 'modules/stores/singleInstanceDiagram';
-
-type LegacyProps = {
-  node: {
-    id: string;
-    name?: string;
-    type: string;
-    typeDetails: any;
-    endDate: string | null;
-    children: any[];
-  };
-  isSelected: boolean;
-};
 
 type Props = {
   flowNodeInstance: FlowNodeInstance;
@@ -61,27 +48,4 @@ const Bar: React.FC<Props> = ({
   );
 };
 
-const BarLegacy = ({node, isSelected}: LegacyProps) => {
-  const {typeDetails, type, children, name, endDate} = node;
-
-  return (
-    <Container showSelectionStyle={isSelected}>
-      <NodeIcon
-        flowNodeInstanceType={type}
-        types={typeDetails}
-        isSelected={isSelected}
-        data-testid={`flow-node-icon-${type}`}
-      />
-      <NodeName isSelected={isSelected} isBold={children.length > 0}>
-        {`${name ?? ''}${
-          type === TYPE.MULTI_INSTANCE_BODY ? ` (Multi Instance)` : ''
-        }`}
-      </NodeName>
-      <TimeStampLabel timeStamp={endDate} isSelected={isSelected} />
-    </Container>
-  );
-};
-
-const CurrentBar = IS_NEXT_FLOW_NODE_INSTANCES ? Bar : BarLegacy;
-
-export {CurrentBar as Bar};
+export {Bar};

@@ -4,13 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {createRawTreeNode} from 'modules/testUtils';
-
-const treeNode = createRawTreeNode({
-  id: 'activityInstanceOfTaskD',
-  activityId: 'taskD',
-  name: 'taskD',
-});
-export const mockSuccessResponseForActivityTree = {
-  children: [treeNode],
+type OverlayType = {
+  position: {
+    top?: number;
+    right?: number;
+    bottom?: number;
+    left?: number;
+  };
+  html: HTMLDivElement;
 };
+
+export type {OverlayType};

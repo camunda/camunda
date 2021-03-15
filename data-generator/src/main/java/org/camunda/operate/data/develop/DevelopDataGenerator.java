@@ -12,7 +12,6 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.worker.JobWorker;
 import java.io.IOException;
 import java.time.Duration;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,20 +21,12 @@ import java.util.UUID;
 import java.util.function.BiFunction;
 import javax.annotation.PostConstruct;
 import org.camunda.operate.data.usertest.UserTestDataGenerator;
-import org.camunda.operate.entities.ActivityState;
-import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.exceptions.OperateRuntimeException;
-import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import org.camunda.operate.schema.templates.ListViewTemplate;
-import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.util.rest.StatefulRestTemplate;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -70,7 +61,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   @Autowired
   private ObjectMapper objectMapper;
 
-  @Autowired(required = false)
+  @Autowired
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired
@@ -314,10 +305,22 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   }
 
   private JobWorker progressBigProcessTaskB() {
+    final int[] countBeforeIncident = {0};
     return client.newWorker()
         .jobType("bigProcessTaskB")
         .handler((jobClient, job) -> {
-          jobClient.newCompleteCommand(job.getKey()).send().join();
+          if (countBeforeIncident[0] <= 45) {
+            jobClient.newCompleteCommand(job.getKey()).send().join();
+            countBeforeIncident[0]++;
+          } else {
+            if (random.nextBoolean()) {
+              //fail task -> create incident
+              jobClient.newFailCommand(job.getKey()).retries(0).send().join();
+            } else {
+              jobClient.newCompleteCommand(job.getKey()).send().join();
+            }
+            countBeforeIncident[0] = 0;
+          }
         })
         .name("operate")
         .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))

@@ -35,7 +35,7 @@ const mockIncidents = {
   ],
 };
 
-export const createRawTree = () => {
+const createRawTree = () => {
   return {
     children: [
       createRawTreeNode({
@@ -61,4 +61,4 @@ const mockSequenceFlows = createSequenceFlows();
 
 const mockEvents = createEvents(createRawTree().children);
 
-export {mockIncidents, mockSequenceFlows, mockEvents};
+export {mockIncidents, mockSequenceFlows, mockEvents, createRawTree};

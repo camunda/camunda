@@ -133,7 +133,7 @@ test('Instance with an incident - diagram', async (t) => {
 
   const withinPopopver = within(screen.getByTestId('popover'));
   await t
-    .expect(withinPopopver.getByText(/activityInstanceId/).exists)
+    .expect(withinPopopver.queryByText(/flowNodeInstanceId/).exists)
     .ok()
     .expect(withinPopopver.getByText(/startDate/).exists)
     .ok()

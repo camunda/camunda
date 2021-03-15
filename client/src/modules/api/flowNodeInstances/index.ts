@@ -9,26 +9,17 @@ import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 
 const URL = '/api/flow-node-instances';
 
-async function fetchFlowNodeInstances({
-  workflowInstanceId,
-  pageSize,
-  parentTreePath,
-  searchAfter,
-  searchBefore,
-}: {
+type Query = {
   workflowInstanceId: WorkflowInstanceEntity['id'];
-  pageSize: number;
-  parentTreePath: string;
+  treePath: FlowNodeInstance['treePath'];
+  pageSize?: number;
   searchAfter?: FlowNodeInstance['sortValues'];
   searchBefore?: FlowNodeInstance['sortValues'];
-}) {
-  return post(URL, {
-    workflowInstanceId,
-    pageSize,
-    parentTreePath,
-    searchAfter,
-    searchBefore,
-  });
+  searchAfterOrEqual?: FlowNodeInstance['sortValues'];
+};
+
+async function fetchFlowNodeInstances(queries: Query[]) {
+  return post(URL, {queries});
 }
 
 export {fetchFlowNodeInstances};

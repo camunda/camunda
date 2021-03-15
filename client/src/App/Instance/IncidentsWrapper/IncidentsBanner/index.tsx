@@ -8,9 +8,9 @@ import React from 'react';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {EXPAND_STATE} from 'modules/constants';
 import * as Styled from './styled';
-import {useParams} from 'react-router-dom';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
+import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 
 type Props = {
   onClick: () => void;
@@ -20,16 +20,19 @@ type Props = {
 
 const IncidentsBanner: React.FC<Props> = observer(
   ({onClick, isOpen, expandState}) => {
-    const {id} = useParams<{id: string}>();
+    const {workflowInstanceId} = useInstancePageParams();
     const {incidentsCount} = incidentsStore;
 
     const errorMessage = `There ${
       incidentsCount === 1 ? 'is' : 'are'
-    } ${pluralSuffix(incidentsCount, 'Incident')} in Instance ${id}`;
+    } ${pluralSuffix(
+      incidentsCount,
+      'Incident'
+    )} in Instance ${workflowInstanceId}`;
     const title = `View ${pluralSuffix(
       incidentsCount,
       'Incident'
-    )} in Instance ${id}`;
+    )} in Instance ${workflowInstanceId}`;
 
     if (expandState === EXPAND_STATE.COLLAPSED) {
       return null;

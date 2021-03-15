@@ -318,43 +318,52 @@ public abstract class ElasticsearchUtil {
     return scroll(searchRequest, clazz, objectMapper, esClient, null, null);
   }
 
+  public static <T> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper, RestHighLevelClient esClient,
+      Consumer<SearchHits> searchHitsProcessor, Consumer<Aggregations> aggsProcessor) throws IOException {
+    return scroll(searchRequest, clazz, objectMapper, esClient, null, searchHitsProcessor, aggsProcessor);
+  }
 
   public static <T> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper, RestHighLevelClient esClient,
-    Consumer<SearchHits> searchHitsProcessor, Consumer<Aggregations> aggsProcessor) throws IOException {
+      Function<SearchHit, T> searchHitMapper, Consumer<SearchHits> searchHitsProcessor, Consumer<Aggregations> aggsProcessor) throws IOException {
 
-    searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-    SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
-    //call aggregations processor
-    if (aggsProcessor != null) {
-      aggsProcessor.accept(response.getAggregations());
-    }
+      searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
-    List<T> result = new ArrayList<>();
-    String scrollId = response.getScrollId();
-    SearchHits hits = response.getHits();
-
-    while (hits.getHits().length != 0) {
-      result.addAll(mapSearchHits(hits.getHits(), objectMapper, clazz));
-
-      //call response processor
-      if (searchHitsProcessor != null) {
-        searchHitsProcessor.accept(response.getHits());
+      //call aggregations processor
+      if (aggsProcessor != null) {
+        aggsProcessor.accept(response.getAggregations());
       }
 
-      SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+      List<T> result = new ArrayList<>();
+      String scrollId = response.getScrollId();
+      SearchHits hits = response.getHits();
 
-      response = esClient
-        .scroll(scrollRequest, RequestOptions.DEFAULT);
+      while (hits.getHits().length != 0) {
+        if (searchHitMapper != null) {
+          result.addAll(mapSearchHits(hits.getHits(), searchHitMapper));
+        } else {
+          result.addAll(mapSearchHits(hits.getHits(), objectMapper, clazz));
+        }
 
-      scrollId = response.getScrollId();
-      hits = response.getHits();
-    }
+        //call response processor
+        if (searchHitsProcessor != null) {
+          searchHitsProcessor.accept(response.getHits());
+        }
 
-    clearScroll(scrollId, esClient);
+        SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+        scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
 
-    return result;
+        response = esClient
+            .scroll(scrollRequest, RequestOptions.DEFAULT);
+
+        scrollId = response.getScrollId();
+        hits = response.getHits();
+      }
+
+      clearScroll(scrollId, esClient);
+
+      return result;
   }
 
   public static void scrollWith(SearchRequest searchRequest, RestHighLevelClient esClient,
