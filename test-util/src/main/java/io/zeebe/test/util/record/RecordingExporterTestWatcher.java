@@ -18,8 +18,7 @@ public final class RecordingExporterTestWatcher extends TestWatcher {
 
   @Override
   protected void failed(final Throwable e, final Description description) {
-    LOG.info("Test failed, following records were exported:");
-    RecordingExporter.getRecords().forEach(r -> LOG.info(r.toString()));
+    RecordLogger.logRecords();
   }
 
   @Override
