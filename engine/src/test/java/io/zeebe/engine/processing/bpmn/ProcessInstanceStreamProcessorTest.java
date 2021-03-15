@@ -407,14 +407,14 @@ public final class ProcessInstanceStreamProcessorTest {
                 .exists());
 
     // when
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CLOSE, subscription);
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CLOSE, subscription);
+    envRule.writeCommand(ProcessInstanceSubscriptionIntent.DELETE, subscription);
+    envRule.writeCommand(ProcessInstanceSubscriptionIntent.DELETE, subscription);
 
     // then
     final Record<ProcessInstanceSubscriptionRecord> rejection =
         streamProcessorRule.awaitAndGetFirstSubscriptionRejection();
 
-    assertThat(rejection.getIntent()).isEqualTo(ProcessInstanceSubscriptionIntent.CLOSE);
+    assertThat(rejection.getIntent()).isEqualTo(ProcessInstanceSubscriptionIntent.DELETE);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 

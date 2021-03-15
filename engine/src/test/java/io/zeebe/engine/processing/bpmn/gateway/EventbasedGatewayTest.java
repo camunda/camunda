@@ -366,7 +366,7 @@ public final class EventbasedGatewayTest {
     // then
     assertThat(
             RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CLOSED)
+                    ProcessInstanceSubscriptionIntent.DELETED)
                 .withMessageName("msg-2")
                 .withProcessInstanceKey(processInstanceKey)
                 .exists())
@@ -402,7 +402,7 @@ public final class EventbasedGatewayTest {
 
     assertThat(
             RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CLOSED)
+                    ProcessInstanceSubscriptionIntent.DELETED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName("msg")
                 .exists())

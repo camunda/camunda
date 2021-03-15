@@ -23,8 +23,8 @@ public enum ProcessInstanceSubscriptionIntent implements ProcessInstanceRelatedI
   CORRELATE((short) 3),
   CORRELATED((short) 4),
 
-  CLOSE((short) 5),
-  CLOSED((short) 6);
+  DELETE((short) 5),
+  DELETED((short) 6);
 
   private final short value;
   private final boolean shouldBlacklist;
@@ -56,9 +56,9 @@ public enum ProcessInstanceSubscriptionIntent implements ProcessInstanceRelatedI
       case 4:
         return CORRELATED;
       case 5:
-        return CLOSE;
+        return DELETE;
       case 6:
-        return CLOSED;
+        return DELETED;
       default:
         return Intent.UNKNOWN;
     }

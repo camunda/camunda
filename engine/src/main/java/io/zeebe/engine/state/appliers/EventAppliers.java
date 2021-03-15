@@ -166,6 +166,9 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceSubscriptionIntent.CREATED,
         new ProcessInstanceSubscriptionCreatedApplier(state.getProcessInstanceSubscriptionState()));
+    register(
+        ProcessInstanceSubscriptionIntent.DELETED,
+        new ProcessInstanceSubscriptionDeletedApplier(state.getProcessInstanceSubscriptionState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
