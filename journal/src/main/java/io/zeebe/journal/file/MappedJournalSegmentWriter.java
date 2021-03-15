@@ -22,10 +22,10 @@ import io.zeebe.journal.StorageException.InvalidChecksum;
 import io.zeebe.journal.StorageException.InvalidIndex;
 import io.zeebe.journal.file.record.JournalRecordReaderUtil;
 import io.zeebe.journal.file.record.JournalRecordSerializer;
-import io.zeebe.journal.file.record.KryoSerializer;
 import io.zeebe.journal.file.record.PersistedJournalRecord;
 import io.zeebe.journal.file.record.RecordData;
 import io.zeebe.journal.file.record.RecordMetadata;
+import io.zeebe.journal.file.record.SBESerializer;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.MappedByteBuffer;
@@ -46,7 +46,7 @@ class MappedJournalSegmentWriter {
   private final JournalRecordReaderUtil recordUtil;
   private final int maxEntrySize;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
-  private final JournalRecordSerializer serializer = new KryoSerializer();
+  private final JournalRecordSerializer serializer = new SBESerializer();
   private final MutableDirectBuffer writeBuffer = new UnsafeBuffer();
 
   MappedJournalSegmentWriter(
@@ -110,9 +110,9 @@ class MappedJournalSegmentWriter {
     final long checksum =
         checksumGenerator.compute(buffer, startPosition + metadataLength, recordLength);
 
-    final RecordMetadata metadata = writeMetadata(startPosition, recordLength, checksum);
+    writeMetadata(startPosition, recordLength, checksum);
 
-    updateLastWrittenEntry(metadata, indexedRecord, startPosition);
+    updateLastWrittenEntry(startPosition, metadataLength, recordLength);
 
     buffer.position(startPosition + metadataLength + recordLength);
     return lastEntry;
@@ -152,16 +152,18 @@ class MappedJournalSegmentWriter {
           String.format("Failed to append record %s. Checksum does not match", record));
     }
 
-    final RecordMetadata metadata = writeMetadata(startPosition, recordLength, checksum);
+    writeMetadata(startPosition, recordLength, checksum);
 
-    updateLastWrittenEntry(metadata, indexedRecord, startPosition);
+    updateLastWrittenEntry(startPosition, metadataLength, recordLength);
 
     buffer.position(startPosition + metadataLength + recordLength);
   }
 
   private void updateLastWrittenEntry(
-      final RecordMetadata metadata, final RecordData recordRead, final int startPosition) {
-    lastEntry = new PersistedJournalRecord(metadata, recordRead);
+      final int startPosition, final int metadataLength, final int recordLength) {
+    final var metadata = serializer.readMetadata(writeBuffer, startPosition);
+    final var data = serializer.readData(writeBuffer, startPosition + metadataLength, recordLength);
+    lastEntry = new PersistedJournalRecord(metadata, data);
     index.index(lastEntry, startPosition);
   }
 

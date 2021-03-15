@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
-import io.zeebe.journal.file.record.KryoSerializer;
 import io.zeebe.journal.file.record.RecordData;
+import io.zeebe.journal.file.record.SBESerializer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -29,7 +29,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class SegmentedJournalTest {
+class SegmentedJournalTest {
 
   @TempDir Path directory;
   private final int journalIndexDensity = 1;
@@ -37,7 +37,7 @@ public class SegmentedJournalTest {
   private final int entrySize = getSerializedSize(data);
 
   @Test
-  public void shouldDeleteIndexMappingsOnReset() {
+  void shouldDeleteIndexMappingsOnReset() {
     // given
     final SegmentedJournal journal = openJournal(10);
 
@@ -58,7 +58,7 @@ public class SegmentedJournalTest {
   }
 
   @Test
-  public void shouldUpdateIndexMappingsOnCompact() {
+  void shouldUpdateIndexMappingsOnCompact() {
     // given
     final int entriesPerSegment = 10;
     long asqn = 1;
@@ -78,7 +78,7 @@ public class SegmentedJournalTest {
   }
 
   @Test
-  public void shouldUpdateIndexMappingsOnTruncate() {
+  void shouldUpdateIndexMappingsOnTruncate() {
     // given
     final int entriesPerSegment = 10;
     long asqn = 1;
@@ -101,7 +101,7 @@ public class SegmentedJournalTest {
   }
 
   @Test
-  public void shouldCreateNewSegmentIfEntryExceedsBuffer() {
+  void shouldCreateNewSegmentIfEntryExceedsBuffer() {
     // given
     final int asqn = 1;
     // one entry fits but not two
@@ -126,7 +126,7 @@ public class SegmentedJournalTest {
   }
 
   @Test
-  public void shouldNotTruncateIfIndexIsHigherThanLast() {
+  void shouldNotTruncateIfIndexIsHigherThanLast() {
     // given
     final int asqn = 1;
     final SegmentedJournal journal = openJournal(1);
@@ -149,7 +149,7 @@ public class SegmentedJournalTest {
   }
 
   @Test
-  public void shouldNotCompactIfIndexIsLowerThanFirst() {
+  void shouldNotCompactIfIndexIsLowerThanFirst() {
     // given
     final int asqn = 1;
     final SegmentedJournal journal = openJournal(1.5f);
@@ -168,7 +168,7 @@ public class SegmentedJournalTest {
   }
 
   @Test
-  public void shouldTruncateNextEntry() {
+  void shouldTruncateNextEntry() {
     // given
     final SegmentedJournal journal = openJournal(2);
     final JournalReader reader = journal.openReader();
@@ -186,7 +186,7 @@ public class SegmentedJournalTest {
   }
 
   @Test
-  public void shouldTruncateReadEntry() {
+  void shouldTruncateReadEntry() {
     // given
     final SegmentedJournal journal = openJournal(2);
     final JournalReader reader = journal.openReader();
@@ -204,7 +204,7 @@ public class SegmentedJournalTest {
   }
 
   @Test
-  public void shouldTruncateNextSegment() {
+  void shouldTruncateNextSegment() {
     // given
     final SegmentedJournal journal = openJournal(1);
     final JournalReader reader = journal.openReader();
@@ -221,7 +221,7 @@ public class SegmentedJournalTest {
   }
 
   @Test
-  public void shouldReadSegmentStartAfterMidSegmentTruncate() {
+  void shouldReadSegmentStartAfterMidSegmentTruncate() {
     final int entryPerSegment = 2;
     final SegmentedJournal journal = openJournal(2);
     final JournalReader reader = journal.openReader();
@@ -240,7 +240,7 @@ public class SegmentedJournalTest {
   }
 
   @Test
-  public void shouldCompactUpToStartOfSegment() {
+  void shouldCompactUpToStartOfSegment() {
     final int entryPerSegment = 2;
     final SegmentedJournal journal = openJournal(entryPerSegment);
     final JournalReader reader = journal.openReader();
@@ -259,7 +259,7 @@ public class SegmentedJournalTest {
   }
 
   @Test
-  public void shouldReturnCorrectFirstIndexAfterCompaction() {
+  void shouldReturnCorrectFirstIndexAfterCompaction() {
     final int entryPerSegment = 2;
     final SegmentedJournal journal = openJournal(2);
 
@@ -275,7 +275,7 @@ public class SegmentedJournalTest {
   }
 
   @Test
-  public void shouldWriteAndReadAfterTruncate() {
+  void shouldWriteAndReadAfterTruncate() {
     final SegmentedJournal journal = openJournal(2);
     final JournalReader reader = journal.openReader();
 
@@ -293,7 +293,7 @@ public class SegmentedJournalTest {
   }
 
   @Test
-  public void shouldAppendEntriesOfDifferentSizesOverSegmentSize() {
+  void shouldAppendEntriesOfDifferentSizesOverSegmentSize() {
     // given
     data.wrap("1234567890".getBytes(StandardCharsets.UTF_8));
     final int entrySize = getSerializedSize(data);
@@ -327,7 +327,7 @@ public class SegmentedJournalTest {
 
   private int getSerializedSize(final DirectBuffer data) {
     final var record = new RecordData(1, 1, data);
-    final var serializer = new KryoSerializer();
+    final var serializer = new SBESerializer();
     final ByteBuffer buffer = ByteBuffer.allocate(128);
     return serializer.writeData(record, new UnsafeBuffer(buffer), 0)
         + serializer.getMetadataLength();
