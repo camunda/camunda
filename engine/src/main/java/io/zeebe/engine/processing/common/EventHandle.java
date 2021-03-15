@@ -25,11 +25,18 @@ public final class EventHandle {
   private final KeyGenerator keyGenerator;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
+  // TODO (saig0): use immutable states only (#6200)
   public EventHandle(
       final KeyGenerator keyGenerator,
       final MutableEventScopeInstanceState eventScopeInstanceState) {
     this.keyGenerator = keyGenerator;
     this.eventScopeInstanceState = eventScopeInstanceState;
+  }
+
+  public boolean canTriggerElement(final ElementInstance eventScopeInstance) {
+    return eventScopeInstance != null
+        && eventScopeInstance.isActive()
+        && eventScopeInstanceState.isAcceptingEvent(eventScopeInstance.getKey());
   }
 
   public boolean triggerEvent(
@@ -38,39 +45,46 @@ public final class EventHandle {
       final ExecutableFlowElement catchEvent,
       final DirectBuffer variables) {
 
-    if (eventScopeInstance == null || !eventScopeInstance.isActive()) {
-      // discard the event if the element instance is left
-      return false;
+    final var canTriggerElement = canTriggerElement(eventScopeInstance);
+    if (canTriggerElement) {
+
+      final var eventScopeKey = eventScopeInstance.getKey();
+      final var elementRecord = eventScopeInstance.getValue();
+
+      final var newElementInstanceKey = keyGenerator.nextKey();
+      eventScopeInstanceState.triggerEvent(
+          eventScopeInstance.getKey(), newElementInstanceKey, catchEvent.getId(), variables);
+
+      activateElement(eventWriter, catchEvent, eventScopeKey, elementRecord);
     }
 
-    final var newElementInstanceKey = keyGenerator.nextKey();
-    final var triggered =
-        eventScopeInstanceState.triggerEvent(
-            eventScopeInstance.getKey(), newElementInstanceKey, catchEvent.getId(), variables);
+    return canTriggerElement;
+  }
 
-    if (triggered) {
+  public void activateElement(
+      final TypedEventWriter eventWriter,
+      final ExecutableFlowElement catchEvent,
+      final long eventScopeKey,
+      final ProcessInstanceRecord elementRecord) {
 
-      final long eventOccurredKey;
+    final long eventOccurredKey;
 
-      if (isEventSubprocess(catchEvent)) {
+    if (isEventSubprocess(catchEvent)) {
+      eventOccurredKey = keyGenerator.nextKey();
+      eventOccurredRecord.wrap(elementRecord);
+      eventOccurredRecord
+          .setElementId(catchEvent.getId())
+          .setBpmnElementType(BpmnElementType.START_EVENT)
+          .setFlowScopeKey(eventScopeKey);
 
-        eventOccurredKey = keyGenerator.nextKey();
-        eventOccurredRecord.wrap(eventScopeInstance.getValue());
-        eventOccurredRecord
-            .setElementId(catchEvent.getId())
-            .setBpmnElementType(BpmnElementType.START_EVENT)
-            .setFlowScopeKey(eventScopeInstance.getKey());
-
-      } else {
-        eventOccurredKey = eventScopeInstance.getKey();
-        eventOccurredRecord.wrap(eventScopeInstance.getValue());
-      }
-
-      eventWriter.appendFollowUpEvent(
-          eventOccurredKey, ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
+    } else {
+      eventOccurredKey = eventScopeKey;
+      eventOccurredRecord.wrap(elementRecord);
     }
 
-    return triggered;
+    // TODO (saig0): trigger the element by writing an ACTIVATE/COMPLETE command (#6186/#6187/#6196)
+    eventWriter.appendFollowUpEvent(
+        eventOccurredKey, ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
   }
 
   public long triggerStartEvent(

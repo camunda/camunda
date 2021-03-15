@@ -11,7 +11,6 @@ import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -72,15 +71,7 @@ public final class MigratedStreamProcessors {
 
     MIGRATED_VALUE_TYPES.put(ValueType.MESSAGE_SUBSCRIPTION, MIGRATED);
     MIGRATED_VALUE_TYPES.put(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, MIGRATED);
-    MIGRATED_VALUE_TYPES.put(
-        ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
-        MIGRATED_INTENT_FILTER_FACTORY.apply(
-            List.of(
-                ProcessInstanceSubscriptionIntent.CREATING,
-                ProcessInstanceSubscriptionIntent.CREATE,
-                ProcessInstanceSubscriptionIntent.CREATED,
-                ProcessInstanceSubscriptionIntent.DELETE,
-                ProcessInstanceSubscriptionIntent.DELETED)));
+    MIGRATED_VALUE_TYPES.put(ValueType.PROCESS_INSTANCE_SUBSCRIPTION, MIGRATED);
 
     MIGRATED_VALUE_TYPES.put(ValueType.VARIABLE_DOCUMENT, MIGRATED);
     MIGRATED_VALUE_TYPES.put(ValueType.VARIABLE, MIGRATED);

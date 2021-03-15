@@ -10,7 +10,8 @@ package io.zeebe.engine.processing;
 import io.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
-import io.zeebe.engine.processing.message.CorrelateProcessInstanceSubscription;
+import io.zeebe.engine.processing.message.PendingProcessInstanceSubscriptionChecker;
+import io.zeebe.engine.processing.message.ProcessInstanceSubscriptionCorrelateProcessor;
 import io.zeebe.engine.processing.message.ProcessInstanceSubscriptionCreateProcessor;
 import io.zeebe.engine.processing.message.ProcessInstanceSubscriptionDeleteProcessor;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -129,12 +130,15 @@ public final class ProcessEventProcessors {
         .onCommand(
             ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
             ProcessInstanceSubscriptionIntent.CORRELATE,
-            new CorrelateProcessInstanceSubscription(
-                subscriptionState, subscriptionCommandSender, zeebeState))
+            new ProcessInstanceSubscriptionCorrelateProcessor(
+                subscriptionState, subscriptionCommandSender, zeebeState, writers))
         .onCommand(
             ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
             ProcessInstanceSubscriptionIntent.DELETE,
-            new ProcessInstanceSubscriptionDeleteProcessor(subscriptionState, writers));
+            new ProcessInstanceSubscriptionDeleteProcessor(subscriptionState, writers))
+        .withListener(
+            new PendingProcessInstanceSubscriptionChecker(
+                subscriptionCommandSender, zeebeState.getProcessInstanceSubscriptionState()));
   }
 
   private static void addTimerStreamProcessors(
