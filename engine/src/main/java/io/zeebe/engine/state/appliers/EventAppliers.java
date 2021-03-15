@@ -77,14 +77,11 @@ public final class EventAppliers implements EventApplier {
         new MessageStartEventSubscriptionCorrelatedApplier(
             state.getMessageState(), state.getEventScopeInstanceState()));
 
-    register(
-        ProcessInstanceSubscriptionIntent.CREATED,
-        new ProcessInstanceSubscriptionCreatedApplier(state.getProcessInstanceSubscriptionState()));
-
     registerJobIntentEventAppliers(state);
     registerVariableEventAppliers(state);
     register(JobBatchIntent.ACTIVATED, new JobBatchActivatedApplier(state));
     registerIncidentEventAppliers(state);
+    registerProcessInstanceSubscriptionEventAppliers(state);
   }
 
   private void registerVariableEventAppliers(final MutableZeebeState state) {
@@ -159,6 +156,16 @@ public final class EventAppliers implements EventApplier {
     register(
         IncidentIntent.RESOLVED,
         new IncidentResolvedApplier(state.getIncidentState(), state.getJobState()));
+  }
+
+  private void registerProcessInstanceSubscriptionEventAppliers(final MutableZeebeState state) {
+    register(
+        ProcessInstanceSubscriptionIntent.CREATING,
+        new ProcessInstanceSubscriptionCreatingApplier(
+            state.getProcessInstanceSubscriptionState()));
+    register(
+        ProcessInstanceSubscriptionIntent.CREATED,
+        new ProcessInstanceSubscriptionCreatedApplier(state.getProcessInstanceSubscriptionState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
