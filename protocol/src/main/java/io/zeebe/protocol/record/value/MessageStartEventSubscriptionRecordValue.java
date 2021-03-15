@@ -25,8 +25,8 @@ import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
  */
 public interface MessageStartEventSubscriptionRecordValue extends RecordValueWithVariables {
 
-  /** @return the workflow key tied to the subscription */
-  long getWorkflowKey();
+  /** @return the process key tied to the subscription */
+  long getProcessDefinitionKey();
 
   /** @return the BPMN process id tied to the subscription */
   String getBpmnProcessId();
@@ -38,10 +38,10 @@ public interface MessageStartEventSubscriptionRecordValue extends RecordValueWit
   String getMessageName();
 
   /**
-   * @return the key of the workflow instance that was created by this message. It is only set when
-   *     a message is correlated to this subscription. Otherwise, it returns -1.
+   * @return the key of the process instance that was created by this message. It is only set when a
+   *     message is correlated to this subscription. Otherwise, it returns -1.
    */
-  long getWorkflowInstanceKey();
+  long getProcessInstanceKey();
 
   /**
    * @return the correlation key of the message. It is only set when a message is correlated to this

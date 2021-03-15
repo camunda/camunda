@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.it.client.command;
 
@@ -14,7 +14,7 @@ import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.response.DeploymentEvent;
-import io.zeebe.client.api.response.Workflow;
+import io.zeebe.client.api.response.Process;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.util.BrokerClassRuleHelper;
@@ -34,12 +34,12 @@ public final class CreateDeploymentTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
-  public void shouldDeployWorkflowModel() {
+  public void shouldDeployProcessModel() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String resourceName = processId + ".bpmn";
 
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask("task", t -> t.zeebeJobType("test"))
@@ -51,34 +51,30 @@ public final class CreateDeploymentTest {
         CLIENT_RULE
             .getClient()
             .newDeployCommand()
-            .addWorkflowModel(workflow, resourceName)
+            .addProcessModel(process, resourceName)
             .send()
             .join();
 
     // then
     assertThat(result.getKey()).isGreaterThan(0);
-    assertThat(result.getWorkflows()).hasSize(1);
+    assertThat(result.getProcesses()).hasSize(1);
 
-    final Workflow deployedWorkflow = result.getWorkflows().get(0);
-    assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo(processId);
-    assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
-    assertThat(deployedWorkflow.getWorkflowKey()).isGreaterThan(0);
-    assertThat(deployedWorkflow.getResourceName()).isEqualTo(resourceName);
+    final Process deployedProcess = result.getProcesses().get(0);
+    assertThat(deployedProcess.getBpmnProcessId()).isEqualTo(processId);
+    assertThat(deployedProcess.getVersion()).isEqualTo(1);
+    assertThat(deployedProcess.getProcessDefinitionKey()).isGreaterThan(0);
+    assertThat(deployedProcess.getResourceName()).isEqualTo(resourceName);
   }
 
   @Test
-  public void shouldRejectDeployIfWorkflowIsInvalid() {
+  public void shouldRejectDeployIfProcessIsInvalid() {
     // given
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process").startEvent().serviceTask("task").done();
 
     // when
     final var command =
-        CLIENT_RULE
-            .getClient()
-            .newDeployCommand()
-            .addWorkflowModel(workflow, "process.bpmn")
-            .send();
+        CLIENT_RULE.getClient().newDeployCommand().addProcessModel(process, "process.bpmn").send();
 
     // when
     assertThatThrownBy(() -> command.join())

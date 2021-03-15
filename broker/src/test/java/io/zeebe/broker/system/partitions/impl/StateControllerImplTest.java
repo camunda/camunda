@@ -2,16 +2,17 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.system.partitions.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.atomix.raft.storage.log.Indexed;
-import io.atomix.raft.zeebe.ZeebeEntry;
+import io.atomix.raft.storage.log.IndexedRaftRecord;
+import io.atomix.raft.storage.log.entry.ApplicationEntry;
+import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.util.RocksDBWrapper;
 import io.zeebe.snapshots.broker.ConstructableSnapshotStore;
@@ -64,8 +65,8 @@ public final class StateControllerImplTest {
             new NoneSnapshotReplication(),
             l ->
                 Optional.ofNullable(
-                    new Indexed(
-                        l, new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null), 0, -1)),
+                    new IndexedRaftRecord(
+                        l, new RaftLogEntry(1, new ApplicationEntry(1, 10, null)), 0, -1)),
             db -> exporterPosition.get());
 
     autoCloseableRule.manage(snapshotController);

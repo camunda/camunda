@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.transport.commandapi;
 
@@ -19,9 +19,9 @@ import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.protocol.record.RecordType;
@@ -66,12 +66,12 @@ final class CommandApiRequestHandler implements RequestHandler {
   private void initEventTypeMap() {
     recordsByType.put(ValueType.DEPLOYMENT, new DeploymentRecord());
     recordsByType.put(ValueType.JOB, new JobRecord());
-    recordsByType.put(ValueType.WORKFLOW_INSTANCE, new WorkflowInstanceRecord());
+    recordsByType.put(ValueType.PROCESS_INSTANCE, new ProcessInstanceRecord());
     recordsByType.put(ValueType.MESSAGE, new MessageRecord());
     recordsByType.put(ValueType.JOB_BATCH, new JobBatchRecord());
     recordsByType.put(ValueType.INCIDENT, new IncidentRecord());
     recordsByType.put(ValueType.VARIABLE_DOCUMENT, new VariableDocumentRecord());
-    recordsByType.put(ValueType.WORKFLOW_INSTANCE_CREATION, new WorkflowInstanceCreationRecord());
+    recordsByType.put(ValueType.PROCESS_INSTANCE_CREATION, new ProcessInstanceCreationRecord());
   }
 
   private void handleExecuteCommandRequest(

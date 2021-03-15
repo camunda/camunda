@@ -19,7 +19,7 @@ public interface ThrowErrorCommandStep1 {
   /**
    * Set the errorCode for the error.
    *
-   * <p>If the errorCode can't be matched to an error catch event in the workflow, an incident will
+   * <p>If the errorCode can't be matched to an error catch event in the process, an incident will
    * be created.
    *
    * @param errorCode the errorCode that will be matched against an error catch event

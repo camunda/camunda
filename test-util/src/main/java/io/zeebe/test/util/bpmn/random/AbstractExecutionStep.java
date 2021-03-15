@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.test.util.bpmn.random;
 
@@ -19,7 +19,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  * when process is created)
  *
  * <p>New implementations should also extends the execution logic in {@link
- * io.zeebe.engine.util.WorkflowExecutor}
+ * io.zeebe.engine.util.ProcessExecutor}
  *
  * <p>Contract: each implementing class must implement {@code equals(...)/hashCode()} This is mostly
  * in order to be able to compare two randomly generated execution paths to see if they are the same

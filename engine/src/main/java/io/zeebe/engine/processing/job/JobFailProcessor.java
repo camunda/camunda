@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.job;
 
@@ -13,8 +13,8 @@ import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.JobState;
+import io.zeebe.engine.state.immutable.ZeebeState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.IncidentIntent;
@@ -43,15 +43,6 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
     return defaultProcessor.onCommand(command, commandControl);
   }
 
-  private void acceptCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-    final long key = command.getKey();
-    final JobRecord failedJob = jobState.getJob(key);
-    failedJob.setRetries(command.getValue().getRetries());
-    failedJob.setErrorMessage(command.getValue().getErrorMessageBuffer());
-    commandControl.accept(JobIntent.FAILED, failedJob);
-  }
-
   @Override
   public void afterAccept(
       final TypedCommandWriter commandWriter,
@@ -71,14 +62,23 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
           .setErrorType(ErrorType.JOB_NO_RETRIES)
           .setErrorMessage(incidentErrorMessage)
           .setBpmnProcessId(value.getBpmnProcessIdBuffer())
-          .setWorkflowKey(value.getWorkflowKey())
-          .setWorkflowInstanceKey(value.getWorkflowInstanceKey())
+          .setProcessDefinitionKey(value.getProcessDefinitionKey())
+          .setProcessInstanceKey(value.getProcessInstanceKey())
           .setElementId(value.getElementIdBuffer())
           .setElementInstanceKey(value.getElementInstanceKey())
           .setJobKey(key)
           .setVariableScopeKey(value.getElementInstanceKey());
 
-      commandWriter.appendFollowUpCommand(key, IncidentIntent.CREATE, incidentEvent);
+      commandWriter.appendNewCommand(IncidentIntent.CREATE, incidentEvent);
     }
+  }
+
+  private void acceptCommand(
+      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
+    final long key = command.getKey();
+    final JobRecord failedJob = jobState.getJob(key);
+    failedJob.setRetries(command.getValue().getRetries());
+    failedJob.setErrorMessage(command.getValue().getErrorMessageBuffer());
+    commandControl.accept(JobIntent.FAILED, failedJob);
   }
 }

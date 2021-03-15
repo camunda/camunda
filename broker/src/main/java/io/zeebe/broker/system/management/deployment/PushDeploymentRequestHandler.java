@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.system.management.deployment;
 
@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 public final class PushDeploymentRequestHandler
     implements Function<byte[], CompletableFuture<byte[]>>, DeploymentResponder {
 
-  private static final Logger LOG = Loggers.WORKFLOW_REPOSITORY_LOGGER;
+  private static final Logger LOG = Loggers.PROCESS_REPOSITORY_LOGGER;
 
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
 

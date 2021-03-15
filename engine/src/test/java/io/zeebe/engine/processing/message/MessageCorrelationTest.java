@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message;
 
@@ -21,13 +21,13 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
+import io.zeebe.test.util.record.ProcessInstances;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.WorkflowInstances;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +40,7 @@ public final class MessageCorrelationTest {
 
   private static final String PROCESS_ID = "process";
 
-  private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
+  private static final BpmnModelInstance RECEIVE_TASK_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .receiveTask("receive-message")
@@ -48,7 +48,7 @@ public final class MessageCorrelationTest {
           .endEvent()
           .done();
 
-  private static final BpmnModelInstance SINGLE_MESSAGE_WORKFLOW =
+  private static final BpmnModelInstance SINGLE_MESSAGE_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("receive-message")
@@ -56,7 +56,7 @@ public final class MessageCorrelationTest {
           .endEvent()
           .done();
 
-  private static final BpmnModelInstance SINGLE_MESSAGE_WORKFLOW_WITH_FEEL_EXPRESSION_MESSAGE_NAME =
+  private static final BpmnModelInstance SINGLE_MESSAGE_PROCESS_WITH_FEEL_EXPRESSION_MESSAGE_NAME =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("receive-message")
@@ -64,7 +64,7 @@ public final class MessageCorrelationTest {
           .endEvent()
           .done();
 
-  private static final BpmnModelInstance TWO_MESSAGES_WORKFLOW =
+  private static final BpmnModelInstance TWO_MESSAGES_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("message1")
@@ -73,7 +73,7 @@ public final class MessageCorrelationTest {
           .message(m -> m.name("ping").zeebeCorrelationKeyExpression("key"))
           .done();
 
-  private static final BpmnModelInstance BOUNDARY_EVENTS_WORKFLOW =
+  private static final BpmnModelInstance BOUNDARY_EVENTS_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .receiveTask("task")
@@ -95,10 +95,10 @@ public final class MessageCorrelationTest {
   public void shouldCorrelateMessageIfEnteredBefore() {
     // given
     final String messageId = UUID.randomUUID().toString();
-    engine.deployment().withXmlResource(SINGLE_MESSAGE_WORKFLOW).deploy();
-    final long workflowInstanceKey =
+    engine.deployment().withXmlResource(SINGLE_MESSAGE_PROCESS).deploy();
+    final long processInstanceKey =
         engine
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("key", "order-123")
             .create();
@@ -119,20 +119,20 @@ public final class MessageCorrelationTest {
         .publish();
 
     // then
-    final Record<WorkflowInstanceRecordValue> event =
-        RecordingExporter.workflowInstanceRecords()
+    final Record<ProcessInstanceRecordValue> event =
+        RecordingExporter.processInstanceRecords()
             .withElementId("receive-message")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .getFirst();
     final Map<String, String> variables =
-        WorkflowInstances.getCurrentVariables(workflowInstanceKey, event.getPosition());
+        ProcessInstances.getCurrentVariables(processInstanceKey, event.getPosition());
     assertThat(variables).containsOnly(entry("key", "\"order-123\""), entry("foo", "\"bar\""));
   }
 
   @Test
   public void shouldCorrelateMessageIfPublishedBefore() {
     // given
-    engine.deployment().withXmlResource(SINGLE_MESSAGE_WORKFLOW).deploy();
+    engine.deployment().withXmlResource(SINGLE_MESSAGE_PROCESS).deploy();
 
     engine
         .message()
@@ -142,21 +142,21 @@ public final class MessageCorrelationTest {
         .publish();
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         engine
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("key", "order-123")
             .create();
 
     // then
-    final Record<WorkflowInstanceRecordValue> event =
-        RecordingExporter.workflowInstanceRecords()
+    final Record<ProcessInstanceRecordValue> event =
+        RecordingExporter.processInstanceRecords()
             .withElementId("receive-message")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .getFirst();
     final Map<String, String> variables =
-        WorkflowInstances.getCurrentVariables(workflowInstanceKey, event.getPosition());
+        ProcessInstances.getCurrentVariables(processInstanceKey, event.getPosition());
     assertThat(variables).containsOnly(entry("key", "\"order-123\""), entry("foo", "\"bar\""));
   }
 
@@ -165,7 +165,7 @@ public final class MessageCorrelationTest {
     // given
     engine
         .deployment()
-        .withXmlResource(SINGLE_MESSAGE_WORKFLOW_WITH_FEEL_EXPRESSION_MESSAGE_NAME)
+        .withXmlResource(SINGLE_MESSAGE_PROCESS_WITH_FEEL_EXPRESSION_MESSAGE_NAME)
         .deploy();
 
     engine
@@ -176,28 +176,28 @@ public final class MessageCorrelationTest {
         .publish();
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         engine
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("key", "order-123")
             .create();
 
     // then
-    final Record<WorkflowInstanceRecordValue> event =
-        RecordingExporter.workflowInstanceRecords()
+    final Record<ProcessInstanceRecordValue> event =
+        RecordingExporter.processInstanceRecords()
             .withElementId("receive-message")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .getFirst();
     final Map<String, String> variables =
-        WorkflowInstances.getCurrentVariables(workflowInstanceKey, event.getPosition());
+        ProcessInstances.getCurrentVariables(processInstanceKey, event.getPosition());
     assertThat(variables).containsOnly(entry("key", "\"order-123\""), entry("foo", "\"bar\""));
   }
 
   @Test
   public void shouldCorrelateMessageIfCorrelationKeyIsANumber() {
     // given
-    engine.deployment().withXmlResource(SINGLE_MESSAGE_WORKFLOW).deploy();
+    engine.deployment().withXmlResource(SINGLE_MESSAGE_PROCESS).deploy();
 
     engine
         .message()
@@ -207,24 +207,24 @@ public final class MessageCorrelationTest {
         .publish();
 
     // when
-    final long workflowInstanceKey =
-        engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", 123).create();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", 123).create();
 
     // then
-    final Record<WorkflowInstanceRecordValue> event =
-        RecordingExporter.workflowInstanceRecords()
+    final Record<ProcessInstanceRecordValue> event =
+        RecordingExporter.processInstanceRecords()
             .withElementType(BpmnElementType.PROCESS)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .getFirst();
     final Map<String, String> variables =
-        WorkflowInstances.getCurrentVariables(workflowInstanceKey, event.getPosition());
+        ProcessInstances.getCurrentVariables(processInstanceKey, event.getPosition());
     assertThat(variables).containsOnly(entry("key", "123"), entry("foo", "\"bar\""));
   }
 
   @Test
   public void shouldCorrelateFirstPublishedMessage() {
     // given
-    engine.deployment().withXmlResource(SINGLE_MESSAGE_WORKFLOW).deploy();
+    engine.deployment().withXmlResource(SINGLE_MESSAGE_PROCESS).deploy();
 
     final PublishMessageClient messageClient =
         engine.message().withName("message").withCorrelationKey("order-123");
@@ -233,32 +233,32 @@ public final class MessageCorrelationTest {
     messageClient.withVariables(asMsgPack("nr", 2)).publish();
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         engine
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("key", "order-123")
             .create();
 
     // then
-    final Record<WorkflowInstanceRecordValue> event =
-        RecordingExporter.workflowInstanceRecords()
+    final Record<ProcessInstanceRecordValue> event =
+        RecordingExporter.processInstanceRecords()
             .withElementType(BpmnElementType.PROCESS)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .getFirst();
     final Map<String, String> variables =
-        WorkflowInstances.getCurrentVariables(workflowInstanceKey, event.getPosition());
+        ProcessInstances.getCurrentVariables(processInstanceKey, event.getPosition());
     assertThat(variables).containsOnly(entry("key", "\"order-123\""), entry("nr", "1"));
   }
 
   @Test
   public void shouldCorrelateMessageWithZeroTTL() {
     // given
-    engine.deployment().withXmlResource(SINGLE_MESSAGE_WORKFLOW).deploy();
+    engine.deployment().withXmlResource(SINGLE_MESSAGE_PROCESS).deploy();
 
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         engine
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("key", "order-123")
             .create();
@@ -278,29 +278,29 @@ public final class MessageCorrelationTest {
         .publish();
 
     // then
-    final Record<WorkflowInstanceRecordValue> event =
-        RecordingExporter.workflowInstanceRecords()
+    final Record<ProcessInstanceRecordValue> event =
+        RecordingExporter.processInstanceRecords()
             .withElementId("receive-message")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .getFirst();
 
-    assertThat(event.getValue().getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
+    assertThat(event.getValue().getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
   @Test
   public void shouldCorrelateMessageByCorrelationKey() {
     // given
-    engine.deployment().withXmlResource(SINGLE_MESSAGE_WORKFLOW).deploy();
+    engine.deployment().withXmlResource(SINGLE_MESSAGE_PROCESS).deploy();
 
-    final long workflowInstanceKey1 =
+    final long processInstanceKey1 =
         engine
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("key", "order-123")
             .create();
-    final long workflowInstanceKey2 =
+    final long processInstanceKey2 =
         engine
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("key", "order-456")
             .create();
@@ -321,35 +321,35 @@ public final class MessageCorrelationTest {
         .publish();
 
     // then
-    final Record<WorkflowInstanceRecordValue> catchEventOccurred1 =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey1)
+    final Record<ProcessInstanceRecordValue> catchEventOccurred1 =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey1)
             .withElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .getFirst();
     final Map<String, String> variables1 =
-        WorkflowInstances.getCurrentVariables(
-            workflowInstanceKey1, catchEventOccurred1.getPosition());
+        ProcessInstances.getCurrentVariables(
+            processInstanceKey1, catchEventOccurred1.getPosition());
     assertThat(variables1).containsOnly(entry("key", "\"order-123\""), entry("nr", "1"));
 
-    final Record<WorkflowInstanceRecordValue> catchEventOccurred2 =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey2)
+    final Record<ProcessInstanceRecordValue> catchEventOccurred2 =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey2)
             .withElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .getFirst();
     final Map<String, String> variables2 =
-        WorkflowInstances.getCurrentVariables(
-            workflowInstanceKey2, catchEventOccurred2.getPosition());
+        ProcessInstances.getCurrentVariables(
+            processInstanceKey2, catchEventOccurred2.getPosition());
     assertThat(variables2).containsOnly(entry("key", "\"order-456\""), entry("nr", "2"));
   }
 
   @Test
-  public void shouldCorrelateMessageToDifferentWorkflows() {
+  public void shouldCorrelateMessageToDifferentProcesses() {
     // given
     engine
         .deployment()
-        .withXmlResource("wf-1.bpmn", SINGLE_MESSAGE_WORKFLOW)
+        .withXmlResource("wf-1.bpmn", SINGLE_MESSAGE_PROCESS)
         .withXmlResource(
             "wf-2.bpmn",
             Bpmn.createExecutableProcess("process-2")
@@ -361,15 +361,15 @@ public final class MessageCorrelationTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey1 =
+    final long processInstanceKey1 =
         engine
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("key", "order-123")
             .create();
-    final long workflowInstanceKey2 =
+    final long processInstanceKey2 =
         engine
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId("process-2")
             .withVariable("key", "order-123")
             .create();
@@ -380,30 +380,30 @@ public final class MessageCorrelationTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.CORRELATED)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.CORRELATED)
                 .limit(2))
         .extracting(Record::getValue)
-        .extracting(v -> tuple(v.getMessageKey(), v.getWorkflowInstanceKey()))
+        .extracting(v -> tuple(v.getMessageKey(), v.getProcessInstanceKey()))
         .contains(
-            tuple(message.getKey(), workflowInstanceKey1),
-            tuple(message.getKey(), workflowInstanceKey2));
+            tuple(message.getKey(), processInstanceKey1),
+            tuple(message.getKey(), processInstanceKey2));
   }
 
   @Test
-  public void shouldCorrelateMessageOnlyOncePerWorkflow() {
+  public void shouldCorrelateMessageOnlyOncePerProcess() {
     // given
-    engine.deployment().withXmlResource(SINGLE_MESSAGE_WORKFLOW).deploy();
+    engine.deployment().withXmlResource(SINGLE_MESSAGE_PROCESS).deploy();
 
-    final long workflowInstanceKey1 =
+    final long processInstanceKey1 =
         engine
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("key", "order-123")
             .create();
-    final long workflowInstanceKey2 =
+    final long processInstanceKey2 =
         engine
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("key", "order-123")
             .create();
@@ -417,24 +417,24 @@ public final class MessageCorrelationTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.CORRELATED)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.CORRELATED)
                 .limit(2))
         .extracting(Record::getValue)
-        .extracting(v -> tuple(v.getMessageKey(), v.getWorkflowInstanceKey()))
+        .extracting(v -> tuple(v.getMessageKey(), v.getProcessInstanceKey()))
         .contains(
-            tuple(message1.getKey(), workflowInstanceKey1),
-            tuple(message2.getKey(), workflowInstanceKey2));
+            tuple(message1.getKey(), processInstanceKey1),
+            tuple(message2.getKey(), processInstanceKey2));
   }
 
   @Test
-  public void shouldCorrelateMessageOnlyOncePerWorkflowAcrossVersions() {
+  public void shouldCorrelateMessageOnlyOncePerProcessAcrossVersions() {
     // given
-    engine.deployment().withXmlResource(SINGLE_MESSAGE_WORKFLOW).deploy();
+    engine.deployment().withXmlResource(SINGLE_MESSAGE_PROCESS).deploy();
 
-    final long workflowInstanceKey1 =
+    final long processInstanceKey1 =
         engine
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("key", "order-123")
             .create();
@@ -452,9 +452,9 @@ public final class MessageCorrelationTest {
                 .done())
         .deploy();
 
-    final long workflowInstanceKey2 =
+    final long processInstanceKey2 =
         engine
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("key", "order-123")
             .create();
@@ -468,20 +468,20 @@ public final class MessageCorrelationTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.CORRELATED)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.CORRELATED)
                 .limit(2))
         .extracting(Record::getValue)
-        .extracting(v -> tuple(v.getMessageKey(), v.getWorkflowInstanceKey()))
+        .extracting(v -> tuple(v.getMessageKey(), v.getProcessInstanceKey()))
         .contains(
-            tuple(message1.getKey(), workflowInstanceKey1),
-            tuple(message2.getKey(), workflowInstanceKey2));
+            tuple(message1.getKey(), processInstanceKey1),
+            tuple(message2.getKey(), processInstanceKey2));
   }
 
   @Test
   public void shouldCorrelateMessageOnlyOnceIfPublishedBefore() {
     // given
-    engine.deployment().withXmlResource(TWO_MESSAGES_WORKFLOW).deploy();
+    engine.deployment().withXmlResource(TWO_MESSAGES_PROCESS).deploy();
 
     final PublishMessageClient messageClient =
         engine.message().withName("ping").withCorrelationKey("123");
@@ -490,19 +490,19 @@ public final class MessageCorrelationTest {
     messageClient.withVariables(asMsgPack("nr", 2)).publish();
 
     // when
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // then
     final List<Object> correlatedValues =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .filter(r -> r.getValue().getElementId().startsWith("message"))
             .limit(2)
             .map(
                 event ->
                     tuple(
                         event.getValue().getElementId(),
-                        WorkflowInstances.getCurrentVariables(
-                                event.getValue().getWorkflowInstanceKey(), event.getPosition())
+                        ProcessInstances.getCurrentVariables(
+                                event.getValue().getProcessInstanceKey(), event.getPosition())
                             .get("nr")))
             .collect(Collectors.toList());
     assertThat(correlatedValues).contains(tuple("message1", "1"), tuple("message2", "2"));
@@ -511,13 +511,13 @@ public final class MessageCorrelationTest {
   @Test
   public void shouldCorrelateMessageOnlyOnceIfEnteredBefore() {
     // given
-    engine.deployment().withXmlResource(TWO_MESSAGES_WORKFLOW).deploy();
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
+    engine.deployment().withXmlResource(TWO_MESSAGES_PROCESS).deploy();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.OPENED)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .exists())
         .isTrue();
 
@@ -527,8 +527,8 @@ public final class MessageCorrelationTest {
     messageClient.withVariables(asMsgPack("nr", 1)).publish();
 
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.OPENED)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .limit(2)
                 .count())
         .isEqualTo(2);
@@ -537,15 +537,15 @@ public final class MessageCorrelationTest {
 
     // then
     final List<Object> correlatedValues =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .filter(r -> r.getValue().getElementId().startsWith("message"))
             .limit(2)
             .map(
                 event ->
                     tuple(
                         event.getValue().getElementId(),
-                        WorkflowInstances.getCurrentVariables(
-                                event.getValue().getWorkflowInstanceKey(), event.getPosition())
+                        ProcessInstances.getCurrentVariables(
+                                event.getValue().getProcessInstanceKey(), event.getPosition())
                             .get("nr")))
             .collect(Collectors.toList());
     assertThat(correlatedValues).contains(tuple("message1", "1"), tuple("message2", "2"));
@@ -568,12 +568,12 @@ public final class MessageCorrelationTest {
                 .done())
         .deploy();
 
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.OPENED)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .limit(2)
                 .count())
         .isEqualTo(2);
@@ -585,13 +585,13 @@ public final class MessageCorrelationTest {
 
     // then
     final List<Object> correlatedValues =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .filter(r -> r.getValue().getElementId().startsWith("message"))
             .limit(2)
             .map(
                 event ->
-                    WorkflowInstances.getCurrentVariables(
-                            event.getValue().getWorkflowInstanceKey(), event.getPosition())
+                    ProcessInstances.getCurrentVariables(
+                            event.getValue().getProcessInstanceKey(), event.getPosition())
                         .get("nr"))
             .collect(Collectors.toList());
     assertThat(correlatedValues).contains("1", "2");
@@ -600,13 +600,13 @@ public final class MessageCorrelationTest {
   @Test
   public void shouldCorrelateOnlyOneMessagePerCatchElement() {
     // given
-    engine.deployment().withXmlResource(TWO_MESSAGES_WORKFLOW).deploy();
+    engine.deployment().withXmlResource(TWO_MESSAGES_PROCESS).deploy();
 
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.OPENED)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.CREATED)
                 .exists())
         .isTrue();
 
@@ -619,15 +619,15 @@ public final class MessageCorrelationTest {
 
     // then
     final List<Object> correlatedValues =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .filter(r -> r.getValue().getElementId().startsWith("message"))
             .limit(2)
             .map(
                 event ->
                     tuple(
                         event.getValue().getElementId(),
-                        WorkflowInstances.getCurrentVariables(
-                                event.getValue().getWorkflowInstanceKey(), event.getPosition())
+                        ProcessInstances.getCurrentVariables(
+                                event.getValue().getProcessInstanceKey(), event.getPosition())
                             .get("nr")))
             .collect(Collectors.toList());
     assertThat(correlatedValues).contains(tuple("message1", "1"), tuple("message2", "2"));
@@ -636,8 +636,8 @@ public final class MessageCorrelationTest {
   @Test
   public void shouldCorrelateCorrectBoundaryEvent() {
     // given
-    engine.deployment().withXmlResource(BOUNDARY_EVENTS_WORKFLOW).deploy();
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
+    engine.deployment().withXmlResource(BOUNDARY_EVENTS_PROCESS).deploy();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     awaitSubscriptionsOpened(3);
@@ -650,10 +650,10 @@ public final class MessageCorrelationTest {
         .publish();
 
     // then
-    assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
-        .filteredOn(r -> r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+    assertThat(RecordingExporter.processInstanceRecords().limitToProcessInstanceCompleted())
+        .filteredOn(r -> r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .extracting(Record::getValue)
-        .extracting(WorkflowInstanceRecordValue::getElementId)
+        .extracting(ProcessInstanceRecordValue::getElementId)
         .contains("msg1End")
         .doesNotContain("taskEnd", "msg2End");
   }
@@ -661,8 +661,8 @@ public final class MessageCorrelationTest {
   @Test
   public void shouldNotTriggerBoundaryEventIfReceiveTaskTriggeredFirst() {
     // given
-    engine.deployment().withXmlResource(BOUNDARY_EVENTS_WORKFLOW).deploy();
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
+    engine.deployment().withXmlResource(BOUNDARY_EVENTS_PROCESS).deploy();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     awaitSubscriptionsOpened(3);
@@ -675,10 +675,10 @@ public final class MessageCorrelationTest {
         .publish();
 
     // then
-    assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
-        .filteredOn(r -> r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+    assertThat(RecordingExporter.processInstanceRecords().limitToProcessInstanceCompleted())
+        .filteredOn(r -> r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .extracting(Record::getValue)
-        .extracting(WorkflowInstanceRecordValue::getElementId)
+        .extracting(ProcessInstanceRecordValue::getElementId)
         .contains("taskEnd")
         .doesNotContain("msg1End", "msg2End");
   }
@@ -686,8 +686,8 @@ public final class MessageCorrelationTest {
   @Test
   public void shouldNotTriggerReceiveTaskIfBoundaryEventTriggeredFirst() {
     // given
-    engine.deployment().withXmlResource(BOUNDARY_EVENTS_WORKFLOW).deploy();
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
+    engine.deployment().withXmlResource(BOUNDARY_EVENTS_PROCESS).deploy();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     awaitSubscriptionsOpened(3); // await both subscriptions opened
@@ -700,10 +700,10 @@ public final class MessageCorrelationTest {
         .publish();
 
     // then
-    assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
-        .filteredOn(r -> r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+    assertThat(RecordingExporter.processInstanceRecords().limitToProcessInstanceCompleted())
+        .filteredOn(r -> r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .extracting(Record::getValue)
-        .extracting(WorkflowInstanceRecordValue::getElementId)
+        .extracting(ProcessInstanceRecordValue::getElementId)
         .contains("msg2End")
         .doesNotContain("taskEnd", "msg1End");
   }
@@ -711,82 +711,82 @@ public final class MessageCorrelationTest {
   @Test
   public void testIntermediateMessageEventLifeCycle() {
     // given
-    engine.deployment().withXmlResource(SINGLE_MESSAGE_WORKFLOW).deploy();
+    engine.deployment().withXmlResource(SINGLE_MESSAGE_PROCESS).deploy();
 
     engine.message().withName("message").withCorrelationKey("order-123").publish();
 
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "order-123").create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "order-123").create();
 
-    final List<Record<WorkflowInstanceRecordValue>> events =
-        RecordingExporter.workflowInstanceRecords()
-            .limitToWorkflowInstanceCompleted()
+    final List<Record<ProcessInstanceRecordValue>> events =
+        RecordingExporter.processInstanceRecords()
+            .limitToProcessInstanceCompleted()
             .collect(Collectors.toList());
 
     assertThat(events)
         .filteredOn(r -> r.getValue().getElementId().equals("receive-message"))
         .extracting(Record::getIntent)
         .containsExactly(
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.EVENT_OCCURRED,
-            WorkflowInstanceIntent.ELEMENT_COMPLETING,
-            WorkflowInstanceIntent.ELEMENT_COMPLETED);
+            ProcessInstanceIntent.ELEMENT_ACTIVATING,
+            ProcessInstanceIntent.ELEMENT_ACTIVATED,
+            ProcessInstanceIntent.EVENT_OCCURRED,
+            ProcessInstanceIntent.ELEMENT_COMPLETING,
+            ProcessInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
   public void testReceiveTaskLifeCycle() {
     // given
-    engine.deployment().withXmlResource(RECEIVE_TASK_WORKFLOW).deploy();
+    engine.deployment().withXmlResource(RECEIVE_TASK_PROCESS).deploy();
     engine.message().withName("message").withCorrelationKey("order-123").publish();
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "order-123").create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "order-123").create();
 
-    final List<Record<WorkflowInstanceRecordValue>> events =
-        RecordingExporter.workflowInstanceRecords()
-            .limitToWorkflowInstanceCompleted()
+    final List<Record<ProcessInstanceRecordValue>> events =
+        RecordingExporter.processInstanceRecords()
+            .limitToProcessInstanceCompleted()
             .collect(Collectors.toList());
 
     assertThat(events)
         .filteredOn(r -> r.getValue().getElementId().equals("receive-message"))
         .extracting(Record::getIntent)
         .containsExactly(
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.EVENT_OCCURRED,
-            WorkflowInstanceIntent.ELEMENT_COMPLETING,
-            WorkflowInstanceIntent.ELEMENT_COMPLETED);
+            ProcessInstanceIntent.ELEMENT_ACTIVATING,
+            ProcessInstanceIntent.ELEMENT_ACTIVATED,
+            ProcessInstanceIntent.EVENT_OCCURRED,
+            ProcessInstanceIntent.ELEMENT_COMPLETING,
+            ProcessInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
   public void testBoundaryMessageEventLifecycle() {
     // given
-    engine.deployment().withXmlResource(BOUNDARY_EVENTS_WORKFLOW).deploy();
+    engine.deployment().withXmlResource(BOUNDARY_EVENTS_PROCESS).deploy();
     engine.message().withName("msg1").withCorrelationKey("order-123").publish();
 
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "order-123").create();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "order-123").create();
 
-    final List<Record<WorkflowInstanceRecordValue>> events =
-        RecordingExporter.workflowInstanceRecords()
-            .limitToWorkflowInstanceCompleted()
+    final List<Record<ProcessInstanceRecordValue>> events =
+        RecordingExporter.processInstanceRecords()
+            .limitToProcessInstanceCompleted()
             .collect(Collectors.toList());
 
     assertThat(events)
         .extracting(r -> tuple(r.getValue().getElementId(), r.getIntent()))
         .containsSequence(
-            tuple("task", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("task", WorkflowInstanceIntent.EVENT_OCCURRED),
-            tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple("msg1", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple("msg1", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("msg1", WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple("msg1", WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple("task", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("task", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("task", ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple("task", ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple("task", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple("msg1", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("msg1", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("msg1", ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple("msg1", ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
   public void shouldCorrelateToNonInterruptingBoundaryEvent() {
     // given
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .serviceTask("task", b -> b.zeebeJobType("type"))
@@ -797,8 +797,8 @@ public final class MessageCorrelationTest {
             .moveToActivity("task")
             .endEvent("taskEnd")
             .done();
-    engine.deployment().withXmlResource(workflow).deploy();
-    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
+    engine.deployment().withXmlResource(process).deploy();
+    engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     final PublishMessageClient messageClient =
@@ -812,7 +812,7 @@ public final class MessageCorrelationTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .withElementType(BpmnElementType.BOUNDARY_EVENT)
                 .limit(3)
                 .count())
@@ -850,29 +850,28 @@ public final class MessageCorrelationTest {
     engine.deployment().withXmlResource(twoMessages).deploy();
 
     // when
-    engine.workflowInstance().ofBpmnProcessId("process").withVariable("key", "123").create();
+    final var processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("process").withVariable("key", "123").create();
 
     // then
+    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey))
+        .extracting(Record::getRecordType, Record::getIntent)
+        .containsSubsequence(
+            tuple(RecordType.COMMAND_REJECTION, ProcessInstanceSubscriptionIntent.CORRELATE),
+            tuple(RecordType.COMMAND, MessageSubscriptionIntent.REJECT),
+            tuple(RecordType.EVENT, MessageSubscriptionIntent.REJECTED),
+            tuple(RecordType.COMMAND, ProcessInstanceSubscriptionIntent.CORRELATE));
+
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.CORRELATE)
-                .withRecordType(RecordType.COMMAND_REJECTION)
-                .limit(1))
-        .isNotEmpty();
-    assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.REJECT).limit(1))
-        .isNotEmpty();
-    assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.CORRELATED)
+            RecordingExporter.processInstanceSubscriptionRecords(
+                    ProcessInstanceSubscriptionIntent.CORRELATED)
                 .limit(2))
         .extracting(r -> r.getValue().getMessageName())
         .containsExactlyInAnyOrder("a", "b");
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .withElementId("process")
-                .limit(1))
-        .isNotEmpty();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
   }
 
   @Test
@@ -889,7 +888,7 @@ public final class MessageCorrelationTest {
                 .done())
         .deploy();
 
-    engine.workflowInstance().ofBpmnProcessId("wf").withVariable("key", "key-1").create();
+    engine.processInstance().ofBpmnProcessId("wf").withVariable("key", "key-1").create();
 
     // - zero TTL
     engine
@@ -932,18 +931,18 @@ public final class MessageCorrelationTest {
     Assertions.assertThat(variable.getValue()).hasValue("3");
   }
 
-  private List<Record<WorkflowInstanceSubscriptionRecordValue>> awaitMessagesCorrelated(
+  private List<Record<ProcessInstanceSubscriptionRecordValue>> awaitMessagesCorrelated(
       final int messagesCount) {
-    return RecordingExporter.workflowInstanceSubscriptionRecords(
-            WorkflowInstanceSubscriptionIntent.CORRELATED)
+    return RecordingExporter.processInstanceSubscriptionRecords(
+            ProcessInstanceSubscriptionIntent.CORRELATED)
         .limit(messagesCount)
         .asList();
   }
 
-  private List<Record<WorkflowInstanceSubscriptionRecordValue>> awaitSubscriptionsOpened(
+  private List<Record<ProcessInstanceSubscriptionRecordValue>> awaitSubscriptionsOpened(
       final int subscriptionsCount) {
-    return RecordingExporter.workflowInstanceSubscriptionRecords()
-        .withIntent(WorkflowInstanceSubscriptionIntent.OPENED)
+    return RecordingExporter.processInstanceSubscriptionRecords()
+        .withIntent(ProcessInstanceSubscriptionIntent.CREATED)
         .limit(subscriptionsCount)
         .asList();
   }

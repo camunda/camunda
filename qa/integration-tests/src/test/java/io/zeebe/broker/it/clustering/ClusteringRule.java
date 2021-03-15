@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.it.clustering;
 
@@ -38,12 +38,12 @@ import io.zeebe.client.api.response.BrokerInfo;
 import io.zeebe.client.api.response.PartitionInfo;
 import io.zeebe.client.api.response.Topology;
 import io.zeebe.gateway.Gateway;
-import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.zeebe.snapshots.broker.impl.FileBasedSnapshotMetadata;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -653,20 +653,20 @@ public final class ClusteringRule extends ExternalResource {
         .until(() -> getTopologyFromClient().getBrokers(), topologyPredicate);
   }
 
-  public long createWorkflowInstanceOnPartition(final int partitionId, final String bpmnProcessId) {
-    final BrokerCreateWorkflowInstanceRequest request =
-        new BrokerCreateWorkflowInstanceRequest().setBpmnProcessId(bpmnProcessId);
+  public long createProcessInstanceOnPartition(final int partitionId, final String bpmnProcessId) {
+    final BrokerCreateProcessInstanceRequest request =
+        new BrokerCreateProcessInstanceRequest().setBpmnProcessId(bpmnProcessId);
 
     request.setPartitionId(partitionId);
 
-    final BrokerResponse<WorkflowInstanceCreationRecord> response =
+    final BrokerResponse<ProcessInstanceCreationRecord> response =
         gateway.getBrokerClient().sendRequestWithRetry(request).join();
 
     if (response.isResponse()) {
-      return response.getResponse().getWorkflowInstanceKey();
+      return response.getResponse().getProcessInstanceKey();
     } else {
       throw new RuntimeException(
-          "Failed to create workflow instance for bpmn process id "
+          "Failed to create process instance for bpmn process id "
               + bpmnProcessId
               + " on partition with id "
               + partitionId

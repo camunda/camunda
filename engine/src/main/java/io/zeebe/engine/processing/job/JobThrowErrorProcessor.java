@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.job;
 
@@ -16,20 +16,20 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.zeebe.engine.state.immutable.JobState;
+import io.zeebe.engine.state.immutable.ZeebeState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
 import org.agrona.DirectBuffer;
@@ -44,7 +44,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   public static final String NO_CATCH_EVENT_FOUND = "NO_CATCH_EVENT_FOUND";
 
   private final IncidentRecord incidentEvent = new IncidentRecord();
-  private final WorkflowInstanceRecord eventOccurredRecord = new WorkflowInstanceRecord();
+  private final ProcessInstanceRecord eventOccurredRecord = new ProcessInstanceRecord();
 
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
@@ -53,8 +53,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   private final KeyGenerator keyGenerator;
   private final EventScopeInstanceState eventScopeInstanceState;
 
-  public JobThrowErrorProcessor(final ZeebeState state) {
-    keyGenerator = state.getKeyGenerator();
+  public JobThrowErrorProcessor(final ZeebeState state, final KeyGenerator keyGenerator) {
+    this.keyGenerator = keyGenerator;
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     eventScopeInstanceState = state.getEventScopeInstanceState();
@@ -63,13 +63,36 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
         new DefaultJobCommandPreconditionGuard<>(
             "throw an error for", jobState, this::acceptCommand);
 
-    stateAnalyzer = new CatchEventAnalyzer(state.getWorkflowState(), elementInstanceState);
+    stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
   }
 
   @Override
   public boolean onCommand(
       final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     return defaultProcessor.onCommand(command, commandControl);
+  }
+
+  @Override
+  public void afterAccept(
+      final TypedCommandWriter commandWriter,
+      final StateWriter stateWriter,
+      final long jobKey,
+      final Intent intent,
+      final JobRecord job) {
+
+    final var serviceTaskInstanceKey = job.getElementId();
+
+    if (NO_CATCH_EVENT_FOUND.equals(serviceTaskInstanceKey)) {
+      raiseIncident(jobKey, job, commandWriter);
+      return;
+    }
+
+    final var serviceTaskInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
+    final var errorCode = job.getErrorCodeBuffer();
+
+    final var foundCatchEvent = stateAnalyzer.findCatchEvent(errorCode, serviceTaskInstance);
+    // TODO (#6472) send TERMINATE_ELEMENT command instead
+    writeEventOccurredRecord(stateWriter, foundCatchEvent);
   }
 
   private void acceptCommand(
@@ -109,29 +132,6 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     return serviceTaskInstance != null && serviceTaskInstance.isActive();
   }
 
-  @Override
-  public void afterAccept(
-      final TypedCommandWriter commandWriter,
-      final StateWriter stateWriter,
-      final long jobKey,
-      final Intent intent,
-      final JobRecord job) {
-
-    final var serviceTaskInstanceKey = job.getElementId();
-
-    if (NO_CATCH_EVENT_FOUND.equals(serviceTaskInstanceKey)) {
-      raiseIncident(jobKey, job, commandWriter);
-      return;
-    }
-
-    final var serviceTaskInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
-    final var errorCode = job.getErrorCodeBuffer();
-
-    final var foundCatchEvent = stateAnalyzer.findCatchEvent(errorCode, serviceTaskInstance);
-    // TODO (#6472) send TERMINATE_ELEMENT command instead
-    writeEventOccurredRecord(stateWriter, foundCatchEvent);
-  }
-
   private void writeEventOccurredRecord(
       final StateWriter stateWriter, final CatchEventAnalyzer.CatchEventTuple foundCatchEvent) {
     final var eventScopeInstance = foundCatchEvent.getElementInstance();
@@ -151,7 +151,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     }
 
     stateWriter.appendFollowUpEvent(
-        eventOccurredKey, WorkflowInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
+        eventOccurredKey, ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
   }
 
   private boolean isEventSubprocess(final ExecutableFlowElement catchEvent) {
@@ -176,8 +176,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
         .setErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .setErrorMessage(incidentErrorMessage)
         .setBpmnProcessId(job.getBpmnProcessIdBuffer())
-        .setWorkflowKey(job.getWorkflowKey())
-        .setWorkflowInstanceKey(job.getWorkflowInstanceKey())
+        .setProcessDefinitionKey(job.getProcessDefinitionKey())
+        .setProcessInstanceKey(job.getProcessInstanceKey())
         .setElementId(job.getElementIdBuffer())
         .setElementInstanceKey(job.getElementInstanceKey())
         .setJobKey(key)

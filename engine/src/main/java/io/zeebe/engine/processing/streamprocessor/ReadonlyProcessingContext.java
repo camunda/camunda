@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.streamprocessor;
 
@@ -11,7 +11,7 @@ import io.zeebe.db.TransactionContext;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.EventApplier;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.util.sched.ActorControl;
@@ -47,7 +47,7 @@ public interface ReadonlyProcessingContext {
   RecordProcessorMap getRecordProcessorMap();
 
   /** @return the state, where the data is stored during processing */
-  ZeebeState getZeebeState();
+  MutableZeebeState getZeebeState();
 
   /** @return the transaction context for the current actor */
   TransactionContext getTransactionContext();

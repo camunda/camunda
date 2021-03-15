@@ -28,10 +28,10 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final long key;
   private final String type;
   private final Map<String, String> customHeaders;
-  private final long workflowInstanceKey;
+  private final long processInstanceKey;
   private final String bpmnProcessId;
-  private final int workflowDefinitionVersion;
-  private final long workflowKey;
+  private final int processDefinitionVersion;
+  private final long processDefinitionKey;
   private final String elementId;
   private final long elementInstanceKey;
   private final String worker;
@@ -49,10 +49,10 @@ public final class ActivatedJobImpl implements ActivatedJob {
     retries = job.getRetries();
     deadline = job.getDeadline();
     variables = job.getVariables();
-    workflowInstanceKey = job.getWorkflowInstanceKey();
+    processInstanceKey = job.getProcessInstanceKey();
     bpmnProcessId = job.getBpmnProcessId();
-    workflowDefinitionVersion = job.getWorkflowDefinitionVersion();
-    workflowKey = job.getWorkflowKey();
+    processDefinitionVersion = job.getProcessDefinitionVersion();
+    processDefinitionKey = job.getProcessDefinitionKey();
     elementId = job.getElementId();
     elementInstanceKey = job.getElementInstanceKey();
   }
@@ -68,8 +68,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
   }
 
   @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
   @Override
@@ -78,13 +78,13 @@ public final class ActivatedJobImpl implements ActivatedJob {
   }
 
   @Override
-  public int getWorkflowDefinitionVersion() {
-    return workflowDefinitionVersion;
+  public int getProcessDefinitionVersion() {
+    return processDefinitionVersion;
   }
 
   @Override
-  public long getWorkflowKey() {
-    return workflowKey;
+  public long getProcessDefinitionKey() {
+    return processDefinitionKey;
   }
 
   @Override

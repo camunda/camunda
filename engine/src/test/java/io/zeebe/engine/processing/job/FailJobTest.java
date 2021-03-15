@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.job;
 
@@ -61,7 +61,7 @@ public final class FailJobTest {
         ENGINE
             .job()
             .withKey(jobKey)
-            .ofInstance(job.getWorkflowInstanceKey())
+            .ofInstance(job.getProcessInstanceKey())
             .withRetries(retries)
             .fail();
 
@@ -89,7 +89,7 @@ public final class FailJobTest {
         ENGINE
             .job()
             .withKey(jobKey)
-            .ofInstance(job.getWorkflowInstanceKey())
+            .ofInstance(job.getProcessInstanceKey())
             .withRetries(retries)
             .withErrorMessage("failed job")
             .fail();
@@ -117,7 +117,7 @@ public final class FailJobTest {
         ENGINE
             .job()
             .withKey(jobKey)
-            .ofInstance(job.getValue().getWorkflowInstanceKey())
+            .ofInstance(job.getValue().getProcessInstanceKey())
             .withRetries(3)
             .fail();
     ENGINE.jobs().withType(jobType).activate();

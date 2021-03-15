@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.instance;
 
@@ -34,7 +34,7 @@ public final class DbIncidentState implements MutableIncidentState {
   /** element instance key -> incident key */
   private final DbLong elementInstanceKey;
 
-  private final ColumnFamily<DbLong, IncidentKey> workflowInstanceIncidentColumnFamily;
+  private final ColumnFamily<DbLong, IncidentKey> processInstanceIncidentColumnFamily;
 
   /** job key -> incident key */
   private final DbLong jobKey;
@@ -54,9 +54,9 @@ public final class DbIncidentState implements MutableIncidentState {
             ZbColumnFamilies.INCIDENTS, transactionContext, incidentKey, incidentRead);
 
     elementInstanceKey = new DbLong();
-    workflowInstanceIncidentColumnFamily =
+    processInstanceIncidentColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.INCIDENT_WORKFLOW_INSTANCES,
+            ZbColumnFamilies.INCIDENT_PROCESS_INSTANCES,
             transactionContext,
             elementInstanceKey,
             incidentKeyValue);
@@ -81,7 +81,7 @@ public final class DbIncidentState implements MutableIncidentState {
       jobIncidentColumnFamily.put(jobKey, incidentKeyValue);
     } else {
       elementInstanceKey.wrapLong(incident.getElementInstanceKey());
-      workflowInstanceIncidentColumnFamily.put(elementInstanceKey, incidentKeyValue);
+      processInstanceIncidentColumnFamily.put(elementInstanceKey, incidentKeyValue);
     }
 
     metrics.incidentCreated();
@@ -110,7 +110,7 @@ public final class DbIncidentState implements MutableIncidentState {
         jobIncidentColumnFamily.delete(jobKey);
       } else {
         elementInstanceKey.wrapLong(incidentRecord.getElementInstanceKey());
-        workflowInstanceIncidentColumnFamily.delete(elementInstanceKey);
+        processInstanceIncidentColumnFamily.delete(elementInstanceKey);
       }
 
       metrics.incidentResolved();
@@ -118,10 +118,10 @@ public final class DbIncidentState implements MutableIncidentState {
   }
 
   @Override
-  public long getWorkflowInstanceIncidentKey(final long workflowInstanceKey) {
-    elementInstanceKey.wrapLong(workflowInstanceKey);
+  public long getProcessInstanceIncidentKey(final long processInstanceKey) {
+    elementInstanceKey.wrapLong(processInstanceKey);
 
-    final IncidentKey incidentKey = workflowInstanceIncidentColumnFamily.get(elementInstanceKey);
+    final IncidentKey incidentKey = processInstanceIncidentColumnFamily.get(elementInstanceKey);
 
     if (incidentKey != null) {
       return incidentKey.get();
@@ -147,14 +147,14 @@ public final class DbIncidentState implements MutableIncidentState {
   }
 
   @Override
-  public void forExistingWorkflowIncident(
+  public void forExistingProcessIncident(
       final long elementInstanceKey, final ObjLongConsumer<IncidentRecord> resolver) {
-    final long workflowIncidentKey = getWorkflowInstanceIncidentKey(elementInstanceKey);
+    final long processIncidentKey = getProcessInstanceIncidentKey(elementInstanceKey);
 
-    final boolean hasIncident = workflowIncidentKey != IncidentState.MISSING_INCIDENT;
+    final boolean hasIncident = processIncidentKey != IncidentState.MISSING_INCIDENT;
     if (hasIncident) {
-      final IncidentRecord incidentRecord = getIncidentRecord(workflowIncidentKey);
-      resolver.accept(incidentRecord, workflowIncidentKey);
+      final IncidentRecord incidentRecord = getIncidentRecord(processIncidentKey);
+      resolver.accept(incidentRecord, processIncidentKey);
     }
   }
 }

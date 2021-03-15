@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.streamprocessor;
 
@@ -11,10 +11,10 @@ import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDbTransaction;
 import io.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriterImpl;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
@@ -115,10 +115,10 @@ public final class ProcessingStateMachine {
   private final EventFilter eventFilter =
       new MetadataEventFilter(new RecordProtocolVersionFilter().and(PROCESSING_FILTER));
 
-  private final ZeebeState zeebeState;
+  private final MutableZeebeState zeebeState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
-  private final TypedResponseWriterImpl responseWriter;
+  private final TypedResponseWriter responseWriter;
   private final ActorControl actor;
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
@@ -173,7 +173,7 @@ public final class ProcessingStateMachine {
 
     final int partitionId = logStream.getPartitionId();
     typedEvent = new TypedEventImpl(partitionId);
-    responseWriter = new TypedResponseWriterImpl(context.getWriters().response(), partitionId);
+    responseWriter = context.getWriters().response();
 
     metrics = new StreamProcessorMetrics(partitionId);
     onProcessedListener = context.getOnProcessedListener();
@@ -357,7 +357,7 @@ public final class ProcessingStateMachine {
 
           zeebeState
               .getBlackListState()
-              .tryToBlacklist(typedEvent, errorRecord::setWorkflowInstanceKey);
+              .tryToBlacklist(typedEvent, errorRecord::setProcessInstanceKey);
 
           logStreamWriter.appendFollowUpEvent(
               typedEvent.getKey(), ErrorIntent.CREATED, errorRecord);

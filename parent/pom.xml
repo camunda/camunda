@@ -19,14 +19,14 @@
 
   <licenses>
     <license>
-      <name>Zeebe Community License v1.0</name>
-      <url>https://zeebe.io/legal/zeebe-community-license-1.0</url>
+      <name>Zeebe Community License v1.1</name>
+      <url>https://zeebe.io/legal/zeebe-community-license-1.1</url>
     </license>
   </licenses>
 
   <properties>
 
-    <!-- Zeebe Community License v1.0 header -->
+    <!-- Zeebe Community License v1.1 header -->
     <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
 
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
@@ -746,6 +746,8 @@
           <configuration>
             <comparisonVersion>${backwards.compat.version}</comparisonVersion>
             <ignoredDifferencesFile>${ignored.changes.file}</ignoredDifferencesFile>
+            <!-- TODO(menski): Enable again after 1.0 release -->
+            <skip>true</skip>
           </configuration>
           <executions>
             <execution>

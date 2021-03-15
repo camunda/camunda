@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.it.client.command;
 
@@ -19,7 +19,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.BrokerClassRuleHelper;
@@ -48,8 +48,8 @@ public final class ThrowErrorTest {
   public void init() {
     jobType = helper.getJobType();
 
-    final var workflowKey =
-        CLIENT_RULE.deployWorkflow(
+    final var processDefinitionKey =
+        CLIENT_RULE.deployProcess(
             Bpmn.createExecutableProcess("process")
                 .startEvent()
                 .serviceTask("task", t -> t.zeebeJobType(jobType))
@@ -57,7 +57,7 @@ public final class ThrowErrorTest {
                 .endEvent()
                 .done());
 
-    CLIENT_RULE.createWorkflowInstance(workflowKey);
+    CLIENT_RULE.createProcessInstance(processDefinitionKey);
 
     jobKey = activateJob().getKey();
   }
@@ -73,11 +73,11 @@ public final class ThrowErrorTest {
     Assertions.assertThat(record.getValue()).hasErrorCode(ERROR_CODE).hasErrorMessage("");
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(record.getValue().getWorkflowInstanceKey())
-                .limitToWorkflowInstanceCompleted()
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(record.getValue().getProcessInstanceKey())
+                .limitToProcessInstanceCompleted()
                 .withElementType(BpmnElementType.BOUNDARY_EVENT)
-                .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .exists())
         .isTrue();
   }

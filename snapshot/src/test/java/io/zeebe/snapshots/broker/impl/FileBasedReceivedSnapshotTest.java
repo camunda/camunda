@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.snapshots.broker.impl;
 
@@ -15,7 +15,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.snapshots.broker.ConstructableSnapshotStore;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.PersistedSnapshotListener;
@@ -78,7 +77,7 @@ public class FileBasedReceivedSnapshotTest {
     // given
 
     // when
-    receiverSnapshotStore.newReceivedSnapshot("1-0-123");
+    receiverSnapshotStore.newReceivedSnapshot("1-0-123-121");
 
     // then
     assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
@@ -583,7 +582,7 @@ public class FileBasedReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var time = WallClockTimestamp.from(123);
+
     final var transientSnapshot =
         senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn.multiinstance;
 
@@ -13,8 +13,8 @@ import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -40,7 +40,7 @@ public final class MultiInstanceInputCollectionTest {
   private static final String INPUT_COLLECTION = "items";
   private static final String INPUT_ELEMENT = "item";
 
-  private static final BpmnModelInstance WORKFLOW =
+  private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .serviceTask(
@@ -80,12 +80,12 @@ public final class MultiInstanceInputCollectionTest {
   @Test
   public void test() {
     // given
-    ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS).deploy();
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(INPUT_COLLECTION, inputCollection)
             .create();
@@ -94,9 +94,9 @@ public final class MultiInstanceInputCollectionTest {
     final int collectionSize = inputCollection.size();
 
     final List<Long> elementInstanceKeys =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementId(ELEMENT_ID)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .limit(collectionSize + 1)
             .map(Record::getKey)
             .collect(Collectors.toList());
@@ -107,7 +107,7 @@ public final class MultiInstanceInputCollectionTest {
     final List<Record<VariableRecordValue>> variables =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
             .withName(INPUT_ELEMENT)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .limit(collectionSize)
             .asList();
 

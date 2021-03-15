@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.instance;
 
@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 
 public final class DbJobState implements JobState, MutableJobState {
 
-  private static final Logger LOG = Loggers.WORKFLOW_PROCESSOR_LOGGER;
+  private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
   // key => job record value
   // we need two separate wrapper to not interfere with get and put
@@ -265,7 +265,8 @@ public final class DbJobState implements JobState, MutableJobState {
         jobTypeKey,
         ((compositeKey, zbNil) -> {
           final long jobKey = compositeKey.getSecond().getValue();
-          return visitJob(jobKey, callback, () -> activatableColumnFamily.delete(compositeKey));
+          // TODO #6521 reconsider race condition and whether or not the cleanup task is needed
+          return visitJob(jobKey, callback, () -> {});
         }));
   }
 

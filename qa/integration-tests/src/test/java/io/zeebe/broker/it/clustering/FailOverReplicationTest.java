@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.it.clustering;
 
@@ -35,9 +35,9 @@ public class FailOverReplicationTest {
 
   private static final int PARTITION_COUNT = 1;
   private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
-  private static final BpmnModelInstance WORKFLOW =
+  private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
-  private static final String WORKFLOW_RESOURCE_NAME = "workflow.bpmn";
+  private static final String PROCESS_RESOURCE_NAME = "process.bpmn";
 
   private final ClusteringRule clusteringRule =
       new ClusteringRule(PARTITION_COUNT, 3, 3, FailOverReplicationTest::configureBroker);
@@ -133,7 +133,7 @@ public class FailOverReplicationTest {
     // given
     final var previousLeaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final var previousLeader = clusteringRule.getBroker(previousLeaderId);
-    client.newDeployCommand().addWorkflowModel(WORKFLOW, WORKFLOW_RESOURCE_NAME).send().join();
+    client.newDeployCommand().addProcessModel(PROCESS, PROCESS_RESOURCE_NAME).send().join();
 
     // disconnect leader - becomes follower
     clusteringRule.disconnect(previousLeader);
@@ -220,7 +220,7 @@ public class FailOverReplicationTest {
   }
 
   private void triggerSnapshotCreation() {
-    client.newDeployCommand().addWorkflowModel(WORKFLOW, WORKFLOW_RESOURCE_NAME).send().join();
+    client.newDeployCommand().addProcessModel(PROCESS, PROCESS_RESOURCE_NAME).send().join();
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
   }
 

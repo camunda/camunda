@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.gateway.impl.broker;
 
@@ -106,7 +106,7 @@ public final class RequestRetryHandler {
                   responseConsumer.accept(response.getKey(), response.getResponse());
                 } else if (shouldRetryWithNextPartition(error)) {
                   Loggers.GATEWAY_LOGGER.trace(
-                      "Failed to create workflow on partition {}",
+                      "Failed to create process on partition {}",
                       partitionIdIterator.getCurrentPartitionId(),
                       error);
                   errors.add(error);

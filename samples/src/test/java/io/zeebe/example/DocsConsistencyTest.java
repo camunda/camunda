@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.example;
 
@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.example.cluster.TopologyViewer;
 import io.zeebe.example.data.HandleVariablesAsPojo;
 import io.zeebe.example.job.JobWorkerCreator;
-import io.zeebe.example.workflow.NonBlockingWorkflowInstanceCreator;
-import io.zeebe.example.workflow.WorkflowDeployer;
-import io.zeebe.example.workflow.WorkflowInstanceCreator;
+import io.zeebe.example.process.NonBlockingProcessInstanceCreator;
+import io.zeebe.example.process.ProcessDeployer;
+import io.zeebe.example.process.ProcessInstanceCreator;
 import java.util.Arrays;
 import java.util.Collection;
 import org.junit.Test;
@@ -38,11 +38,11 @@ public final class DocsConsistencyTest {
           {TopologyViewer.class, "io.zeebe.example.cluster.TopologyViewer"},
           {JobWorkerCreator.class, "io.zeebe.example.job.JobWorkerCreator"},
           {
-            NonBlockingWorkflowInstanceCreator.class,
-            "io.zeebe.example.workflow.NonBlockingWorkflowInstanceCreator"
+            NonBlockingProcessInstanceCreator.class,
+            "io.zeebe.example.process.NonBlockingProcessInstanceCreator"
           },
-          {WorkflowDeployer.class, "io.zeebe.example.workflow.WorkflowDeployer"},
-          {WorkflowInstanceCreator.class, "io.zeebe.example.workflow.WorkflowInstanceCreator"},
+          {ProcessDeployer.class, "io.zeebe.example.process.ProcessDeployer"},
+          {ProcessInstanceCreator.class, "io.zeebe.example.process.ProcessInstanceCreator"},
           {HandleVariablesAsPojo.class, "io.zeebe.example.data.HandleVariablesAsPojo"},
         });
   }

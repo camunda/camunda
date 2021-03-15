@@ -40,10 +40,10 @@ public final class ActivateJobsTest extends ClientTest {
         ActivatedJob.newBuilder()
             .setKey(12)
             .setType("foo")
-            .setWorkflowInstanceKey(123)
+            .setProcessInstanceKey(123)
             .setBpmnProcessId("test1")
-            .setWorkflowDefinitionVersion(2)
-            .setWorkflowKey(23)
+            .setProcessDefinitionVersion(2)
+            .setProcessDefinitionKey(23)
             .setElementId("foo")
             .setElementInstanceKey(23213)
             .setCustomHeaders("{\"version\": \"1\"}")
@@ -57,10 +57,10 @@ public final class ActivateJobsTest extends ClientTest {
         ActivatedJob.newBuilder()
             .setKey(42)
             .setType("foo")
-            .setWorkflowInstanceKey(333)
+            .setProcessInstanceKey(333)
             .setBpmnProcessId("test3")
-            .setWorkflowDefinitionVersion(23)
-            .setWorkflowKey(11)
+            .setProcessDefinitionVersion(23)
+            .setProcessDefinitionKey(11)
             .setElementId("bar")
             .setElementInstanceKey(111)
             .setCustomHeaders("{\"key\": \"value\"}")
@@ -92,10 +92,10 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob1.getBpmnProcessId());
     assertThat(job.getElementId()).isEqualTo(activatedJob1.getElementId());
     assertThat(job.getElementInstanceKey()).isEqualTo(activatedJob1.getElementInstanceKey());
-    assertThat(job.getWorkflowDefinitionVersion())
-        .isEqualTo(activatedJob1.getWorkflowDefinitionVersion());
-    assertThat(job.getWorkflowKey()).isEqualTo(activatedJob1.getWorkflowKey());
-    assertThat(job.getWorkflowInstanceKey()).isEqualTo(activatedJob1.getWorkflowInstanceKey());
+    assertThat(job.getProcessDefinitionVersion())
+        .isEqualTo(activatedJob1.getProcessDefinitionVersion());
+    assertThat(job.getProcessDefinitionKey()).isEqualTo(activatedJob1.getProcessDefinitionKey());
+    assertThat(job.getProcessInstanceKey()).isEqualTo(activatedJob1.getProcessInstanceKey());
     assertThat(job.getCustomHeaders()).isEqualTo(fromJsonAsMap(activatedJob1.getCustomHeaders()));
     assertThat(job.getWorker()).isEqualTo(activatedJob1.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
@@ -108,10 +108,10 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob2.getBpmnProcessId());
     assertThat(job.getElementId()).isEqualTo(activatedJob2.getElementId());
     assertThat(job.getElementInstanceKey()).isEqualTo(activatedJob2.getElementInstanceKey());
-    assertThat(job.getWorkflowDefinitionVersion())
-        .isEqualTo(activatedJob2.getWorkflowDefinitionVersion());
-    assertThat(job.getWorkflowKey()).isEqualTo(activatedJob2.getWorkflowKey());
-    assertThat(job.getWorkflowInstanceKey()).isEqualTo(activatedJob2.getWorkflowInstanceKey());
+    assertThat(job.getProcessDefinitionVersion())
+        .isEqualTo(activatedJob2.getProcessDefinitionVersion());
+    assertThat(job.getProcessDefinitionKey()).isEqualTo(activatedJob2.getProcessDefinitionKey());
+    assertThat(job.getProcessInstanceKey()).isEqualTo(activatedJob2.getProcessInstanceKey());
     assertThat(job.getCustomHeaders()).isEqualTo(fromJsonAsMap(activatedJob2.getCustomHeaders()));
     assertThat(job.getWorker()).isEqualTo(activatedJob2.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob2.getRetries());

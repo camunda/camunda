@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.snapshots.broker.impl;
 
@@ -13,6 +13,7 @@ import io.zeebe.snapshots.raft.PersistedSnapshotStore;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStoreFactory;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.SchedulingHints;
 import java.nio.file.Path;
 import org.agrona.IoUtil;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -25,7 +26,7 @@ import org.agrona.collections.Int2ObjectHashMap;
  * possible skip them (and print out a warning).
  *
  * <p>The metadata extraction is done by parsing the directory name using '%d-%d-%d-%d', where in
- * order we expect: index, term, timestamp, and position.
+ * order we expect: index, term, processed position and exported position.
  */
 public final class FileBasedSnapshotStoreFactory
     implements SnapshotStoreSupplier, ReceivableSnapshotStoreFactory {
@@ -65,7 +66,7 @@ public final class FileBasedSnapshotStoreFactory
             new SnapshotMetrics(Integer.toString(partitionId)),
             snapshotDirectory,
             pendingDirectory);
-    actorScheduler.submitActor(snapshotStore).join();
+    actorScheduler.submitActor(snapshotStore, SchedulingHints.ioBound()).join();
     return snapshotStore;
   }
 

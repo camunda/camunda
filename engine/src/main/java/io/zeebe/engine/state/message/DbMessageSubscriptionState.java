@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.message;
 
@@ -16,6 +16,8 @@ import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public final class DbMessageSubscriptionState implements MutableMessageSubscriptionState {
@@ -88,12 +90,15 @@ public final class DbMessageSubscriptionState implements MutableMessageSubscript
   }
 
   @Override
-  public void put(final MessageSubscription subscription) {
-    elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
-    messageName.wrapBuffer(subscription.getMessageName());
-    subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+  public void put(final long key, final MessageSubscriptionRecord record) {
+    elementInstanceKey.wrapLong(record.getElementInstanceKey());
+    messageName.wrapBuffer(record.getMessageNameBuffer());
 
-    correlationKey.wrapBuffer(subscription.getCorrelationKey());
+    messageSubscription.setKey(key).setRecord(record).setCommandSentTime(0);
+
+    subscriptionColumnFamily.put(elementKeyAndMessageName, messageSubscription);
+
+    correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
     messageNameAndCorrelationKeyColumnFamily.put(
         nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
   }
@@ -132,12 +137,25 @@ public final class DbMessageSubscriptionState implements MutableMessageSubscript
 
   @Override
   public void updateToCorrelatingState(
-      final MessageSubscription subscription,
-      final DirectBuffer messageVariables,
-      final long sentTime,
-      final long messageKey) {
-    subscription.setMessageVariables(messageVariables);
-    subscription.setMessageKey(messageKey);
+      final MessageSubscriptionRecord record, final long sentTime) {
+    final var messageKey = record.getMessageKey();
+    var messageVariables = record.getVariablesBuffer();
+    if (record == messageSubscription.getRecord()) {
+      // copy the buffer before loading the subscription to avoid that it is overridden
+      messageVariables = BufferUtil.cloneBuffer(record.getVariablesBuffer());
+    }
+
+    final var subscription = get(record.getElementInstanceKey(), record.getMessageNameBuffer());
+    if (subscription == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected subscription but not found. [element-instance-key: %d, message-name: %s]",
+              record.getElementInstanceKey(), record.getMessageName()));
+    }
+
+    // update the message key and the variables
+    subscription.getRecord().setMessageKey(messageKey).setVariables(messageVariables);
+
     updateSentTime(subscription, sentTime);
   }
 
@@ -154,8 +172,9 @@ public final class DbMessageSubscriptionState implements MutableMessageSubscript
 
   @Override
   public void updateSentTime(final MessageSubscription subscription, final long sentTime) {
-    elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
-    messageName.wrapBuffer(subscription.getMessageName());
+    final var record = subscription.getRecord();
+    elementInstanceKey.wrapLong(record.getElementInstanceKey());
+    messageName.wrapBuffer(record.getMessageNameBuffer());
 
     removeSubscriptionFromSentTimeColumnFamily(subscription);
 
@@ -209,8 +228,9 @@ public final class DbMessageSubscriptionState implements MutableMessageSubscript
   public void remove(final MessageSubscription subscription) {
     subscriptionColumnFamily.delete(elementKeyAndMessageName);
 
-    messageName.wrapBuffer(subscription.getMessageName());
-    correlationKey.wrapBuffer(subscription.getCorrelationKey());
+    final var record = subscription.getRecord();
+    messageName.wrapBuffer(record.getMessageNameBuffer());
+    correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
     messageNameAndCorrelationKeyColumnFamily.delete(nameCorrelationAndElementInstanceKey);
 
     removeSubscriptionFromSentTimeColumnFamily(subscription);

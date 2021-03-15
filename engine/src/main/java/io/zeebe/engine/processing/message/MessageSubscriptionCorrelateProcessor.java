@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message;
 
@@ -55,26 +55,22 @@ public final class MessageSubscriptionCorrelateProcessor
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
-    final MessageSubscriptionRecord subscriptionRecord = record.getValue();
+    final MessageSubscriptionRecord command = record.getValue();
     final MessageSubscription subscription =
-        subscriptionState.get(
-            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
+        subscriptionState.get(command.getElementInstanceKey(), command.getMessageNameBuffer());
 
     if (subscription == null) {
       rejectCommand(record);
       return;
     }
 
-    // TODO (saig0): not all values are written in the command (#3346)
-    subscriptionRecord
-        .setCorrelationKey(subscription.getCorrelationKey())
-        .setCloseOnCorrelate(subscription.shouldCloseOnCorrelate());
-
+    final var messageSubscription = subscription.getRecord();
     stateWriter.appendFollowUpEvent(
-        record.getKey(), MessageSubscriptionIntent.CORRELATED, subscriptionRecord);
+        subscription.getKey(), MessageSubscriptionIntent.CORRELATED, messageSubscription);
 
-    if (!subscription.shouldCloseOnCorrelate()) {
-      messageCorrelator.correlateNextMessage(subscriptionRecord, sideEffect);
+    if (!messageSubscription.isInterrupting()) {
+      messageCorrelator.correlateNextMessage(
+          subscription.getKey(), messageSubscription, sideEffect);
     }
   }
 

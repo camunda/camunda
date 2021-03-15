@@ -21,7 +21,7 @@
             "errorEventPosition": {
               "type": "long"
             },
-            "workflowInstanceKey": {
+            "processInstanceKey": {
               "type": "long"
             }
           }

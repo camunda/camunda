@@ -12,10 +12,10 @@
         "value": {
           "dynamic": "strict",
           "properties": {
-            "workflowInstancePartitionId": {
+            "processInstancePartitionId": {
               "type": "integer"
             },
-            "workflowInstanceKey": {
+            "processInstanceKey": {
               "type": "long"
             },
             "elementInstanceKey": {
@@ -35,6 +35,9 @@
             },
             "variables": {
               "enabled": false
+            },
+            "interrupting": {
+              "type": "boolean"
             }
           }
         }

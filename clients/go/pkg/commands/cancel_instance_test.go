@@ -23,18 +23,18 @@ import (
 	"testing"
 )
 
-func TestCancelWorkflowInstanceCommand(t *testing.T) {
+func TestCancelProcessInstanceCommand(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	request := &pb.CancelWorkflowInstanceRequest{
-		WorkflowInstanceKey: 123,
+	request := &pb.CancelProcessInstanceRequest{
+		ProcessInstanceKey: 123,
 	}
-	stub := &pb.CancelWorkflowInstanceResponse{}
+	stub := &pb.CancelProcessInstanceResponse{}
 
-	client.EXPECT().CancelWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CancelProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCancelInstanceCommand(client, func(context.Context, error) bool {
 		return false
@@ -43,7 +43,7 @@ func TestCancelWorkflowInstanceCommand(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
-	response, err := command.WorkflowInstanceKey(123).Send(ctx)
+	response, err := command.ProcessInstanceKey(123).Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")

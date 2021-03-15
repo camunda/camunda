@@ -2,12 +2,11 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.snapshots.broker.impl;
 
-import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.SnapshotChunkReader;
 import io.zeebe.util.FileUtil;
@@ -38,11 +37,6 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
 
   public Path getDirectory() {
     return directory;
-  }
-
-  @Override
-  public WallClockTimestamp getTimestamp() {
-    return metadata.getTimestamp();
   }
 
   @Override

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.variable;
 
@@ -82,13 +82,13 @@ public final class UpdateVariableDocumentProcessorTest {
     // given
     final MutableDirectBuffer badDocument = new UnsafeBuffer(asMsgPack("{\"a\": 1}"));
     badDocument.putByte(1, (byte) 0); // overwrite string header type
-    final long workflowInstanceKey = startProcessWithVariables(Map.of());
+    final long processInstanceKey = startProcessWithVariables(Map.of());
 
     // when
     final Record<VariableDocumentRecordValue> result =
         ENGINE
             .variables()
-            .ofScope(workflowInstanceKey)
+            .ofScope(processInstanceKey)
             .withDocument(badDocument)
             .expectRejection()
             .update();
@@ -100,10 +100,10 @@ public final class UpdateVariableDocumentProcessorTest {
   }
 
   @Test
-  public void shouldPropagateValueFromTaskToWorkflow() {
+  public void shouldPropagateValueFromTaskToProcess() {
     // given
     final Map<String, Object> document = Map.of("updated", "newValue", "created", 1);
-    final long workflowInstanceKey = startProcessWithVariables(Map.of("updated", "oldValue"));
+    final long processInstanceKey = startProcessWithVariables(Map.of("updated", "oldValue"));
     final long serviceTaskScopeKey = getServiceTaskScopeKey();
 
     // when
@@ -119,15 +119,15 @@ public final class UpdateVariableDocumentProcessorTest {
     final Record<VariableRecordValue> createdVariable =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
             .skipUntil(r -> r.getPosition() > result.getSourceRecordPosition())
-            .withScopeKey(workflowInstanceKey)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withScopeKey(processInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .limit(document.size())
             .findFirst()
             .orElseThrow();
     final Record<VariableRecordValue> updatedVariable =
         RecordingExporter.variableRecords(VariableIntent.UPDATED)
-            .withScopeKey(workflowInstanceKey)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withScopeKey(processInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .limit(document.size())
             .findFirst()
             .orElseThrow();
@@ -140,7 +140,7 @@ public final class UpdateVariableDocumentProcessorTest {
   public void shouldNotPropagateValueWithLocalSemantic() {
     // given
     final Map<String, Object> document = Map.of("updated", "newValue");
-    final long workflowInstanceKey = startProcessWithVariables(Map.of("updated", "oldValue"));
+    final long processInstanceKey = startProcessWithVariables(Map.of("updated", "oldValue"));
     final long serviceTaskScopeKey = getServiceTaskScopeKey();
 
     // when
@@ -157,7 +157,7 @@ public final class UpdateVariableDocumentProcessorTest {
         RecordingExporter.variableRecords(VariableIntent.CREATED)
             .skipUntil(r -> r.getPosition() > result.getSourceRecordPosition())
             .withScopeKey(serviceTaskScopeKey)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .limit(document.size())
             .findFirst()
             .orElseThrow();
@@ -169,7 +169,7 @@ public final class UpdateVariableDocumentProcessorTest {
   public void shouldNotPropagateExistingVariable() {
     // given
     final Map<String, Object> document = Map.of("updated", "newValue");
-    final long workflowInstanceKey = startProcessWithVariables(Map.of());
+    final long processInstanceKey = startProcessWithVariables(Map.of());
     final long serviceTaskScopeKey = getServiceTaskScopeKey();
 
     // when
@@ -191,7 +191,7 @@ public final class UpdateVariableDocumentProcessorTest {
     final Record<VariableRecordValue> updatedVariable =
         RecordingExporter.variableRecords(VariableIntent.UPDATED)
             .withScopeKey(serviceTaskScopeKey)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .limit(document.size())
             .findFirst()
             .orElseThrow();
@@ -200,7 +200,7 @@ public final class UpdateVariableDocumentProcessorTest {
   }
 
   private long startProcessWithVariables(final Map<String, Object> variables) {
-    return ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariables(variables).create();
+    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariables(variables).create();
   }
 
   private long getServiceTaskScopeKey() {

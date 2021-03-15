@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.it.client;
 
@@ -14,7 +14,7 @@ import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
@@ -28,24 +28,24 @@ public final class ClientReconnectTest {
   public final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
-  private long workflowKey;
+  private long processDefinitionKey;
 
   @Before
   public void init() {
-    workflowKey =
-        clientRule.deployWorkflow(
+    processDefinitionKey =
+        clientRule.deployProcess(
             Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
   }
 
   @Test
   public void shouldTransparentlyReconnectOnUnexpectedConnectionLoss() {
     // given
-    createWorkflowInstance(workflowKey);
+    createProcessInstance(processDefinitionKey);
 
     // when
     brokerRule.stopBroker();
 
-    assertThatThrownBy(() -> createWorkflowInstance(workflowKey))
+    assertThatThrownBy(() -> createProcessInstance(processDefinitionKey))
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("io exception");
 
@@ -54,7 +54,7 @@ public final class ClientReconnectTest {
     TestUtil.doRepeatedly(
             () -> {
               try {
-                return createWorkflowInstance(workflowKey);
+                return createProcessInstance(processDefinitionKey);
               } catch (final ClientException e) {
                 // ignore failures until broker is up again
                 return -1L;
@@ -64,21 +64,21 @@ public final class ClientReconnectTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
                 .filterRootScope()
-                .withWorkflowKey(workflowKey)
+                .withProcessDefinitionKey(processDefinitionKey)
                 .limit(2)
                 .count())
         .isEqualTo(2);
   }
 
-  private long createWorkflowInstance(final long workflowKey) {
+  private long createProcessInstance(final long processDefinitionKey) {
     return clientRule
         .getClient()
         .newCreateInstanceCommand()
-        .workflowKey(workflowKey)
+        .processDefinitionKey(processDefinitionKey)
         .send()
         .join()
-        .getWorkflowInstanceKey();
+        .getProcessInstanceKey();
   }
 }

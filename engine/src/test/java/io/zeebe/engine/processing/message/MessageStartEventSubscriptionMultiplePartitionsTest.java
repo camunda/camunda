@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message;
 
@@ -30,7 +30,7 @@ public final class MessageStartEventSubscriptionMultiplePartitionsTest {
   @Test
   public void shouldOpenMessageStartEventSubscriptionOnAllPartitions() {
     // when
-    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
+    engine.deployment().withXmlResource(createProcessWithOneMessageStartEvent()).deploy();
 
     // then
     final List<Record<MessageStartEventSubscriptionRecordValue>> subscriptions =
@@ -51,7 +51,7 @@ public final class MessageStartEventSubscriptionMultiplePartitionsTest {
         .containsExactlyInAnyOrderElementsOf(partitionIds);
   }
 
-  private static BpmnModelInstance createWorkflowWithOneMessageStartEvent() {
+  private static BpmnModelInstance createProcessWithOneMessageStartEvent() {
     return Bpmn.createExecutableProcess("processId")
         .startEvent(EVENT_ID1)
         .message(m -> m.name(MESSAGE_NAME1).id("startmsgId"))

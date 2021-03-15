@@ -2,14 +2,14 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn.behavior;
 
-import io.zeebe.engine.metrics.WorkflowEngineMetrics;
+import io.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
-import io.zeebe.engine.processing.bpmn.WorkflowInstanceStateTransitionGuard;
+import io.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -19,7 +19,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.variable.VariableBehavior;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.function.Function;
 
@@ -33,9 +33,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnDeferredRecordsBehavior deferredRecordsBehavior;
-  private final WorkflowInstanceStateTransitionGuard stateTransitionGuard;
+  private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final TypedStreamWriter streamWriter;
-  private final BpmnWorkflowResultSenderBehavior workflowResultSenderBehavior;
+  private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
 
   public BpmnBehaviorsImpl(
@@ -43,18 +43,20 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final TypedStreamWriter streamWriter,
       final TypedResponseWriter responseWriter,
       final SideEffects sideEffects,
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
       final VariableBehavior variableBehavior,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookup,
       final Writers writers) {
 
+    final var stateWriter = writers.state();
+    final var commandWriter = writers.command();
     this.streamWriter = streamWriter;
     this.expressionBehavior = expressionBehavior;
 
     stateBehavior = new BpmnStateBehavior(zeebeState, variableBehavior);
-    stateTransitionGuard = new WorkflowInstanceStateTransitionGuard(stateBehavior);
+    stateTransitionGuard = new ProcessInstanceStateTransitionGuard(stateBehavior);
     variableMappingBehavior =
         new BpmnVariableMappingBehavior(expressionBehavior, zeebeState, variableBehavior);
     stateTransitionBehavior =
@@ -62,7 +64,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             streamWriter,
             zeebeState.getKeyGenerator(),
             stateBehavior,
-            new WorkflowEngineMetrics(zeebeState.getPartitionId()),
+            new ProcessEngineMetrics(zeebeState.getPartitionId()),
             stateTransitionGuard,
             processorLookup,
             writers);
@@ -71,13 +73,14 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             stateTransitionBehavior,
             catchEventBehavior,
-            streamWriter,
+            stateWriter,
+            commandWriter,
             sideEffects,
             zeebeState);
     incidentBehavior = new BpmnIncidentBehavior(zeebeState, streamWriter);
     deferredRecordsBehavior = new BpmnDeferredRecordsBehavior(zeebeState);
     eventPublicationBehavior = new BpmnEventPublicationBehavior(zeebeState, streamWriter);
-    workflowResultSenderBehavior = new BpmnWorkflowResultSenderBehavior(zeebeState, responseWriter);
+    processResultSenderBehavior = new BpmnProcessResultSenderBehavior(zeebeState, responseWriter);
     bufferedMessageStartEventBehavior =
         new BpmnBufferedMessageStartEventBehavior(zeebeState, streamWriter);
   }
@@ -128,13 +131,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   }
 
   @Override
-  public WorkflowInstanceStateTransitionGuard stateTransitionGuard() {
+  public ProcessInstanceStateTransitionGuard stateTransitionGuard() {
     return stateTransitionGuard;
   }
 
   @Override
-  public BpmnWorkflowResultSenderBehavior workflowResultSenderBehavior() {
-    return workflowResultSenderBehavior;
+  public BpmnProcessResultSenderBehavior processResultSenderBehavior() {
+    return processResultSenderBehavior;
   }
 
   @Override

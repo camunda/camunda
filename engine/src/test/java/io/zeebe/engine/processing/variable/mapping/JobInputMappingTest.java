@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.variable.mapping;
 
@@ -92,19 +92,19 @@ public final class JobInputMappingTest {
                 .done())
         .deploy()
         .getValue()
-        .getDeployedWorkflows()
+        .getDeployedProcesses()
         .get(0)
-        .getWorkflowKey();
+        .getProcessDefinitionKey();
 
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables(initialVariables)
             .create();
     RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .await();
     ENGINE_RULE.jobs().withType(jobType).activate();
 

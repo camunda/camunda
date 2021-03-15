@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.transport.commandapi;
 
@@ -36,9 +36,9 @@ public final class ErrorResponseWriter implements BufferWriter {
   private static final String INVALID_MESSAGE_TEMPLATE_FORMAT =
       "Expected to handle only messages with template IDs of %s, but received one with id '%d'";
   private static final String INVALID_DEPLOYMENT_PARTITION_FORMAT =
-      "Expected to deploy workflows to partition '%d', but was attempted on partition '%d'";
-  private static final String WORKFLOW_NOT_FOUND_FORMAT =
-      "Expected to get workflow with %s, but no such workflow found";
+      "Expected to deploy processes to partition '%d', but was attempted on partition '%d'";
+  private static final String PROCESS_NOT_FOUND_FORMAT =
+      "Expected to get process with %s, but no such process found";
   private static final String RESOURCE_EXHAUSTED = "Reached maximum capacity of requests handled";
 
   private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
@@ -113,9 +113,9 @@ public final class ErrorResponseWriter implements BufferWriter {
                 INVALID_DEPLOYMENT_PARTITION_FORMAT, expectedPartitionId, actualPartitionId));
   }
 
-  public ErrorResponseWriter workflowNotFound(final String workflowIdentifier) {
-    return errorCode(ErrorCode.WORKFLOW_NOT_FOUND)
-        .errorMessage(String.format(WORKFLOW_NOT_FOUND_FORMAT, workflowIdentifier));
+  public ErrorResponseWriter processNotFound(final String processIdentifier) {
+    return errorCode(ErrorCode.PROCESS_NOT_FOUND)
+        .errorMessage(String.format(PROCESS_NOT_FOUND_FORMAT, processIdentifier));
   }
 
   public ErrorResponseWriter errorCode(final ErrorCode errorCode) {

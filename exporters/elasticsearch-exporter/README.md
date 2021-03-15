@@ -65,7 +65,7 @@ that even when we have low traffic of records we still export every once in a wh
 In most cases, you will not be interested in exporting every single record produced by a
 Zeebe cluster, but rather only a subset of them. This can also be configured to limit the
 kinds of records being exported (e.g. only events, no commands), and the value type of these
-records (e.g. only job and workflow values).
+records (e.g. only job and process values).
 
 For example:
 
@@ -88,8 +88,8 @@ For example:
           jobBatch: false
           message: false
           messageSubscription: false
-          workflowInstance: false
-          workflowInstanceSubscription: false
+          processInstance: false
+          processInstanceSubscription: false
 ```
 
 The given example would only export incident events, and nothing else.
@@ -107,8 +107,8 @@ More specifically, each option configures the following:
 * `jobBatch` (`boolean`): if true, records related to job batches will be exported; if false, ignored.
 * `message` (`boolean`): if true, records related to messages will be exported; if false, ignored.
 * `messageSubscription` (`boolean`): if true, records related to message subscriptions will be exported; if false, ignored.
-* `workflowInstance` (`boolean`): if true, records related to workflow instances will be exported; if false, ignored.
-* `workflowInstanceSubscription` (`boolean`): if true, records related to workflow instance subscriptions will be exported; if false, ignored.
+* `processInstance` (`boolean`): if true, records related to process instances will be exported; if false, ignored.
+* `processInstanceSubscription` (`boolean`): if true, records related to process instance subscriptions will be exported; if false, ignored.
 
 Here is a complete, default configuration example:
 
@@ -156,9 +156,9 @@ Here is a complete, default configuration example:
           messageSubscription: false
           variable: true
           variableDocument: true
-          workflowInstance: true
-          workflowInstanceCreation: false
-          workflowInstanceSubscription: false
+          processInstance: true
+          processInstanceCreation: false
+          processInstanceSubscription: false
 
           ignoreVariablesAbove: 32677
 

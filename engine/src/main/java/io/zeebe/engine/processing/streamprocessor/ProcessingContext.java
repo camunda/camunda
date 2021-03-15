@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.streamprocessor;
 
@@ -11,13 +11,14 @@ import io.zeebe.db.TransactionContext;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriterImpl;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.KeyGeneratorControls;
 import io.zeebe.engine.state.ZeebeDbState;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -32,6 +33,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private LogStreamReader logStreamReader;
   private TypedStreamWriter logStreamWriter = new NoopTypedStreamWriter();
   private CommandResponseWriter commandResponseWriter;
+  private TypedResponseWriterImpl typedResponseWriter;
 
   private RecordValues recordValues;
   private RecordProcessorMap recordProcessorMap;
@@ -93,7 +95,13 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   public ProcessingContext commandResponseWriter(
       final CommandResponseWriter commandResponseWriter) {
     this.commandResponseWriter = commandResponseWriter;
+    typedResponseWriter =
+        new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
     return this;
+  }
+
+  public CommandResponseWriter getCommandResponseWriter() {
+    return commandResponseWriter;
   }
 
   public ProcessingContext onProcessedListener(final Consumer<TypedRecord> onProcessedListener) {
@@ -154,7 +162,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     // todo (#6202): cleanup - revisit after migration is finished
     // create newly every time, because the specific writers may differ over time
     final var stateWriter = new EventApplyingStateWriter(logStreamWriter, eventApplier);
-    return new Writers(logStreamWriter, stateWriter, commandResponseWriter);
+
+    return new Writers(logStreamWriter, stateWriter, typedResponseWriter);
   }
 
   @Override
@@ -168,7 +177,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   }
 
   @Override
-  public ZeebeState getZeebeState() {
+  public MutableZeebeState getZeebeState() {
     return zeebeState;
   }
 

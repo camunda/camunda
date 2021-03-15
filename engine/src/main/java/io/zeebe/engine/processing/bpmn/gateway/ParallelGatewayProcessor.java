@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn.gateway;
 
@@ -36,7 +36,7 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
     final var activated = stateTransitionBehavior.transitionToActivated(context);
     final var completing = stateTransitionBehavior.transitionToCompleting(activated);
     final var completed = stateTransitionBehavior.transitionToCompleted(completing);
-    // fork the workflow processing by taking all outgoing sequence flows of the parallel gateway
+    // fork the process processing by taking all outgoing sequence flows of the parallel gateway
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
   }
 

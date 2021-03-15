@@ -2,23 +2,22 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.logstreams.storage.atomix;
 
-import io.atomix.raft.storage.log.Indexed;
+import io.atomix.raft.storage.log.IndexedRaftRecord;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.raft.zeebe.ZeebeEntry;
+import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.zeebe.logstreams.storage.LogStorageReader;
 import java.util.NoSuchElementException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * Implements {@link LogStorageReader} over a {@link RaftLogReader}. Each {@link ZeebeEntry} is
- * considered a block (as per the log storage definition).
+ * Implements {@link LogStorageReader} over a {@link RaftLogReader}. Each {@link ApplicationEntry}
+ * is considered a block (as per the log storage definition).
  *
  * <p>The implementation does look-ahead by one entry. This is necessary because we usually want to
  * seek to the entry which contains the given position, and in order to know that it does we need to
@@ -90,11 +89,11 @@ public final class AtomixLogStorageReader implements LogStorageReader {
 
   private boolean readNextBlock() {
     while (reader.hasNext()) {
-      final Indexed<RaftLogEntry> entry = reader.next();
-      if (entry.type() == ZeebeEntry.class) {
-        final Indexed<ZeebeEntry> nextIndexedEntry = entry.cast();
+      final IndexedRaftRecord entry = reader.next();
+      if (entry.entry().isApplicationEntry()) {
+        final ApplicationEntry nextEntry = entry.entry().getApplicationEntry();
 
-        nextBlockBuffer.wrap(nextIndexedEntry.entry().data());
+        nextBlockBuffer.wrap(nextEntry.data());
         return true;
       }
     }

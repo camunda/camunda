@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.exporter;
 
@@ -68,12 +68,12 @@ public class ElasticsearchExporterConfiguration {
         return index.variable;
       case VARIABLE_DOCUMENT:
         return index.variableDocument;
-      case WORKFLOW_INSTANCE:
-        return index.workflowInstance;
-      case WORKFLOW_INSTANCE_CREATION:
-        return index.workflowInstanceCreation;
-      case WORKFLOW_INSTANCE_SUBSCRIPTION:
-        return index.workflowInstanceSubscription;
+      case PROCESS_INSTANCE:
+        return index.processInstance;
+      case PROCESS_INSTANCE_CREATION:
+        return index.processInstanceCreation;
+      case PROCESS_INSTANCE_SUBSCRIPTION:
+        return index.processInstanceSubscription;
       default:
         return false;
     }
@@ -114,9 +114,9 @@ public class ElasticsearchExporterConfiguration {
     public boolean messageSubscription = false;
     public boolean variable = true;
     public boolean variableDocument = true;
-    public boolean workflowInstance = true;
-    public boolean workflowInstanceCreation = false;
-    public boolean workflowInstanceSubscription = false;
+    public boolean processInstance = true;
+    public boolean processInstanceCreation = false;
+    public boolean processInstanceSubscription = false;
 
     // size limits
     public int ignoreVariablesAbove = 8191;
@@ -151,12 +151,12 @@ public class ElasticsearchExporterConfiguration {
           + variable
           + ", variableDocument="
           + variableDocument
-          + ", workflowInstance="
-          + workflowInstance
-          + ", workflowInstanceCreation="
-          + workflowInstanceCreation
-          + ", workflowInstanceSubscription="
-          + workflowInstanceSubscription
+          + ", processInstance="
+          + processInstance
+          + ", processInstanceCreation="
+          + processInstanceCreation
+          + ", processInstanceSubscription="
+          + processInstanceSubscription
           + ", ignoreVariablesAbove="
           + ignoreVariablesAbove
           + '}';

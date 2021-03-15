@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.deployment.model.transformer;
 
@@ -17,11 +17,11 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableEventBasedG
 import io.zeebe.engine.processing.deployment.model.element.ExecutableExclusiveGateway;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableReceiveTask;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableServiceTask;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Activity;
@@ -73,7 +73,7 @@ public final class FlowElementInstantiationTransformer
 
   @Override
   public void transform(final FlowElement element, final TransformContext context) {
-    final ExecutableWorkflow workflow = context.getCurrentWorkflow();
+    final ExecutableProcess process = context.getCurrentProcess();
     final Class<?> elementType = element.getElementType().getInstanceType();
 
     final Function<String, AbstractFlowElement> elementFactory = ELEMENT_FACTORIES.get(elementType);
@@ -86,6 +86,6 @@ public final class FlowElementInstantiationTransformer
     executableElement.setElementType(
         BpmnElementType.bpmnElementTypeFor(element.getElementType().getTypeName()));
 
-    workflow.addFlowElement(executableElement);
+    process.addFlowElement(executableElement);
   }
 }

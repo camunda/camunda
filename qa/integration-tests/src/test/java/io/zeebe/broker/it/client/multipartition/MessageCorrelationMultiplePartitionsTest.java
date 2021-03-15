@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.it.client.multipartition;
 
@@ -16,8 +16,8 @@ import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.test.util.BrokerClassRuleHelper;
+import io.zeebe.test.util.record.ProcessInstances;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.WorkflowInstances;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -44,15 +44,15 @@ public final class MessageCorrelationMultiplePartitionsTest {
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
-  private long workflowKey;
+  private long processDefinitionKey;
   private String messageName;
 
   @Before
   public void init() {
     messageName = helper.getMessageName();
 
-    workflowKey =
-        CLIENT_RULE.deployWorkflow(
+    processDefinitionKey =
+        CLIENT_RULE.deployProcess(
             Bpmn.createExecutableProcess("process")
                 .startEvent()
                 .intermediateCatchEvent()
@@ -90,29 +90,29 @@ public final class MessageCorrelationMultiplePartitionsTest {
     publishMessage(CORRELATION_KEY_PARTITION_2, Map.of("p", "p2"));
 
     // when
-    final long wfiKey1 = createWorkflowInstance(Map.of("key", CORRELATION_KEY_PARTITION_0));
-    final long wfiKey2 = createWorkflowInstance(Map.of("key", CORRELATION_KEY_PARTITION_1));
-    final long wfiKey3 = createWorkflowInstance(Map.of("key", CORRELATION_KEY_PARTITION_2));
+    final long wfiKey1 = createProcessInstance(Map.of("key", CORRELATION_KEY_PARTITION_0));
+    final long wfiKey2 = createProcessInstance(Map.of("key", CORRELATION_KEY_PARTITION_1));
+    final long wfiKey3 = createProcessInstance(Map.of("key", CORRELATION_KEY_PARTITION_2));
 
     // then
     final List<String> correlatedValues =
         Arrays.asList(
-            WorkflowInstances.getCurrentVariables(wfiKey1).get("p"),
-            WorkflowInstances.getCurrentVariables(wfiKey2).get("p"),
-            WorkflowInstances.getCurrentVariables(wfiKey3).get("p"));
+            ProcessInstances.getCurrentVariables(wfiKey1).get("p"),
+            ProcessInstances.getCurrentVariables(wfiKey2).get("p"),
+            ProcessInstances.getCurrentVariables(wfiKey3).get("p"));
 
     assertThat(correlatedValues).contains("\"p0\"", "\"p1\"", "\"p2\"");
   }
 
-  private long createWorkflowInstance(final Object variables) {
+  private long createProcessInstance(final Object variables) {
     return CLIENT_RULE
         .getClient()
         .newCreateInstanceCommand()
-        .workflowKey(workflowKey)
+        .processDefinitionKey(processDefinitionKey)
         .variables(variables)
         .send()
         .join()
-        .getWorkflowInstanceKey();
+        .getProcessInstanceKey();
   }
 
   private void publishMessage(final String correlationKey, final Object variables) {

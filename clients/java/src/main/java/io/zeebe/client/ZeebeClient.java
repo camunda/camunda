@@ -16,9 +16,9 @@
 package io.zeebe.client;
 
 import io.zeebe.client.api.command.ActivateJobsCommandStep1;
-import io.zeebe.client.api.command.CancelWorkflowInstanceCommandStep1;
-import io.zeebe.client.api.command.CreateWorkflowInstanceCommandStep1;
-import io.zeebe.client.api.command.DeployWorkflowCommandStep1;
+import io.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
+import io.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.zeebe.client.api.command.SetVariablesCommandStep1;
@@ -79,22 +79,22 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   void close();
 
   /**
-   * Command to deploy new workflows.
+   * Command to deploy new processes.
    *
    * <pre>
    * zeebeClient
    *  .newDeployCommand()
-   *  .addResourceFile("~/wf/workflow1.bpmn")
-   *  .addResourceFile("~/wf/workflow2.bpmn")
+   *  .addResourceFile("~/wf/process1.bpmn")
+   *  .addResourceFile("~/wf/process2.bpmn")
    *  .send();
    * </pre>
    *
    * @return a builder for the command
    */
-  DeployWorkflowCommandStep1 newDeployCommand();
+  DeployProcessCommandStep1 newDeployCommand();
 
   /**
-   * Command to create/start a new instance of a workflow.
+   * Command to create/start a new instance of a process.
    *
    * <pre>
    * zeebeClient
@@ -107,24 +107,24 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  CreateWorkflowInstanceCommandStep1 newCreateInstanceCommand();
+  CreateProcessInstanceCommandStep1 newCreateInstanceCommand();
 
   /**
-   * Command to cancel a workflow instance.
+   * Command to cancel a process instance.
    *
    * <pre>
    * zeebeClient
-   *  .newCancelInstanceCommand(workflowInstanceKey)
+   *  .newCancelInstanceCommand(processInstanceKey)
    *  .send();
    * </pre>
    *
-   * @param workflowInstanceKey the key which identifies the corresponding workflow instance
+   * @param processInstanceKey the key which identifies the corresponding process instance
    * @return a builder for the command
    */
-  CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(long workflowInstanceKey);
+  CancelProcessInstanceCommandStep1 newCancelInstanceCommand(long processInstanceKey);
 
   /**
-   * Command to set and/or update the variables of a given flow element (e.g. workflow instance,
+   * Command to set and/or update the variables of a given flow element (e.g. process instance,
    * task, etc.)
    *
    * <pre>
@@ -140,7 +140,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   SetVariablesCommandStep1 newSetVariablesCommand(long elementInstanceKey);
 
   /**
-   * Command to publish a message which can be correlated to a workflow instance.
+   * Command to publish a message which can be correlated to a process instance.
    *
    * <pre>
    * zeebeClient

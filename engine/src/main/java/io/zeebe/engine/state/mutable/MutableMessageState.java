@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.mutable;
 
@@ -19,13 +19,13 @@ public interface MutableMessageState extends MessageState {
 
   void removeMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId);
 
-  void putActiveWorkflowInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
+  void putActiveProcessInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
 
-  void removeActiveWorkflowInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
+  void removeActiveProcessInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
 
-  void putWorkflowInstanceCorrelationKey(long workflowInstanceKey, DirectBuffer correlationKey);
+  void putProcessInstanceCorrelationKey(long processInstanceKey, DirectBuffer correlationKey);
 
-  void removeWorkflowInstanceCorrelationKey(long workflowInstanceKey);
+  void removeProcessInstanceCorrelationKey(long processInstanceKey);
 
   void remove(long messageKey);
 }

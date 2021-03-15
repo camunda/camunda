@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.gateway;
 
@@ -21,16 +21,16 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo.Builder;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
@@ -133,13 +133,13 @@ public final class EndpointManager {
     activateJobsHandler.activateJobs(request, responseObserver);
   }
 
-  public void cancelWorkflowInstance(
-      final CancelWorkflowInstanceRequest request,
-      final ServerStreamObserver<CancelWorkflowInstanceResponse> responseObserver) {
+  public void cancelProcessInstance(
+      final CancelProcessInstanceRequest request,
+      final ServerStreamObserver<CancelProcessInstanceResponse> responseObserver) {
     sendRequest(
         request,
-        RequestMapper::toCancelWorkflowInstanceRequest,
-        ResponseMapper::toCancelWorkflowInstanceResponse,
+        RequestMapper::toCancelProcessInstanceRequest,
+        ResponseMapper::toCancelProcessInstanceResponse,
         responseObserver);
   }
 
@@ -153,43 +153,43 @@ public final class EndpointManager {
         responseObserver);
   }
 
-  public void createWorkflowInstance(
-      final CreateWorkflowInstanceRequest request,
-      final ServerStreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
+  public void createProcessInstance(
+      final CreateProcessInstanceRequest request,
+      final ServerStreamObserver<CreateProcessInstanceResponse> responseObserver) {
     sendRequestWithRetryPartitions(
         request,
-        RequestMapper::toCreateWorkflowInstanceRequest,
-        ResponseMapper::toCreateWorkflowInstanceResponse,
+        RequestMapper::toCreateProcessInstanceRequest,
+        ResponseMapper::toCreateProcessInstanceResponse,
         responseObserver);
   }
 
-  public void createWorkflowInstanceWithResult(
-      final CreateWorkflowInstanceWithResultRequest request,
-      final ServerStreamObserver<CreateWorkflowInstanceWithResultResponse> responseObserver) {
+  public void createProcessInstanceWithResult(
+      final CreateProcessInstanceWithResultRequest request,
+      final ServerStreamObserver<CreateProcessInstanceWithResultResponse> responseObserver) {
     if (request.getRequestTimeout() > 0) {
       sendRequestWithRetryPartitions(
           request,
-          RequestMapper::toCreateWorkflowInstanceWithResultRequest,
-          ResponseMapper::toCreateWorkflowInstanceWithResultResponse,
+          RequestMapper::toCreateProcessInstanceWithResultRequest,
+          ResponseMapper::toCreateProcessInstanceWithResultResponse,
           responseObserver,
           Duration.ofMillis(request.getRequestTimeout()));
     } else {
       sendRequestWithRetryPartitions(
           request,
-          RequestMapper::toCreateWorkflowInstanceWithResultRequest,
-          ResponseMapper::toCreateWorkflowInstanceWithResultResponse,
+          RequestMapper::toCreateProcessInstanceWithResultRequest,
+          ResponseMapper::toCreateProcessInstanceWithResultResponse,
           responseObserver);
     }
   }
 
-  public void deployWorkflow(
-      final DeployWorkflowRequest request,
-      final ServerStreamObserver<DeployWorkflowResponse> responseObserver) {
+  public void deployProcess(
+      final DeployProcessRequest request,
+      final ServerStreamObserver<DeployProcessResponse> responseObserver) {
 
     sendRequest(
         request,
-        RequestMapper::toDeployWorkflowRequest,
-        ResponseMapper::toDeployWorkflowResponse,
+        RequestMapper::toDeployProcessRequest,
+        ResponseMapper::toDeployProcessResponse,
         responseObserver);
   }
 

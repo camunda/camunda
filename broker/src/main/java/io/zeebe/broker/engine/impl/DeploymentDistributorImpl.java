@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.engine.impl;
 
@@ -33,7 +33,7 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
 
   public static final Duration PUSH_REQUEST_TIMEOUT = Duration.ofSeconds(15);
   public static final Duration RETRY_DELAY = Duration.ofMillis(100);
-  private static final Logger LOG = Loggers.WORKFLOW_REPOSITORY_LOGGER;
+  private static final Logger LOG = Loggers.PROCESS_REPOSITORY_LOGGER;
   private static final String DEPLOYMENT_PUSH_TOPIC = "deployment";
   private final PushDeploymentResponse pushDeploymentResponse = new PushDeploymentResponse();
 

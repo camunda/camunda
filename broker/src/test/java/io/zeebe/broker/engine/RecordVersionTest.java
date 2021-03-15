@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.engine;
 
@@ -15,7 +15,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
 import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -43,12 +43,12 @@ public final class RecordVersionTest {
   @Test
   public void deploymentRecordsShouldHaveBrokerVersion() {
     // given
-    final var workflow = Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
+    final var process = Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
 
-    deployWorkflow(workflow);
+    deployProcess(process);
 
     // then
-    assertThat(RecordingExporter.workflowRecords().limit(1))
+    assertThat(RecordingExporter.processRecords().limit(1))
         .hasSize(1)
         .extracting(Record::getBrokerVersion)
         .containsOnly(EXPECTED_VERSION);
@@ -60,15 +60,15 @@ public final class RecordVersionTest {
   }
 
   @Test
-  public void workflowInstanceRecordsShouldHaveBrokerVersion() {
+  public void processInstanceRecordsShouldHaveBrokerVersion() {
     // given
-    final var workflow = Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
+    final var process = Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
 
-    deployWorkflow(workflow);
-    final var workflowInstanceKey = createWorkflowInstance(PROCESS_ID);
+    deployProcess(process);
+    final var processInstanceKey = createProcessInstance(PROCESS_ID);
 
     // then
-    assertThat(RecordingExporter.records().limitToWorkflowInstance(workflowInstanceKey))
+    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey))
         .extracting(Record::getBrokerVersion)
         .containsOnly(EXPECTED_VERSION);
   }
@@ -76,7 +76,7 @@ public final class RecordVersionTest {
   @Test
   public void messageSubscriptionRecordsShouldHaveBrokerVersion() {
     // given
-    final var workflow =
+    final var process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .intermediateCatchEvent(
@@ -84,30 +84,30 @@ public final class RecordVersionTest {
             .endEvent()
             .done();
 
-    deployWorkflow(workflow);
-    final var workflowInstanceKey = createWorkflowInstance(PROCESS_ID);
+    deployProcess(process);
+    final var processInstanceKey = createProcessInstance(PROCESS_ID);
 
     // then
     assertThat(
             RecordingExporter.messageSubscriptionRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .hasSize(2)
         .extracting(Record::getBrokerVersion)
         .containsOnly(EXPECTED_VERSION);
 
     assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .hasSize(2)
         .extracting(Record::getBrokerVersion)
         .containsOnly(EXPECTED_VERSION);
   }
 
-  private void deployWorkflow(final BpmnModelInstance workflow) {
+  private void deployProcess(final BpmnModelInstance process) {
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-    Bpmn.writeModelToStream(outStream, workflow);
+    Bpmn.writeModelToStream(outStream, process);
     final byte[] resource = outStream.toByteArray();
 
     API_RULE
@@ -119,16 +119,16 @@ public final class RecordVersionTest {
         .send();
   }
 
-  private long createWorkflowInstance(final String processId) {
+  private long createProcessInstance(final String processId) {
     final var response =
         API_RULE
             .createCmdRequest()
-            .type(ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE)
+            .type(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE)
             .command()
             .put("bpmnProcessId", processId)
             .done()
             .sendAndAwait();
 
-    return (Long) response.getValue().get("workflowInstanceKey");
+    return (Long) response.getValue().get("processInstanceKey");
   }
 }

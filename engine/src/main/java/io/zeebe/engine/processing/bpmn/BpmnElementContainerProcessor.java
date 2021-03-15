@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn;
 
@@ -26,8 +26,8 @@ public interface BpmnElementContainerProcessor<T extends ExecutableFlowElement>
    * elements.
    *
    * @param element the instance of the BPMN element container
-   * @param flowScopeContext workflow instance-related data of the element container
-   * @param childContext workflow instance-related data of the child element that is completed
+   * @param flowScopeContext process instance-related data of the element container
+   * @param childContext process instance-related data of the child element that is completed
    */
   void onChildCompleted(
       final T element,
@@ -40,8 +40,8 @@ public interface BpmnElementContainerProcessor<T extends ExecutableFlowElement>
    * the termination.
    *
    * @param element the instance of the BPMN element container
-   * @param flowScopeContext workflow instance-related data of the element container
-   * @param childContext workflow instance-related data of the child element that is terminated
+   * @param flowScopeContext process instance-related data of the element container
+   * @param childContext process instance-related data of the child element that is terminated
    */
   void onChildTerminated(
       T element, BpmnElementContext flowScopeContext, BpmnElementContext childContext);

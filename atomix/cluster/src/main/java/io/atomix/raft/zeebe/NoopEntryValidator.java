@@ -15,10 +15,13 @@
  */
 package io.atomix.raft.zeebe;
 
+import io.atomix.raft.storage.log.entry.ApplicationEntry;
+
 public class NoopEntryValidator implements EntryValidator {
 
   @Override
-  public ValidationResult validateEntry(final ZeebeEntry lastEntry, final ZeebeEntry entry) {
+  public ValidationResult validateEntry(
+      final ApplicationEntry lastEntry, final ApplicationEntry entry) {
     return ValidationResult.success();
   }
 }

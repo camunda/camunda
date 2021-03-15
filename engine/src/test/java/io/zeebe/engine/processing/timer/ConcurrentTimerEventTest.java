@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.timer;
 
@@ -13,8 +13,8 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -32,7 +32,7 @@ public final class ConcurrentTimerEventTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private long workflowInstanceKey;
+  private long processInstanceKey;
   private Record<TimerRecordValue> timerCreated;
 
   @Before
@@ -46,11 +46,11 @@ public final class ConcurrentTimerEventTest {
                 .done())
         .deploy();
 
-    workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("process").create();
+    processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
     timerCreated =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     ENGINE.stop();
@@ -73,7 +73,7 @@ public final class ConcurrentTimerEventTest {
     final var rejection =
         RecordingExporter.timerRecords(TimerIntent.TRIGGER)
             .onlyCommandRejections()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
@@ -96,7 +96,7 @@ public final class ConcurrentTimerEventTest {
     final var rejection =
         RecordingExporter.timerRecords(TimerIntent.TRIGGER)
             .onlyCommandRejections()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
@@ -119,7 +119,7 @@ public final class ConcurrentTimerEventTest {
     final var rejection =
         RecordingExporter.timerRecords(TimerIntent.CANCEL)
             .onlyCommandRejections()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
@@ -129,27 +129,26 @@ public final class ConcurrentTimerEventTest {
   public void shouldRejectTriggerCommandIfElementInstanceIsLeft() {
     // given
     final var processActivated =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementType(BpmnElementType.PROCESS)
             .getFirst();
 
     final var eventActivated =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
             .getFirst();
 
     // when
     ENGINE.writeRecords(
         RecordToWrite.command()
-            .workflowInstance(WorkflowInstanceIntent.CANCEL, processActivated.getValue())
+            .processInstance(ProcessInstanceIntent.CANCEL, processActivated.getValue())
             .key(processActivated.getKey()),
         RecordToWrite.event()
-            .workflowInstance(
-                WorkflowInstanceIntent.ELEMENT_TERMINATING, processActivated.getValue())
+            .processInstance(ProcessInstanceIntent.ELEMENT_TERMINATING, processActivated.getValue())
             .key(processActivated.getKey())
             .causedBy(0),
         RecordToWrite.event()
-            .workflowInstance(WorkflowInstanceIntent.ELEMENT_TERMINATING, eventActivated.getValue())
+            .processInstance(ProcessInstanceIntent.ELEMENT_TERMINATING, eventActivated.getValue())
             .key(eventActivated.getKey())
             .causedBy(1),
         RecordToWrite.command()
@@ -162,7 +161,7 @@ public final class ConcurrentTimerEventTest {
     final var rejection =
         RecordingExporter.timerRecords()
             .onlyCommandRejections()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);

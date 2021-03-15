@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.util;
 
@@ -23,8 +23,8 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.state.EventApplier;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.appliers.EventAppliers;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -78,7 +78,7 @@ public final class TestStreams {
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
   private boolean snapshotWasTaken = false;
 
-  private Function<ZeebeState, EventApplier> eventApplierFactory = EventAppliers::new;
+  private Function<MutableZeebeState, EventApplier> eventApplierFactory = EventAppliers::new;
 
   public TestStreams(
       final TemporaryFolder dataDirectory,
@@ -103,7 +103,7 @@ public final class TestStreams {
   }
 
   public void withEventApplierFactory(
-      final Function<ZeebeState, EventApplier> eventApplierFactory) {
+      final Function<MutableZeebeState, EventApplier> eventApplierFactory) {
     this.eventApplierFactory = eventApplierFactory;
   }
 

@@ -1,6 +1,6 @@
 {
-  "workflowKey": "2251799813685251",
+  "processDefinitionKey": "2251799813685251",
   "bpmnProcessId": "process",
   "version": 2,
-  "workflowInstanceKey": "2251799813685253"
+  "processInstanceKey": "2251799813685253"
 }

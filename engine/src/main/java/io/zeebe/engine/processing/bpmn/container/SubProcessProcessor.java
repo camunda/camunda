@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn.container;
 
@@ -16,7 +16,8 @@ import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
 public final class SubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
@@ -56,20 +57,16 @@ public final class SubProcessProcessor
   public void onActivated(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
 
+    final ExecutableStartEvent startEvent;
     if (element.hasNoneStartEvent()) {
       // embedded sub-process is activated
-      final var noneStartEvent = element.getNoneStartEvent();
-      stateTransitionBehavior.activateChildInstance(context, noneStartEvent);
-
+      startEvent = element.getNoneStartEvent();
     } else {
       // event sub-process is activated
-      final var startEvent = element.getStartEvents().get(0);
-      final var childInstance = stateTransitionBehavior.activateChildInstance(context, startEvent);
-
-      // the event variables are stored as temporary variables in the scope of the subprocess
-      // - move them to the scope of the start event to apply the output variable mappings
-      stateBehavior.transferTemporaryVariables(context, childInstance.getKey());
+      startEvent = element.getStartEvents().get(0);
     }
+
+    stateTransitionBehavior.activateChildInstance(context, startEvent);
   }
 
   @Override
@@ -146,7 +143,7 @@ public final class SubProcessProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
 
-    if (flowScopeContext.getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATING
+    if (flowScopeContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
         && stateBehavior.isLastActiveExecutionPathInScope(childContext)) {
       stateTransitionBehavior.transitionToTerminated(flowScopeContext);
 

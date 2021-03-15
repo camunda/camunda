@@ -2,17 +2,19 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.message;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
+import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.zeebe.test.util.MsgPackUtil;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -28,19 +30,19 @@ public final class MessageSubscriptionStateTest {
   @Before
   public void setUp() {
 
-    final ZeebeState zeebeState = stateRule.getZeebeState();
+    final MutableZeebeState zeebeState = stateRule.getZeebeState();
     state = zeebeState.getMessageSubscriptionState();
   }
 
   @Test
   public void shouldNotExistWithDifferentElementKey() {
     // given
-    final MessageSubscription subscription = subscriptionWithElementInstanceKey(1);
-    state.put(subscription);
+    final var subscription = subscriptionWithElementInstanceKey(1);
+    state.put(1L, subscription);
 
     // when
     final boolean exist =
-        state.existSubscriptionForElementInstance(2, subscription.getMessageName());
+        state.existSubscriptionForElementInstance(2, subscription.getMessageNameBuffer());
 
     // then
     assertThat(exist).isFalse();
@@ -49,8 +51,8 @@ public final class MessageSubscriptionStateTest {
   @Test
   public void shouldNotExistWithDifferentMessageName() {
     // given
-    final MessageSubscription subscription = subscriptionWithElementInstanceKey(1);
-    state.put(subscription);
+    final var subscription = subscriptionWithElementInstanceKey(1);
+    state.put(1L, subscription);
 
     // when
     final boolean exist =
@@ -64,13 +66,13 @@ public final class MessageSubscriptionStateTest {
   @Test
   public void shouldExistSubscription() {
     // given
-    final MessageSubscription subscription = subscriptionWithElementInstanceKey(1);
-    state.put(subscription);
+    final var subscription = subscriptionWithElementInstanceKey(1);
+    state.put(1L, subscription);
 
     // when
     final boolean exist =
         state.existSubscriptionForElementInstance(
-            subscription.getElementInstanceKey(), subscription.getMessageName());
+            subscription.getElementInstanceKey(), subscription.getMessageNameBuffer());
 
     // then
     assertThat(exist).isTrue();
@@ -79,8 +81,8 @@ public final class MessageSubscriptionStateTest {
   @Test
   public void shouldVisitSubscription() {
     // given
-    final MessageSubscription subscription = subscription("messageName", "correlationKey", 1);
-    state.put(subscription);
+    final var subscription = subscription("messageName", "correlationKey", 1);
+    state.put(1L, subscription);
 
     // when
     final List<MessageSubscription> subscriptions = new ArrayList<>();
@@ -89,33 +91,33 @@ public final class MessageSubscriptionStateTest {
 
     // then
     assertThat(subscriptions).hasSize(1);
-    assertThat(subscriptions.get(0).getWorkflowInstanceKey())
-        .isEqualTo(subscription.getWorkflowInstanceKey());
-    assertThat(subscriptions.get(0).getElementInstanceKey())
+    assertThat(subscriptions.get(0).getRecord().getProcessInstanceKey())
+        .isEqualTo(subscription.getProcessInstanceKey());
+    assertThat(subscriptions.get(0).getRecord().getElementInstanceKey())
         .isEqualTo(subscription.getElementInstanceKey());
-    assertThat(subscriptions.get(0).getMessageName()).isEqualTo(subscription.getMessageName());
-    assertThat(subscriptions.get(0).getCorrelationKey())
+    assertThat(subscriptions.get(0).getRecord().getMessageName())
+        .isEqualTo(subscription.getMessageName());
+    assertThat(subscriptions.get(0).getRecord().getCorrelationKey())
         .isEqualTo(subscription.getCorrelationKey());
-    assertThat(subscriptions.get(0).getMessageVariables())
-        .isEqualTo(subscription.getMessageVariables());
-    assertThat(subscriptions.get(0).getCommandSentTime())
-        .isEqualTo(subscription.getCommandSentTime());
+    assertThat(subscriptions.get(0).getRecord().getVariables())
+        .isEqualTo(subscription.getVariables());
+    assertThat(subscriptions.get(0).getCommandSentTime()).isZero();
   }
 
   @Test
   public void shouldVisitSubscriptionsInOrder() {
     // given
-    state.put(subscription("messageName", "correlationKey", 1));
-    state.put(subscription("messageName", "correlationKey", 2));
-    state.put(subscription("otherMessageName", "correlationKey", 3));
-    state.put(subscription("messageName", "otherCorrelationKey", 4));
+    state.put(1L, subscription("messageName", "correlationKey", 1));
+    state.put(2L, subscription("messageName", "correlationKey", 2));
+    state.put(3L, subscription("otherMessageName", "correlationKey", 3));
+    state.put(4L, subscription("messageName", "otherCorrelationKey", 4));
 
     // when
     final List<Long> keys = new ArrayList<>();
     state.visitSubscriptions(
         wrapString("messageName"),
         wrapString("correlationKey"),
-        s -> keys.add(s.getElementInstanceKey()));
+        s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     // then
     assertThat(keys).hasSize(2).containsExactly(1L, 2L);
@@ -124,8 +126,8 @@ public final class MessageSubscriptionStateTest {
   @Test
   public void shouldVisitSubsctionsUntilStop() {
     // given
-    state.put(subscription("messageName", "correlationKey", 1));
-    state.put(subscription("messageName", "correlationKey", 2));
+    state.put(1L, subscription("messageName", "correlationKey", 1));
+    state.put(2L, subscription("messageName", "correlationKey", 2));
 
     // when
     final List<Long> keys = new ArrayList<>();
@@ -133,7 +135,7 @@ public final class MessageSubscriptionStateTest {
         wrapString("messageName"),
         wrapString("correlationKey"),
         s -> {
-          keys.add(s.getElementInstanceKey());
+          keys.add(s.getRecord().getElementInstanceKey());
           return false;
         });
 
@@ -144,17 +146,17 @@ public final class MessageSubscriptionStateTest {
   @Test
   public void shouldNoVisitMessageSubscriptionBeforeTime() {
     // given
-    final MessageSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
-    state.put(subscription1);
-    state.updateSentTime(subscription1, 1_000);
+    final var subscription1 = subscriptionWithElementInstanceKey(1L);
+    state.put(1L, subscription1);
+    state.updateToCorrelatingState(subscription1, 1_000);
 
-    final MessageSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
-    state.put(subscription2);
-    state.updateSentTime(subscription2, 3_000);
+    final var subscription2 = subscriptionWithElementInstanceKey(2L);
+    state.put(2L, subscription2);
+    state.updateToCorrelatingState(subscription2, 3_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
-    state.visitSubscriptionBefore(1_000, s -> keys.add(s.getElementInstanceKey()));
+    state.visitSubscriptionBefore(1_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).isEmpty();
   }
@@ -162,17 +164,17 @@ public final class MessageSubscriptionStateTest {
   @Test
   public void shouldVisitMessageSubscriptionBeforeTime() {
     // given
-    final MessageSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
-    state.put(subscription1);
-    state.updateSentTime(subscription1, 1_000);
+    final var subscription1 = subscriptionWithElementInstanceKey(1L);
+    state.put(1L, subscription1);
+    state.updateToCorrelatingState(subscription1, 1_000);
 
-    final MessageSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
-    state.put(subscription2);
-    state.updateSentTime(subscription2, 3_000);
+    final var subscription2 = subscriptionWithElementInstanceKey(2L);
+    state.put(2L, subscription2);
+    state.updateToCorrelatingState(subscription2, 3_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
-    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getElementInstanceKey()));
+    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
   }
@@ -180,17 +182,17 @@ public final class MessageSubscriptionStateTest {
   @Test
   public void shouldFindMessageSubscriptionBeforeTimeInOrder() {
     // given
-    final MessageSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
-    state.put(subscription1);
-    state.updateSentTime(subscription1, 1_000);
+    final var subscription1 = subscriptionWithElementInstanceKey(1L);
+    state.put(1L, subscription1);
+    state.updateToCorrelatingState(subscription1, 1_000);
 
-    final MessageSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
-    state.put(subscription2);
-    state.updateSentTime(subscription2, 2_000);
+    final var subscription2 = subscriptionWithElementInstanceKey(2L);
+    state.put(2L, subscription2);
+    state.updateToCorrelatingState(subscription2, 2_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
-    state.visitSubscriptionBefore(3_000, s -> keys.add(s.getElementInstanceKey()));
+    state.visitSubscriptionBefore(3_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(2).containsExactly(1L, 2L);
   }
@@ -198,16 +200,16 @@ public final class MessageSubscriptionStateTest {
   @Test
   public void shouldNotVisitMessageSubscriptionIfSentTimeNotSet() {
     // given
-    final MessageSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
-    state.put(subscription1);
-    state.updateSentTime(subscription1, 1_000);
+    final var subscription1 = subscriptionWithElementInstanceKey(1L);
+    state.put(1L, subscription1);
+    state.updateToCorrelatingState(subscription1, 1_000);
 
-    final MessageSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
-    state.put(subscription2);
+    final var subscription2 = subscriptionWithElementInstanceKey(2L);
+    state.put(2L, subscription2);
 
     // then
     final List<Long> keys = new ArrayList<>();
-    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getElementInstanceKey()));
+    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
   }
@@ -215,15 +217,18 @@ public final class MessageSubscriptionStateTest {
   @Test
   public void shouldUpdateMessageSubscriptionSentTime() {
     // given
-    final MessageSubscription subscription = subscriptionWithElementInstanceKey(1L);
-    state.put(subscription);
+    final var record = subscriptionWithElementInstanceKey(1L);
+    state.put(1L, record);
+
+    final var subscription =
+        state.get(record.getElementInstanceKey(), record.getMessageNameBuffer());
 
     // when
     state.updateSentTime(subscription, 1_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
-    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getElementInstanceKey()));
+    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
 
@@ -231,7 +236,7 @@ public final class MessageSubscriptionStateTest {
     state.updateSentTime(subscription, 1_500);
 
     keys.clear();
-    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getElementInstanceKey()));
+    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
   }
@@ -239,30 +244,42 @@ public final class MessageSubscriptionStateTest {
   @Test
   public void shouldUpdateCorrelationState() {
     // given
-    final MessageSubscription subscription = subscriptionWithElementInstanceKey(1L);
-    state.put(subscription);
+    final var subscription = subscriptionWithElementInstanceKey(1L);
+    state.put(1L, subscription);
 
-    assertThat(subscription.isCorrelating()).isFalse();
+    assertThat(
+            state
+                .get(subscription.getElementInstanceKey(), subscription.getMessageNameBuffer())
+                .isCorrelating())
+        .isFalse();
 
     // when
-    state.updateToCorrelatingState(subscription, wrapString("{\"foo\":\"bar\"}"), 1_000, 5);
+    subscription.setVariables(MsgPackUtil.asMsgPack("{\"foo\":\"bar\"}")).setMessageKey(5L);
+    state.updateToCorrelatingState(subscription, 1_000);
 
     // then
-    assertThat(subscription.isCorrelating()).isTrue();
+    assertThat(
+            state
+                .get(subscription.getElementInstanceKey(), subscription.getMessageNameBuffer())
+                .isCorrelating())
+        .isTrue();
 
     // and
     final List<MessageSubscription> subscriptions = new ArrayList<>();
     state.visitSubscriptions(
-        subscription.getMessageName(), subscription.getCorrelationKey(), subscriptions::add);
+        subscription.getMessageNameBuffer(),
+        subscription.getCorrelationKeyBuffer(),
+        subscriptions::add);
 
     assertThat(subscriptions).hasSize(1);
-    assertThat(subscriptions.get(0).getMessageVariables())
-        .isEqualTo(subscription.getMessageVariables());
-    assertThat(subscriptions.get(0).getMessageKey()).isEqualTo(subscription.getMessageKey());
+    assertThat(subscriptions.get(0).getRecord().getVariables())
+        .isEqualTo(subscription.getVariables());
+    assertThat(subscriptions.get(0).getRecord().getMessageKey())
+        .isEqualTo(subscription.getMessageKey());
 
     // and
     final List<Long> keys = new ArrayList<>();
-    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getElementInstanceKey()));
+    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
   }
@@ -270,52 +287,52 @@ public final class MessageSubscriptionStateTest {
   @Test
   public void shouldRemoveSubscription() {
     // given
-    final MessageSubscription subscription = subscriptionWithElementInstanceKey(1L);
-    state.put(subscription);
-    state.updateSentTime(subscription, 1_000);
+    final var subscription = subscriptionWithElementInstanceKey(1L);
+    state.put(1L, subscription);
+    state.updateToCorrelatingState(subscription, 1_000);
 
     // when
-    state.remove(1L, subscription.getMessageName());
+    state.remove(1L, subscription.getMessageNameBuffer());
 
     // then
     final List<Long> keys = new ArrayList<>();
     state.visitSubscriptions(
-        subscription.getMessageName(),
-        subscription.getCorrelationKey(),
-        s -> keys.add(s.getElementInstanceKey()));
+        subscription.getMessageNameBuffer(),
+        subscription.getCorrelationKeyBuffer(),
+        s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).isEmpty();
 
     // and
-    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getElementInstanceKey()));
+    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).isEmpty();
 
     // and
-    assertThat(state.existSubscriptionForElementInstance(1L, subscription.getMessageName()))
+    assertThat(state.existSubscriptionForElementInstance(1L, subscription.getMessageNameBuffer()))
         .isFalse();
   }
 
   @Test
   public void shouldNotFailOnRemoveSubscriptionTwice() {
     // given
-    final MessageSubscription subscription = subscriptionWithElementInstanceKey(1L);
-    state.put(subscription);
+    final var subscription = subscriptionWithElementInstanceKey(1L);
+    state.put(1L, subscription);
 
     // when
-    state.remove(1L, subscription.getMessageName());
-    state.remove(1L, subscription.getMessageName());
+    state.remove(1L, subscription.getMessageNameBuffer());
+    state.remove(1L, subscription.getMessageNameBuffer());
 
     // then
-    assertThat(state.existSubscriptionForElementInstance(1L, subscription.getMessageName()))
+    assertThat(state.existSubscriptionForElementInstance(1L, subscription.getMessageNameBuffer()))
         .isFalse();
   }
 
   @Test
   public void shouldNotRemoveSubscriptionOnDifferentKey() {
     // given
-    state.put(subscription("messageName", "correlationKey", 1L));
-    state.put(subscription("messageName", "correlationKey", 2L));
+    state.put(1L, subscription("messageName", "correlationKey", 1L));
+    state.put(2L, subscription("messageName", "correlationKey", 2L));
 
     // when
     state.remove(2L, wrapString("messageName"));
@@ -325,23 +342,24 @@ public final class MessageSubscriptionStateTest {
     state.visitSubscriptions(
         wrapString("messageName"),
         wrapString("correlationKey"),
-        s -> keys.add(s.getElementInstanceKey()));
+        s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
   }
 
-  private MessageSubscription subscriptionWithElementInstanceKey(final long elementInstanceKey) {
+  private MessageSubscriptionRecord subscriptionWithElementInstanceKey(
+      final long elementInstanceKey) {
     return subscription("messageName", "correlationKey", elementInstanceKey);
   }
 
-  private MessageSubscription subscription(
+  private MessageSubscriptionRecord subscription(
       final String name, final String correlationKey, final long elementInstanceKey) {
-    return new MessageSubscription(
-        1L,
-        elementInstanceKey,
-        wrapString("workflow"),
-        wrapString(name),
-        wrapString(correlationKey),
-        true);
+    return new MessageSubscriptionRecord()
+        .setProcessInstanceKey(1L)
+        .setElementInstanceKey(elementInstanceKey)
+        .setBpmnProcessId(wrapString("process"))
+        .setMessageName(wrapString(name))
+        .setCorrelationKey(wrapString(correlationKey))
+        .setInterrupting(true);
   }
 }

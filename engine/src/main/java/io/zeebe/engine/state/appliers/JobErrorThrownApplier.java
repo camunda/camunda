@@ -2,19 +2,19 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.processing.job.JobThrowErrorProcessor;
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableJobState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
 import org.agrona.DirectBuffer;
@@ -29,13 +29,13 @@ public class JobErrorThrownApplier implements TypedEventApplier<JobIntent, JobRe
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final CatchEventAnalyzer stateAnalyzer;
 
-  JobErrorThrownApplier(final ZeebeState state) {
+  JobErrorThrownApplier(final MutableZeebeState state) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     eventScopeInstanceState = state.getEventScopeInstanceState();
 
     stateAnalyzer =
-        new CatchEventAnalyzer(state.getWorkflowState(), state.getElementInstanceState());
+        new CatchEventAnalyzer(state.getProcessState(), state.getElementInstanceState());
   }
 
   @Override

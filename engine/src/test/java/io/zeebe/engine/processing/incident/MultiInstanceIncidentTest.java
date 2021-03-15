@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.incident;
 
@@ -15,10 +15,10 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -46,7 +46,7 @@ public final class MultiInstanceIncidentTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
   private String jobType;
 
-  private static BpmnModelInstance createWorkflow(final String jobType) {
+  private static BpmnModelInstance createProcess(final String jobType) {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .serviceTask(
@@ -66,23 +66,23 @@ public final class MultiInstanceIncidentTest {
   @Before
   public void init() {
     jobType = helper.getJobType();
-    ENGINE.deployment().withXmlResource(createWorkflow(jobType)).deploy();
+    ENGINE.deployment().withXmlResource(createProcess(jobType)).deploy();
   }
 
   @Test
   public void shouldCreateIncidentIfInputVariableNotFound() {
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    final Record<WorkflowInstanceRecordValue> elementInstance =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId(ELEMENT_ID)
             .getFirst();
 
@@ -101,9 +101,9 @@ public final class MultiInstanceIncidentTest {
   @Test
   public void shouldCreateIncidentIfInputVariableIsNotAnArray() {
     // when
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(INPUT_COLLECTION, "not-an-array-but-a-string")
             .create();
@@ -111,12 +111,12 @@ public final class MultiInstanceIncidentTest {
     // then
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    final Record<WorkflowInstanceRecordValue> elementInstance =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId(ELEMENT_ID)
             .getFirst();
 
@@ -133,25 +133,25 @@ public final class MultiInstanceIncidentTest {
   @Test
   public void shouldCreateIncidentIfOutputElementExpressionEvaluationFailed() {
     // given
-    final long workflowInstanceKey =
+    final long processInstanceKey =
         ENGINE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(INPUT_COLLECTION, List.of(1, 2, 3))
             .create();
 
     // when
-    ENGINE.job().withType(jobType).ofInstance(workflowInstanceKey).complete();
+    ENGINE.job().withType(jobType).ofInstance(processInstanceKey).complete();
 
     // then
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    final Record<WorkflowInstanceRecordValue> elementInstance =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETING)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId(ELEMENT_ID)
             .getFirst();
 
@@ -167,11 +167,11 @@ public final class MultiInstanceIncidentTest {
   @Test
   public void shouldResolveIncident() {
     // given
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // when
@@ -181,14 +181,14 @@ public final class MultiInstanceIncidentTest {
         .withDocument(Collections.singletonMap(INPUT_COLLECTION, Arrays.asList(10, 20, 30)))
         .update();
 
-    ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incident.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
+            RecordingExporter.processInstanceRecords()
                 .withRecordKey(incident.getValue().getElementInstanceKey())
                 .limit(2))
         .extracting(Record::getIntent)
-        .contains(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
   }
 }

@@ -2,12 +2,12 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.it.health;
 
-import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCompleted;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertProcessInstanceCompleted;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.Broker;
@@ -20,7 +20,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
@@ -59,7 +59,7 @@ public class DiskSpaceRecoveryClusteredTest {
     waitUntilDiskSpaceNotAvailable(failingBroker);
 
     final long deploymentKey =
-        deployWorkflow(Bpmn.createExecutableProcess("test").startEvent().endEvent().done());
+        deployProcess(Bpmn.createExecutableProcess("test").startEvent().endEvent().done());
 
     // when
     Awaitility.await()
@@ -79,14 +79,14 @@ public class DiskSpaceRecoveryClusteredTest {
     // given
     final var failingBroker =
         clusteringRule.getBroker(clusteringRule.getLeaderForPartition(3).getNodeId());
-    final long workflowKey = deployWorkflowWithMessage("process1");
+    final long processDefinitionKey = deployProcessWithMessage("process1");
 
-    final long workflowInstanceKey1 =
-        createWorkflowInstance(Map.of("key", CORRELATION_KEY), workflowKey);
-    final long workflowInstanceKey2 =
-        createWorkflowInstance(Map.of("key", CORRELATION_KEY), workflowKey);
-    final long workflowInstanceKey3 =
-        createWorkflowInstance(Map.of("key", CORRELATION_KEY), workflowKey);
+    final long processInstanceKey1 =
+        createProcessInstance(Map.of("key", CORRELATION_KEY), processDefinitionKey);
+    final long processInstanceKey2 =
+        createProcessInstance(Map.of("key", CORRELATION_KEY), processDefinitionKey);
+    final long processInstanceKey3 =
+        createProcessInstance(Map.of("key", CORRELATION_KEY), processDefinitionKey);
 
     Awaitility.await()
         .timeout(Duration.ofSeconds(60))
@@ -107,8 +107,8 @@ public class DiskSpaceRecoveryClusteredTest {
         .untilAsserted(
             () ->
                 assertThat(
-                        RecordingExporter.workflowInstanceSubscriptionRecords(
-                                WorkflowInstanceSubscriptionIntent.CORRELATED)
+                        RecordingExporter.processInstanceSubscriptionRecords(
+                                ProcessInstanceSubscriptionIntent.CORRELATED)
                             .limit(2)
                             .count())
                     .isEqualTo(2));
@@ -121,13 +121,13 @@ public class DiskSpaceRecoveryClusteredTest {
     // then
     Awaitility.await()
         .timeout(Duration.ofSeconds(60))
-        .untilAsserted(() -> assertWorkflowInstanceCompleted(workflowInstanceKey1));
+        .untilAsserted(() -> assertProcessInstanceCompleted(processInstanceKey1));
     Awaitility.await()
         .timeout(Duration.ofSeconds(60))
-        .untilAsserted(() -> assertWorkflowInstanceCompleted(workflowInstanceKey2));
+        .untilAsserted(() -> assertProcessInstanceCompleted(processInstanceKey2));
     Awaitility.await()
         .timeout(Duration.ofSeconds(60))
-        .untilAsserted(() -> assertWorkflowInstanceCompleted(workflowInstanceKey3));
+        .untilAsserted(() -> assertProcessInstanceCompleted(processInstanceKey3));
   }
 
   private void publishMessage(final String correlationKey, final String messageId) {
@@ -142,26 +142,26 @@ public class DiskSpaceRecoveryClusteredTest {
         .join();
   }
 
-  private long deployWorkflow(final BpmnModelInstance modelInstance) {
+  private long deployProcess(final BpmnModelInstance modelInstance) {
     final DeploymentEvent deploymentEvent =
         clientRule
             .getClient()
             .newDeployCommand()
-            .addWorkflowModel(modelInstance, "workflow.bpmn")
+            .addProcessModel(modelInstance, "process.bpmn")
             .send()
             .join();
     return deploymentEvent.getKey();
   }
 
-  private long deployWorkflowWithMessage(final String processId) {
-    final BpmnModelInstance workflow =
+  private long deployProcessWithMessage(final String processId) {
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .intermediateCatchEvent()
             .message(m -> m.name(messageName).zeebeCorrelationKeyExpression("key"))
             .endEvent("end")
             .done();
-    return clientRule.deployWorkflow(workflow);
+    return clientRule.deployProcess(process);
   }
 
   private void waitUntilDiskSpaceNotAvailable(final Broker broker) throws InterruptedException {
@@ -203,14 +203,14 @@ public class DiskSpaceRecoveryClusteredTest {
     assertThat(diskSpaceAvailableAgain.await(2, TimeUnit.SECONDS)).isTrue();
   }
 
-  private long createWorkflowInstance(final Object variables, final long workflowKey) {
+  private long createProcessInstance(final Object variables, final long processDefinitionKey) {
     return clientRule
         .getClient()
         .newCreateInstanceCommand()
-        .workflowKey(workflowKey)
+        .processDefinitionKey(processDefinitionKey)
         .variables(variables)
         .send()
         .join()
-        .getWorkflowInstanceKey();
+        .getProcessInstanceKey();
   }
 }

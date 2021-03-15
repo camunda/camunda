@@ -2,17 +2,17 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn.behavior;
 
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.common.ErrorEventHandler;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.instance.ElementInstance;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import org.agrona.DirectBuffer;
 
 public final class BpmnEventPublicationBehavior {
@@ -22,13 +22,13 @@ public final class BpmnEventPublicationBehavior {
   private final ElementInstanceState elementInstanceState;
 
   public BpmnEventPublicationBehavior(
-      final ZeebeState zeebeState, final TypedStreamWriter streamWriter) {
-    final var workflowState = zeebeState.getWorkflowState();
+      final MutableZeebeState zeebeState, final TypedStreamWriter streamWriter) {
+    final var processState = zeebeState.getProcessState();
     final var keyGenerator = zeebeState.getKeyGenerator();
     elementInstanceState = zeebeState.getElementInstanceState();
     errorEventHandler =
         new ErrorEventHandler(
-            zeebeState.getWorkflowState(),
+            zeebeState.getProcessState(),
             zeebeState.getElementInstanceState(),
             zeebeState.getEventScopeInstanceState(),
             zeebeState.getKeyGenerator());

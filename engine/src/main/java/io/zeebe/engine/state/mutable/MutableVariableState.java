@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.mutable;
 
@@ -21,12 +21,12 @@ public interface MutableVariableState extends VariableState {
    *
    * @param key the variable key
    * @param scopeKey the local scope of the variable
-   * @param workflowKey the associated workflow key, mostly for monitoring purposes
+   * @param processDefinitionKey the associated process key, mostly for monitoring purposes
    * @param name the name of the variable
    * @param value the value of the variable (MsgPack encoded)
    */
   void setVariableLocal(
-      long key, long scopeKey, long workflowKey, DirectBuffer name, DirectBuffer value);
+      long key, long scopeKey, long processDefinitionKey, DirectBuffer name, DirectBuffer value);
 
   /**
    * Creates or updates the variable with {@code name} within the given scope with {@code scopeKey},
@@ -37,7 +37,7 @@ public interface MutableVariableState extends VariableState {
    *
    * @param key the variable key
    * @param scopeKey the local scope of the variable
-   * @param workflowKey the associated workflow key, mostly for monitoring purposes
+   * @param processDefinitionKey the associated process key, mostly for monitoring purposes
    * @param name the name of the variable
    * @param nameOffset offset at which the name starts in the {@code name} buffer
    * @param nameLength length of the variable name in the {@code name} buffer
@@ -48,7 +48,7 @@ public interface MutableVariableState extends VariableState {
   void setVariableLocal(
       long key,
       long scopeKey,
-      long workflowKey,
+      long processDefinitionKey,
       DirectBuffer name,
       int nameOffset,
       int nameLength,

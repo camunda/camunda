@@ -70,6 +70,8 @@ pipeline {
                         sh '.ci/scripts/distribution/prepare-go.sh'
                     }
 
+                    runMavenContainerCommand(".ci/scripts/distribution/ensure-naming-for-process.sh")
+
                     // prepare unstash directory for IT files - required since the file names will
                     // be the same as in the other stages. it's necessary to set the permissions to
                     // 0777 has shell scripts are executed as root, whereas Jenkins directives such
@@ -135,6 +137,7 @@ pipeline {
                 }
 
                 stage('BPMN TCK') {
+                    when { expression { return false } } // disable TCK until migrated to new API
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/test-tck.sh')
@@ -506,8 +509,6 @@ def templatePodspec(String podspecPath, flags = [:]) {
 
     def nodePoolName = "agents-n1-standard-32-netssd-${effectiveFlags.useStableNodePool ? 'stable' : 'preempt'}"
 
-    // Needs no workspace, see:
-    // https://www.jenkins.io/doc/pipeline/steps/workflow-multibranch/#readtrusted-read-trusted-file-from-scm
     String templateString = readTrusted(podspecPath)
 
     // Note: Templating is currently done via simple string substitution as this

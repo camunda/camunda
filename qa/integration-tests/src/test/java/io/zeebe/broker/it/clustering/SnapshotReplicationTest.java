@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.it.clustering;
 
@@ -35,7 +35,7 @@ public final class SnapshotReplicationTest {
 
   private static final int PARTITION_COUNT = 1;
   private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
-  private static final BpmnModelInstance WORKFLOW =
+  private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
   private final ClusteringRule clusteringRule =
@@ -97,7 +97,7 @@ public final class SnapshotReplicationTest {
   }
 
   private void triggerSnapshotCreation() {
-    clientRule.deployWorkflow(WORKFLOW);
+    clientRule.deployProcess(PROCESS);
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
   }
 
@@ -190,10 +190,11 @@ public final class SnapshotReplicationTest {
         FileBasedSnapshotMetadata.ofPath(validSnapshotDir.getFileName()).orElseThrow();
     final String prefix =
         String.format(
-            "%d-%d-%d",
+            "%d-%d-%d-%d",
             snapshotMetadata.getIndex(),
             snapshotMetadata.getTerm(),
-            snapshotMetadata.getTimestamp().unixTimestamp());
+            snapshotMetadata.getProcessedPosition(),
+            snapshotMetadata.getExportedPosition());
     try (final var files = Files.list(validSnapshotDir)) {
       return files.collect(
           Collectors.toMap(

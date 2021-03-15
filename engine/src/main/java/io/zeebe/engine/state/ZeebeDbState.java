@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state;
 
@@ -12,7 +12,7 @@ import io.zeebe.db.DbValue;
 import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.state.deployment.DbDeploymentState;
-import io.zeebe.engine.state.deployment.DbWorkflowState;
+import io.zeebe.engine.state.deployment.DbProcessState;
 import io.zeebe.engine.state.instance.DbElementInstanceState;
 import io.zeebe.engine.state.instance.DbEventScopeInstanceState;
 import io.zeebe.engine.state.instance.DbIncidentState;
@@ -21,7 +21,7 @@ import io.zeebe.engine.state.instance.DbTimerInstanceState;
 import io.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.zeebe.engine.state.message.DbMessageState;
 import io.zeebe.engine.state.message.DbMessageSubscriptionState;
-import io.zeebe.engine.state.message.DbWorkflowInstanceSubscriptionState;
+import io.zeebe.engine.state.message.DbProcessInstanceSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableBlackListState;
 import io.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -32,10 +32,11 @@ import io.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessState;
 import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
-import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
-import io.zeebe.engine.state.mutable.MutableWorkflowState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.state.processing.DbBlackListState;
 import io.zeebe.engine.state.processing.DbKeyGenerator;
 import io.zeebe.engine.state.processing.DbLastProcessedPositionState;
@@ -43,12 +44,12 @@ import io.zeebe.engine.state.variable.DbVariableState;
 import io.zeebe.protocol.Protocol;
 import java.util.function.BiConsumer;
 
-public class ZeebeDbState implements ZeebeState {
+public class ZeebeDbState implements MutableZeebeState {
 
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
   private final DbKeyGenerator keyGenerator;
 
-  private final MutableWorkflowState workflowState;
+  private final MutableProcessState processState;
   private final MutableTimerInstanceState timerInstanceState;
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
@@ -59,7 +60,7 @@ public class ZeebeDbState implements ZeebeState {
   private final MutableMessageState messageState;
   private final MutableMessageSubscriptionState messageSubscriptionState;
   private final MutableMessageStartEventSubscriptionState messageStartEventSubscriptionState;
-  private final MutableWorkflowInstanceSubscriptionState workflowInstanceSubscriptionState;
+  private final MutableProcessInstanceSubscriptionState processInstanceSubscriptionState;
   private final MutableIncidentState incidentState;
   private final MutableBlackListState blackListState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
@@ -80,7 +81,7 @@ public class ZeebeDbState implements ZeebeState {
     keyGenerator = new DbKeyGenerator(partitionId, zeebeDb, transactionContext);
 
     variableState = new DbVariableState(zeebeDb, transactionContext);
-    workflowState = new DbWorkflowState(zeebeDb, transactionContext);
+    processState = new DbProcessState(zeebeDb, transactionContext);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
     elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
     eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);
@@ -91,8 +92,8 @@ public class ZeebeDbState implements ZeebeState {
     messageSubscriptionState = new DbMessageSubscriptionState(zeebeDb, transactionContext);
     messageStartEventSubscriptionState =
         new DbMessageStartEventSubscriptionState(zeebeDb, transactionContext);
-    workflowInstanceSubscriptionState =
-        new DbWorkflowInstanceSubscriptionState(zeebeDb, transactionContext);
+    processInstanceSubscriptionState =
+        new DbProcessInstanceSubscriptionState(zeebeDb, transactionContext);
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
     blackListState = new DbBlackListState(zeebeDb, transactionContext);
     lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, transactionContext);
@@ -104,8 +105,8 @@ public class ZeebeDbState implements ZeebeState {
   }
 
   @Override
-  public MutableWorkflowState getWorkflowState() {
-    return workflowState;
+  public MutableProcessState getProcessState() {
+    return processState;
   }
 
   @Override
@@ -129,18 +130,13 @@ public class ZeebeDbState implements ZeebeState {
   }
 
   @Override
-  public MutableWorkflowInstanceSubscriptionState getWorkflowInstanceSubscriptionState() {
-    return workflowInstanceSubscriptionState;
+  public MutableProcessInstanceSubscriptionState getProcessInstanceSubscriptionState() {
+    return processInstanceSubscriptionState;
   }
 
   @Override
   public MutableIncidentState getIncidentState() {
     return incidentState;
-  }
-
-  @Override
-  public KeyGenerator getKeyGenerator() {
-    return keyGenerator;
   }
 
   @Override
@@ -169,6 +165,11 @@ public class ZeebeDbState implements ZeebeState {
   }
 
   @Override
+  public KeyGenerator getKeyGenerator() {
+    return keyGenerator;
+  }
+
+  @Override
   public int getPartitionId() {
     return partitionId;
   }
@@ -179,7 +180,18 @@ public class ZeebeDbState implements ZeebeState {
     return zeebeDb.isEmpty(column, newContext);
   }
 
-  @Override
+  /**
+   * Iterates over all entries for a given column family and presents each entry to the consumer.
+   *
+   * <p><strong>Hint</strong> Should only be used in tests.
+   *
+   * @param columnFamily the enum instance of the column family
+   * @param keyInstance this instance defines the type of the column family key type
+   * @param valueInstance this instance defines the type of the column family value type
+   * @param visitor the visitor that will be called for each entry
+   * @param <KeyType> the key type of the column family
+   * @param <ValueType> the value type of the column family
+   */
   public <KeyType extends DbKey, ValueType extends DbValue> void forEach(
       final ZbColumnFamilies columnFamily,
       final KeyType keyInstance,

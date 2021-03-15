@@ -2,20 +2,20 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.deployment;
 
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.deployment.DeployedWorkflow;
-import io.zeebe.engine.state.immutable.WorkflowState;
+import io.zeebe.engine.state.deployment.DeployedProcess;
+import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.deployment.WorkflowRecord;
+import io.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
@@ -23,53 +23,53 @@ import java.util.List;
 
 public class MessageStartEventSubscriptionManager {
 
-  private final WorkflowState workflowState;
+  private final ProcessState processState;
   private final MessageStartEventSubscriptionRecord subscriptionRecord =
       new MessageStartEventSubscriptionRecord();
 
-  public MessageStartEventSubscriptionManager(final WorkflowState workflowState) {
-    this.workflowState = workflowState;
+  public MessageStartEventSubscriptionManager(final ProcessState processState) {
+    this.processState = processState;
   }
 
   public void tryReOpenMessageStartEventSubscription(
       final DeploymentRecord deploymentRecord, final TypedStreamWriter streamWriter) {
 
-    for (final WorkflowRecord workflowRecord : deploymentRecord.workflows()) {
-      if (isLatestWorkflow(workflowRecord)) {
-        closeExistingMessageStartEventSubscriptions(workflowRecord, streamWriter);
-        openMessageStartEventSubscriptions(workflowRecord, streamWriter);
+    for (final ProcessRecord processRecord : deploymentRecord.processes()) {
+      if (isLatestProcess(processRecord)) {
+        closeExistingMessageStartEventSubscriptions(processRecord, streamWriter);
+        openMessageStartEventSubscriptions(processRecord, streamWriter);
       }
     }
   }
 
-  private boolean isLatestWorkflow(final WorkflowRecord workflowRecord) {
-    return workflowState
-            .getLatestWorkflowVersionByProcessId(workflowRecord.getBpmnProcessIdBuffer())
+  private boolean isLatestProcess(final ProcessRecord processRecord) {
+    return processState
+            .getLatestProcessVersionByProcessId(processRecord.getBpmnProcessIdBuffer())
             .getVersion()
-        == workflowRecord.getVersion();
+        == processRecord.getVersion();
   }
 
   private void closeExistingMessageStartEventSubscriptions(
-      final WorkflowRecord workflowRecord, final TypedStreamWriter streamWriter) {
-    final DeployedWorkflow lastMsgWorkflow = findLastMessageStartWorkflow(workflowRecord);
-    if (lastMsgWorkflow == null) {
+      final ProcessRecord processRecord, final TypedStreamWriter streamWriter) {
+    final DeployedProcess lastMsgProcess = findLastMessageStartProcess(processRecord);
+    if (lastMsgProcess == null) {
       return;
     }
 
     subscriptionRecord.reset();
-    subscriptionRecord.setWorkflowKey(lastMsgWorkflow.getKey());
+    subscriptionRecord.setProcessDefinitionKey(lastMsgProcess.getKey());
     streamWriter.appendNewCommand(MessageStartEventSubscriptionIntent.CLOSE, subscriptionRecord);
   }
 
-  private DeployedWorkflow findLastMessageStartWorkflow(final WorkflowRecord workflowRecord) {
-    for (int version = workflowRecord.getVersion() - 1; version > 0; --version) {
-      final DeployedWorkflow lastMsgWorkflow =
-          workflowState.getWorkflowByProcessIdAndVersion(
-              workflowRecord.getBpmnProcessIdBuffer(), version);
-      if (lastMsgWorkflow != null
-          && lastMsgWorkflow.getWorkflow().getStartEvents().stream()
+  private DeployedProcess findLastMessageStartProcess(final ProcessRecord processRecord) {
+    for (int version = processRecord.getVersion() - 1; version > 0; --version) {
+      final DeployedProcess lastMsgProcess =
+          processState.getProcessByProcessIdAndVersion(
+              processRecord.getBpmnProcessIdBuffer(), version);
+      if (lastMsgProcess != null
+          && lastMsgProcess.getProcess().getStartEvents().stream()
               .anyMatch(ExecutableCatchEventElement::isMessage)) {
-        return lastMsgWorkflow;
+        return lastMsgProcess;
       }
     }
 
@@ -77,11 +77,11 @@ public class MessageStartEventSubscriptionManager {
   }
 
   private void openMessageStartEventSubscriptions(
-      final WorkflowRecord workflowRecord, final TypedStreamWriter streamWriter) {
-    final long workflowKey = workflowRecord.getKey();
-    final DeployedWorkflow workflowDefinition = workflowState.getWorkflowByKey(workflowKey);
-    final ExecutableWorkflow workflow = workflowDefinition.getWorkflow();
-    final List<ExecutableStartEvent> startEvents = workflow.getStartEvents();
+      final ProcessRecord processRecord, final TypedStreamWriter streamWriter) {
+    final long processDefinitionKey = processRecord.getKey();
+    final DeployedProcess processDefinition = processState.getProcessByKey(processDefinitionKey);
+    final ExecutableProcess process = processDefinition.getProcess();
+    final List<ExecutableStartEvent> startEvents = process.getStartEvents();
 
     // if startEvents contain message events
     for (final ExecutableCatchEventElement startEvent : startEvents) {
@@ -96,8 +96,8 @@ public class MessageStartEventSubscriptionManager {
                   subscriptionRecord.reset();
                   subscriptionRecord
                       .setMessageName(messageNameBuffer)
-                      .setWorkflowKey(workflowKey)
-                      .setBpmnProcessId(workflow.getId())
+                      .setProcessDefinitionKey(processDefinitionKey)
+                      .setBpmnProcessId(process.getId())
                       .setStartEventId(startEvent.getId());
                   streamWriter.appendNewCommand(
                       MessageStartEventSubscriptionIntent.OPEN, subscriptionRecord);

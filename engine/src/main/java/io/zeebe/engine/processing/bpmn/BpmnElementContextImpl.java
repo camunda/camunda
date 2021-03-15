@@ -2,23 +2,23 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import org.agrona.DirectBuffer;
 
 public final class BpmnElementContextImpl implements BpmnElementContext {
 
   private long elementInstanceKey;
-  private WorkflowInstanceRecord recordValue;
-  private WorkflowInstanceIntent intent;
+  private ProcessInstanceRecord recordValue;
+  private ProcessInstanceIntent intent;
 
   @Override
   public long getElementInstanceKey() {
@@ -31,13 +31,13 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
   }
 
   @Override
-  public long getWorkflowInstanceKey() {
-    return recordValue.getWorkflowInstanceKey();
+  public long getProcessInstanceKey() {
+    return recordValue.getProcessInstanceKey();
   }
 
   @Override
-  public long getParentWorkflowInstanceKey() {
-    return recordValue.getParentWorkflowInstanceKey();
+  public long getParentProcessInstanceKey() {
+    return recordValue.getParentProcessInstanceKey();
   }
 
   @Override
@@ -46,12 +46,12 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
   }
 
   @Override
-  public long getWorkflowKey() {
-    return recordValue.getWorkflowKey();
+  public long getProcessDefinitionKey() {
+    return recordValue.getProcessDefinitionKey();
   }
 
   @Override
-  public int getWorkflowVersion() {
+  public int getProcessVersion() {
     return recordValue.getVersion();
   }
 
@@ -71,20 +71,20 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
   }
 
   @Override
-  public WorkflowInstanceRecord getRecordValue() {
+  public ProcessInstanceRecord getRecordValue() {
     return recordValue;
   }
 
   @Override
-  public WorkflowInstanceIntent getIntent() {
+  public ProcessInstanceIntent getIntent() {
     return intent;
   }
 
   @Override
   public BpmnElementContext copy(
       final long elementInstanceKey,
-      final WorkflowInstanceRecord recordValue,
-      final WorkflowInstanceIntent intent) {
+      final ProcessInstanceRecord recordValue,
+      final ProcessInstanceIntent intent) {
 
     final var copy = new BpmnElementContextImpl();
     copy.init(elementInstanceKey, recordValue, intent);
@@ -93,8 +93,8 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
 
   public void init(
       final long elementInstanceKey,
-      final WorkflowInstanceRecord recordValue,
-      final WorkflowInstanceIntent intent) {
+      final ProcessInstanceRecord recordValue,
+      final ProcessInstanceIntent intent) {
     this.elementInstanceKey = elementInstanceKey;
     this.recordValue = recordValue;
     this.intent = intent;
@@ -113,18 +113,18 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
         + getElementInstanceKey()
         + ", flowScopeKey="
         + getFlowScopeKey()
-        + ", workflowInstanceKey="
-        + getWorkflowInstanceKey()
-        + ", parentWorkflowInstanceKey="
-        + getParentWorkflowInstanceKey()
+        + ", processInstanceKey="
+        + getProcessInstanceKey()
+        + ", parentProcessInstanceKey="
+        + getParentProcessInstanceKey()
         + ", parentElementInstanceKey="
         + getParentElementInstanceKey()
         + ", bpmnProcessId="
         + bufferAsString(getBpmnProcessId())
-        + ", workflowVersion="
-        + getWorkflowVersion()
-        + ", workflowKey="
-        + getWorkflowKey()
+        + ", processVersion="
+        + getProcessVersion()
+        + ", processDefinitionKey="
+        + getProcessDefinitionKey()
         + '}';
   }
 }

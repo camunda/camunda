@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.appliers;
 
@@ -25,7 +25,7 @@ final class VariableApplier implements TypedEventApplier<VariableIntent, Variabl
     variableState.setVariableLocal(
         key,
         value.getScopeKey(),
-        value.getWorkflowKey(),
+        value.getProcessDefinitionKey(),
         value.getNameBuffer(),
         value.getValueBuffer());
   }

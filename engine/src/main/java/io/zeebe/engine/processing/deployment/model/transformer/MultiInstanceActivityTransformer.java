@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.deployment.model.transformer;
 
@@ -12,7 +12,7 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableLoopCharacteristics;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Activity;
@@ -33,9 +33,9 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
 
   @Override
   public void transform(final Activity element, final TransformContext context) {
-    final ExecutableWorkflow workflow = context.getCurrentWorkflow();
+    final ExecutableProcess process = context.getCurrentProcess();
     final ExecutableActivity innerActivity =
-        workflow.getElementById(element.getId(), ExecutableActivity.class);
+        process.getElementById(element.getId(), ExecutableActivity.class);
 
     final LoopCharacteristics loopCharacteristics = element.getLoopCharacteristics();
     if (loopCharacteristics instanceof MultiInstanceLoopCharacteristics) {
@@ -72,7 +72,7 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
       innerActivity.getOutgoing().clear();
 
       // replace the inner element with the body
-      workflow.addFlowElement(multiInstanceBody);
+      process.addFlowElement(multiInstanceBody);
     }
   }
 

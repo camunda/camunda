@@ -18,8 +18,8 @@ package io.zeebe.journal.file;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.journal.JournalReader;
-import io.zeebe.journal.file.record.KryoSerializer;
 import io.zeebe.journal.file.record.RecordData;
+import io.zeebe.journal.file.record.SBESerializer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -31,7 +31,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 class SegmentedJournalReaderTest {
 
-  private static final int ENTRIES_PER_SEGMENT = 2;
+  private static final int ENTRIES_PER_SEGMENT = 4;
 
   @TempDir Path directory;
 
@@ -110,7 +110,7 @@ class SegmentedJournalReaderTest {
 
   private int getSerializedSize(final DirectBuffer data) {
     final var record = new RecordData(Long.MAX_VALUE, Long.MAX_VALUE, data);
-    final var serializer = new KryoSerializer();
+    final var serializer = new SBESerializer();
     final ByteBuffer buffer = ByteBuffer.allocate(128);
     return serializer.writeData(record, new UnsafeBuffer(buffer), 0)
         + serializer.getMetadataLength();

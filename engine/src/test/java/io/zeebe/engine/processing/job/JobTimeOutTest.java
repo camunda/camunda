@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.job;
 
@@ -97,13 +97,13 @@ public final class JobTimeOutTest {
     final long jobKey1 =
         jobRecords(JobIntent.CREATED)
             .withType(jobType)
-            .filter(r -> r.getValue().getWorkflowInstanceKey() == instanceKey1)
+            .filter(r -> r.getValue().getProcessInstanceKey() == instanceKey1)
             .getFirst()
             .getKey();
     final long jobKey2 =
         jobRecords(JobIntent.CREATED)
             .withType(jobType)
-            .filter(r -> r.getValue().getWorkflowInstanceKey() == instanceKey2)
+            .filter(r -> r.getValue().getProcessInstanceKey() == instanceKey2)
             .getFirst()
             .getKey();
     final long timeout = 10L;
@@ -114,7 +114,7 @@ public final class JobTimeOutTest {
     jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).getFirst();
 
     ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
-    jobRecords(JobIntent.TIMED_OUT).withWorkflowInstanceKey(instanceKey1).getFirst();
+    jobRecords(JobIntent.TIMED_OUT).withProcessInstanceKey(instanceKey1).getFirst();
     ENGINE.jobs().withType(jobType).activate();
 
     // then
@@ -137,7 +137,7 @@ public final class JobTimeOutTest {
         jobRecords(JobIntent.TIMED_OUT)
             .filter(
                 r -> {
-                  final long wfInstanceKey = r.getValue().getWorkflowInstanceKey();
+                  final long wfInstanceKey = r.getValue().getProcessInstanceKey();
                   return wfInstanceKey == instanceKey1 || wfInstanceKey == instanceKey2;
                 })
             .limit(2)
@@ -158,6 +158,6 @@ public final class JobTimeOutTest {
                 .endEvent("end")
                 .done())
         .deploy();
-    return ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
   }
 }

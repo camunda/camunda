@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.bpmn.sequenceflow;
 
@@ -17,7 +17,7 @@ import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.state.instance.IndexedRecord;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.stream.Collectors;
 
@@ -117,7 +117,7 @@ public final class SequenceFlowProcessor implements BpmnElementProcessor<Executa
 
     final var tokensBySequenceFlow =
         deferredRecordsBehavior.getDeferredRecords(flowScopeContext).stream()
-            .filter(record -> record.getState() == WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
+            .filter(record -> record.getState() == ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .filter(record -> isIncomingSequenceFlow(record, parallelGateway))
             .collect(Collectors.groupingBy(record -> record.getValue().getElementIdBuffer()));
 

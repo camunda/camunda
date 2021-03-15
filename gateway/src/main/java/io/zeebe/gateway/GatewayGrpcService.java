@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.gateway;
 
@@ -12,16 +12,16 @@ import io.zeebe.gateway.grpc.ErrorMappingStreamObserver;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -53,10 +53,10 @@ public class GatewayGrpcService extends GatewayImplBase {
   }
 
   @Override
-  public void cancelWorkflowInstance(
-      final CancelWorkflowInstanceRequest request,
-      final StreamObserver<CancelWorkflowInstanceResponse> responseObserver) {
-    endpointManager.cancelWorkflowInstance(
+  public void cancelProcessInstance(
+      final CancelProcessInstanceRequest request,
+      final StreamObserver<CancelProcessInstanceResponse> responseObserver) {
+    endpointManager.cancelProcessInstance(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 
@@ -69,26 +69,26 @@ public class GatewayGrpcService extends GatewayImplBase {
   }
 
   @Override
-  public void createWorkflowInstance(
-      final CreateWorkflowInstanceRequest request,
-      final StreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
-    endpointManager.createWorkflowInstance(
+  public void createProcessInstance(
+      final CreateProcessInstanceRequest request,
+      final StreamObserver<CreateProcessInstanceResponse> responseObserver) {
+    endpointManager.createProcessInstance(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 
   @Override
-  public void createWorkflowInstanceWithResult(
-      final CreateWorkflowInstanceWithResultRequest request,
-      final StreamObserver<CreateWorkflowInstanceWithResultResponse> responseObserver) {
-    endpointManager.createWorkflowInstanceWithResult(
+  public void createProcessInstanceWithResult(
+      final CreateProcessInstanceWithResultRequest request,
+      final StreamObserver<CreateProcessInstanceWithResultResponse> responseObserver) {
+    endpointManager.createProcessInstanceWithResult(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 
   @Override
-  public void deployWorkflow(
-      final DeployWorkflowRequest request,
-      final StreamObserver<DeployWorkflowResponse> responseObserver) {
-    endpointManager.deployWorkflow(
+  public void deployProcess(
+      final DeployProcessRequest request,
+      final StreamObserver<DeployProcessResponse> responseObserver) {
+    endpointManager.deployProcess(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 

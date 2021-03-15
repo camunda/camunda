@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.incident;
 
@@ -38,11 +38,11 @@ public final class JobActivationIncidentTest {
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
-  private long workflowKey;
+  private long processDefinitionKey;
   private String jobType;
   private String processId;
 
-  static BpmnModelInstance createWorkflow(final String processId, final String jobType) {
+  static BpmnModelInstance createProcess(final String processId, final String jobType) {
     return Bpmn.createExecutableProcess(processId)
         .startEvent()
         .serviceTask("task", t -> t.zeebeJobType(jobType))
@@ -55,30 +55,30 @@ public final class JobActivationIncidentTest {
     jobType = helper.getJobType();
     processId = helper.getBpmnProcessId();
 
-    workflowKey =
+    processDefinitionKey =
         ENGINE
             .deployment()
-            .withXmlResource(createWorkflow(processId, jobType))
+            .withXmlResource(createProcess(processId, jobType))
             .deploy()
             .getValue()
-            .getDeployedWorkflows()
+            .getDeployedProcesses()
             .get(0)
-            .getWorkflowKey();
+            .getProcessDefinitionKey();
   }
 
   @Test
   public void shouldRaiseIncidentWhenActivatingJobThatIsTooBigForMessageSize() {
     // given
-    final var workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .await();
 
     for (int i = 0; i < VARIABLE_COUNT; i++) {
       ENGINE
           .variables()
-          .ofScope(workflowInstanceKey)
+          .ofScope(processInstanceKey)
           .withDocument(Map.of(String.valueOf(i), LARGE_TEXT))
           .update();
     }
@@ -94,30 +94,30 @@ public final class JobActivationIncidentTest {
     final var incidentCommand =
         RecordingExporter.incidentRecords()
             .withIntent(IncidentIntent.CREATE)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     assertThat(incidentCommand.getValue())
         .hasErrorType(ErrorType.MESSAGE_SIZE_EXCEEDED)
         .hasBpmnProcessId(processId)
-        .hasWorkflowKey(workflowKey)
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("task");
   }
 
   @Test
   public void shouldActivateJobIfFetchVariablesFitIntoMessage() {
-    // given (a workflow with variables that together don't fit into the message size)
-    final var workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    // given (a process with variables that together don't fit into the message size)
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .await();
 
     for (int i = 0; i < VARIABLE_COUNT; i++) {
       ENGINE
           .variables()
-          .ofScope(workflowInstanceKey)
+          .ofScope(processInstanceKey)
           .withDocument(Map.of(String.valueOf(i), LARGE_TEXT))
           .update();
     }
@@ -140,16 +140,16 @@ public final class JobActivationIncidentTest {
   @Test
   public void shouldMakeJobActivatableAfterIncidentIsResolved() {
     // given
-    final var workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .await();
 
     for (int i = 0; i < VARIABLE_COUNT; i++) {
       ENGINE
           .variables()
-          .ofScope(workflowInstanceKey)
+          .ofScope(processInstanceKey)
           .withDocument(Map.of(String.valueOf(i), LARGE_TEXT))
           .update();
     }
@@ -159,17 +159,17 @@ public final class JobActivationIncidentTest {
     final var incidentCommand =
         RecordingExporter.incidentRecords()
             .withIntent(IncidentIntent.CREATE)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     ENGINE
         .variables()
-        .ofScope(workflowInstanceKey)
+        .ofScope(processInstanceKey)
         .withDocument(
             Map.of("0", "lorem ipsum", "1", "lorem ipsum", "2", "lorem ipsum", "3", "lorem ipsum"))
         .update();
 
-    ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incidentCommand.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentCommand.getKey()).resolve();
 
     final var activationResult =
         ENGINE.jobs().withMaxJobsToActivate(1).withType(jobType).byWorker("dummy").activate();

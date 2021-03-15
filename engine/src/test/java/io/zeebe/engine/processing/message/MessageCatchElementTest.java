@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message;
 
@@ -20,11 +20,11 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
@@ -50,27 +50,27 @@ public final class MessageCatchElementTest {
   private static final String CORRELATION_VARIABLE = "orderId";
   private static final String MESSAGE_NAME = "order canceled";
   private static final String SEQUENCE_FLOW_ID = "to-end";
-  private static final String CATCH_EVENT_WORKFLOW_PROCESS_ID = "catchEventWorkflow";
-  private static final BpmnModelInstance CATCH_EVENT_WORKFLOW =
-      Bpmn.createExecutableProcess(CATCH_EVENT_WORKFLOW_PROCESS_ID)
+  private static final String CATCH_EVENT_PROCESS_PROCESS_ID = "catchEventProcess";
+  private static final BpmnModelInstance CATCH_EVENT_PROCESS =
+      Bpmn.createExecutableProcess(CATCH_EVENT_PROCESS_PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent(ELEMENT_ID)
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
-  private static final String RECEIVE_TASK_WORKFLOW_PROCESS_ID = "receiveTaskWorkflow";
-  private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
-      Bpmn.createExecutableProcess(RECEIVE_TASK_WORKFLOW_PROCESS_ID)
+  private static final String RECEIVE_TASK_PROCESS_PROCESS_ID = "receiveTaskProcess";
+  private static final BpmnModelInstance RECEIVE_TASK_PROCESS =
+      Bpmn.createExecutableProcess(RECEIVE_TASK_PROCESS_PROCESS_ID)
           .startEvent()
           .receiveTask(ELEMENT_ID)
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
-  private static final String BOUNDARY_EVENT_WORKFLOW_PROCESS_ID = "boundaryEventWorkflow";
-  private static final BpmnModelInstance BOUNDARY_EVENT_WORKFLOW =
-      Bpmn.createExecutableProcess(BOUNDARY_EVENT_WORKFLOW_PROCESS_ID)
+  private static final String BOUNDARY_EVENT_PROCESS_PROCESS_ID = "boundaryEventProcess";
+  private static final BpmnModelInstance BOUNDARY_EVENT_PROCESS =
+      Bpmn.createExecutableProcess(BOUNDARY_EVENT_PROCESS_PROCESS_ID)
           .startEvent()
           .serviceTask(ELEMENT_ID, b -> b.zeebeJobType("type"))
           .boundaryEvent()
@@ -78,10 +78,10 @@ public final class MessageCatchElementTest {
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
-  private static final String NON_INT_BOUNDARY_EVENT_WORKFLOW_PROCESS_ID =
-      "nonIntBoundaryEventWorkflow";
-  private static final BpmnModelInstance NON_INT_BOUNDARY_EVENT_WORKFLOW =
-      Bpmn.createExecutableProcess(NON_INT_BOUNDARY_EVENT_WORKFLOW_PROCESS_ID)
+  private static final String NON_INT_BOUNDARY_EVENT_PROCESS_PROCESS_ID =
+      "nonIntBoundaryEventProcess";
+  private static final BpmnModelInstance NON_INT_BOUNDARY_EVENT_PROCESS =
+      Bpmn.createExecutableProcess(NON_INT_BOUNDARY_EVENT_PROCESS_PROCESS_ID)
           .startEvent()
           .serviceTask(ELEMENT_ID, b -> b.zeebeJobType("type"))
           .boundaryEvent("event")
@@ -101,46 +101,46 @@ public final class MessageCatchElementTest {
   public String bpmnProcessId;
 
   @Parameter(2)
-  public WorkflowInstanceIntent enteredState;
+  public ProcessInstanceIntent enteredState;
 
   @Parameter(3)
-  public WorkflowInstanceIntent continueState;
+  public ProcessInstanceIntent continueState;
 
   @Parameter(4)
   public String continuedElementId;
 
   private String correlationKey;
-  private long workflowInstanceKey;
+  private long processInstanceKey;
 
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
     return new Object[][] {
       {
         "intermediate message catch event",
-        CATCH_EVENT_WORKFLOW_PROCESS_ID,
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-        WorkflowInstanceIntent.ELEMENT_COMPLETED,
+        CATCH_EVENT_PROCESS_PROCESS_ID,
+        ProcessInstanceIntent.ELEMENT_ACTIVATED,
+        ProcessInstanceIntent.ELEMENT_COMPLETED,
         ELEMENT_ID
       },
       {
         "receive task",
-        RECEIVE_TASK_WORKFLOW_PROCESS_ID,
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-        WorkflowInstanceIntent.ELEMENT_COMPLETED,
+        RECEIVE_TASK_PROCESS_PROCESS_ID,
+        ProcessInstanceIntent.ELEMENT_ACTIVATED,
+        ProcessInstanceIntent.ELEMENT_COMPLETED,
         ELEMENT_ID
       },
       {
         "int boundary event",
-        BOUNDARY_EVENT_WORKFLOW_PROCESS_ID,
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-        WorkflowInstanceIntent.ELEMENT_TERMINATED,
+        BOUNDARY_EVENT_PROCESS_PROCESS_ID,
+        ProcessInstanceIntent.ELEMENT_ACTIVATED,
+        ProcessInstanceIntent.ELEMENT_TERMINATED,
         ELEMENT_ID
       },
       {
         "non int boundary event",
-        NON_INT_BOUNDARY_EVENT_WORKFLOW_PROCESS_ID,
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-        WorkflowInstanceIntent.ELEMENT_COMPLETED,
+        NON_INT_BOUNDARY_EVENT_PROCESS_PROCESS_ID,
+        ProcessInstanceIntent.ELEMENT_ACTIVATED,
+        ProcessInstanceIntent.ELEMENT_COMPLETED,
         "event"
       }
     };
@@ -148,10 +148,10 @@ public final class MessageCatchElementTest {
 
   @BeforeClass
   public static void awaitCluster() {
-    deploy(CATCH_EVENT_WORKFLOW);
-    deploy(RECEIVE_TASK_WORKFLOW);
-    deploy(BOUNDARY_EVENT_WORKFLOW);
-    deploy(NON_INT_BOUNDARY_EVENT_WORKFLOW);
+    deploy(CATCH_EVENT_PROCESS);
+    deploy(RECEIVE_TASK_PROCESS);
+    deploy(BOUNDARY_EVENT_PROCESS);
+    deploy(NON_INT_BOUNDARY_EVENT_PROCESS);
   }
 
   private static void deploy(final BpmnModelInstance modelInstance) {
@@ -161,9 +161,9 @@ public final class MessageCatchElementTest {
   @Before
   public void init() {
     correlationKey = UUID.randomUUID().toString();
-    workflowInstanceKey =
+    processInstanceKey =
         ENGINE_RULE
-            .workflowInstance()
+            .processInstance()
             .ofBpmnProcessId(bpmnProcessId)
             .withVariable("orderId", correlationKey)
             .create();
@@ -171,7 +171,7 @@ public final class MessageCatchElementTest {
 
   @Test
   public void shouldOpenMessageSubscription() {
-    final Record<WorkflowInstanceRecordValue> catchEventEntered =
+    final Record<ProcessInstanceRecordValue> catchEventEntered =
         getFirstElementRecord(enteredState);
 
     final Record<MessageSubscriptionRecordValue> messageSubscription =
@@ -181,36 +181,36 @@ public final class MessageCatchElementTest {
     assertThat(messageSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
     Assertions.assertThat(messageSubscription.getValue())
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled")
         .hasCorrelationKey(correlationKey);
   }
 
   @Test
-  public void shouldOpenWorkflowInstanceSubscription() {
-    final Record<WorkflowInstanceRecordValue> catchEventEntered =
+  public void shouldOpenProcessInstanceSubscription() {
+    final Record<ProcessInstanceRecordValue> catchEventEntered =
         getFirstElementRecord(enteredState);
 
-    final Record<WorkflowInstanceSubscriptionRecordValue> workflowInstanceSubscription =
-        getFirstWorkflowInstanceSubscriptionRecord(WorkflowInstanceSubscriptionIntent.OPENED);
+    final Record<ProcessInstanceSubscriptionRecordValue> processInstanceSubscription =
+        getFirstProcessInstanceSubscriptionRecord(ProcessInstanceSubscriptionIntent.CREATED);
 
-    assertThat(workflowInstanceSubscription.getValueType())
-        .isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
-    assertThat(workflowInstanceSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(processInstanceSubscription.getValueType())
+        .isEqualTo(ValueType.PROCESS_INSTANCE_SUBSCRIPTION);
+    assertThat(processInstanceSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
-    Assertions.assertThat(workflowInstanceSubscription.getValue())
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+    Assertions.assertThat(processInstanceSubscription.getValue())
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled");
 
-    assertThat(workflowInstanceSubscription.getValue().getVariables()).isEmpty();
+    assertThat(processInstanceSubscription.getValue().getVariables()).isEmpty();
   }
 
   @Test
-  public void shouldCorrelateWorkflowInstanceSubscription() {
+  public void shouldCorrelateProcessInstanceSubscription() {
     // given
-    final Record<WorkflowInstanceRecordValue> catchEventEntered =
+    final Record<ProcessInstanceRecordValue> catchEventEntered =
         getFirstElementRecord(enteredState);
 
     // when
@@ -222,14 +222,14 @@ public final class MessageCatchElementTest {
         .publish();
 
     // then
-    final Record<WorkflowInstanceSubscriptionRecordValue> subscription =
-        getFirstWorkflowInstanceSubscriptionRecord(WorkflowInstanceSubscriptionIntent.CORRELATED);
+    final Record<ProcessInstanceSubscriptionRecordValue> subscription =
+        getFirstProcessInstanceSubscriptionRecord(ProcessInstanceSubscriptionIntent.CORRELATED);
 
-    assertThat(subscription.getValueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+    assertThat(subscription.getValueType()).isEqualTo(ValueType.PROCESS_INSTANCE_SUBSCRIPTION);
     assertThat(subscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
     Assertions.assertThat(subscription.getValue())
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled");
 
@@ -239,7 +239,7 @@ public final class MessageCatchElementTest {
   @Test
   public void shouldCorrelateMessageSubscription() {
     // given
-    final Record<WorkflowInstanceRecordValue> catchEventEntered =
+    final Record<ProcessInstanceRecordValue> catchEventEntered =
         getFirstElementRecord(enteredState);
 
     getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CREATED);
@@ -258,7 +258,7 @@ public final class MessageCatchElementTest {
         getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CORRELATING);
 
     Assertions.assertThat(subscriptionCorrelating.getValue())
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName(MESSAGE_NAME)
         .hasCorrelationKey(correlationKey)
@@ -269,7 +269,7 @@ public final class MessageCatchElementTest {
         getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CORRELATED);
 
     Assertions.assertThat(subscriptionCorrelated.getValue())
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName(MESSAGE_NAME)
         .hasCorrelationKey(correlationKey);
@@ -278,46 +278,46 @@ public final class MessageCatchElementTest {
   @Test
   public void shouldCloseMessageSubscription() {
     // given
-    final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        getFirstElementRecord(enteredState);
-
-    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
-        .await();
+    final var subscriptionCreated =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
 
     // when
-    ENGINE_RULE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE_RULE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     final Record<MessageSubscriptionRecordValue> messageSubscription =
         getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.DELETED);
 
-    assertThat(messageSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
+    Assertions.assertThat(messageSubscription)
+        .hasRecordType(RecordType.EVENT)
+        .hasKey(subscriptionCreated.getKey());
 
     Assertions.assertThat(messageSubscription.getValue())
-        .hasWorkflowInstanceKey(workflowInstanceKey)
-        .hasElementInstanceKey(catchEventEntered.getKey())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasElementInstanceKey(subscriptionCreated.getValue().getElementInstanceKey())
         .hasMessageName(MESSAGE_NAME)
-        .hasCorrelationKey("");
+        .hasCorrelationKey(subscriptionCreated.getValue().getCorrelationKey());
   }
 
   @Test
-  public void shouldCloseWorkflowInstanceSubscription() {
+  public void shouldCloseProcessInstanceSubscription() {
     // given
-    final Record<WorkflowInstanceRecordValue> catchEventEntered =
+    final Record<ProcessInstanceRecordValue> catchEventEntered =
         getFirstElementRecord(enteredState);
 
     // when
-    ENGINE_RULE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE_RULE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
-    final Record<WorkflowInstanceSubscriptionRecordValue> subscription =
-        getFirstWorkflowInstanceSubscriptionRecord(WorkflowInstanceSubscriptionIntent.CLOSED);
+    final Record<ProcessInstanceSubscriptionRecordValue> subscription =
+        getFirstProcessInstanceSubscriptionRecord(ProcessInstanceSubscriptionIntent.DELETED);
 
     assertThat(subscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
     Assertions.assertThat(subscription.getValue())
-        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName(MESSAGE_NAME);
   }
@@ -325,8 +325,8 @@ public final class MessageCatchElementTest {
   @Test
   public void shouldCorrelateMessageAndContinue() {
     // given
-    RecordingExporter.workflowInstanceSubscriptionRecords(WorkflowInstanceSubscriptionIntent.OPENED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+    RecordingExporter.processInstanceSubscriptionRecords(ProcessInstanceSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
         .withMessageName(MESSAGE_NAME)
         .await();
 
@@ -335,15 +335,15 @@ public final class MessageCatchElementTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(continueState)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords(continueState)
+                .withProcessInstanceKey(processInstanceKey)
                 .withElementId(continuedElementId)
                 .exists())
         .isTrue();
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
-                .withWorkflowInstanceKey(workflowInstanceKey)
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
+                .withProcessInstanceKey(processInstanceKey)
                 .withElementId(SEQUENCE_FLOW_ID)
                 .exists())
         .isTrue();
@@ -365,7 +365,7 @@ public final class MessageCatchElementTest {
     // then
     assertThat(
             RecordingExporter.messageSubscriptionRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .withMessageName(MESSAGE_NAME)
                 .limit(5))
         .extracting(Record::getRecordType, Record::getIntent)
@@ -377,10 +377,57 @@ public final class MessageCatchElementTest {
             tuple(RecordType.EVENT, MessageSubscriptionIntent.CORRELATED));
   }
 
-  private Record<WorkflowInstanceRecordValue> getFirstElementRecord(
-      final WorkflowInstanceIntent intent) {
-    return RecordingExporter.workflowInstanceRecords(intent)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+  @Test
+  public void testProcessInstanceSubscriptionLifecycle() {
+    // given
+    getFirstProcessInstanceSubscriptionRecord(ProcessInstanceSubscriptionIntent.CREATED);
+
+    // when
+    ENGINE_RULE.message().withCorrelationKey(correlationKey).withName(MESSAGE_NAME).publish();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName(MESSAGE_NAME)
+                .limit(5))
+        .extracting(Record::getRecordType, Record::getIntent)
+        .containsExactly(
+            tuple(RecordType.EVENT, ProcessInstanceSubscriptionIntent.CREATING),
+            tuple(RecordType.COMMAND, ProcessInstanceSubscriptionIntent.CREATE),
+            tuple(RecordType.EVENT, ProcessInstanceSubscriptionIntent.CREATED),
+            tuple(RecordType.COMMAND, ProcessInstanceSubscriptionIntent.CORRELATE),
+            tuple(RecordType.EVENT, ProcessInstanceSubscriptionIntent.CORRELATED));
+  }
+
+  @Test
+  public void shouldHaveSameMessageSubscriptionKey() {
+    // given
+    final var messageSubscriptionKey =
+        getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CREATED).getKey();
+
+    // when
+    ENGINE_RULE.message().withCorrelationKey(correlationKey).withName(MESSAGE_NAME).publish();
+
+    // then
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName(MESSAGE_NAME)
+                .limit(5))
+        .extracting(Record::getIntent, Record::getKey)
+        .containsExactly(
+            tuple(MessageSubscriptionIntent.CREATE, -1L),
+            tuple(MessageSubscriptionIntent.CREATED, messageSubscriptionKey),
+            tuple(MessageSubscriptionIntent.CORRELATING, messageSubscriptionKey),
+            tuple(MessageSubscriptionIntent.CORRELATE, -1L),
+            tuple(MessageSubscriptionIntent.CORRELATED, messageSubscriptionKey));
+  }
+
+  private Record<ProcessInstanceRecordValue> getFirstElementRecord(
+      final ProcessInstanceIntent intent) {
+    return RecordingExporter.processInstanceRecords(intent)
+        .withProcessInstanceKey(processInstanceKey)
         .withElementId(ELEMENT_ID)
         .getFirst();
   }
@@ -388,15 +435,15 @@ public final class MessageCatchElementTest {
   private Record<MessageSubscriptionRecordValue> getFirstMessageSubscriptionRecord(
       final MessageSubscriptionIntent intent) {
     return RecordingExporter.messageSubscriptionRecords(intent)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .withMessageName(MESSAGE_NAME)
         .getFirst();
   }
 
-  private Record<WorkflowInstanceSubscriptionRecordValue>
-      getFirstWorkflowInstanceSubscriptionRecord(final WorkflowInstanceSubscriptionIntent intent) {
-    return RecordingExporter.workflowInstanceSubscriptionRecords(intent)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+  private Record<ProcessInstanceSubscriptionRecordValue> getFirstProcessInstanceSubscriptionRecord(
+      final ProcessInstanceSubscriptionIntent intent) {
+    return RecordingExporter.processInstanceSubscriptionRecords(intent)
+        .withProcessInstanceKey(processInstanceKey)
         .withMessageName(MESSAGE_NAME)
         .getFirst();
   }

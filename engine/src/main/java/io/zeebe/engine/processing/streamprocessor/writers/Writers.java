@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.streamprocessor.writers;
 
@@ -12,12 +12,10 @@ public final class Writers {
 
   private final TypedStreamWriter stream;
   private final StateWriter state;
-  private final CommandResponseWriter response;
+  private final TypedResponseWriter response;
 
   public Writers(
-      final TypedStreamWriter stream,
-      final StateWriter state,
-      final CommandResponseWriter response) {
+      final TypedStreamWriter stream, final StateWriter state, final TypedResponseWriter response) {
     this.stream = stream;
     this.state = state;
     this.response = response;
@@ -38,8 +36,12 @@ public final class Writers {
     return state;
   }
 
-  /** @return the response writer, which is used during processing */
-  public CommandResponseWriter response() {
+  /**
+   * Note: {@code flush()} must not be called on the response writer object. This is done centrally
+   *
+   * @return the response writer, which is used during processing
+   */
+  public TypedResponseWriter response() {
     return response;
   }
 

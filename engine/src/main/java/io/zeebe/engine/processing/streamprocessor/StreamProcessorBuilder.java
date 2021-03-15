@@ -2,15 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.state.EventApplier;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.util.sched.ActorScheduler;
 import java.util.ArrayList;
@@ -26,7 +26,7 @@ public final class StreamProcessorBuilder {
   private TypedRecordProcessorFactory typedRecordProcessorFactory;
   private ActorScheduler actorScheduler;
   private ZeebeDb zeebeDb;
-  private Function<ZeebeState, EventApplier> eventApplierFactory;
+  private Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private int nodeId;
 
   public StreamProcessorBuilder() {
@@ -77,7 +77,7 @@ public final class StreamProcessorBuilder {
   }
 
   public StreamProcessorBuilder eventApplierFactory(
-      final Function<ZeebeState, EventApplier> eventApplierFactory) {
+      final Function<MutableZeebeState, EventApplier> eventApplierFactory) {
     this.eventApplierFactory = eventApplierFactory;
     return this;
   }
@@ -106,7 +106,7 @@ public final class StreamProcessorBuilder {
     return nodeId;
   }
 
-  public Function<ZeebeState, EventApplier> getEventApplierFactory() {
+  public Function<MutableZeebeState, EventApplier> getEventApplierFactory() {
     return eventApplierFactory;
   }
 

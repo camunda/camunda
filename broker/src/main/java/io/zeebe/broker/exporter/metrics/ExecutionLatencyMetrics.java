@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.broker.exporter.metrics;
 
@@ -11,11 +11,11 @@ import io.prometheus.client.Histogram;
 
 public class ExecutionLatencyMetrics {
 
-  private static final Histogram WORKFLOW_INSTANCE_EXECUTION =
+  private static final Histogram PROCESS_INSTANCE_EXECUTION =
       Histogram.build()
           .namespace("zeebe")
-          .name("workflow_instance_execution_time")
-          .help("The execution time of processing a complete workflow instance")
+          .name("process_instance_execution_time")
+          .help("The execution time of processing a complete process instance")
           .labelNames("partition")
           .register();
 
@@ -35,9 +35,9 @@ public class ExecutionLatencyMetrics {
           .labelNames("partition")
           .register();
 
-  public void observeWorkflowInstanceExecutionTime(
+  public void observeProcessInstanceExecutionTime(
       final int partitionId, final long creationTimeMs, final long completionTimeMs) {
-    WORKFLOW_INSTANCE_EXECUTION
+    PROCESS_INSTANCE_EXECUTION
         .labels(Integer.toString(partitionId))
         .observe(latencyInSeconds(creationTimeMs, completionTimeMs));
   }

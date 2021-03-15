@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.deployment.model.validation;
 
@@ -24,16 +24,16 @@ public final class SuccessfulDeploymentTest {
       new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldDeployWorkflowWithOrphanErrorDefinition() {
+  public void shouldDeployProcessWithOrphanErrorDefinition() {
     // when
     final var deployment =
         engine
             .deployment()
-            .withXmlClasspathResource("/workflows/orphan-error-definition.bpmn")
+            .withXmlClasspathResource("/processes/orphan-error-definition.bpmn")
             .deploy();
 
     // then
     assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
-    assertThat(deployment.getValue().getDeployedWorkflows()).hasSize(1);
+    assertThat(deployment.getValue().getDeployedProcesses()).hasSize(1);
   }
 }

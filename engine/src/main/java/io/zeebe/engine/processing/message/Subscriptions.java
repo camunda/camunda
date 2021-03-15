@@ -2,13 +2,14 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message;
 
-import io.zeebe.engine.state.message.MessageSubscription;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.Reusable;
 import io.zeebe.util.collection.ReusableObjectList;
 import java.util.function.Consumer;
@@ -35,10 +36,10 @@ public final class Subscriptions {
     return false;
   }
 
-  public void add(final MessageSubscription subscription) {
+  public void add(final MessageSubscriptionRecord subscription) {
     final var newSubscription = subscriptions.add();
-    newSubscription.setBpmnProcessId(subscription.getBpmnProcessId());
-    newSubscription.workflowInstanceKey = subscription.getWorkflowInstanceKey();
+    newSubscription.setBpmnProcessId(BufferUtil.cloneBuffer(subscription.getBpmnProcessIdBuffer()));
+    newSubscription.processInstanceKey = subscription.getProcessInstanceKey();
     newSubscription.elementInstanceKey = subscription.getElementInstanceKey();
   }
 
@@ -78,7 +79,7 @@ public final class Subscriptions {
     private final DirectBuffer bufferView = new UnsafeBuffer(bpmnProcessId);
     private int bufferLength = 0;
 
-    private long workflowInstanceKey;
+    private long processInstanceKey;
     private long elementInstanceKey;
     private boolean isStartEventSubscription;
 
@@ -87,7 +88,7 @@ public final class Subscriptions {
       bufferLength = 0;
       bufferView.wrap(0, 0);
 
-      workflowInstanceKey = -1L;
+      processInstanceKey = -1L;
       elementInstanceKey = -1L;
       isStartEventSubscription = false;
     }
@@ -102,8 +103,8 @@ public final class Subscriptions {
       bufferView.wrap(this.bpmnProcessId, 0, bufferLength);
     }
 
-    public long getWorkflowInstanceKey() {
-      return workflowInstanceKey;
+    public long getProcessInstanceKey() {
+      return processInstanceKey;
     }
 
     public long getElementInstanceKey() {

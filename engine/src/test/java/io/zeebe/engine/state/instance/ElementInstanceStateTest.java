@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.instance;
 
@@ -12,12 +12,12 @@ import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
@@ -32,12 +32,12 @@ import org.junit.Test;
 
 public final class ElementInstanceStateTest {
 
-  private static final long WORKFLOW_KEY = 123;
+  private static final long PROCESS_KEY = 123;
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private MutableElementInstanceState elementInstanceState;
-  private ZeebeState zeebeState;
+  private MutableZeebeState zeebeState;
 
   @Before
   public void setUp() {
@@ -48,12 +48,12 @@ public final class ElementInstanceStateTest {
   @Test
   public void shouldCreateNewInstance() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
 
     // when
     final ElementInstance elementInstance =
         elementInstanceState.newInstance(
-            100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     // then
     assertElementInstance(elementInstance, 0);
@@ -62,17 +62,17 @@ public final class ElementInstanceStateTest {
   @Test
   public void shouldCreateNewInstanceWithParent() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
-            100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
-    final WorkflowInstanceRecord otherRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord otherRecord = createProcessInstanceRecord();
     otherRecord.setElementId("subProcess");
     final ElementInstance childInstance =
         elementInstanceState.newInstance(
-            parentInstance, 101, otherRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+            parentInstance, 101, otherRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
     // then
     assertElementInstance(parentInstance, 1);
@@ -82,9 +82,9 @@ public final class ElementInstanceStateTest {
   @Test
   public void shouldSpawnToken() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     elementInstanceState.newInstance(
-        100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     elementInstanceState.spawnToken(100);
@@ -99,9 +99,9 @@ public final class ElementInstanceStateTest {
   @Test
   public void shouldConsumeToken() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     elementInstanceState.newInstance(
-        100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
     elementInstanceState.spawnToken(100);
 
     // when
@@ -117,9 +117,9 @@ public final class ElementInstanceStateTest {
   @Test
   public void shouldFindElementInstance() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     elementInstanceState.newInstance(
-        100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     final ElementInstance instance = elementInstanceState.getInstance(100);
@@ -131,13 +131,13 @@ public final class ElementInstanceStateTest {
   @Test
   public void shouldFindChildInstance() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
-            100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    workflowInstanceRecord.setElementId("subProcess");
+            100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    processInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
-        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+        parentInstance, 101, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
     // when
     final ElementInstance childInstance = elementInstanceState.getInstance(101L);
@@ -149,13 +149,13 @@ public final class ElementInstanceStateTest {
   @Test
   public void shouldFindParentInstance() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
-            100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    workflowInstanceRecord.setElementId("subProcess");
+            100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    processInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
-        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+        parentInstance, 101, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
     // when
     final ElementInstance updatedParentInstance = elementInstanceState.getInstance(100L);
@@ -167,13 +167,13 @@ public final class ElementInstanceStateTest {
   @Test
   public void shouldRemoveParentInstanceAfterRemovingChild() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
-            100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    workflowInstanceRecord.setElementId("subProcess");
+            100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    processInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
-        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+        parentInstance, 101, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
     elementInstanceState.removeInstance(101L);
 
     // when
@@ -193,16 +193,16 @@ public final class ElementInstanceStateTest {
   @Test
   public void shouldRemoveChildInstance() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
-            100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    workflowInstanceRecord.setElementId("subProcess");
+            100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    processInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
-        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    workflowInstanceRecord.setElementId("subProcess2");
+        parentInstance, 101, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    processInstanceRecord.setElementId("subProcess2");
     elementInstanceState.newInstance(
-        parentInstance, 102, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+        parentInstance, 102, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
     // when
     elementInstanceState.removeInstance(101L);
@@ -224,14 +224,14 @@ public final class ElementInstanceStateTest {
   @Test
   public void shouldUpdateElementInstance() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     final ElementInstance instance =
         elementInstanceState.newInstance(
-            100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     instance.spawnToken();
-    instance.setState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+    instance.setState(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     instance.setJobKey(5);
     elementInstanceState.updateInstance(instance);
 
@@ -240,7 +240,7 @@ public final class ElementInstanceStateTest {
 
     Assertions.assertThat(updatedInstance.getKey()).isEqualTo(100);
     Assertions.assertThat(updatedInstance.getState())
-        .isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+        .isEqualTo(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     Assertions.assertThat(updatedInstance.getJobKey()).isEqualTo(5);
     Assertions.assertThat(updatedInstance.canTerminate()).isTrue();
 
@@ -248,21 +248,21 @@ public final class ElementInstanceStateTest {
     Assertions.assertThat(updatedInstance.getNumberOfActiveExecutionPaths()).isEqualTo(1);
     Assertions.assertThat(updatedInstance.getNumberOfActiveTokens()).isEqualTo(1);
 
-    final WorkflowInstanceRecord record = updatedInstance.getValue();
-    assertWorkflowInstanceRecord(record);
+    final ProcessInstanceRecord record = updatedInstance.getValue();
+    assertProcessInstanceRecord(record);
   }
 
   @Test
   public void shouldNotUpdateElementInstance() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     final ElementInstance instance =
         elementInstanceState.newInstance(
-            100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     instance.spawnToken();
-    instance.setState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+    instance.setState(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     instance.setJobKey(5);
 
     // then
@@ -270,7 +270,7 @@ public final class ElementInstanceStateTest {
 
     Assertions.assertThat(updatedInstance.getKey()).isEqualTo(100);
     Assertions.assertThat(updatedInstance.getState())
-        .isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        .isEqualTo(ProcessInstanceIntent.ELEMENT_ACTIVATED);
     Assertions.assertThat(updatedInstance.getJobKey()).isEqualTo(0L);
     Assertions.assertThat(updatedInstance.canTerminate()).isTrue();
 
@@ -278,21 +278,21 @@ public final class ElementInstanceStateTest {
     Assertions.assertThat(updatedInstance.getNumberOfActiveExecutionPaths()).isEqualTo(0);
     Assertions.assertThat(updatedInstance.getNumberOfActiveTokens()).isEqualTo(0);
 
-    final WorkflowInstanceRecord record = updatedInstance.getValue();
-    assertWorkflowInstanceRecord(record);
+    final ProcessInstanceRecord record = updatedInstance.getValue();
+    assertProcessInstanceRecord(record);
   }
 
   @Test
   public void shouldNotUpdateElementInstanceWithoutFlush() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     final ElementInstance instance =
         elementInstanceState.newInstance(
-            100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     instance.spawnToken();
-    instance.setState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+    instance.setState(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     instance.setJobKey(5);
 
     // then
@@ -304,16 +304,16 @@ public final class ElementInstanceStateTest {
   @Test
   public void shouldCollectChildInstances() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
-            100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    workflowInstanceRecord.setElementId("subProcess");
+            100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    processInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
-        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    workflowInstanceRecord.setElementId("subProcess2");
+        parentInstance, 101, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    processInstanceRecord.setElementId("subProcess2");
     elementInstanceState.newInstance(
-        parentInstance, 102, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+        parentInstance, 102, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
     // when
     final List<ElementInstance> children = elementInstanceState.getChildren(100L);
@@ -327,16 +327,16 @@ public final class ElementInstanceStateTest {
   @Test
   public void shouldStoreAndCollectRecord() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     elementInstanceState.newInstance(
-        100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     elementInstanceState.storeRecord(
         123L,
         100,
-        createWorkflowInstanceRecord(),
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        createProcessInstanceRecord(),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED,
         Purpose.DEFERRED);
 
     // then
@@ -346,27 +346,27 @@ public final class ElementInstanceStateTest {
     final IndexedRecord indexedRecord = storedRecords.get(0);
     Assertions.assertThat(indexedRecord.getKey()).isEqualTo(123L);
     Assertions.assertThat(indexedRecord.getState())
-        .isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    assertWorkflowInstanceRecord(indexedRecord.getValue());
+        .isEqualTo(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    assertProcessInstanceRecord(indexedRecord.getValue());
   }
 
   @Test
   public void shouldRemoveSingleRecord() {
     // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     elementInstanceState.newInstance(
-        100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
     elementInstanceState.storeRecord(
         123L,
         100,
-        createWorkflowInstanceRecord(),
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        createProcessInstanceRecord(),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED,
         Purpose.DEFERRED);
     elementInstanceState.storeRecord(
         124L,
         100,
-        createWorkflowInstanceRecord(),
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        createProcessInstanceRecord(),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED,
         Purpose.DEFERRED);
 
     // when
@@ -379,8 +379,8 @@ public final class ElementInstanceStateTest {
     final IndexedRecord indexedRecord = storedRecords.get(0);
     Assertions.assertThat(indexedRecord.getKey()).isEqualTo(124L);
     Assertions.assertThat(indexedRecord.getState())
-        .isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    assertWorkflowInstanceRecord(indexedRecord.getValue());
+        .isEqualTo(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    assertProcessInstanceRecord(indexedRecord.getValue());
   }
 
   @Test
@@ -388,15 +388,15 @@ public final class ElementInstanceStateTest {
     // given
     final int key = 100;
 
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     elementInstanceState.newInstance(
-        key, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        key, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     elementInstanceState.storeRecord(
         123L,
         100,
-        createWorkflowInstanceRecord(),
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        createProcessInstanceRecord(),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED,
         Purpose.DEFERRED);
 
     // when
@@ -412,22 +412,22 @@ public final class ElementInstanceStateTest {
     final int parent = 100;
     final int child = 101;
 
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
-            parent, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            parent, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
     zeebeState
         .getVariableState()
         .setVariableLocal(
-            1, parent, WORKFLOW_KEY, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+            1, parent, PROCESS_KEY, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
 
-    workflowInstanceRecord.setElementId("subProcess");
+    processInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
-        parentInstance, child, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+        parentInstance, child, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
     zeebeState
         .getVariableState()
         .setVariableLocal(
-            2, child, WORKFLOW_KEY, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
+            2, child, PROCESS_KEY, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
 
     // when
     elementInstanceState.removeInstance(101);
@@ -452,10 +452,10 @@ public final class ElementInstanceStateTest {
     // when
     elementInstanceState.setAwaitResultRequestMetadata(
         key,
-        new AwaitWorkflowInstanceResultMetadata()
+        new AwaitProcessInstanceResultMetadata()
             .setRequestStreamId(streamId)
             .setRequestId(requestId));
-    final AwaitWorkflowInstanceResultMetadata metadata =
+    final AwaitProcessInstanceResultMetadata metadata =
         elementInstanceState.getAwaitResultRequestMetadata(key);
 
     // then
@@ -466,7 +466,7 @@ public final class ElementInstanceStateTest {
   private void assertElementInstance(final ElementInstance elementInstance, final int childCount) {
     Assertions.assertThat(elementInstance.getKey()).isEqualTo(100);
     Assertions.assertThat(elementInstance.getState())
-        .isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        .isEqualTo(ProcessInstanceIntent.ELEMENT_ACTIVATED);
     Assertions.assertThat(elementInstance.getJobKey()).isEqualTo(0);
     Assertions.assertThat(elementInstance.canTerminate()).isTrue();
 
@@ -475,16 +475,16 @@ public final class ElementInstanceStateTest {
     Assertions.assertThat(elementInstance.getNumberOfActiveExecutionPaths()).isEqualTo(childCount);
     Assertions.assertThat(elementInstance.getNumberOfActiveTokens()).isEqualTo(0);
 
-    final WorkflowInstanceRecord record = elementInstance.getValue();
+    final ProcessInstanceRecord record = elementInstance.getValue();
 
-    assertWorkflowInstanceRecord(record);
+    assertProcessInstanceRecord(record);
   }
 
   private void assertChildInstance(
       final ElementInstance childInstance, final long key, final String elementId) {
     Assertions.assertThat(childInstance.getKey()).isEqualTo(key);
     Assertions.assertThat(childInstance.getState())
-        .isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+        .isEqualTo(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     Assertions.assertThat(childInstance.getJobKey()).isEqualTo(0);
     Assertions.assertThat(childInstance.canTerminate()).isTrue();
 
@@ -492,34 +492,34 @@ public final class ElementInstanceStateTest {
     Assertions.assertThat(childInstance.getNumberOfActiveExecutionPaths()).isEqualTo(0);
     Assertions.assertThat(childInstance.getNumberOfActiveTokens()).isEqualTo(0);
 
-    assertWorkflowInstanceRecord(childInstance.getValue(), wrapString(elementId));
+    assertProcessInstanceRecord(childInstance.getValue(), wrapString(elementId));
   }
 
-  private WorkflowInstanceRecord createWorkflowInstanceRecord() {
-    final WorkflowInstanceRecord workflowInstanceRecord = new WorkflowInstanceRecord();
-    workflowInstanceRecord.setElementId("startEvent");
-    workflowInstanceRecord.setBpmnProcessId(wrapString("process1"));
-    workflowInstanceRecord.setWorkflowInstanceKey(1000L);
-    workflowInstanceRecord.setFlowScopeKey(1001L);
-    workflowInstanceRecord.setVersion(1);
-    workflowInstanceRecord.setWorkflowKey(2);
-    workflowInstanceRecord.setBpmnElementType(BpmnElementType.START_EVENT);
+  private ProcessInstanceRecord createProcessInstanceRecord() {
+    final ProcessInstanceRecord processInstanceRecord = new ProcessInstanceRecord();
+    processInstanceRecord.setElementId("startEvent");
+    processInstanceRecord.setBpmnProcessId(wrapString("process1"));
+    processInstanceRecord.setProcessInstanceKey(1000L);
+    processInstanceRecord.setFlowScopeKey(1001L);
+    processInstanceRecord.setVersion(1);
+    processInstanceRecord.setProcessDefinitionKey(2);
+    processInstanceRecord.setBpmnElementType(BpmnElementType.START_EVENT);
 
-    return workflowInstanceRecord;
+    return processInstanceRecord;
   }
 
-  private void assertWorkflowInstanceRecord(final WorkflowInstanceRecord record) {
-    assertWorkflowInstanceRecord(record, wrapString("startEvent"));
+  private void assertProcessInstanceRecord(final ProcessInstanceRecord record) {
+    assertProcessInstanceRecord(record, wrapString("startEvent"));
   }
 
-  private void assertWorkflowInstanceRecord(
-      final WorkflowInstanceRecord record, final DirectBuffer elementId) {
+  private void assertProcessInstanceRecord(
+      final ProcessInstanceRecord record, final DirectBuffer elementId) {
     assertThat(record.getElementIdBuffer()).isEqualTo(elementId);
     assertThat(record.getBpmnProcessIdBuffer()).isEqualTo(wrapString("process1"));
-    assertThat(record.getWorkflowInstanceKey()).isEqualTo(1000L);
+    assertThat(record.getProcessInstanceKey()).isEqualTo(1000L);
     assertThat(record.getFlowScopeKey()).isEqualTo(1001L);
     assertThat(record.getVersion()).isEqualTo(1);
-    assertThat(record.getWorkflowKey()).isEqualTo(2);
+    assertThat(record.getProcessDefinitionKey()).isEqualTo(2);
     assertThat(record.getBpmnElementType()).isEqualTo(BpmnElementType.START_EVENT);
   }
 }

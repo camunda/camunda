@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.job;
 
@@ -11,11 +11,16 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
+import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.engine.state.immutable.VariableState;
-import io.zeebe.engine.state.mutable.MutableJobState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.msgpack.value.StringValue;
@@ -29,7 +34,6 @@ import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.util.ByteValue;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -39,8 +43,13 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
 
-  private final MutableJobState jobState;
+  private final StateWriter stateWriter;
   private final VariableState variableState;
+  private final TypedCommandWriter commandWriter;
+  private final TypedRejectionWriter rejectionWriter;
+  private final TypedResponseWriter responseWriter;
+
+  private final JobState jobState;
   private final KeyGenerator keyGenerator;
   private final long maxRecordLength;
   private final long maxJobBatchLength;
@@ -48,14 +57,16 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
   public JobBatchActivateProcessor(
-      final MutableJobState jobState,
-      final VariableState variableState,
-      final KeyGenerator keyGenerator,
-      final long maxRecordLength) {
+      final Writers writers, final MutableZeebeState state, final long maxRecordLength) {
 
-    this.jobState = jobState;
-    this.variableState = variableState;
-    this.keyGenerator = keyGenerator;
+    stateWriter = writers.state();
+    commandWriter = writers.command();
+    rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
+
+    jobState = state.getJobState();
+    variableState = state.getVariableState();
+    keyGenerator = state.getKeyGenerator();
 
     this.maxRecordLength = maxRecordLength;
     // we can only add the half of the max record length to the job batch
@@ -70,9 +81,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final TypedStreamWriter streamWriter) {
     final JobBatchRecord value = record.getValue();
     if (isValid(value)) {
-      activateJobs(record, responseWriter, streamWriter);
+      activateJobs(record);
     } else {
-      rejectCommand(record, responseWriter, streamWriter);
+      rejectCommand(record);
     }
   }
 
@@ -82,32 +93,20 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
         && record.getTypeBuffer().capacity() > 0;
   }
 
-  private void activateJobs(
-      final TypedRecord<JobBatchRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+  private void activateJobs(final TypedRecord<JobBatchRecord> record) {
     final JobBatchRecord value = record.getValue();
 
     final long jobBatchKey = keyGenerator.nextKey();
 
     final AtomicInteger amount = new AtomicInteger(value.getMaxJobsToActivate());
-    collectJobsToActivate(record, amount, streamWriter);
+    collectJobsToActivate(record, amount);
 
-    // Collecting of jobs and update state and write ACTIVATED job events should be separate,
-    // since otherwise this will cause some problems (weird behavior) with the reusing of objects
-    //
-    // ArrayProperty.add will give always the same object - state.activate will
-    // set/use this object for writing the new job state
-    activateJobs(streamWriter, value);
-
-    streamWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
+    stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
     responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
   }
 
   private void collectJobsToActivate(
-      final TypedRecord<JobBatchRecord> record,
-      final AtomicInteger amount,
-      final TypedStreamWriter streamWriter) {
+      final TypedRecord<JobBatchRecord> record, final AtomicInteger amount) {
     final JobBatchRecord value = record.getValue();
     final ValueArray<JobRecord> jobIterator = value.jobs();
     final ValueArray<LongValue> jobKeyIterator = value.jobKeys();
@@ -154,8 +153,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             value.setTruncated(true);
 
             if (value.getJobs().isEmpty()) {
-              raiseIncidentJobTooLargeForMessageSize(key, jobRecord, streamWriter);
-              jobState.disable(key, jobRecord);
+              raiseIncidentJobTooLargeForMessageSize(key, jobRecord);
             }
 
             return false;
@@ -163,17 +161,6 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
           return remainingAmount > 0;
         });
-  }
-
-  private void activateJobs(final TypedStreamWriter streamWriter, final JobBatchRecord value) {
-    final Iterator<JobRecord> iterator = value.jobs().iterator();
-    final Iterator<LongValue> keyIt = value.jobKeys().iterator();
-    while (iterator.hasNext() && keyIt.hasNext()) {
-      final JobRecord jobRecord = iterator.next();
-      final LongValue next1 = keyIt.next();
-      final long key = next1.getValue();
-      jobState.activate(key, jobRecord);
-    }
   }
 
   private DirectBuffer collectVariables(
@@ -187,10 +174,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     return variables;
   }
 
-  private void rejectCommand(
-      final TypedRecord<JobBatchRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+  private void rejectCommand(final TypedRecord<JobBatchRecord> record) {
     final RejectionType rejectionType;
     final String rejectionReason;
 
@@ -219,12 +203,11 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
           "Expected to reject an invalid activate job batch command, but it appears to be valid");
     }
 
-    streamWriter.appendRejection(record, rejectionType, rejectionReason);
+    rejectionWriter.appendRejection(record, rejectionType, rejectionReason);
     responseWriter.writeRejectionOnCommand(record, rejectionType, rejectionReason);
   }
 
-  private void raiseIncidentJobTooLargeForMessageSize(
-      final long jobKey, final JobRecord job, final TypedStreamWriter streamWriter) {
+  private void raiseIncidentJobTooLargeForMessageSize(final long jobKey, final JobRecord job) {
 
     final String messageSize = ByteValue.prettyPrint(maxRecordLength);
 
@@ -240,13 +223,13 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             .setErrorType(ErrorType.MESSAGE_SIZE_EXCEEDED)
             .setErrorMessage(incidentMessage)
             .setBpmnProcessId(job.getBpmnProcessIdBuffer())
-            .setWorkflowKey(job.getWorkflowKey())
-            .setWorkflowInstanceKey(job.getWorkflowInstanceKey())
+            .setProcessDefinitionKey(job.getProcessDefinitionKey())
+            .setProcessInstanceKey(job.getProcessInstanceKey())
             .setElementId(job.getElementIdBuffer())
             .setElementInstanceKey(job.getElementInstanceKey())
             .setJobKey(jobKey)
             .setVariableScopeKey(job.getElementInstanceKey());
 
-    streamWriter.appendNewCommand(IncidentIntent.CREATE, incidentEvent);
+    commandWriter.appendFollowUpCommand(jobKey, IncidentIntent.CREATE, incidentEvent);
   }
 }

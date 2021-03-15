@@ -9,7 +9,7 @@
 
   <sbe:message name="OpenMessageSubscription" id="0">
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
-    <field name="workflowInstanceKey" id="1" type="uint64"/>
+    <field name="processInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
     <field name="closeOnCorrelate" id="3" type="BooleanType"/>
     <data name="messageName" id="4" type="varDataEncoding"/>
@@ -17,17 +17,17 @@
     <data name="bpmnProcessId" id="6" type="varDataEncoding"/>
   </sbe:message>
 
-  <sbe:message name="OpenWorkflowInstanceSubscription" id="1">
+  <sbe:message name="OpenProcessInstanceSubscription" id="1">
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
-    <field name="workflowInstanceKey" id="1" type="uint64"/>
+    <field name="processInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
     <field name="closeOnCorrelate" id="3" type="BooleanType"/>
     <data name="messageName" id="4" type="varDataEncoding"/>
   </sbe:message>
 
-  <sbe:message name="CorrelateWorkflowInstanceSubscription" id="2">
+  <sbe:message name="CorrelateProcessInstanceSubscription" id="2">
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
-    <field name="workflowInstanceKey" id="1" type="uint64"/>
+    <field name="processInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
     <field name="messageKey" id="3" type="uint64"/>
     <data name="messageName" id="4" type="varDataEncoding"/>
@@ -38,7 +38,7 @@
 
   <sbe:message name="CorrelateMessageSubscription" id="3">
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
-    <field name="workflowInstanceKey" id="1" type="uint64"/>
+    <field name="processInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
     <data name="messageName" id="3" type="varDataEncoding"/>
     <data name="bpmnProcessId" id="4" type="varDataEncoding"/>
@@ -46,21 +46,21 @@
 
   <sbe:message name="CloseMessageSubscription" id="4">
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
-    <field name="workflowInstanceKey" id="1" type="uint64"/>
+    <field name="processInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
     <data name="messageName" id="3" type="varDataEncoding"/>
   </sbe:message>
 
-  <sbe:message name="CloseWorkflowInstanceSubscription" id="5">
+  <sbe:message name="CloseProcessInstanceSubscription" id="5">
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
-    <field name="workflowInstanceKey" id="1" type="uint64"/>
+    <field name="processInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
     <data name="messageName" id="3" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="RejectCorrelateMessageSubscription" id="6">
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
-    <field name="workflowInstanceKey" id="1" type="uint64"/>
+    <field name="processInstanceKey" id="1" type="uint64"/>
     <field name="messageKey" id="2" type="uint64"/>
     <data name="messageName" id="3" type="varDataEncoding"/>
     <data name="correlationKey" id="4" type="varDataEncoding"/>

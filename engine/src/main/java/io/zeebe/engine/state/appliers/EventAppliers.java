@@ -2,33 +2,36 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.intent.WorkflowIntent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
 /**
- * Applies state changes from events to the {@link io.zeebe.engine.state.ZeebeState}.
+ * Applies state changes from events to the {@link MutableZeebeState}.
  *
  * <p>Finds the correct {@link TypedEventApplier} and delegates.
  */
@@ -48,10 +51,10 @@ public final class EventAppliers implements EventApplier {
   @SuppressWarnings("rawtypes")
   private final Map<Intent, TypedEventApplier> mapping = new HashMap<>();
 
-  public EventAppliers(final ZeebeState state) {
-    registerWorkflowInstanceEventAppliers(state);
+  public EventAppliers(final MutableZeebeState state) {
+    registerProcessInstanceEventAppliers(state);
 
-    register(WorkflowIntent.CREATED, new WorkflowCreatedApplier(state));
+    register(ProcessIntent.CREATED, new ProcessCreatedApplier(state));
     register(DeploymentDistributionIntent.DISTRIBUTING, new DeploymentDistributionApplier(state));
     register(
         DeploymentDistributionIntent.COMPLETED,
@@ -59,7 +62,7 @@ public final class EventAppliers implements EventApplier {
 
     register(DeploymentIntent.CREATED, new DeploymentCreatedApplier(state.getDeploymentState()));
     register(
-        DeploymentIntent.DISTRIBUTED, new DeploymentDistributedApplier(state.getWorkflowState()));
+        DeploymentIntent.DISTRIBUTED, new DeploymentDistributedApplier(state.getProcessState()));
     register(
         DeploymentIntent.FULLY_DISTRIBUTED,
         new DeploymentFullyDistributedApplier(state.getDeploymentState()));
@@ -76,44 +79,48 @@ public final class EventAppliers implements EventApplier {
 
     registerJobIntentEventAppliers(state);
     registerVariableEventAppliers(state);
+    register(JobBatchIntent.ACTIVATED, new JobBatchActivatedApplier(state));
+    registerIncidentEventAppliers(state);
+    registerProcessInstanceSubscriptionEventAppliers(state);
   }
 
-  private void registerVariableEventAppliers(final ZeebeState state) {
+  private void registerVariableEventAppliers(final MutableZeebeState state) {
     final VariableApplier variableApplier = new VariableApplier(state.getVariableState());
     register(VariableIntent.CREATED, variableApplier);
     register(VariableIntent.UPDATED, variableApplier);
   }
 
-  private void registerWorkflowInstanceEventAppliers(final ZeebeState state) {
+  private void registerProcessInstanceEventAppliers(final MutableZeebeState state) {
     final var elementInstanceState = state.getElementInstanceState();
     final var eventScopeInstanceState = state.getEventScopeInstanceState();
-    final var workflowState = state.getWorkflowState();
+    final var processState = state.getProcessState();
+    final var variableState = state.getVariableState();
     register(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-        new WorkflowInstanceElementActivatingApplier(elementInstanceState));
+        ProcessInstanceIntent.ELEMENT_ACTIVATING,
+        new ProcessInstanceElementActivatingApplier(
+            elementInstanceState, processState, variableState));
     register(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-        new WorkflowInstanceElementActivatedApplier(
-            elementInstanceState, workflowState, eventScopeInstanceState));
+        ProcessInstanceIntent.ELEMENT_ACTIVATED,
+        new ProcessInstanceElementActivatedApplier(
+            elementInstanceState, processState, eventScopeInstanceState));
     register(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING,
-        new WorkflowInstanceElementCompletingApplier(elementInstanceState));
+        ProcessInstanceIntent.ELEMENT_COMPLETING,
+        new ProcessInstanceElementCompletingApplier(elementInstanceState));
     register(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED,
-        new WorkflowInstanceElementCompletedApplier(elementInstanceState, eventScopeInstanceState));
+        ProcessInstanceIntent.ELEMENT_COMPLETED,
+        new ProcessInstanceElementCompletedApplier(elementInstanceState, eventScopeInstanceState));
     register(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING,
-        new WorkflowInstanceElementTerminatingApplier(elementInstanceState));
+        ProcessInstanceIntent.ELEMENT_TERMINATING,
+        new ProcessInstanceElementTerminatingApplier(elementInstanceState));
     register(
-        WorkflowInstanceIntent.ELEMENT_TERMINATED,
-        new WorkflowInstanceElementTerminatedApplier(
-            elementInstanceState, eventScopeInstanceState));
+        ProcessInstanceIntent.ELEMENT_TERMINATED,
+        new ProcessInstanceElementTerminatedApplier(elementInstanceState, eventScopeInstanceState));
     register(
-        WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-        new WorkflowInstanceSequenceFlowTakenApplier(elementInstanceState));
+        ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
+        new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState));
   }
 
-  private void registerJobIntentEventAppliers(final ZeebeState state) {
+  private void registerJobIntentEventAppliers(final MutableZeebeState state) {
     register(JobIntent.CANCELED, new JobCanceledApplier(state));
     register(JobIntent.COMPLETED, new JobCompletedApplier(state));
     register(JobIntent.CREATED, new JobCreatedApplier(state));
@@ -123,7 +130,7 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.TIMED_OUT, new JobTimedOutApplier(state));
   }
 
-  private void registerMessageSubscriptionAppliers(final ZeebeState state) {
+  private void registerMessageSubscriptionAppliers(final MutableZeebeState state) {
     register(
         MessageSubscriptionIntent.CREATED,
         new MessageSubscriptionCreatedApplier(state.getMessageSubscriptionState()));
@@ -140,6 +147,28 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageSubscriptionIntent.DELETED,
         new MessageSubscriptionDeletedApplier(state.getMessageSubscriptionState()));
+  }
+
+  private void registerIncidentEventAppliers(final MutableZeebeState state) {
+    register(
+        IncidentIntent.CREATED,
+        new IncidentCreatedApplier(state.getIncidentState(), state.getJobState()));
+    register(
+        IncidentIntent.RESOLVED,
+        new IncidentResolvedApplier(state.getIncidentState(), state.getJobState()));
+  }
+
+  private void registerProcessInstanceSubscriptionEventAppliers(final MutableZeebeState state) {
+    register(
+        ProcessInstanceSubscriptionIntent.CREATING,
+        new ProcessInstanceSubscriptionCreatingApplier(
+            state.getProcessInstanceSubscriptionState()));
+    register(
+        ProcessInstanceSubscriptionIntent.CREATED,
+        new ProcessInstanceSubscriptionCreatedApplier(state.getProcessInstanceSubscriptionState()));
+    register(
+        ProcessInstanceSubscriptionIntent.DELETED,
+        new ProcessInstanceSubscriptionDeletedApplier(state.getProcessInstanceSubscriptionState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message;
 
@@ -83,25 +83,23 @@ public final class MessageSubscriptionRejectProcessor
         subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.getCorrelationKeyBuffer(),
         subscription -> {
+          final var correlatingSubscription = subscription.getRecord();
+
           final var canBeCorrelated =
-              subscription.getBpmnProcessId().equals(subscriptionRecord.getBpmnProcessIdBuffer())
+              correlatingSubscription
+                      .getBpmnProcessIdBuffer()
+                      .equals(subscriptionRecord.getBpmnProcessIdBuffer())
                   && !subscription.isCorrelating();
 
           if (canBeCorrelated) {
-            // TODO (saig0): retrieve the subscription record from the state (#6180)
-            final var correlatingSubscription = new MessageSubscriptionRecord();
             correlatingSubscription
                 .setMessageKey(messageKey)
-                .setVariables(storedMessage.getMessage().getVariablesBuffer())
-                .setMessageName(subscription.getMessageName())
-                .setCorrelationKey(subscription.getCorrelationKey())
-                .setBpmnProcessId(subscription.getBpmnProcessId())
-                .setWorkflowInstanceKey(subscription.getWorkflowInstanceKey())
-                .setElementInstanceKey(subscription.getElementInstanceKey())
-                .setCloseOnCorrelate(subscription.shouldCloseOnCorrelate());
+                .setVariables(storedMessage.getMessage().getVariablesBuffer());
 
             stateWriter.appendFollowUpEvent(
-                -1L, MessageSubscriptionIntent.CORRELATING, correlatingSubscription);
+                subscription.getKey(),
+                MessageSubscriptionIntent.CORRELATING,
+                correlatingSubscription);
 
             sideEffect.accept(() -> sendCorrelateCommand(correlatingSubscription));
           }
@@ -110,8 +108,8 @@ public final class MessageSubscriptionRejectProcessor
   }
 
   private boolean sendCorrelateCommand(final MessageSubscriptionRecord subscription) {
-    return commandSender.correlateWorkflowInstanceSubscription(
-        subscription.getWorkflowInstanceKey(),
+    return commandSender.correlateProcessInstanceSubscription(
+        subscription.getProcessInstanceKey(),
         subscription.getElementInstanceKey(),
         subscription.getBpmnProcessIdBuffer(),
         subscription.getMessageNameBuffer(),
@@ -124,7 +122,7 @@ public final class MessageSubscriptionRejectProcessor
     final var subscription = record.getValue();
     final var reason =
         String.format(
-            "Expected message '%d' to be correlated for workflow with BPMN process id '%s' but no correlation was found",
+            "Expected message '%d' to be correlated for process with BPMN process id '%s' but no correlation was found",
             subscription.getMessageKey(), subscription.getBpmnProcessId());
 
     rejectionWriter.appendRejection(record, RejectionType.INVALID_STATE, reason);

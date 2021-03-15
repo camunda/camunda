@@ -2,15 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.instance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +27,7 @@ public final class TimerInstanceStateTest {
 
   @Before
   public void setUp() {
-    final ZeebeState zeebeState = stateRule.getZeebeState();
+    final MutableZeebeState zeebeState = stateRule.getZeebeState();
     state = zeebeState.getTimerState();
   }
 
@@ -85,7 +85,7 @@ public final class TimerInstanceStateTest {
     // given
     final TimerInstance timer = new TimerInstance();
     timer.setElementInstanceKey(1L);
-    timer.setWorkflowInstanceKey(1L);
+    timer.setProcessInstanceKey(1L);
     timer.setKey(2L);
     timer.setDueDate(1000L);
     state.put(timer);
@@ -97,7 +97,7 @@ public final class TimerInstanceStateTest {
     Assertions.assertThat(readTimer).isNotNull();
     Assertions.assertThat(readTimer.getElementInstanceKey()).isEqualTo(1L);
     Assertions.assertThat(readTimer.getKey()).isEqualTo(2L);
-    Assertions.assertThat(readTimer.getWorkflowInstanceKey()).isEqualTo(1L);
+    Assertions.assertThat(readTimer.getProcessInstanceKey()).isEqualTo(1L);
     Assertions.assertThat(readTimer.getDueDate()).isEqualTo(1000L);
 
     // and

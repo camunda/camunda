@@ -2,27 +2,16 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.snapshots.raft;
 
-import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.util.CloseableSilently;
 import java.nio.file.Path;
 
 /** Represents a snapshot, which was persisted at the {@link PersistedSnapshotStore}. */
 public interface PersistedSnapshot extends CloseableSilently {
-
-  /**
-   * Returns the snapshot timestamp.
-   *
-   * <p>The timestamp is the wall clock time at the {@link #getIndex()} at which the snapshot was
-   * taken.
-   *
-   * @return The snapshot timestamp.
-   */
-  WallClockTimestamp getTimestamp();
 
   /**
    * Returns the snapshot format version.
@@ -66,8 +55,8 @@ public interface PersistedSnapshot extends CloseableSilently {
   Path getPath();
 
   /**
-   * Returns an implementation specific compaction bound, e.g. a log stream position, a timestamp,
-   * etc., used during compaction
+   * Returns an implementation specific compaction bound, e.g. a log stream position, index etc.,
+   * used during compaction
    *
    * @return the compaction upper bound
    */

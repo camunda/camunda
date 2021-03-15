@@ -2,16 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
-
 package io.zeebe.broker.logstreams;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.storage.RaftStorage;
-import io.atomix.raft.storage.log.Indexed;
+import io.atomix.raft.storage.log.IndexedRaftRecord;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
 import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStore;
@@ -80,7 +79,11 @@ public final class AtomixLogDeletionServiceTest {
     compactor.awaitCompaction(2L, Duration.ofSeconds(5));
     reader.reset();
     final var entries = readAllEntries(reader);
-    assertThat(entries).isNotEmpty().hasSize(2).extracting(Indexed::index).containsExactly(2L, 3L);
+    assertThat(entries)
+        .isNotEmpty()
+        .hasSize(2)
+        .extracting(IndexedRaftRecord::index)
+        .containsExactly(2L, 3L);
   }
 
   @Test
@@ -101,7 +104,7 @@ public final class AtomixLogDeletionServiceTest {
     assertThat(entries)
         .isNotEmpty()
         .hasSize(3)
-        .extracting(Indexed::index)
+        .extracting(IndexedRaftRecord::index)
         .containsExactly(1L, 2L, 3L);
   }
 
@@ -120,7 +123,11 @@ public final class AtomixLogDeletionServiceTest {
     compactor.awaitCompaction(5L, Duration.ofSeconds(5));
     reader.reset();
     final var entries = readAllEntries(reader);
-    assertThat(entries).isNotEmpty().hasSize(1).extracting(Indexed::index).containsExactly(3L);
+    assertThat(entries)
+        .isNotEmpty()
+        .hasSize(1)
+        .extracting(IndexedRaftRecord::index)
+        .containsExactly(3L);
   }
 
   private void createSnapshot(final long index) {
@@ -144,8 +151,8 @@ public final class AtomixLogDeletionServiceTest {
     }
   }
 
-  private List<Indexed<?>> readAllEntries(final RaftLogReader reader) {
-    final List<Indexed<?>> entries = new ArrayList<>();
+  private List<IndexedRaftRecord> readAllEntries(final RaftLogReader reader) {
+    final List<IndexedRaftRecord> entries = new ArrayList<>();
     while (reader.hasNext()) {
       entries.add(reader.next());
     }

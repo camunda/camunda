@@ -23,7 +23,7 @@ import io.zeebe.protocol.record.intent.VariableIntent;
  *
  * <p>See {@link VariableIntent} for intents.
  */
-public interface VariableRecordValue extends RecordValue, WorkflowInstanceRelated {
+public interface VariableRecordValue extends RecordValue, ProcessInstanceRelated {
 
   /** @return the name of the variable. */
   String getName();
@@ -34,9 +34,9 @@ public interface VariableRecordValue extends RecordValue, WorkflowInstanceRelate
   /** @return the key of the scope the variable belongs to. */
   long getScopeKey();
 
-  /** @return the key of the workflow instance the variable belongs to */
-  long getWorkflowInstanceKey();
+  /** @return the key of the process instance the variable belongs to */
+  long getProcessInstanceKey();
 
-  /** @return the key of the workflow the variable belongs to */
-  long getWorkflowKey();
+  /** @return the key of the process the variable belongs to */
+  long getProcessDefinitionKey();
 }

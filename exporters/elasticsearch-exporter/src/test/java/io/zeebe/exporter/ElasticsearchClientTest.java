@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.exporter;
 
@@ -76,7 +76,7 @@ public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegr
     final String variableName = "varName";
     final String variableValue = "x".repeat(configuration.index.ignoreVariablesAbove + 1);
     final long scopeKey = 1234L;
-    final long workflowInstanceKey = 5678L;
+    final long processInstanceKey = 5678L;
 
     final Record<VariableRecordValue> recordMock = mock(Record.class);
     when(recordMock.getPartitionId()).thenReturn(1);
@@ -88,7 +88,7 @@ public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegr
     when(value.getName()).thenReturn(variableName);
     when(value.getValue()).thenReturn(variableValue);
     when(value.getScopeKey()).thenReturn(scopeKey);
-    when(value.getWorkflowInstanceKey()).thenReturn(workflowInstanceKey);
+    when(value.getProcessInstanceKey()).thenReturn(processInstanceKey);
 
     when(recordMock.getValue()).thenReturn(value);
 
@@ -108,7 +108,7 @@ public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegr
             variableName,
             variableValue.getBytes().length,
             scopeKey,
-            workflowInstanceKey);
+            processInstanceKey);
   }
 
   @Test
@@ -118,7 +118,7 @@ public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegr
 
     final Record<VariableRecordValue> recordMock = mock(Record.class);
     when(recordMock.getPartitionId()).thenReturn(1);
-    when(recordMock.getValueType()).thenReturn(ValueType.WORKFLOW_INSTANCE);
+    when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
 
     // bulk contains records that fail on flush
     IntStream.range(0, bulkSize)
@@ -152,7 +152,7 @@ public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegr
     // given
     final Record<VariableRecordValue> recordMock = mock(Record.class);
     when(recordMock.getPartitionId()).thenReturn(1);
-    when(recordMock.getValueType()).thenReturn(ValueType.WORKFLOW_INSTANCE);
+    when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(recordMock.getKey()).thenReturn(RECORD_KEY + 1);
     when(recordMock.toJson()).thenReturn("{}");
 

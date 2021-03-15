@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message;
 
@@ -34,15 +34,17 @@ public final class PendingMessageSubscriptionChecker implements Runnable {
   }
 
   private boolean sendCommand(final MessageSubscription subscription) {
+    final var record = subscription.getRecord();
+
     final boolean success =
-        commandSender.correlateWorkflowInstanceSubscription(
-            subscription.getWorkflowInstanceKey(),
-            subscription.getElementInstanceKey(),
-            subscription.getBpmnProcessId(),
-            subscription.getMessageName(),
-            subscription.getMessageKey(),
-            subscription.getMessageVariables(),
-            subscription.getCorrelationKey());
+        commandSender.correlateProcessInstanceSubscription(
+            record.getProcessInstanceKey(),
+            record.getElementInstanceKey(),
+            record.getBpmnProcessIdBuffer(),
+            record.getMessageNameBuffer(),
+            record.getMessageKey(),
+            record.getVariablesBuffer(),
+            record.getCorrelationKeyBuffer());
 
     if (success) {
       // TODO (saig0): the state change of the sent time should be reflected by a record (#6364)

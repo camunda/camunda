@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.variable;
 
@@ -12,6 +12,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.msgpack.spec.MsgpackReaderException;
@@ -24,14 +25,17 @@ public final class UpdateVariableDocumentProcessor
     implements TypedRecordProcessor<VariableDocumentRecord> {
 
   private final ElementInstanceState elementInstanceState;
+  private final KeyGenerator keyGenerator;
   private final VariableBehavior variableBehavior;
   private final StateWriter stateWriter;
 
   public UpdateVariableDocumentProcessor(
       final ElementInstanceState elementInstanceState,
+      final KeyGenerator keyGenerator,
       final VariableBehavior variableBehavior,
       final StateWriter stateWriter) {
     this.elementInstanceState = elementInstanceState;
+    this.keyGenerator = keyGenerator;
     this.variableBehavior = variableBehavior;
     this.stateWriter = stateWriter;
   }
@@ -54,15 +58,15 @@ public final class UpdateVariableDocumentProcessor
       return;
     }
 
-    final long workflowKey = scope.getValue().getWorkflowKey();
-    final long workflowInstanceKey = scope.getValue().getWorkflowInstanceKey();
+    final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
+    final long processInstanceKey = scope.getValue().getProcessInstanceKey();
     try {
       if (value.getUpdateSemantics() == VariableDocumentUpdateSemantic.LOCAL) {
         variableBehavior.mergeLocalDocument(
-            scope.getKey(), workflowKey, workflowInstanceKey, value.getVariablesBuffer());
+            scope.getKey(), processDefinitionKey, processInstanceKey, value.getVariablesBuffer());
       } else {
         variableBehavior.mergeDocument(
-            scope.getKey(), workflowKey, workflowInstanceKey, value.getVariablesBuffer());
+            scope.getKey(), processDefinitionKey, processInstanceKey, value.getVariablesBuffer());
       }
     } catch (final MsgpackReaderException e) {
       final String reason =
@@ -74,8 +78,9 @@ public final class UpdateVariableDocumentProcessor
       return;
     }
 
-    stateWriter.appendFollowUpEvent(record.getKey(), VariableDocumentIntent.UPDATED, value);
-    responseWriter.writeEventOnCommand(
-        record.getKey(), VariableDocumentIntent.UPDATED, value, record);
+    final long key = keyGenerator.nextKey();
+
+    stateWriter.appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
+    responseWriter.writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
   }
 }

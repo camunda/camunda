@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.common;
 
@@ -21,16 +21,19 @@ import io.zeebe.engine.processing.message.MessageNameException;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.state.immutable.TimerInstanceState;
 import io.zeebe.engine.state.instance.TimerInstance;
-import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
+import io.zeebe.engine.state.message.ProcessInstanceSubscription;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableWorkflowInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.impl.SubscriptionUtil;
+import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.Either;
@@ -46,45 +49,52 @@ public final class CatchEventBehavior {
   private final ExpressionProcessor expressionProcessor;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final int partitionsCount;
+  private final StateWriter stateWriter;
 
   private final MutableEventScopeInstanceState eventScopeInstanceState;
-  private final MutableWorkflowInstanceSubscriptionState workflowInstanceSubscriptionState;
+  private final MutableProcessInstanceSubscriptionState processInstanceSubscriptionState;
   private final TimerInstanceState timerInstanceState;
 
-  private final WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
+  private final ProcessInstanceSubscriptionRecord subscription =
+      new ProcessInstanceSubscriptionRecord();
   private final TimerRecord timerRecord = new TimerRecord();
   private final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys = new HashMap<>();
   private final Map<DirectBuffer, Timer> evaluatedTimers = new HashMap<>();
 
   public CatchEventBehavior(
-      final ZeebeState zeebeState,
+      final MutableZeebeState zeebeState,
       final ExpressionProcessor expressionProcessor,
       final SubscriptionCommandSender subscriptionCommandSender,
+      final StateWriter stateWriter,
       final int partitionsCount) {
     this.expressionProcessor = expressionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
+    this.stateWriter = stateWriter;
     this.partitionsCount = partitionsCount;
 
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
     timerInstanceState = zeebeState.getTimerState();
-    workflowInstanceSubscriptionState = zeebeState.getWorkflowInstanceSubscriptionState();
+    processInstanceSubscriptionState = zeebeState.getProcessInstanceSubscriptionState();
   }
 
   public void unsubscribeFromEvents(
       final BpmnElementContext context,
-      final TypedStreamWriter streamWriter,
+      final TypedCommandWriter commandWriter,
       final SideEffects sideEffects) {
 
-    unsubscribeFromTimerEvents(context, streamWriter);
+    unsubscribeFromTimerEvents(context, commandWriter);
     unsubscribeFromMessageEvents(context, sideEffects);
 
-    eventScopeInstanceState.deleteInstance(context.getElementInstanceKey());
+    // todo: remove after all are migrated
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      eventScopeInstanceState.deleteInstance(context.getElementInstanceKey());
+    }
   }
 
   public void subscribeToEvents(
       final BpmnElementContext context,
       final ExecutableCatchEventSupplier supplier,
-      final TypedStreamWriter streamWriter,
+      final TypedCommandWriter commandWriter,
       final SideEffects sideEffects)
       throws MessageCorrelationKeyException {
 
@@ -106,11 +116,11 @@ public final class CatchEventBehavior {
       if (event.isTimer()) {
         subscribeToTimerEvent(
             context.getElementInstanceKey(),
-            context.getWorkflowInstanceKey(),
-            context.getWorkflowKey(),
+            context.getProcessInstanceKey(),
+            context.getProcessDefinitionKey(),
             event.getId(),
             evaluatedTimers.get(event.getId()),
-            streamWriter);
+            commandWriter);
       } else if (event.isMessage()) {
         subscribeToMessageEvent(
             context,
@@ -130,105 +140,103 @@ public final class CatchEventBehavior {
 
   public void subscribeToTimerEvent(
       final long elementInstanceKey,
-      final long workflowInstanceKey,
-      final long workflowKey,
+      final long processInstanceKey,
+      final long processDefinitionKey,
       final DirectBuffer handlerNodeId,
       final Timer timer,
-      final TypedStreamWriter writer) {
+      final TypedCommandWriter commandWriter) {
     timerRecord.reset();
     timerRecord
         .setRepetitions(timer.getRepetitions())
         .setDueDate(timer.getDueDate(ActorClock.currentTimeMillis()))
         .setElementInstanceKey(elementInstanceKey)
-        .setWorkflowInstanceKey(workflowInstanceKey)
+        .setProcessInstanceKey(processInstanceKey)
         .setTargetElementId(handlerNodeId)
-        .setWorkflowKey(workflowKey);
-    writer.appendNewCommand(TimerIntent.CREATE, timerRecord);
+        .setProcessDefinitionKey(processDefinitionKey);
+    commandWriter.appendNewCommand(TimerIntent.CREATE, timerRecord);
   }
 
   private void unsubscribeFromTimerEvents(
-      final BpmnElementContext context, final TypedStreamWriter streamWriter) {
+      final BpmnElementContext context, final TypedCommandWriter commandWriter) {
     timerInstanceState.forEachTimerForElementInstance(
-        context.getElementInstanceKey(), t -> unsubscribeFromTimerEvent(t, streamWriter));
+        context.getElementInstanceKey(), t -> unsubscribeFromTimerEvent(t, commandWriter));
   }
 
-  public void unsubscribeFromTimerEvent(final TimerInstance timer, final TypedStreamWriter writer) {
+  public void unsubscribeFromTimerEvent(
+      final TimerInstance timer, final TypedCommandWriter commandWriter) {
     timerRecord.reset();
     timerRecord
         .setElementInstanceKey(timer.getElementInstanceKey())
-        .setWorkflowInstanceKey(timer.getWorkflowInstanceKey())
+        .setProcessInstanceKey(timer.getProcessInstanceKey())
         .setDueDate(timer.getDueDate())
         .setRepetitions(timer.getRepetitions())
         .setTargetElementId(timer.getHandlerNodeId())
-        .setWorkflowKey(timer.getWorkflowKey());
+        .setProcessDefinitionKey(timer.getProcessDefinitionKey());
 
-    writer.appendFollowUpCommand(timer.getKey(), TimerIntent.CANCEL, timerRecord);
+    commandWriter.appendFollowUpCommand(timer.getKey(), TimerIntent.CANCEL, timerRecord);
   }
 
   private void subscribeToMessageEvent(
       final BpmnElementContext context,
-      final ExecutableCatchEvent handler,
-      final DirectBuffer extractedKey,
-      final DirectBuffer extractedMessageName,
+      final ExecutableCatchEvent catchEvent,
+      final DirectBuffer correlationKey,
+      final DirectBuffer messageName,
       final SideEffects sideEffects) {
 
-    final long workflowInstanceKey = context.getWorkflowInstanceKey();
+    final long processInstanceKey = context.getProcessInstanceKey();
     final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
     final long elementInstanceKey = context.getElementInstanceKey();
 
-    final DirectBuffer correlationKey = extractedKey;
-    final DirectBuffer messageName = extractedMessageName;
-    final boolean closeOnCorrelate = handler.shouldCloseMessageSubscriptionOnCorrelate();
     final int subscriptionPartitionId =
         SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionsCount);
 
     subscription.setSubscriptionPartitionId(subscriptionPartitionId);
     subscription.setMessageName(messageName);
     subscription.setElementInstanceKey(elementInstanceKey);
-    subscription.setCommandSentTime(ActorClock.currentTimeMillis());
-    subscription.setWorkflowInstanceKey(workflowInstanceKey);
+    subscription.setProcessInstanceKey(processInstanceKey);
     subscription.setBpmnProcessId(bpmnProcessId);
     subscription.setCorrelationKey(correlationKey);
-    subscription.setTargetElementId(handler.getId());
-    subscription.setCloseOnCorrelate(closeOnCorrelate);
-    // todo(zell): phil will migrate this via writing the open subscription
-    workflowInstanceSubscriptionState.put(subscription);
+    subscription.setElementId(catchEvent.getId());
+    subscription.setInterrupting(catchEvent.isInterrupting());
+
+    // TODO (saig0): the subscription should have a key (#2805)
+    stateWriter.appendFollowUpEvent(-1L, ProcessInstanceSubscriptionIntent.CREATING, subscription);
 
     sideEffects.add(
         () ->
             sendOpenMessageSubscription(
                 subscriptionPartitionId,
-                workflowInstanceKey,
+                processInstanceKey,
                 elementInstanceKey,
                 bpmnProcessId,
                 messageName,
                 correlationKey,
-                closeOnCorrelate));
+                catchEvent.isInterrupting()));
   }
 
   private void unsubscribeFromMessageEvents(
       final BpmnElementContext context, final SideEffects sideEffects) {
-    workflowInstanceSubscriptionState.visitElementSubscriptions(
+    processInstanceSubscriptionState.visitElementSubscriptions(
         context.getElementInstanceKey(),
         subscription -> unsubscribeFromMessageEvent(subscription, sideEffects));
   }
 
   private boolean unsubscribeFromMessageEvent(
-      final WorkflowInstanceSubscription subscription, final SideEffects sideEffects) {
+      final ProcessInstanceSubscription subscription, final SideEffects sideEffects) {
 
     final DirectBuffer messageName = cloneBuffer(subscription.getMessageName());
     final int subscriptionPartitionId = subscription.getSubscriptionPartitionId();
-    final long workflowInstanceKey = subscription.getWorkflowInstanceKey();
+    final long processInstanceKey = subscription.getProcessInstanceKey();
     final long elementInstanceKey = subscription.getElementInstanceKey();
 
     subscription.setClosing();
-    workflowInstanceSubscriptionState.updateToClosingState(
+    processInstanceSubscriptionState.updateToClosingState(
         subscription, ActorClock.currentTimeMillis());
 
     sideEffects.add(
         () ->
             sendCloseMessageSubscriptionCommand(
-                subscriptionPartitionId, workflowInstanceKey, elementInstanceKey, messageName));
+                subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName));
 
     return true;
   }
@@ -251,16 +259,16 @@ public final class CatchEventBehavior {
 
   private boolean sendCloseMessageSubscriptionCommand(
       final int subscriptionPartitionId,
-      final long workflowInstanceKey,
+      final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer messageName) {
     return subscriptionCommandSender.closeMessageSubscription(
-        subscriptionPartitionId, workflowInstanceKey, elementInstanceKey, messageName);
+        subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
   }
 
   private boolean sendOpenMessageSubscription(
       final int subscriptionPartitionId,
-      final long workflowInstanceKey,
+      final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
@@ -268,7 +276,7 @@ public final class CatchEventBehavior {
       final boolean closeOnCorrelate) {
     return subscriptionCommandSender.openMessageSubscription(
         subscriptionPartitionId,
-        workflowInstanceKey,
+        processInstanceKey,
         elementInstanceKey,
         bpmnProcessId,
         messageName,

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.message;
 
@@ -25,7 +25,6 @@ public final class MessageCorrelator {
   private final StateWriter stateWriter;
 
   private Consumer<SideEffectProducer> sideEffect;
-  private MessageSubscriptionRecord subscriptionRecord;
 
   public MessageCorrelator(
       final MessageState messageState,
@@ -37,9 +36,9 @@ public final class MessageCorrelator {
   }
 
   public boolean correlateNextMessage(
+      final long subscriptionKey,
       final MessageSubscriptionRecord subscriptionRecord,
       final Consumer<SideEffectProducer> sideEffect) {
-    this.subscriptionRecord = subscriptionRecord;
     this.sideEffect = sideEffect;
 
     final var isMessageCorrelated = new MutableBoolean(false);
@@ -48,8 +47,9 @@ public final class MessageCorrelator {
         subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.getCorrelationKeyBuffer(),
         storedMessage -> {
-          // correlate the first message which is not correlated to the workflow instance yet
-          final var isCorrelated = correlateMessage(storedMessage);
+          // correlate the first message which is not correlated to the process instance yet
+          final var isCorrelated =
+              correlateMessage(subscriptionKey, subscriptionRecord, storedMessage);
           isMessageCorrelated.set(isCorrelated);
           return !isCorrelated;
         });
@@ -57,7 +57,10 @@ public final class MessageCorrelator {
     return isMessageCorrelated.get();
   }
 
-  private boolean correlateMessage(final StoredMessage storedMessage) {
+  private boolean correlateMessage(
+      final long subscriptionKey,
+      final MessageSubscriptionRecord subscriptionRecord,
+      final StoredMessage storedMessage) {
     final long messageKey = storedMessage.getMessageKey();
     final var message = storedMessage.getMessage();
 
@@ -70,17 +73,17 @@ public final class MessageCorrelator {
       subscriptionRecord.setMessageKey(messageKey).setVariables(message.getVariablesBuffer());
 
       stateWriter.appendFollowUpEvent(
-          -1, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
+          subscriptionKey, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
 
-      sideEffect.accept(this::sendCorrelateCommand);
+      sideEffect.accept(() -> sendCorrelateCommand(subscriptionRecord));
     }
 
     return correlateMessage;
   }
 
-  private boolean sendCorrelateCommand() {
-    return commandSender.correlateWorkflowInstanceSubscription(
-        subscriptionRecord.getWorkflowInstanceKey(),
+  private boolean sendCorrelateCommand(final MessageSubscriptionRecord subscriptionRecord) {
+    return commandSender.correlateProcessInstanceSubscription(
+        subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getBpmnProcessIdBuffer(),
         subscriptionRecord.getMessageNameBuffer(),

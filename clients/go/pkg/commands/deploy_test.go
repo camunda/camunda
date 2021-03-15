@@ -30,42 +30,34 @@ func TestDeployCommand_AddResourceFile(t *testing.T) {
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	demoName := "../../../java/src/test/resources/workflows/demo-process.bpmn"
+	demoName := "../../../java/src/test/resources/processes/demo-process.bpmn"
 	demoBytes := readBytes(t, demoName)
-	anotherName := "../../../java/src/test/resources/workflows/another-demo-process.bpmn"
+	anotherName := "../../../java/src/test/resources/processes/another-demo-process.bpmn"
 	anotherBytes := readBytes(t, anotherName)
-	yamlName := "../../../java/src/test/resources/workflows/simple-workflow.yaml"
-	yamlBytes := readBytes(t, yamlName)
 
-	request := &pb.DeployWorkflowRequest{
-		Workflows: []*pb.WorkflowRequestObject{
+	request := &pb.DeployProcessRequest{
+		Processes: []*pb.ProcessRequestObject{
 			{
 				Name:       demoName,
-				Type:       pb.WorkflowRequestObject_FILE,
+				Type:       pb.ProcessRequestObject_FILE,
 				Definition: demoBytes,
 			},
 			{
 				Name:       anotherName,
-				Type:       pb.WorkflowRequestObject_FILE,
+				Type:       pb.ProcessRequestObject_FILE,
 				Definition: anotherBytes,
-			},
-			{
-				Name:       yamlName,
-				Type:       pb.WorkflowRequestObject_FILE,
-				Definition: yamlBytes,
 			},
 		},
 	}
-	stub := &pb.DeployWorkflowResponse{}
+	stub := &pb.DeployProcessResponse{}
 
-	client.EXPECT().DeployWorkflow(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().DeployProcess(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewDeployCommand(client, func(context.Context, error) bool { return false })
 
 	response, err := command.
 		AddResourceFile(demoName).
 		AddResourceFile(anotherName).
-		AddResourceFile(yamlName).
 		Send(context.Background())
 
 	if err != nil {
@@ -83,21 +75,21 @@ func TestDeployCommand_AddResource(t *testing.T) {
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	demoName := "../../../java/src/test/resources/workflows/demo-process.bpmn"
+	demoName := "../../../java/src/test/resources/processes/demo-process.bpmn"
 	demoBytes := readBytes(t, demoName)
 
-	request := &pb.DeployWorkflowRequest{
-		Workflows: []*pb.WorkflowRequestObject{
+	request := &pb.DeployProcessRequest{
+		Processes: []*pb.ProcessRequestObject{
 			{
 				Name:       demoName,
-				Type:       pb.WorkflowRequestObject_BPMN,
+				Type:       pb.ProcessRequestObject_BPMN,
 				Definition: demoBytes,
 			},
 		},
 	}
-	stub := &pb.DeployWorkflowResponse{}
+	stub := &pb.DeployProcessResponse{}
 
-	client.EXPECT().DeployWorkflow(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().DeployProcess(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewDeployCommand(client, func(context.Context, error) bool { return false })
 
@@ -105,7 +97,7 @@ func TestDeployCommand_AddResource(t *testing.T) {
 	defer cancel()
 
 	response, err := command.
-		AddResource(demoBytes, demoName, pb.WorkflowRequestObject_BPMN).
+		AddResource(demoBytes, demoName, pb.ProcessRequestObject_BPMN).
 		Send(ctx)
 
 	if err != nil {

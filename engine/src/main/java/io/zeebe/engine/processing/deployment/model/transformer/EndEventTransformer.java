@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.deployment.model.transformer;
 
@@ -22,8 +22,8 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
 
   @Override
   public void transform(final EndEvent element, final TransformContext context) {
-    final var currentWorkflow = context.getCurrentWorkflow();
-    final var endEvent = currentWorkflow.getElementById(element.getId(), ExecutableEndEvent.class);
+    final var currentProcess = context.getCurrentProcess();
+    final var endEvent = currentProcess.getElementById(element.getId(), ExecutableEndEvent.class);
 
     if (!element.getEventDefinitions().isEmpty()) {
       transformEventDefinition(element, context, endEvent);

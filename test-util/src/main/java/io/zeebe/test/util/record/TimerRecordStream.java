@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.test.util.record;
 
@@ -46,11 +46,11 @@ public final class TimerRecordStream
     return valueFilter(v -> v.getRepetitions() == repetitions);
   }
 
-  public TimerRecordStream withWorkflowKey(final long workflowKey) {
-    return valueFilter(v -> v.getWorkflowKey() == workflowKey);
+  public TimerRecordStream withProcessDefinitionKey(final long processDefinitionKey) {
+    return valueFilter(v -> v.getProcessDefinitionKey() == processDefinitionKey);
   }
 
-  public TimerRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
-    return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
+  public TimerRecordStream withProcessInstanceKey(final long processInstanceKey) {
+    return valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey);
   }
 }

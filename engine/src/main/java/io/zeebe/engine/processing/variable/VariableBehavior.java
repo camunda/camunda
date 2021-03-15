@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.variable;
 
@@ -53,14 +53,14 @@ public final class VariableBehavior {
    * Variable.CREATED} record is produced as a follow up event.
    *
    * @param scopeKey the scope key for each variable
-   * @param workflowKey the workflow key to be associated with each variable
-   * @param workflowInstanceKey the workflow instance key to be associated with each variable
+   * @param processDefinitionKey the process key to be associated with each variable
+   * @param processInstanceKey the process instance key to be associated with each variable
    * @param document the document to merge
    */
   public void mergeLocalDocument(
       final long scopeKey,
-      final long workflowKey,
-      final long workflowInstanceKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
       final DirectBuffer document) {
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
@@ -69,8 +69,8 @@ public final class VariableBehavior {
 
     variableRecord
         .setScopeKey(scopeKey)
-        .setWorkflowKey(workflowKey)
-        .setWorkflowInstanceKey(workflowInstanceKey);
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessInstanceKey(processInstanceKey);
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
       setLocalVariable(variableRecord);
@@ -94,14 +94,14 @@ public final class VariableBehavior {
    * Variable.CREATED} record is produced as a follow up event.
    *
    * @param scopeKey the scope key for each variable
-   * @param workflowKey the workflow key to be associated with each variable
-   * @param workflowInstanceKey the workflow instance key to be associated with each variable
+   * @param processDefinitionKey the process key to be associated with each variable
+   * @param processInstanceKey the process instance key to be associated with each variable
    * @param document the document to merge
    */
   public void mergeDocument(
       final long scopeKey,
-      final long workflowKey,
-      final long workflowInstanceKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
       final DirectBuffer document) {
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
@@ -111,7 +111,9 @@ public final class VariableBehavior {
     long currentScope = scopeKey;
     long parentScope;
 
-    variableRecord.setWorkflowKey(workflowKey).setWorkflowInstanceKey(workflowInstanceKey);
+    variableRecord
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessInstanceKey(processInstanceKey);
     while ((parentScope = variableState.getParentScopeKey(currentScope)) > 0) {
       final Iterator<DocumentEntry> entryIterator = indexedDocument.iterator();
 
@@ -141,15 +143,15 @@ public final class VariableBehavior {
 
   /**
    * Publishes a follow up event to create or update the variable with name {@code name} on the
-   * given scope with key {@code scopeKey}, with additional {@code workflowKey} and {@code
-   * workflowInstanceKey} context.
+   * given scope with key {@code scopeKey}, with additional {@code processDefinitionKey} and {@code
+   * processInstanceKey} context.
    *
-   * <p>If the scope is the workflow instance itself, then {@code scopeKey} should be equal to
-   * {@code workflowInstanceKey}.
+   * <p>If the scope is the process instance itself, then {@code scopeKey} should be equal to {@code
+   * processInstanceKey}.
    *
    * @param scopeKey the key of the scope on which to set the variable
-   * @param workflowKey the associated workflow key
-   * @param workflowInstanceKey the associated workflow instance key
+   * @param processDefinitionKey the associated process key
+   * @param processInstanceKey the associated process instance key
    * @param name a buffer containing only the name of the variable
    * @param value a buffer containing the value of the variable as MessagePack
    * @param valueOffset the offset of the value in the {@code value} buffer
@@ -157,8 +159,8 @@ public final class VariableBehavior {
    */
   public void setLocalVariable(
       final long scopeKey,
-      final long workflowKey,
-      final long workflowInstanceKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
       final DirectBuffer name,
       final DirectBuffer value,
       final int valueOffset,
@@ -166,8 +168,8 @@ public final class VariableBehavior {
 
     variableRecord
         .setScopeKey(scopeKey)
-        .setWorkflowKey(workflowKey)
-        .setWorkflowInstanceKey(workflowInstanceKey)
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessInstanceKey(processInstanceKey)
         .setName(name)
         .setValue(value, valueOffset, valueLength);
 

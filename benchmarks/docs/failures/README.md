@@ -24,7 +24,7 @@ PUT zeebe-record-job/_settings
 {
   "index.blocks.read_only_allow_delete": null
 }
-PUT zeebe-record-workflow-instance/_settings
+PUT zeebe-record-process-instance/_settings
 {
   "index.blocks.read_only_allow_delete": null
 }

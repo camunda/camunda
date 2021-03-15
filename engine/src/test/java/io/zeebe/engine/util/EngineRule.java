@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.util;
 
@@ -25,14 +25,15 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.ZeebeDbState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.client.DeploymentClient;
 import io.zeebe.engine.util.client.IncidentClient;
 import io.zeebe.engine.util.client.JobActivationClient;
 import io.zeebe.engine.util.client.JobClient;
+import io.zeebe.engine.util.client.ProcessInstanceClient;
 import io.zeebe.engine.util.client.PublishMessageClient;
 import io.zeebe.engine.util.client.VariableClient;
-import io.zeebe.engine.util.client.WorkflowInstanceClient;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -263,7 +264,7 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getClock();
   }
 
-  public ZeebeState getZeebeState() {
+  public MutableZeebeState getZeebeState() {
     return environmentRule.getZeebeState();
   }
 
@@ -279,8 +280,8 @@ public final class EngineRule extends ExternalResource {
     return new DeploymentClient(environmentRule, this::forEachPartition);
   }
 
-  public WorkflowInstanceClient workflowInstance() {
-    return new WorkflowInstanceClient(environmentRule);
+  public ProcessInstanceClient processInstance() {
+    return new ProcessInstanceClient(environmentRule);
   }
 
   public PublishMessageClient message() {
@@ -314,11 +315,11 @@ public final class EngineRule extends ExternalResource {
                 .done())
         .deploy();
 
-    final long instanceKey = workflowInstance().ofBpmnProcessId(processId).create();
+    final long instanceKey = processInstance().ofBpmnProcessId(processId).create();
 
     return jobRecords(JobIntent.CREATED)
         .withType(type)
-        .filter(r -> r.getValue().getWorkflowInstanceKey() == instanceKey)
+        .filter(r -> r.getValue().getProcessInstanceKey() == instanceKey)
         .getFirst();
   }
 
@@ -349,7 +350,7 @@ public final class EngineRule extends ExternalResource {
                 Function.identity(),
                 columnFamily -> {
                   final var entries = new HashMap<>();
-                  getZeebeState()
+                  ((ZeebeDbState) getZeebeState())
                       .forEach(
                           columnFamily,
                           keyInstance,

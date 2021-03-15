@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.exporter;
 
@@ -115,7 +115,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
 
   private int numberOfShardsForIndex(final String indexName) {
     if (indexName.startsWith(
-            esClient.indexPrefixForValueTypeWithDelimiter(ValueType.WORKFLOW_INSTANCE))
+            esClient.indexPrefixForValueTypeWithDelimiter(ValueType.PROCESS_INSTANCE))
         || indexName.startsWith(esClient.indexPrefixForValueTypeWithDelimiter(ValueType.JOB))) {
       return 3;
     } else {
@@ -146,9 +146,9 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     configuration.index.messageSubscription = true;
     configuration.index.variable = true;
     configuration.index.variableDocument = true;
-    configuration.index.workflowInstance = true;
-    configuration.index.workflowInstanceCreation = true;
-    configuration.index.workflowInstanceSubscription = true;
+    configuration.index.processInstance = true;
+    configuration.index.processInstanceCreation = true;
+    configuration.index.processInstanceSubscription = true;
 
     return configuration;
   }

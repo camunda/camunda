@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.deployment.model.validation;
 
@@ -39,10 +39,10 @@ public final class TimerValidationTest {
   void invalidCycleFormat(
       final String timerEventElementId, final AbstractCatchEventBuilder<?, ?> timerEventBuilder) {
 
-    final var workflow = timerEventBuilder.timerWithCycle("foo").done();
+    final var process = timerEventBuilder.timerWithCycle("foo").done();
 
-    validateWorkflow(
-        workflow,
+    validateProcess(
+        process,
         expect(
             timerEventElementId,
             "Invalid timer cycle expression (Repetition spec must start with R)"));
@@ -54,10 +54,10 @@ public final class TimerValidationTest {
   void invalidDurationFormat(
       final String timerEventElementId, final AbstractCatchEventBuilder<?, ?> timerEventBuilder) {
 
-    final var workflow = timerEventBuilder.timerWithDuration("foo").done();
+    final var process = timerEventBuilder.timerWithDuration("foo").done();
 
-    validateWorkflow(
-        workflow,
+    validateProcess(
+        process,
         expect(
             timerEventElementId,
             "Invalid timer duration expression (Invalid duration format 'foo' for expression 'foo')"));
@@ -69,10 +69,10 @@ public final class TimerValidationTest {
   void invalidDateFormat(
       final String timerEventElementId, final AbstractCatchEventBuilder<?, ?> timerEventBuilder) {
 
-    final var workflow = timerEventBuilder.timerWithDate("foo").done();
+    final var process = timerEventBuilder.timerWithDate("foo").done();
 
-    validateWorkflow(
-        workflow,
+    validateProcess(
+        process,
         expect(
             timerEventElementId,
             "Invalid timer date expression (Invalid date-time format 'foo' for expression 'foo')"));
@@ -86,10 +86,10 @@ public final class TimerValidationTest {
       final String timerType,
       final Function<String, BpmnModelInstance> timerEventWithExpressionBuilder) {
 
-    final var workflow = timerEventWithExpressionBuilder.apply("x");
+    final var process = timerEventWithExpressionBuilder.apply("x");
 
-    validateWorkflow(
-        workflow,
+    validateProcess(
+        process,
         expect(
             StartEvent.class,
             "Invalid timer "
@@ -105,10 +105,10 @@ public final class TimerValidationTest {
       final String timerType,
       final Function<String, BpmnModelInstance> timerEventWithExpressionBuilder) {
 
-    final var workflow = timerEventWithExpressionBuilder.apply("!");
+    final var process = timerEventWithExpressionBuilder.apply("!");
 
-    validateWorkflow(
-        workflow,
+    validateProcess(
+        process,
         expect(
             TimerEventDefinition.class,
             "failed to parse expression '!': [1.1] failure: '{' expected but '!' found\n"
@@ -144,7 +144,7 @@ public final class TimerValidationTest {
         Arguments.of(
             "start event",
             "cycle",
-            workflowBuilder(
+            processBuilder(
                 expression ->
                     Bpmn.createExecutableProcess("process")
                         .startEvent()
@@ -153,7 +153,7 @@ public final class TimerValidationTest {
         Arguments.of(
             "start event",
             "date",
-            workflowBuilder(
+            processBuilder(
                 expression ->
                     Bpmn.createExecutableProcess("process")
                         .startEvent()
@@ -167,7 +167,7 @@ public final class TimerValidationTest {
             Arguments.of(
                 "boundary event",
                 "duration",
-                workflowBuilder(
+                processBuilder(
                     expression ->
                         Bpmn.createExecutableProcess("process")
                             .startEvent()
@@ -178,7 +178,7 @@ public final class TimerValidationTest {
             Arguments.of(
                 "boundary event",
                 "cycle",
-                workflowBuilder(
+                processBuilder(
                     expression ->
                         Bpmn.createExecutableProcess("process")
                             .startEvent()
@@ -189,7 +189,7 @@ public final class TimerValidationTest {
             Arguments.of(
                 "intermediate catch event",
                 "duration",
-                workflowBuilder(
+                processBuilder(
                     expression ->
                         Bpmn.createExecutableProcess("process")
                             .startEvent()
@@ -199,7 +199,7 @@ public final class TimerValidationTest {
             Arguments.of(
                 "event sub-process",
                 "duration",
-                workflowBuilder(
+                processBuilder(
                     expression ->
                         Bpmn.createExecutableProcess("process")
                             .eventSubProcess(
@@ -215,7 +215,7 @@ public final class TimerValidationTest {
             Arguments.of(
                 "event sub-process",
                 "cycle",
-                workflowBuilder(
+                processBuilder(
                     expression ->
                         Bpmn.createExecutableProcess("process")
                             .eventSubProcess(
@@ -231,18 +231,18 @@ public final class TimerValidationTest {
     return Stream.concat(timerStartEventsWithExpression(), otherTimerEventsWithExpressions);
   }
 
-  private static Function<String, BpmnModelInstance> workflowBuilder(
+  private static Function<String, BpmnModelInstance> processBuilder(
       final Function<String, BpmnModelInstance> builder) {
     return builder;
   }
 
-  private void validateWorkflow(
-      final BpmnModelInstance workflow, final ExpectedValidationResult expectation) {
+  private void validateProcess(
+      final BpmnModelInstance process, final ExpectedValidationResult expectation) {
 
-    Bpmn.validateModel(workflow);
+    Bpmn.validateModel(process);
 
     final var validationResults =
-        validate(workflow).getResults().values().stream()
+        validate(process).getResults().values().stream()
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
 

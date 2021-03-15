@@ -49,12 +49,12 @@ func (r *RPCTestMsg) Matches(msg interface{}) bool {
 		}
 	}
 	{
-		gotCreateReq, okGot := msg.(*pb.CreateWorkflowInstanceWithResultRequest)
-		wantCreateReq, okWant := r.Msg.(*pb.CreateWorkflowInstanceWithResultRequest)
+		gotCreateReq, okGot := msg.(*pb.CreateProcessInstanceWithResultRequest)
+		wantCreateReq, okWant := r.Msg.(*pb.CreateProcessInstanceWithResultRequest)
 		if okGot && okWant {
-			return cmp.Equal(gotCreateReq, r.Msg, cmpopts.IgnoreUnexported(pb.CreateWorkflowInstanceWithResultRequest{}),
-				cmpopts.IgnoreUnexported(pb.CreateWorkflowInstanceRequest{}),
-				cmpopts.IgnoreFields(pb.CreateWorkflowInstanceWithResultRequest{}, "RequestTimeout")) &&
+			return cmp.Equal(gotCreateReq, r.Msg, cmpopts.IgnoreUnexported(pb.CreateProcessInstanceWithResultRequest{}),
+				cmpopts.IgnoreUnexported(pb.CreateProcessInstanceRequest{}),
+				cmpopts.IgnoreFields(pb.CreateProcessInstanceWithResultRequest{}, "RequestTimeout")) &&
 				gotCreateReq.RequestTimeout <= wantCreateReq.RequestTimeout
 		}
 

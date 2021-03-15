@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.util;
 
@@ -12,7 +12,7 @@ import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.ZeebeDbState;
-import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.Protocol;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -22,7 +22,7 @@ public final class ZeebeStateRule extends ExternalResource {
   private final TemporaryFolder tempFolder = new TemporaryFolder();
   private final int partition;
   private ZeebeDb<ZbColumnFamilies> db;
-  private ZeebeState zeebeState;
+  private MutableZeebeState zeebeState;
 
   public ZeebeStateRule() {
     this(Protocol.DEPLOYMENT_PARTITION);
@@ -50,7 +50,7 @@ public final class ZeebeStateRule extends ExternalResource {
     tempFolder.delete();
   }
 
-  public ZeebeState getZeebeState() {
+  public MutableZeebeState getZeebeState() {
     return zeebeState;
   }
 

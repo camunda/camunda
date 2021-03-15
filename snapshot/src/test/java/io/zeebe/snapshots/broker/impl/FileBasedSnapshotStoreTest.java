@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.snapshots.broker.impl;
 
@@ -11,7 +11,6 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
@@ -112,11 +111,10 @@ public class FileBasedSnapshotStoreTest {
   @Test
   public void shouldLoadLatestSnapshotWhenMoreThanOneExistsAndDeleteOlder() throws IOException {
     // given
-    final var timeStamp = WallClockTimestamp.from(System.currentTimeMillis());
     final List<FileBasedSnapshotMetadata> snapshots = new ArrayList<>();
-    snapshots.add(new FileBasedSnapshotMetadata(1, 1, timeStamp, 1, 1));
-    snapshots.add(new FileBasedSnapshotMetadata(10, 1, timeStamp, 10, 10));
-    snapshots.add(new FileBasedSnapshotMetadata(2, 1, timeStamp, 2, 2));
+    snapshots.add(new FileBasedSnapshotMetadata(1, 1, 1, 1));
+    snapshots.add(new FileBasedSnapshotMetadata(10, 1, 10, 10));
+    snapshots.add(new FileBasedSnapshotMetadata(2, 1, 2, 2));
 
     // We can't use FileBasedSnapshotStore to create multiple snapshot as it always delete the
     // previous snapshot during normal execution. However, due to errors or crashes during

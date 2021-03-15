@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.incident;
 
@@ -33,7 +33,7 @@ public final class ErrorEventIncidentTest {
   private static final String JOB_TYPE = "test";
   private static final String ERROR_CODE = "error";
 
-  private static final BpmnModelInstance BOUNDARY_EVENT_WORKFLOW =
+  private static final BpmnModelInstance BOUNDARY_EVENT_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
@@ -41,7 +41,7 @@ public final class ErrorEventIncidentTest {
           .endEvent()
           .done();
 
-  private static final BpmnModelInstance END_EVENT_WORKFLOW =
+  private static final BpmnModelInstance END_EVENT_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .endEvent("error", e -> e.error(ERROR_CODE))
@@ -54,15 +54,15 @@ public final class ErrorEventIncidentTest {
   @Test
   public void shouldCreateIncident() {
     // given
-    ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_PROCESS).deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     final var jobEvent =
         ENGINE
             .job()
-            .ofInstance(workflowInstanceKey)
+            .ofInstance(processInstanceKey)
             .withType(JOB_TYPE)
             .withErrorCode("other-error")
             .withErrorMessage("error thrown")
@@ -72,15 +72,15 @@ public final class ErrorEventIncidentTest {
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .withIntent(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .hasErrorMessage("error thrown")
         .hasBpmnProcessId(jobEvent.getValue().getBpmnProcessId())
-        .hasWorkflowKey(jobEvent.getValue().getWorkflowKey())
-        .hasWorkflowInstanceKey(jobEvent.getValue().getWorkflowInstanceKey())
+        .hasProcessDefinitionKey(jobEvent.getValue().getProcessDefinitionKey())
+        .hasProcessInstanceKey(jobEvent.getValue().getProcessInstanceKey())
         .hasElementId(jobEvent.getValue().getElementId())
         .hasElementInstanceKey(jobEvent.getValue().getElementInstanceKey())
         .hasVariableScopeKey(jobEvent.getValue().getElementInstanceKey())
@@ -90,14 +90,14 @@ public final class ErrorEventIncidentTest {
   @Test
   public void shouldCreateIncidentWithDefaultErrorMessage() {
     // given
-    ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_PROCESS).deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     ENGINE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
         .withErrorCode("other-error")
         .throwError();
@@ -106,7 +106,7 @@ public final class ErrorEventIncidentTest {
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .withIntent(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(incidentEvent.getValue())
@@ -117,7 +117,7 @@ public final class ErrorEventIncidentTest {
   @Test
   public void shouldCreateIncidentIfErrorIsThrownFromInterruptingEventSubprocess() {
     // given
-    final var workflow =
+    final var process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .eventSubProcess(
                 "error",
@@ -131,21 +131,21 @@ public final class ErrorEventIncidentTest {
             .endEvent()
             .done();
 
-    ENGINE.deployment().withXmlResource(workflow).deploy();
+    ENGINE.deployment().withXmlResource(process).deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // trigger interrupting event subprocess
     ENGINE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
         .withErrorCode(ERROR_CODE)
         .throwError();
 
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("task-in-subprocess")
             .getFirst()
             .getKey();
@@ -157,7 +157,7 @@ public final class ErrorEventIncidentTest {
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .withIntent(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     Assertions.assertThat(incidentEvent.getValue())
@@ -168,78 +168,36 @@ public final class ErrorEventIncidentTest {
   }
 
   @Test
-  public void shouldResolveIncident() {
-    // given
-    ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_WORKFLOW).deploy();
-
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    final var jobEvent =
-        ENGINE
-            .job()
-            .ofInstance(workflowInstanceKey)
-            .withType(JOB_TYPE)
-            .withErrorCode("other-error")
-            .throwError();
-
-    final Record<IncidentRecordValue> incidentEvent =
-        RecordingExporter.incidentRecords()
-            .withIntent(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .getFirst();
-
-    // when
-    ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incidentEvent.getKey()).resolve();
-
-    // then
-    assertThat(ENGINE.jobs().withType(JOB_TYPE).activate().getValue().getJobKeys())
-        .doesNotContain(jobEvent.getKey());
-
-    assertThat(
-            RecordingExporter.incidentRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limit(5))
-        .extracting(Record::getIntent)
-        .containsExactly(
-            IncidentIntent.CREATE,
-            IncidentIntent.CREATED,
-            IncidentIntent.RESOLVED,
-            IncidentIntent.CREATE,
-            IncidentIntent.CREATED);
-  }
-
-  @Test
   public void shouldResolveIncidentWhenTerminatingScope() {
     // given
-    ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_PROCESS).deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     ENGINE
         .job()
-        .ofInstance(workflowInstanceKey)
+        .ofInstance(processInstanceKey)
         .withType(JOB_TYPE)
         .withErrorCode("other-error")
         .throwError();
 
     RecordingExporter.incidentRecords()
         .withIntent(IncidentIntent.CREATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .await();
 
     // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToWorkflowInstance(workflowInstanceKey)
+                .limitToProcessInstance(processInstanceKey)
                 .incidentRecords())
         .extracting(Record::getIntent)
         .contains(IncidentIntent.RESOLVED);
 
-    assertThat(
-            RecordingExporter.records().limitToWorkflowInstance(workflowInstanceKey).jobRecords())
+    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey).jobRecords())
         .extracting(Record::getIntent)
         .doesNotContain(JobIntent.CANCEL);
   }
@@ -247,21 +205,21 @@ public final class ErrorEventIncidentTest {
   @Test
   public void shouldCreateIncidentOnErrorEndEvent() {
     // given
-    ENGINE.deployment().withXmlResource(END_EVENT_WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(END_EVENT_PROCESS).deploy();
 
     // when
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .withIntent(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final var endEvent =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.END_EVENT)
             .getFirst();
 
@@ -270,8 +228,8 @@ public final class ErrorEventIncidentTest {
         .hasErrorMessage(
             "Expected to throw an error event with the code 'error', but it was not caught.")
         .hasBpmnProcessId(endEvent.getValue().getBpmnProcessId())
-        .hasWorkflowKey(endEvent.getValue().getWorkflowKey())
-        .hasWorkflowInstanceKey(endEvent.getValue().getWorkflowInstanceKey())
+        .hasProcessDefinitionKey(endEvent.getValue().getProcessDefinitionKey())
+        .hasProcessInstanceKey(endEvent.getValue().getProcessInstanceKey())
         .hasElementId(endEvent.getValue().getElementId())
         .hasElementInstanceKey(endEvent.getKey())
         .hasVariableScopeKey(endEvent.getKey())
@@ -281,24 +239,22 @@ public final class ErrorEventIncidentTest {
   @Test
   public void shouldNotResolveIncidentOnEndEvent() {
     // given
-    ENGINE.deployment().withXmlResource(END_EVENT_WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(END_EVENT_PROCESS).deploy();
 
-    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .withIntent(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // when
-    ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incidentEvent.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
 
     // then
     assertThat(
-            RecordingExporter.incidentRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limit(5))
+            RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(5))
         .extracting(Record::getIntent)
         .containsExactly(
             IncidentIntent.CREATE,

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.variable;
 
@@ -15,10 +15,10 @@ import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.ZeebeDbState;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.appliers.EventAppliers;
 import io.zeebe.engine.state.immutable.VariableState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.RecordingTypedEventWriter;
 import io.zeebe.engine.util.RecordingTypedEventWriter.RecordedEvent;
 import io.zeebe.protocol.record.intent.VariableIntent;
@@ -48,7 +48,7 @@ final class VariableBehaviorTest {
   @BeforeEach
   void beforeEach(final @TempDir File directory) {
     db = DefaultZeebeDbFactory.defaultFactory().createDb(directory);
-    final ZeebeState zeebeState = new ZeebeDbState(db, db.createContext());
+    final MutableZeebeState zeebeState = new ZeebeDbState(db, db.createContext());
     final StateWriter stateWriter =
         new EventApplyingStateWriter(eventWriter, new EventAppliers(zeebeState));
 
@@ -64,18 +64,18 @@ final class VariableBehaviorTest {
   @Test
   void shouldMergeLocalDocument() {
     // given
-    final long workflowKey = 1;
+    final long processDefinitionKey = 1;
     final long parentScopeKey = 1;
     final long childScopeKey = 2;
     final long childFooKey = 3;
     final Map<String, Object> document = Map.of("foo", "bar", "baz", "buz");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
     state.createScope(childScopeKey, parentScopeKey);
-    setVariable(childFooKey, childScopeKey, workflowKey, "foo", "qux");
+    setVariable(childFooKey, childScopeKey, processDefinitionKey, "foo", "qux");
 
     // when
     behavior.mergeLocalDocument(
-        childScopeKey, workflowKey, parentScopeKey, MsgPackUtil.asMsgPack(document));
+        childScopeKey, processDefinitionKey, parentScopeKey, MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -87,8 +87,8 @@ final class VariableBehaviorTest {
                   .hasName("baz")
                   .hasValue("\"buz\"")
                   .hasScopeKey(childScopeKey)
-                  .hasWorkflowKey(workflowKey)
-                  .hasWorkflowInstanceKey(parentScopeKey);
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(parentScopeKey);
             },
             event -> {
               assertThat(event.intent).isEqualTo(VariableIntent.UPDATED);
@@ -97,21 +97,22 @@ final class VariableBehaviorTest {
                   .hasName("foo")
                   .hasValue("\"bar\"")
                   .hasScopeKey(childScopeKey)
-                  .hasWorkflowKey(workflowKey)
-                  .hasWorkflowInstanceKey(parentScopeKey);
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(parentScopeKey);
             });
   }
 
   @Test
   void shouldNotMergeLocalDocumentIfEmpty() {
     // given
-    final long workflowKey = 1;
+    final long processDefinitionKey = 1;
     final long scopeKey = 1;
     final Map<String, Object> document = Map.of();
-    setVariable(2, scopeKey, workflowKey, "foo", "qux");
+    setVariable(2, scopeKey, processDefinitionKey, "foo", "qux");
 
     // when
-    behavior.mergeLocalDocument(scopeKey, workflowKey, scopeKey, MsgPackUtil.asMsgPack(document));
+    behavior.mergeLocalDocument(
+        scopeKey, processDefinitionKey, scopeKey, MsgPackUtil.asMsgPack(document));
 
     // then
     assertThat(getFollowUpEvents()).isEmpty();
@@ -120,7 +121,7 @@ final class VariableBehaviorTest {
   @Test
   void shouldMergeDocumentWithoutPropagatingMoreThanOnce() {
     // given
-    final long workflowKey = 1;
+    final long processDefinitionKey = 1;
     final long rootScopeKey = 1;
     final long parentScopeKey = 2;
     final long childScopeKey = 3;
@@ -129,12 +130,12 @@ final class VariableBehaviorTest {
     state.createScope(rootScopeKey, VariableState.NO_PARENT);
     state.createScope(parentScopeKey, rootScopeKey);
     state.createScope(childScopeKey, parentScopeKey);
-    setVariable(parentFooKey, parentScopeKey, workflowKey, "foo", "qux");
-    setVariable(5, rootScopeKey, workflowKey, "foo", "biz");
+    setVariable(parentFooKey, parentScopeKey, processDefinitionKey, "foo", "qux");
+    setVariable(5, rootScopeKey, processDefinitionKey, "foo", "biz");
 
     // when
     behavior.mergeDocument(
-        childScopeKey, workflowKey, rootScopeKey, MsgPackUtil.asMsgPack(document));
+        childScopeKey, processDefinitionKey, rootScopeKey, MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -147,15 +148,15 @@ final class VariableBehaviorTest {
                   .hasName("foo")
                   .hasValue("\"bar\"")
                   .hasScopeKey(parentScopeKey)
-                  .hasWorkflowKey(workflowKey)
-                  .hasWorkflowInstanceKey(rootScopeKey);
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(rootScopeKey);
             });
   }
 
   @Test
   void shouldMergeDocumentPropagatingToRoot() {
     // given
-    final long workflowKey = 1;
+    final long processDefinitionKey = 1;
     final long rootScopeKey = 1;
     final long parentScopeKey = 2;
     final long childScopeKey = 3;
@@ -166,7 +167,7 @@ final class VariableBehaviorTest {
 
     // when
     behavior.mergeDocument(
-        childScopeKey, workflowKey, rootScopeKey, MsgPackUtil.asMsgPack(document));
+        childScopeKey, processDefinitionKey, rootScopeKey, MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -178,8 +179,8 @@ final class VariableBehaviorTest {
                   .hasName("foo")
                   .hasValue("\"bar\"")
                   .hasScopeKey(rootScopeKey)
-                  .hasWorkflowKey(workflowKey)
-                  .hasWorkflowInstanceKey(rootScopeKey);
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(rootScopeKey);
             },
             event -> {
               assertThat(event.intent).isEqualTo(VariableIntent.CREATED);
@@ -187,27 +188,27 @@ final class VariableBehaviorTest {
                   .hasName("buz")
                   .hasValue("\"baz\"")
                   .hasScopeKey(rootScopeKey)
-                  .hasWorkflowKey(workflowKey)
-                  .hasWorkflowInstanceKey(rootScopeKey);
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(rootScopeKey);
             });
   }
 
   @Test
   void shouldMergeDocumentWithoutPropagatingExistingVariables() {
     // given
-    final long workflowKey = 1;
+    final long processDefinitionKey = 1;
     final long parentScopeKey = 1;
     final long childScopeKey = 2;
     final long childFooKey = 3;
     final Map<String, Object> document = Map.of("foo", "bar");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
     state.createScope(childScopeKey, parentScopeKey);
-    setVariable(childFooKey, childScopeKey, workflowKey, "foo", "qux");
-    setVariable(4, parentScopeKey, workflowKey, "foo", "biz");
+    setVariable(childFooKey, childScopeKey, processDefinitionKey, "foo", "qux");
+    setVariable(4, parentScopeKey, processDefinitionKey, "foo", "biz");
 
     // when
     behavior.mergeDocument(
-        childScopeKey, workflowKey, parentScopeKey, MsgPackUtil.asMsgPack(document));
+        childScopeKey, processDefinitionKey, parentScopeKey, MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -220,26 +221,26 @@ final class VariableBehaviorTest {
                   .hasName("foo")
                   .hasValue("\"bar\"")
                   .hasScopeKey(childScopeKey)
-                  .hasWorkflowKey(workflowKey)
-                  .hasWorkflowInstanceKey(parentScopeKey);
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(parentScopeKey);
             });
   }
 
   @Test
   void shouldNotMergeDocumentIfEmpty() {
     // given
-    final int workflowKey = 1;
+    final int processDefinitionKey = 1;
     final int parentScopeKey = 1;
     final int childScopeKey = 2;
     final Map<String, Object> document = Map.of();
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
     state.createScope(childScopeKey, parentScopeKey);
-    setVariable(3, parentScopeKey, workflowKey, "foo", "qux");
-    setVariable(4, childScopeKey, workflowKey, "foo", "bar");
+    setVariable(3, parentScopeKey, processDefinitionKey, "foo", "qux");
+    setVariable(4, childScopeKey, processDefinitionKey, "foo", "bar");
 
     // when
     behavior.mergeDocument(
-        childScopeKey, workflowKey, parentScopeKey, MsgPackUtil.asMsgPack(document));
+        childScopeKey, processDefinitionKey, parentScopeKey, MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -249,7 +250,7 @@ final class VariableBehaviorTest {
   @Test
   void shouldCreateLocalVariable() {
     // given
-    final int workflowKey = 1;
+    final int processDefinitionKey = 1;
     final int parentScopeKey = 1;
     final int childScopeKey = 2;
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
@@ -260,7 +261,7 @@ final class VariableBehaviorTest {
     // when
     behavior.setLocalVariable(
         childScopeKey,
-        workflowKey,
+        processDefinitionKey,
         parentScopeKey,
         variableName,
         variableValue,
@@ -277,15 +278,15 @@ final class VariableBehaviorTest {
                   .hasName("foo")
                   .hasValue("\"bar\"")
                   .hasScopeKey(childScopeKey)
-                  .hasWorkflowKey(workflowKey)
-                  .hasWorkflowInstanceKey(parentScopeKey);
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(parentScopeKey);
             });
   }
 
   @Test
   void shouldUpdateLocalVariable() {
     // given
-    final long workflowKey = 1;
+    final long processDefinitionKey = 1;
     final long parentScopeKey = 1;
     final long childScopeKey = 2;
     final long parentFooKey = 3;
@@ -293,12 +294,12 @@ final class VariableBehaviorTest {
     final DirectBuffer variableValue = packString("bar");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
     state.createScope(childScopeKey, parentScopeKey);
-    setVariable(parentFooKey, parentScopeKey, workflowKey, "foo", "qux");
+    setVariable(parentFooKey, parentScopeKey, processDefinitionKey, "foo", "qux");
 
     // when
     behavior.setLocalVariable(
         parentScopeKey,
-        workflowKey,
+        processDefinitionKey,
         parentScopeKey,
         variableName,
         variableValue,
@@ -316,8 +317,8 @@ final class VariableBehaviorTest {
                   .hasName("foo")
                   .hasValue("\"bar\"")
                   .hasScopeKey(parentScopeKey)
-                  .hasWorkflowKey(workflowKey)
-                  .hasWorkflowInstanceKey(parentScopeKey);
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(parentScopeKey);
             });
   }
 
@@ -333,11 +334,11 @@ final class VariableBehaviorTest {
   private void setVariable(
       final long key,
       final long scopeKey,
-      final long workflowKey,
+      final long processDefinitionKey,
       final String name,
       final String value) {
     final DirectBuffer nameBuffer = BufferUtil.wrapString(name);
-    state.setVariableLocal(key, scopeKey, workflowKey, nameBuffer, packString(value));
+    state.setVariableLocal(key, scopeKey, processDefinitionKey, nameBuffer, packString(value));
   }
 
   private DirectBuffer packString(final String value) {

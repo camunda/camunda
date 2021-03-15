@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.state.variable;
 
@@ -16,14 +16,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.immutable.VariableState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
+import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
@@ -37,7 +37,7 @@ import org.junit.Test;
 public final class VariableStateTest {
 
   @ClassRule public static final ZeebeStateRule ZEEBE_STATE_RULE = new ZeebeStateRule();
-  private static final long WORKFLOW_KEY = 123;
+  private static final long PROCESS_KEY = 123;
   private static final AtomicLong PARENT_KEY = new AtomicLong(0);
   private static final AtomicLong CHILD_KEY = new AtomicLong(1);
   private static final AtomicLong SECOND_CHILD_KEY = new AtomicLong(2);
@@ -50,7 +50,7 @@ public final class VariableStateTest {
 
   @BeforeClass
   public static void setUp() {
-    final ZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
+    final MutableZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
     elementInstanceState = zeebeState.getElementInstanceState();
     variableState = zeebeState.getVariableState();
   }
@@ -445,36 +445,35 @@ public final class VariableStateTest {
   private void declareScope(final long parentKey, final long key) {
     final ElementInstance parent = elementInstanceState.getInstance(parentKey);
 
-    final TypedRecord<WorkflowInstanceRecord> record = mockTypedRecord(key, parentKey);
+    final TypedRecord<ProcessInstanceRecord> record = mockTypedRecord(key, parentKey);
     elementInstanceState.newInstance(
-        parent, key, record.getValue(), WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+        parent, key, record.getValue(), ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
 
-  private TypedRecord<WorkflowInstanceRecord> mockTypedRecord(
-      final long key, final long parentKey) {
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord(parentKey);
+  private TypedRecord<ProcessInstanceRecord> mockTypedRecord(final long key, final long parentKey) {
+    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord(parentKey);
 
-    final TypedRecord<WorkflowInstanceRecord> typedRecord = mock(TypedRecord.class);
+    final TypedRecord<ProcessInstanceRecord> typedRecord = mock(TypedRecord.class);
     when(typedRecord.getKey()).thenReturn(key);
-    when(typedRecord.getValue()).thenReturn(workflowInstanceRecord);
+    when(typedRecord.getValue()).thenReturn(processInstanceRecord);
 
     return typedRecord;
   }
 
-  private WorkflowInstanceRecord createWorkflowInstanceRecord(final long parentKey) {
-    final WorkflowInstanceRecord workflowInstanceRecord = new WorkflowInstanceRecord();
+  private ProcessInstanceRecord createProcessInstanceRecord(final long parentKey) {
+    final ProcessInstanceRecord processInstanceRecord = new ProcessInstanceRecord();
 
     if (parentKey >= 0) {
-      workflowInstanceRecord.setFlowScopeKey(parentKey);
+      processInstanceRecord.setFlowScopeKey(parentKey);
     }
 
-    return workflowInstanceRecord;
+    return processInstanceRecord;
   }
 
   public long setVariableLocal(
       final long scopeKey, final DirectBuffer name, final DirectBuffer value) {
     final long key = KEY_GENERATOR.incrementAndGet();
-    variableState.setVariableLocal(key, scopeKey, WORKFLOW_KEY, name, value);
+    variableState.setVariableLocal(key, scopeKey, PROCESS_KEY, name, value);
     return key;
   }
 }

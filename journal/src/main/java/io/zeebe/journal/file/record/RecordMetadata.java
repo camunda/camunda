@@ -15,6 +15,8 @@
  */
 package io.zeebe.journal.file.record;
 
+import java.util.Objects;
+
 public final class RecordMetadata {
 
   private final long checksum;
@@ -31,6 +33,23 @@ public final class RecordMetadata {
 
   public int length() {
     return length;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(checksum, length);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final RecordMetadata that = (RecordMetadata) o;
+    return checksum == that.checksum && length == that.length;
   }
 
   @Override

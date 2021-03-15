@@ -2,14 +2,14 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.zeebe.engine.processing.deployment.model.transformer;
 
 import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.impl.BpmnModelConstants;
@@ -30,23 +30,21 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
 
   @Override
   public void transform(final FlowNode flowNode, final TransformContext context) {
-    final ExecutableWorkflow workflow = context.getCurrentWorkflow();
+    final ExecutableProcess process = context.getCurrentProcess();
     final ExecutableFlowNode element =
-        workflow.getElementById(flowNode.getId(), ExecutableFlowNode.class);
+        process.getElementById(flowNode.getId(), ExecutableFlowNode.class);
 
-    setParentReference(flowNode, workflow, element);
+    setParentReference(flowNode, process, element);
     transformIoMappings(flowNode, element, context.getExpressionLanguage());
   }
 
   private void setParentReference(
-      final FlowNode flowNode,
-      final ExecutableWorkflow workflow,
-      final ExecutableFlowNode element) {
+      final FlowNode flowNode, final ExecutableProcess process, final ExecutableFlowNode element) {
 
     final var parentElement = flowNode.getParentElement();
     Optional.ofNullable(parentElement.getAttributeValue(BpmnModelConstants.BPMN_ATTRIBUTE_ID))
         .map(BufferUtil::wrapString)
-        .map(workflow::getElementById)
+        .map(process::getElementById)
         .ifPresent(element::setFlowScope);
   }
 
