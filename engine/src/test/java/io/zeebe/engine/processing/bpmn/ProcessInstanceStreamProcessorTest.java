@@ -23,7 +23,7 @@ import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.Assertions;
@@ -32,7 +32,7 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -229,7 +229,7 @@ public final class ProcessInstanceStreamProcessorTest {
   }
 
   @Test
-  public void shouldRejectDuplicatedOpenProcessInstanceSubscription() {
+  public void shouldRejectDuplicatedOpenProcessMessageSubscription() {
     // given
     streamProcessorRule.deploy(MESSAGE_CATCH_EVENT_PROCESS);
     streamProcessorRule.createProcessInstance(
@@ -240,21 +240,21 @@ public final class ProcessInstanceStreamProcessorTest {
             "catch-event", ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
-    final ProcessInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
+    final ProcessMessageSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
 
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CREATE, subscription);
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CREATE, subscription);
+    envRule.writeCommand(ProcessMessageSubscriptionIntent.CREATE, subscription);
+    envRule.writeCommand(ProcessMessageSubscriptionIntent.CREATE, subscription);
 
     // then
-    final Record<ProcessInstanceSubscriptionRecord> rejection =
+    final Record<ProcessMessageSubscriptionRecord> rejection =
         streamProcessorRule.awaitAndGetFirstSubscriptionRejection();
 
-    assertThat(rejection.getIntent()).isEqualTo(ProcessInstanceSubscriptionIntent.CREATE);
+    assertThat(rejection.getIntent()).isEqualTo(ProcessMessageSubscriptionIntent.CREATE);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
   }
 
   @Test
-  public void shouldRejectDuplicatedCorrelateProcessInstanceSubscription() {
+  public void shouldRejectDuplicatedCorrelateProcessMessageSubscription() {
     // given
     streamProcessorRule.deploy(MESSAGE_CATCH_EVENT_PROCESS);
 
@@ -265,25 +265,25 @@ public final class ProcessInstanceStreamProcessorTest {
         streamProcessorRule.awaitElementInState(
             "catch-event", ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
-    final ProcessInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CREATE, subscription);
+    final ProcessMessageSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
+    envRule.writeCommand(ProcessMessageSubscriptionIntent.CREATE, subscription);
     waitUntil(
         () ->
             envRule
                 .events()
-                .onlyProcessInstanceSubscriptionRecords()
-                .withIntent(ProcessInstanceSubscriptionIntent.CREATED)
+                .onlyProcessMessageSubscriptionRecords()
+                .withIntent(ProcessMessageSubscriptionIntent.CREATED)
                 .exists());
 
     // when
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CORRELATE, subscription);
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CORRELATE, subscription);
+    envRule.writeCommand(ProcessMessageSubscriptionIntent.CORRELATE, subscription);
+    envRule.writeCommand(ProcessMessageSubscriptionIntent.CORRELATE, subscription);
 
     // then
-    final Record<ProcessInstanceSubscriptionRecord> rejection =
+    final Record<ProcessMessageSubscriptionRecord> rejection =
         streamProcessorRule.awaitAndGetFirstSubscriptionRejection();
 
-    assertThat(rejection.getIntent()).isEqualTo(ProcessInstanceSubscriptionIntent.CORRELATE);
+    assertThat(rejection.getIntent()).isEqualTo(ProcessMessageSubscriptionIntent.CORRELATE);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
 
     final ArgumentCaptor<DirectBuffer> captor = ArgumentCaptor.forClass(DirectBuffer.class);
@@ -309,7 +309,7 @@ public final class ProcessInstanceStreamProcessorTest {
   }
 
   @Test
-  public void shouldRejectCorrelateProcessInstanceSubscription() {
+  public void shouldRejectCorrelateProcessMessageSubscription() {
     // given
     streamProcessorRule.deploy(MESSAGE_CATCH_EVENT_PROCESS);
 
@@ -321,15 +321,15 @@ public final class ProcessInstanceStreamProcessorTest {
         streamProcessorRule.awaitElementInState(
             "catch-event", ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
-    final ProcessInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CREATE, subscription);
+    final ProcessMessageSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
+    envRule.writeCommand(ProcessMessageSubscriptionIntent.CREATE, subscription);
 
     waitUntil(
         () ->
             envRule
                 .events()
-                .onlyProcessInstanceSubscriptionRecords()
-                .withIntent(ProcessInstanceSubscriptionIntent.CREATED)
+                .onlyProcessMessageSubscriptionRecords()
+                .withIntent(ProcessMessageSubscriptionIntent.CREATED)
                 .exists());
 
     envRule.writeCommand(
@@ -337,13 +337,13 @@ public final class ProcessInstanceStreamProcessorTest {
     streamProcessorRule.awaitElementInState(PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATED);
 
     // when
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CORRELATE, subscription);
+    envRule.writeCommand(ProcessMessageSubscriptionIntent.CORRELATE, subscription);
 
     // then
-    final Record<ProcessInstanceSubscriptionRecord> rejection =
+    final Record<ProcessMessageSubscriptionRecord> rejection =
         streamProcessorRule.awaitAndGetFirstSubscriptionRejection();
 
-    assertThat(rejection.getIntent()).isEqualTo(ProcessInstanceSubscriptionIntent.CORRELATE);
+    assertThat(rejection.getIntent()).isEqualTo(ProcessMessageSubscriptionIntent.CORRELATE);
     // since we mock the message partition, we never get the acknowledged CLOSE command, so our
     // subscription remains in closing state
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
@@ -362,7 +362,7 @@ public final class ProcessInstanceStreamProcessorTest {
         streamProcessorRule.awaitElementInState(
             "catch-event", ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
-    final ProcessInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
+    final ProcessMessageSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
 
     envRule.writeCommand(
         createdEvent.getKey(), ProcessInstanceIntent.CANCEL, catchEvent.getValue());
@@ -385,7 +385,7 @@ public final class ProcessInstanceStreamProcessorTest {
   }
 
   @Test
-  public void shouldRejectDuplicatedCloseProcessInstanceSubscription() {
+  public void shouldRejectDuplicatedCloseProcessMessageSubscription() {
     // given
     streamProcessorRule.deploy(MESSAGE_CATCH_EVENT_PROCESS);
     streamProcessorRule.createProcessInstance(
@@ -395,26 +395,26 @@ public final class ProcessInstanceStreamProcessorTest {
         streamProcessorRule.awaitElementInState(
             "catch-event", ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
-    final ProcessInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.CREATE, subscription);
+    final ProcessMessageSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
+    envRule.writeCommand(ProcessMessageSubscriptionIntent.CREATE, subscription);
 
     waitUntil(
         () ->
             envRule
                 .events()
-                .onlyProcessInstanceSubscriptionRecords()
-                .withIntent(ProcessInstanceSubscriptionIntent.CREATED)
+                .onlyProcessMessageSubscriptionRecords()
+                .withIntent(ProcessMessageSubscriptionIntent.CREATED)
                 .exists());
 
     // when
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.DELETE, subscription);
-    envRule.writeCommand(ProcessInstanceSubscriptionIntent.DELETE, subscription);
+    envRule.writeCommand(ProcessMessageSubscriptionIntent.DELETE, subscription);
+    envRule.writeCommand(ProcessMessageSubscriptionIntent.DELETE, subscription);
 
     // then
-    final Record<ProcessInstanceSubscriptionRecord> rejection =
+    final Record<ProcessMessageSubscriptionRecord> rejection =
         streamProcessorRule.awaitAndGetFirstSubscriptionRejection();
 
-    assertThat(rejection.getIntent()).isEqualTo(ProcessInstanceSubscriptionIntent.DELETE);
+    assertThat(rejection.getIntent()).isEqualTo(ProcessMessageSubscriptionIntent.DELETE);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
@@ -490,9 +490,9 @@ public final class ProcessInstanceStreamProcessorTest {
         .containsExactly("timer1", "timer1End", "process");
   }
 
-  private ProcessInstanceSubscriptionRecord subscriptionRecordForEvent(
+  private ProcessMessageSubscriptionRecord subscriptionRecordForEvent(
       final Record<ProcessInstanceRecord> catchEvent) {
-    return new ProcessInstanceSubscriptionRecord()
+    return new ProcessMessageSubscriptionRecord()
         .setSubscriptionPartitionId(START_PARTITION_ID)
         .setProcessInstanceKey(catchEvent.getValue().getProcessInstanceKey())
         .setElementInstanceKey(catchEvent.getKey())

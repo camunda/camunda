@@ -15,20 +15,20 @@ import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import org.agrona.DirectBuffer;
 
-public final class DbProcessInstanceSubscriptionState
-    implements MutableProcessInstanceSubscriptionState {
+public final class DbProcessMessageSubscriptionState
+    implements MutableProcessMessageSubscriptionState {
 
   private final TransactionContext transactionContext;
 
-  // (elementInstanceKey, messageName) => ProcessInstanceSubscription
+  // (elementInstanceKey, messageName) => ProcessMessageSubscription
   private final DbLong elementInstanceKey;
   private final DbString messageName;
   private final DbCompositeKey<DbLong, DbString> elementKeyAndMessageName;
-  private final ProcessInstanceSubscription processInstanceSubscription;
-  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, ProcessInstanceSubscription>
+  private final ProcessMessageSubscription processMessageSubscription;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, ProcessMessageSubscription>
       subscriptionColumnFamily;
 
   // (sentTime, elementInstanceKey, messageName) => \0
@@ -37,20 +37,20 @@ public final class DbProcessInstanceSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>>, DbNil>
       sentTimeColumnFamily;
 
-  public DbProcessInstanceSubscriptionState(
+  public DbProcessMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     this.transactionContext = transactionContext;
     elementInstanceKey = new DbLong();
     messageName = new DbString();
     elementKeyAndMessageName = new DbCompositeKey<>(elementInstanceKey, messageName);
-    processInstanceSubscription = new ProcessInstanceSubscription();
+    processMessageSubscription = new ProcessMessageSubscription();
 
     subscriptionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_KEY,
             transactionContext,
             elementKeyAndMessageName,
-            processInstanceSubscription);
+            processMessageSubscription);
 
     sentTime = new DbLong();
     sentTimeCompositeKey = new DbCompositeKey<>(sentTime, elementKeyAndMessageName);
@@ -63,7 +63,7 @@ public final class DbProcessInstanceSubscriptionState
   }
 
   @Override
-  public void put(final ProcessInstanceSubscription subscription) {
+  public void put(final ProcessMessageSubscription subscription) {
     wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
     subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
@@ -73,7 +73,7 @@ public final class DbProcessInstanceSubscriptionState
   }
 
   @Override
-  public ProcessInstanceSubscription getSubscription(
+  public ProcessMessageSubscription getSubscription(
       final long elementInstanceKey, final DirectBuffer messageName) {
     wrapSubscriptionKeys(elementInstanceKey, messageName);
 
@@ -82,7 +82,7 @@ public final class DbProcessInstanceSubscriptionState
 
   @Override
   public void visitElementSubscriptions(
-      final long elementInstanceKey, final ProcessInstanceSubscriptionVisitor visitor) {
+      final long elementInstanceKey, final ProcessMessageSubscriptionVisitor visitor) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
 
     subscriptionColumnFamily.whileEqualPrefix(
@@ -94,16 +94,16 @@ public final class DbProcessInstanceSubscriptionState
 
   @Override
   public void visitSubscriptionBefore(
-      final long deadline, final ProcessInstanceSubscriptionVisitor visitor) {
+      final long deadline, final ProcessMessageSubscriptionVisitor visitor) {
 
     sentTimeColumnFamily.whileTrue(
         (compositeKey, nil) -> {
           final long sentTime = compositeKey.getFirst().getValue();
           if (sentTime < deadline) {
-            final ProcessInstanceSubscription processInstanceSubscription =
+            final ProcessMessageSubscription processMessageSubscription =
                 subscriptionColumnFamily.get(compositeKey.getSecond());
 
-            return visitor.visit(processInstanceSubscription);
+            return visitor.visit(processMessageSubscription);
           }
           return false;
         });
@@ -111,7 +111,7 @@ public final class DbProcessInstanceSubscriptionState
 
   @Override
   public void updateToOpenedState(
-      final ProcessInstanceSubscription subscription, final int subscriptionPartitionId) {
+      final ProcessMessageSubscription subscription, final int subscriptionPartitionId) {
     subscription.setOpened();
     subscription.setSubscriptionPartitionId(subscriptionPartitionId);
     updateSentTime(subscription, 0);
@@ -119,19 +119,19 @@ public final class DbProcessInstanceSubscriptionState
 
   @Override
   public void updateToClosingState(
-      final ProcessInstanceSubscription subscription, final long sentTime) {
+      final ProcessMessageSubscription subscription, final long sentTime) {
     subscription.setClosing();
     updateSentTime(subscription, sentTime);
   }
 
   @Override
   public void updateSentTimeInTransaction(
-      final ProcessInstanceSubscription subscription, final long sentTime) {
+      final ProcessMessageSubscription subscription, final long sentTime) {
     transactionContext.runInTransaction(() -> updateSentTime(subscription, sentTime));
   }
 
   @Override
-  public void updateSentTime(final ProcessInstanceSubscription subscription, final long sentTime) {
+  public void updateSentTime(final ProcessMessageSubscription subscription, final long sentTime) {
     wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
     if (subscription.getCommandSentTime() > 0) {
@@ -158,7 +158,7 @@ public final class DbProcessInstanceSubscriptionState
 
   @Override
   public boolean remove(final long elementInstanceKey, final DirectBuffer messageName) {
-    final ProcessInstanceSubscription subscription =
+    final ProcessMessageSubscription subscription =
         getSubscription(elementInstanceKey, messageName);
     final boolean found = subscription != null;
     if (found) {
@@ -168,7 +168,7 @@ public final class DbProcessInstanceSubscriptionState
   }
 
   @Override
-  public void remove(final ProcessInstanceSubscription subscription) {
+  public void remove(final ProcessMessageSubscription subscription) {
     wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
     subscriptionColumnFamily.delete(elementKeyAndMessageName);

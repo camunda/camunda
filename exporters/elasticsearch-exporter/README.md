@@ -89,7 +89,7 @@ For example:
           message: false
           messageSubscription: false
           processInstance: false
-          processInstanceSubscription: false
+          processMessageSubscription: false
 ```
 
 The given example would only export incident events, and nothing else.
@@ -108,7 +108,7 @@ More specifically, each option configures the following:
 * `message` (`boolean`): if true, records related to messages will be exported; if false, ignored.
 * `messageSubscription` (`boolean`): if true, records related to message subscriptions will be exported; if false, ignored.
 * `processInstance` (`boolean`): if true, records related to process instances will be exported; if false, ignored.
-* `processInstanceSubscription` (`boolean`): if true, records related to process instance subscriptions will be exported; if false, ignored.
+* `processMessageSubscription` (`boolean`): if true, records related to process message subscriptions will be exported; if false, ignored.
 
 Here is a complete, default configuration example:
 
@@ -158,7 +158,7 @@ Here is a complete, default configuration example:
           variableDocument: true
           processInstance: true
           processInstanceCreation: false
-          processInstanceSubscription: false
+          processMessageSubscription: false
 
           ignoreVariablesAbove: 32677
 

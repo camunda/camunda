@@ -16,14 +16,14 @@
 package io.zeebe.protocol.record.value;
 
 import io.zeebe.protocol.record.RecordValueWithVariables;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 
 /**
- * Represents a process instance subscription command or event.
+ * Represents a process message subscription command or event.
  *
- * <p>See {@link ProcessInstanceSubscriptionIntent} for intents.
+ * <p>See {@link ProcessMessageSubscriptionIntent} for intents.
  */
-public interface ProcessInstanceSubscriptionRecordValue
+public interface ProcessMessageSubscriptionRecordValue
     extends RecordValueWithVariables, ProcessInstanceRelated {
   /** @return the process instance key */
   @Override

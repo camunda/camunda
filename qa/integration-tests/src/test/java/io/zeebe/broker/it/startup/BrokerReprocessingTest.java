@@ -34,7 +34,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.test.util.record.ProcessInstances;
@@ -511,8 +511,8 @@ public final class BrokerReprocessingTest {
             .getProcessInstanceKey();
 
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CREATED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
                 .exists())
         .isTrue();
 

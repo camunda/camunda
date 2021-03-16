@@ -26,7 +26,7 @@ import io.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
@@ -69,7 +69,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.PROCESS_INSTANCE, this::summarizeProcessInstance);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_CREATION, this::summarizeProcessInstanceCreation);
     valueLoggers.put(
-        ValueType.PROCESS_INSTANCE_SUBSCRIPTION, this::summarizeProcessInstanceSubscription);
+        ValueType.PROCESS_MESSAGE_SUBSCRIPTION, this::summarizeProcessInstanceSubscription);
     valueLoggers.put(ValueType.VARIABLE, this::summarizeVariable);
     // TODO please extend list
   }
@@ -388,7 +388,7 @@ public class CompactRecordLogger {
   }
 
   private String summarizeProcessInstanceSubscription(final Record<?> record) {
-    final var value = (ProcessInstanceSubscriptionRecordValue) record.getValue();
+    final var value = (ProcessMessageSubscriptionRecordValue) record.getValue();
 
     final var result =
         new StringBuilder().append("\"").append(value.getMessageName()).append("\" ");

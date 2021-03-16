@@ -64,7 +64,7 @@ public enum ZbColumnFamilies {
   MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
   MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME,
 
-  // process instance subscription
+  // process message subscription
   PROCESS_SUBSCRIPTION_BY_KEY,
   PROCESS_SUBSCRIPTION_BY_SENT_TIME,
 

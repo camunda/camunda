@@ -10,29 +10,29 @@ package io.zeebe.engine.processing.message;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.state.message.ProcessInstanceSubscription;
-import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.message.ProcessMessageSubscription;
+import io.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 
-public final class PendingProcessInstanceSubscriptionChecker
+public final class PendingProcessMessageSubscriptionChecker
     implements StreamProcessorLifecycleAware {
 
   private static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
   private static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
   private final SubscriptionCommandSender commandSender;
-  private final MutableProcessInstanceSubscriptionState subscriptionState;
+  private final MutableProcessMessageSubscriptionState subscriptionState;
   private final long subscriptionTimeoutInMillis;
 
   private ActorControl actor;
   private ScheduledTimer timer;
 
-  public PendingProcessInstanceSubscriptionChecker(
+  public PendingProcessMessageSubscriptionChecker(
       final SubscriptionCommandSender commandSender,
-      final MutableProcessInstanceSubscriptionState subscriptionState) {
+      final MutableProcessMessageSubscriptionState subscriptionState) {
     this.commandSender = commandSender;
     this.subscriptionState = subscriptionState;
     subscriptionTimeoutInMillis = SUBSCRIPTION_TIMEOUT.toMillis();
@@ -82,7 +82,7 @@ public final class PendingProcessInstanceSubscriptionChecker
         ActorClock.currentTimeMillis() - subscriptionTimeoutInMillis, this::sendPendingCommand);
   }
 
-  private boolean sendPendingCommand(final ProcessInstanceSubscription subscription) {
+  private boolean sendPendingCommand(final ProcessMessageSubscription subscription) {
     final boolean success;
 
     // can only be opening/closing as an opened subscription is not indexed in the sent time column
@@ -101,7 +101,7 @@ public final class PendingProcessInstanceSubscriptionChecker
     return success;
   }
 
-  private boolean sendOpenCommand(final ProcessInstanceSubscription subscription) {
+  private boolean sendOpenCommand(final ProcessMessageSubscription subscription) {
     return commandSender.openMessageSubscription(
         subscription.getSubscriptionPartitionId(),
         subscription.getProcessInstanceKey(),
@@ -112,7 +112,7 @@ public final class PendingProcessInstanceSubscriptionChecker
         subscription.shouldCloseOnCorrelate());
   }
 
-  private boolean sendCloseCommand(final ProcessInstanceSubscription subscription) {
+  private boolean sendCloseCommand(final ProcessMessageSubscription subscription) {
     return commandSender.closeMessageSubscription(
         subscription.getSubscriptionPartitionId(),
         subscription.getProcessInstanceKey(),

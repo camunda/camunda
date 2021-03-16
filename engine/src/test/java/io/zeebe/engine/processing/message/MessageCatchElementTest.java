@@ -21,10 +21,10 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
@@ -188,27 +188,27 @@ public final class MessageCatchElementTest {
   }
 
   @Test
-  public void shouldOpenProcessInstanceSubscription() {
+  public void shouldOpenProcessMessageSubscription() {
     final Record<ProcessInstanceRecordValue> catchEventEntered =
         getFirstElementRecord(enteredState);
 
-    final Record<ProcessInstanceSubscriptionRecordValue> processInstanceSubscription =
-        getFirstProcessInstanceSubscriptionRecord(ProcessInstanceSubscriptionIntent.CREATED);
+    final Record<ProcessMessageSubscriptionRecordValue> processMessageSubscription =
+        getFirstProcessMessageSubscriptionRecord(ProcessMessageSubscriptionIntent.CREATED);
 
-    assertThat(processInstanceSubscription.getValueType())
-        .isEqualTo(ValueType.PROCESS_INSTANCE_SUBSCRIPTION);
-    assertThat(processInstanceSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(processMessageSubscription.getValueType())
+        .isEqualTo(ValueType.PROCESS_MESSAGE_SUBSCRIPTION);
+    assertThat(processMessageSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
-    Assertions.assertThat(processInstanceSubscription.getValue())
+    Assertions.assertThat(processMessageSubscription.getValue())
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled");
 
-    assertThat(processInstanceSubscription.getValue().getVariables()).isEmpty();
+    assertThat(processMessageSubscription.getValue().getVariables()).isEmpty();
   }
 
   @Test
-  public void shouldCorrelateProcessInstanceSubscription() {
+  public void shouldCorrelateProcessMessageSubscription() {
     // given
     final Record<ProcessInstanceRecordValue> catchEventEntered =
         getFirstElementRecord(enteredState);
@@ -222,10 +222,10 @@ public final class MessageCatchElementTest {
         .publish();
 
     // then
-    final Record<ProcessInstanceSubscriptionRecordValue> subscription =
-        getFirstProcessInstanceSubscriptionRecord(ProcessInstanceSubscriptionIntent.CORRELATED);
+    final Record<ProcessMessageSubscriptionRecordValue> subscription =
+        getFirstProcessMessageSubscriptionRecord(ProcessMessageSubscriptionIntent.CORRELATED);
 
-    assertThat(subscription.getValueType()).isEqualTo(ValueType.PROCESS_INSTANCE_SUBSCRIPTION);
+    assertThat(subscription.getValueType()).isEqualTo(ValueType.PROCESS_MESSAGE_SUBSCRIPTION);
     assertThat(subscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
     Assertions.assertThat(subscription.getValue())
@@ -302,7 +302,7 @@ public final class MessageCatchElementTest {
   }
 
   @Test
-  public void shouldCloseProcessInstanceSubscription() {
+  public void shouldCloseProcessMessageSubscription() {
     // given
     final Record<ProcessInstanceRecordValue> catchEventEntered =
         getFirstElementRecord(enteredState);
@@ -311,8 +311,8 @@ public final class MessageCatchElementTest {
     ENGINE_RULE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
-    final Record<ProcessInstanceSubscriptionRecordValue> subscription =
-        getFirstProcessInstanceSubscriptionRecord(ProcessInstanceSubscriptionIntent.DELETED);
+    final Record<ProcessMessageSubscriptionRecordValue> subscription =
+        getFirstProcessMessageSubscriptionRecord(ProcessMessageSubscriptionIntent.DELETED);
 
     assertThat(subscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
@@ -325,7 +325,7 @@ public final class MessageCatchElementTest {
   @Test
   public void shouldCorrelateMessageAndContinue() {
     // given
-    RecordingExporter.processInstanceSubscriptionRecords(ProcessInstanceSubscriptionIntent.CREATED)
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .withMessageName(MESSAGE_NAME)
         .await();
@@ -378,26 +378,26 @@ public final class MessageCatchElementTest {
   }
 
   @Test
-  public void testProcessInstanceSubscriptionLifecycle() {
+  public void testProcessMessageSubscriptionLifecycle() {
     // given
-    getFirstProcessInstanceSubscriptionRecord(ProcessInstanceSubscriptionIntent.CREATED);
+    getFirstProcessMessageSubscriptionRecord(ProcessMessageSubscriptionIntent.CREATED);
 
     // when
     ENGINE_RULE.message().withCorrelationKey(correlationKey).withName(MESSAGE_NAME).publish();
 
     // then
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords()
+            RecordingExporter.processMessageSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName(MESSAGE_NAME)
                 .limit(5))
         .extracting(Record::getRecordType, Record::getIntent)
         .containsExactly(
-            tuple(RecordType.EVENT, ProcessInstanceSubscriptionIntent.CREATING),
-            tuple(RecordType.COMMAND, ProcessInstanceSubscriptionIntent.CREATE),
-            tuple(RecordType.EVENT, ProcessInstanceSubscriptionIntent.CREATED),
-            tuple(RecordType.COMMAND, ProcessInstanceSubscriptionIntent.CORRELATE),
-            tuple(RecordType.EVENT, ProcessInstanceSubscriptionIntent.CORRELATED));
+            tuple(RecordType.EVENT, ProcessMessageSubscriptionIntent.CREATING),
+            tuple(RecordType.COMMAND, ProcessMessageSubscriptionIntent.CREATE),
+            tuple(RecordType.EVENT, ProcessMessageSubscriptionIntent.CREATED),
+            tuple(RecordType.COMMAND, ProcessMessageSubscriptionIntent.CORRELATE),
+            tuple(RecordType.EVENT, ProcessMessageSubscriptionIntent.CORRELATED));
   }
 
   @Test
@@ -440,9 +440,9 @@ public final class MessageCatchElementTest {
         .getFirst();
   }
 
-  private Record<ProcessInstanceSubscriptionRecordValue> getFirstProcessInstanceSubscriptionRecord(
-      final ProcessInstanceSubscriptionIntent intent) {
-    return RecordingExporter.processInstanceSubscriptionRecords(intent)
+  private Record<ProcessMessageSubscriptionRecordValue> getFirstProcessMessageSubscriptionRecord(
+      final ProcessMessageSubscriptionIntent intent) {
+    return RecordingExporter.processMessageSubscriptionRecords(intent)
         .withProcessInstanceKey(processInstanceKey)
         .withMessageName(MESSAGE_NAME)
         .getFirst();

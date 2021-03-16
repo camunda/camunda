@@ -20,7 +20,7 @@ import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
@@ -35,7 +35,7 @@ import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
-import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.zeebe.protocol.record.value.VariableRecordValue;
@@ -180,15 +180,15 @@ public final class RecordingExporter implements Exporter {
     return incidentRecords().withIntent(intent);
   }
 
-  public static ProcessInstanceSubscriptionRecordStream processInstanceSubscriptionRecords() {
-    return new ProcessInstanceSubscriptionRecordStream(
+  public static ProcessMessageSubscriptionRecordStream processMessageSubscriptionRecords() {
+    return new ProcessMessageSubscriptionRecordStream(
         records(
-            ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionRecordValue.class));
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION, ProcessMessageSubscriptionRecordValue.class));
   }
 
-  public static ProcessInstanceSubscriptionRecordStream processInstanceSubscriptionRecords(
-      final ProcessInstanceSubscriptionIntent intent) {
-    return processInstanceSubscriptionRecords().withIntent(intent);
+  public static ProcessMessageSubscriptionRecordStream processMessageSubscriptionRecords(
+      final ProcessMessageSubscriptionIntent intent) {
+    return processMessageSubscriptionRecords().withIntent(intent);
   }
 
   public static MessageRecordStream messageRecords() {

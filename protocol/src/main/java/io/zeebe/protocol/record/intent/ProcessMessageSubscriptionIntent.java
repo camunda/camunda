@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.record.intent;
 
-public enum ProcessInstanceSubscriptionIntent implements ProcessInstanceRelatedIntent {
+public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIntent {
   CREATING((short) 0),
   CREATE((short) 1),
   CREATED((short) 2),
@@ -29,11 +29,11 @@ public enum ProcessInstanceSubscriptionIntent implements ProcessInstanceRelatedI
   private final short value;
   private final boolean shouldBlacklist;
 
-  ProcessInstanceSubscriptionIntent(final short value) {
+  ProcessMessageSubscriptionIntent(final short value) {
     this(value, true);
   }
 
-  ProcessInstanceSubscriptionIntent(final short value, final boolean shouldBlacklist) {
+  ProcessMessageSubscriptionIntent(final short value, final boolean shouldBlacklist) {
     this.value = value;
     this.shouldBlacklist = shouldBlacklist;
   }

@@ -26,7 +26,7 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -510,10 +510,10 @@ public final class JsonSerializableToJsonTest {
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////// ProcessInstanceSubscriptionRecord /////////////////////////////
+      //////////////////////////// ProcessMessageSubscriptionRecord /////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "ProcessInstanceSubscriptionRecord",
+        "ProcessMessageSubscriptionRecord",
         (Supplier<UnifiedRecordValue>)
             () -> {
               final long elementInstanceKey = 123;
@@ -524,7 +524,7 @@ public final class JsonSerializableToJsonTest {
               final long processInstanceKey = 1345;
               final String correlationKey = "key";
 
-              return new ProcessInstanceSubscriptionRecord()
+              return new ProcessMessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setMessageName(wrapString(messageName))
@@ -539,16 +539,16 @@ public final class JsonSerializableToJsonTest {
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////// Empty ProcessInstanceSubscriptionRecord ///////////////////////
+      //////////////////////////// Empty ProcessMessageSubscriptionRecord ///////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "Empty ProcessInstanceSubscriptionRecord",
+        "Empty ProcessMessageSubscriptionRecord",
         (Supplier<UnifiedRecordValue>)
             () -> {
               final long elementInstanceKey = 123;
               final long processInstanceKey = 1345;
 
-              return new ProcessInstanceSubscriptionRecord()
+              return new ProcessMessageSubscriptionRecord()
                   .setProcessInstanceKey(processInstanceKey)
                   .setElementInstanceKey(elementInstanceKey);
             },

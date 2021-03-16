@@ -148,7 +148,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     configuration.index.variableDocument = true;
     configuration.index.processInstance = true;
     configuration.index.processInstanceCreation = true;
-    configuration.index.processInstanceSubscription = true;
+    configuration.index.processMessageSubscription = true;
 
     return configuration;
   }
