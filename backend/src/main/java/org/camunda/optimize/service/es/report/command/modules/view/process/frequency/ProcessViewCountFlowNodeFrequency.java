@@ -24,4 +24,5 @@ public class ProcessViewCountFlowNodeFrequency extends ProcessViewFrequency {
     view.setProperties(ViewProperty.FREQUENCY);
     dataForCommandKey.setView(view);
   }
+
 }

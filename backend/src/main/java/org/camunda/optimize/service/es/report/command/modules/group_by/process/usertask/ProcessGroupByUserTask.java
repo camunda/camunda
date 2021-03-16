@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -24,6 +23,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -50,14 +50,12 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    return Collections.singletonList(createFilteredUserTaskAggregation(
-      context,
-      AggregationBuilders
-        .terms(USER_TASK_ID_TERMS_AGGREGATION)
-        .size(configurationService.getEsAggregationBucketLimit())
-        .field(USER_TASKS + "." + USER_TASK_ACTIVITY_ID)
-        .subAggregation(distributedByPart.createAggregation(context))
-    ));
+    final TermsAggregationBuilder userTaskTermsAggregation = AggregationBuilders
+      .terms(USER_TASK_ID_TERMS_AGGREGATION)
+      .size(configurationService.getEsAggregationBucketLimit())
+      .field(USER_TASKS + "." + USER_TASK_ACTIVITY_ID);
+    distributedByPart.createAggregations(context).forEach(userTaskTermsAggregation::subAggregation);
+    return Collections.singletonList(createFilteredUserTaskAggregation(context, userTaskTermsAggregation));
   }
 
   @Override
@@ -110,17 +108,9 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
     if (!viewLevelFilterExists) {
       // If no view level filter exists, we enrich the user task data with user tasks that may not have been executed,
       // but should still show up in the result
-      userTaskNames.keySet().forEach(userTaskKey -> {
-        GroupByResult emptyResult;
-        if (distributedByPart instanceof ProcessDistributedByNone) {
-          emptyResult = GroupByResult.createResultWithEmptyDistributedBy(userTaskKey);
-        } else {
-          // Add empty result for each missing bucket
-          emptyResult = GroupByResult.createResultWithEmptyDistributedBy(userTaskKey, context);
-        }
-        emptyResult.setLabel(userTaskNames.get(userTaskKey));
-        groupedData.add(emptyResult);
-      });
+      userTaskNames.forEach((key, value) -> groupedData.add(
+        GroupByResult.createGroupByResult(key, value, distributedByPart.createEmptyResult(context))
+      ));
     }
   }
 

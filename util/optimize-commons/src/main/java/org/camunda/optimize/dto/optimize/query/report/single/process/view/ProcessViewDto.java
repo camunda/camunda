@@ -77,7 +77,7 @@ public class ProcessViewDto implements Combinable {
   @Deprecated
   protected void setProperty(final ViewProperty property) {
     if (this.properties == null || this.properties.isEmpty()) {
-      this.properties = Arrays.asList(property);
+      this.properties = new ArrayList<>(Arrays.asList(property));
     } else {
       this.properties.set(0, property);
     }

@@ -30,14 +30,15 @@ public abstract class AbstractGroupByUserTask extends GroupByPart<ProcessReportD
 
   protected NestedAggregationBuilder createFilteredUserTaskAggregation(final ExecutionContext<ProcessReportDataDto> context,
                                                                        final AggregationBuilder subAggregation) {
-    return nested(USER_TASKS_AGGREGATION, USER_TASKS)
+    final NestedAggregationBuilder nestedUserTaskAggregation = nested(USER_TASKS_AGGREGATION, USER_TASKS)
       .subAggregation(
         filter(FILTERED_USER_TASKS_AGGREGATION, createUserTaskAggregationFilter(context.getReportData()))
           .subAggregation(subAggregation)
-      )
-      // sibling aggregation for distributedByPart for retrieval of all keys that
-      // should be present in distributedBy result
-      .subAggregation(distributedByPart.createAggregation(context));
+      );
+    // sibling aggregation for distributedByPart for retrieval of all keys that
+    // should be present in distributedBy result
+    distributedByPart.createAggregations(context).forEach(nestedUserTaskAggregation::subAggregation);
+    return nestedUserTaskAggregation;
   }
 
   protected Optional<Filter> getFilteredUserTaskAggregation(final SearchResponse response) {

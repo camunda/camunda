@@ -64,7 +64,7 @@ public class ViewProperty implements Combinable {
   }
 
   @JsonIgnore
-  public <T extends TypedViewPropertyDto> Optional<T> getViewPropertyDtoIfAssignableTo(final Class<T> clazz) {
+  public <T extends TypedViewPropertyDto> Optional<T> getViewPropertyDtoIfOfType(final Class<T> clazz) {
     return Optional.of(this.viewPropertyDto)
       .filter(clazz::isInstance)
       .map(clazz::cast);

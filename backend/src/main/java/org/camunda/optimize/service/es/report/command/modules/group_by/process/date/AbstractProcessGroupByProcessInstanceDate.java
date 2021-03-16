@@ -93,7 +93,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends GroupByP
       .dateField(getDateField())
       .minMaxStats(stats)
       .timezone(context.getTimezone())
-      .subAggregation(distributedByPart.createAggregation(context))
+      .subAggregations(distributedByPart.createAggregations(context))
       .processGroupByType(getGroupByType().getType())
       .processFilters(context.getReportData().getFilter())
       .processQueryFilterEnhancer(queryFilterEnhancer)
@@ -180,7 +180,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends GroupByP
     // add sibling distributedBy aggregation to enrich context with all distributed by keys,
     // required for variable distribution
     if (DistributedByType.VARIABLE.equals(getDistributedByType(context.getReportData()))) {
-      aggregationBuilder.subAggregation(distributedByPart.createAggregation(context));
+      distributedByPart.createAggregations(context).forEach(aggregationBuilder::subAggregation);
     }
     return aggregationBuilder;
   }

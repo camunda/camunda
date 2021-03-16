@@ -86,7 +86,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
       .dateField(ProcessInstanceDto.Fields.startDate)
       .runningDateReportEndDateField(ProcessInstanceDto.Fields.endDate)
       .timezone(context.getTimezone())
-      .subAggregation(distributedByPart.createAggregation(context))
+      .subAggregations(distributedByPart.createAggregations(context))
       .build();
 
     return dateAggregationService.createRunningDateAggregation(dateAggContext)

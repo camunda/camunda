@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report.process.single.user_task.duration
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
@@ -22,6 +21,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.ModelElementDurationByModelElementDateReportEvaluationIT;
@@ -45,7 +45,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.getAggregationTypesAsListWithoutSum;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
@@ -92,18 +91,19 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> results =
-      evaluateMapReportForAllAggTypes(reportData);
+    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
-    getAggregationTypesAsListWithoutSum().forEach((AggregationType aggType) -> {
-      ReportResultResponseDto<List<MapResultEntryDto>> result = results.get(aggType);
-      assertThat(result.getFirstMeasureData()).isNotNull();
-
-      assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), groupedByDayDateAsString(today)))
+    assertThat(result.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(getSupportedAggregationTypes());
+    result.getMeasures().forEach(measureResult -> {
+      assertThat(MapResultUtil.getEntryForKey(measureResult.getData(), groupedByDayDateAsString(today)))
         .get()
         .extracting(MapResultEntryDto::getValue)
-        .isEqualTo(calculateExpectedValueGivenDurations(10., 20.).get(aggType));
+        .isEqualTo(calculateExpectedValueGivenDurations(10., 20.).get(measureResult.getAggregationType()));
     });
   }
 
@@ -137,17 +137,19 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
     // when
     final ProcessReportDataDto reportData =
       createReportData(processDefinition1.getKey(), ALL_VERSIONS, AggregateByDateUnit.DAY);
-    final Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> results = evaluateMapReportForAllAggTypes(reportData);
+    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
-    getAggregationTypesAsListWithoutSum().forEach((AggregationType aggType) -> {
-      ReportResultResponseDto<List<MapResultEntryDto>> result = results.get(aggType);
-      assertThat(result.getFirstMeasureData()).isNotNull();
-
-      assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), groupedByDayDateAsString(today)))
+    assertThat(result.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(getSupportedAggregationTypes());
+    result.getMeasures().forEach(measureResult -> {
+      assertThat(MapResultUtil.getEntryForKey(measureResult.getData(), groupedByDayDateAsString(today)))
         .get()
         .extracting(MapResultEntryDto::getValue)
-        .isEqualTo(calculateExpectedValueGivenDurations(10., 20.).get(aggType));
+        .isEqualTo(calculateExpectedValueGivenDurations(10., 20.).get(measureResult.getAggregationType()));
     });
   }
 

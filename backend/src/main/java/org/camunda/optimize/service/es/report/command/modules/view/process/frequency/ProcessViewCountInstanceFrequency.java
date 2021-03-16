@@ -9,6 +9,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -23,5 +25,12 @@ public class ProcessViewCountInstanceFrequency extends ProcessViewFrequency {
     view.setEntity(ProcessViewEntity.PROCESS_INSTANCE);
     view.setProperties(ViewProperty.FREQUENCY);
     dataForCommandKey.setView(view);
+  }
+
+  @Override
+  public ViewResult createEmptyResult(final ExecutionContext<ProcessReportDataDto> context) {
+    // for instance count the default is 0
+    // see https://jira.camunda.com/browse/OPT-3336
+    return createViewResult(0.);
   }
 }

@@ -47,7 +47,7 @@ public class DateAggregationContext {
   @NonNull
   private final ZoneId timezone;
   @NonNull
-  private final AggregationBuilder subAggregation;
+  private final List<AggregationBuilder> subAggregations;
 
   private final String dateAggregationName;
 

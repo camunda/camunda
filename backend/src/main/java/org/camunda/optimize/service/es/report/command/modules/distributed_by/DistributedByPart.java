@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.distributed_by;
 
+import lombok.Getter;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -24,6 +25,7 @@ import java.util.List;
 public abstract class DistributedByPart<Data extends SingleReportDataDto> {
 
   @Setter
+  @Getter
   protected ViewPart<Data> viewPart;
 
   public abstract boolean isKeyOfNumericType(final ExecutionContext<Data> context);
@@ -39,11 +41,13 @@ public abstract class DistributedByPart<Data extends SingleReportDataDto> {
     viewPart.adjustSearchRequest(searchRequest, baseQuery, context);
   }
 
-  public abstract AggregationBuilder createAggregation(final ExecutionContext<Data> context);
+  public abstract List<AggregationBuilder> createAggregations(final ExecutionContext<Data> context);
 
   public abstract List<DistributedByResult> retrieveResult(final SearchResponse response,
                                                            final Aggregations aggregations,
                                                            final ExecutionContext<Data> context);
+
+  public abstract List<DistributedByResult> createEmptyResult(final ExecutionContext<Data> context);
 
   public void addDistributedByAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey) {
     addAdjustmentsForCommandKeyGeneration(dataForCommandKey);

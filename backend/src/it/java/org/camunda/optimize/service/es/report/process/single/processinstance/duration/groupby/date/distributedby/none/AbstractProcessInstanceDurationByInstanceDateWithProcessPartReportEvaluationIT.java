@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -57,8 +58,6 @@ import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPartReportEvaluationIT
   extends AbstractProcessDefinitionIT {
 
-  private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListForProcessParts();
-
   protected abstract ProcessReportDataType getTestReportDataType();
 
   protected abstract ProcessGroupByType getGroupByType();
@@ -92,8 +91,8 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setReportDataType(getTestReportDataType())
       .build();
 
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse = reportClient.evaluateMapReport(
-      reportData);
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -211,12 +210,13 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(getTestReportDataType())
       .build();
+    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
 
-    final Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> results =
-      evaluateMapReportForAllAggTypes(reportData);
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
 
     // then
-    assertDurationMapReportResults(results, new Double[]{1000., 2000., 9000.});
+    assertDurationMapReportResults(evaluationResponse, new Double[]{1000., 2000., 9000.});
   }
 
   @Test
@@ -613,7 +613,8 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .setReportDataType(getTestReportDataType())
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -656,27 +657,29 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
 
     importAllEngineEntitiesFromScratch();
 
-    aggregationTypes.forEach((AggregationType aggType) -> {
-      // when
-      final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-        .setGroupByDateInterval(AggregateByDateUnit.DAY)
-        .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessDefinitionVersion(processDefinitionVersion)
-        .setStartFlowNodeId(START_EVENT)
-        .setEndFlowNodeId(END_EVENT)
-        .setReportDataType(getTestReportDataType())
-        .build();
-      reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-      reportData.getConfiguration().setAggregationTypes(aggType);
-      final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    // when
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .setReportDataType(getTestReportDataType())
+      .build();
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
-      // then
-      final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-      assertThat(resultData).hasSize(3);
-      final List<Double> bucketValues = resultData.stream()
-        .map(MapResultEntryDto::getValue)
-        .collect(Collectors.toList());
-      assertThat(bucketValues)
+    // then
+    assertThat(result.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactlyInAnyOrderElementsOf(AggregationType.getAggregationTypesAsListForProcessParts());
+    result.getMeasures().forEach(measureResult -> {
+      final List<MapResultEntryDto> resultData = measureResult.getData();
+      assertThat(resultData)
+        .hasSize(3)
+        .extracting(MapResultEntryDto::getValue)
         .isSortedAccordingTo(Comparator.naturalOrder());
     });
   }
@@ -754,6 +757,10 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     // then
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertDateResultMap(result.getFirstMeasureData(), 5, now, mapToChronoUnit(unit));
+  }
+
+  private AggregationType[] getSupportedAggregationTypes() {
+    return AggregationType.getAggregationTypesAsListForProcessParts().toArray(new AggregationType[0]);
   }
 
   private void assertDateResultMap(List<MapResultEntryDto> resultData,
@@ -855,25 +862,20 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     engineDatabaseExtension.updateActivityInstanceEndDates(endDatesToUpdate);
   }
 
-  private Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
-
-    Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> resultsMap = new HashMap<>();
-    aggregationTypes.forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationTypes(aggType);
-      ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
-      resultsMap.put(aggType, result);
-    });
-    return resultsMap;
-  }
-
-  private void assertDurationMapReportResults(Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> results,
+  private void assertDurationMapReportResults(AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse,
                                               Double[] expectedDurations) {
+    assertThat(evaluationResponse.getResult().getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(getSupportedAggregationTypes());
 
-    aggregationTypes.forEach((AggregationType aggType) -> {
-      final List<MapResultEntryDto> resultData = results.get(aggType).getFirstMeasureData();
-      assertThat(resultData).isNotNull();
-      assertThat(resultData.get(0).getValue())
-        .isEqualTo(calculateExpectedValueGivenDurations(expectedDurations).get(aggType));
+    final Map<AggregationType, List<MapResultEntryDto>> resultByAggregationType = evaluationResponse.getResult()
+      .getMeasures()
+      .stream()
+      .collect(Collectors.toMap(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData));
+
+    Arrays.stream(getSupportedAggregationTypes()).forEach(aggregationType -> {
+      assertThat(resultByAggregationType.get(aggregationType).get(0).getValue())
+        .isEqualTo(calculateExpectedValueGivenDurations(expectedDurations).get(aggregationType));
     });
   }
 }

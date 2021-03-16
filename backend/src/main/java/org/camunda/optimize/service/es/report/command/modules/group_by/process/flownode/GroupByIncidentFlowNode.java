@@ -21,6 +21,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -52,15 +53,15 @@ public class GroupByIncidentFlowNode extends GroupByPart<ProcessReportDataDto> {
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
+    final TermsAggregationBuilder incidentTermsAggregation = terms(GROUPED_BY_FLOW_NODE_ID_AGGREGATION)
+      .size(configurationService.getEsAggregationBucketLimit())
+      .field(INCIDENTS + "." + INCIDENT_ACTIVITY_ID);
+    distributedByPart.createAggregations(context).forEach(incidentTermsAggregation::subAggregation);
     return Collections.singletonList(
       nested(NESTED_INCIDENT_AGGREGATION, INCIDENTS)
         .subAggregation(
           filter(FILTERED_INCIDENT_AGGREGATION, createIncidentAggregationFilter(context.getReportData()))
-            .subAggregation(
-              terms(GROUPED_BY_FLOW_NODE_ID_AGGREGATION)
-                .size(configurationService.getEsAggregationBucketLimit())
-                .field(INCIDENTS + "." + INCIDENT_ACTIVITY_ID)
-                .subAggregation(distributedByPart.createAggregation(context)))
+            .subAggregation(incidentTermsAggregation)
         )
     );
   }
@@ -102,9 +103,11 @@ public class GroupByIncidentFlowNode extends GroupByPart<ProcessReportDataDto> {
     if (!viewLevelFilterExists) {
       // enrich data with flow nodes that haven't been executed, but should still show up in the result
       flowNodeNames.keySet().forEach(flowNodeKey -> {
-        CompositeCommandResult.GroupByResult emptyResult =
-          CompositeCommandResult.GroupByResult.createResultWithEmptyDistributedBy(flowNodeKey);
-        emptyResult.setLabel(flowNodeNames.get(flowNodeKey));
+        CompositeCommandResult.GroupByResult emptyResult = CompositeCommandResult.GroupByResult.createGroupByResult(
+          flowNodeKey,
+          flowNodeNames.get(flowNodeKey),
+          distributedByPart.createEmptyResult(context)
+        );
         groupedData.add(emptyResult);
       });
     }

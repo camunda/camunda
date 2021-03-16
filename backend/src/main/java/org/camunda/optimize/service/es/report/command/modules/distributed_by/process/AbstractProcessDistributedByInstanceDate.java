@@ -39,7 +39,7 @@ public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDi
   protected final ProcessQueryFilterEnhancer queryFilterEnhancer;
 
   @Override
-  public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
+  public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
     final AggregateByDateUnit unit = getDistributedByDateUnit(context.getReportData());
 
     final MinMaxStatDto stats = getMinMaxStats(context);
@@ -50,14 +50,15 @@ public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDi
       .minMaxStats(stats)
       .extendBoundsToMinMaxStats(true)
       .timezone(context.getTimezone())
-      .subAggregation(viewPart.createAggregation(context))
+      .subAggregations(viewPart.createAggregations(context))
       .distributedByType(getDistributedBy().getType())
       .processFilters(context.getReportData().getFilter())
       .processQueryFilterEnhancer(queryFilterEnhancer)
       .build();
 
     return dateAggregationService.createProcessInstanceDateAggregation(dateAggContext)
-      .orElse(viewPart.createAggregation(context));
+      .map(Collections::singletonList)
+      .orElse(viewPart.createAggregations(context));
   }
 
   @Override

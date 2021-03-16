@@ -21,6 +21,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,13 +39,14 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
   private final DefinitionService definitionService;
 
   @Override
-  public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
-    return AggregationBuilders
+  public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
+    final TermsAggregationBuilder modelElementTermsAggregation = AggregationBuilders
       .terms(MODEL_ELEMENT_ID_TERMS_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
       .order(BucketOrder.key(true))
-      .field(getModelElementIdPath())
-      .subAggregation(viewPart.createAggregation(context));
+      .field(getModelElementIdPath());
+    viewPart.createAggregations(context).forEach(modelElementTermsAggregation::subAggregation);
+    return Collections.singletonList(modelElementTermsAggregation);
   }
 
   @Override
@@ -63,18 +65,19 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
         modelElementNames.remove(modelElementKey);
       }
     }
-    addMissingDistributions(modelElementNames, distributedByModelElements);
+    addMissingDistributions(modelElementNames, distributedByModelElements, context);
     return distributedByModelElements;
   }
 
   private void addMissingDistributions(final Map<String, String> modelElementNames,
-                                       final List<DistributedByResult> distributedByModelElements) {
+                                       final List<DistributedByResult> distributedByModelElements,
+                                       final ExecutionContext<ProcessReportDataDto> context) {
     // enrich data model elements that haven't been executed, but should still show up in the result
-    modelElementNames.keySet().forEach(modelElementKey -> {
-      DistributedByResult emptyResult = DistributedByResult.createResultWithEmptyValue(modelElementKey);
-      emptyResult.setLabel(modelElementNames.get(modelElementKey));
-      distributedByModelElements.add(emptyResult);
-    });
+    modelElementNames.keySet().forEach(modelElementKey -> distributedByModelElements.add(
+      DistributedByResult.createDistributedByResult(
+        modelElementKey, modelElementNames.get(modelElementKey), getViewPart().createEmptyResult(context)
+      )
+    ));
   }
 
   private Map<String, String> getModelElementNames(final ProcessReportDataDto reportData) {

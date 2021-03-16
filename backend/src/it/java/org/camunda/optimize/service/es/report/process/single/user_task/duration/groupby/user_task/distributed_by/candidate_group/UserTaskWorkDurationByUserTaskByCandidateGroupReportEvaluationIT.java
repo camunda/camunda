@@ -15,13 +15,15 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
@@ -177,75 +179,90 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
 
   @Override
   protected void assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(
-    final Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> actualResults,
-    final AggregationType aggType) {
-    // @formatter:off
-    HyperMapAsserter.asserter()
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result) {
+    assertThat(result.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(getSupportedAggregationTypes());
+    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
-        .groupByContains(USER_TASK_1)
-          .distributedByContains(
-            FIRST_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-            FIRST_CANDIDATE_GROUP_NAME
-          )
-          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-          .distributedByContains(
-            SECOND_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
-            SECOND_CANDIDATE_GROUP_NAME
-          )
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .groupByContains(USER_TASK_A)
-          .distributedByContains(
-            FIRST_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-            FIRST_CANDIDATE_GROUP_NAME
-          )
-          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .groupByContains(USER_TASK_B)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-          .distributedByContains(
-            SECOND_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
-            SECOND_CANDIDATE_GROUP_NAME
-          )
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .doAssert(actualResults.get(aggType));
-    // @formatter:on
+      .processInstanceCountWithoutFilters(2L);
+    Arrays.stream(getSupportedAggregationTypes()).forEach(aggType -> {
+      // @formatter:off
+      hyperMapAsserter
+        .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
+          .groupByContains(USER_TASK_1)
+            .distributedByContains(
+              FIRST_CANDIDATE_GROUP_ID,
+              calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+              FIRST_CANDIDATE_GROUP_NAME
+            )
+            .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+            .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+          .groupByContains(USER_TASK_2)
+            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+            .distributedByContains(
+              SECOND_CANDIDATE_GROUP_ID,
+              calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
+              SECOND_CANDIDATE_GROUP_NAME
+            )
+            .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+          .groupByContains(USER_TASK_A)
+            .distributedByContains(
+              FIRST_CANDIDATE_GROUP_ID,
+              calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+              FIRST_CANDIDATE_GROUP_NAME
+            )
+            .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+            .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+          .groupByContains(USER_TASK_B)
+            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+            .distributedByContains(
+              SECOND_CANDIDATE_GROUP_ID,
+              calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
+              SECOND_CANDIDATE_GROUP_NAME
+            )
+            .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+          .add()
+        .add();
+      // @formatter:on
+    });
+    hyperMapAsserter.doAssert(result);
   }
 
   @Override
   protected void assertHyperMap_ForMultipleEventsWithAllAggregationTypes(
-    final Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> results, final AggregationType aggType) {
-    // @formatter:off
-    HyperMapAsserter.asserter()
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result) {
+    assertThat(result.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(getSupportedAggregationTypes());
+    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
-        .groupByContains(USER_TASK_1)
-          .distributedByContains(
-            FIRST_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-            FIRST_CANDIDATE_GROUP_NAME
-          )
-          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-          .distributedByContains(
-            SECOND_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
-            SECOND_CANDIDATE_GROUP_NAME
-          )
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-      .doAssert(results.get(aggType));
-    // @formatter:on
+      .processInstanceCountWithoutFilters(2L);
+    Arrays.stream(getSupportedAggregationTypes()).forEach(aggType -> {
+      // @formatter:off
+      hyperMapAsserter
+        .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
+          .groupByContains(USER_TASK_1)
+            .distributedByContains(
+              FIRST_CANDIDATE_GROUP_ID,
+              calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+              FIRST_CANDIDATE_GROUP_NAME
+            )
+            .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+            .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+          .groupByContains(USER_TASK_2)
+            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+            .distributedByContains(
+              SECOND_CANDIDATE_GROUP_ID,
+              calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
+              SECOND_CANDIDATE_GROUP_NAME
+            )
+            .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+          .add()
+        .add();
+      // @formatter:on
+    });
+    hyperMapAsserter.doAssert(result);
   }
 
   @Override

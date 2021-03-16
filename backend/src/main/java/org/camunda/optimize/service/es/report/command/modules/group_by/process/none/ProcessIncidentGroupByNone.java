@@ -15,6 +15,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -43,12 +44,12 @@ public class ProcessIncidentGroupByNone extends GroupByPart<ProcessReportDataDto
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    return Stream.of(
-      nested(NESTED_INCIDENT_AGGREGATION, INCIDENTS)
-        .subAggregation(
-          filter(FILTERED_INCIDENT_AGGREGATION, createIncidentAggregationFilter(context.getReportData()))
-            .subAggregation(distributedByPart.createAggregation(context))
-        ))
+    final FilterAggregationBuilder filteredIncidentsAggregation = filter(
+      FILTERED_INCIDENT_AGGREGATION,
+      createIncidentAggregationFilter(context.getReportData())
+    );
+    distributedByPart.createAggregations(context).forEach(filteredIncidentsAggregation::subAggregation);
+    return Stream.of(nested(NESTED_INCIDENT_AGGREGATION, INCIDENTS).subAggregation(filteredIncidentsAggregation))
       .filter(Objects::nonNull)
       .collect(Collectors.toList());
   }
@@ -61,7 +62,7 @@ public class ProcessIncidentGroupByNone extends GroupByPart<ProcessReportDataDto
       .ifPresent(nestedIncidents -> {
         final List<DistributedByResult> distributions =
           distributedByPart.retrieveResult(response, nestedIncidents.getAggregations(), context);
-        GroupByResult groupByResult = GroupByResult.createEmptyGroupBy(distributions);
+        GroupByResult groupByResult = GroupByResult.createGroupByNone(distributions);
         compositeCommandResult.setGroup(groupByResult);
       });
   }

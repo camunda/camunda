@@ -99,7 +99,16 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
             " for the specified definition. Returning empty result instead",
           e
         );
-        return mapToReportResult.apply(new CompositeCommandResult(executionContext.getReportData()));
+        return mapToReportResult.apply(new CompositeCommandResult(
+          executionContext.getReportData(),
+          viewPart.getViewProperty(executionContext),
+          // the default number value differs across views, see the corresponding createEmptyResult implementations
+          // thus we refer to it here in order to create an appropriate empty result
+          // see https://jira.camunda.com/browse/OPT-3336
+          viewPart.createEmptyResult(executionContext).getViewMeasures().stream()
+            .findFirst()
+            .map(CompositeCommandResult.ViewMeasure::getValue).orElse(0.)
+        ));
       } else {
         throw e;
       }
@@ -131,7 +140,6 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
   private CommandEvaluationResult<T> retrieveQueryResult(final SearchResponse response,
                                                          final ExecutionContext<D> executionContext) {
     final CompositeCommandResult result = groupByPart.retrieveQueryResult(response, executionContext);
-    result.setViewProperty(viewPart.getViewProperty(executionContext));
     final CommandEvaluationResult<T> reportResult = mapToReportResult.apply(result);
     reportResult.setInstanceCount(response.getHits().getTotalHits().value);
     reportResult.setInstanceCountWithoutFilters(executionContext.getUnfilteredInstanceCount());

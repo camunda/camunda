@@ -21,7 +21,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
@@ -34,7 +33,7 @@ public class DecisionGroupByNone extends GroupByPart<DecisionReportDataDto> {
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<DecisionReportDataDto> context) {
     // nothing to do here, since we don't group so just pass the view part on
-    return Stream.of(distributedByPart.createAggregation(context))
+    return distributedByPart.createAggregations(context).stream()
       .filter(Objects::nonNull)
       .collect(Collectors.toList());
   }
@@ -45,7 +44,7 @@ public class DecisionGroupByNone extends GroupByPart<DecisionReportDataDto> {
                              final ExecutionContext<DecisionReportDataDto> context) {
     final List<DistributedByResult> distributions =
       distributedByPart.retrieveResult(response, response.getAggregations(), context);
-    GroupByResult groupByResult = GroupByResult.createEmptyGroupBy(distributions);
+    GroupByResult groupByResult = GroupByResult.createGroupByNone(distributions);
     compositeCommandResult.setGroup(groupByResult);
   }
 

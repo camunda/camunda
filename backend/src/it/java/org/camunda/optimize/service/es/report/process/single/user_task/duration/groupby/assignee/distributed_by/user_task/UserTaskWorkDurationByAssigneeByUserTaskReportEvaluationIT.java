@@ -11,13 +11,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserT
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
@@ -103,24 +104,32 @@ public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
 
   @Override
   protected void assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(
-    final Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> results, final AggregationType aggType) {
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
-        .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
-          .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
-          .distributedByContains(USER_TASK_2, null)
-          .distributedByContains(USER_TASK_A, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
-          .distributedByContains(USER_TASK_B, null)
-        .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
-          .distributedByContains(USER_TASK_1, null)
-          .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
-          .distributedByContains(USER_TASK_A, null)
-          .distributedByContains(USER_TASK_B, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
-      .doAssert(results.get(aggType));
-    // @formatter:on
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result) {
+      assertThat(result.getMeasures())
+        .extracting(MeasureResponseDto::getAggregationType)
+        .containsExactly(getSupportedAggregationTypes());
+      final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
+        .processInstanceCount(2L)
+        .processInstanceCountWithoutFilters(2L);
+      Arrays.stream(getSupportedAggregationTypes()).forEach(aggType -> {
+        // @formatter:off
+        hyperMapAsserter
+          .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
+            .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
+              .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
+              .distributedByContains(USER_TASK_2, null)
+              .distributedByContains(USER_TASK_A, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
+              .distributedByContains(USER_TASK_B, null)
+            .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+              .distributedByContains(USER_TASK_1, null)
+              .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
+              .distributedByContains(USER_TASK_A, null)
+              .distributedByContains(USER_TASK_B, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
+            .add()
+          .add();
+        // @formatter:on
+      });
+      hyperMapAsserter.doAssert(result);
   }
 
   @Override
@@ -142,24 +151,32 @@ public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
 
   @Override
   protected void assertHyperMap_ForMultipleEventsWithAllAggregationTypes(
-    final Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> results, final AggregationType aggType) {
-    // @formatter:off
-    HyperMapAsserter.asserter()
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result) {
+    assertThat(result.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(getSupportedAggregationTypes());
+    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
-        .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
-          .distributedByContains(
-            USER_TASK_1,
-            calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-            USER_TASK_1_NAME
-          )
-          .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
-          .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-          .distributedByContains(USER_TASK_2,SET_DURATIONS[0], USER_TASK_2_NAME)
-      .doAssert(results.get(aggType));
-    // @formatter:on
+      .processInstanceCountWithoutFilters(2L);
+    Arrays.stream(getSupportedAggregationTypes()).forEach(aggType -> {
+      // @formatter:off
+      hyperMapAsserter
+        .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
+          .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
+           .distributedByContains(
+              USER_TASK_1,
+              calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+              USER_TASK_1_NAME
+            )
+            .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+          .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+            .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+            .distributedByContains(USER_TASK_2,SET_DURATIONS[0], USER_TASK_2_NAME)
+          .add()
+        .add();
+      // @formatter:on
+    });
+    hyperMapAsserter.doAssert(result);
   }
 
   protected void assertHyperMap_otherProcessDefinitionsDoNotInfluenceResult(final Double[] setDurations1,

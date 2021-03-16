@@ -21,9 +21,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.targe
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Optional;
+import java.util.Set;
 
 @AllArgsConstructor
 @Builder
@@ -34,9 +37,11 @@ public class SingleReportConfigurationDto {
   @Builder.Default
   private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
   @Builder.Default
-  private List<AggregationType> aggregationTypes = Arrays.asList(AggregationType.AVERAGE);
+  private Set<AggregationType> aggregationTypes =
+    new LinkedHashSet<>(Collections.singletonList(AggregationType.AVERAGE));
   @Builder.Default
-  private List<UserTaskDurationTime> userTaskDurationTimes = Arrays.asList(UserTaskDurationTime.TOTAL);
+  private Set<UserTaskDurationTime> userTaskDurationTimes =
+    new LinkedHashSet<>(Collections.singletonList(UserTaskDurationTime.TOTAL));
   @Builder.Default
   private HiddenNodesDto hiddenNodes = new HiddenNodesDto();
   @Builder.Default
@@ -94,41 +99,49 @@ public class SingleReportConfigurationDto {
   // to be removed with OPT-4871 when the result evaluation needs to read all values
   @Deprecated
   public AggregationType getAggregationType() {
-    return this.aggregationTypes != null && !this.aggregationTypes.isEmpty() ? this.aggregationTypes.get(0) : null;
+    return this.aggregationTypes != null && !this.aggregationTypes.isEmpty() ? this.aggregationTypes.iterator().next() : null;
   }
 
-  // to be removed with OPT-4872, just here for jackson and API backwards compatibility thus protected
+  // to be removed with OPT-4871 when the result evaluation needs to read all values
   @Deprecated
-  protected void setAggregationType(final AggregationType aggregationType) {
+  public void setAggregationType(final AggregationType aggregationType) {
     if (this.aggregationTypes == null || this.aggregationTypes.isEmpty()) {
-      this.aggregationTypes = Arrays.asList(aggregationType);
+      this.aggregationTypes = new LinkedHashSet<>(Collections.singletonList(aggregationType));
     } else {
-      this.aggregationTypes.set(0, aggregationType);
+      final ArrayList<AggregationType> aggregationTypeList = new ArrayList<>(this.aggregationTypes);
+      aggregationTypeList.set(0, aggregationType);
+      this.aggregationTypes = new LinkedHashSet<>(aggregationTypeList);
     }
   }
 
   public void setAggregationTypes(final AggregationType... aggregationTypes) {
-    this.aggregationTypes = Arrays.asList(aggregationTypes);
+    // deduplication using an intermediate set
+    this.aggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
   }
 
   // to be removed with OPT-4871 when the result evaluation needs to read all values
   @Deprecated
   public UserTaskDurationTime getUserTaskDurationTime() {
-    return this.userTaskDurationTimes != null && !this.userTaskDurationTimes.isEmpty() ? this.userTaskDurationTimes.get(0) : null;
+    return this.userTaskDurationTimes != null && !this.userTaskDurationTimes.isEmpty()
+      ? this.userTaskDurationTimes.iterator().next()
+      : null;
   }
 
-  // to be removed with OPT-4872, just here for jackson and API backwards compatibility thus protected
+  // to be removed with OPT-4871 when the result evaluation needs to read all values
   @Deprecated
-  protected void setUserTaskDurationTime(final UserTaskDurationTime userTaskDurationTime) {
+  public void setUserTaskDurationTime(final UserTaskDurationTime userTaskDurationTime) {
     if (this.userTaskDurationTimes == null || this.userTaskDurationTimes.isEmpty()) {
-      this.userTaskDurationTimes = Arrays.asList(userTaskDurationTime);
+      this.userTaskDurationTimes = new LinkedHashSet<>(Collections.singletonList(userTaskDurationTime));
     } else {
-      this.userTaskDurationTimes.set(0, userTaskDurationTime);
+      final ArrayList<UserTaskDurationTime> userTaskDurationTimesList = new ArrayList<>(this.userTaskDurationTimes);
+      userTaskDurationTimesList.set(0, userTaskDurationTime);
+      this.userTaskDurationTimes = new LinkedHashSet<>(userTaskDurationTimesList);
     }
   }
 
   public void setUserTaskDurationTimes(final UserTaskDurationTime... userTaskDurationTimes) {
-    this.userTaskDurationTimes = Arrays.asList(userTaskDurationTimes);
+    // deduplication using an intermediate set
+    this.userTaskDurationTimes = new LinkedHashSet<>(Arrays.asList(userTaskDurationTimes));
   }
 
   public Optional<ReportSortingDto> getSorting() {

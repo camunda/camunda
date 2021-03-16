@@ -32,9 +32,11 @@ import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -62,20 +64,19 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
+    final TermsAggregationBuilder identityTermsAggregation = AggregationBuilders
+      .terms(GROUP_BY_IDENTITY_TERMS_AGGREGATION)
+      .size(configurationService.getEsAggregationBucketLimit())
+      .order(BucketOrder.key(true))
+      .field(USER_TASKS + "." + getIdentityField())
+      .missing(GROUP_BY_IDENTITY_MISSING_KEY);
+    distributedByPart.createAggregations(context).forEach(identityTermsAggregation::subAggregation);
     final NestedAggregationBuilder groupByIdentityAggregation = nested(USER_TASKS, USER_TASKS_AGGREGATION)
       .subAggregation(
         filter(
           FILTERED_USER_TASKS_AGGREGATION,
           createUserTaskIdentityAggregationFilter(context.getReportData(), getUserTaskIds(context.getReportData()))
-        ).subAggregation(
-          AggregationBuilders
-            .terms(GROUP_BY_IDENTITY_TERMS_AGGREGATION)
-            .size(configurationService.getEsAggregationBucketLimit())
-            .order(BucketOrder.key(true))
-            .field(USER_TASKS + "." + getIdentityField())
-            .missing(GROUP_BY_IDENTITY_MISSING_KEY)
-            .subAggregation(distributedByPart.createAggregation(context))
-        ));
+        ).subAggregation(identityTermsAggregation));
 
     return Collections.singletonList(groupByIdentityAggregation);
   }
@@ -124,9 +125,11 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
 
       if (identityBucket.getKeyAsString().equals(GROUP_BY_IDENTITY_MISSING_KEY)) {
         // ensure missing identity bucket is excluded if its empty
-        final boolean resultIsEmpty = singleResult.isEmpty()
-          || singleResult.stream()
-          .allMatch(result -> result.getViewResult().getNumber() == null || result.getViewResult().getNumber() == 0.0);
+        final boolean resultIsEmpty = singleResult.isEmpty() || singleResult.stream()
+          .map(DistributedByResult::getViewResult)
+          .map(CompositeCommandResult.ViewResult::getViewMeasures)
+          .flatMap(Collection::stream)
+          .allMatch(viewMeasure -> viewMeasure.getValue() == null || viewMeasure.getValue() == 0.0);
         if (resultIsEmpty) {
           continue;
         }

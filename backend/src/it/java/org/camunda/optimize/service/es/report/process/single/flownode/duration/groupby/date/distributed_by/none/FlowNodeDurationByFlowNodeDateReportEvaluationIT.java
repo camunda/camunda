@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.ModelElementDurationByModelElementDateReportEvaluationIT;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
@@ -32,7 +33,6 @@ import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.getAggregationTypesAsListWithoutSum;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
@@ -66,18 +66,20 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> results =
-      evaluateMapReportForAllAggTypes(reportData);
+    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
-    getAggregationTypesAsListWithoutSum().forEach((AggregationType aggType) -> {
-      ReportResultResponseDto<List<MapResultEntryDto>> result = results.get(aggType);
-      assertThat(result.getFirstMeasureData()).isNotNull();
-
-      assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), groupedByDayDateAsString(today)))
+    assertThat(result.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(getSupportedAggregationTypes());
+    result.getMeasures().forEach(measureResult -> {
+      final List<MapResultEntryDto> resultData = measureResult.getData();
+      assertThat(MapResultUtil.getEntryForKey(resultData, groupedByDayDateAsString(today)))
         .get()
         .extracting(MapResultEntryDto::getValue)
-        .isEqualTo(calculateExpectedValueGivenDurations(10., 20.).get(aggType));
+        .isEqualTo(calculateExpectedValueGivenDurations(10., 20.).get(measureResult.getAggregationType()));
     });
   }
 
@@ -104,20 +106,23 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
 
     importAllEngineEntitiesFromScratch();
 
-    // when
     final ProcessReportDataDto reportData =
       createReportData(processDefinition1.getKey(), ALL_VERSIONS, AggregateByDateUnit.DAY);
-    final Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> results = evaluateMapReportForAllAggTypes(reportData);
+    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
+
+    // when
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
-    getAggregationTypesAsListWithoutSum().forEach((AggregationType aggType) -> {
-      ReportResultResponseDto<List<MapResultEntryDto>> result = results.get(aggType);
-      assertThat(result.getFirstMeasureData()).isNotNull();
-
-      assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), groupedByDayDateAsString(today)))
+    assertThat(result.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(getSupportedAggregationTypes());
+    result.getMeasures().forEach(measureResult -> {
+      assertThat(MapResultUtil.getEntryForKey(measureResult.getData(), groupedByDayDateAsString(today)))
         .get()
         .extracting(MapResultEntryDto::getValue)
-        .isEqualTo(calculateExpectedValueGivenDurations(10., 20.).get(aggType));
+        .isEqualTo(calculateExpectedValueGivenDurations(10., 20.).get(measureResult.getAggregationType()));
     });
   }
 
@@ -415,6 +420,10 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
                  .sum()).isEqualTo(800);
     assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(100.);
     assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(500.);
+  }
+
+  protected AggregationType[] getSupportedAggregationTypes() {
+    return AggregationType.getAggregationTypesAsListWithoutSum().toArray(new AggregationType[0]);
   }
 
   protected ProcessReportDataDto createReportData(final String processDefinitionKey, final String version,

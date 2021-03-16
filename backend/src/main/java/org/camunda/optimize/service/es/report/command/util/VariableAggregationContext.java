@@ -15,6 +15,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 @Builder
@@ -30,7 +31,7 @@ public class VariableAggregationContext {
   private final AggregateByDateUnit dateUnit;
   private final String indexName;
   private final QueryBuilder baseQueryForMinMaxStats;
-  private final AggregationBuilder subAggregation;
+  private final List<AggregationBuilder> subAggregations;
   private MinMaxStatDto variableRangeMinMaxStats;
   private final MinMaxStatDto combinedRangeMinMaxStats;
 

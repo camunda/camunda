@@ -7,16 +7,11 @@ package org.camunda.optimize.service.es.report.command.modules.view.process.dura
 
 import org.apache.commons.math3.util.Precision;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
-import org.camunda.optimize.service.es.report.command.aggregations.AvgAggregation;
-import org.camunda.optimize.service.es.report.command.aggregations.MaxAggregation;
-import org.camunda.optimize.service.es.report.command.aggregations.MedianAggregation;
-import org.camunda.optimize.service.es.report.command.aggregations.MinAggregation;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewMeasure;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
-import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewPart;
+import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewMultiAggregation;
 import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
@@ -24,19 +19,10 @@ import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
-import java.util.EnumMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
-public abstract class ProcessViewDuration extends ProcessViewPart {
-
-  private static final EnumMap<AggregationType, AggregationStrategy> aggregationStrategyMap =
-    new EnumMap<>(AggregationType.class);
-
-  static {
-    aggregationStrategyMap.put(AggregationType.MIN, new MinAggregation());
-    aggregationStrategyMap.put(AggregationType.MAX, new MaxAggregation());
-    aggregationStrategyMap.put(AggregationType.AVERAGE, new AvgAggregation());
-    aggregationStrategyMap.put(AggregationType.MEDIAN, new MedianAggregation());
-  }
+public abstract class ProcessViewDuration extends ProcessViewMultiAggregation {
 
   @Override
   public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {
@@ -44,14 +30,34 @@ public abstract class ProcessViewDuration extends ProcessViewPart {
   }
 
   @Override
-  public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
-    final AggregationStrategy strategy = getAggregationStrategy(context.getReportData());
-    return strategy.getAggregationBuilder().script(getScriptedAggregationField(context.getReportData()));
+  public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
+    return getAggregationStrategies(context.getReportData()).stream()
+      .map(strategy -> strategy.getAggregationBuilder().script(getScriptedAggregationField(context.getReportData())))
+      .collect(Collectors.toList());
   }
 
-  AggregationStrategy getAggregationStrategy(final ProcessReportDataDto definitionData) {
-    return aggregationStrategyMap.get(definitionData.getConfiguration().getAggregationType());
+  @Override
+  public ViewResult retrieveResult(final SearchResponse response,
+                                   final Aggregations aggs,
+                                   final ExecutionContext<ProcessReportDataDto> context) {
+    final ViewResult.ViewResultBuilder viewResultBuilder = ViewResult.builder();
+    getAggregationStrategies(context.getReportData()).forEach(aggregationStrategy -> {
+      Double measureResult = aggregationStrategy.getValue(aggs);
+      if (measureResult != null) {
+        // rounding to closest integer since the lowest precision
+        // for duration in the data is milliseconds anyway for data types.
+        measureResult = Precision.round(measureResult, 0);
+      }
+      viewResultBuilder.viewMeasure(
+        ViewMeasure.builder().aggregationType(aggregationStrategy.getAggregationType()).value(measureResult).build()
+      );
+    });
+    return viewResultBuilder.build();
   }
+
+  protected abstract String getReferenceDateFieldName(final ProcessReportDataDto reportData);
+
+  protected abstract String getDurationFieldName(final ProcessReportDataDto reportData);
 
   private Script getScriptedAggregationField(final ProcessReportDataDto reportData) {
     return AggregationFilterUtil.getDurationScript(
@@ -59,21 +65,5 @@ public abstract class ProcessViewDuration extends ProcessViewPart {
       getDurationFieldName(reportData),
       getReferenceDateFieldName(reportData)
     );
-  }
-
-  protected abstract String getReferenceDateFieldName(final ProcessReportDataDto reportData);
-
-  protected abstract String getDurationFieldName(final ProcessReportDataDto reportData);
-
-  @Override
-  public ViewResult retrieveResult(final SearchResponse response, final Aggregations aggs,
-                                   final ExecutionContext<ProcessReportDataDto> context) {
-    Double number = getAggregationStrategy(context.getReportData()).getValue(aggs);
-    if (number != null) {
-      // rounding to closest integer since the lowest precision
-      // for duration in the data is milliseconds anyway for data types.
-      number = Precision.round(number, 0);
-    }
-    return new ViewResult().setNumber(number);
   }
 }

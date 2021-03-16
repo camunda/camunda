@@ -70,7 +70,7 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
       .dateField(EVALUATION_DATE_TIME)
       .minMaxStats(stats)
       .timezone(context.getTimezone())
-      .subAggregation(distributedByPart.createAggregation(context))
+      .subAggregations(distributedByPart.createAggregations(context))
       .decisionFilters(context.getReportData().getFilter())
       .decisionQueryFilterEnhancer(queryFilterEnhancer)
       .build();

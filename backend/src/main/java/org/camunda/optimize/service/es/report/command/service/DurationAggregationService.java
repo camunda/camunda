@@ -171,7 +171,7 @@ public class DurationAggregationService {
       minValueInMillis,
       durationCalculationScript,
       maxValueInMillis,
-      distributedByPart.createAggregation(context)
+      distributedByPart.createAggregations(context)
     );
 
     return Optional.of(wrapWithFilterLimitedParentAggregation(limitingFilter, histogramAggregation));

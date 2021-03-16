@@ -30,8 +30,8 @@ public class DecisionDistributedByNone extends DecisionDistributedByPart {
   }
 
   @Override
-  public AggregationBuilder createAggregation(final ExecutionContext<DecisionReportDataDto> context) {
-    return viewPart.createAggregation(context);
+  public List<AggregationBuilder> createAggregations(final ExecutionContext<DecisionReportDataDto> context) {
+    return viewPart.createAggregations(context);
   }
 
   @Override
@@ -39,7 +39,12 @@ public class DecisionDistributedByNone extends DecisionDistributedByPart {
                                                   final Aggregations aggregations,
                                                   final ExecutionContext<DecisionReportDataDto> context) {
     final ViewResult viewResult = viewPart.retrieveResult(response, aggregations, context);
-    return Collections.singletonList(DistributedByResult.createEmptyDistributedBy(viewResult));
+    return Collections.singletonList(DistributedByResult.creatDistributedByNoneResult(viewResult));
+  }
+
+  @Override
+  public List<DistributedByResult> createEmptyResult(final ExecutionContext<DecisionReportDataDto> context) {
+    return Collections.singletonList(DistributedByResult.creatDistributedByNoneResult(viewPart.createEmptyResult(context)));
   }
 
   @Override

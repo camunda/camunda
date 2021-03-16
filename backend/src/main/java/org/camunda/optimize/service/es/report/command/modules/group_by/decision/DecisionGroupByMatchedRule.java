@@ -46,8 +46,8 @@ public class DecisionGroupByMatchedRule extends GroupByPart<DecisionReportDataDt
     final TermsAggregationBuilder byMatchedRuleAggregation = AggregationBuilders
       .terms(MATCHED_RULES_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
-      .field(MATCHED_RULES)
-      .subAggregation(distributedByPart.createAggregation(context));
+      .field(MATCHED_RULES);
+    distributedByPart.createAggregations(context).forEach(byMatchedRuleAggregation::subAggregation);
     return Collections.singletonList(byMatchedRuleAggregation);
   }
 

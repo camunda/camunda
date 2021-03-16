@@ -28,6 +28,7 @@ import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
@@ -42,7 +43,6 @@ import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -74,7 +74,6 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
   protected static final String USER_TASK_B = "userTaskB";
   private static final Double UNASSIGNED_TASK_DURATION = 500.;
   protected static final Double[] SET_DURATIONS = new Double[]{10., 20.};
-  private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListWithoutSum();
 
   @BeforeEach
   public void init() {
@@ -156,7 +155,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -202,11 +201,11 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     assertThat(resultReportDataDto.getDistributedBy().getType())
       .isEqualTo(DistributedByType.CANDIDATE_GROUP);
 
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     assertHyperMap_ForOneProcessWithUnassignedTasks(actualResult);
   }
 
-  protected void assertHyperMap_ForOneProcessWithUnassignedTasks(final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult) {
+  protected void assertHyperMap_ForOneProcessWithUnassignedTasks(final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult) {
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -256,7 +255,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     // @formatter:off
@@ -303,11 +303,11 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     assertHyperMap_ForSeveralProcesses(actualResult);
   }
 
-  protected void assertHyperMap_ForSeveralProcesses(final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult) {
+  protected void assertHyperMap_ForSeveralProcesses(final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult) {
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
@@ -373,60 +373,65 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     importAndRefresh();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
+    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
 
     // when
-    final Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> results =
-      evaluateHypeMapReportForAllAggTypes(reportData);
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
-    aggregationTypes.forEach((AggregationType aggType) -> assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(
-      results,
-      aggType
-    ));
+    assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(result);
   }
 
   protected void assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(
-    final Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> actualResults,
-    final AggregationType aggType) {
-    // @formatter:off
-    HyperMapAsserter.asserter()
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result) {
+    assertThat(result.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(getSupportedAggregationTypes());
+    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
-        .groupByContains(USER_TASK_1)
-          .distributedByContains(
-            FIRST_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-            FIRST_CANDIDATE_GROUP_NAME
-          )
-          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-          .distributedByContains(
-            SECOND_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
-            SECOND_CANDIDATE_GROUP_NAME
-          )
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
-        .groupByContains(USER_TASK_A)
-          .distributedByContains(
-            FIRST_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-            FIRST_CANDIDATE_GROUP_NAME
-          )
-          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .groupByContains(USER_TASK_B)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-          .distributedByContains(
-            SECOND_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
-            SECOND_CANDIDATE_GROUP_NAME
-          )
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
-      .doAssert(actualResults.get(aggType));
-    // @formatter:on
+      .processInstanceCountWithoutFilters(2L);
+    Arrays.stream(getSupportedAggregationTypes()).forEach(aggType -> {
+      // @formatter:off
+        hyperMapAsserter
+          .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
+            .groupByContains(USER_TASK_1)
+              .distributedByContains(
+                FIRST_CANDIDATE_GROUP_ID,
+                calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+                FIRST_CANDIDATE_GROUP_NAME
+              )
+              .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+              .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+            .groupByContains(USER_TASK_2)
+              .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+              .distributedByContains(
+                SECOND_CANDIDATE_GROUP_ID,
+                calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
+                SECOND_CANDIDATE_GROUP_NAME
+              )
+              .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+            .groupByContains(USER_TASK_A)
+              .distributedByContains(
+                FIRST_CANDIDATE_GROUP_ID,
+                calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+                FIRST_CANDIDATE_GROUP_NAME
+              )
+              .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+              .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+            .groupByContains(USER_TASK_B)
+              .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+              .distributedByContains(
+                SECOND_CANDIDATE_GROUP_ID,
+                calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
+                SECOND_CANDIDATE_GROUP_NAME
+              )
+              .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+            .add()
+          .add();
+        // @formatter:on
+    });
+    hyperMapAsserter.doAssert(result);
   }
 
   @Test
@@ -452,43 +457,49 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     importAndRefresh();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
+    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
 
     // when
-    final Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> results =
-      evaluateHypeMapReportForAllAggTypes(reportData);
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
-    aggregationTypes.forEach((AggregationType aggType) -> assertHyperMap_ForMultipleEventsWithAllAggregationTypes(
-      results,
-      aggType
-    ));
+    assertHyperMap_ForMultipleEventsWithAllAggregationTypes(result);
   }
 
   protected void assertHyperMap_ForMultipleEventsWithAllAggregationTypes(
-    final Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> results, final AggregationType aggType) {
-    // @formatter:off
-    HyperMapAsserter.asserter()
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result) {
+    assertThat(result.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(getSupportedAggregationTypes());
+    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
-        .groupByContains(USER_TASK_1)
-          .distributedByContains(
-            FIRST_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
-            FIRST_CANDIDATE_GROUP_NAME
-          )
-          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
-        .groupByContains(USER_TASK_2)
-          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
-          .distributedByContains(
-            SECOND_CANDIDATE_GROUP_ID,
-            calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
-            SECOND_CANDIDATE_GROUP_NAME
-          )
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
-      .doAssert(results.get(aggType));
-    // @formatter:on
+      .processInstanceCountWithoutFilters(2L);
+    Arrays.stream(getSupportedAggregationTypes()).forEach(aggType -> {
+      // @formatter:off
+        hyperMapAsserter
+          .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
+            .groupByContains(USER_TASK_1)
+              .distributedByContains(
+                FIRST_CANDIDATE_GROUP_ID,
+                calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+                FIRST_CANDIDATE_GROUP_NAME
+              )
+              .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+              .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+            .groupByContains(USER_TASK_2)
+              .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+              .distributedByContains(
+                SECOND_CANDIDATE_GROUP_ID,
+                calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
+                SECOND_CANDIDATE_GROUP_NAME
+              )
+              .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+            .add()
+          .add();
+        // @formatter:on
+    });
+    hyperMapAsserter.doAssert(result);
   }
 
   @Test
@@ -512,17 +523,22 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
+    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
 
     // when
-    final Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> results =
-      evaluateHypeMapReportForAllAggTypes(reportData);
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
-    aggregationTypes.forEach((AggregationType aggType) -> {
+    assertThat(result.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(getSupportedAggregationTypes());
+    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L);
+    Arrays.stream(getSupportedAggregationTypes()).forEach(aggType -> {
       // @formatter:off
-      HyperMapAsserter.asserter()
-        .processInstanceCount(2L)
-        .processInstanceCountWithoutFilters(2L)
+      hyperMapAsserter
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
           .groupByContains(USER_TASK_2)
             .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
@@ -530,9 +546,11 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
           .groupByContains(USER_TASK_1)
             .distributedByContains(FIRST_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), FIRST_CANDIDATE_GROUP_NAME)
             .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
-        .doAssert(results.get(aggType));
+          .add()
+        .add();
       // @formatter:on
     });
+    hyperMapAsserter.doAssert(result);
   }
 
   @Test
@@ -563,18 +581,24 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
     importAndRefresh();
 
-    // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_LABEL, SortOrder.DESC));
-    final Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> results =
-      evaluateHypeMapReportForAllAggTypes(reportData);
+    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
+
+    // when
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
-    aggregationTypes.forEach((AggregationType aggType) -> {
+    assertThat(result.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(getSupportedAggregationTypes());
+    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L);
+    Arrays.stream(getSupportedAggregationTypes()).forEach(aggType -> {
       // @formatter:off
-      HyperMapAsserter.asserter()
-        .processInstanceCount(2L)
-        .processInstanceCountWithoutFilters(2L)
+      hyperMapAsserter
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1, "thisLabelComesSecond")
             .distributedByContains(FIRST_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), FIRST_CANDIDATE_GROUP_NAME)
@@ -582,9 +606,11 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
           .groupByContains(USER_TASK_2, "thisLabelComesFirst")
             .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
             .distributedByContains(SECOND_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), SECOND_CANDIDATE_GROUP_NAME)
-        .doAssert(results.get(aggType));
+          .add()
+        .add();
       // @formatter:on
     });
+    hyperMapAsserter.doAssert(result);
   }
 
   @Test
@@ -612,7 +638,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
@@ -666,7 +692,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
@@ -715,7 +741,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
@@ -761,7 +787,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
@@ -809,9 +835,11 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult1 = reportClient.evaluateHyperMapReport(reportData1).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult1 = reportClient.evaluateHyperMapReport(
+      reportData1).getResult();
     final ProcessReportDataDto reportData2 = createReport(processDefinition2);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult2 = reportClient.evaluateHyperMapReport(reportData2).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult2 = reportClient.evaluateHyperMapReport(
+      reportData2).getResult();
 
     // then
     assertHyperMap_otherProcessDefinitionsDoNotInfluenceResult(
@@ -824,8 +852,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
   protected void assertHyperMap_otherProcessDefinitionsDoNotInfluenceResult(final Double[] setDurations1,
                                                                             final Double[] setDurations2,
-                                                                            final ReportResultResponseDto<List<HyperMapResultEntryDto>>result1,
-                                                                            final ReportResultResponseDto<List<HyperMapResultEntryDto>>result2) {
+                                                                            final ReportResultResponseDto<List<HyperMapResultEntryDto>> result1,
+                                                                            final ReportResultResponseDto<List<HyperMapResultEntryDto>> result2) {
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
@@ -869,7 +897,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -893,17 +922,23 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
     importAndRefresh();
 
-    // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> results =
-      evaluateHypeMapReportForAllAggTypes(reportData);
+    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
+
+    // when
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
-    aggregationTypes.forEach((AggregationType aggType) -> {
+    assertThat(result.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(getSupportedAggregationTypes());
+    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
+      .processInstanceCount(3L)
+      .processInstanceCountWithoutFilters(3L);
+    Arrays.stream(getSupportedAggregationTypes()).forEach(aggType -> {
       // @formatter:off
-      HyperMapAsserter.asserter()
-        .processInstanceCount(3L)
-        .processInstanceCountWithoutFilters(3L)
+      hyperMapAsserter
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
             .distributedByContains(
@@ -911,9 +946,11 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
               calculateExpectedValueGivenDurations(setDurations).get(aggType),
               FIRST_CANDIDATE_GROUP_NAME
             )
-        .doAssert(results.get(aggType));
+          .add()
+        .add();
       // @formatter:on
     });
+    hyperMapAsserter.doAssert(result);
   }
 
   @Test
@@ -922,7 +959,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     final ProcessReportDataDto reportData = createReport(
       "nonExistingProcessDefinitionId", "1"
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isEmpty();
@@ -979,14 +1017,15 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(processFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     assertThat(actualResult.getFirstMeasureData()).hasSize(expectedDataSize);
     assertEvaluateReportWithFlowNodeStatusFilter(actualResult, processFilter);
   }
 
-  protected abstract void assertEvaluateReportWithFlowNodeStatusFilter(final ReportResultResponseDto<List<HyperMapResultEntryDto>>result,
+  protected abstract void assertEvaluateReportWithFlowNodeStatusFilter(final ReportResultResponseDto<List<HyperMapResultEntryDto>> result,
                                                                        final List<ProcessFilterDto<?>> executionState);
 
   @Test
@@ -1019,7 +1058,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -1052,7 +1091,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(11L)
@@ -1088,7 +1127,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     assertThat(actualResult.getFirstMeasureData()).isNotNull();
     assertThat(actualResult.getFirstMeasureData()).hasSize(1);
 
@@ -1177,7 +1216,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
@@ -1283,7 +1323,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
@@ -1364,7 +1405,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       .filter().candidateGroups().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
@@ -1469,7 +1511,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       .filter().candidateGroups().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
@@ -1537,6 +1580,11 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
   protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
 
+  protected AggregationType[] getSupportedAggregationTypes() {
+    return AggregationType.getAggregationTypesAsListWithoutSum().toArray(new AggregationType[0]);
+  }
+
+
   private ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
     return createReport(processDefinitionKey, newArrayList(version));
   }
@@ -1599,17 +1647,6 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       .endEvent()
       .done();
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
-  }
-
-  private Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> evaluateHypeMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
-
-    Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> resultsMap = new HashMap<>();
-    aggregationTypes.forEach((AggregationType aggType) -> {
-      reportData.getConfiguration().setAggregationTypes(aggType);
-      final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
-      resultsMap.put(aggType, result);
-    });
-    return resultsMap;
   }
 
   protected String getLocalisedUnassignedLabel() {

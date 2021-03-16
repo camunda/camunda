@@ -92,7 +92,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
       .dateField(getDateField())
       .minMaxStats(stats)
       .timezone(context.getTimezone())
-      .subAggregation(distributedByPart.createAggregation(context))
+      .subAggregations(distributedByPart.createAggregations(context))
       .build();
 
     final Optional<AggregationBuilder> bucketLimitedHistogramAggregation =
@@ -103,7 +103,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
         wrapInNestedElementAggregation(
           context,
           bucketLimitedHistogramAggregation.get(),
-          distributedByPart.createAggregation(context)
+          distributedByPart.createAggregations(context)
         );
       return Collections.singletonList(groupByFlowNodeDateAggregation);
     }
@@ -113,15 +113,16 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
 
   private NestedAggregationBuilder wrapInNestedElementAggregation(final ExecutionContext<ProcessReportDataDto> context,
                                                                   final AggregationBuilder aggregationToWrap,
-                                                                  final AggregationBuilder distributedBySubAggregation) {
-    return nested(ELEMENT_AGGREGATION, getPathToElementField())
+                                                                  final List<AggregationBuilder> distributedBySubAggregations) {
+    final NestedAggregationBuilder nestedAggregationBuilder = nested(ELEMENT_AGGREGATION, getPathToElementField())
       .subAggregation(
         filter(FILTERED_ELEMENTS_AGGREGATION, getFilterQuery(context))
           .subAggregation(aggregationToWrap)
-      )
-      // sibling aggregation for distributedByPart for retrieval of all keys that
-      // should be present in distributedBy result
-      .subAggregation(distributedBySubAggregation);
+      );
+    // sibling aggregation for distributedByPart for retrieval of all keys that
+    // should be present in distributedBy result
+    distributedBySubAggregations.forEach(nestedAggregationBuilder::subAggregation);
+    return nestedAggregationBuilder;
   }
 
   @Override

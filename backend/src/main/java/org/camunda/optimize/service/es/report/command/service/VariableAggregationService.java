@@ -23,6 +23,7 @@ import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 import org.elasticsearch.search.aggregations.bucket.nested.ParsedNested;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
@@ -59,11 +60,12 @@ public class VariableAggregationService {
     switch (context.getVariableType()) {
       case STRING:
       case BOOLEAN:
-        return Optional.of(AggregationBuilders
-                             .terms(VARIABLES_AGGREGATION)
-                             .size(configurationService.getEsAggregationBucketLimit())
-                             .field(context.getNestedVariableValueFieldLabel())
-                             .subAggregation(context.getSubAggregation()));
+        final TermsAggregationBuilder variableTermsAggregation = AggregationBuilders
+          .terms(VARIABLES_AGGREGATION)
+          .size(configurationService.getEsAggregationBucketLimit())
+          .field(context.getNestedVariableValueFieldLabel());
+        context.getSubAggregations().forEach(variableTermsAggregation::subAggregation);
+        return Optional.of(variableTermsAggregation);
       case DATE:
         return createDateVariableAggregation(context);
       default:
@@ -96,7 +98,7 @@ public class VariableAggregationService {
       .dateField(context.getNestedVariableValueFieldLabel())
       .minMaxStats(context.getVariableRangeMinMaxStats())
       .timezone(context.getTimezone())
-      .subAggregation(context.getSubAggregation())
+      .subAggregations(context.getSubAggregations())
       .dateAggregationName(VARIABLES_AGGREGATION)
       .build();
 

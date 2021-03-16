@@ -47,7 +47,7 @@ public class NumberVariableAggregationService {
       max,
       context.getNestedVariableValueFieldLabel(),
       digitFormat,
-      context.getSubAggregation()
+      context.getSubAggregations()
     );
 
     return Optional.of(histogramAggregation);

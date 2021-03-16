@@ -24,6 +24,7 @@ import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.ModelElementDurationByModelElementDateByModelElementReportEvaluationIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
@@ -46,7 +47,6 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.getAggregationTypesAsListWithoutSum;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
@@ -165,29 +165,33 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final Map<AggregationType, ReportResultResponseDto<List<HyperMapResultEntryDto>>> results =
-      evaluateHyperMapReportForAllAggTypes(
-      reportData);
+    reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
-    getAggregationTypesAsListWithoutSum().forEach((AggregationType aggType) -> {
-      ReportResultResponseDto<List<HyperMapResultEntryDto>> result = results.get(aggType);
-      assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getMeasures())
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsExactly(getSupportedAggregationTypes());
 
-      // @formatter:off
-      HyperMapAsserter.asserter()
+    final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
       .processInstanceCount(2L)
-      .processInstanceCountWithoutFilters(2L)
-      .measure(ViewProperty.DURATION, aggType)
-        .groupByContains(groupedByDayDateAsString(today.minusDays(1)))
-          .distributedByContains(END_EVENT, calculateExpectedValueGivenDurations(10., 20.).get(aggType), END_EVENT)
-          .distributedByContains(START_EVENT, null, START_EVENT)
-        .groupByContains(groupedByDayDateAsString(today))
-          .distributedByContains(END_EVENT, null, END_EVENT)
-          .distributedByContains(START_EVENT, calculateExpectedValueGivenDurations(10., 20.).get(aggType), START_EVENT)
-      .doAssert(result);
+      .processInstanceCountWithoutFilters(2L);
+    Arrays.stream(getSupportedAggregationTypes()).forEach(aggType -> {
+      // @formatter:off
+      hyperMapAsserter
+        .measure(ViewProperty.DURATION, aggType)
+          .groupByContains(groupedByDayDateAsString(today.minusDays(1)))
+            .distributedByContains(END_EVENT, calculateExpectedValueGivenDurations(10., 20.).get(aggType), END_EVENT)
+            .distributedByContains(START_EVENT, null, START_EVENT)
+          .groupByContains(groupedByDayDateAsString(today))
+            .distributedByContains(END_EVENT, null, END_EVENT)
+            .distributedByContains(START_EVENT, calculateExpectedValueGivenDurations(10., 20.).get(aggType), START_EVENT)
+          .add()
+        .add();
       // @formatter:on
     });
+    hyperMapAsserter.doAssert(result);
   }
 
   @Test
