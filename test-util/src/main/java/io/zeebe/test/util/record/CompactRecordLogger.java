@@ -117,23 +117,29 @@ public class CompactRecordLogger {
   }
 
   public void log() {
-    LOG.info("--------");
-    LOG.info("Compact log representation");
-    LOG.info(
-        "['C'ommand/'E'event/'R'ejection] - #[position]->#[source record position]  K[key] -  [valueType] [intent] - [summary of value]");
-    LOG.info(
-        "K999 - key; #999 - record position; \"ID\" element/process id; @\"elementid\"/[K99] - element with ID and key");
-    LOG.info(
-        "Long numbers are substituted with short numbers (e.g. 52124672368 -> 1)."
-            + " Substituted numbers are used consistently, but they might not have the same order as the numbers they substitute");
-    LOG.info(
-        "Long IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'");
+    final var bulkMessage = new StringBuilder().append("Compact log representation:\n");
+    bulkMessage
+        .append("--------\n")
+        .append(
+            "\t['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position]  K[key] - [summary of value]\n")
+        .append(
+            "\tK999 - key; #999 - record position; \"ID\" element/process id; @\"elementid\"/[K99] - element with ID and key\n")
+        .append(
+            "\tLong numbers are substituted with short numbers (e.g. 52124672368 -> 1). Substituted numbers are used consistently, ")
+        .append("but they might not have the same order as the numbers they substitute\n")
+        .append(
+            "\tLong IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'\n")
+        .append("--------\n");
 
-    LOG.info("--------");
-    records.forEach(this::logRecord);
+    records.forEach(
+        record -> {
+          bulkMessage.append(summarizeRecord(record)).append("\n");
+        });
+
+    LOG.info(bulkMessage.toString());
   }
 
-  private void logRecord(final Record<?> record) {
+  private StringBuilder summarizeRecord(final Record<?> record) {
     final StringBuilder message = new StringBuilder();
 
     if (record.getRecordType() != RecordType.COMMAND_REJECTION) {
@@ -145,7 +151,7 @@ public class CompactRecordLogger {
       message.append(summarizePositionFields(record));
     }
 
-    LOG.info(message.toString());
+    return message;
   }
 
   private StringBuilder summarizePositionFields(final Record<?> record) {
@@ -288,8 +294,7 @@ public class CompactRecordLogger {
         final var job = value.getJobs().get(i);
 
         result
-            .append(
-                "\n                                                                                     ")
+            .append(StringUtils.rightPad("\n", 8 + valueTypeChars))
             .append(summarizeJobRecordValue(jobKey, job));
       }
     }
