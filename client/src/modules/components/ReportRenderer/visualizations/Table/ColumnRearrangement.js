@@ -6,17 +6,14 @@
 
 import React from 'react';
 
-import processRawData from './processRawData';
-
 import './ColumnRearrangement.scss';
 
 export default class ColumnRearrangement extends React.Component {
   render() {
-    const {updateReport, report} = this.props;
-    // not raw data report
-    if (report.combined || report.data.view.properties[0] !== 'rawData' || !updateReport) {
+    if (!this.props.enabled) {
       return this.props.children;
     }
+
     return (
       <div className="ColumnRearrangement" onMouseDown={this.handleMouseDown}>
         {this.props.children}
@@ -69,16 +66,7 @@ export default class ColumnRearrangement extends React.Component {
     const targetIdx = this.processDrag(evt);
 
     if (typeof targetIdx !== 'undefined') {
-      const {reportType} = this.props.report;
-      const list = processRawData[reportType](this.props).head.map((el) => el.id);
-
-      // add the column at the specified position
-      list.splice(targetIdx + 1, 0, list[this.dragIdx]);
-
-      // remove the original column
-      list.splice(this.dragIdx + (this.dragIdx > targetIdx), 1);
-
-      this.props.updateReport({configuration: {tableColumns: {columnOrder: {$set: list}}}});
+      this.props.onChange(this.dragIdx, targetIdx);
     }
 
     document.removeEventListener('mousemove', this.handleMouseMove);

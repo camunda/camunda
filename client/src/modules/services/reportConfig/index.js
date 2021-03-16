@@ -48,6 +48,10 @@ config.process.update = (type, data, props) => {
 
   const newReport = update(props.report, {data: changes});
   changes.configuration.sorting = {$set: getDefaultSorting(newReport)};
+  changes.configuration.tableColumns = {
+    ...changes.configuration.tableColumns,
+    columnOrder: {$set: []},
+  };
 
   // automatically distribute by flownode/usertasks when view is flownode/usertask
   if (
@@ -75,6 +79,10 @@ config.decision.update = (type, data, props) => {
   const changes = decisionUpdate(type, data, props);
   changes.configuration = changes.configuration || {};
   changes.configuration.sorting = {$set: getDefaultSorting(update(props.report, {data: changes}))};
+  changes.configuration.tableColumns = {
+    ...changes.configuration.tableColumns,
+    columnOrder: {$set: []},
+  };
 
   return changes;
 };

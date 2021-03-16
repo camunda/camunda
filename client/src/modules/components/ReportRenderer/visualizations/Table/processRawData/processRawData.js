@@ -10,13 +10,8 @@ import {format} from 'dates';
 import {formatters} from 'services';
 import {t} from 'translation';
 
-import {
-  sortColumns,
-  cockpitLink,
-  getNoDataMessage,
-  isVisibleColumn,
-  getLabelWithType,
-} from './service';
+import {sortColumns} from '../service';
+import {cockpitLink, getNoDataMessage, isVisibleColumn, getLabelWithType} from './service';
 
 const {duration} = formatters;
 

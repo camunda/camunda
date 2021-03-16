@@ -20,8 +20,14 @@ import './Table.scss';
 
 export function Table(props) {
   const {report, updateReport, mightFail, loadReport} = props;
-  const {reportType, combined, data, result} = report;
-  const needEndpoint = result && !combined && data.view?.properties[0] === 'rawData';
+  const {
+    reportType,
+    combined,
+    data: {view, groupBy, configuration},
+    result,
+  } = report;
+
+  const needEndpoint = result && !combined && view?.properties[0] === 'rawData';
 
   const [camundaEndpoints, setCamundaEndpoints] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -52,17 +58,16 @@ export function Table(props) {
     [loadReport]
   );
 
-  const formatData = () => {
-    const {configuration} = data;
+  if (needEndpoint && camundaEndpoints === null) {
+    return <LoadingIndicator />;
+  }
 
-    // Combined Report
-    if (combined) {
-      return processCombinedData(props);
-    }
-
+  let tableProps;
+  if (combined) {
+    tableProps = processCombinedData(props);
+  } else {
     let tableData;
-    // raw data
-    if (data.view.properties[0] === 'rawData') {
+    if (view.properties[0] === 'rawData') {
       tableData = processRawData[reportType](props, camundaEndpoints);
       tableData.fetchData = fetchData;
       tableData.loading = loading;
@@ -70,27 +75,32 @@ export function Table(props) {
       tableData.defaultPage = result.pagination.offset / result.pagination.limit;
       tableData.totalEntries = result.instanceCount;
     } else {
-      // Normal single Report
       tableData = processDefaultData(props);
       tableData.loading = loading;
     }
 
-    return {
+    tableProps = {
       ...tableData,
       resultType: result.type,
-      sortByLabel: ['flowNodes', 'userTasks'].includes(data.groupBy.type),
-      updateSorting: updateReport && updateSorting,
       sorting: configuration && configuration.sorting,
+      updateSorting: updateReport && updateSorting,
+      sortByLabel: ['flowNodes', 'userTasks'].includes(groupBy.type),
     };
-  };
-
-  if (needEndpoint && camundaEndpoints === null) {
-    return <LoadingIndicator />;
   }
 
   return (
-    <ColumnRearrangement report={report} updateReport={updateReport}>
-      <TableRenderer {...formatData()} />
+    <ColumnRearrangement
+      enabled={updateReport && !report.combined}
+      onChange={(oldIdx, newIdx) => {
+        const list = tableProps.head.map((el) => el.id || el);
+        // add the column at the specified position
+        list.splice(newIdx + 1, 0, list[oldIdx]);
+        // remove the original column
+        list.splice(oldIdx + (oldIdx > newIdx), 1);
+        updateReport({configuration: {tableColumns: {columnOrder: {$set: list}}}});
+      }}
+    >
+      <TableRenderer {...tableProps} />
     </ColumnRearrangement>
   );
 }

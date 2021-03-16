@@ -37,6 +37,7 @@ const report = {
         includeNewVariables: true,
         includedColumns: [],
         excludedColumns: [],
+        columnOrder: [],
       },
       hideRelativeValue: true,
       hideAbsoluteValue: false,
@@ -82,6 +83,9 @@ const newProps = {
       configuration: {
         hideAbsoluteValue: true,
         hideRelativeValue: false,
+        tableColumns: {
+          columnOrder: [],
+        },
       },
     },
   },

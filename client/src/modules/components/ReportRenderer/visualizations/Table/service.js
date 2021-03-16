@@ -105,3 +105,41 @@ export function getCombinedTableProps(reportResult, reports) {
 
   return combinedProps;
 }
+
+export function sortColumns(head, body, columnOrder) {
+  if (!columnOrder.length) {
+    return {sortedHead: head, sortedBody: body};
+  }
+
+  const sortedHead = head.slice().sort(byOrder(columnOrder));
+
+  const sortedBody = body.map((row) => row.map(valueForNewColumnPosition(head, sortedHead)));
+
+  return {sortedHead, sortedBody};
+}
+
+function byOrder(order) {
+  return function (a, b) {
+    let indexA = order.indexOf(a.id || a);
+    let indexB = order.indexOf(b.id || b);
+
+    // put columns without specified order at end
+    if (indexA === -1) {
+      indexA = Infinity;
+    }
+    if (indexB === -1) {
+      indexB = Infinity;
+    }
+
+    return indexA - indexB;
+  };
+}
+
+function valueForNewColumnPosition(head, sortedHead) {
+  return function (_, newPosition, cells) {
+    const headerAtNewPosition = sortedHead[newPosition];
+    const originalPosition = head.indexOf(headerAtNewPosition);
+
+    return cells[originalPosition];
+  };
+}

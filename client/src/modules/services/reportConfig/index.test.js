@@ -46,6 +46,16 @@ describe('process update', () => {
     expect(changes.configuration.aggregationType).toEqual({$set: 'avg'});
   });
 
+  it('should always reset tabel column order', () => {
+    const changes = config.process.update(
+      'view',
+      {properties: ['duration'], entity: 'processInstance'},
+      {report: {data: {configuration: {aggregationType: 'sum'}}, configuration: {}}}
+    );
+
+    expect(changes.configuration.tableColumns.columnOrder).toEqual({$set: []});
+  });
+
   it('should set a correct sorting', () => {
     const rawData = config.process.update(
       '',
@@ -233,5 +243,17 @@ describe('process update', () => {
     );
 
     expect(changes.configuration.targetValue).toEqual({active: {$set: false}});
+  });
+});
+
+describe('decision update', () => {
+  it('should always reset tabel column order', () => {
+    const changes = config.decision.update(
+      'view',
+      {properties: ['frequency'], property: 'frequency'},
+      {report: {data: {visualization: 'table', view: {properties: ['rawData']}}}}
+    );
+
+    expect(changes.configuration.tableColumns.columnOrder).toEqual({$set: []});
   });
 });

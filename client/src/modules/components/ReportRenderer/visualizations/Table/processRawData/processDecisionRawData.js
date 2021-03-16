@@ -9,13 +9,8 @@ import {parseISO} from 'date-fns';
 import {format} from 'dates';
 import {t} from 'translation';
 
-import {
-  sortColumns,
-  cockpitLink,
-  getNoDataMessage,
-  isVisibleColumn,
-  getLabelWithType,
-} from './service';
+import {sortColumns} from '../service';
+import {cockpitLink, getNoDataMessage, isVisibleColumn, getLabelWithType} from './service';
 
 export default function processDecisionRawData(
   {

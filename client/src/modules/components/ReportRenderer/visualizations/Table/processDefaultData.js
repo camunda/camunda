@@ -7,12 +7,18 @@
 import {reportConfig, formatters, processResult} from 'services';
 import {t} from 'translation';
 
+import {sortColumns} from './service';
+
 const {formatReportResult, getRelativeValue, frequency, duration} = formatters;
 
 export default function processDefaultData({report}) {
   const {data, result, reportType} = report;
   const {
-    configuration: {hideAbsoluteValue, hideRelativeValue},
+    configuration: {
+      hideAbsoluteValue,
+      hideRelativeValue,
+      tableColumns: {columnOrder},
+    },
     view,
     groupBy,
   } = data;
@@ -67,8 +73,7 @@ export default function processDefaultData({report}) {
     }
   });
 
-  return {
-    head,
-    body,
-  };
+  const {sortedHead, sortedBody} = sortColumns(head, body, columnOrder);
+
+  return {head: sortedHead, body: sortedBody};
 }
