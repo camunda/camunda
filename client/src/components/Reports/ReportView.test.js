@@ -44,7 +44,7 @@ const report = {
     configuration: {},
     visualization: 'table',
   },
-  result: {data: [1, 2, 3], instanceCount: 37},
+  result: {measures: [{data: [1, 2, 3]}], instanceCount: 37},
 };
 
 it('should display the key properties of a report', () => {
@@ -105,8 +105,15 @@ it('should show a download csv button with the correct link', () => {
 });
 
 it('should show a download csv button even if the result is 0', () => {
-  const node = shallow(<ReportView report={{...report, result: {data: 0}}} />);
+  const node = shallow(<ReportView report={{...report, result: {measures: [{data: 0}]}}} />);
   expect(node.find('.Report__csv-download-button')).toExist();
+});
+
+it('should not show a download csv button for multi-measure reports', () => {
+  const node = shallow(
+    <ReportView report={{...report, result: {measures: [{data: 0}, {data: 12}]}}} />
+  );
+  expect(node.find('.Report__csv-download-button')).not.toExist();
 });
 
 it('should provide conflict check method to Deleter', () => {

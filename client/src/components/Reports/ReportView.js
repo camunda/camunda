@@ -36,7 +36,15 @@ export default class ReportView extends React.Component {
     this.setState({sharingEnabled});
   }
 
-  shouldShowCSVDownload = () => typeof this.props.report.result !== 'undefined';
+  shouldShowCSVDownload = () => {
+    const {report} = this.props;
+
+    if (report.combined && typeof report.result !== 'undefined') {
+      return true;
+    }
+
+    return this.props.report.result?.measures.length === 1;
+  };
 
   constructCSVDownloadLink = () => {
     return `api/export/csv/${this.props.report.id}/${encodeURIComponent(
