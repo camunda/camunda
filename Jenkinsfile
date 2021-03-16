@@ -145,6 +145,20 @@ pipeline {
         }
       }
     }
+    stage('Prepare Docker login') {
+      environment {
+        GCR_REGISTRY = credentials('docker-registry-ci3')
+        DOCKER_HUB = credentials('camunda-dockerhub')
+      }
+      steps {
+        container('docker') {
+          sh """
+            echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
+            docker login --username ${DOCKER_HUB_USR} --password ${DOCKER_HUB_PSW}
+          """
+        }
+      }
+    }
     stage('Deploy') {
       parallel {
         stage('Deploy - Nexus Snapshot') {
@@ -173,16 +187,12 @@ pipeline {
           }
           environment {
             IMAGE_TAG = getImageTag()
-            GCR_REGISTRY = credentials('docker-registry-ci3')
           }
           steps {
             lock('operate-dockerimage-upload') {
               container('docker') {
                 sh """
-                  echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
-
                   docker build -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} .
-
                   docker push ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG}
 
                   if [ "${env.BRANCH_NAME}" = 'master' ]; then
@@ -201,13 +211,11 @@ pipeline {
           environment {
             IMAGE_NAME = 'camunda/operate'
             IMAGE_TAG = 'SNAPSHOT'
-            DOCKER_HUB = credentials('camunda-dockerhub')
           }
           steps {
             lock('operate-dockerimage-snapshot-upload') {
               container('docker') {
                 sh """
-                  docker login --username ${DOCKER_HUB_USR} --password ${DOCKER_HUB_PSW}
                   docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
                   docker push ${IMAGE_NAME}:${IMAGE_TAG}
                 """
