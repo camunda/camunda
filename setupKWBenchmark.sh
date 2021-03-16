@@ -1,6 +1,9 @@
 #!/bin/bash
 set -exuo pipefail
 
+# Contains OS specific sed function
+source ./benchmarks/setup/utils.sh
+
 mvn clean install -DskipTests -T1C
 
 cw=$(date +%V)
@@ -16,8 +19,8 @@ cd benchmarks/setup/
 
 cd "$benchmark"
 
-sed -i 's/camunda\/zeebe/gcr.io\/zeebe-io\/zeebe/' zeebe-values.yaml
-sed -i "s/SNAPSHOT/$benchmark/" zeebe-values.yaml
+sed_inplace 's/camunda\/zeebe/gcr.io\/zeebe-io\/zeebe/' zeebe-values.yaml
+sed_inplace "s/SNAPSHOT/$benchmark/" zeebe-values.yaml
 
 make zeebe starter worker
 
