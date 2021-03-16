@@ -11,15 +11,18 @@ import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.protocol.record.value.MessageRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.protocol.record.value.TimerRecordValue;
 
@@ -68,6 +71,12 @@ public final class RecordToWrite {
   public RecordToWrite job(final JobIntent intent, final JobRecordValue value) {
     recordMetadata.valueType(ValueType.JOB).intent(intent);
     unifiedRecordValue = (JobRecord) value;
+    return this;
+  }
+
+  public RecordToWrite message(final MessageIntent intent, final MessageRecordValue message) {
+    recordMetadata.valueType(ValueType.MESSAGE).intent(intent);
+    unifiedRecordValue = (MessageRecord) message;
     return this;
   }
 
