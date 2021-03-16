@@ -125,7 +125,7 @@ public final class ReProcessingStateMachine {
           );
 
   private final LogStreamReader logStreamReader;
-  private final ReprocessingStreamWriter reprocessingStreamWriter = new ReprocessingStreamWriter();
+  private final ReprocessingStreamWriter reprocessingStreamWriter;
   private final TypedResponseWriter noopResponseWriter = new NoopResponseWriter();
   private final EventApplier eventApplier;
 
@@ -167,6 +167,7 @@ public final class ReProcessingStateMachine {
     updateStateRetryStrategy = new EndlessRetryStrategy(actor);
     processRetryStrategy = new EndlessRetryStrategy(actor);
     detectReprocessingInconsistency = context.isDetectReprocessingInconsistency();
+    reprocessingStreamWriter = context.getReprocessingStreamWriter();
   }
 
   /**
