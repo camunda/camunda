@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: starter
-        image: gcr.io/zeebe-io/starter:zeebe
+        image: gcr.io/zeebe-io/starter:medic-cw-11-5041b3563-benchmark
         imagePullPolicy: Always
         env:
           - name: JAVA_OPTIONS

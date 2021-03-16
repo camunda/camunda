@@ -1,6 +1,12 @@
 #!/bin/bash
 set -exuo pipefail
 
+# Check if docker daemon is running
+if ! docker info >/dev/null 2>&1; then
+    echo "Docker daemon does not seem to be running, make sure it's running and retry"
+    exit 1
+fi
+
 # Contains OS specific sed function
 source ./benchmarks/setup/utils.sh
 
@@ -13,7 +19,13 @@ benchmark="medic-cw-$cw-$commitHash-benchmark"
 docker build --build-arg DISTBALL=dist/target/zeebe-distribution-*.tar.gz --build-arg APP_ENV=dev -t "gcr.io/zeebe-io/zeebe:$benchmark" .
 docker push "gcr.io/zeebe-io/zeebe:$benchmark"
 
-cd benchmarks/setup/
+cd benchmarks/project
+
+sed_inplace "s/:SNAPSHOT/:$benchmark/" docker-compose.yml
+docker-compose build
+docker-compose push
+
+cd ../setup/
 
 ./newBenchmark.sh "$benchmark"
 
@@ -21,6 +33,8 @@ cd "$benchmark"
 
 sed_inplace 's/camunda\/zeebe/gcr.io\/zeebe-io\/zeebe/' zeebe-values.yaml
 sed_inplace "s/SNAPSHOT/$benchmark/" zeebe-values.yaml
+sed_inplace "s/starter:zeebe/starter:$benchmark/" starter.yaml
+sed_inplace "s/worker:zeebe/worker:$benchmark/" worker.yaml
 
 make zeebe starter worker
 
