@@ -80,7 +80,7 @@ public final class BpmnStateBehavior {
       return false;
     }
 
-    final int activePaths = flowScopeInstance.getNumberOfActiveTokens();
+    final int activePaths = flowScopeInstance.getNumberOfActiveElementInstances();
     if (activePaths < 0) {
       throw new BpmnProcessingException(
           context,
