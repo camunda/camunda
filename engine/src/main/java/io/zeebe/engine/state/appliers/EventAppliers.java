@@ -185,6 +185,10 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceSubscriptionIntent.CREATED,
         new ProcessInstanceSubscriptionCreatedApplier(state.getProcessInstanceSubscriptionState()));
     register(
+        ProcessInstanceSubscriptionIntent.CORRELATED,
+        new ProcessInstanceSubscriptionCorrelatedApplier(
+            state.getProcessInstanceSubscriptionState(), state.getEventScopeInstanceState()));
+    register(
         ProcessInstanceSubscriptionIntent.DELETED,
         new ProcessInstanceSubscriptionDeletedApplier(state.getProcessInstanceSubscriptionState()));
   }
