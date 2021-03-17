@@ -14,8 +14,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.camunda.operate.entities.IncidentEntity;
+import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +51,8 @@ public class IncidentNotifier {
   protected static final String FIELD_NAME_FLOW_NODE_INSTANCE_KEY = "flowNodeInstanceKey";
   protected static final String FIELD_NAME_JOB_KEY = "jobKey";
   protected static final String FIELD_NAME_WORKFLOW_KEY = "workflowKey";
+  protected static final String FIELD_NAME_WORKFLOW_NAME = "workflowName";
+  protected static final String FIELD_NAME_WORKFLOW_VERSION = "workflowVersion";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -61,6 +66,9 @@ public class IncidentNotifier {
   @Autowired
   @Qualifier("incidentNotificationRestTemplate")
   private RestTemplate restTemplate;
+
+  @Autowired
+  private WorkflowCache workflowCache;
 
   public void notifyOnIncidents(List<IncidentEntity> incidents) {
     try {
@@ -117,6 +125,12 @@ public class IncidentNotifier {
       incidentFields.put(FIELD_NAME_FLOW_NODE_INSTANCE_KEY, inc.getFlowNodeInstanceKey());
       incidentFields.put(FIELD_NAME_JOB_KEY, inc.getJobKey());
       incidentFields.put(FIELD_NAME_WORKFLOW_KEY, inc.getWorkflowKey());
+      final Optional<WorkflowEntity> workflow = workflowCache
+          .findOrWaitWorkflow(inc.getWorkflowKey(), 2, 1000L);
+      if (workflow.isPresent()) {
+        incidentFields.put(FIELD_NAME_WORKFLOW_NAME, workflow.get().getName());
+        incidentFields.put(FIELD_NAME_WORKFLOW_VERSION, workflow.get().getVersion());
+      }
       incidentList.add(incidentFields);
     }
     return objectMapper.writeValueAsString(asMap(FIELD_NAME_ALERTS, incidentList));

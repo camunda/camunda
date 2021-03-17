@@ -26,40 +26,45 @@ public class WorkflowEntity extends OperateZeebeEntity<WorkflowEntity> {
     return this;
   }
   
-  public void setName(String name) {
+  public WorkflowEntity setName(String name) {
     this.name = name;
+    return this;
   }
 
   public int getVersion() {
     return version;
   }
 
-  public void setVersion(int version) {
+  public WorkflowEntity setVersion(int version) {
     this.version = version;
+    return this;
   }
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
 
-  public void setBpmnProcessId(String bpmnProcessId) {
+  public WorkflowEntity setBpmnProcessId(String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
+    return this;
   }
 
   public String getBpmnXml() {
     return bpmnXml;
   }
 
-  public void setBpmnXml(String bpmnXml) {
+  public WorkflowEntity setBpmnXml(String bpmnXml) {
     this.bpmnXml = bpmnXml;
+    return this;
   }
 
   public String getResourceName() {
     return resourceName;
   }
 
-  public void setResourceName(String resourceName) {
+  public WorkflowEntity setResourceName(String resourceName) {
     this.resourceName = resourceName;
+    return this;
   }
 
   @Override
