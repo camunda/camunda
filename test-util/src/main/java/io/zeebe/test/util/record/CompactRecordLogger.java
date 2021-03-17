@@ -7,11 +7,13 @@
  */
 package io.zeebe.test.util.record;
 
+import static java.util.Comparator.comparing;
 import static java.util.Map.entry;
 import static java.util.Map.ofEntries;
 import static org.apache.commons.lang3.StringUtils.leftPad;
 import static org.apache.commons.lang3.StringUtils.rightPad;
 
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -81,7 +84,7 @@ public class CompactRecordLogger {
   private final Map<Long, Long> substitutions = new HashMap<>();
   private final ArrayList<Record<?>> records;
 
-  private long counter = 0;
+  private long counter = 1;
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
     this.records = new ArrayList<>(records);
@@ -135,6 +138,22 @@ public class CompactRecordLogger {
         record -> {
           bulkMessage.append(summarizeRecord(record)).append("\n");
         });
+
+    bulkMessage.append("--------\n").append("Substituted numbers (for debugging):\n");
+
+    substitutions.entrySet().stream()
+        .sorted(comparing(Entry::getValue))
+        .forEach(
+            entry ->
+                bulkMessage
+                    .append("K" + leftPad(Long.toString(entry.getValue()), keyDigits, '0'))
+                    .append(" <-> ")
+                    .append(entry.getKey())
+                    .append("\t(Partition: ")
+                    .append(Protocol.decodePartitionId(entry.getKey()))
+                    .append("\tKey: ")
+                    .append(Protocol.decodeKeyInPartition(entry.getKey()))
+                    .append(")\n"));
 
     LOG.info(bulkMessage.toString());
   }
@@ -442,11 +461,11 @@ public class CompactRecordLogger {
   }
 
   private String formatKey(final long input) {
-    return "K" + leftPad(Long.toString(substitute(input)), keyDigits, '0');
+    return "K" + leftPad(Long.toString(substitute(input)), keyDigits, input >= 0 ? '0' : ' ');
   }
 
   private String formatPosition(final long input) {
-    return "#" + leftPad(Long.toString(input), keyDigits, '0');
+    return "#" + leftPad(Long.toString(input), keyDigits, input >= 0 ? '0' : ' ');
   }
 
   private String formatId(final String input) {

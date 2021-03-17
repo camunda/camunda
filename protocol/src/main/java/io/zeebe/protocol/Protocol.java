@@ -69,4 +69,10 @@ public final class Protocol {
   public static int decodePartitionId(final long key) {
     return (int) (key >> KEY_BITS);
   }
+
+  public static long decodeKeyInPartition(final long key) {
+    final long partitionId = decodePartitionId(key);
+
+    return key - ((long) partitionId << KEY_BITS);
+  }
 }
