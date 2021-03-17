@@ -35,6 +35,19 @@ it('should render an aggregation selection for duration reports', () => {
   expect(node).toMatchSnapshot();
 });
 
+it('should render an user task duration selection for user task duration reports', () => {
+  const node = shallow(
+    <AggregationType
+      report={{
+        view: {entity: 'userTask', properties: ['duration']},
+        configuration: {aggregationTypes: ['median'], userTaskDurationTimes: ['idle']},
+      }}
+    />
+  );
+
+  expect(node).toMatchSnapshot();
+});
+
 it('should render an additional sum field for variable reports', () => {
   const node = shallow(
     <AggregationType

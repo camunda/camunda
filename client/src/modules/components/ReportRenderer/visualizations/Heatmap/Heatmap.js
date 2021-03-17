@@ -185,10 +185,13 @@ function getMeasureString(measure) {
   if (property === 'frequency') {
     property = 'count';
   }
-  const aggregation = measure.aggregationType;
+  const {aggregationType: aggregation, userTaskDurationTime} = measure;
 
   return (
     t('report.view.' + property) +
-    (aggregation ? ` - ${t('report.config.aggregationShort.' + aggregation)}` : '')
+    (aggregation ? ` - ${t('report.config.aggregationShort.' + aggregation)}` : '') +
+    (userTaskDurationTime
+      ? ` (${t('report.config.userTaskDuration.' + userTaskDurationTime)})`
+      : '')
   );
 }

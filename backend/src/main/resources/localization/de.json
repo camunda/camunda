@@ -439,6 +439,7 @@
         "evaluation": "Zeige Evaluierungsanzahl"
       },
       "aggregation": {
+        "userTaskLegend": "Benutzeraufgabendauer",
         "durationLegend": "Daueraggregationen",
         "variableLegend": "Variablenaggregationen",
         "sum": "Summe",
@@ -455,7 +456,6 @@
         "max": "Max"
       },
       "userTaskDuration": {
-        "legend": "Dauer der Benutzeraufgabe",
         "idle": "Wartezeit",
         "work": "Arbeitszeit",
         "total": "Summe"

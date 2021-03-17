@@ -30,19 +30,25 @@ export default function createDefaultChartData(props) {
     return property === 'frequency' ? 0 : 1;
   }
 
-  function getLabel({property, aggregationType}) {
+  function getLabel({property, aggregationType, userTaskDurationTime}) {
     return (
       viewString +
       ' ' +
       t('report.view.' + (property === 'frequency' ? 'count' : 'duration')) +
-      (aggregationType ? ` - ${t('report.config.aggregation.' + aggregationType)}` : '')
+      (aggregationType ? ` - ${t('report.config.aggregation.' + aggregationType)}` : '') +
+      (userTaskDurationTime
+        ? ` (${t('report.config.userTaskDuration.' + userTaskDurationTime)})`
+        : '')
     );
   }
 
-  function getShortLabel({property, aggregationType}) {
+  function getShortLabel({property, aggregationType, userTaskDurationTime}) {
     return (
       t('report.view.' + (property === 'frequency' ? 'count' : 'duration')) +
-      (aggregationType ? ` - ${t('report.config.aggregationShort.' + aggregationType)}` : '')
+      (aggregationType ? ` - ${t('report.config.aggregationShort.' + aggregationType)}` : '') +
+      (userTaskDurationTime
+        ? ` (${t('report.config.userTaskDuration.' + userTaskDurationTime)})`
+        : '')
     );
   }
 

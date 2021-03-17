@@ -16,7 +16,6 @@ import {showError} from 'notifications';
 
 import DistributedBy from './DistributedBy';
 import AggregationType from './AggregationType';
-import UserTaskDurationTime from './UserTaskDurationTime';
 import ReportSelect from './ReportSelect';
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
@@ -302,7 +301,6 @@ export default withErrorHandling(
                   previous={[data.view]}
                 />
               </li>
-              <UserTaskDurationTime report={this.props.report} onChange={this.props.updateReport} />
               <DistributedBy report={this.props.report} onChange={this.props.updateReport} />
               {isDurationHeatmap(data) && (
                 <li className="select">

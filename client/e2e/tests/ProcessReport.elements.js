@@ -84,7 +84,6 @@ export const deselectAllButton = Selector('.Button').withText('Deselect All');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = (text) => Selector('.Table tbody td').withText(text);
 export const distributedBySelect = Selector('.label').withText('Distributed By').nextSibling();
-export const userTaskDurationSelect = Selector('.UserTaskDurationTime button');
 export const cyanColor = Selector('div[color="#00bcd4"]');
 export const axisInputs = (label) => Selector(`input[placeholder="${label}"]`);
 export const chartGoalInput = Selector('input[placeholder="Goal value"]');

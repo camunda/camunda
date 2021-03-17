@@ -62,7 +62,11 @@ export default function processDefaultData({report}) {
     } else if (measure.property === 'duration') {
       const title = `${viewString}: ${
         view.entity === 'incident' ? t('report.view.resolutionDuration') : t('report.view.duration')
-      } - ${t('report.config.aggregation.' + measure.aggregationType)}`;
+      } - ${t('report.config.aggregation.' + measure.aggregationType)}${
+        measure.userTaskDurationTime
+          ? ` (${t('report.config.userTaskDuration.' + measure.userTaskDurationTime)})`
+          : ''
+      }`;
 
       head.push({label: title, id: title, sortable: !isMultiMeasure});
       formattedResult.forEach(({value}, idx) => {

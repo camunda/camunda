@@ -695,14 +695,15 @@ test('should be able to select how the time of the user task is calculated', asy
   await u.selectGroupby(t, 'Candidate Group');
   await u.selectVisualization(t, 'Table');
 
-  await t.click(e.userTaskDurationSelect);
+  await t.click(e.aggregationTypeSelect);
+  await t.click(e.aggregationOption('Idle'));
+  await t.click(e.aggregationOption('Total'));
 
-  await t.click(e.option('Idle'));
   await t.expect(e.reportTable.visible).ok();
 
-  await t.click(e.userTaskDurationSelect);
+  await t.click(e.aggregationOption('Work'));
+  await t.click(e.aggregationOption('Idle'));
 
-  await t.click(e.option('Work'));
   await t.expect(e.reportTable.visible).ok();
 });
 

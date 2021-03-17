@@ -11,34 +11,40 @@ import {t} from 'translation';
 
 import './AggregationType.scss';
 
-const aggregationOrder = ['sum', 'min', 'avg', 'median', 'max'];
+const orders = {
+  aggregationTypes: ['sum', 'min', 'avg', 'median', 'max'],
+  userTaskDurationTimes: ['total', 'work', 'idle'],
+};
 
 export default function AggregationType({report, onChange}) {
+  const {configuration} = report;
   const {aggregationTypes} = report.configuration;
 
   const isDurationReport = report?.view?.properties.includes('duration');
+  const isUserTaskReport = report?.view?.entity === 'userTask';
   const isVariableReport = report?.view?.entity === 'variable';
 
-  function isLastAggregation(type) {
-    return aggregationTypes.length === 1 && aggregationTypes[0] === type;
+  function isLastAggregation(field, type) {
+    return configuration[field].length === 1 && configuration[field][0] === type;
   }
 
-  function hasAggregation(type) {
-    return aggregationTypes.includes(type);
+  function hasAggregation(field, type) {
+    return configuration[field].includes(type);
   }
 
-  function addAggregation(type) {
-    const newAggregations = [...aggregationTypes, type].sort(
-      (a, b) => aggregationOrder.indexOf(a) - aggregationOrder.indexOf(b)
+  function addAggregation(field, type) {
+    const newAggregations = [...configuration[field], type].sort(
+      (a, b) => orders[field].indexOf(a) - orders[field].indexOf(b)
     );
 
+    const singularField = field.slice(0, -1);
     return onChange(
       {
         configuration: {
-          aggregationTypes: {
+          [field]: {
             $set: newAggregations,
           },
-          aggregationType: {$set: newAggregations[0]},
+          [singularField]: {$set: newAggregations[0]},
           targetValue: {active: {$set: false}},
         },
         distributedBy: {$set: {type: 'none', value: null}},
@@ -47,15 +53,19 @@ export default function AggregationType({report, onChange}) {
     );
   }
 
-  function removeAggregation(type) {
-    const remainingAggregations = aggregationTypes.filter((existingType) => existingType !== type);
+  function removeAggregation(field, type) {
+    const remainingAggregations = configuration[field].filter(
+      (existingType) => existingType !== type
+    );
+
+    const singularField = field.slice(0, -1);
     return onChange(
       {
         configuration: {
-          aggregationTypes: {
+          [field]: {
             $set: remainingAggregations,
           },
-          aggregationType: {$set: remainingAggregations[0]},
+          [singularField]: {$set: remainingAggregations[0]},
         },
       },
       true
@@ -74,7 +84,9 @@ export default function AggregationType({report, onChange}) {
     availableAggregations.push('max');
 
     let popoverTitle = t('report.config.aggregationShort.' + aggregationTypes[0]);
-    if (availableAggregations.every(hasAggregation)) {
+    if (
+      availableAggregations.every((aggregation) => hasAggregation('aggregationTypes', aggregation))
+    ) {
       popoverTitle = 'All';
     } else if (aggregationTypes.length > 1) {
       popoverTitle = 'Multi';
@@ -90,24 +102,47 @@ export default function AggregationType({report, onChange}) {
           </>
         }
       >
-        <h4>
-          {t(
-            'report.config.aggregation.' + (isVariableReport ? 'variableLegend' : 'durationLegend')
-          )}
-        </h4>
         <Form compact>
+          {isUserTaskReport && (
+            <>
+              <h4>{t('report.config.aggregation.userTaskLegend')}</h4>
+              <fieldset>
+                {orders.userTaskDurationTimes.map((type) => (
+                  <Switch
+                    key={type}
+                    label={t('report.config.userTaskDuration.' + type)}
+                    checked={hasAggregation('userTaskDurationTimes', type)}
+                    disabled={isLastAggregation('userTaskDurationTimes', type)}
+                    onChange={({target}) => {
+                      if (target.checked) {
+                        addAggregation('userTaskDurationTimes', type);
+                      } else {
+                        removeAggregation('userTaskDurationTimes', type);
+                      }
+                    }}
+                  />
+                ))}
+              </fieldset>
+            </>
+          )}
+          <h4>
+            {t(
+              'report.config.aggregation.' +
+                (isVariableReport ? 'variableLegend' : 'durationLegend')
+            )}
+          </h4>
           <fieldset>
             {availableAggregations.map((type) => (
               <Switch
                 key={type}
                 label={t('report.config.aggregation.' + type)}
-                checked={hasAggregation(type)}
-                disabled={isLastAggregation(type)}
+                checked={hasAggregation('aggregationTypes', type)}
+                disabled={isLastAggregation('aggregationTypes', type)}
                 onChange={({target}) => {
                   if (target.checked) {
-                    addAggregation(type);
+                    addAggregation('aggregationTypes', type);
                   } else {
-                    removeAggregation(type);
+                    removeAggregation('aggregationTypes', type);
                   }
                 }}
               />
