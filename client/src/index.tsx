@@ -9,10 +9,10 @@ import ReactDOM from 'react-dom';
 import {App} from './App';
 import './index.css';
 import '@camunda-cloud/common-ui/dist/common-ui/common-ui.css';
-import {worker} from 'modules/mock-server/browser';
+import {startMocking} from 'modules/mock-server/browser';
 
 if (process.env.NODE_ENV === 'development') {
-  worker.start();
+  startMocking();
 }
 
 ReactDOM.render(<App />, document.getElementById('root'));

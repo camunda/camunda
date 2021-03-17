@@ -7,6 +7,14 @@
 import {setupWorker} from 'msw';
 import {handlers} from './handlers';
 
-const worker = setupWorker(...handlers);
+function startMocking() {
+  const worker = setupWorker(...handlers);
 
-export {worker};
+  worker.stop();
+
+  if (handlers.length > 0) {
+    worker.start();
+  }
+}
+
+export {startMocking};
