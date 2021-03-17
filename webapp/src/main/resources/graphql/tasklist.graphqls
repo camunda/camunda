@@ -20,6 +20,16 @@ type Task {
     sortValues: [String!]
     # Flag to show that the task is first in current filter
     isFirst: Boolean
+    # Reference to the task form
+    formId: String
+}
+
+#Describes task form
+type Form {
+    #The unique identifier of the form
+    id: String!
+    #Form content
+    schema: String!
 }
 
 #Task query - query to get one page of tasks.
@@ -71,6 +81,8 @@ type Query {
     task(id: String!): Task!
     # Get currently logged in user.
     currentUser: User!
+    # Get task form by id
+    form(id: String!): Form
 }
 # What can be changed.
 type Mutation {

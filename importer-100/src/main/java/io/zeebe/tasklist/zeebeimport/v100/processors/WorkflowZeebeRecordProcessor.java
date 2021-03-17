@@ -12,7 +12,9 @@ import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.zeebe.protocol.record.value.deployment.ResourceType;
+import io.zeebe.tasklist.entities.FormEntity;
 import io.zeebe.tasklist.entities.WorkflowEntity;
+import io.zeebe.tasklist.es.schema.indices.FormIndex;
 import io.zeebe.tasklist.es.schema.indices.WorkflowIndex;
 import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.util.ConversionUtils;
@@ -48,6 +50,8 @@ public class WorkflowZeebeRecordProcessor {
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private WorkflowIndex workflowIndex;
+
+  @Autowired private FormIndex formIndex;
 
   @Autowired private XMLUtil xmlUtil;
 
@@ -111,5 +115,24 @@ public class WorkflowZeebeRecordProcessor {
   private Map<String, DeploymentResource> resourceToMap(List<DeploymentResource> resources) {
     return resources.stream()
         .collect(Collectors.toMap(DeploymentResource::getResourceName, Function.identity()));
+  }
+
+  // TODO for future use
+  private void persistForm(long workflowKey, String formKey, String schema, BulkRequest bulkRequest)
+      throws PersistenceException {
+    final FormEntity formEntity = new FormEntity(String.valueOf(workflowKey), formKey, schema);
+    LOGGER.debug("Form: key {}", formKey);
+    try {
+      bulkRequest.add(
+          new IndexRequest(
+                  formIndex.getIndexName(),
+                  ElasticsearchUtil.ES_INDEX_TYPE,
+                  ConversionUtils.toStringOrNull(formEntity.getId()))
+              .source(objectMapper.writeValueAsString(formEntity), XContentType.JSON));
+    } catch (JsonProcessingException e) {
+      throw new PersistenceException(
+          String.format("Error preparing the query to insert task form [%s]", formEntity.getId()),
+          e);
+    }
   }
 }

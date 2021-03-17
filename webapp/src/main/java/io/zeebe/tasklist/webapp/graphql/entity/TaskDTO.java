@@ -37,6 +37,8 @@ public final class TaskDTO {
 
   private boolean isFirst = false;
 
+  private String formId;
+
   public String getId() {
     return id;
   }
@@ -145,6 +147,15 @@ public final class TaskDTO {
     return this;
   }
 
+  public String getFormId() {
+    return formId;
+  }
+
+  public TaskDTO setFormId(final String formId) {
+    this.formId = formId;
+    return this;
+  }
+
   public static TaskDTO createFrom(TaskEntity taskEntity, ObjectMapper objectMapper) {
     return createFrom(taskEntity, null, objectMapper);
   }
@@ -163,7 +174,8 @@ public final class TaskDTO {
             .setBpmnProcessId(taskEntity.getBpmnProcessId())
             .setWorkflowId(taskEntity.getWorkflowId())
             .setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId())
-            .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId());
+            .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
+            .setFormId(taskEntity.getFormId());
     if (sortValues != null) {
       taskDTO.setSortValues(toArrayOfStrings(sortValues));
     }
@@ -190,7 +202,8 @@ public final class TaskDTO {
         && Objects.equals(completionTime, taskDTO.completionTime)
         && Objects.equals(assigneeUsername, taskDTO.assigneeUsername)
         && taskState == taskDTO.taskState
-        && Arrays.equals(sortValues, taskDTO.sortValues);
+        && Arrays.equals(sortValues, taskDTO.sortValues)
+        && Objects.equals(formId, taskDTO.formId);
   }
 
   @Override
@@ -207,7 +220,8 @@ public final class TaskDTO {
             completionTime,
             assigneeUsername,
             taskState,
-            isFirst);
+            isFirst,
+            formId);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
@@ -248,6 +262,9 @@ public final class TaskDTO {
         + Arrays.toString(sortValues)
         + ", isFirst="
         + isFirst
+        + ", formId='"
+        + formId
+        + '\''
         + '}';
   }
 }

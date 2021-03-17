@@ -19,6 +19,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
   private OffsetDateTime completionTime;
   private TaskState state;
   private String assignee;
+  private String formId;
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
@@ -101,6 +102,15 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
+  public String getFormId() {
+    return formId;
+  }
+
+  public TaskEntity setFormId(final String formId) {
+    this.formId = formId;
+    return this;
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -121,7 +131,8 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         && Objects.equals(creationTime, that.creationTime)
         && Objects.equals(completionTime, that.completionTime)
         && state == that.state
-        && Objects.equals(assignee, that.assignee);
+        && Objects.equals(assignee, that.assignee)
+        && Objects.equals(formId, that.formId);
   }
 
   @Override
@@ -136,6 +147,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         creationTime,
         completionTime,
         state,
-        assignee);
+        assignee,
+        formId);
   }
 }

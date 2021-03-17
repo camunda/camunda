@@ -5,25 +5,37 @@
  */
 package io.zeebe.tasklist.data;
 
+import static io.zeebe.tasklist.util.ThreadUtil.sleepFor;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.tasklist.entities.FormEntity;
 import io.zeebe.tasklist.entities.UserEntity;
+import io.zeebe.tasklist.es.schema.indices.FormIndex;
 import io.zeebe.tasklist.es.schema.indices.UserIndex;
+import io.zeebe.tasklist.es.schema.templates.TaskTemplate;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.util.ZeebeTestUtil;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +60,10 @@ public class DevDataGenerator implements DataGenerator {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired private ZeebeClient zeebeClient;
+
+  @Autowired private FormIndex formIndex;
+
+  @Autowired private TaskTemplate taskTemplate;
 
   private Random random = new Random();
 
@@ -125,6 +141,93 @@ public class DevDataGenerator implements DataGenerator {
       startOrderProcess();
       startFlightRegistrationProcess();
       startSimpleProcess();
+    }
+    // TODO remove this when import is ready
+    mockTaskForms();
+  }
+
+  private void mockTaskForms() {
+    try {
+      final String formJSON =
+          "{\n"
+              + "  \"components\": [\n"
+              + "    {\n"
+              + "      \"key\": \"firstName\",\n"
+              + "      \"label\": \"First name\",\n"
+              + "      \"type\": \"textfield\",\n"
+              + "      \"validate\": {\n"
+              + "        \"required\": true\n"
+              + "      }\n"
+              + "    },\n"
+              + "    {\n"
+              + "      \"key\": \"lastName\",\n"
+              + "      \"label\": \"Last name\",\n"
+              + "      \"type\": \"textfield\",\n"
+              + "      \"validate\": {\n"
+              + "        \"required\": true\n"
+              + "      }\n"
+              + "    },\n"
+              + "    {\n"
+              + "      \"key\": \"passNo\",\n"
+              + "      \"label\": \"Passport number\",\n"
+              + "      \"type\": \"textfield\",\n"
+              + "      \"validate\": {\n"
+              + "        \"required\": true\n"
+              + "      }\n"
+              + "    },\n"
+              + "    {\n"
+              + "      \"key\": \"ticketNo\",\n"
+              + "      \"label\": \"Ticket number\",\n"
+              + "      \"type\": \"textfield\",\n"
+              + "      \"validate\": {\n"
+              + "        \"required\": true\n"
+              + "      }\n"
+              + "    },\n"
+              + "    {\n"
+              + "      \"key\": \"registered\",\n"
+              + "      \"label\": \"Registered successfully\",\n"
+              + "      \"type\": \"checkbox\"\n"
+              + "    }\n"
+              + "  ],\n"
+              + "  \"type\": \"default\"\n"
+              + "}";
+      final FormEntity formEntity = new FormEntity("workflowId", "formKey", formJSON);
+      final IndexRequest indexRequest =
+          new IndexRequest(
+                  formIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, formEntity.getId())
+              .source(objectMapper.writeValueAsString(formEntity), XContentType.JSON);
+      try {
+        esClient.index(indexRequest, RequestOptions.DEFAULT);
+      } catch (IOException e) {
+        LOGGER.error(e.getMessage(), e);
+      }
+      sleepFor(10000L);
+      // update registerPassenger tasks with formKey
+      final UpdateByQueryRequest updateRequest =
+          new UpdateByQueryRequest(taskTemplate.getMainIndexName())
+              .setQuery(termQuery(TaskTemplate.FLOW_NODE_BPMN_ID, "registerPassenger"))
+              .setScript(
+                  new Script(
+                      ScriptType.INLINE,
+                      "painless",
+                      "ctx._source.formId = \"workflowId_formKey\";",
+                      Collections.emptyMap()));
+      esClient.updateByQueryAsync(
+          updateRequest,
+          RequestOptions.DEFAULT,
+          new ActionListener<>() {
+            @Override
+            public void onResponse(final BulkByScrollResponse bulkByScrollResponse) {
+              LOGGER.debug("tasks updated");
+            }
+
+            @Override
+            public void onFailure(final Exception e) {
+              LOGGER.error(e.getMessage(), e);
+            }
+          });
+    } catch (JsonProcessingException e) {
+      e.printStackTrace();
     }
   }
 
