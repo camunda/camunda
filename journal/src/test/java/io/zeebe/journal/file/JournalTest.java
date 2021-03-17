@@ -23,6 +23,7 @@ import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
 import io.zeebe.journal.StorageException.InvalidChecksum;
 import io.zeebe.journal.StorageException.InvalidIndex;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -470,6 +471,29 @@ class JournalTest {
     assertThat(reader.hasNext()).isTrue();
     assertThat(reader.next()).isEqualTo(newSecondRecord);
 
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  public void shouldInvalidateAllEntries() throws Exception {
+    // given
+    data.wrap("000".getBytes(StandardCharsets.UTF_8));
+    final var firstRecord = journal.append(data);
+    journal.append(data);
+    journal.append(data);
+
+    // when
+    journal.deleteAfter(firstRecord.index());
+    data.wrap("111".getBytes(StandardCharsets.UTF_8));
+    final var secondRecord = journal.append(data);
+
+    journal.close();
+    journal = openJournal();
+
+    // then
+    final var reader = journal.openReader();
+    assertThat(reader.next()).isEqualTo(firstRecord);
+    assertThat(reader.next()).isEqualTo(secondRecord);
     assertThat(reader.hasNext()).isFalse();
   }
 

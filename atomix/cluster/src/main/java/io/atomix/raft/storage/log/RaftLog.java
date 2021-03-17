@@ -132,7 +132,6 @@ public class RaftLog implements Closeable {
     return journal.isEmpty();
   }
 
-  @SuppressWarnings("unchecked")
   public IndexedRaftRecord append(final RaftLogEntry entry) {
     final byte[] serializedEntry = serializer.serialize(entry);
     final JournalRecord journalRecord;

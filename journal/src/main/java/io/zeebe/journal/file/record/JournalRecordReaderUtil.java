@@ -48,10 +48,7 @@ public final class JournalRecordReaderUtil {
     final int startPosition = buffer.position();
     try {
       final UnsafeBuffer directBuffer = new UnsafeBuffer(buffer.slice());
-      if (!serializer.hasMetadata(directBuffer, 0)) {
-        // No valid record here
-        return null;
-      }
+
       final RecordMetadata metadata = serializer.readMetadata(directBuffer, 0);
 
       final int metadataLength = serializer.getMetadataLength(directBuffer, 0);
@@ -67,9 +64,9 @@ public final class JournalRecordReaderUtil {
           checksumGenerator.compute(buffer, startPosition + metadataLength, recordLength);
 
       if (checksum != metadata.checksum()) {
-        // TODO: Throw an exception, when we introduce magic headers before each record
         buffer.reset();
-        return null;
+        throw new CorruptedLogException(
+            "Record doesn't match checksum. Log segment may be corrupted.");
       }
 
       // Read record
