@@ -7,7 +7,7 @@
  */
 package io.zeebe.logstreams.storage.atomix;
 
-import io.atomix.raft.storage.log.IndexedRaftRecord;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.zeebe.logstreams.storage.LogStorage;
 
@@ -19,7 +19,7 @@ public final class AtomixAppendListenerAdapter implements AppendListener {
   }
 
   @Override
-  public void onWrite(final IndexedRaftRecord indexed) {
+  public void onWrite(final IndexedRaftLogEntry indexed) {
     delegate.onWrite(indexed.index());
   }
 
@@ -29,12 +29,12 @@ public final class AtomixAppendListenerAdapter implements AppendListener {
   }
 
   @Override
-  public void onCommit(final IndexedRaftRecord indexed) {
+  public void onCommit(final IndexedRaftLogEntry indexed) {
     delegate.onCommit(indexed.index());
   }
 
   @Override
-  public void onCommitError(final IndexedRaftRecord indexed, final Throwable error) {
+  public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {
     delegate.onCommitError(indexed.index(), error);
   }
 }

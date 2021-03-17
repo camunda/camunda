@@ -17,7 +17,7 @@ package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.storage.log.IndexedRaftRecord;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +59,7 @@ public class RaftFailOverTest {
     final var maxIndex =
         memberLog.values().stream()
             .flatMap(Collection::stream)
-            .map(IndexedRaftRecord::index)
+            .map(IndexedRaftLogEntry::index)
             .max(Long::compareTo)
             .orElseThrow();
     assertThat(maxIndex).isEqualTo(lastIndex);
@@ -84,7 +84,7 @@ public class RaftFailOverTest {
     final var maxIndex =
         memberLog.values().stream()
             .flatMap(Collection::stream)
-            .map(IndexedRaftRecord::index)
+            .map(IndexedRaftLogEntry::index)
             .max(Long::compareTo)
             .orElseThrow();
     assertThat(maxIndex).isEqualTo(lastIndex);
@@ -109,7 +109,7 @@ public class RaftFailOverTest {
     final var maxIndex =
         memberLog.values().stream()
             .flatMap(Collection::stream)
-            .map(IndexedRaftRecord::index)
+            .map(IndexedRaftLogEntry::index)
             .max(Long::compareTo)
             .orElseThrow();
     assertThat(maxIndex).isEqualTo(lastIndex);
@@ -210,7 +210,7 @@ public class RaftFailOverTest {
     for (final String member : memberLogs.keySet()) {
       if (!follower.equals(member)) {
         final var memberEntries = memberLogs.get(member);
-        assertThat(memberEntries).endsWith(entries.toArray(new IndexedRaftRecord[0]));
+        assertThat(memberEntries).endsWith(entries.toArray(new IndexedRaftLogEntry[0]));
       }
     }
   }
@@ -307,7 +307,7 @@ public class RaftFailOverTest {
     for (final String member : memberLogs.keySet()) {
       if (!follower.equals(member)) {
         final var memberEntries = memberLogs.get(member);
-        assertThat(memberEntries).endsWith(entries.toArray(new IndexedRaftRecord[0]));
+        assertThat(memberEntries).endsWith(entries.toArray(new IndexedRaftLogEntry[0]));
       }
     }
   }
@@ -411,7 +411,7 @@ public class RaftFailOverTest {
     assertThat(entries.get(0).index()).isEqualTo(66);
   }
 
-  private void assertMemberLogs(final Map<String, List<IndexedRaftRecord>> memberLog) {
+  private void assertMemberLogs(final Map<String, List<IndexedRaftLogEntry>> memberLog) {
     final var members = memberLog.keySet();
     final var iterator = members.iterator();
 
@@ -423,7 +423,7 @@ public class RaftFailOverTest {
         final var otherEntries = memberLog.get(iterator.next());
         assertThat(firstMemberEntries)
             .withFailMessage(memberLog.toString())
-            .containsExactly(otherEntries.toArray(new IndexedRaftRecord[0]));
+            .containsExactly(otherEntries.toArray(new IndexedRaftLogEntry[0]));
       }
     }
   }

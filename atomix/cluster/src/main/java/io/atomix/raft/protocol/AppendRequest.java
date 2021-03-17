@@ -21,7 +21,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.log.PersistedRaftRecord;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -39,24 +39,21 @@ public class AppendRequest extends AbstractRaftRequest {
   private final String leader;
   private final long prevLogIndex;
   private final long prevLogTerm;
-  private final List<RaftLogEntry> entries;
+  private final List<PersistedRaftRecord> entries;
   private final long commitIndex;
-  private final List<Long> checksums;
 
   public AppendRequest(
       final long term,
       final String leader,
       final long prevLogIndex,
       final long prevLogTerm,
-      final List<RaftLogEntry> entries,
-      final List<Long> checksums,
+      final List<PersistedRaftRecord> entries,
       final long commitIndex) {
     this.term = term;
     this.leader = leader;
     this.prevLogIndex = prevLogIndex;
     this.prevLogTerm = prevLogTerm;
     this.entries = entries;
-    this.checksums = checksums;
     this.commitIndex = commitIndex;
   }
 
@@ -110,16 +107,8 @@ public class AppendRequest extends AbstractRaftRequest {
    *
    * @return A list of log entries.
    */
-  public List<RaftLogEntry> entries() {
+  public List<PersistedRaftRecord> entries() {
     return entries;
-  }
-  /**
-   * Returns the checksums for the log entries.
-   *
-   * @return A list of checksums
-   */
-  public List<Long> checksums() {
-    return checksums;
   }
   /**
    * Returns the leader's commit index.
@@ -132,21 +121,19 @@ public class AppendRequest extends AbstractRaftRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        getClass(), term, leader, prevLogIndex, prevLogTerm, entries, commitIndex, checksums);
+    return Objects.hash(getClass(), term, leader, prevLogIndex, prevLogTerm, entries, commitIndex);
   }
 
   @Override
   public boolean equals(final Object object) {
-    if (object != null && object.getClass() == this.getClass()) {
+    if (object != null && object.getClass() == getClass()) {
       final AppendRequest request = (AppendRequest) object;
       return request.term == term
           && request.leader.equals(leader)
           && request.prevLogIndex == prevLogIndex
           && request.prevLogTerm == prevLogTerm
           && request.entries.equals(entries)
-          && request.commitIndex == commitIndex
-          && request.checksums.equals(checksums);
+          && request.commitIndex == commitIndex;
     }
     return false;
   }
@@ -159,7 +146,6 @@ public class AppendRequest extends AbstractRaftRequest {
         .add("prevLogIndex", prevLogIndex)
         .add("prevLogTerm", prevLogTerm)
         .add("entries", entries.size())
-        .add("checksums", checksums.size())
         .add("commitIndex", commitIndex)
         .toString();
   }
@@ -172,8 +158,7 @@ public class AppendRequest extends AbstractRaftRequest {
     private String leader;
     private long logIndex;
     private long logTerm;
-    private List<RaftLogEntry> entries;
-    private List<Long> checksums;
+    private List<PersistedRaftRecord> entries;
     private long commitIndex = -1;
 
     /**
@@ -234,7 +219,7 @@ public class AppendRequest extends AbstractRaftRequest {
      * @return The append request builder.
      * @throws NullPointerException if {@code entries} is null
      */
-    public Builder withEntries(final RaftLogEntry... entries) {
+    public Builder withEntries(final PersistedRaftRecord... entries) {
       return withEntries(Arrays.asList(checkNotNull(entries, NULL_ENTRIES_ERR)));
     }
 
@@ -246,20 +231,8 @@ public class AppendRequest extends AbstractRaftRequest {
      * @throws NullPointerException if {@code entries} is null
      */
     @SuppressWarnings("unchecked")
-    public Builder withEntries(final List<RaftLogEntry> entries) {
+    public Builder withEntries(final List<PersistedRaftRecord> entries) {
       this.entries = checkNotNull(entries, NULL_ENTRIES_ERR);
-      return this;
-    }
-
-    /**
-     * Sets the entries' checksums.
-     *
-     * @param checksums The entries' checksums.
-     * @return The append request builder.
-     * @throws NullPointerException if {@code entries} is null
-     */
-    public Builder withChecksums(final List<Long> checksums) {
-      this.checksums = checkNotNull(checksums, "checksums cannot be null");
       return this;
     }
 
@@ -270,7 +243,7 @@ public class AppendRequest extends AbstractRaftRequest {
      * @return The request builder.
      * @throws NullPointerException if {@code entry} is {@code null}
      */
-    public Builder addEntry(final RaftLogEntry entry) {
+    public Builder addEntry(final PersistedRaftRecord entry) {
       entries.add(checkNotNull(entry, NULL_ENTRIES_ERR));
       return this;
     }
@@ -295,7 +268,7 @@ public class AppendRequest extends AbstractRaftRequest {
     @Override
     public AppendRequest build() {
       validate();
-      return new AppendRequest(term, leader, logIndex, logTerm, entries, checksums, commitIndex);
+      return new AppendRequest(term, leader, logIndex, logTerm, entries, commitIndex);
     }
 
     @Override
@@ -306,7 +279,6 @@ public class AppendRequest extends AbstractRaftRequest {
       checkArgument(logIndex >= 0, "prevLogIndex must be positive");
       checkArgument(logTerm >= 0, "prevLogTerm must be positive");
       checkNotNull(entries, NULL_ENTRIES_ERR);
-      checkNotNull(checksums, "checksums cannot be null");
       checkArgument(commitIndex >= 0, "commitIndex must be positive");
     }
   }

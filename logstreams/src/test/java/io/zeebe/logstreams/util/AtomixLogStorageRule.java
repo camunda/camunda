@@ -11,7 +11,7 @@ import static org.mockito.Mockito.spy;
 
 import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.storage.RaftStorage;
-import io.atomix.raft.storage.log.IndexedRaftRecord;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
@@ -109,11 +109,11 @@ public final class AtomixLogStorageRule extends ExternalResource
       final ByteBuffer data,
       final AppendListener listener) {
     final ApplicationEntry zbEntry = new ApplicationEntry(lowestPosition, highestPosition, data);
-    final IndexedRaftRecord lastEntry = raftLog.getLastEntry();
+    final IndexedRaftLogEntry lastEntry = raftLog.getLastEntry();
 
     ApplicationEntry lastZbEntry = null;
-    if (lastEntry != null && lastEntry.entry().isApplicationEntry()) {
-      lastZbEntry = lastEntry.entry().getApplicationEntry();
+    if (lastEntry != null && lastEntry.isApplicationEntry()) {
+      lastZbEntry = lastEntry.getApplicationEntry();
     }
 
     final ValidationResult result = entryValidator.validateEntry(lastZbEntry, zbEntry);
@@ -127,7 +127,7 @@ public final class AtomixLogStorageRule extends ExternalResource
       return;
     }
 
-    final IndexedRaftRecord entry = raftLog.append(new RaftLogEntry(1, zbEntry));
+    final IndexedRaftLogEntry entry = raftLog.append(new RaftLogEntry(1, zbEntry));
 
     listener.onWrite(entry);
     raftLog.setCommitIndex(entry.index());
@@ -138,7 +138,7 @@ public final class AtomixLogStorageRule extends ExternalResource
     }
   }
 
-  public IndexedRaftRecord appendEntry(
+  public IndexedRaftLogEntry appendEntry(
       final long lowestPosition, final long highestPosition, final ByteBuffer data) {
     final NoopListener listener = new NoopListener();
     appendEntry(lowestPosition, highestPosition, data, listener);
@@ -245,10 +245,10 @@ public final class AtomixLogStorageRule extends ExternalResource
 
   private static final class NoopListener implements AppendListener {
 
-    private IndexedRaftRecord lastWrittenEntry;
+    private IndexedRaftLogEntry lastWrittenEntry;
 
     @Override
-    public void onWrite(final IndexedRaftRecord indexed) {
+    public void onWrite(final IndexedRaftLogEntry indexed) {
       lastWrittenEntry = indexed;
     }
 
@@ -256,9 +256,9 @@ public final class AtomixLogStorageRule extends ExternalResource
     public void onWriteError(final Throwable error) {}
 
     @Override
-    public void onCommit(final IndexedRaftRecord indexed) {}
+    public void onCommit(final IndexedRaftLogEntry indexed) {}
 
     @Override
-    public void onCommitError(final IndexedRaftRecord indexed, final Throwable error) {}
+    public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {}
   }
 }

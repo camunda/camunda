@@ -95,7 +95,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
     final Optional<TransientSnapshot> transientSnapshot =
         constructableSnapshotStore.newTransientSnapshot(
             snapshotIndexedEntry.index(),
-            snapshotIndexedEntry.entry().term(),
+            snapshotIndexedEntry.term(),
             lowerBoundSnapshotPosition,
             exportedPosition);
     transientSnapshot.ifPresent(this::takeSnapshot);

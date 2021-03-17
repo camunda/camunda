@@ -10,9 +10,8 @@ package io.zeebe.broker.system.partitions.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.atomix.raft.storage.log.IndexedRaftRecord;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.util.RocksDBWrapper;
 import io.zeebe.snapshots.broker.ConstructableSnapshotStore;
@@ -63,10 +62,7 @@ public final class StateControllerImplTest {
             factory.getReceivableSnapshotStore(1),
             rootDirectory.resolve("runtime"),
             new NoneSnapshotReplication(),
-            l ->
-                Optional.ofNullable(
-                    new IndexedRaftRecord(
-                        l, new RaftLogEntry(1, new ApplicationEntry(1, 10, null)), 0, -1)),
+            l -> Optional.of(new TestIndexedRaftLogEntry(l, 1, new ApplicationEntry(1, 10, null))),
             db -> exporterPosition.get());
 
     autoCloseableRule.manage(snapshotController);
