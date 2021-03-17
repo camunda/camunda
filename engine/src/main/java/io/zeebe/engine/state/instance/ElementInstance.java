@@ -21,7 +21,6 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final LongProperty parentKeyProp = new LongProperty("parentKey", -1L);
   private final IntegerProperty childCountProp = new IntegerProperty("childCount", 0);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", 0L);
-  private final IntegerProperty activeTokensProp = new IntegerProperty("activeTokens", 0);
   private final IntegerProperty multiInstanceLoopCounterProp =
       new IntegerProperty("multiInstanceLoopCounter", 0);
   private final LongProperty interruptingEventKeyProp =
@@ -35,7 +34,6 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(jobKeyProp)
-        .declareProperty(activeTokensProp)
         .declareProperty(multiInstanceLoopCounterProp)
         .declareProperty(interruptingEventKeyProp)
         .declareProperty(calledChildInstanceKeyProp)
@@ -116,29 +114,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     return ProcessInstanceLifecycle.isFinalState(getState());
   }
 
-  public void spawnToken() {
-    activeTokensProp.increment();
-  }
-
-  public void consumeToken() {
-    final int activeTokens = activeTokensProp.decrement();
-
-    if (activeTokens < 0) {
-      throw new IllegalStateException(
-          String.format("Expected the active token count to be positive but was %d", activeTokens));
-    }
-  }
-
-  public int getNumberOfActiveTokens() {
-    return activeTokensProp.getValue();
-  }
-
   public int getNumberOfActiveElementInstances() {
     return childCountProp.getValue();
-  }
-
-  public int getNumberOfActiveExecutionPaths() {
-    return activeTokensProp.getValue() + childCountProp.getValue();
   }
 
   public int getMultiInstanceLoopCounter() {

@@ -60,7 +60,6 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   @Override
   public void onCompleted(final ExecutableStartEvent element, final BpmnElementContext context) {
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 
@@ -73,7 +72,6 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   public void onTerminated(final ExecutableStartEvent element, final BpmnElementContext context) {
     incidentBehavior.resolveIncidents(context);
     stateTransitionBehavior.onElementTerminated(element, context);
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 

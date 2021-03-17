@@ -431,7 +431,6 @@ public final class BpmnEventSubscriptionBehavior {
     stateBehavior.updateFlowScopeInstance(
         context,
         flowScopeInstance -> {
-          flowScopeInstance.spawnToken();
           flowScopeInstance.setInterruptingEventKey(eventElementInstanceKey);
         });
   }
@@ -458,7 +457,7 @@ public final class BpmnEventSubscriptionBehavior {
   }
 
   private boolean isInterrupted(final ElementInstance elementInstance) {
-    return elementInstance.getNumberOfActiveTokens() == 2
+    return elementInstance.getNumberOfActiveElementInstances() == 1
         && elementInstance.isInterrupted()
         && elementInstance.isActive();
   }

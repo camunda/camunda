@@ -104,20 +104,6 @@ public final class BpmnStateBehavior {
     }
   }
 
-  public void consumeToken(final BpmnElementContext context) {
-    final ElementInstance flowScopeInstance = getFlowScopeInstance(context);
-    if (flowScopeInstance != null) {
-      elementInstanceState.consumeToken(flowScopeInstance.getKey());
-    }
-  }
-
-  public void spawnToken(final BpmnElementContext context) {
-    final ElementInstance flowScopeInstance = getFlowScopeInstance(context);
-    if (flowScopeInstance != null) {
-      elementInstanceState.spawnToken(flowScopeInstance.getKey());
-    }
-  }
-
   public ElementInstance getFlowScopeInstance(final BpmnElementContext context) {
     return elementInstanceState.getInstance(context.getFlowScopeKey());
   }
@@ -134,18 +120,6 @@ public final class BpmnStateBehavior {
                 context.copy(
                     childInstance.getKey(), childInstance.getValue(), childInstance.getState()))
         .collect(Collectors.toList());
-  }
-
-  public ElementInstance createChildElementInstance(
-      final BpmnElementContext context,
-      final long childInstanceKey,
-      final ProcessInstanceRecord childRecord) {
-    final var parentElementInstance = getElementInstance(context);
-    return elementInstanceState.newInstance(
-        parentElementInstance,
-        childInstanceKey,
-        childRecord,
-        ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
 
   public void createElementInstanceInFlowScope(

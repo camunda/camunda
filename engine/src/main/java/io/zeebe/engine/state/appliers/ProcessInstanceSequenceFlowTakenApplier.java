@@ -24,7 +24,5 @@ final class ProcessInstanceSequenceFlowTakenApplier
   }
 
   @Override
-  public void applyState(final long key, final ProcessInstanceRecord value) {
-    elementInstanceState.spawnToken(value.getFlowScopeKey());
-  }
+  public void applyState(final long key, final ProcessInstanceRecord value) {}
 }

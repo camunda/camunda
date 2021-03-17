@@ -83,7 +83,6 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   @Override
   public void onCompleted(final ExecutableEndEvent element, final BpmnElementContext context) {
     stateTransitionBehavior.onElementCompleted(element, context);
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 
@@ -96,7 +95,6 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   public void onTerminated(final ExecutableEndEvent element, final BpmnElementContext context) {
     incidentBehavior.resolveIncidents(context);
     stateTransitionBehavior.onElementTerminated(element, context);
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 

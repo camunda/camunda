@@ -187,7 +187,6 @@ public final class BpmnStateTransitionBehavior {
     if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
       streamWriter.appendFollowUpEvent(
           keyGenerator.nextKey(), ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
-      stateBehavior.spawnToken(context);
     } else {
       stateWriter.appendFollowUpEvent(
           keyGenerator.nextKey(), ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
@@ -266,18 +265,6 @@ public final class BpmnStateTransitionBehavior {
 
     final var elementInstance = stateBehavior.getElementInstance(context);
     final var activeChildInstances = elementInstance.getNumberOfActiveElementInstances();
-
-    if (activeChildInstances > 0) {
-      // wait for child instances to be terminated
-
-      // clean up the state because some events of child instances will not be processed (e.g.
-      // element completed, sequence flow taken)
-      final int pendingTokens = elementInstance.getNumberOfActiveTokens() - activeChildInstances;
-      for (int t = 0; t < pendingTokens; t++) {
-        elementInstance.consumeToken();
-      }
-      stateBehavior.updateElementInstance(elementInstance);
-    }
 
     return activeChildInstances == 0;
   }

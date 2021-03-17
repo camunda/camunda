@@ -97,7 +97,6 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
 
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
 
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 
@@ -125,7 +124,6 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
 
     stateTransitionBehavior.onElementTerminated(element, context);
 
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 

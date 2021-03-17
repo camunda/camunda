@@ -84,7 +84,6 @@ public class IntermediateCatchEventProcessor
   public void onCompleted(
       final ExecutableCatchEventElement element, final BpmnElementContext context) {
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 
@@ -101,8 +100,6 @@ public class IntermediateCatchEventProcessor
     incidentBehavior.resolveIncidents(context);
 
     stateTransitionBehavior.onElementTerminated(element, context);
-
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 

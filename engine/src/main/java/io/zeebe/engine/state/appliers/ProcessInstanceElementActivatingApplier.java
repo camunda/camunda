@@ -10,7 +10,6 @@ package io.zeebe.engine.state.appliers;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -48,18 +47,6 @@ final class ProcessInstanceElementActivatingApplier
     final var flowScopeElementType = flowScopeInstance.getValue().getBpmnElementType();
     final var currentElementType = value.getBpmnElementType();
 
-    if (isContainerElement(flowScopeElementType, currentElementType)
-        || isNonInterruptingEventSubprocess(flowScopeInstance, currentElementType)
-        || currentElementType == BpmnElementType.BOUNDARY_EVENT
-        || currentElementType == BpmnElementType.INTERMEDIATE_CATCH_EVENT) {
-      // we currently spawn new tokens only for:
-      // container elements, non interrupting event sub process, boundary events and intermediate
-      // catch events
-      // we might spawn tokens for other bpmn element types as well later, then we can improve
-      // here
-      elementInstanceState.spawnToken(flowScopeInstance.getKey());
-    }
-
     if (isStartEventInSubProcess(flowScopeElementType, currentElementType)) {
 
       final var executableStartEvent =
@@ -86,32 +73,9 @@ final class ProcessInstanceElementActivatingApplier
     }
   }
 
-  private boolean isNonInterruptingEventSubprocess(
-      final ElementInstance flowScopeInstance, final BpmnElementType currentElementType) {
-    final var flowScopeElementType = flowScopeInstance.getValue().getBpmnElementType();
-
-    return currentElementType == BpmnElementType.SUB_PROCESS
-        && flowScopeElementType == BpmnElementType.PROCESS
-        && !isInterrupted(flowScopeInstance);
-  }
-
-  private boolean isInterrupted(final ElementInstance elementInstance) {
-    return elementInstance.getNumberOfActiveTokens() == 2
-        && elementInstance.isInterrupted()
-        && elementInstance.isActive();
-  }
-
   private boolean isStartEventInSubProcess(
       final BpmnElementType flowScopeElementType, final BpmnElementType currentElementType) {
     return currentElementType == BpmnElementType.START_EVENT
         && flowScopeElementType == BpmnElementType.SUB_PROCESS;
-  }
-
-  private boolean isContainerElement(
-      final BpmnElementType flowScopeElementType, final BpmnElementType currentElementType) {
-    return (currentElementType == BpmnElementType.START_EVENT
-            && (flowScopeElementType == BpmnElementType.SUB_PROCESS
-                || flowScopeElementType == BpmnElementType.PROCESS))
-        || flowScopeElementType == BpmnElementType.MULTI_INSTANCE_BODY;
   }
 }

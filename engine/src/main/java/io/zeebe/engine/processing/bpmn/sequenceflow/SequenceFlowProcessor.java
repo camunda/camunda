@@ -124,20 +124,12 @@ public final class SequenceFlowProcessor implements BpmnElementProcessor<Executa
     if (tokensBySequenceFlow.size() == parallelGateway.getIncoming().size()) {
       // all incoming sequence flows are taken, so the gateway can be activated
 
-      final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
-
       // consume one token per sequence flow
       tokensBySequenceFlow.forEach(
           (sequenceFlow, tokens) -> {
             final var firstToken = tokens.get(0);
             deferredRecordsBehavior.removeDeferredRecord(flowScopeContext, firstToken);
-
-            flowScopeInstance.consumeToken();
           });
-
-      // spawn a new token for the activated gateway
-      flowScopeInstance.spawnToken();
-      stateBehavior.updateElementInstance(flowScopeInstance);
 
       stateTransitionBehavior.activateElementInstanceInFlowScope(context, parallelGateway);
     }

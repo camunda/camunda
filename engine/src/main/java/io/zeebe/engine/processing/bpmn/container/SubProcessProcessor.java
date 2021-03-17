@@ -89,7 +89,6 @@ public final class SubProcessProcessor
 
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
 
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 
@@ -115,7 +114,6 @@ public final class SubProcessProcessor
 
     stateTransitionBehavior.onElementTerminated(element, context);
 
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 

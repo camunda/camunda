@@ -80,41 +80,6 @@ public final class ElementInstanceStateTest {
   }
 
   @Test
-  public void shouldSpawnToken() {
-    // given
-    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
-    elementInstanceState.newInstance(
-        100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-
-    // when
-    elementInstanceState.spawnToken(100);
-
-    // then
-    final ElementInstance elementInstance = elementInstanceState.getInstance(100);
-    Assertions.assertThat(elementInstance.getNumberOfActiveElementInstances()).isEqualTo(0);
-    Assertions.assertThat(elementInstance.getNumberOfActiveExecutionPaths()).isEqualTo(1);
-    Assertions.assertThat(elementInstance.getNumberOfActiveTokens()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldConsumeToken() {
-    // given
-    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
-    elementInstanceState.newInstance(
-        100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-    elementInstanceState.spawnToken(100);
-
-    // when
-    elementInstanceState.consumeToken(100);
-
-    // then
-    final ElementInstance elementInstance = elementInstanceState.getInstance(100);
-    Assertions.assertThat(elementInstance.getNumberOfActiveElementInstances()).isEqualTo(0);
-    Assertions.assertThat(elementInstance.getNumberOfActiveExecutionPaths()).isEqualTo(0);
-    Assertions.assertThat(elementInstance.getNumberOfActiveTokens()).isEqualTo(0);
-  }
-
-  @Test
   public void shouldFindElementInstance() {
     // given
     final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
@@ -230,7 +195,6 @@ public final class ElementInstanceStateTest {
             100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
-    instance.spawnToken();
     instance.setState(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     instance.setJobKey(5);
     elementInstanceState.updateInstance(instance);
@@ -245,8 +209,6 @@ public final class ElementInstanceStateTest {
     Assertions.assertThat(updatedInstance.canTerminate()).isTrue();
 
     Assertions.assertThat(updatedInstance.getNumberOfActiveElementInstances()).isEqualTo(0);
-    Assertions.assertThat(updatedInstance.getNumberOfActiveExecutionPaths()).isEqualTo(1);
-    Assertions.assertThat(updatedInstance.getNumberOfActiveTokens()).isEqualTo(1);
 
     final ProcessInstanceRecord record = updatedInstance.getValue();
     assertProcessInstanceRecord(record);
@@ -261,7 +223,6 @@ public final class ElementInstanceStateTest {
             100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
-    instance.spawnToken();
     instance.setState(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     instance.setJobKey(5);
 
@@ -275,8 +236,6 @@ public final class ElementInstanceStateTest {
     Assertions.assertThat(updatedInstance.canTerminate()).isTrue();
 
     Assertions.assertThat(updatedInstance.getNumberOfActiveElementInstances()).isEqualTo(0);
-    Assertions.assertThat(updatedInstance.getNumberOfActiveExecutionPaths()).isEqualTo(0);
-    Assertions.assertThat(updatedInstance.getNumberOfActiveTokens()).isEqualTo(0);
 
     final ProcessInstanceRecord record = updatedInstance.getValue();
     assertProcessInstanceRecord(record);
@@ -291,7 +250,6 @@ public final class ElementInstanceStateTest {
             100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
-    instance.spawnToken();
     instance.setState(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     instance.setJobKey(5);
 
@@ -472,8 +430,6 @@ public final class ElementInstanceStateTest {
 
     Assertions.assertThat(elementInstance.getNumberOfActiveElementInstances())
         .isEqualTo(childCount);
-    Assertions.assertThat(elementInstance.getNumberOfActiveExecutionPaths()).isEqualTo(childCount);
-    Assertions.assertThat(elementInstance.getNumberOfActiveTokens()).isEqualTo(0);
 
     final ProcessInstanceRecord record = elementInstance.getValue();
 
@@ -489,8 +445,6 @@ public final class ElementInstanceStateTest {
     Assertions.assertThat(childInstance.canTerminate()).isTrue();
 
     Assertions.assertThat(childInstance.getNumberOfActiveElementInstances()).isEqualTo(0);
-    Assertions.assertThat(childInstance.getNumberOfActiveExecutionPaths()).isEqualTo(0);
-    Assertions.assertThat(childInstance.getNumberOfActiveTokens()).isEqualTo(0);
 
     assertProcessInstanceRecord(childInstance.getValue(), wrapString(elementId));
   }
