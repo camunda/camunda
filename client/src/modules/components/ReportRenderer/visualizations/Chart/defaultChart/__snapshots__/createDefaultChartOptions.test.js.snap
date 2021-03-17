@@ -146,9 +146,9 @@ Object {
   "showAllTooltips": undefined,
   "tooltips": Object {
     "callbacks": Object {
-      "beforeLabel": [Function],
       "label": [Function],
       "labelColor": [Function],
+      "title": [Function],
     },
   },
 }

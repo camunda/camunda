@@ -83,7 +83,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
   }
 
   if (visualization === 'pie' && !isPersistedTooltips && !groupedByDurationMaxValue) {
-    tooltipCallbacks.beforeLabel = ({index}, {labels}) => labels[index];
+    tooltipCallbacks.title = (data, {labels}) => data.length && labels[data[0].index];
   }
 
   if (visualization === 'pie' && groupedByDurationMaxValue) {
