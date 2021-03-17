@@ -71,7 +71,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .getWorkflowInstanceKey();
 
     //when 1.1
-    FlowNodeMetadataDto flowNodeMetadata = getFlowNodeMetadataFromRest(
+    FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(workflowInstanceKey), taskId, null, null);
 
     //then
@@ -86,7 +86,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         flowNodeInstanceId1, false);
 
     //when 2.1
-    flowNodeMetadata = getFlowNodeMetadataFromRest(
+    flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(workflowInstanceKey), null, null, flowNodeInstanceId1);
 
     //then
@@ -131,7 +131,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .getWorkflowInstanceKey();
 
     //when 1.2
-    FlowNodeMetadataDto flowNodeMetadata = getFlowNodeMetadataFromRest(
+    FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(workflowInstanceKey), subprocessId, null, null);
 
     //then
@@ -147,7 +147,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         MULTI_INSTANCE_BODY, flowNodeInstanceId1, false);
 
     //when 2.2 (is multi-instance body itseld)
-    flowNodeMetadata = getFlowNodeMetadataFromRest(
+    flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(workflowInstanceKey), null, null, flowNodeInstanceId1);
 
     //then
@@ -165,7 +165,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     //when 3.1 (breadcrumb for multi-instance body)
     final FlowNodeInstanceBreadcrumbEntryDto breadcrumb = flowNodeMetadata
         .getBreadcrumb().get(0);
-    flowNodeMetadata = getFlowNodeMetadataFromRest(
+    flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(workflowInstanceKey), breadcrumb.getFlowNodeId(),
         breadcrumb.getFlowNodeType(), null);
 
@@ -182,7 +182,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         MULTI_INSTANCE_BODY, flowNodeInstanceId3, false);
 
     //when 3.1 (breadcrumb for subprocess)
-    flowNodeMetadata = getFlowNodeMetadataFromRest(
+    flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(workflowInstanceKey), subprocessId, SUB_PROCESS, null);
 
     //then
@@ -199,7 +199,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         SUB_PROCESS, subprocessInstanceId1, false);
 
     //when 2.2 (is included in multi-instance)
-    flowNodeMetadata = getFlowNodeMetadataFromRest(
+    flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(workflowInstanceKey), null, null, subprocessInstanceId1);
 
     //then
@@ -242,7 +242,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .getWorkflowInstanceKey();
 
     //when 1.3 - instance count by flowNodeId
-    FlowNodeMetadataDto flowNodeMetadata = getFlowNodeMetadataFromRest(
+    FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(workflowInstanceKey), taskId, null, null);
 
     //then
@@ -252,7 +252,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeMetadata.getFlowNodeId()).isEqualTo(taskId);
 
     //when 3.2 - instance count by breadcrump
-    flowNodeMetadata = getFlowNodeMetadataFromRest(
+    flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(workflowInstanceKey), taskId, SERVICE_TASK, null);
 
     //then
@@ -286,14 +286,14 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .and().waitUntil()
         .activityIsActive(taskId)
         .getWorkflowInstanceKey();
-    final List<FlowNodeInstanceDto> flowNodeInstances = getFlowNodeInstanceOneListFromRest(
+    final List<FlowNodeInstanceDto> flowNodeInstances = tester.getFlowNodeInstanceOneListFromRest(
         String.valueOf(workflowInstanceKey));
     final List<FlowNodeInstanceDto> tasks = flowNodeInstances.stream()
         .filter(fni -> fni.getType().equals(SERVICE_TASK)).collect(Collectors.toList());
     final String flowNodeInstanceId = tasks.get(0).getId();
 
     //when 2.3 - one instance out of several (Peter case)
-    FlowNodeMetadataDto flowNodeMetadata = getFlowNodeMetadataFromRest(
+    FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(workflowInstanceKey), null, null, flowNodeInstanceId);
 
     //then
@@ -339,7 +339,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .getWorkflowInstanceKey();
 
     //when 3.3 - instance count by breadcrump
-    FlowNodeMetadataDto flowNodeMetadata = getFlowNodeMetadataFromRest(
+    FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(workflowInstanceKey), subprocessId, SUB_PROCESS, null);
 
     //then
@@ -404,7 +404,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     final String workflowInstanceId = String.valueOf(workflowInstanceKey);
     FlowNodeInstanceQueryDto request = new FlowNodeInstanceQueryDto(
         workflowInstanceId, workflowInstanceId);
-    List<FlowNodeInstanceDto> instances = getFlowNodeInstanceOneListFromRest(request);
+    List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
 
     assertMetadata(instances, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED,
         workflowInstanceKey, "start");
@@ -452,7 +452,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     final String workflowInstanceId = String.valueOf(workflowInstanceKey);
     FlowNodeInstanceQueryDto request = new FlowNodeInstanceQueryDto(
         workflowInstanceId, workflowInstanceId);
-    List<FlowNodeInstanceDto> instances = getFlowNodeInstanceOneListFromRest(request);
+    List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
 
     //then
     try {
@@ -487,14 +487,17 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     final String workflowInstanceId = String.valueOf(workflowInstanceKey);
     FlowNodeInstanceQueryDto request = new FlowNodeInstanceQueryDto(
         workflowInstanceId, workflowInstanceId);
-    List<FlowNodeInstanceDto> instances = getFlowNodeInstanceOneListFromRest(request);
+    List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
 
     //then last event does not have a jobId
-    final FlowNodeMetadataDto flowNodeMetadata = getFlowNodeMetadataFromRest(
+    final FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(workflowInstanceKey),
         null, null, instances.get(instances.size() - 1).getId());
     FlowNodeInstanceMetadataDto flowNodeInstanceMetadata = flowNodeMetadata.getInstanceMetadata();
     assertThat(flowNodeInstanceMetadata.getJobId()).isNull();
+    //assert incident fields
+    assertThat(flowNodeInstanceMetadata.getIncidentErrorMessage()).isNotNull();
+    assertThat(flowNodeInstanceMetadata.getIncidentErrorType()).isNotNull();
 
   }
 
@@ -530,7 +533,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeInstance).isNotEmpty();
 
     //call REST API to get metadata
-    final FlowNodeMetadataDto flowNodeMetadata = getFlowNodeMetadataFromRest(
+    final FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(workflowInstanceKey),
         null, null, flowNodeInstance.get().getId());
 
@@ -556,37 +559,6 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
           .as(assertionName + ".incidentErrorType").isNotNull();
     }
 
-  }
-
-  private FlowNodeMetadataDto getFlowNodeMetadataFromRest(String workflowInstanceId,
-      String flowNodeId, FlowNodeType flowNodeType, String flowNodeInstanceId)
-      throws Exception {
-    final FlowNodeMetadataRequestDto request = new FlowNodeMetadataRequestDto()
-        .setFlowNodeId(flowNodeId)
-        .setFlowNodeType(flowNodeType)
-        .setFlowNodeInstanceId(flowNodeInstanceId);
-    MvcResult mvcResult = postRequest(
-        String.format(WORKFLOW_INSTANCE_URL + "/%s/flow-node-metadata", workflowInstanceId),
-        request);
-    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
-  }
-
-  private List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
-      String workflowInstanceId) throws Exception {
-    return getFlowNodeInstanceOneListFromRest(
-        new FlowNodeInstanceQueryDto(workflowInstanceId, workflowInstanceId));
-  }
-
-  private List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
-      FlowNodeInstanceQueryDto query) throws Exception {
-    FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
-    MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
-    final Map<String, FlowNodeInstanceResponseDto> response = mockMvcTestRule
-        .fromResponse(mvcResult, new TypeReference<>() {
-        });
-    assertThat(response).hasSize(1);
-    return response.values().iterator().next().getChildren();
   }
 
 }

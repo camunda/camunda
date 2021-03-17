@@ -6,50 +6,52 @@
 package org.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import org.camunda.operate.entities.ActivityState;
-import org.camunda.operate.entities.IncidentEntity;
-import org.camunda.operate.entities.IncidentState;
-import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.entities.listview.WorkflowInstanceState;
-import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
-import org.camunda.operate.webapp.es.reader.IncidentReader;
-import org.camunda.operate.webapp.es.reader.ListViewReader;
-import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.TestUtil;
-import org.camunda.operate.util.ZeebeTestUtil;
-import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceDto;
-import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeDto;
-import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeRequestDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
-import org.camunda.operate.webapp.rest.dto.listview.WorkflowInstanceStateDto;
-import org.camunda.operate.zeebe.ImportValueType;
-import org.camunda.operate.zeebe.PartitionHolder;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-
 import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.IncidentEntity;
+import org.camunda.operate.entities.IncidentState;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
+import org.camunda.operate.util.OperateZeebeIntegrationTest;
+import org.camunda.operate.util.TestUtil;
+import org.camunda.operate.util.ZeebeTestUtil;
+import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
+import org.camunda.operate.webapp.es.reader.IncidentReader;
+import org.camunda.operate.webapp.es.reader.ListViewReader;
+import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
+import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceDto;
+import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeDto;
+import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeRequestDto;
+import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
+import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
+import org.camunda.operate.webapp.rest.dto.listview.WorkflowInstanceStateDto;
+import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
+import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
+import org.camunda.operate.zeebe.ImportValueType;
+import org.camunda.operate.zeebe.PartitionHolder;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
@@ -147,6 +149,41 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     //and
     final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
     assertActivityInstanceTreeDto(tree, 2, activityId);
+  }
+
+  @Test
+  public void testEarlierEventsAreIgnored() throws Exception {
+    // having
+    String activityId = "taskA";
+    String processId = "demoProcess";
+    final Long workflowKey = deployWorkflow("demoProcess_v_1.bpmn");
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+
+    //create an incident
+    final String incidentError = "Some error";
+    ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, incidentError);
+
+    //when
+    //1st load incident
+    processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsActiveCheck, workflowInstanceKey);
+
+    //and then workflow instance events
+    processImportTypeAndWait(ImportValueType.WORKFLOW_INSTANCE, workflowInstanceIsCreatedCheck, workflowInstanceKey);
+    processImportTypeAndWait(ImportValueType.JOB, workflowInstanceIsCreatedCheck, workflowInstanceKey);
+
+    //when
+    //get flow node instance tree
+    final String workflowInstanceId = String.valueOf(workflowInstanceKey);
+    FlowNodeInstanceQueryDto request = new FlowNodeInstanceQueryDto(
+        workflowInstanceId, workflowInstanceId);
+    List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
+
+    final FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
+        String.valueOf(workflowInstanceKey),
+        null, null, instances.get(instances.size() - 1).getId());
+    FlowNodeInstanceMetadataDto flowNodeInstanceMetadata = flowNodeMetadata.getInstanceMetadata();
+    assertThat(flowNodeInstanceMetadata.getIncidentErrorMessage()).isEqualTo(incidentError);
+    assertThat(flowNodeInstanceMetadata.getIncidentErrorType()).isEqualTo(JOB_NO_RETRIES);
   }
 
   private void assertActivityInstanceTreeDto(final ActivityInstanceTreeDto tree,final int childrenCount, final String activityId) {

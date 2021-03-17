@@ -192,7 +192,9 @@
           </includes>
           <excludes>
             <exclude>**/ImportSeveralVersionsTest.java</exclude>
-            <exclude>**/IncidentIT.java</exclude>
+            <exclude>**/FlowNodeInstanceIT.java</exclude>
+            <exclude>**/FlowNodeMetadataIT.java</exclude>
+            <exclude>**/ZeebeImport*.java</exclude>
           </excludes>
           <systemPropertyVariables>
             <spring.profiles.active>test,old-zeebe</spring.profiles.active>

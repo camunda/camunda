@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
+import org.camunda.operate.schema.templates.EventTemplate;
 import org.camunda.operate.schema.templates.TemplateDescriptor;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
@@ -46,6 +47,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.ReindexRequest;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -249,7 +251,7 @@ public abstract class ElasticsearchUtil {
         final BulkResponse bulkItemResponses = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
         final BulkItemResponse[] items = bulkItemResponses.getItems();
         for (BulkItemResponse responseItem : items) {
-          if (responseItem.isFailed()) {
+          if (responseItem.isFailed() && !isEventConflictError(responseItem)) {
             logger.error(String.format("%s failed for type [%s] and id [%s]: %s", responseItem.getOpType(), responseItem.getIndex(), responseItem.getId(),
                 responseItem.getFailureMessage()), responseItem.getFailure().getCause());
             throw new PersistenceException("Operation failed: " + responseItem.getFailureMessage(), responseItem.getFailure().getCause(), responseItem.getItemId());
@@ -260,6 +262,11 @@ public abstract class ElasticsearchUtil {
         throw new PersistenceException("Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
       }
     }
+  }
+
+  private static boolean isEventConflictError(final BulkItemResponse responseItem) {
+    return responseItem.getIndex().contains(EventTemplate.INDEX_NAME)
+        && responseItem.getFailure().getStatus().equals(RestStatus.CONFLICT);
   }
 
   public static void executeUpdate(RestHighLevelClient esClient, UpdateRequest updateRequest) throws PersistenceException {

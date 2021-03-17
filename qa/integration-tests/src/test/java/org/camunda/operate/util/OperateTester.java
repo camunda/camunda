@@ -5,11 +5,16 @@
  */
 package org.camunda.operate.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.util.CollectionUtil.filter;
+import static org.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
+import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -17,6 +22,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
@@ -24,13 +30,20 @@ import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.archiver.AbstractArchiverJob;
 import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
+import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
+import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
+import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
+import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
+import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
+import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
@@ -373,6 +386,48 @@ public class OperateTester {
 
   public boolean hasIncidentWithErrorMessage(String errorMessage) {
     return !filter(getIncidents(),incident -> incident.getErrorMessage().equals(errorMessage)).isEmpty();
+  }
+
+  public List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
+      String workflowInstanceId) throws Exception {
+    return getFlowNodeInstanceOneListFromRest(
+        new FlowNodeInstanceQueryDto(workflowInstanceId, workflowInstanceId));
+  }
+
+  public List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
+      FlowNodeInstanceQueryDto query) throws Exception {
+    FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
+    MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
+    final Map<String, FlowNodeInstanceResponseDto> response = mockMvcTestRule
+        .fromResponse(mvcResult, new TypeReference<>() {
+        });
+    assertThat(response).hasSize(1);
+    return response.values().iterator().next().getChildren();
+  }
+
+  public FlowNodeMetadataDto getFlowNodeMetadataFromRest(String workflowInstanceId,
+      String flowNodeId, FlowNodeType flowNodeType, String flowNodeInstanceId)
+      throws Exception {
+    final FlowNodeMetadataRequestDto request = new FlowNodeMetadataRequestDto()
+        .setFlowNodeId(flowNodeId)
+        .setFlowNodeType(flowNodeType)
+        .setFlowNodeInstanceId(flowNodeInstanceId);
+    MvcResult mvcResult = postRequest(
+        String.format(WORKFLOW_INSTANCE_URL + "/%s/flow-node-metadata", workflowInstanceId),
+        request);
+    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+  }
+
+  private MvcResult postRequest(String requestUrl, Object query) throws Exception {
+    MockHttpServletRequestBuilder request = post(requestUrl)
+        .content(mockMvcTestRule.json(query))
+        .contentType(mockMvcTestRule.getContentType());
+
+    return mockMvcTestRule.getMockMvc().perform(request)
+        .andExpect(status().isOk())
+        .andExpect(content().contentTypeCompatibleWith(mockMvcTestRule.getContentType()))
+        .andReturn();
   }
 
 }

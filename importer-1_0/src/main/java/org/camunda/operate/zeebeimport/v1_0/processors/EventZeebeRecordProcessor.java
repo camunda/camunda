@@ -38,6 +38,7 @@ import org.camunda.operate.zeebeimport.v1_0.record.value.WorkflowInstanceRecordV
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.VersionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -259,7 +260,9 @@ public class EventZeebeRecordProcessor {
 
       //write event
       bulkRequest.add(new IndexRequest(eventTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-        .source(objectMapper.writeValueAsString(entity), XContentType.JSON));
+        .source(objectMapper.writeValueAsString(entity), XContentType.JSON)
+        .version(entity.getDateTime().toInstant().toEpochMilli())
+        .versionType(VersionType.EXTERNAL_GTE));
 
     } catch (JsonProcessingException e) {
       logger.error("Error preparing the query to insert event", e);
