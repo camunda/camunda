@@ -11,7 +11,6 @@ import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
-import {eventsStore} from 'modules/stores/events';
 import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
@@ -38,13 +37,11 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
 
   useEffect(() => {
-    eventsStore.init();
     sequenceFlowsStore.init();
     flowNodeMetaDataStore.init();
     flowNodeStatesStore.init(workflowInstanceId);
 
     return () => {
-      eventsStore.reset();
       sequenceFlowsStore.reset();
       flowNodeStatesStore.reset();
       flowNodeMetaDataStore.reset();

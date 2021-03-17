@@ -12,7 +12,7 @@ import {
 } from '@testing-library/react';
 import {MemoryRouter, Route} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {mockSequenceFlows, mockEvents, mockIncidents} from './index.setup';
+import {mockSequenceFlows, mockIncidents} from './index.setup';
 import SplitPane from 'modules/components/SplitPane';
 import {TopPanel} from './index';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
@@ -82,8 +82,7 @@ describe('TopPanel', () => {
       rest.get(
         '/api/workflow-instances/:instanceId/flow-node-states',
         (_, res, ctx) => res.once(ctx.json({}))
-      ),
-      rest.post('/api/events', (_, res, ctx) => res.once(ctx.json(mockEvents)))
+      )
     );
   });
 

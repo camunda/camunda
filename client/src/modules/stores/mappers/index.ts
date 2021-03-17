@@ -10,40 +10,6 @@ import {
   FLOWNODE_TYPE_HANDLE,
   MULTI_INSTANCE_TYPE,
 } from 'modules/constants';
-/**
- * transforms the activities instances tree to
- * @return activityIdToActivityInstanceMap: (activityId -> activityInstance) map
- * @param {*} activitiesInstancesTree
- * @param {*} [activityIdToActivityInstanceMap] optional
- */
-const constructFlowNodeIdToFlowNodeInstanceMap = function (
-  flowNodesInstancesTree: any,
-  flowNodeIdToFlowNodeInstanceMap = new Map()
-) {
-  const {children} = flowNodesInstancesTree;
-
-  return children.reduce(
-    (flowNodeIdToFlowNodeInstanceMap: any, flowNodeInstance: any) => {
-      const {id, activityId: flowNodeId} = flowNodeInstance;
-
-      // update flowNodeIdToFlowNodeInstanceMap
-      const flowNodeInstancesMap =
-        flowNodeIdToFlowNodeInstanceMap.get(flowNodeId) || new Map();
-
-      flowNodeInstancesMap.set(id, flowNodeInstance);
-
-      flowNodeIdToFlowNodeInstanceMap.set(flowNodeId, flowNodeInstancesMap);
-
-      return !flowNodeInstance.children
-        ? flowNodeIdToFlowNodeInstanceMap
-        : constructFlowNodeIdToFlowNodeInstanceMap(
-            flowNodeInstance,
-            flowNodeIdToFlowNodeInstanceMap
-          );
-    },
-    flowNodeIdToFlowNodeInstanceMap
-  );
-};
 
 const getSelectableFlowNodes = (bpmnElements: any) => {
   if (!bpmnElements) {
@@ -137,7 +103,6 @@ const addFlowNodeName = (object: any, nodeMetaData: any) => {
 };
 
 export {
-  constructFlowNodeIdToFlowNodeInstanceMap,
   getSelectableFlowNodes,
   createNodeMetaDataMap,
   getProcessedSequenceFlows,

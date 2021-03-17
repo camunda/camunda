@@ -14,7 +14,7 @@ import {
 } from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {testData} from './index.setup';
-import {mockSequenceFlows, mockEvents} from './TopPanel/index.setup';
+import {mockSequenceFlows} from './TopPanel/index.setup';
 import {PAGE_TITLE} from 'modules/constants';
 import {getWorkflowName} from 'modules/utils/instance';
 import {Instance} from './index';
@@ -52,7 +52,6 @@ describe('Instance', () => {
         '/api/workflow-instances/:instanceId/sequence-flows',
         (_, res, ctx) => res(ctx.json(mockSequenceFlows))
       ),
-      rest.post('/api/events', (_, res, ctx) => res(ctx.json(mockEvents))),
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
         res(ctx.json(workFlowInstancesMock.level1))
       ),

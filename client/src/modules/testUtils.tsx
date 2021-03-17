@@ -69,8 +69,6 @@ const randomIdIterator = createRandomId('id');
 const randomActivityIdIterator = createRandomId('activityId');
 const randomWorkflowIdInterator = createRandomId('workflowId');
 const randomJobIdIterator = createRandomId('jobId');
-const eventIdIterator = createRandomId('eventId');
-const randomActivityInstanceIdIterator = createRandomId('activityInstanceId');
 
 /**
  * @returns a mocked selection Object
@@ -121,8 +119,6 @@ export const createSelection = (options = {}) => {
  */
 export const createIncident = (options = {}) => {
   return {
-    // activityId: createRandomId(),
-    // activityInstanceId: createRandomId(),
     errorMessage: 'Some Condition error has occured',
     errorType: 'Condition error',
     id: randomIdIterator.next().value,
@@ -390,15 +386,6 @@ export const createDiagramNode = (options = {}) => {
   };
 };
 
-export const createActivities = (diagramNodes: any) => {
-  return Object.values(diagramNodes).map((diagramNode) =>
-    createActivity({
-      // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
-      activityId: diagramNode.id,
-    })
-  );
-};
-
 export const createDefinitions = () => {
   return {
     $type: 'bpmn:Definitions',
@@ -408,66 +395,6 @@ export const createDefinitions = () => {
     id: 'Definitions_0hir062',
     rootElements: [],
     targetNamespace: '',
-  };
-};
-
-export const createEvent = (options = {}) => {
-  return {
-    activityId: 'Task_1b1r7ow',
-    activityInstanceId: '1215',
-    bpmnProcessId: 'orderProcess',
-    dateTime: '2019-01-21T08:34:07.121+0000',
-    eventSourceType: 'JOB',
-    eventType: 'CREATED',
-    id: eventIdIterator.next().value,
-    metadata: {
-      incidentErrorMessage: null,
-      incidentErrorType: null,
-      jobCustomHeaders: {},
-      jobDeadline: null,
-      jobId: '66',
-      jobRetries: 3,
-      jobType: 'shipArticles',
-      jobWorker: '',
-      payload: '',
-      workflowId: '1',
-      workflowInstanceId: '53',
-    },
-    workflowId: '1',
-    workflowInstanceId: '1197',
-    ...options,
-  };
-};
-
-export const createEvents = (activities: any) =>
-  activities.map((node: any) =>
-    createEvent({
-      activityId: node.activityId,
-      activityInstanceId: node.id,
-      bpmnProcessId: node.activityId,
-    })
-  );
-
-export const createMetadata = (activityId: any) => ({
-  endDate: '--',
-  activityInstanceId: activityId,
-  jobId: '67',
-  startDate: '28 Jan 2019 13:37:46',
-  incidentErrorMessage: 'Cannot connect to server delivery05',
-  incidentErrorType: 'JOB_NO_RETRIES',
-});
-
-export const createRawTreeNode = (options = {}) => {
-  return {
-    activityId: 'Unspecified_1234',
-    children: [],
-    endDate: '2019-02-07T13:03:36.218Z',
-    id: randomActivityInstanceIdIterator.next().value,
-    parentId: 'string',
-    startDate: '2019-02-07T13:03:36.218Z',
-    state: 'ACTIVE',
-    type: 'UNSPECIFIED',
-    ...options,
   };
 };
 

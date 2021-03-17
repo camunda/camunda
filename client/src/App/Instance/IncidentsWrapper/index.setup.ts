@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {createIncident, createInstance} from 'modules/testUtils';
+import {createIncident} from 'modules/testUtils';
 import {EXPAND_STATE} from 'modules/constants';
 
 export const mockIncidents = {
@@ -45,12 +45,6 @@ export const mockIncidents = {
 };
 
 const defaultProps = {
-  instance: createInstance(),
-  forceSpinner: false,
-  selectedIncidents: ['1', '2', '3'],
-  onIncidentOperation: jest.fn(),
-  onIncidentSelection: jest.fn(),
-
   expandState: EXPAND_STATE.DEFAULT,
 };
 
