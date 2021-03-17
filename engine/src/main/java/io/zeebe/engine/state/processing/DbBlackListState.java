@@ -43,7 +43,7 @@ public final class DbBlackListState implements MutableBlackListState {
 
   private void blacklist(final long key) {
     if (key >= 0) {
-      LOG.warn(BLACKLIST_INSTANCE_MESSAGE, processInstanceKey);
+      LOG.warn(BLACKLIST_INSTANCE_MESSAGE, key);
 
       processInstanceKey.wrapLong(key);
       blackListColumnFamily.put(processInstanceKey, DbNil.INSTANCE);
