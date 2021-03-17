@@ -22,7 +22,7 @@ interface FormValues {
 
 const Filters: React.FC = () => {
   const history = useHistory();
-  const {loading} = useTasks();
+  const {loading} = useTasks({withPolling: false});
 
   return (
     <Container>

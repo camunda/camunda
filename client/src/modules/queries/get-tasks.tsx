@@ -38,6 +38,7 @@ interface GetAllOpenVariables {
   searchAfter?: string[];
   searchAfterOrEqual?: readonly string[];
   pageSize?: number;
+  isPolling?: boolean;
 }
 
 interface GetClaimedByMeVariables {
@@ -47,6 +48,7 @@ interface GetClaimedByMeVariables {
   pageSize?: number;
   assignee: string;
   state: typeof TaskStates.Created;
+  isPolling?: boolean;
 }
 
 interface GetUnclaimedVariables {
@@ -56,6 +58,7 @@ interface GetUnclaimedVariables {
   pageSize?: number;
   assigned: false;
   state: typeof TaskStates.Created;
+  isPolling?: boolean;
 }
 
 interface GetCompletedVariables {
@@ -64,6 +67,7 @@ interface GetCompletedVariables {
   searchAfterOrEqual?: readonly string[];
   pageSize?: number;
   state: typeof TaskStates.Completed;
+  isPolling?: boolean;
 }
 
 type GetTasksVariables =
@@ -109,20 +113,22 @@ const GET_TASKS = gql`
   }
 `;
 
-const mockGetAllOpenTasks = {
-  request: {
-    query: GET_TASKS,
-    variables: {
-      state: TaskStates.Created,
-      pageSize: MAX_TASKS_PER_REQUEST,
+const mockGetAllOpenTasks = (isRunAfterMutation?: boolean) =>
+  ({
+    request: {
+      query: GET_TASKS,
+      variables: {
+        state: TaskStates.Created,
+        pageSize: MAX_TASKS_PER_REQUEST,
+        isRunAfterMutation,
+      },
     },
-  },
-  result: {
-    data: {
-      tasks,
+    result: {
+      data: {
+        tasks,
+      },
     },
-  },
-} as const;
+  } as const);
 
 const mockFetchPreviousTasks = (sortValues = []) =>
   ({
@@ -158,20 +164,22 @@ const mockFetchNextTasks = (sortValues = []) =>
     },
   } as const);
 
-const mockGetAllOpenTasksUnclaimed = {
-  request: {
-    query: GET_TASKS,
-    variables: {
-      state: TaskStates.Created,
-      pageSize: MAX_TASKS_PER_REQUEST,
+const mockGetAllOpenTasksUnclaimed = (isRunAfterMutation?: boolean) =>
+  ({
+    request: {
+      query: GET_TASKS,
+      variables: {
+        state: TaskStates.Created,
+        pageSize: MAX_TASKS_PER_REQUEST,
+        isRunAfterMutation,
+      },
     },
-  },
-  result: {
-    data: {
-      tasks: unclaimedTasks,
+    result: {
+      data: {
+        tasks: unclaimedTasks,
+      },
     },
-  },
-} as const;
+  } as const);
 
 const mockGetEmptyTasks = {
   request: {

@@ -112,7 +112,7 @@ describe('<Task />', () => {
           mockGetTaskClaimed,
           mockGetCurrentUser,
           mockCompleteTask,
-          mockGetAllOpenTasks,
+          mockGetAllOpenTasks(true),
         ],
       }),
     });
@@ -162,7 +162,7 @@ describe('<Task />', () => {
           mockGetTaskClaimed,
           mockGetCurrentUser,
           mockCompleteTask,
-          mockGetAllOpenTasks,
+          mockGetAllOpenTasks(true),
         ],
       }),
     });
@@ -195,7 +195,7 @@ describe('<Task />', () => {
           mockGetTaskClaimedWithVariables,
           mockGetCurrentUser,
           mockCompleteTaskWithEditedVariable,
-          mockGetAllOpenTasks,
+          mockGetAllOpenTasks(true),
         ],
       }),
     });
@@ -227,7 +227,7 @@ describe('<Task />', () => {
           mockGetTaskClaimed,
           mockGetCurrentUser,
           mockCompleteTaskWithAddedVariable,
-          mockGetAllOpenTasks,
+          mockGetAllOpenTasks(true),
         ],
       }),
     });
@@ -335,9 +335,9 @@ describe('<Task />', () => {
           mockGetCurrentUser,
           mockGetTaskClaimed,
           mockUnclaimTask,
-          mockGetAllOpenTasks,
+          mockGetAllOpenTasks(true),
           mockClaimTask,
-          mockGetAllOpenTasks,
+          mockGetAllOpenTasks(true),
           mockGetTaskClaimed,
         ],
       }),

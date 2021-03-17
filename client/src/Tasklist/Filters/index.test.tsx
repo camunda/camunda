@@ -43,7 +43,7 @@ describe('<Filters />', () => {
     const history = createMemoryHistory();
     render(<Filters />, {
       wrapper: getWrapper(history, [
-        mockGetAllOpenTasks,
+        mockGetAllOpenTasks(),
         mockGetEmptyTasks,
         mockGetClaimedByMe,
         mockGetUnclaimed,
@@ -73,7 +73,7 @@ describe('<Filters />', () => {
     const history = createMemoryHistory({initialEntries: ['/foobar']});
 
     render(<Filters />, {
-      wrapper: getWrapper(history, [mockGetAllOpenTasks]),
+      wrapper: getWrapper(history, [mockGetAllOpenTasks()]),
     });
 
     await waitFor(() =>
@@ -99,7 +99,7 @@ describe('<Filters />', () => {
     });
 
     render(<Filters />, {
-      wrapper: getWrapper(history, [mockGetAllOpenTasks]),
+      wrapper: getWrapper(history, [mockGetAllOpenTasks()]),
     });
 
     await waitFor(() =>
@@ -137,7 +137,7 @@ describe('<Filters />', () => {
 
   it('should have the correct options', async () => {
     render(<Filters />, {
-      wrapper: getWrapper(createMemoryHistory(), [mockGetAllOpenTasks]),
+      wrapper: getWrapper(createMemoryHistory(), [mockGetAllOpenTasks()]),
     });
 
     await waitFor(() =>
@@ -153,7 +153,7 @@ describe('<Filters />', () => {
 
   it('should should disable the filter while loading', async () => {
     render(<Filters />, {
-      wrapper: getWrapper(createMemoryHistory(), [mockGetAllOpenTasks]),
+      wrapper: getWrapper(createMemoryHistory(), [mockGetAllOpenTasks()]),
     });
 
     await waitFor(() =>

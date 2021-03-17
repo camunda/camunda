@@ -45,7 +45,7 @@ const getWrapper = (
 
 describe('<Tasks />', () => {
   it('should not render when loading', async () => {
-    render(<Tasks />, {wrapper: getWrapper([mockGetAllOpenTasks])});
+    render(<Tasks />, {wrapper: getWrapper([mockGetAllOpenTasks()])});
 
     expect(screen.queryByTestId('task-0')).not.toBeInTheDocument();
     await waitForElementToBeRemoved(
@@ -55,9 +55,9 @@ describe('<Tasks />', () => {
   });
 
   it('should render tasks', async () => {
-    render(<Tasks />, {wrapper: getWrapper([mockGetAllOpenTasks])});
+    render(<Tasks />, {wrapper: getWrapper([mockGetAllOpenTasks()])});
 
-    const [firstTask, secondTask] = mockGetAllOpenTasks.result.data.tasks;
+    const [firstTask, secondTask] = mockGetAllOpenTasks().result.data.tasks;
 
     await waitForElementToBeRemoved(
       screen.getByTestId('tasks-loading-overlay'),
@@ -164,7 +164,10 @@ describe('<Tasks />', () => {
     });
 
     render(<Tasks />, {
-      wrapper: getWrapper([mockGetAllOpenTasks, mockGetCompleted], historyMock),
+      wrapper: getWrapper(
+        [mockGetAllOpenTasks(), mockGetCompleted],
+        historyMock,
+      ),
     });
 
     expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();

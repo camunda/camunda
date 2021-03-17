@@ -91,7 +91,7 @@ describe('<Details />', () => {
     render(<Details />, {
       wrapper: getWrapper({
         id: '0',
-        mocks: [mockGetTaskUnclaimed, mockClaimTask, mockGetAllOpenTasks],
+        mocks: [mockGetTaskUnclaimed, mockClaimTask, mockGetAllOpenTasks(true)],
       }),
     });
     expect(
@@ -125,7 +125,7 @@ describe('<Details />', () => {
         mocks: [
           mockGetTaskClaimed,
           mockUnclaimTask,
-          mockGetAllOpenTasksUnclaimed,
+          mockGetAllOpenTasksUnclaimed(true),
         ],
       }),
     });

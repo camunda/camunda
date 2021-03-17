@@ -73,10 +73,10 @@ const completedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
   taskState: TaskStates.Completed,
 }));
 
-const generateTask = (id: string) => {
+const generateTask = (id: string, name?: string) => {
   return {
     id,
-    name: `TASK ${id}`,
+    name: name ?? `TASK ${id}`,
     workflowName: 'Flight registration',
     assignee: {
       username: 'demo',
@@ -86,7 +86,7 @@ const generateTask = (id: string) => {
     },
     creationTime: '2021-01-13T12:13:18.655Z',
     taskState: 'CREATED',
-    sortValues: ['1610539998655', '4503599627371091'],
+    sortValues: [id, id],
     __typename: 'Task',
     isFirst: false,
   };

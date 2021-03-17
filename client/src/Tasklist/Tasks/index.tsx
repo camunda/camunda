@@ -22,7 +22,7 @@ const Tasks: React.FC = () => {
     fetchPreviousTasks,
     fetchNextTasks,
     shouldFetchMoreTasks,
-  } = useTasks();
+  } = useTasks({withPolling: true});
 
   const taskRef = useRef<HTMLLIElement>(null);
   const scrollableListRef = useRef<HTMLUListElement>(null);

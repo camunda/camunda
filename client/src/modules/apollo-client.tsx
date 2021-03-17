@@ -23,27 +23,29 @@ const client = new ApolloClient({
             merge(existing, incoming, {args}) {
               let merged = existing ? existing.slice(0) : [];
 
-              // refreshing after mutations / polling
-              if (args?.query?.searchAfterOrEqual !== undefined) {
-                return incoming;
-              }
+              let result;
+
               // requesting next page
               if (args?.query?.searchAfter !== undefined) {
                 merged.push(...incoming);
-                return merged.slice(
+                result = merged.slice(
                   Math.max(merged.length - MAX_TASKS_DISPLAYED, 0),
                 );
               }
               // requesting previous page
-              if (args?.query?.searchBefore !== undefined) {
+              else if (args?.query?.searchBefore !== undefined) {
                 if (incoming.length > 0) {
                   merged.unshift(...incoming);
                 }
 
-                return merged.slice(0, MAX_TASKS_DISPLAYED);
+                result = merged.slice(0, MAX_TASKS_DISPLAYED);
+              }
+              // initial request / polling / refreshing after mutations
+              else {
+                result = incoming;
               }
 
-              return incoming;
+              return result;
             },
           },
         },

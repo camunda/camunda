@@ -53,7 +53,7 @@ describe('<Tasklist />', () => {
   it('should load tasks', async () => {
     render(<Tasklist />, {
       wrapper: getWrapper([
-        mockGetAllOpenTasks,
+        mockGetAllOpenTasks(),
         mockGetCurrentUser,
         mockGetUnclaimed,
         mockGetUnclaimed,

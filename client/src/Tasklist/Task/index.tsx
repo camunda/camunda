@@ -73,6 +73,7 @@ const Task: React.FC = () => {
                   : MAX_TASKS_DISPLAYED,
               searchAfterOrEqual: getSortValues(dataFromCache?.tasks),
             }),
+            isRunAfterMutation: true,
           },
         },
       ],

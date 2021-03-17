@@ -17,13 +17,17 @@ import {
   GET_CURRENT_USER,
   GetCurrentUser,
 } from 'modules/queries/get-current-user';
-import {MAX_TASKS_PER_REQUEST} from 'modules/constants/tasks';
+import {
+  MAX_TASKS_PER_REQUEST,
+  MAX_TASKS_DISPLAYED,
+} from 'modules/constants/tasks';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {FilterValues} from 'modules/constants/filterValues';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
-import {useEffect} from 'react';
+import {useEffect, useRef} from 'react';
+import {getSortValues} from './Task/getSortValues';
 
-function useTasks() {
+function useTasks({withPolling}: {withPolling?: boolean}) {
   const location = useLocation();
   const filter =
     getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
@@ -31,6 +35,8 @@ function useTasks() {
   const currentUserResult = useQuery<GetCurrentUser>(GET_CURRENT_USER, {
     skip: !isClaimedByMeFilter,
   });
+
+  let timeout = useRef<NodeJS.Timeout | undefined>();
 
   const [fetchTasks, {data, networkStatus, fetchMore, called}] = useLazyQuery<
     GetTasks,
@@ -44,8 +50,8 @@ function useTasks() {
     nextFetchPolicy: 'cache-first',
     notifyOnNetworkStatusChange: true,
   });
-  const tasks = data?.tasks ?? [];
 
+  const tasks = data?.tasks;
   const fetchPreviousTasks = async () => {
     if (fetchMore === undefined) {
       return [];
@@ -55,7 +61,10 @@ function useTasks() {
       const {
         data: {tasks: latestFetchedTasks},
       } = await fetchMore({
-        variables: {searchBefore: tasks[0]?.sortValues},
+        variables: {
+          searchBefore: tasks?.[0]?.sortValues,
+          pageSize: MAX_TASKS_PER_REQUEST,
+        },
       });
 
       return latestFetchedTasks;
@@ -73,7 +82,8 @@ function useTasks() {
     try {
       await fetchMore({
         variables: {
-          searchAfter: tasks[tasks.length - 1]?.sortValues,
+          searchAfter: tasks?.[tasks.length - 1]?.sortValues,
+          pageSize: MAX_TASKS_PER_REQUEST,
         },
       });
     } catch (error) {
@@ -91,8 +101,40 @@ function useTasks() {
     fetchTasks();
   }, [fetchTasks, currentUserResult, isClaimedByMeFilter]);
 
+  useEffect(() => {
+    if (
+      withPolling &&
+      networkStatus === NetworkStatus.ready &&
+      timeout.current === undefined
+    ) {
+      timeout.current = setTimeout(() => {
+        if (fetchMore !== undefined && timeout.current !== undefined) {
+          const taskLength = tasks?.length ?? 0;
+
+          fetchMore({
+            variables: {
+              pageSize:
+                taskLength <= MAX_TASKS_PER_REQUEST
+                  ? MAX_TASKS_PER_REQUEST
+                  : MAX_TASKS_DISPLAYED,
+              searchAfterOrEqual: getSortValues(tasks),
+              isPolling: true,
+            },
+          });
+        }
+      }, 5000);
+    }
+
+    return () => {
+      if (withPolling && timeout.current !== undefined) {
+        clearTimeout(timeout.current);
+        timeout.current = undefined;
+      }
+    };
+  }, [withPolling, networkStatus, tasks, fetchMore]);
+
   return {
-    tasks,
+    tasks: tasks ?? [],
     networkStatus,
     shouldFetchMoreTasks,
     fetchPreviousTasks,

@@ -60,7 +60,7 @@ const EmptyPage: React.FC = () => {
 const AllOpenTasks: React.FC = () => {
   return (
     <Wrapper
-      mocks={[mockGetCurrentUser, mockGetAllOpenTasks]}
+      mocks={[mockGetCurrentUser, mockGetAllOpenTasks()]}
       initialEntries={['/']}
     >
       <Tasklist />
@@ -123,9 +123,9 @@ const Claimed: React.FC = () => {
     <Wrapper
       mocks={[
         mockGetCurrentUser,
-        mockGetAllOpenTasks,
+        mockGetAllOpenTasks(),
         mockGetTaskUnclaimed,
-        mockGetAllOpenTasks,
+        mockGetAllOpenTasks(),
       ]}
       initialEntries={['/0']}
     >
@@ -172,9 +172,9 @@ const ClaimedWithVariables: React.FC = () => {
     <Wrapper
       mocks={[
         mockGetCurrentUser,
-        mockGetAllOpenTasks,
+        mockGetAllOpenTasks(),
         mockGetTaskUnclaimedWithVariables,
-        mockGetAllOpenTasks,
+        mockGetAllOpenTasks(),
       ]}
       initialEntries={['/0']}
     >
