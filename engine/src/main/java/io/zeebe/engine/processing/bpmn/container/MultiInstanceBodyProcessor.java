@@ -197,7 +197,7 @@ public final class MultiInstanceBodyProcessor
       }
     }
 
-    if (stateBehavior.isLastActiveExecutionPathInScope(childContext)) {
+    if (stateBehavior.canBeCompleted(childContext)) {
       stateTransitionBehavior.transitionToCompleting(flowScopeContext);
     }
   }
@@ -209,7 +209,7 @@ public final class MultiInstanceBodyProcessor
       final BpmnElementContext childContext) {
 
     if (flowScopeContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
-        && stateBehavior.isLastActiveExecutionPathInScope(childContext)) {
+        && stateBehavior.canBeTerminated(childContext)) {
       stateTransitionBehavior.transitionToTerminated(flowScopeContext);
 
     } else {

@@ -24,5 +24,18 @@ final class ProcessInstanceSequenceFlowTakenApplier
   }
 
   @Override
-  public void applyState(final long key, final ProcessInstanceRecord value) {}
+  public void applyState(final long key, final ProcessInstanceRecord value) {
+    // We need to keep track of the active sequence flows to not complete the process instances to
+    // early. On completing of the process instance we verify that we have no more active element
+    // instances and active sequence flows. Since sequence flows are no elements, we don't want to
+    // have element instances for them.
+    //
+    // This is necessary for concurrent flows, where for example the end event is reached on one
+    // path and on the other path the sequence flow is currently active.
+    //
+    // See discussion in https://github.com/camunda-cloud/zeebe/pull/6562
+    final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
+    flowScopeInstance.incrementActiveSequenceFlows();
+    elementInstanceState.updateInstance(flowScopeInstance);
+  }
 }

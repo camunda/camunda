@@ -29,6 +29,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
       new LongProperty("calledChildInstanceKey", -1L);
   private final ObjectProperty<IndexedRecord> recordProp =
       new ObjectProperty<>("elementRecord", new IndexedRecord());
+  private final IntegerProperty activeSequenceFlowsProp =
+      new IntegerProperty("activeSequenceFlows", 0);
 
   ElementInstance() {
     declareProperty(parentKeyProp)
@@ -37,7 +39,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(multiInstanceLoopCounterProp)
         .declareProperty(interruptingEventKeyProp)
         .declareProperty(calledChildInstanceKeyProp)
-        .declareProperty(recordProp);
+        .declareProperty(recordProp)
+        .declareProperty(activeSequenceFlowsProp);
   }
 
   public ElementInstance(
@@ -152,5 +155,26 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public long getParentKey() {
     return parentKeyProp.getValue();
+  }
+
+  public long getActiveSequenceFlows() {
+    return activeSequenceFlowsProp.getValue();
+  }
+
+  public void decrementActiveSequenceFlows() {
+    final var decrement = activeSequenceFlowsProp.decrement();
+
+    if (decrement < 0) {
+      throw new IllegalStateException(
+          "Not expected to have an active sequence flow count lower then zero!");
+    }
+  }
+
+  public void incrementActiveSequenceFlows() {
+    activeSequenceFlowsProp.increment();
+  }
+
+  public void resetActiveSequenceFlows() {
+    activeSequenceFlowsProp.setValue(0);
   }
 }
