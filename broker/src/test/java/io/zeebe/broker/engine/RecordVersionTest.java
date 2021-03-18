@@ -97,7 +97,7 @@ public final class RecordVersionTest {
         .containsOnly(EXPECTED_VERSION);
 
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords()
+            RecordingExporter.processMessageSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .hasSize(2)

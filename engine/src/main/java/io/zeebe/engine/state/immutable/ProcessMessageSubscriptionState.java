@@ -7,22 +7,22 @@
  */
 package io.zeebe.engine.state.immutable;
 
-import io.zeebe.engine.state.message.ProcessInstanceSubscription;
+import io.zeebe.engine.state.message.ProcessMessageSubscription;
 import org.agrona.DirectBuffer;
 
-public interface ProcessInstanceSubscriptionState {
+public interface ProcessMessageSubscriptionState {
 
-  ProcessInstanceSubscription getSubscription(long elementInstanceKey, DirectBuffer messageName);
+  ProcessMessageSubscription getSubscription(long elementInstanceKey, DirectBuffer messageName);
 
   void visitElementSubscriptions(
-      long elementInstanceKey, ProcessInstanceSubscriptionVisitor visitor);
+      long elementInstanceKey, ProcessMessageSubscriptionVisitor visitor);
 
-  void visitSubscriptionBefore(long deadline, ProcessInstanceSubscriptionVisitor visitor);
+  void visitSubscriptionBefore(long deadline, ProcessMessageSubscriptionVisitor visitor);
 
   boolean existSubscriptionForElementInstance(long elementInstanceKey, DirectBuffer messageName);
 
   @FunctionalInterface
-  interface ProcessInstanceSubscriptionVisitor {
-    boolean visit(ProcessInstanceSubscription subscription);
+  interface ProcessMessageSubscriptionVisitor {
+    boolean visit(ProcessMessageSubscription subscription);
   }
 }

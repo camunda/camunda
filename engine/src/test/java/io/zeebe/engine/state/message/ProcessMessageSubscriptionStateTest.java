@@ -11,7 +11,7 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
@@ -22,21 +22,21 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class ProcessInstanceSubscriptionStateTest {
+public final class ProcessMessageSubscriptionStateTest {
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
-  private MutableProcessInstanceSubscriptionState state;
+  private MutableProcessMessageSubscriptionState state;
 
   @Before
   public void setUp() {
-    state = stateRule.getZeebeState().getProcessInstanceSubscriptionState();
+    state = stateRule.getZeebeState().getProcessMessageSubscriptionState();
   }
 
   @Test
   public void shouldNotExist() {
     // given
-    final ProcessInstanceSubscription subscription = subscriptionWithElementInstanceKey(1);
+    final ProcessMessageSubscription subscription = subscriptionWithElementInstanceKey(1);
     state.put(subscription);
 
     // when
@@ -50,7 +50,7 @@ public final class ProcessInstanceSubscriptionStateTest {
   @Test
   public void shouldExistSubscription() {
     // given
-    final ProcessInstanceSubscription subscription = subscriptionWithElementInstanceKey(1);
+    final ProcessMessageSubscription subscription = subscriptionWithElementInstanceKey(1);
     state.put(subscription);
 
     // when
@@ -64,11 +64,11 @@ public final class ProcessInstanceSubscriptionStateTest {
   @Test
   public void shouldNoVisitSubscriptionBeforeTime() {
     // given
-    final ProcessInstanceSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
+    final ProcessMessageSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
     state.put(subscription1);
     state.updateSentTime(subscription1, 1_000);
 
-    final ProcessInstanceSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
+    final ProcessMessageSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
     state.put(subscription2);
     state.updateSentTime(subscription2, 3_000);
 
@@ -82,11 +82,11 @@ public final class ProcessInstanceSubscriptionStateTest {
   @Test
   public void shouldVisitSubscriptionBeforeTime() {
     // given
-    final ProcessInstanceSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
+    final ProcessMessageSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
     state.put(subscription1);
     state.updateSentTime(subscription1, 1_000);
 
-    final ProcessInstanceSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
+    final ProcessMessageSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
     state.put(subscription2);
     state.updateSentTime(subscription2, 3_000);
 
@@ -100,11 +100,11 @@ public final class ProcessInstanceSubscriptionStateTest {
   @Test
   public void shouldFindSubscriptionBeforeTimeInOrder() {
     // given
-    final ProcessInstanceSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
+    final ProcessMessageSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
     state.put(subscription1);
     state.updateSentTime(subscription1, 1_000);
 
-    final ProcessInstanceSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
+    final ProcessMessageSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
     state.put(subscription2);
     state.updateSentTime(subscription2, 2_000);
 
@@ -118,10 +118,10 @@ public final class ProcessInstanceSubscriptionStateTest {
   @Test
   public void shouldNotVisitSubscriptionIfOpened() {
     // given
-    final ProcessInstanceSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
+    final ProcessMessageSubscription subscription1 = subscriptionWithElementInstanceKey(1L);
     state.put(subscription1);
 
-    final ProcessInstanceSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
+    final ProcessMessageSubscription subscription2 = subscriptionWithElementInstanceKey(2L);
     state.put(subscription2);
     state.updateToOpenedState(subscription2, 3);
 
@@ -135,7 +135,7 @@ public final class ProcessInstanceSubscriptionStateTest {
   @Test
   public void shouldUpdateSubscriptionSentTime() {
     // given
-    final ProcessInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
+    final ProcessMessageSubscription subscription = subscriptionWithElementInstanceKey(1L);
     state.put(subscription);
 
     // when
@@ -159,7 +159,7 @@ public final class ProcessInstanceSubscriptionStateTest {
   @Test
   public void shouldUpdateOpenState() {
     // given
-    final ProcessInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
+    final ProcessMessageSubscription subscription = subscriptionWithElementInstanceKey(1L);
     state.put(subscription);
 
     Assertions.assertThat(subscription.isOpening()).isTrue();
@@ -185,7 +185,7 @@ public final class ProcessInstanceSubscriptionStateTest {
   @Test
   public void shouldUpdateCloseState() {
     // given
-    final ProcessInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
+    final ProcessMessageSubscription subscription = subscriptionWithElementInstanceKey(1L);
     state.put(subscription);
 
     state.updateToOpenedState(subscription, 3);
@@ -207,7 +207,7 @@ public final class ProcessInstanceSubscriptionStateTest {
   @Test
   public void shouldRemoveSubscription() {
     // given
-    final ProcessInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
+    final ProcessMessageSubscription subscription = subscriptionWithElementInstanceKey(1L);
     state.put(subscription);
     state.updateSentTime(subscription, 1_000);
 
@@ -228,7 +228,7 @@ public final class ProcessInstanceSubscriptionStateTest {
   @Test
   public void shouldNotFailOnRemoveSubscriptionTwice() {
     // given
-    final ProcessInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
+    final ProcessMessageSubscription subscription = subscriptionWithElementInstanceKey(1L);
     state.put(subscription);
 
     // when
@@ -272,22 +272,22 @@ public final class ProcessInstanceSubscriptionStateTest {
             new Tuple<>(1L, wrapString("message1")), new Tuple<>(1L, wrapString("message2")));
   }
 
-  private ProcessInstanceSubscription subscriptionWithElementInstanceKey(
+  private ProcessMessageSubscription subscriptionWithElementInstanceKey(
       final long elementInstanceKey) {
     return subscription("handler", "messageName", "correlationKey", elementInstanceKey);
   }
 
-  private ProcessInstanceSubscription subscription(
+  private ProcessMessageSubscription subscription(
       final String name, final String correlationKey, final long elementInstanceKey) {
     return subscription("handler", name, correlationKey, elementInstanceKey);
   }
 
-  private ProcessInstanceSubscription subscription(
+  private ProcessMessageSubscription subscription(
       final String handlerId,
       final String name,
       final String correlationKey,
       final long elementInstanceKey) {
-    return new ProcessInstanceSubscription(
+    return new ProcessMessageSubscription(
         1L,
         elementInstanceKey,
         wrapString("process"),

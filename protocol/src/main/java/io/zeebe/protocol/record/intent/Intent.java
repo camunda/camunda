@@ -28,7 +28,7 @@ public interface Intent {
           ProcessInstanceIntent.class,
           MessageIntent.class,
           MessageSubscriptionIntent.class,
-          ProcessInstanceSubscriptionIntent.class,
+          ProcessMessageSubscriptionIntent.class,
           JobBatchIntent.class,
           TimerIntent.class,
           VariableIntent.class,
@@ -71,8 +71,8 @@ public interface Intent {
         return MessageSubscriptionIntent.from(intent);
       case MESSAGE_START_EVENT_SUBSCRIPTION:
         return MessageStartEventSubscriptionIntent.from(intent);
-      case PROCESS_INSTANCE_SUBSCRIPTION:
-        return ProcessInstanceSubscriptionIntent.from(intent);
+      case PROCESS_MESSAGE_SUBSCRIPTION:
+        return ProcessMessageSubscriptionIntent.from(intent);
       case JOB_BATCH:
         return JobBatchIntent.from(intent);
       case TIMER:
@@ -118,8 +118,8 @@ public interface Intent {
         return MessageSubscriptionIntent.valueOf(intent);
       case MESSAGE_START_EVENT_SUBSCRIPTION:
         return MessageStartEventSubscriptionIntent.valueOf(intent);
-      case PROCESS_INSTANCE_SUBSCRIPTION:
-        return ProcessInstanceSubscriptionIntent.valueOf(intent);
+      case PROCESS_MESSAGE_SUBSCRIPTION:
+        return ProcessMessageSubscriptionIntent.valueOf(intent);
       case JOB_BATCH:
         return JobBatchIntent.valueOf(intent);
       case TIMER:

@@ -8,35 +8,35 @@
 package io.zeebe.test.util.record;
 
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import java.util.stream.Stream;
 
-public final class ProcessInstanceSubscriptionRecordStream
+public final class ProcessMessageSubscriptionRecordStream
     extends ExporterRecordWithVariablesStream<
-        ProcessInstanceSubscriptionRecordValue, ProcessInstanceSubscriptionRecordStream> {
+        ProcessMessageSubscriptionRecordValue, ProcessMessageSubscriptionRecordStream> {
 
-  public ProcessInstanceSubscriptionRecordStream(
-      final Stream<Record<ProcessInstanceSubscriptionRecordValue>> wrappedStream) {
+  public ProcessMessageSubscriptionRecordStream(
+      final Stream<Record<ProcessMessageSubscriptionRecordValue>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
-  protected ProcessInstanceSubscriptionRecordStream supply(
-      final Stream<Record<ProcessInstanceSubscriptionRecordValue>> wrappedStream) {
-    return new ProcessInstanceSubscriptionRecordStream(wrappedStream);
+  protected ProcessMessageSubscriptionRecordStream supply(
+      final Stream<Record<ProcessMessageSubscriptionRecordValue>> wrappedStream) {
+    return new ProcessMessageSubscriptionRecordStream(wrappedStream);
   }
 
-  public ProcessInstanceSubscriptionRecordStream withProcessInstanceKey(
+  public ProcessMessageSubscriptionRecordStream withProcessInstanceKey(
       final long processInstanceKey) {
     return valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey);
   }
 
-  public ProcessInstanceSubscriptionRecordStream withElementInstanceKey(
+  public ProcessMessageSubscriptionRecordStream withElementInstanceKey(
       final long elementInstanceKey) {
     return valueFilter(v -> v.getElementInstanceKey() == elementInstanceKey);
   }
 
-  public ProcessInstanceSubscriptionRecordStream withMessageName(final String messageName) {
+  public ProcessMessageSubscriptionRecordStream withMessageName(final String messageName) {
     return valueFilter(v -> messageName.equals(v.getMessageName()));
   }
 }

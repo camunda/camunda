@@ -16,11 +16,11 @@ import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
@@ -368,12 +368,12 @@ public final class EventSubscriptionIncidentTest {
 
     // then
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CREATED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .extracting(Record::getValue)
-        .extracting(ProcessInstanceSubscriptionRecordValue::getMessageName)
+        .extracting(ProcessMessageSubscriptionRecordValue::getMessageName)
         .containsExactlyInAnyOrder(MESSAGE_NAME_1, MESSAGE_NAME_2);
 
     // and
@@ -425,8 +425,8 @@ public final class EventSubscriptionIncidentTest {
             .getFirst();
 
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CREATED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .allMatch(r -> r.getPosition() > incidentResolvedRecord.getPosition());

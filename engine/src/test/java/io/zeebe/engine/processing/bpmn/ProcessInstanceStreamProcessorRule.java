@@ -36,7 +36,7 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -246,19 +246,19 @@ public final class ProcessInstanceStreamProcessorRule extends ExternalResource
     waitUntil(() -> environmentRule.events().withIntent(state).findFirst().isPresent());
   }
 
-  public Record<ProcessInstanceSubscriptionRecord> awaitAndGetFirstSubscriptionRejection() {
+  public Record<ProcessMessageSubscriptionRecord> awaitAndGetFirstSubscriptionRejection() {
     waitUntil(
         () ->
             environmentRule
                 .events()
-                .onlyProcessInstanceSubscriptionRecords()
+                .onlyProcessMessageSubscriptionRecords()
                 .onlyRejections()
                 .findFirst()
                 .isPresent());
 
     return environmentRule
         .events()
-        .onlyProcessInstanceSubscriptionRecords()
+        .onlyProcessMessageSubscriptionRecords()
         .onlyRejections()
         .findFirst()
         .get();

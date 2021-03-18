@@ -92,7 +92,7 @@ public final class MessageSubscriptionCreateProcessor
   }
 
   private boolean sendAcknowledgeCommand() {
-    return commandSender.openProcessInstanceSubscription(
+    return commandSender.openProcessMessageSubscription(
         subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getMessageNameBuffer(),

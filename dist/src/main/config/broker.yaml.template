@@ -442,7 +442,7 @@
         #     variableDocument: true
         #     processInstance: true
         #     processInstanceCreation: false
-        #     processInstanceSubscription: false
+        #     processMessageSubscription: false
         #
         #     ignoreVariablesAbove: 32677
 

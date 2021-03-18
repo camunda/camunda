@@ -74,8 +74,8 @@ public final class Records {
     return isRecordOfType(event, ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
   }
 
-  public static boolean isProcessInstanceSubscriptionRecord(final LoggedEvent event) {
-    return isRecordOfType(event, ValueType.PROCESS_INSTANCE_SUBSCRIPTION);
+  public static boolean isProcessMessageSubscriptionRecord(final LoggedEvent event) {
+    return isRecordOfType(event, ValueType.PROCESS_MESSAGE_SUBSCRIPTION);
   }
 
   public static boolean isTimerRecord(final LoggedEvent event) {

@@ -23,7 +23,7 @@ public interface ZeebeState {
 
   MessageStartEventSubscriptionState getMessageStartEventSubscriptionState();
 
-  ProcessInstanceSubscriptionState getProcessInstanceSubscriptionState();
+  ProcessMessageSubscriptionState getProcessMessageSubscriptionState();
 
   IncidentState getIncidentState();
 

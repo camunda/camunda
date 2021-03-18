@@ -108,7 +108,7 @@ public final class MessageSubscriptionRejectProcessor
   }
 
   private boolean sendCorrelateCommand(final MessageSubscriptionRecord subscription) {
-    return commandSender.correlateProcessInstanceSubscription(
+    return commandSender.correlateProcessMessageSubscription(
         subscription.getProcessInstanceKey(),
         subscription.getElementInstanceKey(),
         subscription.getBpmnProcessIdBuffer(),

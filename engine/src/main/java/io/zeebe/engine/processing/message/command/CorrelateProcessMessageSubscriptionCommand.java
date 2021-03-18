@@ -12,14 +12,14 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class CorrelateProcessInstanceSubscriptionCommand
+public final class CorrelateProcessMessageSubscriptionCommand
     extends SbeBufferWriterReader<
-        CorrelateProcessInstanceSubscriptionEncoder, CorrelateProcessInstanceSubscriptionDecoder> {
+        CorrelateProcessMessageSubscriptionEncoder, CorrelateProcessMessageSubscriptionDecoder> {
 
-  private final CorrelateProcessInstanceSubscriptionEncoder encoder =
-      new CorrelateProcessInstanceSubscriptionEncoder();
-  private final CorrelateProcessInstanceSubscriptionDecoder decoder =
-      new CorrelateProcessInstanceSubscriptionDecoder();
+  private final CorrelateProcessMessageSubscriptionEncoder encoder =
+      new CorrelateProcessMessageSubscriptionEncoder();
+  private final CorrelateProcessMessageSubscriptionDecoder decoder =
+      new CorrelateProcessMessageSubscriptionDecoder();
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer variables = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
@@ -30,22 +30,22 @@ public final class CorrelateProcessInstanceSubscriptionCommand
   private long messageKey;
 
   @Override
-  protected CorrelateProcessInstanceSubscriptionEncoder getBodyEncoder() {
+  protected CorrelateProcessMessageSubscriptionEncoder getBodyEncoder() {
     return encoder;
   }
 
   @Override
-  protected CorrelateProcessInstanceSubscriptionDecoder getBodyDecoder() {
+  protected CorrelateProcessMessageSubscriptionDecoder getBodyDecoder() {
     return decoder;
   }
 
   @Override
   public void reset() {
     subscriptionPartitionId =
-        CorrelateProcessInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    processInstanceKey = CorrelateProcessInstanceSubscriptionDecoder.processInstanceKeyNullValue();
-    elementInstanceKey = CorrelateProcessInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
-    messageKey = CorrelateProcessInstanceSubscriptionDecoder.messageKeyNullValue();
+        CorrelateProcessMessageSubscriptionDecoder.subscriptionPartitionIdNullValue();
+    processInstanceKey = CorrelateProcessMessageSubscriptionDecoder.processInstanceKeyNullValue();
+    elementInstanceKey = CorrelateProcessMessageSubscriptionDecoder.elementInstanceKeyNullValue();
+    messageKey = CorrelateProcessMessageSubscriptionDecoder.messageKeyNullValue();
 
     messageName.wrap(0, 0);
     variables.wrap(0, 0);
@@ -56,13 +56,13 @@ public final class CorrelateProcessInstanceSubscriptionCommand
   @Override
   public int getLength() {
     return super.getLength()
-        + CorrelateProcessInstanceSubscriptionDecoder.messageNameHeaderLength()
+        + CorrelateProcessMessageSubscriptionDecoder.messageNameHeaderLength()
         + messageName.capacity()
-        + CorrelateProcessInstanceSubscriptionDecoder.variablesHeaderLength()
+        + CorrelateProcessMessageSubscriptionDecoder.variablesHeaderLength()
         + variables.capacity()
-        + CorrelateProcessInstanceSubscriptionDecoder.bpmnProcessIdHeaderLength()
+        + CorrelateProcessMessageSubscriptionDecoder.bpmnProcessIdHeaderLength()
         + bpmnProcessId.capacity()
-        + CorrelateProcessInstanceSubscriptionDecoder.correlationKeyHeaderLength()
+        + CorrelateProcessMessageSubscriptionDecoder.correlationKeyHeaderLength()
         + correlationKey.capacity();
   }
 
@@ -92,25 +92,25 @@ public final class CorrelateProcessInstanceSubscriptionCommand
 
     offset = decoder.limit();
 
-    offset += CorrelateProcessInstanceSubscriptionDecoder.messageNameHeaderLength();
+    offset += CorrelateProcessMessageSubscriptionDecoder.messageNameHeaderLength();
     final int messageNameLength = decoder.messageNameLength();
     messageName.wrap(buffer, offset, messageNameLength);
     offset += messageNameLength;
     decoder.limit(offset);
 
-    offset += CorrelateProcessInstanceSubscriptionDecoder.variablesHeaderLength();
+    offset += CorrelateProcessMessageSubscriptionDecoder.variablesHeaderLength();
     final int variablesLength = decoder.variablesLength();
     variables.wrap(buffer, offset, variablesLength);
     offset += variablesLength;
     decoder.limit(offset);
 
-    offset += CorrelateProcessInstanceSubscriptionDecoder.bpmnProcessIdHeaderLength();
+    offset += CorrelateProcessMessageSubscriptionDecoder.bpmnProcessIdHeaderLength();
     final int bpmnProcessIdLength = decoder.bpmnProcessIdLength();
     bpmnProcessId.wrap(buffer, offset, bpmnProcessIdLength);
     offset += bpmnProcessIdLength;
     decoder.limit(offset);
 
-    offset += CorrelateProcessInstanceSubscriptionDecoder.correlationKeyHeaderLength();
+    offset += CorrelateProcessMessageSubscriptionDecoder.correlationKeyHeaderLength();
     final int correlationKeyLength = decoder.correlationKeyLength();
     correlationKey.wrap(buffer, offset, correlationKeyLength);
     offset += correlationKeyLength;

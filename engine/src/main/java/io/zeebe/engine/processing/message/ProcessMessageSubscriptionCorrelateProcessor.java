@@ -21,31 +21,31 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
-import io.zeebe.engine.state.immutable.ProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.message.ProcessInstanceSubscription;
+import io.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
-public final class ProcessInstanceSubscriptionCorrelateProcessor
-    implements TypedRecordProcessor<ProcessInstanceSubscriptionRecord> {
+public final class ProcessMessageSubscriptionCorrelateProcessor
+    implements TypedRecordProcessor<ProcessMessageSubscriptionRecord> {
 
   private static final String NO_EVENT_OCCURRED_MESSAGE =
-      "Expected to correlate a process instance subscription with element key '%d' and message name '%s', "
+      "Expected to correlate a process message subscription with element key '%d' and message name '%s', "
           + "but the subscription is not active anymore";
   private static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
-      "Expected to correlate process instance subscription with element key '%d' and message name '%s', "
+      "Expected to correlate process message subscription with element key '%d' and message name '%s', "
           + "but no such subscription was found";
   private static final String ALREADY_CLOSING_MESSAGE =
-      "Expected to correlate process instance subscription with element key '%d' and message name '%s', "
+      "Expected to correlate process message subscription with element key '%d' and message name '%s', "
           + "but it is already closing";
 
-  private final ProcessInstanceSubscriptionState subscriptionState;
+  private final ProcessMessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
@@ -53,8 +53,8 @@ public final class ProcessInstanceSubscriptionCorrelateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final EventHandle eventHandle;
 
-  public ProcessInstanceSubscriptionCorrelateProcessor(
-      final ProcessInstanceSubscriptionState subscriptionState,
+  public ProcessMessageSubscriptionCorrelateProcessor(
+      final ProcessMessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender,
       final MutableZeebeState zeebeState,
       final Writers writers) {
@@ -71,7 +71,7 @@ public final class ProcessInstanceSubscriptionCorrelateProcessor
 
   @Override
   public void processRecord(
-      final TypedRecord<ProcessInstanceSubscriptionRecord> command,
+      final TypedRecord<ProcessMessageSubscriptionRecord> command,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
@@ -79,7 +79,7 @@ public final class ProcessInstanceSubscriptionCorrelateProcessor
     final var subscriptionRecord = command.getValue();
     final var elementInstanceKey = subscriptionRecord.getElementInstanceKey();
 
-    final ProcessInstanceSubscription subscription =
+    final ProcessMessageSubscription subscription =
         subscriptionState.getSubscription(
             elementInstanceKey, subscriptionRecord.getMessageNameBuffer());
 
@@ -103,7 +103,7 @@ public final class ProcessInstanceSubscriptionCorrelateProcessor
             .setInterrupting(subscription.shouldCloseOnCorrelate());
 
         stateWriter.appendFollowUpEvent(
-            command.getKey(), ProcessInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
+            command.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, subscriptionRecord);
 
         final var catchEvent =
             getCatchEvent(elementInstance.getValue(), subscriptionRecord.getElementIdBuffer());
@@ -122,7 +122,7 @@ public final class ProcessInstanceSubscriptionCorrelateProcessor
   }
 
   private void rejectCommand(
-      final TypedRecord<ProcessInstanceSubscriptionRecord> command,
+      final TypedRecord<ProcessMessageSubscriptionRecord> command,
       final RejectionType rejectionType,
       final String reasonTemplate) {
 
@@ -138,7 +138,7 @@ public final class ProcessInstanceSubscriptionCorrelateProcessor
     sendRejectionCommand(subscription);
   }
 
-  private void sendAcknowledgeCommand(final ProcessInstanceSubscriptionRecord subscription) {
+  private void sendAcknowledgeCommand(final ProcessMessageSubscriptionRecord subscription) {
     subscriptionCommandSender.correlateMessageSubscription(
         subscription.getSubscriptionPartitionId(),
         subscription.getProcessInstanceKey(),
@@ -147,7 +147,7 @@ public final class ProcessInstanceSubscriptionCorrelateProcessor
         subscription.getMessageNameBuffer());
   }
 
-  private void sendRejectionCommand(final ProcessInstanceSubscriptionRecord subscription) {
+  private void sendRejectionCommand(final ProcessMessageSubscriptionRecord subscription) {
     subscriptionCommandSender.rejectCorrelateMessageSubscription(
         subscription.getProcessInstanceKey(),
         subscription.getBpmnProcessIdBuffer(),

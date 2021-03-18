@@ -9,26 +9,26 @@ package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
-import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
+import io.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 
-public final class ProcessInstanceSubscriptionCorrelatedApplier
+public final class ProcessMessageSubscriptionCorrelatedApplier
     implements TypedEventApplier<
-        ProcessInstanceSubscriptionIntent, ProcessInstanceSubscriptionRecord> {
+        ProcessMessageSubscriptionIntent, ProcessMessageSubscriptionRecord> {
 
-  private final MutableProcessInstanceSubscriptionState subscriptionState;
+  private final MutableProcessMessageSubscriptionState subscriptionState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
-  public ProcessInstanceSubscriptionCorrelatedApplier(
-      final MutableProcessInstanceSubscriptionState subscriptionState,
+  public ProcessMessageSubscriptionCorrelatedApplier(
+      final MutableProcessMessageSubscriptionState subscriptionState,
       final MutableEventScopeInstanceState eventScopeInstanceState) {
     this.subscriptionState = subscriptionState;
     this.eventScopeInstanceState = eventScopeInstanceState;
   }
 
   @Override
-  public void applyState(final long key, final ProcessInstanceSubscriptionRecord value) {
+  public void applyState(final long key, final ProcessMessageSubscriptionRecord value) {
 
     if (value.isInterrupting()) {
       subscriptionState.remove(value.getElementInstanceKey(), value.getMessageNameBuffer());

@@ -25,15 +25,15 @@ import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.state.immutable.TimerInstanceState;
 import io.zeebe.engine.state.instance.TimerInstance;
-import io.zeebe.engine.state.message.ProcessInstanceSubscription;
+import io.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.impl.SubscriptionUtil;
-import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.Either;
@@ -52,11 +52,11 @@ public final class CatchEventBehavior {
   private final StateWriter stateWriter;
 
   private final MutableEventScopeInstanceState eventScopeInstanceState;
-  private final MutableProcessInstanceSubscriptionState processInstanceSubscriptionState;
+  private final MutableProcessMessageSubscriptionState processMessageSubscriptionState;
   private final TimerInstanceState timerInstanceState;
 
-  private final ProcessInstanceSubscriptionRecord subscription =
-      new ProcessInstanceSubscriptionRecord();
+  private final ProcessMessageSubscriptionRecord subscription =
+      new ProcessMessageSubscriptionRecord();
   private final TimerRecord timerRecord = new TimerRecord();
   private final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys = new HashMap<>();
   private final Map<DirectBuffer, Timer> evaluatedTimers = new HashMap<>();
@@ -74,7 +74,7 @@ public final class CatchEventBehavior {
 
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
     timerInstanceState = zeebeState.getTimerState();
-    processInstanceSubscriptionState = zeebeState.getProcessInstanceSubscriptionState();
+    processMessageSubscriptionState = zeebeState.getProcessMessageSubscriptionState();
   }
 
   public void unsubscribeFromEvents(
@@ -200,7 +200,7 @@ public final class CatchEventBehavior {
     subscription.setInterrupting(catchEvent.isInterrupting());
 
     // TODO (saig0): the subscription should have a key (#2805)
-    stateWriter.appendFollowUpEvent(-1L, ProcessInstanceSubscriptionIntent.CREATING, subscription);
+    stateWriter.appendFollowUpEvent(-1L, ProcessMessageSubscriptionIntent.CREATING, subscription);
 
     sideEffects.add(
         () ->
@@ -216,13 +216,13 @@ public final class CatchEventBehavior {
 
   private void unsubscribeFromMessageEvents(
       final BpmnElementContext context, final SideEffects sideEffects) {
-    processInstanceSubscriptionState.visitElementSubscriptions(
+    processMessageSubscriptionState.visitElementSubscriptions(
         context.getElementInstanceKey(),
         subscription -> unsubscribeFromMessageEvent(subscription, sideEffects));
   }
 
   private boolean unsubscribeFromMessageEvent(
-      final ProcessInstanceSubscription subscription, final SideEffects sideEffects) {
+      final ProcessMessageSubscription subscription, final SideEffects sideEffects) {
 
     final DirectBuffer messageName = cloneBuffer(subscription.getMessageName());
     final int subscriptionPartitionId = subscription.getSubscriptionPartitionId();
@@ -230,7 +230,7 @@ public final class CatchEventBehavior {
     final long elementInstanceKey = subscription.getElementInstanceKey();
 
     subscription.setClosing();
-    processInstanceSubscriptionState.updateToClosingState(
+    processMessageSubscriptionState.updateToClosingState(
         subscription, ActorClock.currentTimeMillis());
 
     sideEffects.add(

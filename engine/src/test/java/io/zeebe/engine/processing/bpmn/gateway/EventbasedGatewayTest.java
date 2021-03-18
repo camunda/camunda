@@ -18,11 +18,11 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -184,7 +184,7 @@ public final class EventbasedGatewayTest {
   }
 
   @Test
-  public void shouldOpenProcessInstanceSubscriptions() {
+  public void shouldOpenProcessMessageSubscriptions() {
     // given
 
     // when
@@ -192,7 +192,7 @@ public final class EventbasedGatewayTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId("PROCESS_WITH_MESSAGES")
-            .withVariable("key", "shouldOpenProcessInstanceSubscriptions")
+            .withVariable("key", "shouldOpenProcessMessageSubscriptions")
             .create();
 
     // then
@@ -202,9 +202,9 @@ public final class EventbasedGatewayTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    final List<Record<ProcessInstanceSubscriptionRecordValue>> subscriptionEvents =
-        RecordingExporter.processInstanceSubscriptionRecords(
-                ProcessInstanceSubscriptionIntent.CREATED)
+    final List<Record<ProcessMessageSubscriptionRecordValue>> subscriptionEvents =
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .limit(2)
             .asList();
@@ -347,26 +347,26 @@ public final class EventbasedGatewayTest {
   }
 
   @Test
-  public void shouldCloseProcessInstanceSubscription() {
+  public void shouldCloseProcessMessageSubscription() {
     // given
     final long processInstanceKey =
         ENGINE
             .processInstance()
             .ofBpmnProcessId("PROCESS_WITH_MESSAGES")
-            .withVariable("key", "shouldCloseProcessInstanceSubscription")
+            .withVariable("key", "shouldCloseProcessMessageSubscription")
             .create();
 
     // when
     ENGINE
         .message()
         .withName("msg-1")
-        .withCorrelationKey("shouldCloseProcessInstanceSubscription")
+        .withCorrelationKey("shouldCloseProcessMessageSubscription")
         .publish();
 
     // then
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.DELETED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.DELETED)
                 .withMessageName("msg-2")
                 .withProcessInstanceKey(processInstanceKey)
                 .exists())
@@ -384,8 +384,8 @@ public final class EventbasedGatewayTest {
             .create();
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).exists()).isTrue();
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CREATED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
                 .exists())
         .isTrue();
 
@@ -401,8 +401,8 @@ public final class EventbasedGatewayTest {
         .isTrue();
 
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.DELETED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.DELETED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName("msg")
                 .exists())
@@ -431,8 +431,8 @@ public final class EventbasedGatewayTest {
             .create();
 
     final List<String> messageNames =
-        RecordingExporter.processInstanceSubscriptionRecords(
-                ProcessInstanceSubscriptionIntent.CORRELATE)
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.CORRELATE)
             .withProcessInstanceKey(processInstanceKey)
             .limit(2)
             .map(r -> r.getValue().getMessageName())
@@ -441,15 +441,15 @@ public final class EventbasedGatewayTest {
     assertThat(messageNames).hasSize(2);
 
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CORRELATED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CORRELATED)
                 .withMessageName(messageNames.get(0))
                 .exists())
         .isTrue();
 
     Assertions.assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CORRELATE)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CORRELATE)
                 .withMessageName(messageNames.get(1))
                 .onlyCommandRejections()
                 .getFirst())

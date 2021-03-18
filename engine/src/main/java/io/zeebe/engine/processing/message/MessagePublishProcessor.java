@@ -195,7 +195,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     final var success =
         correlatingSubscriptions.visitSubscriptions(
             subscription ->
-                commandSender.correlateProcessInstanceSubscription(
+                commandSender.correlateProcessMessageSubscription(
                     subscription.getProcessInstanceKey(),
                     subscription.getElementInstanceKey(),
                     subscription.getBpmnProcessId(),

@@ -12,43 +12,43 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class CloseProcessInstanceSubscriptionCommand
+public final class OpenProcessMessageSubscriptionCommand
     extends SbeBufferWriterReader<
-        CloseProcessInstanceSubscriptionEncoder, CloseProcessInstanceSubscriptionDecoder> {
+        OpenProcessMessageSubscriptionEncoder, OpenProcessMessageSubscriptionDecoder> {
 
-  private final CloseProcessInstanceSubscriptionEncoder encoder =
-      new CloseProcessInstanceSubscriptionEncoder();
-  private final CloseProcessInstanceSubscriptionDecoder decoder =
-      new CloseProcessInstanceSubscriptionDecoder();
-
-  private final DirectBuffer messageName = new UnsafeBuffer(0, 0);
+  private final OpenProcessMessageSubscriptionEncoder encoder =
+      new OpenProcessMessageSubscriptionEncoder();
+  private final OpenProcessMessageSubscriptionDecoder decoder =
+      new OpenProcessMessageSubscriptionDecoder();
+  private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
   private long processInstanceKey;
   private long elementInstanceKey;
+  private boolean closeOnCorrelate;
 
   @Override
-  protected CloseProcessInstanceSubscriptionEncoder getBodyEncoder() {
+  protected OpenProcessMessageSubscriptionEncoder getBodyEncoder() {
     return encoder;
   }
 
   @Override
-  protected CloseProcessInstanceSubscriptionDecoder getBodyDecoder() {
+  protected OpenProcessMessageSubscriptionDecoder getBodyDecoder() {
     return decoder;
   }
 
   @Override
   public void reset() {
     subscriptionPartitionId =
-        CloseProcessInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    processInstanceKey = CloseProcessInstanceSubscriptionDecoder.processInstanceKeyNullValue();
-    elementInstanceKey = CloseProcessInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
+        OpenProcessMessageSubscriptionDecoder.subscriptionPartitionIdNullValue();
+    processInstanceKey = OpenProcessMessageSubscriptionDecoder.processInstanceKeyNullValue();
+    elementInstanceKey = OpenProcessMessageSubscriptionDecoder.elementInstanceKeyNullValue();
     messageName.wrap(0, 0);
   }
 
   @Override
   public int getLength() {
     return super.getLength()
-        + CloseProcessInstanceSubscriptionDecoder.messageNameHeaderLength()
+        + OpenProcessMessageSubscriptionDecoder.messageNameHeaderLength()
         + messageName.capacity();
   }
 
@@ -60,17 +60,24 @@ public final class CloseProcessInstanceSubscriptionCommand
         .subscriptionPartitionId(subscriptionPartitionId)
         .processInstanceKey(processInstanceKey)
         .elementInstanceKey(elementInstanceKey)
+        .closeOnCorrelate(closeOnCorrelate ? BooleanType.TRUE : BooleanType.FALSE)
         .putMessageName(messageName, 0, messageName.capacity());
   }
 
   @Override
-  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+  public void wrap(final DirectBuffer buffer, int offset, final int length) {
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
     processInstanceKey = decoder.processInstanceKey();
     elementInstanceKey = decoder.elementInstanceKey();
-    decoder.wrapMessageName(messageName);
+    closeOnCorrelate = decoder.closeOnCorrelate() == BooleanType.TRUE;
+
+    offset = decoder.limit();
+
+    offset += OpenProcessMessageSubscriptionDecoder.messageNameHeaderLength();
+    final int messageNameLength = decoder.messageNameLength();
+    messageName.wrap(buffer, offset, messageNameLength);
   }
 
   public int getSubscriptionPartitionId() {
@@ -101,7 +108,11 @@ public final class CloseProcessInstanceSubscriptionCommand
     return messageName;
   }
 
-  public void setMessageName(final DirectBuffer messageName) {
-    this.messageName.wrap(messageName);
+  public boolean shouldCloseOnCorrelate() {
+    return closeOnCorrelate;
+  }
+
+  public void setCloseOnCorrelate(final boolean closeOnCorrelate) {
+    this.closeOnCorrelate = closeOnCorrelate;
   }
 }

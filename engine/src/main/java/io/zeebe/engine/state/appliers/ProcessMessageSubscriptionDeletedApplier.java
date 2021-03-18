@@ -8,23 +8,23 @@
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
-import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
+import io.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 
-public final class ProcessInstanceSubscriptionDeletedApplier
+public final class ProcessMessageSubscriptionDeletedApplier
     implements TypedEventApplier<
-        ProcessInstanceSubscriptionIntent, ProcessInstanceSubscriptionRecord> {
+        ProcessMessageSubscriptionIntent, ProcessMessageSubscriptionRecord> {
 
-  private final MutableProcessInstanceSubscriptionState subscriptionState;
+  private final MutableProcessMessageSubscriptionState subscriptionState;
 
-  public ProcessInstanceSubscriptionDeletedApplier(
-      final MutableProcessInstanceSubscriptionState subscriptionState) {
+  public ProcessMessageSubscriptionDeletedApplier(
+      final MutableProcessMessageSubscriptionState subscriptionState) {
     this.subscriptionState = subscriptionState;
   }
 
   @Override
-  public void applyState(final long key, final ProcessInstanceSubscriptionRecord value) {
+  public void applyState(final long key, final ProcessMessageSubscriptionRecord value) {
 
     subscriptionState.remove(value.getElementInstanceKey(), value.getMessageNameBuffer());
   }

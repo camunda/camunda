@@ -17,7 +17,7 @@
     <data name="bpmnProcessId" id="6" type="varDataEncoding"/>
   </sbe:message>
 
-  <sbe:message name="OpenProcessInstanceSubscription" id="1">
+  <sbe:message name="OpenProcessMessageSubscription" id="1">
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
     <field name="processInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
@@ -25,7 +25,7 @@
     <data name="messageName" id="4" type="varDataEncoding"/>
   </sbe:message>
 
-  <sbe:message name="CorrelateProcessInstanceSubscription" id="2">
+  <sbe:message name="CorrelateProcessMessageSubscription" id="2">
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
     <field name="processInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
@@ -51,7 +51,7 @@
     <data name="messageName" id="3" type="varDataEncoding"/>
   </sbe:message>
 
-  <sbe:message name="CloseProcessInstanceSubscription" id="5">
+  <sbe:message name="CloseProcessMessageSubscription" id="5">
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
     <field name="processInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
