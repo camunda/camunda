@@ -15,6 +15,7 @@ it('should render nothing if the current result is no duration and the view is n
       report={{
         configuration: {aggregationTypes: ['avg']},
         view: {entity: null, properties: ['rawData']},
+        distributedBy: {type: 'none'},
       }}
     />
   );
@@ -27,6 +28,7 @@ it('should render an aggregation selection for duration reports', () => {
     <AggregationType
       report={{
         view: {properties: ['duration']},
+        distributedBy: {type: 'none'},
         configuration: {aggregationTypes: ['median']},
       }}
     />
@@ -40,6 +42,7 @@ it('should render an user task duration selection for user task duration reports
     <AggregationType
       report={{
         view: {entity: 'userTask', properties: ['duration']},
+        distributedBy: {type: 'none'},
         configuration: {aggregationTypes: ['median'], userTaskDurationTimes: ['idle']},
       }}
     />
@@ -53,6 +56,7 @@ it('should render an additional sum field for variable reports', () => {
     <AggregationType
       report={{
         view: {entity: 'variable', properties: [{}]},
+        distributedBy: {type: 'none'},
         configuration: {aggregationTypes: ['sum']},
       }}
     />
@@ -68,6 +72,7 @@ it('should reevaluate the report when changing the aggregation type', () => {
     <AggregationType
       report={{
         view: {properties: ['duration']},
+        distributedBy: {type: 'none'},
         configuration: {aggregationTypes: ['median']},
       }}
       onChange={spy}
@@ -86,7 +91,6 @@ it('should reevaluate the report when changing the aggregation type', () => {
         aggregationType: {$set: 'median'},
         targetValue: {active: {$set: false}},
       },
-      distributedBy: {$set: {type: 'none', value: null}},
     },
     true
   );
@@ -99,6 +103,7 @@ it('should hide median aggregation if processpart is defined', () => {
     <AggregationType
       report={{
         view: {properties: ['duration']},
+        distributedBy: {type: 'none'},
         configuration: {aggregationTypes: ['avg'], processPart: 'defined'},
       }}
       onChange={spy}
@@ -106,4 +111,27 @@ it('should hide median aggregation if processpart is defined', () => {
   );
 
   expect(node.find({label: 'Median'})).not.toExist();
+});
+
+it('should reset the visualization to table if the report is distributed', () => {
+  const spy = jest.fn();
+
+  const node = shallow(
+    <AggregationType
+      report={{
+        view: {properties: ['duration']},
+        distributedBy: {type: 'assignee'},
+        configuration: {aggregationTypes: ['avg']},
+        visualization: 'bar',
+      }}
+      onChange={spy}
+    />
+  );
+
+  node
+    .find('Switch')
+    .last()
+    .simulate('change', {target: {checked: true}});
+
+  expect(spy.mock.calls[0][0].visualization).toEqual({$set: 'table'});
 });

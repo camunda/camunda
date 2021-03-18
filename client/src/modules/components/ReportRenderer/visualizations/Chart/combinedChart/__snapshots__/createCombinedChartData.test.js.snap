@@ -33,15 +33,15 @@ Object {
   "datasets": Array [
     Object {
       "data": Array [
-        123,
         null,
+        123,
       ],
       "label": "report A",
     },
     Object {
       "data": Array [
-        null,
         5,
+        null,
       ],
       "label": "report B",
     },

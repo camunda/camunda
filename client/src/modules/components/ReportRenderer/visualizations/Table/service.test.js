@@ -17,6 +17,7 @@ jest.mock('services', () => {
     reportConfig: {
       process: {
         getLabelFor: () => 'foo',
+        findSelectedOption: () => ({key: 'fn'}),
         options: {
           view: {foo: {data: 'foo', label: 'viewfoo'}},
           groupBy: {
@@ -28,19 +29,31 @@ jest.mock('services', () => {
   };
 });
 
+const unitedResults = [
+  [
+    {
+      property: 'frequency',
+      data: [
+        {key: 'a', value: 1},
+        {key: 'b', value: 2},
+      ],
+    },
+  ],
+  [
+    {
+      property: 'frequency',
+      data: [
+        {key: 'a', value: ''},
+        {key: 'b', value: 0},
+      ],
+    },
+  ],
+];
+
 it('should apply flow node names to the body rows', () => {
   expect(
     getBodyRows({
-      unitedResults: [
-        [
-          {key: 'a', value: 1},
-          {key: 'b', value: 2},
-        ],
-        [
-          {key: 'a', value: ''},
-          {key: 'b', value: 0},
-        ],
-      ],
+      unitedResults,
       allKeys: ['a', 'b'],
       formatter: (v) => v,
       displayRelativeValue: false,
@@ -53,24 +66,15 @@ it('should apply flow node names to the body rows', () => {
       groupedByDuration: false,
     })
   ).toEqual([
-    ['Flownode A', 1, ''],
-    ['Flownode B', 2, 0],
+    ['Flownode A', '1', '--'],
+    ['Flownode B', '2', '0'],
   ]);
 });
 
 it('should return correctly formatted body rows', () => {
   expect(
     getBodyRows({
-      unitedResults: [
-        [
-          {key: 'a', value: 1},
-          {key: 'b', value: 2},
-        ],
-        [
-          {key: 'a', value: ''},
-          {key: 'b', value: 0},
-        ],
-      ],
+      unitedResults,
       allKeys: ['a', 'b'],
       formatter: (v) => v,
       displayRelativeValue: false,
@@ -79,24 +83,15 @@ it('should return correctly formatted body rows', () => {
       groupedByDuration: false,
     })
   ).toEqual([
-    ['a', 1, ''],
-    ['b', 2, 0],
+    ['a', '1', '--'],
+    ['b', '2', '0'],
   ]);
 });
 
 it('should hide absolute values when sepcified from body rows', () => {
   expect(
     getBodyRows({
-      unitedResults: [
-        [
-          {key: 'a', value: 1},
-          {key: 'b', value: 2},
-        ],
-        [
-          {key: 'a', value: ''},
-          {key: 'b', value: 1},
-        ],
-      ],
+      unitedResults,
       allKeys: ['a', 'b'],
       formatter: (v) => v,
       displayRelativeValue: false,
@@ -125,31 +120,13 @@ it('should return correct table label structure', () => {
   ]);
 });
 
-it('should hide absolute values when specified from labels', () => {
-  expect(
-    getFormattedLabels(
-      [
-        ['key', 'value'],
-        ['key', 'value'],
-      ],
-      ['Report A', 'Report B'],
-      ['ReportIdA', 'ReportIdB'],
-      false,
-      false
-    )
-  ).toEqual([
-    {columns: [], label: 'Report A', id: 'ReportIdA'},
-    {columns: [], label: 'Report B', id: 'ReportIdB'},
-  ]);
-});
-
 it('should return correct combined table report data properties', () => {
   const report = {
     name: 'report A',
     combined: false,
     data: {
       view: {
-        properties: ['foo'],
+        properties: ['frequency'],
       },
       groupBy: {
         type: 'startDate',
@@ -162,9 +139,14 @@ it('should return correct combined table report data properties', () => {
     },
     result: {
       instanceCount: 100,
-      data: [
-        {key: '2015-03-25T12:00:00Z', label: '2015-03-25T12:00:00Z', value: 2},
-        {key: '2015-03-26T12:00:00Z', label: '2015-03-26T12:00:00Z', value: 3},
+      measures: [
+        {
+          property: 'frequency',
+          data: [
+            {key: '2015-03-25T12:00:00Z', label: '2015-03-25T12:00:00Z', value: 2},
+            {key: '2015-03-26T12:00:00Z', label: '2015-03-26T12:00:00Z', value: 3},
+          ],
+        },
       ],
     },
   };
@@ -180,22 +162,37 @@ it('should return correct combined table report data properties', () => {
       'report B': report,
     },
   };
-  const tableProps = getCombinedTableProps(combinedReport.result, combinedReport.data.reports);
+  const tableProps = getCombinedTableProps(
+    combinedReport.result,
+    combinedReport.data.reports,
+    false,
+    true
+  );
 
   expect(tableProps).toEqual({
     combinedResult: [
       [
-        {key: '2015-03-25T12:00:00Z', label: '2015-03-25', value: 2},
-        {key: '2015-03-26T12:00:00Z', label: '2015-03-26', value: 3},
+        {
+          property: 'frequency',
+          data: [
+            {key: '2015-03-25T12:00:00Z', label: '2015-03-25', value: 2},
+            {key: '2015-03-26T12:00:00Z', label: '2015-03-26', value: 3},
+          ],
+        },
       ],
       [
-        {key: '2015-03-25T12:00:00Z', label: '2015-03-25', value: 2},
-        {key: '2015-03-26T12:00:00Z', label: '2015-03-26', value: 3},
+        {
+          property: 'frequency',
+          data: [
+            {key: '2015-03-25T12:00:00Z', label: '2015-03-25', value: 2},
+            {key: '2015-03-26T12:00:00Z', label: '2015-03-26', value: 3},
+          ],
+        },
       ],
     ],
     labels: [
-      ['foo', 'foo'],
-      ['foo', 'foo'],
+      ['foo', 'Flow Node: Count'],
+      ['foo', 'Flow Node: Count'],
     ],
     instanceCount: [100, 100],
     reportsNames: ['report A', 'report A'],

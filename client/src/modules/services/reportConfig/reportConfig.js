@@ -62,11 +62,24 @@ export default function reportConfig({view, groupBy, visualization, combinations
     const groupGroup = getGroupFor(groupBy, targetGroupBy);
     const visualizationGroup = getGroupFor(visualization, targetVisualization);
 
-    if (
-      ['pie', 'heat'].includes(targetVisualization) &&
-      report.data.distributedBy.type !== 'none'
-    ) {
-      return false;
+    if (report.data.distributedBy.type !== 'none') {
+      if (['pie', 'heat'].includes(targetVisualization)) {
+        // pie charts and heatmaps generally do not support distributed reports
+        return false;
+      }
+
+      if (
+        (targetView?.properties.length > 1 ||
+          (report.data.configuration.aggregationTypes.length > 1 &&
+            targetView?.properties.includes('duration')) ||
+          (report.data.configuration.userTaskDurationTimes.length > 1 &&
+            targetView?.properties.includes('duration') &&
+            targetView?.entity === 'userTask')) &&
+        ['bar', 'line'].includes(targetVisualization)
+      ) {
+        // distributed multi-measure reports also do not support normal chart visualizatations
+        return false;
+      }
     }
 
     if (viewGroup && groupGroup && visualizationGroup) {

@@ -4,12 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {uniteResults} from '../../service';
 import {getCombinedChartProps} from './service';
 import createCombinedChartData from './createCombinedChartData';
 
 jest.mock('../defaultChart/createDefaultChartOptions', () => ({createDatasetOptions: jest.fn()}));
-jest.mock('../../service', () => ({uniteResults: jest.fn()}));
 jest.mock('./service', () => ({getCombinedChartProps: jest.fn()}));
 
 const createReport = ({reportA, reportB, groupByType}) => {
@@ -68,11 +66,6 @@ it('should return correct chart data object for a combined report', () => {
     color: 'yellow',
   };
 
-  uniteResults.mockReturnValue([
-    [{value: 123}, {value: 5}, {value: null}],
-    [{value: 1}, {value: null}, {value: 3}],
-  ]);
-
   const chartData = createCombinedChartData({
     report: createReport({reportA, reportB, groupByType: 'flowNodes'}),
     targetValue: false,
@@ -92,11 +85,6 @@ it('should return correct chart data object for a combined report with correct d
     data: [{key: '2017-03-27T14:21:56.000', value: 5, label: 'Mar 2017'}],
     color: 'yellow',
   };
-
-  uniteResults.mockReturnValue([
-    [{value: 123}, {value: null}],
-    [{value: null}, {value: 5}],
-  ]);
 
   const chartData = createCombinedChartData({
     report: createReport({reportA, reportB}),

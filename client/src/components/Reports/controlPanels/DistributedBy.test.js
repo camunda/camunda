@@ -25,6 +25,7 @@ const data = {
   view: {entity: 'userTask', properties: ['frequency']},
   groupBy: {type: 'userTasks'},
   distributedBy: {},
+  configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
 };
 
 it('should match snapshot', () => {

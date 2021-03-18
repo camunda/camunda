@@ -169,11 +169,6 @@ function shouldResetDistributedBy(type, data, report) {
     }
   }
 
-  if (type === 'view' && data.properties.length > 1) {
-    // multi-measure reports do not support distribute by yet
-    return true;
-  }
-
   return false;
 }
 

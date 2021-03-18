@@ -43,13 +43,16 @@ export default function HyperReportRenderer({report, ...rest}) {
       result: {
         ...result,
         type: 'map',
-        data: result.data.map((entry) => ({
-          ...entry,
-          value: entry.value.find((data) => data.key === key).value,
+        measures: result.measures.map((measure) => ({
+          ...measure,
+          type: 'map',
+          data: measure.data.map((datapoint) => ({
+            ...datapoint,
+            value: datapoint.value.find((data) => data.key === key).value,
+          })),
         })),
       },
     };
-    delete newResultData[key].result.measures;
   });
 
   convertedReport.result = {

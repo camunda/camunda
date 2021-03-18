@@ -22,7 +22,7 @@ export function DistributedBy({
       view,
       groupBy,
       visualization,
-      configuration,
+      configuration: {aggregationTypes, userTaskDurationTimes},
     },
   },
   onChange,
@@ -48,7 +48,7 @@ export function DistributedBy({
     setVariables,
   ]);
 
-  if (canDistributeData(view, groupBy, configuration)) {
+  if (canDistributeData(view, groupBy)) {
     return (
       <li className="DistributedBy">
         <span className="label">{t('report.config.userTaskDistributedBy')}</span>
@@ -71,6 +71,13 @@ export function DistributedBy({
 
             if (value !== 'none' && !['line', 'table'].includes(visualization)) {
               change.visualization = {$set: 'bar'};
+            }
+
+            if (
+              value !== 'none' &&
+              isMultiMeasureReport(view, aggregationTypes, userTaskDurationTimes)
+            ) {
+              change.visualization = {$set: 'table'};
             }
 
             onChange(change, true);
@@ -98,16 +105,8 @@ function getValue(distributedBy) {
   return distributedBy.type;
 }
 
-function canDistributeData(view, groupBy, configuration) {
+function canDistributeData(view, groupBy) {
   if (!view || !groupBy) {
-    return false;
-  }
-
-  if (view.properties.length > 1) {
-    return false;
-  }
-
-  if (view.properties.includes('duration') && configuration.aggregationTypes.length > 1) {
     return false;
   }
 
@@ -216,6 +215,24 @@ function isInstanceDateReport(view, groupBy) {
 
 function isInstanceVariableReport(view, groupBy) {
   return view?.entity === 'processInstance' && groupBy?.type === 'variable';
+}
+
+function isMultiMeasureReport(view, aggregationTypes, userTaskDurationTimes) {
+  if (view.properties.length > 1) {
+    return true;
+  }
+  if (view.properties[0] === 'duration' && aggregationTypes.length > 1) {
+    return true;
+  }
+  if (
+    view.properties[0] === 'duration' &&
+    view.entity === 'userTask' &&
+    userTaskDurationTimes.length > 1
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 export default withErrorHandling(DistributedBy);

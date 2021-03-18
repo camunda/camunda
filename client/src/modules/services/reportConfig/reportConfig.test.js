@@ -16,7 +16,12 @@ const {
   update,
 } = reportConfig(process);
 
-const report = {data: {distributedBy: {type: 'none', value: null}}};
+const report = {
+  data: {
+    distributedBy: {type: 'none', value: null},
+    configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
+  },
+};
 
 it('should get a label for a simple visualization', () => {
   expect(getLabelFor('visualization', visualization, 'heat')).toBe('Heatmap');
@@ -125,7 +130,12 @@ it('should allow only visualization options that make sense for the selected vie
 });
 
 it('should forbid pie charts for distributed user task reports', () => {
-  const report = {data: {distributedBy: {type: 'userTask', value: null}}};
+  const report = {
+    data: {
+      distributedBy: {type: 'userTask', value: null},
+      configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
+    },
+  };
   const view = {entity: 'userTask', properties: ['frequency']};
   const groupBy = {type: 'assignee', value: null};
 
@@ -135,7 +145,12 @@ it('should forbid pie charts for distributed user task reports', () => {
 });
 
 it('should forbid pie charts and heatmap for distributed userTask reports', () => {
-  const report = {data: {distributedBy: {type: 'assignee', value: null}}};
+  const report = {
+    data: {
+      distributedBy: {type: 'assignee', value: null},
+      configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
+    },
+  };
   const view = {entity: 'userTask', properties: ['frequency']};
   const groupBy = {type: 'userTasks', value: null};
 
@@ -174,6 +189,8 @@ describe('update', () => {
           data: {
             view: countProcessInstances,
             visualization: 'bar',
+            distributedBy: {type: 'none', value: null},
+            configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
           },
         },
       })
@@ -187,6 +204,8 @@ describe('update', () => {
           data: {
             view: countProcessInstances,
             visualization: 'number',
+            distributedBy: {type: 'none', value: null},
+            configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
           },
         },
       }).visualization
@@ -204,6 +223,7 @@ describe('update', () => {
               view: countProcessInstances,
               visualization: 'heat',
               distributedBy: {type: 'none'},
+              configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
             },
           },
         }
@@ -218,6 +238,8 @@ describe('update', () => {
           data: {
             groupBy: startDate,
             visualization: 'bar',
+            distributedBy: {type: 'none', value: null},
+            configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
           },
         },
       })
@@ -235,6 +257,7 @@ describe('update', () => {
             groupBy: {type: 'flowNodes', value: null},
             visualization: 'heat',
             distributedBy: {type: 'none'},
+            configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
           },
         },
       })

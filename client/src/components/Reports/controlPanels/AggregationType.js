@@ -17,7 +17,7 @@ const orders = {
 };
 
 export default function AggregationType({report, onChange}) {
-  const {configuration} = report;
+  const {configuration, distributedBy} = report;
   const {aggregationTypes} = report.configuration;
 
   const isDurationReport = report?.view?.properties.includes('duration');
@@ -38,19 +38,22 @@ export default function AggregationType({report, onChange}) {
     );
 
     const singularField = field.slice(0, -1);
-    return onChange(
-      {
-        configuration: {
-          [field]: {
-            $set: newAggregations,
-          },
-          [singularField]: {$set: newAggregations[0]},
-          targetValue: {active: {$set: false}},
+
+    const changes = {
+      configuration: {
+        [field]: {
+          $set: newAggregations,
         },
-        distributedBy: {$set: {type: 'none', value: null}},
+        [singularField]: {$set: newAggregations[0]},
+        targetValue: {active: {$set: false}},
       },
-      true
-    );
+    };
+
+    if (distributedBy.type !== 'none') {
+      changes.visualization = {$set: 'table'};
+    }
+
+    return onChange(changes, true);
   }
 
   function removeAggregation(field, type) {

@@ -32,32 +32,37 @@ it('should convert a hypermap to a combined report', () => {
           },
         },
         result: {
-          data: [
+          measures: [
             {
-              key: 'Anne',
-              label: 'Anne',
-              value: [
-                {key: 'taskId1', label: 'Usertask 1', value: 8},
-                {key: 'taskId2', label: 'Usertask 2', value: 1},
-                {key: 'taskId3', label: 'Usertask 3', value: 65},
-              ],
-            },
-            {
-              key: 'Bernd',
-              label: 'Bernd',
-              value: [
-                {key: 'taskId1', label: 'Usertask 1', value: 3},
-                {key: 'taskId2', label: 'Usertask 2', value: 17},
-                {key: 'taskId3', label: 'Usertask 3', value: 22},
-              ],
-            },
-            {
-              key: 'Chris',
-              label: 'Chris',
-              value: [
-                {key: 'taskId1', label: 'Usertask 1', value: 1},
-                {key: 'taskId2', label: 'Usertask 2', value: 0},
-                {key: 'taskId3', label: 'Usertask 3', value: 73},
+              property: 'duration',
+              data: [
+                {
+                  key: 'Anne',
+                  label: 'Anne',
+                  value: [
+                    {key: 'taskId1', label: 'Usertask 1', value: 8},
+                    {key: 'taskId2', label: 'Usertask 2', value: 1},
+                    {key: 'taskId3', label: 'Usertask 3', value: 65},
+                  ],
+                },
+                {
+                  key: 'Bernd',
+                  label: 'Bernd',
+                  value: [
+                    {key: 'taskId1', label: 'Usertask 1', value: 3},
+                    {key: 'taskId2', label: 'Usertask 2', value: 17},
+                    {key: 'taskId3', label: 'Usertask 3', value: 22},
+                  ],
+                },
+                {
+                  key: 'Chris',
+                  label: 'Chris',
+                  value: [
+                    {key: 'taskId1', label: 'Usertask 1', value: 1},
+                    {key: 'taskId2', label: 'Usertask 2', value: 0},
+                    {key: 'taskId3', label: 'Usertask 3', value: 73},
+                  ],
+                },
               ],
             },
           ],
@@ -97,20 +102,25 @@ it('should format single reports names for hyper reports distributed by date var
           },
         },
         result: {
-          data: [
+          measures: [
             {
-              key: '2020-09-01T00:00:00.000+0200',
-              label: '2020-09-01T00:00:00.000+0200',
-              value: [
+              property: 'frequency',
+              data: [
                 {
-                  key: '1969-12-07T14:52:00Z',
-                  value: 1.0,
-                  label: '1969-12-07T14:52:00Z',
-                },
-                {
-                  key: '2020-03-08T14:52:00Z',
-                  value: 1.0,
-                  label: '2020-03-08T14:52:00Z',
+                  key: '2020-09-01T00:00:00.000+0200',
+                  label: '2020-09-01T00:00:00.000+0200',
+                  value: [
+                    {
+                      key: '1969-12-07T14:52:00Z',
+                      value: 1.0,
+                      label: '1969-12-07T14:52:00Z',
+                    },
+                    {
+                      key: '2020-03-08T14:52:00Z',
+                      value: 1.0,
+                      label: '2020-03-08T14:52:00Z',
+                    },
+                  ],
                 },
               ],
             },

@@ -65,20 +65,91 @@ exports[`should convert a hypermap to a combined report 1`] = `
                 Object {
                   "key": "Anne",
                   "label": "Anne",
-                  "value": 8,
+                  "value": Array [
+                    Object {
+                      "key": "taskId1",
+                      "label": "Usertask 1",
+                      "value": 8,
+                    },
+                    Object {
+                      "key": "taskId2",
+                      "label": "Usertask 2",
+                      "value": 1,
+                    },
+                    Object {
+                      "key": "taskId3",
+                      "label": "Usertask 3",
+                      "value": 65,
+                    },
+                  ],
                 },
                 Object {
                   "key": "Bernd",
                   "label": "Bernd",
-                  "value": 3,
+                  "value": Array [
+                    Object {
+                      "key": "taskId1",
+                      "label": "Usertask 1",
+                      "value": 3,
+                    },
+                    Object {
+                      "key": "taskId2",
+                      "label": "Usertask 2",
+                      "value": 17,
+                    },
+                    Object {
+                      "key": "taskId3",
+                      "label": "Usertask 3",
+                      "value": 22,
+                    },
+                  ],
                 },
                 Object {
                   "key": "Chris",
                   "label": "Chris",
-                  "value": 1,
+                  "value": Array [
+                    Object {
+                      "key": "taskId1",
+                      "label": "Usertask 1",
+                      "value": 1,
+                    },
+                    Object {
+                      "key": "taskId2",
+                      "label": "Usertask 2",
+                      "value": 0,
+                    },
+                    Object {
+                      "key": "taskId3",
+                      "label": "Usertask 3",
+                      "value": 73,
+                    },
+                  ],
                 },
               ],
               "instanceCount": 1234,
+              "measures": Array [
+                Object {
+                  "data": Array [
+                    Object {
+                      "key": "Anne",
+                      "label": "Anne",
+                      "value": 8,
+                    },
+                    Object {
+                      "key": "Bernd",
+                      "label": "Bernd",
+                      "value": 3,
+                    },
+                    Object {
+                      "key": "Chris",
+                      "label": "Chris",
+                      "value": 1,
+                    },
+                  ],
+                  "property": "duration",
+                  "type": "map",
+                },
+              ],
               "type": "map",
             },
           },
@@ -118,25 +189,166 @@ exports[`should convert a hypermap to a combined report 1`] = `
                 Object {
                   "key": "Anne",
                   "label": "Anne",
-                  "value": 1,
+                  "value": Array [
+                    Object {
+                      "key": "taskId1",
+                      "label": "Usertask 1",
+                      "value": 8,
+                    },
+                    Object {
+                      "key": "taskId2",
+                      "label": "Usertask 2",
+                      "value": 1,
+                    },
+                    Object {
+                      "key": "taskId3",
+                      "label": "Usertask 3",
+                      "value": 65,
+                    },
+                  ],
                 },
                 Object {
                   "key": "Bernd",
                   "label": "Bernd",
-                  "value": 17,
+                  "value": Array [
+                    Object {
+                      "key": "taskId1",
+                      "label": "Usertask 1",
+                      "value": 3,
+                    },
+                    Object {
+                      "key": "taskId2",
+                      "label": "Usertask 2",
+                      "value": 17,
+                    },
+                    Object {
+                      "key": "taskId3",
+                      "label": "Usertask 3",
+                      "value": 22,
+                    },
+                  ],
                 },
                 Object {
                   "key": "Chris",
                   "label": "Chris",
-                  "value": 0,
+                  "value": Array [
+                    Object {
+                      "key": "taskId1",
+                      "label": "Usertask 1",
+                      "value": 1,
+                    },
+                    Object {
+                      "key": "taskId2",
+                      "label": "Usertask 2",
+                      "value": 0,
+                    },
+                    Object {
+                      "key": "taskId3",
+                      "label": "Usertask 3",
+                      "value": 73,
+                    },
+                  ],
                 },
               ],
               "instanceCount": 1234,
+              "measures": Array [
+                Object {
+                  "data": Array [
+                    Object {
+                      "key": "Anne",
+                      "label": "Anne",
+                      "value": 1,
+                    },
+                    Object {
+                      "key": "Bernd",
+                      "label": "Bernd",
+                      "value": 17,
+                    },
+                    Object {
+                      "key": "Chris",
+                      "label": "Chris",
+                      "value": 0,
+                    },
+                  ],
+                  "property": "duration",
+                  "type": "map",
+                },
+              ],
               "type": "map",
             },
           },
         },
         "instanceCount": 1234,
+        "measures": Array [
+          Object {
+            "data": Array [
+              Object {
+                "key": "Anne",
+                "label": "Anne",
+                "value": Array [
+                  Object {
+                    "key": "taskId1",
+                    "label": "Usertask 1",
+                    "value": 8,
+                  },
+                  Object {
+                    "key": "taskId2",
+                    "label": "Usertask 2",
+                    "value": 1,
+                  },
+                  Object {
+                    "key": "taskId3",
+                    "label": "Usertask 3",
+                    "value": 65,
+                  },
+                ],
+              },
+              Object {
+                "key": "Bernd",
+                "label": "Bernd",
+                "value": Array [
+                  Object {
+                    "key": "taskId1",
+                    "label": "Usertask 1",
+                    "value": 3,
+                  },
+                  Object {
+                    "key": "taskId2",
+                    "label": "Usertask 2",
+                    "value": 17,
+                  },
+                  Object {
+                    "key": "taskId3",
+                    "label": "Usertask 3",
+                    "value": 22,
+                  },
+                ],
+              },
+              Object {
+                "key": "Chris",
+                "label": "Chris",
+                "value": Array [
+                  Object {
+                    "key": "taskId1",
+                    "label": "Usertask 1",
+                    "value": 1,
+                  },
+                  Object {
+                    "key": "taskId2",
+                    "label": "Usertask 2",
+                    "value": 0,
+                  },
+                  Object {
+                    "key": "taskId3",
+                    "label": "Usertask 3",
+                    "value": 73,
+                  },
+                ],
+              },
+            ],
+            "property": "duration",
+          },
+        ],
         "type": "hyperMap",
       },
     }
