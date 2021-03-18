@@ -48,6 +48,11 @@
       <artifactId>sbe-tool</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+
   </dependencies>
 
 
@@ -125,6 +130,11 @@
           <usedDependencies>
             <!-- dependency used but plugin seems to report a false positive here -->
             <dependency>uk.co.real-logic:sbe-tool</dependency>
+            <!--
+              ensures that zeebe-protocol is built first, preventing concurrent executions
+              of the sbe-tool
+            -->
+            <dependency>io.zeebe:zeebe-protocol</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
