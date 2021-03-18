@@ -17,14 +17,14 @@ public class MinAggregation implements AggregationStrategy {
   private static final String MIN_AGGREGATION = "minAggregation";
 
   @Override
-  public Double getValue(final Aggregations aggs) {
-    final Min aggregation = aggs.get(MIN_AGGREGATION);
+  public Double getValue(final String customIdentifier, final Aggregations aggs) {
+    final Min aggregation = aggs.get(createAggregationName(customIdentifier, MIN_AGGREGATION));
     return mapToDoubleOrNull(aggregation.getValue());
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<?> getAggregationBuilder() {
-    return min(MIN_AGGREGATION);
+  public ValuesSourceAggregationBuilder<?> createAggregationBuilder(final String customIdentifier) {
+    return min(createAggregationName(customIdentifier, MIN_AGGREGATION));
   }
 
   @Override

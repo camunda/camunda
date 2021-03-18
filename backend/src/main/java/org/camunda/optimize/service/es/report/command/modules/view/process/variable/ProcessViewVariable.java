@@ -76,7 +76,7 @@ public class ProcessViewVariable extends ProcessViewMultiAggregation {
         .must(existsQuery(getNestedVariableValueFieldForType(variableType)))
     );
     getAggregationStrategies(context.getReportData()).stream()
-      .map(strategy -> strategy.getAggregationBuilder().field(getNestedVariableValueFieldForType(variableType)))
+      .map(strategy -> strategy.createAggregationBuilder().field(getNestedVariableValueFieldForType(variableType)))
       .forEach(filteredVariablesAggregation::subAggregation);
 
     return Collections.singletonList(

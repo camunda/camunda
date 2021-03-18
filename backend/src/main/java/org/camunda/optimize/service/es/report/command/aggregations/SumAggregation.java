@@ -17,14 +17,14 @@ public class SumAggregation implements AggregationStrategy {
   private static final String SUM_AGGREGATION = "sumAggregation";
 
   @Override
-  public Double getValue(final Aggregations aggs) {
-    final Sum aggregation = aggs.get(SUM_AGGREGATION);
+  public Double getValue(final String customIdentifier, final Aggregations aggs) {
+    final Sum aggregation = aggs.get(createAggregationName(customIdentifier, SUM_AGGREGATION));
     return mapToDoubleOrNull(aggregation.getValue());
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<?> getAggregationBuilder() {
-    return sum(SUM_AGGREGATION);
+  public ValuesSourceAggregationBuilder<?> createAggregationBuilder(final String customIdentifier) {
+    return sum(createAggregationName(customIdentifier, SUM_AGGREGATION));
   }
 
   @Override

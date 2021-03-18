@@ -18,15 +18,16 @@ public class MedianAggregation implements AggregationStrategy {
   private static final String MEDIAN_AGGREGATION = "medianAggregation";
 
   @Override
-  public Double getValue(final Aggregations aggregations) {
-    final ParsedTDigestPercentiles percentiles = aggregations.get(MEDIAN_AGGREGATION);
+  public Double getValue(final String customIdentifier, final Aggregations aggregations) {
+    final ParsedTDigestPercentiles percentiles = aggregations.get(createAggregationName(
+      customIdentifier, MEDIAN_AGGREGATION
+    ));
     return ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull(percentiles);
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<?> getAggregationBuilder() {
-    return percentiles(MEDIAN_AGGREGATION)
-      .percentiles(50);
+  public ValuesSourceAggregationBuilder<?> createAggregationBuilder(final String customIdentifier) {
+    return percentiles(createAggregationName(customIdentifier, MEDIAN_AGGREGATION)).percentiles(50);
   }
 
   @Override

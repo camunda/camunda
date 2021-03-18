@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Singular;
 import lombok.experimental.Accessors;
@@ -23,13 +24,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Distr
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.VariableViewPropertyDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.result.HyperMapCommandResult;
 import org.camunda.optimize.service.es.report.result.MapCommandResult;
 import org.camunda.optimize.service.es.report.result.NumberCommandResult;
@@ -79,12 +78,12 @@ public class CompositeCommandResult {
   }
 
   public CommandEvaluationResult<List<HyperMapResultEntryDto>> transformToHyperMap() {
-    final Map<AggregationType, List<HyperMapResultEntryDto>> measureDataSets = createMeasureMap(ArrayList::new);
+    final Map<ViewMeasureIdentifier, List<HyperMapResultEntryDto>> measureDataSets = createMeasureMap(ArrayList::new);
     for (GroupByResult group : groups) {
-      final Map<AggregationType, List<MapResultEntryDto>> distributionsByAggregationType =
+      final Map<ViewMeasureIdentifier, List<MapResultEntryDto>> distributionsByAggregationType =
         createMeasureMap(ArrayList::new);
       group.distributions.forEach(distributedByResult -> distributedByResult.getViewResult().getViewMeasures()
-        .forEach(viewMeasure -> distributionsByAggregationType.get(viewMeasure.getAggregationType())
+        .forEach(viewMeasure -> distributionsByAggregationType.get(viewMeasure.getViewMeasureIdentifier())
           .add(new MapResultEntryDto(
             distributedByResult.getKey(), viewMeasure.getValue(), distributedByResult.getLabel()
           ))
@@ -107,10 +106,10 @@ public class CompositeCommandResult {
   }
 
   public CommandEvaluationResult<List<MapResultEntryDto>> transformToMap() {
-    final Map<AggregationType, List<MapResultEntryDto>> measureDataSets = createMeasureMap(ArrayList::new);
+    final Map<ViewMeasureIdentifier, List<MapResultEntryDto>> measureDataSets = createMeasureMap(ArrayList::new);
     for (GroupByResult group : groups) {
       group.getDistributions().forEach(distributedByResult -> distributedByResult.getViewResult().getViewMeasures()
-        .forEach(viewMeasure -> measureDataSets.get(viewMeasure.getAggregationType()).add(
+        .forEach(viewMeasure -> measureDataSets.get(viewMeasure.getViewMeasureIdentifier()).add(
           new MapResultEntryDto(group.getKey(), viewMeasure.getValue(), group.getLabel())
         ))
       );
@@ -129,13 +128,13 @@ public class CompositeCommandResult {
   }
 
   public CommandEvaluationResult<Double> transformToNumber() {
-    final Map<AggregationType, Double> measureDataSets = createMeasureMap(defaultNumberValueSupplier);
+    final Map<ViewMeasureIdentifier, Double> measureDataSets = createMeasureMap(defaultNumberValueSupplier);
     if (groups.size() == 1) {
       final List<DistributedByResult> distributions = groups.get(0).distributions;
       if (distributions.size() == 1) {
         final List<ViewMeasure> measures = distributions.get(0).getViewResult().getViewMeasures();
         for (final ViewMeasure viewMeasure : measures) {
-          measureDataSets.put(viewMeasure.getAggregationType(), viewMeasure.getValue());
+          measureDataSets.put(viewMeasure.getViewMeasureIdentifier(), viewMeasure.getValue());
         }
       } else {
         throw new OptimizeRuntimeException(createErrorMessage(NumberCommandResult.class, DistributedByType.class));
@@ -150,17 +149,26 @@ public class CompositeCommandResult {
     );
   }
 
-  private <T> Map<AggregationType, T> createMeasureMap(final Supplier<T> defaultValueSupplier) {
-    final Map<AggregationType, T> measureMap = new LinkedHashMap<>();
+  private <T> Map<ViewMeasureIdentifier, T> createMeasureMap(final Supplier<T> defaultValueSupplier) {
+    final Map<ViewMeasureIdentifier, T> measureMap = new LinkedHashMap<>();
 
     // if this is a frequency view only null key is expected
     if (ViewProperty.FREQUENCY.equals(viewProperty)) {
-      measureMap.put(null, defaultValueSupplier.get());
+      measureMap.put(new ViewMeasureIdentifier(), defaultValueSupplier.get());
     }
-    // if this is duration view property an entry per aggregationType is expected
-    if (ViewProperty.DURATION.equals(viewProperty)) {
+
+    if (isUserTaskDurationResult()) {
+      reportDataDto.getConfiguration().getUserTaskDurationTimes()
+        .forEach(userTaskDurationTime -> reportDataDto.getConfiguration().getAggregationTypes()
+          .forEach(aggregationType -> measureMap.put(
+            new ViewMeasureIdentifier(aggregationType, userTaskDurationTime), defaultValueSupplier.get())
+          ));
+    } else if (ViewProperty.DURATION.equals(viewProperty)) {
+      // if this is duration view property an entry per aggregationType is expected
       reportDataDto.getConfiguration().getAggregationTypes()
-        .forEach(aggregationType -> measureMap.put(aggregationType, defaultValueSupplier.get()));
+        .forEach(aggregationType -> measureMap.put(
+          new ViewMeasureIdentifier(aggregationType, null), defaultValueSupplier.get()
+        ));
     }
     return measureMap;
   }
@@ -187,36 +195,19 @@ public class CompositeCommandResult {
   }
 
   private <T> MeasureDto<T> createMeasureDto(final T value) {
-    return createMeasureDto(getAggregationType(), value);
+    return createMeasureDto(new ViewMeasureIdentifier(), value);
   }
 
-  private <T> MeasureDto<T> createMeasureDto(final AggregationType aggregationType, final T value) {
-    return new MeasureDto<>(viewProperty, aggregationType, getUserTaskDurationTime(), value);
+  private <T> MeasureDto<T> createMeasureDto(final ViewMeasureIdentifier viewMeasureIdentifier, final T value) {
+    return new MeasureDto<>(
+      viewProperty, viewMeasureIdentifier.getAggregationType(), viewMeasureIdentifier.getUserTaskDurationTime(), value
+    );
   }
 
-  private AggregationType getAggregationType() {
-    return ViewProperty.DURATION.equals(viewProperty) || isNumberVariableView()
-      ? reportDataDto.getConfiguration().getAggregationTypes().iterator().next()
-      : null;
-  }
-
-  private boolean isNumberVariableView() {
-    return Optional.ofNullable(viewProperty)
-      .flatMap(value -> value.getViewPropertyDtoIfOfType(VariableViewPropertyDto.class))
-      .map(VariableViewPropertyDto::getType)
-      .filter(propertyType -> VariableType.getNumericTypes().contains(propertyType))
-      .isPresent();
-  }
-
-  private UserTaskDurationTime getUserTaskDurationTime() {
-    if (reportDataDto instanceof ProcessReportDataDto) {
-      return ProcessViewEntity.USER_TASK.equals(((ProcessReportDataDto) reportDataDto).getView().getEntity())
-        && ViewProperty.DURATION.equals(viewProperty)
-        ? reportDataDto.getConfiguration().getUserTaskDurationTimes().iterator().next()
-        : null;
-    } else {
-      return null;
-    }
+  private boolean isUserTaskDurationResult() {
+    return reportDataDto instanceof ProcessReportDataDto
+      && ProcessViewEntity.USER_TASK.equals(((ProcessReportDataDto) reportDataDto).getView().getEntity())
+      && ViewProperty.DURATION.equals(viewProperty);
   }
 
   private Comparator<MapResultEntryDto> getSortingComparator(
@@ -391,6 +382,19 @@ public class CompositeCommandResult {
   @Data
   public static class ViewMeasure {
     private AggregationType aggregationType;
+    private UserTaskDurationTime userTaskDurationTime;
     private final Double value;
+
+    public ViewMeasureIdentifier getViewMeasureIdentifier() {
+      return new ViewMeasureIdentifier(aggregationType, userTaskDurationTime);
+    }
+  }
+
+  @Data
+  @AllArgsConstructor
+  @NoArgsConstructor
+  public static class ViewMeasureIdentifier {
+    private AggregationType aggregationType;
+    private UserTaskDurationTime userTaskDurationTime;
   }
 }

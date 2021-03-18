@@ -17,14 +17,14 @@ public class MaxAggregation implements AggregationStrategy {
   private static final String MAX_AGGREGATION = "maxAggregation";
 
   @Override
-  public Double getValue(final Aggregations aggs) {
-    final Max aggregation = aggs.get(MAX_AGGREGATION);
+  public Double getValue(final String customIdentifier, final Aggregations aggs) {
+    final Max aggregation = aggs.get(createAggregationName(customIdentifier, MAX_AGGREGATION));
     return mapToDoubleOrNull(aggregation.getValue());
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<?> getAggregationBuilder() {
-    return max(MAX_AGGREGATION);
+  public ValuesSourceAggregationBuilder<?> createAggregationBuilder(final String customIdentifier) {
+    return max(createAggregationName(customIdentifier, MAX_AGGREGATION));
   }
 
   @Override

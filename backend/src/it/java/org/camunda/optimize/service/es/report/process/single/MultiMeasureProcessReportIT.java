@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Aggre
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
@@ -36,6 +37,8 @@ import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_BY_ASSIGNEE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE;
 
 public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
@@ -96,7 +99,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
   public void numberResultSupportsMultipleViewPropertiesAlongWithMultipleAggregations(
     final AggregationType[] aggregationTypes) {
     // given
-    final Set<AggregationType> deduplicatedAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
+    final Set<AggregationType> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
     final List<ViewProperty> viewProperties = Arrays.asList(ViewProperty.FREQUENCY, ViewProperty.DURATION);
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     // modifying duration to make sure the result for count does never equal the duration average
@@ -122,9 +125,9 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
     final ReportResultResponseDto<Double> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
     assertThat(resultDto.getMeasures())
-      .hasSize(calculateExpectedMeasureCount(viewProperties, deduplicatedAggregationTypes))
+      .hasSize(calculateExpectedMeasureCount(viewProperties, distinctAggregationTypes))
       .extracting(MeasureResponseDto::getAggregationType)
-      .containsSequence(deduplicatedAggregationTypes);
+      .containsSequence(distinctAggregationTypes);
     assertThat(
       resultDto.getMeasures().stream().map(MeasureResponseDto::getProperty).distinct().collect(toList())
     ).containsExactlyElementsOf(viewProperties);
@@ -132,7 +135,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
       .extracting(MeasureResponseDto::getData)
       .containsExactlyElementsOf(
         // frequency first (1), then all aggregations with the same value as we just have one instance
-        DoubleStream.iterate(1, previousValue -> instanceDuration).limit(deduplicatedAggregationTypes.size() + 1)
+        DoubleStream.iterate(1, previousValue -> instanceDuration).limit(distinctAggregationTypes.size() + 1)
           .boxed().collect(Collectors.toList())
       );
   }
@@ -187,7 +190,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
   public void mapResultSupportsMultipleViewPropertiesAlongWithMultipleAggregations(
     final AggregationType[] aggregationTypes) {
     // given
-    final Set<AggregationType> deduplicatedAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
+    final Set<AggregationType> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
     final List<ViewProperty> viewProperties = Arrays.asList(ViewProperty.FREQUENCY, ViewProperty.DURATION);
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
@@ -210,9 +213,71 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
     final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
     assertThat(resultDto.getMeasures())
-      .hasSize(calculateExpectedMeasureCount(viewProperties, deduplicatedAggregationTypes))
+      .hasSize(calculateExpectedMeasureCount(viewProperties, distinctAggregationTypes))
       .extracting(MeasureResponseDto::getAggregationType)
-      .containsSequence(deduplicatedAggregationTypes);
+      .containsSequence(distinctAggregationTypes);
+    assertThat(
+      resultDto.getMeasures().stream().map(MeasureResponseDto::getProperty).distinct().collect(toList())
+    ).containsExactlyElementsOf(viewProperties);
+    // no result value assertion as this was considered too much effort and the main focus here is on the measures
+    // being present
+  }
+
+  @ParameterizedTest
+  @MethodSource("multiAggregationAndUserTaskTimeScenarios")
+  public void mapResultSupportsMultipleViewPropertiesAlongWithMultipleAggregationsAndMultipleTimes(
+    final AggregationType[] aggregationTypes,
+    final UserTaskDurationTime[] userTaskDurationTimes) {
+    // given
+    final Set<AggregationType> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
+    final Set<UserTaskDurationTime> distinctUserTaskDurationTimes =
+      new LinkedHashSet<>(Arrays.asList(userTaskDurationTimes));
+    final List<ViewProperty> viewProperties = Arrays.asList(ViewProperty.FREQUENCY, ViewProperty.DURATION);
+    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      // using user task frequency group by user task as base for the setup but will modify view.properties,
+      // aggregationTypes and userTaskDurationTimes
+      .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK)
+      .build();
+    reportData.getView().setProperties(viewProperties);
+    reportData.getConfiguration().setAggregationTypes(aggregationTypes);
+    reportData.getConfiguration().setUserTaskDurationTimes(userTaskDurationTimes);
+
+    // when
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse = reportClient
+      .evaluateMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
+    assertThat(resultDto.getMeasures())
+      .hasSize(calculateExpectedMeasureCount(
+        viewProperties, distinctAggregationTypes, distinctUserTaskDurationTimes
+      ))
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsSequence(
+        // generate a sequence of the expected aggregationTypes, all distinct aggregationTypes are expected
+        // to be repated for every userTaskDurationTime as each pair results in a dedicated measure
+        distinctUserTaskDurationTimes.stream()
+          .flatMap(userTaskDurationTime -> distinctAggregationTypes.stream())
+          .collect(Collectors.toList())
+      );
+    assertThat(resultDto.getMeasures())
+      .extracting(MeasureResponseDto::getUserTaskDurationTime)
+      .containsSequence(
+        // generate a sequence of all userTaskDurationTimes repeating each userTaskDuration entry
+        // by the amount of aggregations used, as every aggregationType causes multiple measures per userTaskDuration
+        distinctUserTaskDurationTimes.stream()
+          .flatMap(userTaskDurationTime -> Stream.generate(() -> userTaskDurationTime)
+            .limit(distinctAggregationTypes.size())
+          ).collect(Collectors.toList())
+      );
     assertThat(
       resultDto.getMeasures().stream().map(MeasureResponseDto::getProperty).distinct().collect(toList())
     ).containsExactlyElementsOf(viewProperties);
@@ -241,8 +306,8 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
     reportData.getView().setProperties(viewProperties);
 
     // when
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse = reportClient
-      .evaluateMapReport(reportData);
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse = reportClient
+      .evaluateHyperMapReport(reportData);
 
     // then
     // expected view properties are a Set to make sure duplicate viewProperties provided by the client
@@ -253,7 +318,8 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
       .map(viewProperty -> ViewProperty.DURATION.equals(viewProperty) ? UserTaskDurationTime.TOTAL : null)
       .collect(toList());
 
-    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
+    // then
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
     assertThat(resultDto.getMeasures())
       .extracting(MeasureResponseDto::getProperty)
@@ -276,7 +342,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
   public void hyperMapResultSupportsMultipleViewPropertiesAlongWithMultipleAggregations(
     final AggregationType[] aggregationTypes) {
     // given
-    final Set<AggregationType> deduplicatedAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
+    final Set<AggregationType> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
     final List<ViewProperty> viewProperties = Arrays.asList(ViewProperty.FREQUENCY, ViewProperty.DURATION);
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
@@ -296,16 +362,74 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
     reportData.getConfiguration().setAggregationTypes(aggregationTypes);
 
     // when
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse = reportClient
-      .evaluateMapReport(reportData);
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse = reportClient
+      .evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
     assertThat(resultDto.getMeasures())
-      .hasSize(calculateExpectedMeasureCount(viewProperties, deduplicatedAggregationTypes))
+      .hasSize(calculateExpectedMeasureCount(viewProperties, distinctAggregationTypes))
       .extracting(MeasureResponseDto::getAggregationType)
-      .containsSequence(deduplicatedAggregationTypes);
+      .containsSequence(distinctAggregationTypes);
+    assertThat(
+      resultDto.getMeasures().stream().map(MeasureResponseDto::getProperty).distinct().collect(toList())
+    ).containsExactlyElementsOf(viewProperties);
+    // no result value assertion as this was considered too much effort and the main focus here is on the measures
+    // being present
+  }
+
+  @ParameterizedTest
+  @MethodSource("multiAggregationAndUserTaskTimeScenarios")
+  public void hyperMapResultSupportsMultipleViewPropertiesAlongWithMultipleAggregationsAndMultipleUserTaskTimes(
+    final AggregationType[] aggregationTypes,
+    final UserTaskDurationTime[] userTaskDurationTimes) {
+    // given
+    final Set<AggregationType> distinctAggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
+    final Set<UserTaskDurationTime> distinctUserTaskDurationTimes =
+      new LinkedHashSet<>(Arrays.asList(userTaskDurationTimes));
+    final List<ViewProperty> viewProperties = Arrays.asList(ViewProperty.FREQUENCY, ViewProperty.DURATION);
+    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      // using user task frequency group by user task distribute by assignee as base for the setup but will modify
+      // view.properties, aggregationTypes and userTaskDurationTimes
+      .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_BY_ASSIGNEE)
+      .build();
+    reportData.getView().setProperties(viewProperties);
+    reportData.getConfiguration().setAggregationTypes(aggregationTypes);
+    reportData.getConfiguration().setUserTaskDurationTimes(userTaskDurationTimes);
+
+    // when
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse = reportClient
+      .evaluateHyperMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
+    assertThat(resultDto.getMeasures())
+      .hasSize(calculateExpectedMeasureCount(
+        viewProperties, distinctAggregationTypes, distinctUserTaskDurationTimes
+      ))
+      .extracting(MeasureResponseDto::getAggregationType)
+      .containsSequence(
+        distinctUserTaskDurationTimes.stream()
+          .flatMap(userTaskDurationTime -> distinctAggregationTypes.stream())
+          .collect(Collectors.toList())
+      );
+    assertThat(resultDto.getMeasures())
+      .extracting(MeasureResponseDto::getUserTaskDurationTime)
+      .containsSequence(
+        distinctUserTaskDurationTimes.stream()
+          .flatMap(userTaskDurationTime -> Stream.generate(() -> userTaskDurationTime)
+            .limit(distinctAggregationTypes.size())
+          ).collect(Collectors.toList())
+      );
     assertThat(
       resultDto.getMeasures().stream().map(MeasureResponseDto::getProperty).distinct().collect(toList())
     ).containsExactlyElementsOf(viewProperties);
@@ -338,8 +462,16 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
 
   private int calculateExpectedMeasureCount(final List<ViewProperty> viewProperties,
                                             final Set<AggregationType> aggregationTypes) {
+    return calculateExpectedMeasureCount(
+      viewProperties, aggregationTypes, Collections.singleton(UserTaskDurationTime.TOTAL)
+    );
+  }
+
+  private int calculateExpectedMeasureCount(final List<ViewProperty> viewProperties,
+                                            final Set<AggregationType> aggregationTypes,
+                                            final Set<UserTaskDurationTime> userTaskDurationTimes) {
     return (viewProperties.contains(ViewProperty.FREQUENCY) ? 1 : 0)
-      + (viewProperties.contains(ViewProperty.DURATION) ? aggregationTypes.size() : 0);
+      + (viewProperties.contains(ViewProperty.DURATION) ? aggregationTypes.size() * userTaskDurationTimes.size() : 0);
   }
 
   private static AggregationType[] getSupportedAggregationTypes() {
@@ -369,6 +501,21 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
       // duplicate aggregations should be handled by only considering the first occurrence
       Arguments.of((Object) new AggregationType[]{AggregationType.MIN, AggregationType.MIN}),
       Arguments.of((Object) new AggregationType[]{AggregationType.MIN, AggregationType.MAX, AggregationType.MIN})
+    );
+  }
+
+  private static Stream<Arguments> multiAggregationAndUserTaskTimeScenarios() {
+    return Stream.of(
+      Arguments.of(getSupportedAggregationTypes(), UserTaskDurationTime.values()),
+      // duplicate aggregations/userTaskTimes should be handled by only considering the first occurrence
+      Arguments.of(
+        new AggregationType[]{AggregationType.MIN, AggregationType.MIN},
+        new UserTaskDurationTime[]{UserTaskDurationTime.IDLE, UserTaskDurationTime.IDLE}
+      ),
+      Arguments.of(
+        new AggregationType[]{AggregationType.MIN, AggregationType.MAX, AggregationType.MIN},
+        new UserTaskDurationTime[]{UserTaskDurationTime.IDLE, UserTaskDurationTime.WORK, UserTaskDurationTime.IDLE}
+      )
     );
   }
 }

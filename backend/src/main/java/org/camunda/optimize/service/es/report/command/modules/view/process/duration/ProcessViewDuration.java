@@ -32,7 +32,7 @@ public abstract class ProcessViewDuration extends ProcessViewMultiAggregation {
   @Override
   public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
     return getAggregationStrategies(context.getReportData()).stream()
-      .map(strategy -> strategy.getAggregationBuilder().script(getScriptedAggregationField(context.getReportData())))
+      .map(strategy -> strategy.createAggregationBuilder().script(getScriptedAggregationField(context.getReportData())))
       .collect(Collectors.toList());
   }
 

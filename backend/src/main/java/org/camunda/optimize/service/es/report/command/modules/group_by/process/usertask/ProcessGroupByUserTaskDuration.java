@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.usertask;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.DurationGroupByDto;
@@ -47,7 +46,7 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
                                                     final ExecutionContext<ProcessReportDataDto> context) {
     return durationAggregationService
       .createLimitedGroupByScriptedUserTaskDurationAggregation(
-        searchSourceBuilder, context, distributedByPart, getDurationScript(context.getReportConfiguration())
+        searchSourceBuilder, context, distributedByPart, getDurationScript(getUserTaskDurationTime(context))
       )
       .map(durationAggregation -> (AggregationBuilder) createFilteredUserTaskAggregation(context, durationAggregation))
       .map(Collections::singletonList)
@@ -66,7 +65,6 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
           durationAggregationService.mapGroupByDurationResults(
             response, userFilteredFlowNodes.getAggregations(), context, distributedByPart
           );
-
         compositeCommandResult.setGroups(durationHistogramData);
       });
   }
@@ -79,18 +77,24 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
   @Override
   public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
                                                 final BoolQueryBuilder baseQuery) {
-    return Optional.of(retrieveMinMaxDurationStats(baseQuery, context.getReportConfiguration()));
+    return Optional.of(retrieveMinMaxDurationStats(baseQuery, getUserTaskDurationTime(context)));
+  }
+
+  private UserTaskDurationTime getUserTaskDurationTime(final ExecutionContext<ProcessReportDataDto> context) {
+    // groupBy is only supported on the first userTaskDurationTime, defaults to total
+    return context.getReportConfiguration().getUserTaskDurationTimes().stream()
+      .findFirst()
+      .orElse(UserTaskDurationTime.TOTAL);
   }
 
   private MinMaxStatDto retrieveMinMaxDurationStats(final QueryBuilder baseQuery,
-                                                    final SingleReportConfigurationDto reportConfiguration) {
+                                                    final UserTaskDurationTime userTaskDurationTime) {
     return minMaxStatsService.getScriptedMinMaxStats(
-      baseQuery, PROCESS_INSTANCE_INDEX_NAME, USER_TASKS, getDurationScript(reportConfiguration)
+      baseQuery, PROCESS_INSTANCE_INDEX_NAME, USER_TASKS, getDurationScript(userTaskDurationTime)
     );
   }
 
-  private Script getDurationScript(final SingleReportConfigurationDto reportConfiguration) {
-    final UserTaskDurationTime userTaskDurationTime = reportConfiguration.getUserTaskDurationTime();
+  private Script getDurationScript(final UserTaskDurationTime userTaskDurationTime) {
     return AggregationFilterUtil.getDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
       USER_TASKS + "." + userTaskDurationTime.getDurationFieldName(),
