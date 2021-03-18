@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogType;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.springframework.stereotype.Component;
 
@@ -40,14 +41,12 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTI
 
 @Component
 @Slf4j
-public class IdentityLinkLogWriter extends AbstractUserTaskWriter<UserTaskInstanceDto> {
-
-  private final OptimizeElasticsearchClient esClient;
+public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
 
   public IdentityLinkLogWriter(final OptimizeElasticsearchClient esClient,
+                               final ElasticSearchSchemaManager elasticSearchSchemaManager,
                                final ObjectMapper objectMapper) {
-    super(objectMapper);
-    this.esClient = esClient;
+    super(esClient, elasticSearchSchemaManager, objectMapper);
   }
 
   public void importIdentityLinkLogs(final List<IdentityLinkLogEntryDto> identityLinkLogs) {
@@ -67,6 +66,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter<UserTaskInstan
       userTaskInstances.add(new UserTaskInstanceDto(
         firstOperationEntry.getTaskId(),
         firstOperationEntry.getProcessInstanceId(),
+        firstOperationEntry.getProcessDefinitionKey(),
         firstOperationEntry.getEngine(),
         extractAssignee(assigneeOperations),
         extractCandidateGroups(candidateGroupOperations),
@@ -77,11 +77,11 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter<UserTaskInstan
 
     final Map<String, List<UserTaskInstanceDto>> processInstanceIdToUserTasks = new HashMap<>();
     for (UserTaskInstanceDto userTask : userTaskInstances) {
-      if (!processInstanceIdToUserTasks.containsKey(userTask.getProcessInstanceId())) {
-        processInstanceIdToUserTasks.put(userTask.getProcessInstanceId(), new ArrayList<>());
-      }
+      processInstanceIdToUserTasks.putIfAbsent(userTask.getProcessInstanceId(), new ArrayList<>());
       processInstanceIdToUserTasks.get(userTask.getProcessInstanceId()).add(userTask);
     }
+
+    createInstanceIndicesIfMissing(userTaskInstances, UserTaskInstanceDto::getProcessDefinitionKey);
 
     final List<ImportRequestDto> importRequests = processInstanceIdToUserTasks.entrySet().stream()
       .map(entry -> ImportRequestDto.builder()

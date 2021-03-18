@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS
 
 class UpgradeEsSchemaIT extends BaseUpgradeIT {
   private static final Logger log = LoggerFactory.getLogger(UpgradeEsSchemaIT.class);
@@ -85,18 +85,18 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
       assertThat(newElasticClient.getDocumentCount(PROCESS_DEFINITION_INDEX_NAME))
         .as("Process Definition Document Count is not as expected")
         .isEqualTo(oldElasticClient.getDocumentCount(PROCESS_DEFINITION_INDEX_NAME))
-      assertThat(newElasticClient.getDocumentCount(PROCESS_INSTANCE_INDEX_NAME))
+      assertThat(newElasticClient.getDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS))
         .as("Process Instance Document Count is not as expected")
-        .isEqualTo(oldElasticClient.getDocumentCount(PROCESS_INSTANCE_INDEX_NAME))
-      assertThat(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.EVENTS))
+        .isEqualTo(oldElasticClient.getDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS))
+      assertThat(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.EVENTS))
         .as("Process Instance Activity Document Count is not as expected")
-        .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.EVENTS))
-      assertThat(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.VARIABLES))
+        .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.EVENTS))
+      assertThat(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.VARIABLES))
         .as("Process Instance Activity Variable Count is not as expected")
-        .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.VARIABLES))
-      assertThat(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.USER_TASKS))
+        .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.VARIABLES))
+      assertThat(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.USER_TASKS))
         .as("Process Instance User Task Count is not as expected")
-        .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.USER_TASKS))
+        .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.USER_TASKS))
 
       assertThat(oldElasticClient.getDocumentCount(DECISION_DEFINITION_INDEX_NAME))
         .as("Decision Definition Document Count is not as expected")

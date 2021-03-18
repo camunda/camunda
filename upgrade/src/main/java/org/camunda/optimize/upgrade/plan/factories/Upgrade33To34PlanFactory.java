@@ -10,7 +10,10 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
@@ -20,14 +23,20 @@ import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.plan.indices.DecisionInstanceIndexV4Old;
+import org.camunda.optimize.upgrade.plan.indices.EventProcessInstanceIndexV5Old;
+import org.camunda.optimize.upgrade.plan.indices.ProcessInstanceIndexV5Old;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.schema.AddAliasStep;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.ReindexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -35,15 +44,20 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.DECISION_DEFINITION_KEY;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -52,6 +66,9 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
   @Override
   public UpgradePlan createUpgradePlan(final OptimizeElasticsearchClient esClient) {
     final Set<String> existingDecisionKeys = getAllExistingDefinitionKeys(esClient, DECISION);
+    final Set<String> existingProcessKeys = getAllExistingDefinitionKeys(esClient, PROCESS);
+    final Map<String, String> existingEventIndexIdToKeyMap =
+      getAllExistingEventBasedIndexIdToKey(esClient, getAllEventProcessIndexIds(esClient));
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion("3.3.0")
       .toVersion("3.4.0")
@@ -59,9 +76,14 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
       .addUpgradeStep(migrateSingleDecisionReportV6())
       .addUpgradeStep(migrateEventMappingEventSources())
       .addUpgradeStep(migrateEventPublishStateEventSources())
-      .addUpgradeSteps(createDedicatedInstanceIndicesPerDecisionDefinition(existingDecisionKeys))
-      .addUpgradeSteps(migrateAllDecisionInstancesToDedicatedIndices(existingDecisionKeys))
-      .addUpgradeStep(deleteOldDecisionInstanceIndex())
+      .addUpgradeSteps(createDedicatedInstanceIndicesPerDefinition(DECISION, existingDecisionKeys))
+      .addUpgradeSteps(migrateAllInstancesToDedicatedIndices(DECISION, existingDecisionKeys))
+      .addUpgradeStep(deleteOldInstanceIndex(DECISION))
+      .addUpgradeSteps(createDedicatedInstanceIndicesPerDefinition(PROCESS, existingProcessKeys))
+      .addUpgradeSteps(migrateAllInstancesToDedicatedIndices(PROCESS, existingProcessKeys))
+      .addUpgradeStep(deleteOldInstanceIndex(PROCESS))
+      .addUpgradeSteps(upgradeAllEventProcessInstanceIndices(existingEventIndexIdToKeyMap.keySet()))
+      .addUpgradeSteps(addReadAliasesToEventInstancesIndices(existingEventIndexIdToKeyMap))
       .build();
   }
 
@@ -245,24 +267,96 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
     return new UpdateIndexStep(new EventProcessPublishStateIndex(), script);
   }
 
-  private static List<UpgradeStep> createDedicatedInstanceIndicesPerDecisionDefinition(final Set<String> existingDecisionKeys) {
-    return existingDecisionKeys.stream()
-      .map(key -> new CreateIndexStep(new DecisionInstanceIndex(key), Sets.newHashSet(DECISION_INSTANCE_MULTI_ALIAS)))
+  private static List<UpgradeStep> createDedicatedInstanceIndicesPerDefinition(final DefinitionType type,
+                                                                               final Set<String> existingDefinitionKeys) {
+    return existingDefinitionKeys.stream()
+      .map(key -> new CreateIndexStep(getNewInstanceIndex(type, key), Sets.newHashSet(getNewReadMultiAlias(type))))
       .collect(toList());
   }
 
-  private static List<UpgradeStep> migrateAllDecisionInstancesToDedicatedIndices(final Set<String> existingDecisionKeys) {
-    return existingDecisionKeys.stream()
+  private static List<UpgradeStep> migrateAllInstancesToDedicatedIndices(final DefinitionType type,
+                                                                         final Set<String> existingDefinitionKeys) {
+    return existingDefinitionKeys.stream()
       .map(key -> new ReindexStep(
-        new DecisionInstanceIndexV4Old(),
-        new DecisionInstanceIndex(key),
-        boolQuery().must(termQuery(DECISION_DEFINITION_KEY, key))
+        getOldInstanceIndex(type),
+        getNewInstanceIndex(type, key),
+        boolQuery().must(termQuery(resolveDefinitionKeyFieldForType(type), key))
       ))
       .collect(toList());
   }
 
-  private static DeleteIndexIfExistsStep deleteOldDecisionInstanceIndex() {
-    return new DeleteIndexIfExistsStep(new DecisionInstanceIndexV4Old());
+  private static DeleteIndexIfExistsStep deleteOldInstanceIndex(final DefinitionType type) {
+    return new DeleteIndexIfExistsStep(getOldInstanceIndex(type));
+  }
+
+  private static List<UpgradeStep> upgradeAllEventProcessInstanceIndices(final Set<String> existingIndexIds) {
+    // upgrade all event process indices because the process instance index version has increased
+    return existingIndexIds.stream()
+      .map(id -> new UpdateIndexStep(new EventProcessInstanceIndex(id)))
+      .collect(toList());
+  }
+
+  private static List<UpgradeStep> addReadAliasesToEventInstancesIndices(final Map<String, String> indexIdToKeyMap) {
+    return indexIdToKeyMap.entrySet().stream()
+      .map(entry -> new AddAliasStep(
+        new EventProcessInstanceIndex(entry.getKey()),
+        false,
+        Sets.newHashSet(PROCESS_INSTANCE_MULTI_ALIAS, getProcessInstanceIndexAliasName(entry.getValue()))
+      ))
+      .collect(toList());
+  }
+
+  private Map<String, String> getAllExistingEventBasedIndexIdToKey(final OptimizeElasticsearchClient esClient,
+                                                                   final Set<String> eventProcessIndexIds) {
+    final Map<String, String> indexIdByKeyMap = new HashMap<>();
+    final String defKeyAggName = "definitionKeyAggregation";
+    final TermsAggregationBuilder definitionKeyAgg = AggregationBuilders
+      .terms(defKeyAggName)
+      .field(ProcessInstanceDto.Fields.processDefinitionKey);
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().fetchSource(false).size(0);
+    searchSourceBuilder.aggregation(definitionKeyAgg);
+
+    for (String indexId : eventProcessIndexIds) {
+      final SearchRequest searchRequest =
+        new SearchRequest(new EventProcessInstanceIndexV5Old(indexId).getIndexName()).source(searchSourceBuilder);
+      final SearchResponse response;
+      try {
+        response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      } catch (IOException e) {
+        throw new UpgradeRuntimeException("Was not able to retrieve definition keys for event based instances", e);
+      }
+      final Terms definitionKeyTerms = response.getAggregations().get(defKeyAggName);
+      final List<String> definitionKeyList = definitionKeyTerms.getBuckets().stream()
+        .map(MultiBucketsAggregation.Bucket::getKeyAsString)
+        .collect(toList());
+      if (definitionKeyList.isEmpty()) {
+        return Collections.emptyMap();
+      }
+      indexIdByKeyMap.put(indexId, definitionKeyList.get(0));
+    }
+
+    return indexIdByKeyMap;
+  }
+
+  private Set<String> getAllEventProcessIndexIds(final OptimizeElasticsearchClient esClient) {
+    final GetAliasesResponse aliases;
+    try {
+      aliases = esClient.getAlias(
+        new GetAliasesRequest(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
+      );
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Failed retrieving aliases for event process index prefix.");
+    }
+    return aliases.getAliases()
+      .values()
+      .stream()
+      .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetadata::alias))
+      .map(fullAliasName ->
+             fullAliasName.substring(
+               fullAliasName.lastIndexOf(EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
+                 + EVENT_PROCESS_INSTANCE_INDEX_PREFIX.length()
+             ))
+      .collect(toSet());
   }
 
   private Set<String> getAllExistingDefinitionKeys(final OptimizeElasticsearchClient esClient,
@@ -292,7 +386,7 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
   private String[] resolveIndexNameForType(final DefinitionType type) {
     switch (type) {
       case PROCESS:
-        return new String[]{PROCESS_INSTANCE_INDEX_NAME};
+        return new String[]{new ProcessInstanceIndexV5Old().getIndexName()};
       case DECISION:
         return new String[]{new DecisionInstanceIndexV4Old().getIndexName()};
       default:
@@ -300,12 +394,46 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
     }
   }
 
-  private String resolveDefinitionKeyFieldForType(final DefinitionType type) {
+  private static String resolveDefinitionKeyFieldForType(final DefinitionType type) {
     switch (type) {
       case PROCESS:
         return ProcessInstanceDto.Fields.processDefinitionKey;
       case DECISION:
         return DecisionInstanceDto.Fields.decisionDefinitionKey;
+      default:
+        throw new OptimizeRuntimeException("Unsupported definition type:" + type);
+    }
+  }
+
+  private static IndexMappingCreator getOldInstanceIndex(final DefinitionType type) {
+    switch (type) {
+      case PROCESS:
+        return new ProcessInstanceIndexV5Old();
+      case DECISION:
+        return new DecisionInstanceIndexV4Old();
+      default:
+        throw new OptimizeRuntimeException("Unsupported definition type:" + type);
+    }
+  }
+
+  private static IndexMappingCreator getNewInstanceIndex(final DefinitionType type,
+                                                         final String definitionKey) {
+    switch (type) {
+      case PROCESS:
+        return new ProcessInstanceIndex(definitionKey);
+      case DECISION:
+        return new DecisionInstanceIndex(definitionKey);
+      default:
+        throw new OptimizeRuntimeException("Unsupported definition type:" + type);
+    }
+  }
+
+  private static String getNewReadMultiAlias(final DefinitionType type) {
+    switch (type) {
+      case PROCESS:
+        return PROCESS_INSTANCE_MULTI_ALIAS;
+      case DECISION:
+        return DECISION_INSTANCE_MULTI_ALIAS;
       default:
         throw new OptimizeRuntimeException("Unsupported definition type:" + type);
     }

@@ -75,6 +75,7 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
     return new UserTaskInstanceDto(
       engineEntity.getId(),
       engineEntity.getProcessInstanceId(),
+      engineEntity.getProcessDefinitionKey(),
       engineContext.getEngineAlias(),
       engineEntity.getTaskDefinitionKey(),
       engineEntity.getActivityInstanceId(),

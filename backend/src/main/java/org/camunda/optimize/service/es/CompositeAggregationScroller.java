@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -19,9 +20,12 @@ import org.elasticsearch.search.aggregations.bucket.composite.ParsedComposite;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
+
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 
 @Slf4j
 public class CompositeAggregationScroller {
@@ -67,6 +71,11 @@ public class CompositeAggregationScroller {
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(e)) {
+        return Collections.emptyList();
+      }
+      throw e;
     }
   }
 

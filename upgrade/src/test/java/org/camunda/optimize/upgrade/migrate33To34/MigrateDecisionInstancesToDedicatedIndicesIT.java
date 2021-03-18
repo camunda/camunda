@@ -7,23 +7,17 @@ package org.camunda.optimize.upgrade.migrate33To34;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.factories.Upgrade33To34PlanFactory;
 import org.camunda.optimize.upgrade.plan.indices.DecisionInstanceIndexV4Old;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.indices.GetIndexRequest;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 
-public class MigrateDecisionInstancesToDedicatedIndicesIT extends AbstractUpgrade33IT {
+public class MigrateDecisionInstancesToDedicatedIndicesIT extends AbstractMigrateInstanceIndicesIT {
 
   @SneakyThrows
   @Test
@@ -57,17 +51,5 @@ public class MigrateDecisionInstancesToDedicatedIndicesIT extends AbstractUpgrad
 
     // the multi alias points to all new instance indices
     assertThat(getAllDocumentsOfIndex(DECISION_INSTANCE_MULTI_ALIAS)).hasSize(3);
-  }
-
-  private boolean indexExists(final IndexMappingCreator index) {
-    final GetIndexRequest request = new GetIndexRequest(indexNameService.getOptimizeIndexNameWithVersion(index));
-    try {
-      return prefixAwareClient.exists(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      final String message = String.format(
-        "Could not check if [%s] index already exist.", String.join(",", index.getIndexName())
-      );
-      throw new OptimizeRuntimeException(message, e);
-    }
   }
 }

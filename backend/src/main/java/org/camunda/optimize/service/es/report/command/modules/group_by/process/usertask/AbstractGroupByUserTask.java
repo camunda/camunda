@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
@@ -24,7 +24,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 @RequiredArgsConstructor
-public abstract class AbstractGroupByUserTask extends GroupByPart<ProcessReportDataDto> {
+public abstract class AbstractGroupByUserTask extends ProcessGroupByPart {
   private static final String USER_TASKS_AGGREGATION = "userTasks";
   private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
 

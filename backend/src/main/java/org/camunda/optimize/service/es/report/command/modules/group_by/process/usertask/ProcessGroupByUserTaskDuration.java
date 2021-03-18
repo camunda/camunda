@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -77,7 +76,7 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
   @Override
   public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
                                                 final BoolQueryBuilder baseQuery) {
-    return Optional.of(retrieveMinMaxDurationStats(baseQuery, getUserTaskDurationTime(context)));
+    return Optional.of(retrieveMinMaxDurationStats(context, baseQuery, getUserTaskDurationTime(context)));
   }
 
   private UserTaskDurationTime getUserTaskDurationTime(final ExecutionContext<ProcessReportDataDto> context) {
@@ -87,10 +86,11 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
       .orElse(UserTaskDurationTime.TOTAL);
   }
 
-  private MinMaxStatDto retrieveMinMaxDurationStats(final QueryBuilder baseQuery,
+  private MinMaxStatDto retrieveMinMaxDurationStats(final ExecutionContext<ProcessReportDataDto> context,
+                                                    final QueryBuilder baseQuery,
                                                     final UserTaskDurationTime userTaskDurationTime) {
     return minMaxStatsService.getScriptedMinMaxStats(
-      baseQuery, PROCESS_INSTANCE_INDEX_NAME, USER_TASKS, getDurationScript(userTaskDurationTime)
+      baseQuery, getIndexName(context), USER_TASKS, getDurationScript(userTaskDurationTime)
     );
   }
 

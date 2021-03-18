@@ -52,11 +52,11 @@ import static org.camunda.optimize.service.es.report.command.service.VariableAgg
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLE_HISTOGRAM_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.createFilterForUndefinedOrNullQueryBuilder;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -91,7 +91,7 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
       .variablePath(VARIABLES)
       .nestedVariableNameField(getNestedVariableNameField())
       .nestedVariableValueFieldLabel(getNestedVariableValueFieldLabel(getVariableType(context)))
-      .indexName(PROCESS_INSTANCE_INDEX_NAME)
+      .indexName(getProcessInstanceIndexAliasName(context.getReportData().getProcessDefinitionKey()))
       .timezone(context.getTimezone())
       .customBucketDto(context.getReportData().getConfiguration().getDistributeByCustomBucket())
       .dateUnit(getDistributeByDateUnit(context))

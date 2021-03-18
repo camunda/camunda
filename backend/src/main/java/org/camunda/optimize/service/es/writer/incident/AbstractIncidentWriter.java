@@ -6,13 +6,14 @@
 package org.camunda.optimize.service.es.writer.incident;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.writer.AbstractProcessInstanceDataWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -27,28 +28,36 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENTS;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @Slf4j
-@AllArgsConstructor
 @Component
-public abstract class AbstractIncidentWriter {
+public abstract class AbstractIncidentWriter extends AbstractProcessInstanceDataWriter<IncidentDto> {
 
-  private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
+  protected AbstractIncidentWriter(final OptimizeElasticsearchClient esClient,
+                                   final ElasticSearchSchemaManager elasticSearchSchemaManager,
+                                   final ObjectMapper objectMapper) {
+    super(esClient, elasticSearchSchemaManager);
+    this.objectMapper = objectMapper;
+  }
+
   public List<ImportRequestDto> generateIncidentImports(List<IncidentDto> incidents) {
+    final String importItemName = "incidents";
+    log.debug("Creating imports for {} [{}].", incidents.size(), importItemName);
+
+    createInstanceIndicesFromIncidentsIfMissing(incidents);
+
     Map<String, List<OptimizeDto>> processInstanceToEvents = new HashMap<>();
     for (IncidentDto e : incidents) {
       processInstanceToEvents.putIfAbsent(e.getProcessInstanceId(), new ArrayList<>());
       processInstanceToEvents.get(e.getProcessInstanceId()).add(e);
     }
-
-    String importItemName = "incidents";
-    log.debug("Creating imports for {} [{}].", incidents.size(), importItemName);
 
     return processInstanceToEvents.entrySet().stream()
       .map(entry -> ImportRequestDto.builder()
@@ -60,12 +69,13 @@ public abstract class AbstractIncidentWriter {
   }
 
   private UpdateRequest createImportRequestForIncident(Map.Entry<String, List<OptimizeDto>> incidentsByProcessInstance) {
-    if (!incidentsByProcessInstance.getValue().stream().allMatch(dto -> dto instanceof IncidentDto)) {
+    if (!incidentsByProcessInstance.getValue().stream().allMatch(IncidentDto.class::isInstance)) {
       throw new InvalidParameterException("Method called with incorrect instance of DTO.");
     }
     final List<IncidentDto> incidents =
       (List<IncidentDto>) (List<?>) incidentsByProcessInstance.getValue();
     final String processInstanceId = incidentsByProcessInstance.getKey();
+    final String processDefinitionKey = incidents.get(0).getProcessDefinitionKey();
 
     final Map<String, Object> params = new HashMap<>();
 
@@ -84,7 +94,7 @@ public abstract class AbstractIncidentWriter {
         .build();
       String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
       return new UpdateRequest()
-        .index(PROCESS_INSTANCE_INDEX_NAME)
+        .index(getProcessInstanceIndexAliasName(processDefinitionKey))
         .id(processInstanceId)
         .script(updateScript)
         .upsert(newEntryIfAbsent, XContentType.JSON)
@@ -97,6 +107,12 @@ public abstract class AbstractIncidentWriter {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
+  }
+
+  protected void createInstanceIndicesFromIncidentsIfMissing(final List<IncidentDto> incidents) {
+    createInstanceIndicesIfMissing(incidents.stream()
+                                     .map(IncidentDto::getProcessDefinitionKey)
+                                     .collect(toSet()));
   }
 
   protected abstract String createInlineUpdateScript();

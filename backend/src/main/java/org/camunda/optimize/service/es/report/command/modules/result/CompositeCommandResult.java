@@ -24,11 +24,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Distr
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.VariableViewPropertyDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.result.HyperMapCommandResult;
 import org.camunda.optimize.service.es.report.result.MapCommandResult;
 import org.camunda.optimize.service.es.report.result.NumberCommandResult;
@@ -163,7 +165,7 @@ public class CompositeCommandResult {
           .forEach(aggregationType -> measureMap.put(
             new ViewMeasureIdentifier(aggregationType, userTaskDurationTime), defaultValueSupplier.get())
           ));
-    } else if (ViewProperty.DURATION.equals(viewProperty)) {
+    } else if (ViewProperty.DURATION.equals(viewProperty) || isNumberVariableView()) {
       // if this is duration view property an entry per aggregationType is expected
       reportDataDto.getConfiguration().getAggregationTypes()
         .forEach(aggregationType -> measureMap.put(
@@ -208,6 +210,14 @@ public class CompositeCommandResult {
     return reportDataDto instanceof ProcessReportDataDto
       && ProcessViewEntity.USER_TASK.equals(((ProcessReportDataDto) reportDataDto).getView().getEntity())
       && ViewProperty.DURATION.equals(viewProperty);
+  }
+
+  private boolean isNumberVariableView() {
+    return Optional.ofNullable(viewProperty)
+      .flatMap(value -> value.getViewPropertyDtoIfOfType(VariableViewPropertyDto.class))
+      .map(VariableViewPropertyDto::getType)
+      .filter(propertyType -> VariableType.getNumericTypes().contains(propertyType))
+      .isPresent();
   }
 
   private Comparator<MapResultEntryDto> getSortingComparator(

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 
 public class SingleDecisionReportHandlingIT extends AbstractIT {
 
@@ -79,6 +80,8 @@ public class SingleDecisionReportHandlingIT extends AbstractIT {
   }
 
   private void assertEmptyResult(final ReportResultResponseDto<?> result) {
+    assertThat(result.getInstanceCount()).isZero();
+    assertThat(result.getInstanceCountWithoutFilters()).isZero();
     if (result.getFirstMeasureData() instanceof List) {
       assertThat((List<?>) result.getFirstMeasureData()).isEmpty();
     } else if (result.getFirstMeasureData() instanceof Double) {
@@ -89,7 +92,9 @@ public class SingleDecisionReportHandlingIT extends AbstractIT {
   }
 
   private String deployDefinitionAndCreateReport(final DecisionReportDataType reportType) {
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto =
+      engineIntegrationExtension.deployDecisionDefinition(createDefaultDmnModel(
+        "TestDecision_evaluateReport_missingInstanceIndicesReturnsEmptyResult"));
 
     final DecisionReportDataDto expectedReportData = DecisionReportDataBuilder.create()
       .setDecisionDefinitionKey(decisionDefinitionDto.getKey())

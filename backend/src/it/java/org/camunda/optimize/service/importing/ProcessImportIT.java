@@ -30,6 +30,7 @@ import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -44,6 +45,7 @@ import org.mockserver.verify.VerificationTimes;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -57,11 +59,13 @@ import static org.assertj.core.groups.Tuple.tuple;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
@@ -82,6 +86,12 @@ public class ProcessImportIT extends AbstractImportIT {
   protected final LogCapturer logCapturer =
     LogCapturer.create().captureForType(ProcessDefinitionFetcher.class);
 
+  @BeforeEach
+  public void cleanUpExistingProcessInstanceIndices() {
+    elasticSearchIntegrationTestExtension.deleteAllProcessInstanceIndices();
+    elasticSearchIntegrationTestExtension.deleteAllDecisionInstanceIndices();
+  }
+
   @Test
   public void importCanBeDisabled() {
     // given
@@ -100,10 +110,60 @@ public class ProcessImportIT extends AbstractImportIT {
     assertThat(embeddedOptimizeExtension.getImportSchedulerManager().getImportSchedulers()).hasSizeGreaterThan(0);
     embeddedOptimizeExtension.getImportSchedulerManager().getImportSchedulers()
       .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
-    assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 0L);
     assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 0L);
+    assertThat(indexExist(PROCESS_INSTANCE_MULTI_ALIAS)).isFalse();
     assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
-    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances()).isEmpty();
+    assertThat(indexExist(DECISION_INSTANCE_MULTI_ALIAS)).isFalse();
+  }
+
+  @Test
+  public void importCreatesDedicatedProcessInstanceIndicesPerDefinition() {
+    // given two new process definitions
+    final String key1 = "processKey1";
+    final String key2 = "processKey2";
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(key1));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(key2));
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then both instance indices exist
+    assertThat(indicesExist(Arrays.asList(
+      new ProcessInstanceIndex(key1),
+      new ProcessInstanceIndex(key2)
+    ))).isTrue();
+
+    // there is one instance in each index
+    final SearchResponse idsInIndex1 = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(getProcessInstanceIndexAliasName(key1));
+    final SearchResponse idsInIndex2 = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(getProcessInstanceIndexAliasName(key2));
+    assertThat(idsInIndex1.getHits().getTotalHits().value).isEqualTo(1L);
+    assertThat(idsInIndex2.getHits().getTotalHits().value).isEqualTo(1L);
+
+    // both instances can be found via the multi alias
+    final SearchResponse idsInIndices = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
+    assertThat(idsInIndices.getHits().getTotalHits().value).isEqualTo(2L);
+  }
+
+  @Test
+  public void importInstancesToCorrectIndexWhenIndexAlreadyExists() {
+    // given
+    final String key = "processKey";
+    final ProcessDefinitionEngineDto definition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(key));
+    engineIntegrationExtension.startProcessInstance(definition.getId());
+    importAllEngineEntitiesFromScratch();
+    engineIntegrationExtension.startProcessInstance(definition.getId());
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then there are two instances in one process index
+    final SearchResponse idsInIndex = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(getProcessInstanceIndexAliasName(key));
+    assertThat(idsInIndex.getHits().getTotalHits().value).isEqualTo(2L);
   }
 
   @Test
@@ -181,7 +241,7 @@ public class ProcessImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
   }
 
   @Test
@@ -194,7 +254,7 @@ public class ProcessImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
     final List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getEvents())
@@ -226,7 +286,7 @@ public class ProcessImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then
-    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
     allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getEvents())
@@ -258,7 +318,7 @@ public class ProcessImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then
-    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
     allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getEvents())
@@ -302,7 +362,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap()).containsEntry(ProcessInstanceIndex.TENANT_ID, tenantId);
@@ -320,7 +380,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap()).containsEntry(ProcessInstanceIndex.TENANT_ID, tenantId);
@@ -339,7 +399,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap()).containsEntry(ProcessInstanceIndex.TENANT_ID, expectedTenantId);
@@ -354,7 +414,7 @@ public class ProcessImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
     importAllEngineEntitiesFromLastIndex();
 
-    elasticSearchIntegrationTestExtension.blockProcInstIndex(true);
+    elasticSearchIntegrationTestExtension.blockProcInstIndex(dto1.getProcessDefinitionKey(), true);
 
     ProcessInstanceEngineDto dto2 = deployAndStartSimpleServiceTask();
 
@@ -364,7 +424,7 @@ public class ProcessImportIT extends AbstractImportIT {
     OffsetDateTime lastImportTimestamp = elasticSearchIntegrationTestExtension.getLastProcessInstanceImportTimestamp();
     assertThat(lastImportTimestamp).isEqualTo(endTime);
 
-    elasticSearchIntegrationTestExtension.blockProcInstIndex(false);
+    elasticSearchIntegrationTestExtension.blockProcInstIndex(dto1.getProcessDefinitionKey(), false);
     endTime = engineIntegrationExtension.getHistoricProcessInstance(dto2.getId()).getEndTime();
 
     importAllEngineEntitiesFromLastIndex();
@@ -377,7 +437,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
   @AfterEach
   public void unblockIndex() throws IOException {
-    elasticSearchIntegrationTestExtension.blockProcInstIndex(false);
+    elasticSearchIntegrationTestExtension.blockAllProcInstIndices(false);
   }
 
   @Test
@@ -423,7 +483,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List<?> events = (List<?>) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events).hasSize(3);
@@ -440,7 +500,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getAt(0).getSourceAsMap())
       .containsEntry(ProcessInstanceIndex.STATE, EXTERNALLY_TERMINATED_STATE);
   }
@@ -453,7 +513,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List<?> events = (List<?>) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events).hasSize(2);
@@ -467,7 +527,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       Object date = searchHitFields.getSourceAsMap().get(END_DATE);
       assertThat(date).isNotNull();
@@ -486,7 +546,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertAllEntriesInElasticsearchHaveAllDataWithCount(
-      PROCESS_INSTANCE_INDEX_NAME,
+      PROCESS_INSTANCE_MULTI_ALIAS,
       4L,
       PROCESS_INSTANCE_NULLABLE_FIELDS
     );
@@ -526,7 +586,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     SearchHit hit = idsResp.getHits().getAt(0);
     List<?> events = (List<?>) hit.getSourceAsMap().get(EVENTS);
@@ -545,7 +605,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     SearchHit hit = idsResp.getHits().getAt(0);
     List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);
@@ -573,7 +633,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     SearchHit hit = idsResp.getHits().getAt(0);
     List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);
@@ -967,7 +1027,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertAllEntriesInElasticsearchHaveAllDataWithCount(
-      PROCESS_INSTANCE_INDEX_NAME,
+      PROCESS_INSTANCE_MULTI_ALIAS,
       4L,
       PROCESS_INSTANCE_NULLABLE_FIELDS
     );
@@ -993,7 +1053,7 @@ public class ProcessImportIT extends AbstractImportIT {
       );
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(PROCESS_INSTANCE_INDEX_NAME)
+      .indices(PROCESS_INSTANCE_MULTI_ALIAS)
       .source(searchSourceBuilder);
 
     SearchResponse response = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
@@ -1053,6 +1113,11 @@ public class ProcessImportIT extends AbstractImportIT {
   private void deploySimpleProcess() {
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
     engineIntegrationExtension.deployProcessAndGetId(processModel);
+  }
+
+  protected boolean indexExist(final String indexName) {
+    return embeddedOptimizeExtension.getElasticSearchSchemaManager()
+      .indexExists(embeddedOptimizeExtension.getOptimizeElasticClient(), indexName);
   }
 
 }

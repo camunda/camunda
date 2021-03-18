@@ -32,7 +32,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static org.camunda.optimize.service.util.InstanceIndexUtil.isDecisionInstanceIndexNotFoundException;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 
 @Slf4j
 public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
@@ -93,7 +93,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
-      if (isDecisionInstanceIndexNotFoundException(e)) {
+      if (isInstanceIndexNotFoundException(e)) {
         log.warn(
           "Could not evaluate report. Required instance index does not exist, no instances have been imported yet" +
             " for the specified definition. Returning empty result instead",
@@ -107,7 +107,8 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
           // see https://jira.camunda.com/browse/OPT-3336
           viewPart.createEmptyResult(executionContext).getViewMeasures().stream()
             .findFirst()
-            .map(CompositeCommandResult.ViewMeasure::getValue).orElse(0.)
+            .map(CompositeCommandResult.ViewMeasure::getValue)
+            .orElse(null)
         ));
       } else {
         throw e;

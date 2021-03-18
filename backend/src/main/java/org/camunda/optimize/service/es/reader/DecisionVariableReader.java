@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.INPUTS;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.OUTPUTS;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
@@ -44,7 +45,7 @@ import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariab
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.isDecisionInstanceIndexNotFoundException;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -133,14 +134,13 @@ public class DecisionVariableReader {
 
   private List<String> getVariableValues(final DecisionVariableValueRequestDto requestDto,
                                          final String variablesPath) {
-    final BoolQueryBuilder query =
-      createDefinitionQuery(
-        requestDto.getDecisionDefinitionKey(),
-        requestDto.getDecisionDefinitionVersions(),
-        requestDto.getTenantIds(),
-        new DecisionInstanceIndex(requestDto.getDecisionDefinitionKey()),
-        decisionDefinitionReader::getLatestVersionToKey
-      );
+    final BoolQueryBuilder query = createDefinitionQuery(
+      requestDto.getDecisionDefinitionKey(),
+      requestDto.getDecisionDefinitionVersions(),
+      requestDto.getTenantIds(),
+      new DecisionInstanceIndex(requestDto.getDecisionDefinitionKey()),
+      decisionDefinitionReader::getLatestVersionToKey
+    );
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
@@ -165,7 +165,7 @@ public class DecisionVariableReader {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
-      if (isDecisionInstanceIndexNotFoundException(e)) {
+      if (isInstanceIndexNotFoundException(DECISION, e)) {
         return Collections.emptyList();
       }
       throw e;

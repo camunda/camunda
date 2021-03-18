@@ -170,6 +170,8 @@ class PostMigrationTest {
     final Map<String, Long> eventProcessInstanceCountsBeforeRepublish =
       retrieveEventProcessInstanceCounts(eventProcessMappingsBeforeRepublish);
 
+    assertThat(eventProcessInstanceCountsBeforeRepublish.values()).doesNotContain(0L);
+
     eventProcessMappingsBeforeRepublish.forEach(eventProcessMappingDto -> {
       final String currentEventProcessMappingId = eventProcessMappingDto.getId();
       // update it to allow another publish (but no actual changes required)

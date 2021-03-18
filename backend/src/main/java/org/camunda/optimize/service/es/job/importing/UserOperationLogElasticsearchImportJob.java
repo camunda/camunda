@@ -36,18 +36,12 @@ public class UserOperationLogElasticsearchImportJob extends ElasticsearchImportJ
     runningProcessInstanceWriter.importProcessInstancesFromUserOperationLogs(
       filterAndMapInstanceSuspensionByInstanceIdOperationsLogsToProcessInstanceDtos(newOptimizeEntities)
     );
-    final Map<String, Map<String, String>> definitionSuspensionMap =
-      filterAndMapDefinitionSuspensionUserOperationsLogsToMap(newOptimizeEntities);
-    if (definitionSuspensionMap.containsKey(ProcessInstanceDto.Fields.processDefinitionKey)) {
-      runningProcessInstanceWriter.importProcessInstancesForProcessDefinitionKeys(
-        definitionSuspensionMap.get(ProcessInstanceDto.Fields.processDefinitionKey)
-      );
-    }
-    if (definitionSuspensionMap.containsKey(ProcessInstanceDto.Fields.processDefinitionId)) {
-      runningProcessInstanceWriter.importProcessInstancesForProcessDefinitionIds(
-        definitionSuspensionMap.get(ProcessInstanceDto.Fields.processDefinitionId)
-      );
-    }
+    runningProcessInstanceWriter.importProcessInstancesForProcessDefinitionKeys(
+      filterAndMapDefinitionKeySuspensionUserOperationsLogsToMap(newOptimizeEntities)
+    );
+    runningProcessInstanceWriter.importProcessInstancesForProcessDefinitionIds(
+      filterAndMapDefinitionIdSuspensionUserOperationsLogsToMap(newOptimizeEntities)
+    );
   }
 
   private List<ProcessInstanceDto> filterAndMapInstanceSuspensionByInstanceIdOperationsLogsToProcessInstanceDtos(
@@ -56,6 +50,7 @@ public class UserOperationLogElasticsearchImportJob extends ElasticsearchImportJ
       .filter(userOpLog -> isSuspensionByInstanceIdOperation(userOpLog.getOperationType()))
       .map(userOpLog -> ProcessInstanceDto.builder()
         .processInstanceId(userOpLog.getProcessInstanceId())
+        .processDefinitionKey(userOpLog.getProcessDefinitionKey())
         .state(resolveNewStateFromOperationType(userOpLog.getOperationType()))
         .build()
       )
@@ -63,31 +58,12 @@ public class UserOperationLogElasticsearchImportJob extends ElasticsearchImportJ
       .collect(toList());
   }
 
-  /**
-   * Filters suspension operations on instances based on definition ID or definition key and creates a map
-   * of suspensionIdentifier("ProcessDefinitionKey" or "ProcessDefinitionId") to a map of definitionIdentifier
-   * (the key or the ID) to the latest new state of said definition.
-   * For example: Suspending process definition (incl. process instances) with ID "someID" results in the entry:
-   * ["ProcessDefinitionId", "someID", "Suspended"]
-   *
-   * @param userOperationLogEntryDtos A List of UserOperationLogEntryDtos to map.
-   * @return A map of the new state of the instances belonging to the suspended/activated definitions.
-   */
-  private Map<String, Map<String, String>> filterAndMapDefinitionSuspensionUserOperationsLogsToMap(
+  private Map<String, String> filterAndMapDefinitionKeySuspensionUserOperationsLogsToMap(
     final List<UserOperationLogEntryDto> userOperationLogEntryDtos) {
-    Map<String, Map<String, String>> definitionSuspensionOperationMap = new HashMap<>();
+    Map<String, String> definitionSuspensionOperationMap = new HashMap<>();
     for (UserOperationLogEntryDto userOpLog : userOperationLogEntryDtos) {
-      if (isSuspensionByDefinitionIdOperation(userOpLog.getOperationType())) {
-        addDefinitionSuspensionOperationToMap(
-          definitionSuspensionOperationMap,
-          ProcessInstanceDto.Fields.processDefinitionId,
-          userOpLog.getProcessDefinitionId(),
-          resolveNewStateFromOperationType(userOpLog.getOperationType())
-        );
-      } else if (isSuspensionByDefinitionKeyOperation(userOpLog.getOperationType())) {
-        addDefinitionSuspensionOperationToMap(
-          definitionSuspensionOperationMap,
-          ProcessInstanceDto.Fields.processDefinitionKey,
+      if (isSuspensionByDefinitionKeyOperation(userOpLog.getOperationType())) {
+        definitionSuspensionOperationMap.putIfAbsent(
           userOpLog.getProcessDefinitionKey(),
           resolveNewStateFromOperationType(userOpLog.getOperationType())
         );
@@ -96,15 +72,20 @@ public class UserOperationLogElasticsearchImportJob extends ElasticsearchImportJ
     return definitionSuspensionOperationMap;
   }
 
-  private void addDefinitionSuspensionOperationToMap(
-    Map<String, Map<String, String>> definitionSuspensionOperationMap,
-    final String suspensionIdentifier,
-    final String processDefinitionIdOrKey,
-    final String newState) {
-    definitionSuspensionOperationMap.putIfAbsent(suspensionIdentifier, new HashMap<>());
-    definitionSuspensionOperationMap
-      .get(suspensionIdentifier)
-      .put(processDefinitionIdOrKey, newState);
+  private Map<String, Map<String, String>> filterAndMapDefinitionIdSuspensionUserOperationsLogsToMap(
+    final List<UserOperationLogEntryDto> userOperationLogEntryDtos) {
+    // definitionSuspensionOperationMap contains <definitionKey, Map<definitionId, newState>> because the key is needed
+    // to find the appropriate instance index to update
+    Map<String, Map<String, String>> definitionSuspensionOperationMap = new HashMap<>();
+    for (UserOperationLogEntryDto userOpLog : userOperationLogEntryDtos) {
+      if (isSuspensionByDefinitionIdOperation(userOpLog.getOperationType())) {
+        definitionSuspensionOperationMap.putIfAbsent(userOpLog.getProcessDefinitionKey(), new HashMap<>());
+        definitionSuspensionOperationMap
+          .get(userOpLog.getProcessDefinitionKey())
+          .put(userOpLog.getProcessDefinitionId(), resolveNewStateFromOperationType(userOpLog.getOperationType()));
+      }
+    }
+    return definitionSuspensionOperationMap;
   }
 
   public String resolveNewStateFromOperationType(final UserOperationType operationType) {

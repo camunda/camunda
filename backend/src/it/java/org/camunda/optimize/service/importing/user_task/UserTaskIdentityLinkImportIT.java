@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
@@ -25,11 +26,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_OPERATION_ADD;
 import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_OPERATION_DELETE;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 
 public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
@@ -50,7 +52,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
 
     // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
@@ -79,7 +81,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
 
     // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
@@ -131,7 +133,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
 
     // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
@@ -156,7 +158,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -188,7 +190,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -210,7 +212,8 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void severalAssigneeOperationsLeadToCorrectResult() throws Exception {
     // given
-    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
+    final ProcessInstanceEngineDto instanceDto =
+      engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.claimAllRunningUserTasks();
     engineIntegrationExtension.unclaimAllRunningUserTasks();
     engineIntegrationExtension.addUser("secondUser", "secondPassword");
@@ -222,7 +225,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -250,7 +253,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -272,8 +275,8 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp =
+      elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -300,8 +303,8 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp =
+      elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -333,8 +336,8 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp =
+      elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -363,7 +366,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -386,8 +389,8 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp =
+      elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -428,8 +431,13 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
       sameIdTaskInstanceDto
     );
     storedInstance.setUserTasks(duplicateTaskList);
+    embeddedOptimizeExtension.getElasticSearchSchemaManager()
+      .createIndexIfMissing(
+        elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),
+        new ProcessInstanceIndex(storedInstance.getProcessDefinitionKey())
+      );
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      PROCESS_INSTANCE_INDEX_NAME,
+      getProcessInstanceIndexAliasName(storedInstance.getProcessDefinitionKey()),
       storedInstance.getProcessInstanceId(),
       storedInstance
     );
@@ -449,7 +457,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
 
   private ProcessInstanceDto getStoredProcessInstance() throws JsonProcessingException {
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     return objectMapper.readValue(
       idsResp.getHits().getHits()[0].getSourceAsString(), ProcessInstanceDto.class

@@ -53,7 +53,6 @@ public class ReimportPreparation {
     new TimestampBasedImportIndex(),
     new ProcessDefinitionIndex(),
     new EventProcessDefinitionIndex(),
-    new ProcessInstanceIndex(),
     new DecisionDefinitionIndex(),
     new TenantIndex(),
     new BusinessKeyIndex(),
@@ -68,6 +67,7 @@ public class ReimportPreparation {
     new EventSequenceCountIndex("*"),
     new EventTraceStateIndex("*")
   );
+  private static final IndexMappingCreator DYNAMIC_PROCESS_INSTANCE_INDEX_TO_DELETE = new ProcessInstanceIndex("*");
   private static final IndexMappingCreator DYNAMIC_DECISION_INSTANCE_INDEX_TO_DELETE = new DecisionInstanceIndex("*");
 
   public static void main(String[] args) {
@@ -103,6 +103,10 @@ public class ReimportPreparation {
     log.info("Deleting import and engine data indices from Elasticsearch...");
     STATIC_INDICES_TO_DELETE.forEach(prefixAwareClient::deleteIndex);
     log.info("Finished deleting import and engine data indices from Elasticsearch.");
+
+    log.info("Deleting process instance indices from Elasticsearch...");
+    prefixAwareClient.deleteIndex(DYNAMIC_PROCESS_INSTANCE_INDEX_TO_DELETE);
+    log.info("Finished deleting process instance indices from Elasticsearch.");
 
     log.info("Deleting event process indices and Camunda event data from Elasticsearch...");
     DYNAMIC_EVENT_INDICES_TO_DELETE.forEach(prefixAwareClient::deleteIndex);

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -15,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatm
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -25,6 +27,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -34,6 +38,8 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
@@ -54,8 +60,13 @@ import java.util.Set;
 
 import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_DURATION_GROUP_BY_NONE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE_WITH_PART;
+import static org.camunda.optimize.test.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.mockserver.model.HttpRequest.request;
@@ -374,7 +385,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey("foo")
       .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .build();
     reportData.setVisualization(null);
 
@@ -386,6 +397,22 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(ProcessReportDataType.class)
+  public void evaluateReport_missingInstanceIndicesReturnsEmptyResult(ProcessReportDataType reportType) {
+    // given
+    final String reportId = deployDefinitionAndCreateReport(reportType);
+
+    // when
+    final ReportResultResponseDto<?> result = embeddedOptimizeExtension.getRequestExecutor()
+      .buildEvaluateSavedReportRequest(reportId)
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<?>>() {
+      }).getResult();
+
+    // then
+    assertEmptyResult(reportType, result);
   }
 
   @Test
@@ -430,9 +457,10 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
   @SneakyThrows
   public void elasticsearchStatusExceptionIsMapped() {
     // given a report evaluation that throws an ElasticsearchStatusException
+    final String definitionKey = "someKey";
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
-      .withPath("/.*" + PROCESS_INSTANCE_INDEX_NAME + "/_search")
+      .withPath("/.*" + getProcessInstanceIndexAliasName(definitionKey) + "/_search")
       .withMethod(POST);
     // the request throws an exception which results in an ElasticsearchStatusException
     esMockServer
@@ -443,7 +471,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     // when
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .setProcessDefinitionKey("someKey")
+      .setProcessDefinitionKey(definitionKey)
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .build();
     final Response response = reportClient.evaluateReportAndReturnResponse(reportData);
@@ -451,6 +479,21 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     // then the response has the correct error code
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("elasticsearchError");
+  }
+
+  private void assertEmptyResult(final ProcessReportDataType reportType,
+                                 final ReportResultResponseDto<?> result) {
+    assertThat(result.getInstanceCount()).isZero();
+    assertThat(result.getInstanceCountWithoutFilters()).isZero();
+    if (isNullResultExpected(reportType)) {
+      assertThat(result.getFirstMeasureData()).isNull();
+    } else if (result.getFirstMeasureData() instanceof List) {
+      assertThat((List<?>) result.getFirstMeasureData()).isEmpty();
+    } else if (result.getFirstMeasureData() instanceof Double) {
+      assertThat((Double) result.getFirstMeasureData()).isZero();
+    } else {
+      throw new OptimizeIntegrationTestException("Unexpected result type: " + result.getFirstMeasureData().getClass());
+    }
   }
 
   private SingleProcessReportDefinitionRequestDto constructSingleProcessReportWithFakePD() {
@@ -477,6 +520,33 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
     processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
     return processInstanceEngineDto;
+  }
+
+  private String deployDefinitionAndCreateReport(final ProcessReportDataType reportType) {
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess("TestProcess_evaluateReport_missingInstanceIndicesReturnsEmptyResult"));
+
+    final ProcessReportDataDto expectedReportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setProcessDefinitionKey(processDefinition.getKey())
+      .setProcessDefinitionVersion("1")
+      .setReportDataType(reportType)
+      .setVariableName("variableName")
+      .setVariableType(VariableType.INTEGER)
+      .setGroupByDateVariableUnit(AggregateByDateUnit.AUTOMATIC)
+      .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
+      .setDistributeByDateInterval(AggregateByDateUnit.AUTOMATIC)
+      .build();
+    final SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
+    report.setData(expectedReportData);
+    return reportClient.createSingleProcessReport(report);
+  }
+
+  private boolean isNullResultExpected(final ProcessReportDataType reportDataType) {
+    return PROC_INST_DUR_GROUP_BY_NONE.equals(reportDataType)
+      || PROC_INST_DUR_GROUP_BY_NONE_WITH_PART.equals(reportDataType)
+      || INCIDENT_DURATION_GROUP_BY_NONE.equals(reportDataType)
+      || VARIABLE_AGGREGATION_GROUP_BY_NONE.equals(reportDataType)
+      || INCIDENT_FREQUENCY_GROUP_BY_NONE.equals(reportDataType);
   }
 
 }

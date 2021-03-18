@@ -26,15 +26,16 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.writer.AbstractProcessInstanceDataWriter;
 import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
 import org.camunda.optimize.service.identity.IdentityService;
 import org.camunda.optimize.service.identity.UserIdentityCacheService;
 import org.camunda.optimize.service.identity.UserTaskIdentityCacheService;
+import org.camunda.optimize.service.importing.DefinitionXmlImportMediator;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
-import org.camunda.optimize.service.importing.DefinitionXmlImportMediator;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.EngineImportSchedulerManagerService;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
@@ -69,6 +70,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -456,6 +458,14 @@ public class EmbeddedOptimizeExtension
   public void resetImportStartIndexes() {
     for (ImportIndexHandler<?, ?> importIndexHandler : getIndexHandlerRegistry().getAllHandlers()) {
       importIndexHandler.resetImportIndex();
+    }
+  }
+
+  public void resetInstanceDataWriters() {
+    final Map<String, AbstractProcessInstanceDataWriter> writers =
+      getApplicationContext().getBeansOfType(AbstractProcessInstanceDataWriter.class);
+    for (AbstractProcessInstanceDataWriter<?> writer : writers.values()) {
+      writer.reloadConfiguration(getApplicationContext());
     }
   }
 

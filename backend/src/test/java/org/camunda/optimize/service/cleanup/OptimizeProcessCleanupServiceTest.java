@@ -182,6 +182,7 @@ public class OptimizeProcessCleanupServiceTest {
     // when
     mockProcessDefinitions(allProcessDefinitionKeys);
     mockGetProcessInstanceIdsForProcessInstanceDelete(allProcessDefinitionKeys);
+//    mockGetProcessInstanceDefinitionKeysForProcessInstanceDelete(allProcessDefinitionKeys);
     mockNextPageOfEntities();
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
@@ -303,9 +304,9 @@ public class OptimizeProcessCleanupServiceTest {
     );
 
     verify(processInstanceWriter, times(expectedProcessDefinitionKeys.size()))
-      .deleteByIds(eq(FIRST_PAGE.getEntities()));
+      .deleteByIds(any(), eq(FIRST_PAGE.getEntities()));
     verify(processInstanceWriter, times(expectedProcessDefinitionKeys.size()))
-      .deleteByIds(eq(SECOND_PAGE.getEntities()));
+      .deleteByIds(any(), eq(SECOND_PAGE.getEntities()));
     verify(variableUpdateInstanceWriter, times(expectedProcessDefinitionKeys.size()))
       .deleteByProcessInstanceIds(eq(FIRST_PAGE.getEntities()));
     verify(variableUpdateInstanceWriter, times(expectedProcessDefinitionKeys.size()))
@@ -375,7 +376,7 @@ public class OptimizeProcessCleanupServiceTest {
     final List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos = processDefinitionIds.stream()
       .map(this::createProcessDefinitionDto)
       .collect(Collectors.toList());
-    when(processDefinitionReader.getAllProcessDefinitions())
+    when(processDefinitionReader.getProcessDefinitions(any()))
       .thenReturn(processDefinitionOptimizeDtos);
     return processDefinitionIds;
   }

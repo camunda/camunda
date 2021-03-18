@@ -47,12 +47,15 @@ public abstract class AbstractImportMediatorPermutationsIT {
   public static void beforeAll() {
     engineIntegrationExtension.cleanEngine();
     elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
+    elasticSearchIntegrationTestExtension.deleteAllProcessInstanceIndices();
+    elasticSearchIntegrationTestExtension.deleteAllDecisionInstanceIndices();
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
   }
 
   @AfterEach
   public void after() {
     embeddedOptimizeExtension.resetImportStartIndexes();
+    embeddedOptimizeExtension.resetInstanceDataWriters();
     elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
   }
 

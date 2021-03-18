@@ -18,7 +18,7 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
@@ -48,7 +48,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 @RequiredArgsConstructor
-public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDataDto> {
+public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
 
   private static final String GROUP_BY_IDENTITY_TERMS_AGGREGATION = "identities";
   private static final String USER_TASKS_AGGREGATION = "userTasks";
@@ -81,23 +81,6 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
     return Collections.singletonList(groupByIdentityAggregation);
   }
 
-  private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
-    return definitionService
-      .getDefinition(
-        DefinitionType.PROCESS,
-        reportData.getDefinitionKey(),
-        reportData.getDefinitionVersions(),
-        reportData.getTenantIds()
-      )
-      .map(def -> ((ProcessDefinitionOptimizeDto) def).getUserTaskNames())
-      .map(Map::keySet)
-      .orElse(Collections.emptySet());
-  }
-
-  protected abstract String getIdentityField();
-
-  protected abstract IdentityType getIdentityType();
-
   public void addQueryResult(final CompositeCommandResult compositeCommandResult,
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
@@ -112,6 +95,23 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
         .getSorting()
         .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_LABEL, SortOrder.ASC))
     );
+  }
+
+  protected abstract String getIdentityField();
+
+  protected abstract IdentityType getIdentityType();
+
+  private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
+    return definitionService
+      .getDefinition(
+        DefinitionType.PROCESS,
+        reportData.getDefinitionKey(),
+        reportData.getDefinitionVersions(),
+        reportData.getTenantIds()
+      )
+      .map(def -> ((ProcessDefinitionOptimizeDto) def).getUserTaskNames())
+      .map(Map::keySet)
+      .orElse(Collections.emptySet());
   }
 
   private List<GroupByResult> getByIdentityAggregationResults(final SearchResponse response,

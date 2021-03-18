@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
@@ -17,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
@@ -25,12 +22,11 @@ import java.io.IOException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FIELDS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 
-@NoArgsConstructor
-@AllArgsConstructor
 public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
 
-  public static final int VERSION = 5;
+  public static final int VERSION = 6;
 
   public static final String START_DATE = ProcessInstanceDto.Fields.startDate;
   public static final String END_DATE = ProcessInstanceDto.Fields.endDate;
@@ -99,18 +95,22 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String CANDIDATE_GROUP_OPERATION_TIMESTAMP = CandidateGroupOperationDto.Fields.timestamp;
 
   public static final String INCIDENTS = ProcessInstanceDto.Fields.incidents;
-  private static final String INCIDENT_ID = IncidentDto.Fields.id;
+  public static final String INCIDENT_ID = IncidentDto.Fields.id;
   public static final String INCIDENT_CREATE_TIME = IncidentDto.Fields.createTime;
-  private static final String INCIDENT_END_TIME = IncidentDto.Fields.endTime;
+  public static final String INCIDENT_END_TIME = IncidentDto.Fields.endTime;
   public static final String INCIDENT_DURATION_IN_MS = IncidentDto.Fields.durationInMs;
-  private static final String INCIDENT_INCIDENT_TYPE = IncidentDto.Fields.incidentType;
+  public static final String INCIDENT_INCIDENT_TYPE = IncidentDto.Fields.incidentType;
   public static final String INCIDENT_ACTIVITY_ID = IncidentDto.Fields.activityId;
-  private static final String INCIDENT_FAILED_ACTIVITY_ID = IncidentDto.Fields.failedActivityId;
-  private static final String INCIDENT_MESSAGE = IncidentDto.Fields.incidentMessage;
+  public static final String INCIDENT_FAILED_ACTIVITY_ID = IncidentDto.Fields.failedActivityId;
+  public static final String INCIDENT_MESSAGE = IncidentDto.Fields.incidentMessage;
   public static final String INCIDENT_STATUS = IncidentDto.Fields.incidentStatus;
 
+  public ProcessInstanceIndex(final String instanceIndexKey) {
+    indexName = getIndexPrefix() + instanceIndexKey.toLowerCase();
+  }
+
   @Setter
-  private String indexName = ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+  private String indexName;
 
   @Override
   public String getIndexName() {
@@ -202,6 +202,10 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
             .endObject();
     return newBuilder;
     // @formatter:on
+  }
+
+  protected String getIndexPrefix(){
+    return PROCESS_INSTANCE_INDEX_PREFIX;
   }
 
   private XContentBuilder addNestedEventField(XContentBuilder builder) throws IOException {

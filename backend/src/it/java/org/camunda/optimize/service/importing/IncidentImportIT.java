@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedIncidentEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.OpenIncidentEngineImportMediator;
@@ -32,8 +33,10 @@ import java.util.concurrent.TimeUnit;
 import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 import static org.camunda.optimize.util.BpmnModels.getTwoExternalTaskProcess;
@@ -284,7 +287,7 @@ public class IncidentImportIT extends AbstractImportIT {
       .withMethod(POST)
       .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
         .getIndexNameService()
-        .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_NAME + "\""));
+        .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_PREFIX));
     esMockServer
       .when(processInstanceIndexMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
@@ -312,7 +315,7 @@ public class IncidentImportIT extends AbstractImportIT {
       .withMethod(POST)
       .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
         .getIndexNameService()
-        .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_NAME + "\""));
+        .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_PREFIX));
     esMockServer
       .when(processInstanceIndexMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
@@ -423,6 +426,7 @@ public class IncidentImportIT extends AbstractImportIT {
       .endDate(OffsetDateTime.now())
       .incidents(Collections.singletonList(new IncidentDto(
         processInstanceWithIncident.getId(),
+        processInstanceWithIncident.getProcessDefinitionKey(),
         DEFAULT_ENGINE_ALIAS,
         incidentEngineDto.getId(),
         OffsetDateTime.now(),
@@ -431,8 +435,16 @@ public class IncidentImportIT extends AbstractImportIT {
         IncidentType.FAILED_EXTERNAL_TASK, SERVICE_TASK, SERVICE_TASK, "Foo bar", IncidentStatus.RESOLVED
       )))
       .build();
+    embeddedOptimizeExtension.getElasticSearchSchemaManager()
+      .createIndexIfMissing(
+        elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),
+        new ProcessInstanceIndex(processInstanceWithIncident.getProcessDefinitionKey()),
+        Collections.singleton(PROCESS_INSTANCE_MULTI_ALIAS)
+      );
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      PROCESS_INSTANCE_INDEX_NAME, processInstanceWithIncident.getId(), procInst
+      getProcessInstanceIndexAliasName(processInstanceWithIncident.getProcessDefinitionKey()),
+      processInstanceWithIncident.getId(),
+      procInst
     );
   }
 

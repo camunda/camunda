@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
 import static org.mockserver.model.HttpRequest.request;
@@ -251,7 +251,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
       .withMethod(POST)
       .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
         .getIndexNameService()
-        .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_NAME + "\""));
+        .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_PREFIX));
     esMockServer
       .when(userTaskImportMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));

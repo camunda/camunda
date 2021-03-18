@@ -15,21 +15,25 @@ import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.isDecisionInstanceIndexNotFoundException;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
 @Component
@@ -37,7 +41,16 @@ public class DefinitionInstanceReader {
   private final OptimizeElasticsearchClient esClient;
 
   public Set<String> getAllExistingDefinitionKeys(final DefinitionType type) {
+    return getAllExistingDefinitionKeys(type, Collections.emptySet());
+  }
+
+  public Set<String> getAllExistingDefinitionKeys(final DefinitionType type,
+                                                  final Set<String> instanceIds) {
     final String defKeyAggName = "definitionKeyAggregation";
+    final BoolQueryBuilder idQuery = boolQuery();
+    if (!CollectionUtils.isEmpty(instanceIds)) {
+      idQuery.filter(termsQuery(resolveInstanceIdFieldForType(type), instanceIds));
+    }
     final TermsAggregationBuilder definitionKeyAgg = AggregationBuilders
       .terms(defKeyAggName)
       .field(resolveDefinitionKeyFieldForType(type));
@@ -56,7 +69,7 @@ public class DefinitionInstanceReader {
         type
       ), e);
     } catch (ElasticsearchStatusException e) {
-      if (isDecisionInstanceIndexNotFoundException(e)) {
+      if (isInstanceIndexNotFoundException(type, e)) {
         return Collections.emptySet();
       }
       throw e;
@@ -71,7 +84,7 @@ public class DefinitionInstanceReader {
   private String[] resolveIndexMultiAliasForType(final DefinitionType type) {
     switch (type) {
       case PROCESS:
-        return new String[]{PROCESS_INSTANCE_INDEX_NAME};
+        return new String[]{PROCESS_INSTANCE_MULTI_ALIAS};
       case DECISION:
         return new String[]{DECISION_INSTANCE_MULTI_ALIAS};
       default:
@@ -85,6 +98,17 @@ public class DefinitionInstanceReader {
         return ProcessInstanceDto.Fields.processDefinitionKey;
       case DECISION:
         return DecisionInstanceDto.Fields.decisionDefinitionKey;
+      default:
+        throw new OptimizeRuntimeException("Unsupported definition type:" + type);
+    }
+  }
+
+  private String resolveInstanceIdFieldForType(final DefinitionType type) {
+    switch (type) {
+      case PROCESS:
+        return ProcessInstanceDto.Fields.processInstanceId;
+      case DECISION:
+        return DecisionInstanceDto.Fields.decisionInstanceId;
       default:
         throw new OptimizeRuntimeException("Unsupported definition type:" + type);
     }

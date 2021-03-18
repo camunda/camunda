@@ -23,7 +23,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.mockserver.model.JsonBody.json;
 
@@ -102,7 +102,10 @@ public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanup
     instancesToGetCleanedUp.forEach(instance -> elasticsearchFacade.verify(
       HttpRequest.request()
         .withPath("/_bulk")
-        .withBody(json(createBulkDeleteProcessInstanceRequestJson(instance.getId()))),
+        .withBody(json(createBulkDeleteProcessInstanceRequestJson(
+          instance.getId(),
+          instance.getProcessDefinitionKey()
+        ))),
       VerificationTimes.exactly(1)
     ));
   }
@@ -242,7 +245,10 @@ public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanup
     instancesToGetCleanedUp.forEach(instance -> elasticsearchFacade.verify(
       HttpRequest.request()
         .withPath("/_bulk")
-        .withBody(json(createBulkUpdateProcessInstanceRequestJson(instance.getId()))),
+        .withBody(json(createBulkUpdateProcessInstanceRequestJson(
+          instance.getId(),
+          instance.getProcessDefinitionKey()
+        ))),
       VerificationTimes.exactly(1)
     ));
   }
@@ -378,20 +384,23 @@ public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanup
     ));
   }
 
-  private String createBulkDeleteProcessInstanceRequestJson(final String processInstanceId) {
-    return createBulkProcessInstanceRequestJson(processInstanceId, "delete");
+  private String createBulkDeleteProcessInstanceRequestJson(final String processInstanceId,
+                                                            final String processDefinitionKey) {
+    return createBulkProcessInstanceRequestJson(processInstanceId, processDefinitionKey, "delete");
   }
 
-  private String createBulkUpdateProcessInstanceRequestJson(final String processInstanceId) {
-    return createBulkProcessInstanceRequestJson(processInstanceId, "update");
+  private String createBulkUpdateProcessInstanceRequestJson(final String processInstanceId,
+                                                            final String processDefinitionKey) {
+    return createBulkProcessInstanceRequestJson(processInstanceId, processDefinitionKey, "update");
   }
 
-  private String createBulkProcessInstanceRequestJson(final String processInstanceId, final String operation) {
+  private String createBulkProcessInstanceRequestJson(final String processInstanceId, final String processDefinitionKey,
+                                                      final String operation) {
     return String.format(
       "{\"%s\":{\"_index\":\"%s\",\"_id\":\"%s\"}}",
       operation,
       embeddedOptimizeExtension.getOptimizeElasticClient().getIndexNameService()
-        .getOptimizeIndexAliasForIndex(PROCESS_INSTANCE_INDEX_NAME),
+        .getOptimizeIndexAliasForIndex(getProcessInstanceIndexAliasName(processDefinitionKey)),
       processInstanceId
     );
   }

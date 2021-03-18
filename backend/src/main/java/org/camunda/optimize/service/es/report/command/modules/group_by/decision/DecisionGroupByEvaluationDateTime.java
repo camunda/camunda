@@ -16,7 +16,6 @@ import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
@@ -37,12 +36,11 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.EVALUATION_DATE_TIME;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionReportDataDto> {
+public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
 
   private final DateAggregationService dateAggregationService;
   private final MinMaxStatsService minMaxStatsService;
@@ -130,10 +128,6 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
         distributedByPart.retrieveResult(response, stringBucketEntry.getValue(), context)
       ))
       .collect(Collectors.toList());
-  }
-
-  protected String getIndexName(final ExecutionContext<DecisionReportDataDto> context) {
-    return getDecisionInstanceIndexAliasName(context.getReportData().getDecisionDefinitionKey());
   }
 
   @Override

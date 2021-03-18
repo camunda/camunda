@@ -41,8 +41,8 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE_WITH_PART;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.END_LOOP;
 import static org.camunda.optimize.util.BpmnModels.START_LOOP;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -251,7 +251,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
-    setActivityStartDatesToNull();
+    setActivityStartDatesToNull(processInstanceDto.getProcessDefinitionKey());
 
     // when
     ProcessReportDataDto reportData =
@@ -269,14 +269,14 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(calculatedResult).isNull();
   }
 
-  private void setActivityStartDatesToNull() {
+  private void setActivityStartDatesToNull(final String processDefinitionKey) {
     Script setActivityStartDatesToNull = new Script(
       ScriptType.INLINE,
       DEFAULT_SCRIPT_LANG,
       "for (event in ctx._source.events) { event.startDate = null }",
       Collections.emptyMap()
     );
-    UpdateByQueryRequest request = new UpdateByQueryRequest(PROCESS_INSTANCE_INDEX_NAME)
+    UpdateByQueryRequest request = new UpdateByQueryRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
       .setAbortOnVersionConflict(false)
       .setQuery(matchAllQuery())
       .setScript(setActivityStartDatesToNull)

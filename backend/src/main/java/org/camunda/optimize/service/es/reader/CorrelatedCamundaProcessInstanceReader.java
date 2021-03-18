@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -38,9 +39,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
@@ -49,10 +53,11 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToLatest;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -102,7 +107,7 @@ public class CorrelatedCamundaProcessInstanceReader {
                .must(functionScoreQuery(matchAllQuery(), ScoreFunctionBuilders.randomFunction())))
       .size(0);
 
-    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+    SearchRequest searchRequest = new SearchRequest(getInstanceIndices(camundaSources))
       .source(searchSourceBuilder);
     addCorrelationValuesAggregation(searchSourceBuilder, camundaSources);
 
@@ -113,6 +118,11 @@ public class CorrelatedCamundaProcessInstanceReader {
       String reason = "Was not able to fetch sample correlation values";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        return Collections.emptyList();
+      }
+      throw e;
     }
     Aggregations aggregations = searchResponse.getAggregations();
     return extractCorrelationValues(aggregations, camundaSources);
@@ -144,7 +154,7 @@ public class CorrelatedCamundaProcessInstanceReader {
                .filter(matchesSourceQuery)
                .must(functionScoreQuery(matchAllQuery(), ScoreFunctionBuilders.randomFunction())))
       .size(MAX_RESPONSE_SIZE_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+    SearchRequest searchRequest = new SearchRequest(getInstanceIndices(camundaSources))
       .source(searchSourceBuilder)
       .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
@@ -155,6 +165,11 @@ public class CorrelatedCamundaProcessInstanceReader {
       String reason = "Was not able to fetch instances for correlation values";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        return Collections.emptyList();
+      }
+      throw e;
     }
     return ElasticsearchReaderUtil.retrieveAllScrollResults(
       searchResponse,
@@ -171,7 +186,9 @@ public class CorrelatedCamundaProcessInstanceReader {
     List<String> correlationValues = new ArrayList<>();
     for (Terms.Bucket eventSourceBucket : valuesByProcessDefinition.getBuckets()) {
       CamundaEventSourceEntryDto eventSourceForCurrentBucket = eventSources.stream()
-        .filter(source -> source.getConfiguration().getProcessDefinitionKey().equals(eventSourceBucket.getKeyAsString()))
+        .filter(source -> source.getConfiguration()
+          .getProcessDefinitionKey()
+          .equals(eventSourceBucket.getKeyAsString()))
         .findFirst()
         .orElseThrow(() -> new OptimizeRuntimeException(String.format(
           "Could not find event source for bucket with key %s when sampling for correlation values",
@@ -233,7 +250,6 @@ public class CorrelatedCamundaProcessInstanceReader {
 
   private BoolQueryBuilder queryForEventSourceInstances(final CamundaEventSourceEntryDto eventSource) {
     return boolQuery()
-      .filter(termQuery(PROCESS_DEFINITION_KEY, eventSource.getConfiguration().getProcessDefinitionKey()))
       .filter(versionsQuery(eventSource))
       .filter(tenantsQuery(eventSource));
   }
@@ -288,6 +304,13 @@ public class CorrelatedCamundaProcessInstanceReader {
       tenantQuery.should(termsQuery(TENANT_ID, nonNullTenants));
     }
     return tenantQuery;
+  }
+
+  private String[] getInstanceIndices(final List<CamundaEventSourceEntryDto> eventSources) {
+    final Set<String> definitionKeys = eventSources.stream()
+      .map(source -> source.getConfiguration().getProcessDefinitionKey())
+      .collect(toSet());
+    return getProcessInstanceIndexAliasNames(definitionKeys);
   }
 
 }

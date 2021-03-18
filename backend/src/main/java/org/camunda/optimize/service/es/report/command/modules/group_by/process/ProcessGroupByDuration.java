@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Durat
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.es.report.command.service.DurationAggregationService;
@@ -32,12 +31,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-
 @Component
 @RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessGroupByDuration extends GroupByPart<ProcessReportDataDto> {
+public class ProcessGroupByDuration extends ProcessGroupByPart {
   private final DurationAggregationService durationAggregationService;
   private final MinMaxStatsService minMaxStatsService;
 
@@ -68,18 +65,19 @@ public class ProcessGroupByDuration extends GroupByPart<ProcessReportDataDto> {
   }
 
   @Override
+  public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
+                                                final BoolQueryBuilder baseQuery) {
+    return Optional.of(retrieveMinMaxDurationStats(context, baseQuery));
+  }
+
+  @Override
   protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto reportData) {
     reportData.setGroupBy(new DurationGroupByDto());
   }
 
-  @Override
-  public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
-                                                final BoolQueryBuilder baseQuery) {
-    return Optional.of(retrieveMinMaxDurationStats(baseQuery));
-  }
-
-  private MinMaxStatDto retrieveMinMaxDurationStats(final QueryBuilder baseQuery) {
-    return minMaxStatsService.getScriptedMinMaxStats(baseQuery, PROCESS_INSTANCE_INDEX_NAME, null, getDurationScript());
+  private MinMaxStatDto retrieveMinMaxDurationStats(final ExecutionContext<ProcessReportDataDto> context,
+                                                    final QueryBuilder baseQuery) {
+    return minMaxStatsService.getScriptedMinMaxStats(baseQuery, getIndexName(context), null, getDurationScript());
   }
 
   private Script getDurationScript() {

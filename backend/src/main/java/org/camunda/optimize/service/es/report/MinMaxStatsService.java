@@ -32,7 +32,7 @@ import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.isDecisionInstanceIndexNotFoundException;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -151,7 +151,7 @@ public class MinMaxStatsService {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
-      if (isDecisionInstanceIndexNotFoundException(e)) {
+      if (isInstanceIndexNotFoundException(e)) {
         return new MinMaxStatDto(0, 0);
       }
       throw e;
@@ -228,7 +228,7 @@ public class MinMaxStatsService {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
-      if (isDecisionInstanceIndexNotFoundException(e)) {
+      if (isInstanceIndexNotFoundException(e)) {
         return new MinMaxStatDto(0, 0);
       }
       throw e;

@@ -14,6 +14,7 @@ import org.camunda.optimize.upgrade.steps.UpgradeStepType;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,6 +32,7 @@ public class UpdateIndexStep extends UpgradeStep {
   private final Map<String, Object> parameters;
   // expected suffix: hyphen and numbers at end of index name
   private final Pattern indexSuffixPattern = Pattern.compile("-\\d+$");
+  private Set<String> additionalReadAliases = new HashSet<>();
 
   public UpdateIndexStep(final IndexMappingCreator index) {
     this(index, null);

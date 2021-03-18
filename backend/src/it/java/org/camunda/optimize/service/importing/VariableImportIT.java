@@ -39,9 +39,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_VALUE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
@@ -188,26 +190,26 @@ public class VariableImportIT extends AbstractImportIT {
     assertThat(storedVariableUpdateInstances).hasSize(variables.size());
   }
 
+  @SuppressWarnings(UNCHECKED_CAST)
   @Test
   public void variablesCanHaveNullValue() throws JsonProcessingException {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariablesWithNullValues();
-    ProcessInstanceEngineDto instanceDto =
-      engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
+    engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
     importAllEngineEntitiesFromScratch();
 
     // when
     SearchResponse responseForAllDocumentsOfIndex = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
     // then
     for (SearchHit searchHit : responseForAllDocumentsOfIndex.getHits()) {
       List<Map> retrievedVariables = (List<Map>) searchHit.getSourceAsMap().get(VARIABLES);
       assertThat(retrievedVariables).hasSize(variables.size());
-      retrievedVariables.forEach(var -> assertThat(var.get("value")).isNull());
+      retrievedVariables.forEach(var -> assertThat(var.get(VARIABLE_VALUE)).isNull());
     }
     assertThat(storedVariableUpdateInstances)
       .hasSize(variables.size())

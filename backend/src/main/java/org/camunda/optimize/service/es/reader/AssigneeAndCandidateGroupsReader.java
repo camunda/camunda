@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -32,9 +33,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.TENANT_ID;
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
+import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -81,38 +86,12 @@ public class AssigneeAndCandidateGroupsReader {
     return getSearchResponse(requestDto, ProcessInstanceIndex.USER_TASK_ASSIGNEE);
   }
 
-  public Set<String> getAssigneeIdsForProcess(@NonNull final String definitionKey,
-                                              final List<String> tenantIds) {
-    return getUserTaskFieldTerms(ProcessInstanceIndex.USER_TASK_ASSIGNEE, definitionKey, tenantIds);
-  }
-
   public Set<String> getAssigneeIdsForProcess(final Map<String, Set<String>> definitionKeyToTenantsMap) {
     return getUserTaskFieldTerms(ProcessInstanceIndex.USER_TASK_ASSIGNEE, definitionKeyToTenantsMap);
   }
 
-  public Set<String> getCandidateGroupIdsForProcess(@NonNull final String definitionKey,
-                                                    final List<String> tenantIds) {
-    return getUserTaskFieldTerms(ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS, definitionKey, tenantIds);
-  }
-
   public Set<String> getCandidateGroupIdsForProcess(final Map<String, Set<String>> definitionKeyToTenantsMap) {
     return getUserTaskFieldTerms(ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS, definitionKeyToTenantsMap);
-  }
-
-  private Set<String> getUserTaskFieldTerms(final String userTaskFieldName,
-                                            final String definitionKey,
-                                            final List<String> tenantIds) {
-    log.debug(
-      "Fetching {} for process definition with key [{}] and tenants [{}]", userTaskFieldName, definitionKey, tenantIds
-    );
-
-    final BoolQueryBuilder definitionQuery = createDefinitionQuery(
-      definitionKey, tenantIds, new ProcessInstanceIndex()
-    );
-
-    final Set<String> result = new HashSet<>();
-    consumeUserTaskFieldTermsInBatches(definitionQuery, userTaskFieldName, result::addAll, MAX_RESPONSE_SIZE_LIMIT);
-    return result;
   }
 
   private Set<String> getUserTaskFieldTerms(final String userTaskFieldName,
@@ -123,9 +102,14 @@ public class AssigneeAndCandidateGroupsReader {
     final Set<String> result = new HashSet<>();
     if (!definitionKeyToTenantsMap.isEmpty()) {
       final BoolQueryBuilder definitionQuery = createDefinitionQuery(
-        definitionKeyToTenantsMap, new ProcessInstanceIndex()
+        definitionKeyToTenantsMap, PROCESS_DEFINITION_KEY, TENANT_ID
       );
-      consumeUserTaskFieldTermsInBatches(definitionQuery, userTaskFieldName, result::addAll, MAX_RESPONSE_SIZE_LIMIT);
+      consumeUserTaskFieldTermsInBatches(
+        definitionKeyToTenantsMap.keySet(),
+        definitionQuery,
+        userTaskFieldName,
+        result::addAll
+      );
     }
     return result;
   }
@@ -141,21 +125,53 @@ public class AssigneeAndCandidateGroupsReader {
       field, requestDto.getProcessDefinitionKey(), requestDto.getProcessDefinitionVersions(), requestDto.getTenantIds()
     );
 
-    final BoolQueryBuilder definitionQuery = createDefinitionQuery(
+    final BoolQueryBuilder definitionQuery = DefinitionQueryUtil.createDefinitionQuery(
       requestDto.getProcessDefinitionKey(),
       requestDto.getProcessDefinitionVersions(),
       requestDto.getTenantIds(),
-      new ProcessInstanceIndex(),
+      new ProcessInstanceIndex(requestDto.getProcessDefinitionKey()),
       processDefinitionReader::getLatestVersionToKey
     );
 
     final List<String> result = new ArrayList<>();
-    consumeUserTaskFieldTermsInBatches(definitionQuery, field, result::addAll, MAX_RESPONSE_SIZE_LIMIT);
+    consumeUserTaskFieldTermsInBatches(
+      Collections.singleton(requestDto.getProcessDefinitionKey()),
+      definitionQuery,
+      field,
+      result::addAll
+    );
     return result;
+  }
 
+  private void consumeUserTaskFieldTermsInBatches(final Set<String> definitionKeys,
+                                                  final QueryBuilder filterQuery,
+                                                  final String fieldName,
+                                                  final Consumer<List<String>> termBatchConsumer) {
+    consumeUserTaskFieldTermsInBatches(
+      getProcessInstanceIndexAliasNames(definitionKeys),
+      filterQuery,
+      fieldName,
+      termBatchConsumer,
+      MAX_RESPONSE_SIZE_LIMIT
+    );
   }
 
   private void consumeUserTaskFieldTermsInBatches(final QueryBuilder filterQuery,
+                                                  final String fieldName,
+                                                  final Consumer<List<String>> termBatchConsumer,
+                                                  final int batchSize) {
+    consumeUserTaskFieldTermsInBatches(
+      new String[]{PROCESS_INSTANCE_MULTI_ALIAS},
+      filterQuery,
+      fieldName,
+      termBatchConsumer,
+      batchSize
+    );
+  }
+
+
+  private void consumeUserTaskFieldTermsInBatches(final String[] indexNames,
+                                                  final QueryBuilder filterQuery,
                                                   final String fieldName,
                                                   final Consumer<List<String>> termBatchConsumer,
                                                   final int batchSize) {
@@ -169,7 +185,8 @@ public class AssigneeAndCandidateGroupsReader {
       .query(filterQuery)
       .aggregation(userTasksAgg)
       .size(0);
-    final SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME).source(searchSourceBuilder);
+    final SearchRequest searchRequest =
+      new SearchRequest(indexNames).source(searchSourceBuilder);
 
     final List<String> termsBatch = new ArrayList<>();
     final CompositeAggregationScroller compositeAggregationScroller = CompositeAggregationScroller.create()

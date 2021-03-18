@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByMatchedRuleDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -29,12 +28,11 @@ import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.MATCHED_RULES;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DecisionGroupByMatchedRule extends GroupByPart<DecisionReportDataDto> {
+public class DecisionGroupByMatchedRule extends DecisionGroupByPart {
 
   private final ConfigurationService configurationService;
 
@@ -73,7 +71,4 @@ public class DecisionGroupByMatchedRule extends GroupByPart<DecisionReportDataDt
     reportData.setGroupBy(new DecisionGroupByMatchedRuleDto());
   }
 
-  protected String getIndexName(final ExecutionContext<DecisionReportDataDto> context) {
-    return getDecisionInstanceIndexAliasName(context.getReportData().getDecisionDefinitionKey());
-  }
 }

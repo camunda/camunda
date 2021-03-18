@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.engine.EngineGroupDto;
 import org.camunda.optimize.dto.engine.EngineListUserDto;
+import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -60,6 +61,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.MEMBER
 import static org.camunda.optimize.service.util.importing.EngineConstants.MEMBER_OF_GROUP;
 import static org.camunda.optimize.service.util.importing.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
 import static org.camunda.optimize.service.util.importing.EngineConstants.PROCESS_DEFINITION_ENDPOINT_TEMPLATE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.PROCESS_INSTANCE_ENDPOINT_TEMPLATE;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
@@ -260,6 +262,22 @@ public class EngineContext {
       this.getEngineAlias(),
       engineEntity.getTenantId().orElseGet(() -> this.getDefaultTenantId().orElse(null))
     );
+  }
+
+  public HistoricProcessInstanceDto fetchProcessInstance(final String processInstanceId) {
+    final Response response =
+      engineClient.target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(PROCESS_INSTANCE_ENDPOINT_TEMPLATE)
+        .resolveTemplate("id", processInstanceId)
+        .request(MediaType.APPLICATION_JSON)
+        .acceptEncoding(UTF8)
+        .get();
+
+    if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+      return response.readEntity(HistoricProcessInstanceDto.class);
+    } else {
+      return null;
+    }
   }
 
   private UserDto mapEngineUser(EngineListUserDto engineUser) {

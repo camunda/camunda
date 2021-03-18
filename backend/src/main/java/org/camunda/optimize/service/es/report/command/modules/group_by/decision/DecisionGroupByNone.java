@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.decision
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByNoneDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.elasticsearch.action.search.SearchResponse;
@@ -23,11 +22,10 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DecisionGroupByNone extends GroupByPart<DecisionReportDataDto> {
+public class DecisionGroupByNone extends DecisionGroupByPart {
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
@@ -53,7 +51,4 @@ public class DecisionGroupByNone extends GroupByPart<DecisionReportDataDto> {
     reportData.setGroupBy(new DecisionGroupByNoneDto());
   }
 
-  protected String getIndexName(final ExecutionContext<DecisionReportDataDto> context) {
-    return getDecisionInstanceIndexAliasName(context.getReportData().getDecisionDefinitionKey());
-  }
 }

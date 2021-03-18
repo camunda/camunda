@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.elasticsearch.action.search.SearchResponse;
@@ -36,7 +36,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessIncidentGroupByNone extends GroupByPart<ProcessReportDataDto> {
+public class ProcessIncidentGroupByNone extends ProcessGroupByPart {
 
   private static final String NESTED_INCIDENT_AGGREGATION = "incidentAggregation";
   private static final String FILTERED_INCIDENT_AGGREGATION = "filteredIncidentAggregation";

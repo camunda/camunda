@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
@@ -40,12 +40,11 @@ import static org.camunda.optimize.rest.util.TimeZoneUtil.formatToCorrectTimezon
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<ProcessReportDataDto> {
+public class ProcessGroupByProcessInstanceRunningDate extends ProcessGroupByPart {
   private final DateTimeFormatter formatter;
   private final DateAggregationService dateAggregationService;
   private final MinMaxStatsService minMaxStatsService;
@@ -60,7 +59,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
           minMaxStatsService.getMinMaxDateRangeForCrossField(
             context,
             baseQuery,
-            PROCESS_INSTANCE_INDEX_NAME,
+            getIndexName(context),
             START_DATE,
             END_DATE
           ));
@@ -75,7 +74,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxDateRangeForCrossField(
       context,
       searchSourceBuilder.query(),
-      PROCESS_INSTANCE_INDEX_NAME,
+      getIndexName(context),
       START_DATE,
       END_DATE
     );

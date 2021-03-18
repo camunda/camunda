@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.service.importing.engine.handler;
 
+import lombok.Getter;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -18,6 +18,7 @@ public class RunningProcessInstanceImportIndexHandler extends TimestampBasedEngi
 
   public static final String RUNNING_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID = "runningProcessInstanceImportIndex";
 
+  @Getter
   private final EngineContext engineContext;
 
   public RunningProcessInstanceImportIndexHandler(final EngineContext engineContext) {

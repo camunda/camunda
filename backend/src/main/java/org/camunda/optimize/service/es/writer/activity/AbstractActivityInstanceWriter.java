@@ -6,19 +6,18 @@
 package org.camunda.optimize.service.es.writer.activity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.writer.AbstractProcessInstanceDataWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -31,18 +30,26 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
-@AllArgsConstructor
 @Component
-public abstract class AbstractActivityInstanceWriter {
-  protected final Logger log = LoggerFactory.getLogger(getClass());
-
-  private final OptimizeElasticsearchClient esClient;
+public abstract class AbstractActivityInstanceWriter extends AbstractProcessInstanceDataWriter<FlowNodeEventDto> {
   private final ObjectMapper objectMapper;
 
+  protected AbstractActivityInstanceWriter(final OptimizeElasticsearchClient esClient,
+                                           final ElasticSearchSchemaManager elasticSearchSchemaManager,
+                                           final ObjectMapper objectMapper) {
+    super(esClient, elasticSearchSchemaManager);
+    this.objectMapper = objectMapper;
+  }
+
   public List<ImportRequestDto> generateActivityInstanceImports(List<FlowNodeEventDto> activityInstances) {
+    final String importItemName = "activity instances";
+    log.debug("Creating imports for {} [{}].", activityInstances.size(), importItemName);
+
+    createInstanceIndicesIfMissing(activityInstances, FlowNodeEventDto::getProcessDefinitionKey);
+
     Map<String, List<OptimizeDto>> processInstanceToEvents = new HashMap<>();
     for (FlowNodeEventDto e : activityInstances) {
       if (!processInstanceToEvents.containsKey(e.getProcessInstanceId())) {
@@ -50,9 +57,6 @@ public abstract class AbstractActivityInstanceWriter {
       }
       processInstanceToEvents.get(e.getProcessInstanceId()).add(e);
     }
-
-    String importItemName = "activity instances";
-    log.debug("Creating imports for {} [{}].", activityInstances.size(), importItemName);
 
     return processInstanceToEvents.entrySet().stream()
       .map(entry -> ImportRequestDto.builder()
@@ -64,7 +68,7 @@ public abstract class AbstractActivityInstanceWriter {
   }
 
   private UpdateRequest createImportRequestForActivityInstance(Map.Entry<String, List<OptimizeDto>> activitiesByProcessInstance) {
-    if (!activitiesByProcessInstance.getValue().stream().allMatch(dto -> dto instanceof FlowNodeEventDto)) {
+    if (!activitiesByProcessInstance.getValue().stream().allMatch(FlowNodeEventDto.class::isInstance)) {
       throw new InvalidParameterException("Method called with incorrect instance of DTO.");
     }
     final List<FlowNodeEventDto> activityInstances =
@@ -86,11 +90,12 @@ public abstract class AbstractActivityInstanceWriter {
       final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
         .processInstanceId(processInstanceId)
         .engine(activityInstances.get(0).getEngineAlias())
+        .processDefinitionKey(activityInstances.get(0).getProcessDefinitionKey())
         .events(flowNodeInstanceDtos)
         .build();
       String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
       return new UpdateRequest()
-        .index(PROCESS_INSTANCE_INDEX_NAME)
+        .index(getProcessInstanceIndexAliasName(procInst.getProcessDefinitionKey()))
         .id(processInstanceId)
         .script(updateScript)
         .upsert(newEntryIfAbsent, XContentType.JSON)

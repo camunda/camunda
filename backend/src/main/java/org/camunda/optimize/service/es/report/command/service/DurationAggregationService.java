@@ -49,10 +49,10 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
 import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 
 @Component
@@ -72,7 +72,10 @@ public class DurationAggregationService {
     final Script durationCalculationScript) {
 
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForScriptedField(
-      context, searchSourceBuilder.query(), PROCESS_INSTANCE_INDEX_NAME, durationCalculationScript
+      context,
+      searchSourceBuilder.query(),
+      getIndexName(context),
+      durationCalculationScript
     );
     return createLimitedGroupByScriptedDurationAggregation(
       context, distributedByPart, durationCalculationScript, minMaxStats, this::createProcessInstanceLimitingFilterQuery
@@ -86,7 +89,7 @@ public class DurationAggregationService {
     final Script durationCalculationScript) {
 
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
-      context, searchSourceBuilder.query(), PROCESS_INSTANCE_INDEX_NAME, EVENTS, durationCalculationScript
+      context, searchSourceBuilder.query(), getIndexName(context), EVENTS, durationCalculationScript
     );
     return createLimitedGroupByScriptedDurationAggregation(
       context, distributedByPart, durationCalculationScript, minMaxStats, this::createEventLimitingFilterQuery
@@ -100,7 +103,7 @@ public class DurationAggregationService {
     final Script durationCalculationScript) {
 
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
-      context, searchSourceBuilder.query(), PROCESS_INSTANCE_INDEX_NAME, USER_TASKS, durationCalculationScript
+      context, searchSourceBuilder.query(), getIndexName(context), USER_TASKS, durationCalculationScript
     );
     return createLimitedGroupByScriptedDurationAggregation(
       context,
@@ -250,5 +253,9 @@ public class DurationAggregationService {
           .build()
       )
     );
+  }
+
+  private String getIndexName(final ExecutionContext<ProcessReportDataDto> context) {
+    return getProcessInstanceIndexAliasName(context.getReportData().getProcessDefinitionKey());
   }
 }

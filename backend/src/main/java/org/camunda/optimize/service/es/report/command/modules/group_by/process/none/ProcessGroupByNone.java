@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.elasticsearch.action.search.SearchResponse;
@@ -26,7 +26,7 @@ import static org.camunda.optimize.service.es.report.command.modules.result.Comp
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessGroupByNone extends GroupByPart<ProcessReportDataDto> {
+public class ProcessGroupByNone extends ProcessGroupByPart {
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,

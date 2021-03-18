@@ -243,19 +243,23 @@ public class SchemaUpgradeClient {
     }
   }
 
-  public void addAlias(final String indexAlias, final String indexName, final boolean isWriteAlias) {
-    log.debug("Adding alias [{}] to index [{}].", indexAlias, indexName);
+  public void addAlias(final String indexAlias, final String completeIndexName, final boolean isWriteAlias) {
+    addAliases(Collections.singleton(indexAlias), completeIndexName, isWriteAlias);
+  }
+
+  public void addAliases(final Set<String> indexAliases, final String completeIndexName, final boolean isWriteAlias) {
+    log.debug("Adding aliases [{}] to index [{}].", indexAliases, completeIndexName);
 
     try {
       final IndicesAliasesRequest indicesAliasesRequest = new IndicesAliasesRequest();
       final AliasActions aliasAction = new AliasActions(AliasActions.Type.ADD)
-        .index(indexName)
+        .index(completeIndexName)
         .writeIndex(isWriteAlias)
-        .alias(indexAlias);
+        .aliases(indexAliases.toArray(new String[0]));
       indicesAliasesRequest.addAliasAction(aliasAction);
       getHighLevelRestClient().indices().updateAliases(indicesAliasesRequest, RequestOptions.DEFAULT);
     } catch (Exception e) {
-      String errorMessage = String.format("Could not add alias to index [%s]!", indexName);
+      String errorMessage = String.format("Could not add alias to index [%s]!", completeIndexName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }

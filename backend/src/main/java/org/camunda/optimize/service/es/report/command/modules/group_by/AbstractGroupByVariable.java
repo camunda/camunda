@@ -81,8 +81,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   protected abstract String getVariablePath();
 
-  protected abstract String getIndexName(ExecutionContext<Data> context);
-
   protected abstract BoolQueryBuilder getVariableUndefinedOrNullQuery(final ExecutionContext<Data> context);
 
   @Override

@@ -47,13 +47,14 @@ public class DefinitionQueryUtil {
   }
 
   public static BoolQueryBuilder createDefinitionQuery(final Map<String, Set<String>> definitionKeyToTenantsMap,
-                                                       final DefinitionBasedType type) {
+                                                       final String definitionKeyFieldName,
+                                                       final String tenantKeyFieldName) {
     final BoolQueryBuilder query = boolQuery().minimumShouldMatch(1);
     definitionKeyToTenantsMap.forEach(
       (definitionKey, tenantIds) -> query.should(
         boolQuery()
-          .must(termQuery(type.getDefinitionKeyFieldName(), definitionKey))
-          .must(createTenantIdQuery(type.getTenantIdFieldName(), new ArrayList<>(tenantIds)))
+          .must(termQuery(definitionKeyFieldName, definitionKey))
+          .must(createTenantIdQuery(tenantKeyFieldName, new ArrayList<>(tenantIds)))
       ));
     return query;
   }

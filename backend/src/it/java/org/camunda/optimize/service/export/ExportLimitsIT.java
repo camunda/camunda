@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
@@ -32,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsByteArray;
 import static org.camunda.optimize.service.export.CsvExportService.DEFAULT_RECORD_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class ExportLimitsIT extends AbstractIT {
@@ -121,8 +122,8 @@ public class ExportLimitsIT extends AbstractIT {
     reader.close();
   }
 
-  private void addProcessInstancesToElasticsearch(final int totalInstanceCount, final String processDefinitionKey)
-    throws IOException {
+  private void addProcessInstancesToElasticsearch(final int totalInstanceCount,
+                                                  final String processDefinitionKey) throws IOException {
     final int maxBulkSize = 10000;
     final int batchCount = Double.valueOf(Math.ceil((double) totalInstanceCount / maxBulkSize)).intValue();
 
@@ -130,6 +131,11 @@ public class ExportLimitsIT extends AbstractIT {
       .processDefinitionKey(processDefinitionKey)
       .processDefinitionVersion("1")
       .build();
+
+    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
+      embeddedOptimizeExtension.getOptimizeElasticClient(),
+      new ProcessInstanceIndex(processDefinitionKey)
+    );
 
     for (int i = 0; i < batchCount; i++) {
       final BulkRequest bulkInsert = new BulkRequest();
@@ -139,7 +145,7 @@ public class ExportLimitsIT extends AbstractIT {
         processInstanceDto.setProcessInstanceId(UUID.randomUUID().toString());
 
         final IndexRequest indexRequest =
-          new IndexRequest(PROCESS_INSTANCE_INDEX_NAME)
+          new IndexRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
             .id(processInstanceDto.getProcessInstanceId())
             .source(
               elasticSearchIntegrationTestExtension.getObjectMapper().writeValueAsString(processInstanceDto),
@@ -162,7 +168,8 @@ public class ExportLimitsIT extends AbstractIT {
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportData);
     singleProcessReportDefinitionDto.setId("something");
     singleProcessReportDefinitionDto.setLastModifier("something");

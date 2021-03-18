@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.writer.incident;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,8 +16,9 @@ import org.springframework.stereotype.Component;
 public class CompletedIncidentWriter extends AbstractIncidentWriter {
 
   public CompletedIncidentWriter(final OptimizeElasticsearchClient esClient,
+                                 final ElasticSearchSchemaManager elasticSearchSchemaManager,
                                  final ObjectMapper objectMapper) {
-    super(esClient, objectMapper);
+    super(esClient, elasticSearchSchemaManager, objectMapper);
   }
 
   protected String createInlineUpdateScript() {

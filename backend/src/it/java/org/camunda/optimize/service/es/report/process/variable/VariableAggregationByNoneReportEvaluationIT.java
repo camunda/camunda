@@ -211,17 +211,6 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     );
   }
 
-  @Test
-  public void noResultForNonExistingVariable() {
-    // when
-    ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.INTEGER);
-    ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
-
-    // then
-    assertThat(evaluationResponse.getInstanceCount()).isEqualTo(0L);
-    assertThat(evaluationResponse.getFirstMeasureData()).isNull();
-  }
-
   @ParameterizedTest
   @MethodSource("nonNumericVariableTypes")
   public void unsupportedVariableTypesThrowError(final VariableType variableType) {

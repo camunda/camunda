@@ -43,6 +43,7 @@ import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -69,11 +70,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.SPLITTING_GATEWAY_ID;
 
 public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT {
@@ -466,7 +467,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .execute(new TypeReference<AuthorizedCombinedReportEvaluationResponseDto<List<MapResultEntryDto>>>() {});
       // @formatter:on
     final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> resultData = result.getResult();
-    final Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> resultMap = resultData.getData();
+    final Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> resultMap =
+      resultData.getData();
 
     // then
     assertThat(resultMap).hasSize(2);
@@ -998,8 +1000,13 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .startDate(date)
       .endDate(date)
       .build();
+    embeddedOptimizeExtension.getElasticSearchSchemaManager()
+      .createIndexIfMissing(
+        elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),
+        new ProcessInstanceIndex("aKey")
+      );
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      PROCESS_INSTANCE_INDEX_NAME,
+      getProcessInstanceIndexAliasName("aKey"),
       instanceDto.getProcessInstanceId(),
       instanceDto
     );
@@ -1007,7 +1014,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     instanceDto.setStartDate(date.plusHours(1));
     instanceDto.setEndDate(date.plusHours(1));
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      PROCESS_INSTANCE_INDEX_NAME,
+      getProcessInstanceIndexAliasName("aKey"),
       instanceDto.getProcessInstanceId(),
       instanceDto
     );

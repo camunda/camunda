@@ -42,7 +42,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.BUSINESS_KEY_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
@@ -114,6 +114,7 @@ public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
   protected List<ProcessInstanceEngineDto> deployProcessAndStartTwoProcessInstancesWithEndTime(OffsetDateTime endTime) {
     final ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTask();
     final ProcessInstanceEngineDto secondProcInst = startNewProcessWithSameProcessDefinitionId(firstProcInst);
+    secondProcInst.setProcessDefinitionKey(firstProcInst.getProcessDefinitionKey());
 
     modifyProcessInstanceEndTime(endTime, firstProcInst, secondProcInst);
 
@@ -148,7 +149,7 @@ public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(PROCESS_INSTANCE_INDEX_NAME)
+      .indices(PROCESS_INSTANCE_MULTI_ALIAS)
       .source(searchSourceBuilder);
 
     return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()

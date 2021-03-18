@@ -8,10 +8,12 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
@@ -31,7 +33,9 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.TENANT_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component
@@ -44,16 +48,15 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
   );
   private static final String IMPORT_ITEM_NAME = "running process instances";
 
-  private final OptimizeElasticsearchClient esClient;
-
   public RunningProcessInstanceWriter(final OptimizeElasticsearchClient esClient,
-                                      final ObjectMapper objectMapper) {
-    super(objectMapper);
-    this.esClient = esClient;
+                                      final ObjectMapper objectMapper,
+                                      final ElasticSearchSchemaManager elasticSearchSchemaManager) {
+    super(esClient, elasticSearchSchemaManager, objectMapper);
   }
 
   public List<ImportRequestDto> generateProcessInstanceImports(List<ProcessInstanceDto> processInstanceDtos) {
     log.debug("Creating imports for {} [{}].", processInstanceDtos.size(), IMPORT_ITEM_NAME);
+    createInstanceIndicesIfMissing(processInstanceDtos, ProcessInstanceDto::getProcessDefinitionKey);
 
     return processInstanceDtos.stream()
       .map(instance -> ImportRequestDto.builder()
@@ -64,16 +67,18 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
       .collect(toList());
   }
 
-  public void importProcessInstancesFromUserOperationLogs(List<ProcessInstanceDto> processInstanceDtos) {
+  @SuppressWarnings(UNCHECKED_CAST)
+  public void importProcessInstancesFromUserOperationLogs(final List<ProcessInstanceDto> processInstanceDtos) {
     log.debug(
       "Writing changes from user operation logs to [{}] {} to ES.",
       processInstanceDtos.size(),
       IMPORT_ITEM_NAME
     );
 
-    List<ProcessInstanceDto> processInstanceDtoToUpdateList = processInstanceDtos.stream()
+    final List<ProcessInstanceDto> processInstanceDtoToUpdateList = processInstanceDtos.stream()
       .filter(procInst -> procInst.getProcessInstanceId() != null)
       .collect(toList());
+    createInstanceIndicesIfMissing(processInstanceDtos, ProcessInstanceDto::getProcessDefinitionKey);
 
     ElasticsearchWriterUtil.doBulkRequestWithList(
       esClient,
@@ -89,27 +94,30 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
   }
 
   public void importProcessInstancesForProcessDefinitionIds(
-    final Map<String, String> definitionIdToNewStateMap) {
-
-    for (Map.Entry<String, String> definitionStateEntry : definitionIdToNewStateMap.entrySet()) {
-      ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient,
-        String.format(
-          "%s with %s: %s",
-          IMPORT_ITEM_NAME,
-          ProcessInstanceDto.Fields.processDefinitionId,
-          definitionStateEntry.getKey()
-        ),
-        createUpdateStateScript(definitionStateEntry.getValue()),
-        termsQuery(ProcessInstanceDto.Fields.processDefinitionId, definitionStateEntry.getKey()),
-        PROCESS_INSTANCE_INDEX_NAME
-      );
+    final Map<String, Map<String, String>> definitionKeyToIdToStateMap) {
+    for (Map.Entry<String, Map<String, String>> definitionKeyEntry : definitionKeyToIdToStateMap.entrySet()) {
+      final String definitionKey = definitionKeyEntry.getKey();
+      for (Map.Entry<String, String> definitionStateEntry : definitionKeyToIdToStateMap.get(definitionKey).entrySet()) {
+        createInstanceIndicesIfMissing(Sets.newHashSet((definitionKey)));
+        ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+          esClient,
+          String.format(
+            "%s with %s: %s",
+            IMPORT_ITEM_NAME,
+            ProcessInstanceDto.Fields.processDefinitionId,
+            definitionStateEntry.getKey()
+          ),
+          createUpdateStateScript(definitionStateEntry.getValue()),
+          termsQuery(ProcessInstanceDto.Fields.processDefinitionId, definitionStateEntry.getKey()),
+          getProcessInstanceIndexAliasName(definitionKey)
+        );
+      }
     }
   }
 
   public void importProcessInstancesForProcessDefinitionKeys(
     final Map<String, String> definitionKeyToNewStateMap) {
-
+    createInstanceIndicesIfMissing(definitionKeyToNewStateMap.keySet());
     for (Map.Entry<String, String> definitionStateEntry : definitionKeyToNewStateMap.entrySet()) {
       ElasticsearchWriterUtil.tryUpdateByQueryRequest(
         esClient,
@@ -120,8 +128,8 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
           definitionStateEntry.getKey()
         ),
         createUpdateStateScript(definitionStateEntry.getValue()),
-        termsQuery(ProcessInstanceDto.Fields.processDefinitionKey, definitionStateEntry.getKey()),
-        PROCESS_INSTANCE_INDEX_NAME
+        matchAllQuery(),
+        getProcessInstanceIndexAliasName(definitionStateEntry.getKey())
       );
     }
   }

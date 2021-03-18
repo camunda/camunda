@@ -8,9 +8,10 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -24,9 +25,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 public class AnalysisRestServiceIT extends AbstractIT {
 
@@ -84,11 +85,19 @@ public class AnalysisRestServiceIT extends AbstractIT {
       .engine(DEFAULT_ENGINE_ALIAS)
       .bpmn20Xml(readDiagram())
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_ID, processDefinitionXmlDto);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      PROCESS_DEFINITION_INDEX_NAME,
+      PROCESS_DEFINITION_ID,
+      processDefinitionXmlDto
+    );
 
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_2);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      PROCESS_DEFINITION_INDEX_NAME,
+      PROCESS_DEFINITION_ID_2,
+      processDefinitionXmlDto
+    );
 
     final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
       .processDefinitionId(PROCESS_DEFINITION_ID)
@@ -99,13 +108,20 @@ public class AnalysisRestServiceIT extends AbstractIT {
       .endDate(OffsetDateTime.now())
       .events(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}))
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_ID, procInst);
+    embeddedOptimizeExtension.getElasticSearchSchemaManager()
+      .createIndexIfMissing(
+        elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),
+        new ProcessInstanceIndex(PROCESS_DEFINITION_KEY)
+      );
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      getProcessInstanceIndexAliasName(PROCESS_DEFINITION_KEY), PROCESS_INSTANCE_ID, procInst);
 
     procInst.setEvents(
       createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY})
     );
     procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_ID_2, procInst);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      getProcessInstanceIndexAliasName(PROCESS_DEFINITION_KEY), PROCESS_INSTANCE_ID_2, procInst);
   }
 
   private List<FlowNodeInstanceDto> createEventList(String[] activityIds) {

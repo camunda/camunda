@@ -32,7 +32,6 @@ import java.util.Optional;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_START_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -85,12 +84,13 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
   @Override
   public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
                                                 final BoolQueryBuilder baseQuery) {
-    return Optional.of(retrieveMinMaxDurationStats(baseQuery));
+    return Optional.of(retrieveMinMaxDurationStats(context, baseQuery));
   }
 
-  private MinMaxStatDto retrieveMinMaxDurationStats(final QueryBuilder baseQuery) {
+  private MinMaxStatDto retrieveMinMaxDurationStats(final ExecutionContext<ProcessReportDataDto> context,
+                                                    final QueryBuilder baseQuery) {
     return minMaxStatsService.getScriptedMinMaxStats(
-      baseQuery, PROCESS_INSTANCE_INDEX_NAME, EVENTS, getDurationScript()
+      baseQuery, getIndexName(context), EVENTS, getDurationScript()
     );
   }
 

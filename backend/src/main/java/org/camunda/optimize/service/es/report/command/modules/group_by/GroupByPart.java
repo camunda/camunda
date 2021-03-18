@@ -68,6 +68,8 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
     return Optional.empty();
   }
 
+  protected abstract String getIndexName(ExecutionContext<Data> context);
+
   protected abstract void addQueryResult(final CompositeCommandResult compositeCommandResult,
                                          final SearchResponse response,
                                          final ExecutionContext<Data> executionContext);
