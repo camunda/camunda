@@ -14,15 +14,15 @@ import org.slf4j.LoggerFactory;
 
 public class RecordLogger {
   public static final String STYLE_PROPERTY = "RECORD_LOGGER_STYLE";
-  public static final String STYLE_COMPACT = "COMPACT";
+  public static final String STYLE_RAW = "RAW";
   public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test");
 
   public static void logRecords() {
     LOG.info("Test failed, following records were exported:");
-    if (STYLE_COMPACT.equals(System.getenv(STYLE_PROPERTY))) {
-      logRecordsCompact(RecordingExporter.getRecords());
-    } else {
+    if (STYLE_RAW.equals(System.getenv(STYLE_PROPERTY))) {
       logRecordsRaw(RecordingExporter.getRecords());
+    } else {
+      logRecordsCompact(RecordingExporter.getRecords());
     }
   }
 

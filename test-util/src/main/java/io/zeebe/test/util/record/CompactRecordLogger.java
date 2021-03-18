@@ -7,11 +7,13 @@
  */
 package io.zeebe.test.util.record;
 
+import static java.util.Comparator.comparing;
 import static java.util.Map.entry;
 import static java.util.Map.ofEntries;
 import static org.apache.commons.lang3.StringUtils.leftPad;
 import static org.apache.commons.lang3.StringUtils.rightPad;
 
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -77,14 +80,22 @@ public class CompactRecordLogger {
   private final int keyDigits;
   private final int valueTypeChars;
   private final int intentChars;
+  private final boolean singlePartition;
 
-  private final Map<Long, Long> substitutions = new HashMap<>();
+  private final Map<Long, String> substitutions = new HashMap<>();
   private final ArrayList<Record<?>> records;
-
-  private long counter = 0;
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
     this.records = new ArrayList<>(records);
+
+    singlePartition =
+        records.stream()
+                .mapToLong(Record::getKey)
+                .filter(key -> key != -1)
+                .map(Protocol::decodePartitionId)
+                .distinct()
+                .count()
+            < 2;
     final var highestPosition = this.records.get(records.size() - 1).getPosition();
 
     int digits = 0;
@@ -121,12 +132,11 @@ public class CompactRecordLogger {
     bulkMessage
         .append("--------\n")
         .append(
-            "\t['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position]  K[key] - [summary of value]\n")
+            "\t['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position]  P[partitionId]K[key] - [summary of value]\n")
         .append(
-            "\tK999 - key; #999 - record position; \"ID\" element/process id; @\"elementid\"/[K99] - element with ID and key\n")
+            "\tP9K999 - key; #999 - record position; \"ID\" element/process id; @\"elementid\"/[P9K999] - element with ID and key\n")
         .append(
-            "\tLong numbers are substituted with short numbers (e.g. 52124672368 -> 1). Substituted numbers are used consistently, ")
-        .append("but they might not have the same order as the numbers they substitute\n")
+            "\tKeys are decomposed into partition id and per partition key (e.g. 2251799813685253 -> P1K005). If single partition, the partition is omitted.\n")
         .append(
             "\tLong IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'\n")
         .append("--------\n");
@@ -135,6 +145,18 @@ public class CompactRecordLogger {
         record -> {
           bulkMessage.append(summarizeRecord(record)).append("\n");
         });
+
+    bulkMessage.append("--------\n").append("Decomposed keys (for debugging):\n");
+
+    substitutions.entrySet().stream()
+        .sorted(comparing(Entry::getValue))
+        .forEach(
+            entry ->
+                bulkMessage
+                    .append(entry.getValue())
+                    .append(" <-> ")
+                    .append(entry.getKey())
+                    .append("\n"));
 
     LOG.info(bulkMessage.toString());
   }
@@ -160,7 +182,7 @@ public class CompactRecordLogger {
         .append("->")
         .append(formatPosition(record.getSourceRecordPosition()))
         .append(" ")
-        .append(formatKey(record.getKey()))
+        .append(shortenKey(record.getKey()))
         .append(BLOCK_SEPARATOR);
   }
 
@@ -194,14 +216,14 @@ public class CompactRecordLogger {
 
   private String summarizeElementInformation(
       final String elementId, final long elementInstanceKey) {
-    return String.format(" @%s[%s]", formatId(elementId), formatKey(elementInstanceKey));
+    return String.format(" @%s[%s]", formatId(elementId), shortenKey(elementInstanceKey));
   }
 
   private String summarizeProcessInformation(
       final String bpmnProcessId, final long processInstancekey) {
     if (!StringUtils.isEmpty(bpmnProcessId)) {
       return String.format(
-          " in <process %s[%s]>", formatId(bpmnProcessId), formatKey(processInstancekey));
+          " in <process %s[%s]>", formatId(bpmnProcessId), shortenKey(processInstancekey));
     } else {
       return " in <process ?>";
     }
@@ -224,7 +246,7 @@ public class CompactRecordLogger {
       result.append(value.getErrorType()).append(" ").append(value.getErrorMessage()).append(", ");
 
       if (value.getJobKey() != -1) {
-        result.append("joBKey: ").append(formatKey(value.getJobKey())).append(" ");
+        result.append("joBKey: ").append(shortenKey(value.getJobKey())).append(" ");
       }
 
       result
@@ -232,7 +254,7 @@ public class CompactRecordLogger {
           .append(
               summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()));
     } else {
-      result.append(formatKey(record.getKey()));
+      result.append(shortenKey(record.getKey()));
     }
     return result.toString();
   }
@@ -247,7 +269,7 @@ public class CompactRecordLogger {
     final var result = new StringBuilder();
 
     if (jobKey != -1) {
-      result.append(formatKey(jobKey));
+      result.append(shortenKey(jobKey));
     }
     if (!StringUtils.isEmpty(value.getType())) {
       result
@@ -345,7 +367,7 @@ public class CompactRecordLogger {
 
     result
         .append("@[")
-        .append(formatKey(value.getElementInstanceKey()))
+        .append(shortenKey(value.getElementInstanceKey()))
         .append("]")
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
@@ -403,7 +425,7 @@ public class CompactRecordLogger {
 
     result
         .append("@[")
-        .append(formatKey(value.getElementInstanceKey()))
+        .append(shortenKey(value.getElementInstanceKey()))
         .append("]")
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
@@ -421,7 +443,7 @@ public class CompactRecordLogger {
         .append(value.getValue())
         .append(" in <process ")
         .append("[")
-        .append(formatKey(value.getProcessInstanceKey()))
+        .append(shortenKey(value.getProcessInstanceKey()))
         .append("]>")
         .toString();
   }
@@ -433,20 +455,37 @@ public class CompactRecordLogger {
         .append(record.getRejectionReason());
   }
 
-  private long substitute(final long input) {
-    if (input > 0) {
-      return substitutions.computeIfAbsent(input, key -> counter++);
-    } else {
-      return input;
-    }
+  private String shortenKey(final long input) {
+    return substitutions.computeIfAbsent(input, this::formatKey);
   }
 
-  private String formatKey(final long input) {
-    return "K" + leftPad(Long.toString(substitute(input)), keyDigits, '0');
+  private String formatKey(final long key) {
+    final var result = new StringBuilder();
+
+    if (!singlePartition) {
+      if (key > 0) {
+        result.append("P").append(Protocol.decodePartitionId(key));
+      } else {
+        result.append("  ");
+      }
+    }
+
+    if (key > 0) {
+      result.append(
+          "K" + leftPad(Long.toString(Protocol.decodeKeyInPartition(key)), keyDigits, '0'));
+    } else {
+      result.append(leftPad(Long.toString(key), keyDigits + 1, ' '));
+    }
+
+    return result.toString();
   }
 
   private String formatPosition(final long input) {
-    return "#" + leftPad(Long.toString(input), keyDigits, '0');
+    if (input >= 0) {
+      return "#" + leftPad(Long.toString(input), keyDigits, '0');
+    } else {
+      return leftPad(Long.toString(input), keyDigits + 1, ' ');
+    }
   }
 
   private String formatId(final String input) {
