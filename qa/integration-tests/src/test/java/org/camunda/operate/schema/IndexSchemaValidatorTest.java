@@ -1,3 +1,8 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
 package org.camunda.operate.schema;
 
 import org.camunda.operate.es.RetryElasticsearchClient;
@@ -153,7 +158,6 @@ public class IndexSchemaValidatorTest {
   private void whenELSClientReturnsIndexNames(List<String> givenIndexNames) {
     Set<String> returnValues = new HashSet<>(givenIndexNames);
     when(retryElasticsearchClient.getIndexNamesFromClusterHealth(anyString())).thenReturn(returnValues);
-    when(retryElasticsearchClient.getIndexNamesFor(anyString())).thenReturn(givenIndexNames);
   }
 
   private List<String> versionsOf(IndexDescriptor index, Set<String> versions) {

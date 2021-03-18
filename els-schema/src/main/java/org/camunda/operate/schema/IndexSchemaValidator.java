@@ -1,3 +1,8 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
 package org.camunda.operate.schema;
 
 import org.camunda.operate.es.RetryElasticsearchClient;
@@ -33,10 +38,10 @@ public class IndexSchemaValidator {
   @Autowired
   RetryElasticsearchClient retryElasticsearchClient;
 
-  private List<String> getAllIndexNamesForIndex(String index) {
+  private Set<String> getAllIndexNamesForIndex(String index) {
     final String indexPattern = String.format("%s-%s*", getIndexPrefix(), index);
     logger.debug("Getting all indices for {}", indexPattern);
-    return retryElasticsearchClient.getIndexNamesFor(indexPattern);
+    return retryElasticsearchClient.getIndexNamesFromClusterHealth(indexPattern);
   }
 
   private String getIndexPrefix() {
@@ -60,7 +65,7 @@ public class IndexSchemaValidator {
   }
 
   private Set<String> versionsForIndex(IndexDescriptor indexDescriptor) {
-    List<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
+    Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
     return allIndexNames.stream()
         .map(this::getVersionFromIndexName)
         .filter(Optional::isPresent)

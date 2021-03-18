@@ -117,10 +117,6 @@ public class RetryElasticsearchClient {
     return indicesStatus.keySet();
   }
 
-  public List<String> getIndexNamesFor(String namePattern) {
-    return executeWithRetries(() -> List.of(esClient.indices().get(new GetIndexRequest(namePattern), requestOptions).getIndices()));
-  }
-
   public boolean createIndex(CreateIndexRequest createIndexRequest) {
     return executeWithRetries("CreateIndex " + createIndexRequest.index(), () -> {
       if (!indicesExist(createIndexRequest.index())) {
