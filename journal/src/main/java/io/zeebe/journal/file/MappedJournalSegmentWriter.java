@@ -30,7 +30,6 @@ import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.MappedByteBuffer;
 import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -50,7 +49,7 @@ class MappedJournalSegmentWriter {
   private final MutableDirectBuffer writeBuffer = new UnsafeBuffer();
 
   MappedJournalSegmentWriter(
-      final JournalSegmentFile file,
+      final MappedByteBuffer buffer,
       final JournalSegment segment,
       final int maxEntrySize,
       final JournalIndex index) {
@@ -59,16 +58,9 @@ class MappedJournalSegmentWriter {
     recordUtil = new JournalRecordReaderUtil(serializer);
     this.index = index;
     firstIndex = segment.index();
-    buffer = mapFile(file, segment);
+    this.buffer = buffer;
     writeBuffer.wrap(buffer);
     reset(0);
-  }
-
-  private static MappedByteBuffer mapFile(
-      final JournalSegmentFile file, final JournalSegment segment) {
-    // map existing file, because file is already created by SegmentedJournal
-    return IoUtil.mapExistingFile(
-        file.file(), file.name(), 0, segment.descriptor().maxSegmentSize());
   }
 
   public long getLastIndex() {
@@ -263,7 +255,6 @@ class MappedJournalSegmentWriter {
     if (isOpen) {
       isOpen = false;
       flush();
-      IoUtil.unmap(buffer);
     }
   }
 
