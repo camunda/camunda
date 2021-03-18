@@ -24,6 +24,7 @@ cd benchmarks/project
 sed_inplace "s/:SNAPSHOT/:$benchmark/" docker-compose.yml
 docker-compose build
 docker-compose push
+git restore -- docker-compose.yml
 
 cd ../setup/
 
@@ -34,6 +35,8 @@ cd "$benchmark"
 sed_inplace 's/camunda\/zeebe/gcr.io\/zeebe-io\/zeebe/' zeebe-values.yaml
 sed_inplace "s/SNAPSHOT/$benchmark/" zeebe-values.yaml
 sed_inplace "s/starter:zeebe/starter:$benchmark/" starter.yaml
+sed_inplace "s/starter:zeebe/starter:$benchmark/" simpleStarter.yaml
+sed_inplace "s/starter:zeebe/starter:$benchmark/" timer.yaml
 sed_inplace "s/worker:zeebe/worker:$benchmark/" worker.yaml
 
 make zeebe starter worker
