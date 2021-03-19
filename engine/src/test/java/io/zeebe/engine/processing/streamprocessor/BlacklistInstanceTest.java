@@ -28,7 +28,7 @@ import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
@@ -116,18 +116,14 @@ public final class BlacklistInstanceTest {
       ////////////////////////////////////////
       ////////// MSG START EVENT SUB /////////
       ////////////////////////////////////////
-      {ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, MessageStartEventSubscriptionIntent.OPEN, false},
       {
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
-        MessageStartEventSubscriptionIntent.OPENED,
+        MessageStartEventSubscriptionIntent.CREATED,
         false
       },
       {
-        ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, MessageStartEventSubscriptionIntent.CLOSE, false
-      },
-      {
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
-        MessageStartEventSubscriptionIntent.CLOSED,
+        MessageStartEventSubscriptionIntent.DELETED,
         false
       },
 
@@ -187,12 +183,12 @@ public final class BlacklistInstanceTest {
       ////////////////////////////////////////
       //////// PROCESS INSTANCE SUB /////////
       ////////////////////////////////////////
-      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CREATE, true},
-      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CREATED, true},
-      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CORRELATE, true},
-      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.CORRELATED, true},
-      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.DELETE, true},
-      {ValueType.PROCESS_INSTANCE_SUBSCRIPTION, ProcessInstanceSubscriptionIntent.DELETED, true}
+      {ValueType.PROCESS_MESSAGE_SUBSCRIPTION, ProcessMessageSubscriptionIntent.CREATE, true},
+      {ValueType.PROCESS_MESSAGE_SUBSCRIPTION, ProcessMessageSubscriptionIntent.CREATED, true},
+      {ValueType.PROCESS_MESSAGE_SUBSCRIPTION, ProcessMessageSubscriptionIntent.CORRELATE, true},
+      {ValueType.PROCESS_MESSAGE_SUBSCRIPTION, ProcessMessageSubscriptionIntent.CORRELATED, true},
+      {ValueType.PROCESS_MESSAGE_SUBSCRIPTION, ProcessMessageSubscriptionIntent.DELETE, true},
+      {ValueType.PROCESS_MESSAGE_SUBSCRIPTION, ProcessMessageSubscriptionIntent.DELETED, true}
     };
   }
 

@@ -16,7 +16,7 @@ import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
-public final class ProcessInstanceSubscription extends UnpackedObject implements DbValue {
+public final class ProcessMessageSubscription extends UnpackedObject implements DbValue {
 
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
@@ -32,7 +32,7 @@ public final class ProcessInstanceSubscription extends UnpackedObject implements
   private final EnumProperty<State> stateProp =
       new EnumProperty<>("state", State.class, State.STATE_OPENING);
 
-  public ProcessInstanceSubscription() {
+  public ProcessMessageSubscription() {
     declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(targetElementIdProp)
@@ -45,7 +45,7 @@ public final class ProcessInstanceSubscription extends UnpackedObject implements
         .declareProperty(stateProp);
   }
 
-  public ProcessInstanceSubscription(
+  public ProcessMessageSubscription(
       final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer targetElementId,

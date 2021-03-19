@@ -20,7 +20,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
@@ -107,8 +107,8 @@ public class DiskSpaceRecoveryClusteredTest {
         .untilAsserted(
             () ->
                 assertThat(
-                        RecordingExporter.processInstanceSubscriptionRecords(
-                                ProcessInstanceSubscriptionIntent.CORRELATED)
+                        RecordingExporter.processMessageSubscriptionRecords(
+                                ProcessMessageSubscriptionIntent.CORRELATED)
                             .limit(2)
                             .count())
                     .isEqualTo(2));

@@ -183,8 +183,7 @@ public class StreamProcessorHealthTest {
         streamProcessorRule.startTypedStreamProcessor(
             processingContext -> {
               final MutableZeebeState zeebeState = processingContext.getZeebeState();
-              mockedLogStreamWriter =
-                  new WrappedStreamWriter(processingContext.getLogStreamWriter());
+              mockedLogStreamWriter = new WrappedStreamWriter();
               processingContext.logStreamWriter(mockedLogStreamWriter);
               return processors(zeebeState.getKeyGenerator(), processingContext.getWriters())
                   .onEvent(
@@ -230,40 +229,27 @@ public class StreamProcessorHealthTest {
 
   private final class WrappedStreamWriter implements TypedStreamWriter {
 
-    private final TypedStreamWriter wrappedWriter;
-
-    private WrappedStreamWriter(final TypedStreamWriter wrappedWriter) {
-      this.wrappedWriter = wrappedWriter;
-    }
-
     @Override
     public void appendRejection(
         final TypedRecord<? extends RecordValue> command,
         final RejectionType type,
-        final String reason) {
-      wrappedWriter.appendRejection(command, type, reason);
-    }
+        final String reason) {}
 
     @Override
     public void appendRejection(
         final TypedRecord<? extends RecordValue> command,
         final RejectionType type,
         final String reason,
-        final UnaryOperator<RecordMetadata> modifier) {
-      wrappedWriter.appendRejection(command, type, reason, modifier);
-    }
+        final UnaryOperator<RecordMetadata> modifier) {}
 
     @Override
-    public void configureSourceContext(final long sourceRecordPosition) {
-      wrappedWriter.configureSourceContext(sourceRecordPosition);
-    }
+    public void configureSourceContext(final long sourceRecordPosition) {}
 
     @Override
     public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
       if (shouldFailErrorHandlingInTransaction.get()) {
         throw new RuntimeException("Expected failure on append followup event");
       }
-      wrappedWriter.appendFollowUpEvent(key, intent, value);
     }
 
     @Override
@@ -275,40 +261,31 @@ public class StreamProcessorHealthTest {
       if (shouldFailErrorHandlingInTransaction.get()) {
         throw new RuntimeException("Expected failure on append followup event");
       }
-      wrappedWriter.appendFollowUpEvent(key, intent, value, modifier);
     }
 
     @Override
-    public void appendNewCommand(final Intent intent, final RecordValue value) {
-      wrappedWriter.appendNewCommand(intent, value);
-    }
+    public void appendNewCommand(final Intent intent, final RecordValue value) {}
 
     @Override
     public void appendFollowUpCommand(
-        final long key, final Intent intent, final RecordValue value) {
-      wrappedWriter.appendFollowUpCommand(key, intent, value);
-    }
+        final long key, final Intent intent, final RecordValue value) {}
 
     @Override
     public void appendFollowUpCommand(
         final long key,
         final Intent intent,
         final RecordValue value,
-        final UnaryOperator<RecordMetadata> modifier) {
-      wrappedWriter.appendFollowUpCommand(key, intent, value, modifier);
-    }
+        final UnaryOperator<RecordMetadata> modifier) {}
 
     @Override
-    public void reset() {
-      wrappedWriter.reset();
-    }
+    public void reset() {}
 
     @Override
     public long flush() {
       if (shouldFlushThrowException.get()) {
         throw new RuntimeException("Expected failure on flush");
       }
-      return wrappedWriter.flush();
+      return 1L;
     }
   }
 }

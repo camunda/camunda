@@ -37,7 +37,7 @@ public final class PendingMessageSubscriptionChecker implements Runnable {
     final var record = subscription.getRecord();
 
     final boolean success =
-        commandSender.correlateProcessInstanceSubscription(
+        commandSender.correlateProcessMessageSubscription(
             record.getProcessInstanceKey(),
             record.getElementInstanceKey(),
             record.getBpmnProcessIdBuffer(),

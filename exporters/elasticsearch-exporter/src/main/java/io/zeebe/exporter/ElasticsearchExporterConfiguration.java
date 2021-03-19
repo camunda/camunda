@@ -72,8 +72,8 @@ public class ElasticsearchExporterConfiguration {
         return index.processInstance;
       case PROCESS_INSTANCE_CREATION:
         return index.processInstanceCreation;
-      case PROCESS_INSTANCE_SUBSCRIPTION:
-        return index.processInstanceSubscription;
+      case PROCESS_MESSAGE_SUBSCRIPTION:
+        return index.processMessageSubscription;
       default:
         return false;
     }
@@ -116,7 +116,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean variableDocument = true;
     public boolean processInstance = true;
     public boolean processInstanceCreation = false;
-    public boolean processInstanceSubscription = false;
+    public boolean processMessageSubscription = false;
 
     // size limits
     public int ignoreVariablesAbove = 8191;
@@ -155,8 +155,8 @@ public class ElasticsearchExporterConfiguration {
           + processInstance
           + ", processInstanceCreation="
           + processInstanceCreation
-          + ", processInstanceSubscription="
-          + processInstanceSubscription
+          + ", processMessageSubscription="
+          + processMessageSubscription
           + ", ignoreVariablesAbove="
           + ignoreVariablesAbove
           + '}';

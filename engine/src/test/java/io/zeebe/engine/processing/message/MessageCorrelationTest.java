@@ -22,10 +22,10 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.zeebe.test.util.record.ProcessInstances;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
@@ -380,8 +380,8 @@ public final class MessageCorrelationTest {
 
     // then
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CORRELATED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CORRELATED)
                 .limit(2))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getMessageKey(), v.getProcessInstanceKey()))
@@ -417,8 +417,8 @@ public final class MessageCorrelationTest {
 
     // then
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CORRELATED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CORRELATED)
                 .limit(2))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getMessageKey(), v.getProcessInstanceKey()))
@@ -468,8 +468,8 @@ public final class MessageCorrelationTest {
 
     // then
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CORRELATED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CORRELATED)
                 .limit(2))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getMessageKey(), v.getProcessInstanceKey()))
@@ -516,8 +516,8 @@ public final class MessageCorrelationTest {
 
     // when
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CREATED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
                 .exists())
         .isTrue();
 
@@ -527,8 +527,8 @@ public final class MessageCorrelationTest {
     messageClient.withVariables(asMsgPack("nr", 1)).publish();
 
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CREATED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
                 .limit(2)
                 .count())
         .isEqualTo(2);
@@ -572,8 +572,8 @@ public final class MessageCorrelationTest {
 
     // when
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CREATED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
                 .limit(2)
                 .count())
         .isEqualTo(2);
@@ -605,8 +605,8 @@ public final class MessageCorrelationTest {
     engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CREATED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
                 .exists())
         .isTrue();
 
@@ -857,14 +857,14 @@ public final class MessageCorrelationTest {
     assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey))
         .extracting(Record::getRecordType, Record::getIntent)
         .containsSubsequence(
-            tuple(RecordType.COMMAND_REJECTION, ProcessInstanceSubscriptionIntent.CORRELATE),
+            tuple(RecordType.COMMAND_REJECTION, ProcessMessageSubscriptionIntent.CORRELATE),
             tuple(RecordType.COMMAND, MessageSubscriptionIntent.REJECT),
             tuple(RecordType.EVENT, MessageSubscriptionIntent.REJECTED),
-            tuple(RecordType.COMMAND, ProcessInstanceSubscriptionIntent.CORRELATE));
+            tuple(RecordType.COMMAND, ProcessMessageSubscriptionIntent.CORRELATE));
 
     assertThat(
-            RecordingExporter.processInstanceSubscriptionRecords(
-                    ProcessInstanceSubscriptionIntent.CORRELATED)
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CORRELATED)
                 .limit(2))
         .extracting(r -> r.getValue().getMessageName())
         .containsExactlyInAnyOrder("a", "b");
@@ -931,18 +931,18 @@ public final class MessageCorrelationTest {
     Assertions.assertThat(variable.getValue()).hasValue("3");
   }
 
-  private List<Record<ProcessInstanceSubscriptionRecordValue>> awaitMessagesCorrelated(
+  private List<Record<ProcessMessageSubscriptionRecordValue>> awaitMessagesCorrelated(
       final int messagesCount) {
-    return RecordingExporter.processInstanceSubscriptionRecords(
-            ProcessInstanceSubscriptionIntent.CORRELATED)
+    return RecordingExporter.processMessageSubscriptionRecords(
+            ProcessMessageSubscriptionIntent.CORRELATED)
         .limit(messagesCount)
         .asList();
   }
 
-  private List<Record<ProcessInstanceSubscriptionRecordValue>> awaitSubscriptionsOpened(
+  private List<Record<ProcessMessageSubscriptionRecordValue>> awaitSubscriptionsOpened(
       final int subscriptionsCount) {
-    return RecordingExporter.processInstanceSubscriptionRecords()
-        .withIntent(ProcessInstanceSubscriptionIntent.CREATED)
+    return RecordingExporter.processMessageSubscriptionRecords()
+        .withIntent(ProcessMessageSubscriptionIntent.CREATED)
         .limit(subscriptionsCount)
         .asList();
   }

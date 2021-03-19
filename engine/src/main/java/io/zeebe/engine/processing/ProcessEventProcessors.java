@@ -10,9 +10,10 @@ package io.zeebe.engine.processing;
 import io.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
-import io.zeebe.engine.processing.message.CorrelateProcessInstanceSubscription;
-import io.zeebe.engine.processing.message.ProcessInstanceSubscriptionCreateProcessor;
-import io.zeebe.engine.processing.message.ProcessInstanceSubscriptionDeleteProcessor;
+import io.zeebe.engine.processing.message.PendingProcessMessageSubscriptionChecker;
+import io.zeebe.engine.processing.message.ProcessMessageSubscriptionCorrelateProcessor;
+import io.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
+import io.zeebe.engine.processing.message.ProcessMessageSubscriptionDeleteProcessor;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.processinstance.CreateProcessInstanceProcessor;
 import io.zeebe.engine.processing.processinstance.CreateProcessInstanceWithResultProcessor;
@@ -30,13 +31,13 @@ import io.zeebe.engine.processing.variable.VariableBehavior;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import java.util.Arrays;
@@ -51,8 +52,8 @@ public final class ProcessEventProcessors {
       final CatchEventBehavior catchEventBehavior,
       final DueDateTimerChecker timerChecker,
       final Writers writers) {
-    final MutableProcessInstanceSubscriptionState subscriptionState =
-        zeebeState.getProcessInstanceSubscriptionState();
+    final MutableProcessMessageSubscriptionState subscriptionState =
+        zeebeState.getProcessMessageSubscriptionState();
     final VariableBehavior variableBehavior =
         new VariableBehavior(
             zeebeState.getVariableState(), writers.state(), zeebeState.getKeyGenerator());
@@ -116,25 +117,28 @@ public final class ProcessEventProcessors {
 
   private static void addMessageStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
-      final MutableProcessInstanceSubscriptionState subscriptionState,
+      final MutableProcessMessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender,
       final MutableZeebeState zeebeState,
       final Writers writers) {
     typedRecordProcessors
         .onCommand(
-            ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
-            ProcessInstanceSubscriptionIntent.CREATE,
-            new ProcessInstanceSubscriptionCreateProcessor(
-                zeebeState.getProcessInstanceSubscriptionState(), writers))
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            ProcessMessageSubscriptionIntent.CREATE,
+            new ProcessMessageSubscriptionCreateProcessor(
+                zeebeState.getProcessMessageSubscriptionState(), writers))
         .onCommand(
-            ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
-            ProcessInstanceSubscriptionIntent.CORRELATE,
-            new CorrelateProcessInstanceSubscription(
-                subscriptionState, subscriptionCommandSender, zeebeState))
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            ProcessMessageSubscriptionIntent.CORRELATE,
+            new ProcessMessageSubscriptionCorrelateProcessor(
+                subscriptionState, subscriptionCommandSender, zeebeState, writers))
         .onCommand(
-            ValueType.PROCESS_INSTANCE_SUBSCRIPTION,
-            ProcessInstanceSubscriptionIntent.DELETE,
-            new ProcessInstanceSubscriptionDeleteProcessor(subscriptionState, writers));
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            ProcessMessageSubscriptionIntent.DELETE,
+            new ProcessMessageSubscriptionDeleteProcessor(subscriptionState, writers))
+        .withListener(
+            new PendingProcessMessageSubscriptionChecker(
+                subscriptionCommandSender, zeebeState.getProcessMessageSubscriptionState()));
   }
 
   private static void addTimerStreamProcessors(

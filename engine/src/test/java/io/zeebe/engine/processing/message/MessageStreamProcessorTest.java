@@ -45,15 +45,15 @@ public final class MessageStreamProcessorTest {
   public void setup() {
     MockitoAnnotations.initMocks(this);
 
-    when(mockSubscriptionCommandSender.openProcessInstanceSubscription(
+    when(mockSubscriptionCommandSender.openProcessMessageSubscription(
             anyLong(), anyLong(), any(), anyBoolean()))
         .thenReturn(true);
 
-    when(mockSubscriptionCommandSender.correlateProcessInstanceSubscription(
+    when(mockSubscriptionCommandSender.correlateProcessMessageSubscription(
             anyLong(), anyLong(), any(), any(), anyLong(), any(), any()))
         .thenReturn(true);
 
-    when(mockSubscriptionCommandSender.closeProcessInstanceSubscription(
+    when(mockSubscriptionCommandSender.closeProcessMessageSubscription(
             anyLong(), anyLong(), any(DirectBuffer.class)))
         .thenReturn(true);
 
@@ -86,7 +86,7 @@ public final class MessageStreamProcessorTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
 
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
-        .openProcessInstanceSubscription(
+        .openProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             any(),
@@ -113,7 +113,7 @@ public final class MessageStreamProcessorTest {
     final long messageKey =
         rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).getFirst().getKey();
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
-        .correlateProcessInstanceSubscription(
+        .correlateProcessMessageSubscription(
             subscription.getProcessInstanceKey(),
             subscription.getElementInstanceKey(),
             subscription.getBpmnProcessIdBuffer(),
@@ -149,7 +149,7 @@ public final class MessageStreamProcessorTest {
         rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).getFirst().getKey();
 
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
-        .correlateProcessInstanceSubscription(
+        .correlateProcessMessageSubscription(
             subscription.getProcessInstanceKey(),
             subscription.getElementInstanceKey(),
             subscription.getBpmnProcessIdBuffer(),
@@ -211,7 +211,7 @@ public final class MessageStreamProcessorTest {
     // cannot verify messageName buffer since it is a view around another buffer which is changed
     // by the time we perform the verification.
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
-        .closeProcessInstanceSubscription(
+        .closeProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             any(DirectBuffer.class));
@@ -235,7 +235,7 @@ public final class MessageStreamProcessorTest {
         rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).getFirst().getKey();
 
     verify(mockSubscriptionCommandSender, timeout(5_000).times(1))
-        .correlateProcessInstanceSubscription(
+        .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             any(),
@@ -274,7 +274,7 @@ public final class MessageStreamProcessorTest {
             .getKey();
 
     verify(mockSubscriptionCommandSender, timeout(5_000))
-        .correlateProcessInstanceSubscription(
+        .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             eq(subscription.getBpmnProcessIdBuffer()),
@@ -284,7 +284,7 @@ public final class MessageStreamProcessorTest {
             any());
 
     verify(mockSubscriptionCommandSender, timeout(5_000))
-        .correlateProcessInstanceSubscription(
+        .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             eq(subscription.getBpmnProcessIdBuffer()),
@@ -374,7 +374,7 @@ public final class MessageStreamProcessorTest {
 
     // then
     verify(mockSubscriptionCommandSender, timeout(5_000))
-        .correlateProcessInstanceSubscription(
+        .correlateProcessMessageSubscription(
             eq(firstSubscription.getProcessInstanceKey()),
             eq(firstSubscription.getElementInstanceKey()),
             eq(firstSubscription.getBpmnProcessIdBuffer()),
@@ -384,7 +384,7 @@ public final class MessageStreamProcessorTest {
             eq(firstSubscription.getCorrelationKeyBuffer()));
 
     verify(mockSubscriptionCommandSender, timeout(5_000))
-        .correlateProcessInstanceSubscription(
+        .correlateProcessMessageSubscription(
             eq(secondSubscription.getProcessInstanceKey()),
             eq(secondSubscription.getElementInstanceKey()),
             eq(secondSubscription.getBpmnProcessIdBuffer()),
@@ -410,7 +410,7 @@ public final class MessageStreamProcessorTest {
             .getKey();
 
     verify(mockSubscriptionCommandSender, timeout(5_000))
-        .correlateProcessInstanceSubscription(
+        .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             eq(subscription.getBpmnProcessIdBuffer()),
@@ -420,7 +420,7 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getCorrelationKeyBuffer()));
 
     verify(mockSubscriptionCommandSender, timeout(5_000))
-        .correlateProcessInstanceSubscription(
+        .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             eq(subscription.getBpmnProcessIdBuffer()),

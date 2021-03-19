@@ -12,43 +12,43 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class OpenProcessInstanceSubscriptionCommand
+public final class CloseProcessMessageSubscriptionCommand
     extends SbeBufferWriterReader<
-        OpenProcessInstanceSubscriptionEncoder, OpenProcessInstanceSubscriptionDecoder> {
+        CloseProcessMessageSubscriptionEncoder, CloseProcessMessageSubscriptionDecoder> {
 
-  private final OpenProcessInstanceSubscriptionEncoder encoder =
-      new OpenProcessInstanceSubscriptionEncoder();
-  private final OpenProcessInstanceSubscriptionDecoder decoder =
-      new OpenProcessInstanceSubscriptionDecoder();
-  private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
+  private final CloseProcessMessageSubscriptionEncoder encoder =
+      new CloseProcessMessageSubscriptionEncoder();
+  private final CloseProcessMessageSubscriptionDecoder decoder =
+      new CloseProcessMessageSubscriptionDecoder();
+
+  private final DirectBuffer messageName = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
   private long processInstanceKey;
   private long elementInstanceKey;
-  private boolean closeOnCorrelate;
 
   @Override
-  protected OpenProcessInstanceSubscriptionEncoder getBodyEncoder() {
+  protected CloseProcessMessageSubscriptionEncoder getBodyEncoder() {
     return encoder;
   }
 
   @Override
-  protected OpenProcessInstanceSubscriptionDecoder getBodyDecoder() {
+  protected CloseProcessMessageSubscriptionDecoder getBodyDecoder() {
     return decoder;
   }
 
   @Override
   public void reset() {
     subscriptionPartitionId =
-        OpenProcessInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    processInstanceKey = OpenProcessInstanceSubscriptionDecoder.processInstanceKeyNullValue();
-    elementInstanceKey = OpenProcessInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
+        CloseProcessMessageSubscriptionDecoder.subscriptionPartitionIdNullValue();
+    processInstanceKey = CloseProcessMessageSubscriptionDecoder.processInstanceKeyNullValue();
+    elementInstanceKey = CloseProcessMessageSubscriptionDecoder.elementInstanceKeyNullValue();
     messageName.wrap(0, 0);
   }
 
   @Override
   public int getLength() {
     return super.getLength()
-        + OpenProcessInstanceSubscriptionDecoder.messageNameHeaderLength()
+        + CloseProcessMessageSubscriptionDecoder.messageNameHeaderLength()
         + messageName.capacity();
   }
 
@@ -60,24 +60,17 @@ public final class OpenProcessInstanceSubscriptionCommand
         .subscriptionPartitionId(subscriptionPartitionId)
         .processInstanceKey(processInstanceKey)
         .elementInstanceKey(elementInstanceKey)
-        .closeOnCorrelate(closeOnCorrelate ? BooleanType.TRUE : BooleanType.FALSE)
         .putMessageName(messageName, 0, messageName.capacity());
   }
 
   @Override
-  public void wrap(final DirectBuffer buffer, int offset, final int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
     processInstanceKey = decoder.processInstanceKey();
     elementInstanceKey = decoder.elementInstanceKey();
-    closeOnCorrelate = decoder.closeOnCorrelate() == BooleanType.TRUE;
-
-    offset = decoder.limit();
-
-    offset += OpenProcessInstanceSubscriptionDecoder.messageNameHeaderLength();
-    final int messageNameLength = decoder.messageNameLength();
-    messageName.wrap(buffer, offset, messageNameLength);
+    decoder.wrapMessageName(messageName);
   }
 
   public int getSubscriptionPartitionId() {
@@ -108,11 +101,7 @@ public final class OpenProcessInstanceSubscriptionCommand
     return messageName;
   }
 
-  public boolean shouldCloseOnCorrelate() {
-    return closeOnCorrelate;
-  }
-
-  public void setCloseOnCorrelate(final boolean closeOnCorrelate) {
-    this.closeOnCorrelate = closeOnCorrelate;
+  public void setMessageName(final DirectBuffer messageName) {
+    this.messageName.wrap(messageName);
   }
 }

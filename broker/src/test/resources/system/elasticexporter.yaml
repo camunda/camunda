@@ -11,12 +11,12 @@ zeebe:
         #
         args:
           url: http://localhost:9200
-        #
-        #   bulk:
-        #     delay: 5
-        #     size: 1000
-        #     memoryLimit: 10485760
-        #
+          #
+          #   bulk:
+          #     delay: 5
+          #     size: 1000
+          #     memoryLimit: 10485760
+          #
           authentication:
             username: elastic
             password: changeme
@@ -40,6 +40,6 @@ zeebe:
         #     variableDocument: true
         #     processInstance: true
         #     processInstanceCreation: false
-        #     processInstanceSubscription: false
+        #     processMessageSubscription: false
         #
         #     ignoreVariablesAbove: 32677

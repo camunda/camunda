@@ -17,7 +17,7 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.message.ProcessInstanceSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -86,10 +86,10 @@ public final class RecordStream extends StreamWrapper<LoggedEvent, RecordStream>
             .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
-  public TypedRecordStream<ProcessInstanceSubscriptionRecord>
-      onlyProcessInstanceSubscriptionRecords() {
+  public TypedRecordStream<ProcessMessageSubscriptionRecord>
+      onlyProcessMessageSubscriptionRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isProcessInstanceSubscriptionRecord)
+        filter(Records::isProcessMessageSubscriptionRecord)
             .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 

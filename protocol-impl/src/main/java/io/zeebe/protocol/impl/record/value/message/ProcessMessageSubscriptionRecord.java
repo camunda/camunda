@@ -17,12 +17,12 @@ import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.value.ProcessInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
-public final class ProcessInstanceSubscriptionRecord extends UnifiedRecordValue
-    implements ProcessInstanceSubscriptionRecordValue {
+public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
+    implements ProcessMessageSubscriptionRecordValue {
 
   private final IntegerProperty subscriptionPartitionIdProp =
       new IntegerProperty("subscriptionPartitionId");
@@ -36,7 +36,7 @@ public final class ProcessInstanceSubscriptionRecord extends UnifiedRecordValue
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
 
-  public ProcessInstanceSubscriptionRecord() {
+  public ProcessMessageSubscriptionRecord() {
     declareProperty(subscriptionPartitionIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -59,7 +59,7 @@ public final class ProcessInstanceSubscriptionRecord extends UnifiedRecordValue
     return elementInstanceKeyProp.getValue();
   }
 
-  public ProcessInstanceSubscriptionRecord setElementInstanceKey(final long key) {
+  public ProcessMessageSubscriptionRecord setElementInstanceKey(final long key) {
     elementInstanceKeyProp.setValue(key);
     return this;
   }
@@ -69,7 +69,7 @@ public final class ProcessInstanceSubscriptionRecord extends UnifiedRecordValue
     return bufferAsString(bpmnProcessIdProp.getValue());
   }
 
-  public ProcessInstanceSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+  public ProcessMessageSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
@@ -89,17 +89,17 @@ public final class ProcessInstanceSubscriptionRecord extends UnifiedRecordValue
     return bufferAsString(correlationKeyProp.getValue());
   }
 
-  public ProcessInstanceSubscriptionRecord setCorrelationKey(final DirectBuffer correlationKey) {
+  public ProcessMessageSubscriptionRecord setCorrelationKey(final DirectBuffer correlationKey) {
     correlationKeyProp.setValue(correlationKey);
     return this;
   }
 
-  public ProcessInstanceSubscriptionRecord setMessageName(final DirectBuffer messageName) {
+  public ProcessMessageSubscriptionRecord setMessageName(final DirectBuffer messageName) {
     messageNameProp.setValue(messageName);
     return this;
   }
 
-  public ProcessInstanceSubscriptionRecord setMessageKey(final long messageKey) {
+  public ProcessMessageSubscriptionRecord setMessageKey(final long messageKey) {
     messageKeyProp.setValue(messageKey);
     return this;
   }
@@ -119,7 +119,7 @@ public final class ProcessInstanceSubscriptionRecord extends UnifiedRecordValue
     return subscriptionPartitionIdProp.getValue();
   }
 
-  public ProcessInstanceSubscriptionRecord setSubscriptionPartitionId(final int partitionId) {
+  public ProcessMessageSubscriptionRecord setSubscriptionPartitionId(final int partitionId) {
     subscriptionPartitionIdProp.setValue(partitionId);
     return this;
   }
@@ -129,7 +129,7 @@ public final class ProcessInstanceSubscriptionRecord extends UnifiedRecordValue
     return MsgPackConverter.convertToMap(variablesProp.getValue());
   }
 
-  public ProcessInstanceSubscriptionRecord setVariables(final DirectBuffer variables) {
+  public ProcessMessageSubscriptionRecord setVariables(final DirectBuffer variables) {
     variablesProp.setValue(variables);
     return this;
   }
@@ -144,12 +144,12 @@ public final class ProcessInstanceSubscriptionRecord extends UnifiedRecordValue
     return processInstanceKeyProp.getValue();
   }
 
-  public ProcessInstanceSubscriptionRecord setProcessInstanceKey(final long key) {
+  public ProcessMessageSubscriptionRecord setProcessInstanceKey(final long key) {
     processInstanceKeyProp.setValue(key);
     return this;
   }
 
-  public ProcessInstanceSubscriptionRecord setInterrupting(final boolean interrupting) {
+  public ProcessMessageSubscriptionRecord setInterrupting(final boolean interrupting) {
     interruptingProp.setValue(interrupting);
     return this;
   }
@@ -164,7 +164,7 @@ public final class ProcessInstanceSubscriptionRecord extends UnifiedRecordValue
     return bufferAsString(getElementIdBuffer());
   }
 
-  public ProcessInstanceSubscriptionRecord setElementId(final DirectBuffer elementId) {
+  public ProcessMessageSubscriptionRecord setElementId(final DirectBuffer elementId) {
     elementIdProp.setValue(elementId);
     return this;
   }

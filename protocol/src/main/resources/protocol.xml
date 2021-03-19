@@ -27,7 +27,7 @@
       <validValue name="INCIDENT">6</validValue>
       <validValue name="MESSAGE">10</validValue>
       <validValue name="MESSAGE_SUBSCRIPTION">11</validValue>
-      <validValue name="PROCESS_INSTANCE_SUBSCRIPTION">12</validValue>
+      <validValue name="PROCESS_MESSAGE_SUBSCRIPTION">12</validValue>
       <validValue name="JOB_BATCH">14</validValue>
       <validValue name="TIMER">15</validValue>
       <validValue name="MESSAGE_START_EVENT_SUBSCRIPTION">16</validValue>

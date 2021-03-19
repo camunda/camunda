@@ -84,7 +84,7 @@ public final class MessageSubscriptionDeleteProcessor
   }
 
   private boolean sendAcknowledgeCommand() {
-    return commandSender.closeProcessInstanceSubscription(
+    return commandSender.closeProcessMessageSubscription(
         subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getMessageNameBuffer());

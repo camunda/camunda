@@ -20,7 +20,7 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -340,8 +340,8 @@ public final class MessageStartEventTest {
         .containsExactly("1", "2");
 
     final var subscription =
-        RecordingExporter.processInstanceSubscriptionRecords(
-                ProcessInstanceSubscriptionIntent.CORRELATED)
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.CORRELATED)
             .getFirst();
 
     Assertions.assertThat(subscription.getValue()).hasMessageKey(message2.getKey());

@@ -99,6 +99,7 @@
   </tbody>
 </table>
 
+
 </script>
 
 <script src="/jquery-3.3.1.slim.min.js"></script>
@@ -108,14 +109,14 @@
   var recordTemplate = $('#record-template').html();
   Mustache.parse(recordTemplate);
 
-  $("#form-search").submit(function(e) {
+  $("#form-search").submit(function (e) {
     fetchRecords();
     e.preventDefault();
   });
 
   function fetchRecords() {
     fetch('/records.json')
-      .then(function(response) {
+      .then(function (response) {
         return response.json()
       })
       .then(filterRecords)
@@ -140,7 +141,7 @@
         return $('#filter-timer');
       case 'MESSAGE':
       case 'MESSAGE_SUBSCRIPTION':
-      case 'PROCESS_INSTANCE_SUBSCRIPTION':
+      case 'PROCESS_MESSAGE_SUBSCRIPTION':
       case 'MESSAGE_START_EVENT_SUBSCRIPTION':
         return $('#filter-message');
       case 'DEPLOYMENT':

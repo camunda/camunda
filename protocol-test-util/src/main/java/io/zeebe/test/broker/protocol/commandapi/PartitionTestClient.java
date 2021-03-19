@@ -52,7 +52,7 @@ import io.zeebe.test.util.record.JobRecordStream;
 import io.zeebe.test.util.record.MessageRecordStream;
 import io.zeebe.test.util.record.MessageSubscriptionRecordStream;
 import io.zeebe.test.util.record.ProcessInstanceRecordStream;
-import io.zeebe.test.util.record.ProcessInstanceSubscriptionRecordStream;
+import io.zeebe.test.util.record.ProcessMessageSubscriptionRecordStream;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.TimerRecordStream;
 import io.zeebe.util.buffer.BufferUtil;
@@ -652,8 +652,8 @@ public final class PartitionTestClient {
   // MESSAGE SUBSCRIPTIONS ////////////////////
   /////////////////////////////////////////////
 
-  public ProcessInstanceSubscriptionRecordStream receiveProcessInstanceSubscriptions() {
-    return RecordingExporter.processInstanceSubscriptionRecords().withPartitionId(partitionId);
+  public ProcessMessageSubscriptionRecordStream receiveProcessMessageSubscriptions() {
+    return RecordingExporter.processMessageSubscriptionRecords().withPartitionId(partitionId);
   }
 
   /////////////////////////////////////////////

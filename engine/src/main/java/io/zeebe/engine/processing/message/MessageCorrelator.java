@@ -82,7 +82,7 @@ public final class MessageCorrelator {
   }
 
   private boolean sendCorrelateCommand(final MessageSubscriptionRecord subscriptionRecord) {
-    return commandSender.correlateProcessInstanceSubscription(
+    return commandSender.correlateProcessMessageSubscription(
         subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getBpmnProcessIdBuffer(),

@@ -73,7 +73,7 @@ public class ElasticsearchExporterTest {
     config.index.variableDocument = true;
     config.index.processInstance = true;
     config.index.processInstanceCreation = true;
-    config.index.processInstanceSubscription = true;
+    config.index.processMessageSubscription = true;
 
     // when
     createAndOpenExporter();
@@ -93,7 +93,7 @@ public class ElasticsearchExporterTest {
     verify(esClient).putIndexTemplate(ValueType.VARIABLE_DOCUMENT);
     verify(esClient).putIndexTemplate(ValueType.PROCESS_INSTANCE);
     verify(esClient).putIndexTemplate(ValueType.PROCESS_INSTANCE_CREATION);
-    verify(esClient).putIndexTemplate(ValueType.PROCESS_INSTANCE_SUBSCRIPTION);
+    verify(esClient).putIndexTemplate(ValueType.PROCESS_MESSAGE_SUBSCRIPTION);
   }
 
   @Test
@@ -111,7 +111,7 @@ public class ElasticsearchExporterTest {
     config.index.variableDocument = true;
     config.index.processInstance = true;
     config.index.processInstanceCreation = true;
-    config.index.processInstanceSubscription = true;
+    config.index.processMessageSubscription = true;
 
     createAndOpenExporter();
 
@@ -128,7 +128,7 @@ public class ElasticsearchExporterTest {
           ValueType.VARIABLE_DOCUMENT,
           ValueType.PROCESS_INSTANCE,
           ValueType.PROCESS_INSTANCE_CREATION,
-          ValueType.PROCESS_INSTANCE_SUBSCRIPTION
+          ValueType.PROCESS_MESSAGE_SUBSCRIPTION
         };
 
     // when - then
@@ -152,7 +152,7 @@ public class ElasticsearchExporterTest {
     config.index.variableDocument = false;
     config.index.processInstance = false;
     config.index.processInstanceCreation = false;
-    config.index.processInstanceSubscription = false;
+    config.index.processMessageSubscription = false;
 
     createAndOpenExporter();
 
@@ -169,7 +169,7 @@ public class ElasticsearchExporterTest {
           ValueType.VARIABLE_DOCUMENT,
           ValueType.PROCESS_INSTANCE,
           ValueType.PROCESS_INSTANCE_CREATION,
-          ValueType.PROCESS_INSTANCE_SUBSCRIPTION
+          ValueType.PROCESS_MESSAGE_SUBSCRIPTION
         };
 
     // when - then

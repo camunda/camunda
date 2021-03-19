@@ -21,7 +21,7 @@ import io.zeebe.engine.state.instance.DbTimerInstanceState;
 import io.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.zeebe.engine.state.message.DbMessageState;
 import io.zeebe.engine.state.message.DbMessageSubscriptionState;
-import io.zeebe.engine.state.message.DbProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableBlackListState;
 import io.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -32,7 +32,7 @@ import io.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
-import io.zeebe.engine.state.mutable.MutableProcessInstanceSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableProcessState;
 import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
@@ -60,7 +60,7 @@ public class ZeebeDbState implements MutableZeebeState {
   private final MutableMessageState messageState;
   private final MutableMessageSubscriptionState messageSubscriptionState;
   private final MutableMessageStartEventSubscriptionState messageStartEventSubscriptionState;
-  private final MutableProcessInstanceSubscriptionState processInstanceSubscriptionState;
+  private final MutableProcessMessageSubscriptionState processMessageSubscriptionState;
   private final MutableIncidentState incidentState;
   private final MutableBlackListState blackListState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
@@ -92,8 +92,8 @@ public class ZeebeDbState implements MutableZeebeState {
     messageSubscriptionState = new DbMessageSubscriptionState(zeebeDb, transactionContext);
     messageStartEventSubscriptionState =
         new DbMessageStartEventSubscriptionState(zeebeDb, transactionContext);
-    processInstanceSubscriptionState =
-        new DbProcessInstanceSubscriptionState(zeebeDb, transactionContext);
+    processMessageSubscriptionState =
+        new DbProcessMessageSubscriptionState(zeebeDb, transactionContext);
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
     blackListState = new DbBlackListState(zeebeDb, transactionContext);
     lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, transactionContext);
@@ -130,8 +130,8 @@ public class ZeebeDbState implements MutableZeebeState {
   }
 
   @Override
-  public MutableProcessInstanceSubscriptionState getProcessInstanceSubscriptionState() {
-    return processInstanceSubscriptionState;
+  public MutableProcessMessageSubscriptionState getProcessMessageSubscriptionState() {
+    return processMessageSubscriptionState;
   }
 
   @Override

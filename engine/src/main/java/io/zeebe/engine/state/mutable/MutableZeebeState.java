@@ -31,7 +31,7 @@ public interface MutableZeebeState extends ZeebeState {
   MutableMessageStartEventSubscriptionState getMessageStartEventSubscriptionState();
 
   @Override
-  MutableProcessInstanceSubscriptionState getProcessInstanceSubscriptionState();
+  MutableProcessMessageSubscriptionState getProcessMessageSubscriptionState();
 
   @Override
   MutableIncidentState getIncidentState();
