@@ -44,12 +44,8 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public final class ZeebeRuntimeValidationTest {
 
-  private static final String INVALID_EXPRESSION = "?!";
-  private static final String INVALID_EXPRESSION_MESSAGE =
-      "failed to parse expression '?!': [1.2] failure: end of input expected\n"
-          + "\n"
-          + "?!\n"
-          + " ^";
+  private static final String INVALID_EXPRESSION = "a & b";
+  private static final String INVALID_EXPRESSION_MESSAGE = "failed to parse expression 'a & b'";
   private static final String STATIC_EXPRESSION = "x";
   private static final String STATIC_EXPRESSION_MESSAGE =
       "Expected expression but found static value 'x'. An expression must start with '=' (e.g. '=x').";

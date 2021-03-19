@@ -56,7 +56,7 @@ public final class ExpectedValidationResult {
       match = false;
     }
 
-    if (!expectedMessage.equals(result.getMessage())) {
+    if (!result.getMessage().startsWith(expectedMessage)) {
       match = false;
     }
 
