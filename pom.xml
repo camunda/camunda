@@ -219,6 +219,10 @@
         <sonar.projectKey>camunda_camunda-optimize</sonar.projectKey>
         <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
         <sonar.login>${env.SONARCLOUD_TOKEN}</sonar.login>
+        <!-- sonar exclusions on duplication detection -->
+        <!-- As part of our migration testing we have to c&p index classes to have their old state -->
+        <!-- available during migration testing, we thus want to exlude them from duplication detection. -->
+        <sonar.cpd.exclusions>**/org/camunda/optimize/upgrade/**/*Old.java</sonar.cpd.exclusions>
       </properties>
       <build>
         <plugins>
