@@ -435,10 +435,11 @@ public final class BpmnEventSubscriptionBehavior {
         });
   }
 
-  public void publishTriggeredEventSubProcess(final BpmnElementContext context) {
+  public void publishTriggeredEventSubProcess(
+      final boolean isChildMigrated, final BpmnElementContext context) {
     final var elementInstance = stateBehavior.getElementInstance(context);
 
-    if (isInterrupted(elementInstance)) {
+    if (isInterrupted(isChildMigrated, elementInstance)) {
       elementInstanceState.getDeferredRecords(context.getElementInstanceKey()).stream()
           .filter(record -> record.getKey() == elementInstance.getInterruptingEventKey())
           .filter(record -> record.getValue().getBpmnElementType() == BpmnElementType.SUB_PROCESS)
@@ -456,8 +457,10 @@ public final class BpmnEventSubscriptionBehavior {
     }
   }
 
-  private boolean isInterrupted(final ElementInstance elementInstance) {
-    return elementInstance.getNumberOfActiveElementInstances() == 1
+  private boolean isInterrupted(
+      final boolean isChildMigrated, final ElementInstance elementInstance) {
+    final int expectedActiveInstanceCount = isChildMigrated ? 0 : 1;
+    return elementInstance.getNumberOfActiveElementInstances() == expectedActiveInstanceCount
         && elementInstance.isInterrupted()
         && elementInstance.isActive();
   }

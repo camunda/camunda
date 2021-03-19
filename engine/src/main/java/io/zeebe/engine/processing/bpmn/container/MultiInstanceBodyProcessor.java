@@ -18,6 +18,7 @@ import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
@@ -213,7 +214,8 @@ public final class MultiInstanceBodyProcessor
       stateTransitionBehavior.transitionToTerminated(flowScopeContext);
 
     } else {
-      eventSubscriptionBehavior.publishTriggeredEventSubProcess(flowScopeContext);
+      eventSubscriptionBehavior.publishTriggeredEventSubProcess(
+          MigratedStreamProcessors.isMigrated(childContext.getBpmnElementType()), flowScopeContext);
     }
   }
 
