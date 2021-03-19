@@ -42,5 +42,5 @@ sed_inplace "s/worker:zeebe/worker:$benchmark/" worker.yaml
 make zeebe starter worker
 
 git add .
-git commit -m "add $benchmark"
+git commit -m "chore(benchmark): add $benchmark"
 git push origin medic-cw-benchmarks
