@@ -27,6 +27,7 @@ import {ReactComponent as FlowNodeTaskSubProcess} from 'modules/components/Icon/
 import {ReactComponent as FlowNodeTaskMulti} from 'modules/components/Icon/flow-node-multi-instance-parallel.svg';
 import {ReactComponent as FlowNodeTaskParallel} from 'modules/components/Icon/flow-node-multi-instance-sequential.svg';
 import {ReactComponent as FlowNodeCallActivity} from 'modules/components/Icon/flow-node-call-activity.svg';
+import {ReactComponent as FlowNodeTaskUser} from 'modules/components/Icon/flow-node-task-user.svg';
 
 /**
  * Event Imports
@@ -116,6 +117,12 @@ const TASK_SUBPROCESS = styled(FlowNodeTaskSubProcess)`
 
 const TASK_CALL_ACTIVITY = styled(FlowNodeCallActivity)`
   ${newIconStyle};
+`;
+
+const TASK_USER = styled(FlowNodeTaskUser)`
+  ${newIconStyle};
+  top: 3px;
+  left: 0px;
 `;
 
 /**
@@ -240,6 +247,7 @@ export {
   TASK_DEFAULT,
   TASK_SUBPROCESS,
   TASK_CALL_ACTIVITY,
+  TASK_USER,
   MULTI_SEQUENTIAL,
   MULTI_PARALLEL,
   START,

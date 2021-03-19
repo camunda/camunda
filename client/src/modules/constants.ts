@@ -36,6 +36,7 @@ export const TYPE = {
   TASK_SEND: 'TASK_SEND',
   TASK_SUBPROCESS: 'TASK_SUBPROCESS',
   TASK_CALL_ACTIVITY: 'TASK_CALL_ACTIVITY',
+  TASK_USER: 'TASK_USER',
 
   EVENT_SUBPROCESS: 'EVENT_SUBPROCESS',
 
@@ -61,6 +62,7 @@ export const FLOWNODE_TYPE_HANDLE = {
   'bpmn:ExclusiveGateway': TYPE.GATEWAY_EXCLUSIVE,
   'bpmn:SubProcess': TYPE.TASK_SUBPROCESS,
   'bpmn:ServiceTask': TYPE.TASK_SERVICE,
+  'bpmn:UserTask': TYPE.TASK_USER,
   'bpmn:ReceiveTask': TYPE.TASK_RECEIVE,
   'bpmn:SendTask': TYPE.TASK_SEND,
   'bpmn:CallActivity': TYPE.TASK_CALL_ACTIVITY,

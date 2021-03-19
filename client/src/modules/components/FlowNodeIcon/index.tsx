@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {TYPE} from 'modules/constants';
 
 import * as Styled from './styled';
@@ -36,6 +35,7 @@ const flowNodes = {
   [TYPE.TASK_SEND]: Styled[TYPE.TASK_SEND],
   [TYPE.TASK_SUBPROCESS]: Styled[TYPE.TASK_SUBPROCESS],
   [TYPE.TASK_CALL_ACTIVITY]: Styled[TYPE.TASK_CALL_ACTIVITY],
+  [TYPE.TASK_USER]: Styled[TYPE.TASK_USER],
   //Gateways
   [TYPE.GATEWAY_EVENT_BASED]: Styled[TYPE.GATEWAY_EVENT_BASED],
   [TYPE.GATEWAY_PARALLEL]: Styled[TYPE.GATEWAY_PARALLEL],
@@ -62,6 +62,7 @@ function getFlowNodeTypeIcon({
     // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     return Styled[multiInstanceType];
   }
+
   return eventType === undefined
     ? // @ts-expect-error ts-migrate(7053) FIXME: No index signature with a parameter of type 'strin... Remove this comment to see the full error message
       flowNodes[elementType] || Styled[TYPE.TASK_DEFAULT]
