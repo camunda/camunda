@@ -8,6 +8,8 @@ def masterBranchName = 'master'
 def isMasterBranch = env.BRANCH_NAME == masterBranchName
 def developBranchName = 'develop'
 def isDevelopBranch = env.BRANCH_NAME == developBranchName
+def latestStableBranchName = 'stable/0.26'
+def isLatestStable = env.BRANCH_NAME == latestStableBranchName
 
 //for develop branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
 def daysToKeep = isDevelopBranch ? '7' : '-1'
@@ -16,8 +18,9 @@ def numToKeep = isDevelopBranch ? '-1' : '10'
 def shortTimeoutMinutes = 10
 def longTimeoutMinutes = 45
 
-//the develop branch should be run hourly to detect flaky tests and instability, other branches only on commit
-def cronTrigger = isDevelopBranch ? '@hourly' : ''
+// the latest stable branch should be run at midnight to do a nightly build including QA test run
+// todo: run develop branch at midnight using new testbench version
+def cronTrigger = isLatestStable ? '0 0 * * *' : ''
 
 pipeline {
     agent {
@@ -270,7 +273,13 @@ pipeline {
 
         stage('QA') {
             when {
-                expression { params.RUN_QA }
+                anyOf {
+                    expression { params.RUN_QA }
+                    allOf {
+                        branch latestStableBranchName
+                        triggeredBy 'TimerTrigger'
+                    }
+                }
             }
             environment {
                 IMAGE = "gcr.io/zeebe-io/zeebe"
