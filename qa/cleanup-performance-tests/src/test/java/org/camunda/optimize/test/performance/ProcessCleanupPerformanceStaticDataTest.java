@@ -19,7 +19,6 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -50,12 +49,8 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
   public static void setUp() {
     embeddedOptimizeExtension.setupOptimize();
     // given
+    // Note that when these tests run on jenkins, data is usually imported already during the "import" stage of the job
     importEngineData();
-  }
-
-  @BeforeEach
-  public void cleanUpExistingProcessInstanceIndices() {
-    elasticSearchIntegrationTestExtension.deleteAllProcessInstanceIndices();
   }
 
   @Test

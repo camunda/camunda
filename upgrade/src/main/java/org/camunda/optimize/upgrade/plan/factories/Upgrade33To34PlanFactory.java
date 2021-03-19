@@ -57,6 +57,7 @@ import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -312,7 +313,8 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
     final String defKeyAggName = "definitionKeyAggregation";
     final TermsAggregationBuilder definitionKeyAgg = AggregationBuilders
       .terms(defKeyAggName)
-      .field(ProcessInstanceDto.Fields.processDefinitionKey);
+      .field(ProcessInstanceDto.Fields.processDefinitionKey)
+      .size(MAX_RESPONSE_SIZE_LIMIT);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().fetchSource(false).size(0);
     searchSourceBuilder.aggregation(definitionKeyAgg);
 
@@ -364,7 +366,8 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
     final String defKeyAggName = "definitionKeyAggregation";
     final TermsAggregationBuilder definitionKeyAgg = AggregationBuilders
       .terms(defKeyAggName)
-      .field(resolveDefinitionKeyFieldForType(type));
+      .field(resolveDefinitionKeyFieldForType(type))
+      .size(MAX_RESPONSE_SIZE_LIMIT);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().fetchSource(false).size(0);
     searchSourceBuilder.aggregation(definitionKeyAgg);
 

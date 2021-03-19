@@ -31,8 +31,10 @@ import java.util.Set;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
@@ -46,15 +48,15 @@ public class DefinitionInstanceReader {
 
   public Set<String> getAllExistingDefinitionKeys(final DefinitionType type,
                                                   final Set<String> instanceIds) {
+    final BoolQueryBuilder idQuery = CollectionUtils.isEmpty(instanceIds)
+      ? boolQuery().must(matchAllQuery())
+      : boolQuery().filter(termsQuery(resolveInstanceIdFieldForType(type), instanceIds));
     final String defKeyAggName = "definitionKeyAggregation";
-    final BoolQueryBuilder idQuery = boolQuery();
-    if (!CollectionUtils.isEmpty(instanceIds)) {
-      idQuery.filter(termsQuery(resolveInstanceIdFieldForType(type), instanceIds));
-    }
     final TermsAggregationBuilder definitionKeyAgg = AggregationBuilders
       .terms(defKeyAggName)
-      .field(resolveDefinitionKeyFieldForType(type));
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().fetchSource(false).size(0);
+      .field(resolveDefinitionKeyFieldForType(type))
+      .size(MAX_RESPONSE_SIZE_LIMIT);
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(idQuery).fetchSource(false).size(0);
     searchSourceBuilder.aggregation(definitionKeyAgg);
 
     final SearchRequest searchRequest =

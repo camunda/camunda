@@ -6,7 +6,6 @@
 package org.camunda.optimize.test.performance;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -22,12 +21,8 @@ public class DecisionCleanupPerformanceStaticDataTest extends AbstractDataCleanu
   public static void setUp() {
     embeddedOptimizeExtension.setupOptimize();
     // given
+    // Note that when these tests run on jenkins, data is usually imported already during the "import" stage of the job
     importEngineData();
-  }
-
-  @BeforeEach
-  public void cleanUpExistingDecisionInstanceIndices() {
-    elasticSearchIntegrationTestExtension.deleteAllDecisionInstanceIndices();
   }
 
   @Test
