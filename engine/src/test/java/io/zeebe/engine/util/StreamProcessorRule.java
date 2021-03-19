@@ -40,7 +40,6 @@ import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
@@ -103,8 +102,7 @@ public final class StreamProcessorRule implements TestRule {
             .around(actorSchedulerRule)
             .around(new CleanUpRule(tempFolder::getRoot))
             .around(closeables)
-            .around(rule)
-            .around(new FailedTestRecordPrinter());
+            .around(rule);
   }
 
   public ActorSchedulerRule getActorSchedulerRule() {
@@ -319,15 +317,6 @@ public final class StreamProcessorRule implements TestRule {
     protected void after() {
       streams = null;
       streamProcessingComposite = null;
-    }
-  }
-
-  private class FailedTestRecordPrinter extends TestWatcher {
-
-    @Override
-    protected void failed(final Throwable e, final Description description) {
-      LOG.info("Test failed, following records were exported:");
-      printAllRecords();
     }
   }
 
