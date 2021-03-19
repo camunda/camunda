@@ -10,6 +10,7 @@ metadata:
     app: "@BRANCH@-optimize-camunda-cloud"
     branch: "@BRANCH@"
     changed: "@CHANGED@"
+    team: optimize
 spec:
   replicas: 1
   revisionHistoryLimit: 0

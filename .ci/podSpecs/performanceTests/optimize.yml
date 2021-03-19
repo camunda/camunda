@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: performance-optimize-camunda-cloud
   namespace: ${NAMESPACE}
+  labels:
+    team: optimize
 spec:
   progressDeadlineSeconds: 1800
   replicas: 1

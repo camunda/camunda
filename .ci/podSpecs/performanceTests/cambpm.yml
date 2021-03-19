@@ -5,6 +5,7 @@ metadata:
   namespace: ${NAMESPACE}
   labels:
     app: cambpm
+    team: optimize
 spec:
   progressDeadlineSeconds: 1800
   replicas: 1

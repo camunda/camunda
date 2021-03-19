@@ -6,6 +6,7 @@ metadata:
   namespace: optimize-persistent
   labels:
     app: optimize-persistent
+    team: optimize
 spec:
   replicas: 1
   revisionHistoryLimit: 0
