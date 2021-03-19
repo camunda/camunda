@@ -325,8 +325,16 @@ export default withErrorHandling(
                     processPart={data.configuration.processPart}
                     update={(newPart) => {
                       const change = {configuration: {processPart: {$set: newPart}}};
-                      if (data.configuration.aggregationType === 'median') {
-                        change.configuration.aggregationType = {$set: 'avg'};
+                      if (data.configuration.aggregationTypes.includes('median')) {
+                        const newAggregations = data.configuration.aggregationTypes.filter(
+                          (type) => type !== 'median'
+                        );
+                        if (newAggregations.length === 0) {
+                          newAggregations.push('avg');
+                        }
+
+                        change.configuration.aggregationTypes = {$set: newAggregations};
+                        change.configuration.aggregationType = {$set: newAggregations[0]};
                       }
                       this.props.updateReport(change, true);
                     }}

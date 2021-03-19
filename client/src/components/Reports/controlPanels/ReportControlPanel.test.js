@@ -163,7 +163,7 @@ it('should only display process part button if view is process instance duration
   expect(node.find('ProcessPart')).not.toExist();
 });
 
-it('should set aggregation to avergage if aggregation is median after setting a process part', () => {
+it('should remove median aggregation after setting a process part', () => {
   const spy = jest.fn();
   const node = shallow(
     <ReportControlPanel
@@ -176,7 +176,7 @@ it('should set aggregation to avergage if aggregation is median after setting a 
           view: {entity: 'processInstance', properties: ['duration']},
           configuration: {
             ...report.data.configuration,
-            aggregationType: 'median',
+            aggregationTypes: ['min', 'median', 'max'],
           },
         },
       }}
@@ -184,10 +184,24 @@ it('should set aggregation to avergage if aggregation is median after setting a 
   );
 
   node.find('ProcessPart').prop('update')({});
-  expect(spy).toHaveBeenCalledWith(
-    {configuration: {aggregationType: {$set: 'avg'}, processPart: {$set: {}}}},
-    true
-  );
+  expect(spy.mock.calls[0][0].configuration.aggregationTypes.$set).toEqual(['min', 'max']);
+
+  node.setProps({
+    report: {
+      ...report,
+      data: {
+        ...report.data,
+        view: {entity: 'processInstance', properties: ['duration']},
+        configuration: {
+          ...report.data.configuration,
+          aggregationTypes: ['median'],
+        },
+      },
+    },
+  });
+
+  node.find('ProcessPart').prop('update')({});
+  expect(spy.mock.calls[1][0].configuration.aggregationTypes.$set).toEqual(['avg']);
 });
 
 it('should only display target value button if view is flownode duration', () => {

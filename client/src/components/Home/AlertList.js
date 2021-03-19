@@ -54,8 +54,11 @@ export default withErrorHandling(
         (reports) =>
           this.setState({
             reports: reports.filter(
-              ({combined, data: {visualization, view}}) =>
-                !combined && visualization === 'number' && view?.properties?.length === 1
+              ({combined, data: {visualization, view, configuration}}) =>
+                !combined &&
+                visualization === 'number' &&
+                view?.properties?.length === 1 &&
+                (configuration.aggregationTypes.length === 1 || view.properties[0] !== 'duration')
             ),
           }),
         (error) => {
