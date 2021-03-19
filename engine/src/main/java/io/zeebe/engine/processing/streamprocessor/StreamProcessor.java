@@ -122,6 +122,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
       final ReProcessingStateMachine reProcessingStateMachine =
           new ReProcessingStateMachine(processingContext);
 
+      // disable writing to the log stream but for reprocessing checks
+      processingContext.disableLogStreamWriter();
+      processingContext.enableReprocessingStreamWriter();
+
       recoverFuture = reProcessingStateMachine.startRecover(snapshotPosition);
 
       actor.runOnCompletion(
@@ -280,6 +284,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
   private void onRecovered(final long lastReprocessedPosition) {
     phase = Phase.PROCESSING;
+
+    // enable writing records to the stream
+    processingContext.enableLogStreamWriter();
+
     onCommitPositionUpdatedCondition =
         actor.onCondition(
             getName() + "-on-commit-position-updated", processingStateMachine::readNextEvent);

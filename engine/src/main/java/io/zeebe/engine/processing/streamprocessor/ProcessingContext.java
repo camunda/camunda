@@ -8,9 +8,11 @@
 package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.db.TransactionContext;
+import io.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.ReprocessingStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriterImpl;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -28,10 +30,14 @@ import java.util.function.Consumer;
 
 public final class ProcessingContext implements ReadonlyProcessingContext {
 
+  private final TypedStreamWriterProxy streamWriterProxy = new TypedStreamWriterProxy();
+  private final ReprocessingStreamWriter reprocessingStreamWriter = new ReprocessingStreamWriter();
+  private final NoopTypedStreamWriter noopTypedStreamWriter = new NoopTypedStreamWriter();
+
   private ActorControl actor;
   private LogStream logStream;
   private LogStreamReader logStreamReader;
-  private TypedStreamWriter logStreamWriter = new NoopTypedStreamWriter();
+  private TypedStreamWriter logStreamWriter = noopTypedStreamWriter;
   private CommandResponseWriter commandResponseWriter;
   private TypedResponseWriterImpl typedResponseWriter;
 
@@ -46,6 +52,10 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private Consumer<LoggedEvent> onSkippedListener = record -> {};
   private int maxFragmentSize;
   private boolean detectReprocessingInconsistency;
+
+  public ProcessingContext() {
+    streamWriterProxy.wrap(logStreamWriter);
+  }
 
   public ProcessingContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -154,16 +164,15 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   @Override
   public TypedStreamWriter getLogStreamWriter() {
-    return logStreamWriter;
+    return streamWriterProxy;
   }
 
   @Override
   public Writers getWriters() {
     // todo (#6202): cleanup - revisit after migration is finished
     // create newly every time, because the specific writers may differ over time
-    final var stateWriter = new EventApplyingStateWriter(logStreamWriter, eventApplier);
-
-    return new Writers(logStreamWriter, stateWriter, typedResponseWriter);
+    final var stateWriter = new EventApplyingStateWriter(streamWriterProxy, eventApplier);
+    return new Writers(streamWriterProxy, stateWriter, typedResponseWriter);
   }
 
   @Override
@@ -212,5 +221,21 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
       final boolean detectReprocessingInconsistency) {
     this.detectReprocessingInconsistency = detectReprocessingInconsistency;
     return this;
+  }
+
+  public ReprocessingStreamWriter getReprocessingStreamWriter() {
+    return reprocessingStreamWriter;
+  }
+
+  public void enableReprocessingStreamWriter() {
+    streamWriterProxy.wrap(reprocessingStreamWriter);
+  }
+
+  public void enableLogStreamWriter() {
+    streamWriterProxy.wrap(logStreamWriter);
+  }
+
+  public void disableLogStreamWriter() {
+    streamWriterProxy.wrap(noopTypedStreamWriter);
   }
 }
