@@ -28,10 +28,6 @@ public interface MutableElementInstanceState extends ElementInstanceState {
 
   void updateInstance(long key, Consumer<ElementInstance> modifier);
 
-  void consumeToken(long scopeKey);
-
-  void spawnToken(long scopeKey);
-
   void storeRecord(
       long key,
       long scopeKey,

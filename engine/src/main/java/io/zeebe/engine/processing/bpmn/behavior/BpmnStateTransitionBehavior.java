@@ -25,6 +25,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedProcess;
 import io.zeebe.engine.state.instance.ElementInstance;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -45,6 +46,7 @@ public final class BpmnStateTransitionBehavior {
   private final ProcessInstanceRecord childInstanceRecord = new ProcessInstanceRecord();
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
+  private final MutableElementInstanceState elementInstanceState;
 
   public BpmnStateTransitionBehavior(
       final TypedStreamWriter streamWriter,
@@ -54,7 +56,8 @@ public final class BpmnStateTransitionBehavior {
       final ProcessInstanceStateTransitionGuard stateTransitionGuard,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp,
-      final Writers writers) {
+      final Writers writers,
+      final MutableElementInstanceState elementInstanceState) {
     // todo (@korthout): replace streamWriter by writers
     this.streamWriter = streamWriter;
     this.keyGenerator = keyGenerator;
@@ -64,6 +67,7 @@ public final class BpmnStateTransitionBehavior {
     this.processorLookUp = processorLookUp;
     stateWriter = writers.state();
     commandWriter = writers.command();
+    this.elementInstanceState = elementInstanceState;
   }
 
   /** @return context with updated intent */
@@ -184,13 +188,18 @@ public final class BpmnStateTransitionBehavior {
             .setElementId(sequenceFlow.getId())
             .setBpmnElementType(sequenceFlow.getElementType());
 
+    final var sequenceFlowKey = keyGenerator.nextKey();
+
     if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
+      flowScopeInstance.incrementActiveSequenceFlows();
+      elementInstanceState.updateInstance(flowScopeInstance);
+
       streamWriter.appendFollowUpEvent(
-          keyGenerator.nextKey(), ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
-      stateBehavior.spawnToken(context);
+          sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
     } else {
       stateWriter.appendFollowUpEvent(
-          keyGenerator.nextKey(), ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
+          sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
     }
   }
 
@@ -228,6 +237,14 @@ public final class BpmnStateTransitionBehavior {
       commandWriter.appendFollowUpCommand(
           elementInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, elementInstanceRecord);
     } else {
+      // For migrated processors the active sequence flow count is decremented in the
+      // *ActivatingApplier. For non migrated we do it here, otherwise we can't complete the process
+      // instance in the end. Counting the active sequence flows is necessary to not complete the
+      // process instance to early.
+      final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
+      flowScopeInstance.decrementActiveSequenceFlows();
+      elementInstanceState.updateInstance(flowScopeInstance);
+
       streamWriter.appendFollowUpEvent(
           elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, elementInstanceRecord);
 
@@ -266,18 +283,6 @@ public final class BpmnStateTransitionBehavior {
 
     final var elementInstance = stateBehavior.getElementInstance(context);
     final var activeChildInstances = elementInstance.getNumberOfActiveElementInstances();
-
-    if (activeChildInstances > 0) {
-      // wait for child instances to be terminated
-
-      // clean up the state because some events of child instances will not be processed (e.g.
-      // element completed, sequence flow taken)
-      final int pendingTokens = elementInstance.getNumberOfActiveTokens() - activeChildInstances;
-      for (int t = 0; t < pendingTokens; t++) {
-        elementInstance.consumeToken();
-      }
-      stateBehavior.updateElementInstance(elementInstance);
-    }
 
     return activeChildInstances == 0;
   }

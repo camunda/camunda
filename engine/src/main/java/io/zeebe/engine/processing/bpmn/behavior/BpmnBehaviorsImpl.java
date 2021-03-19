@@ -67,7 +67,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             new ProcessEngineMetrics(zeebeState.getPartitionId()),
             stateTransitionGuard,
             processorLookup,
-            writers);
+            writers,
+            zeebeState.getElementInstanceState());
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
             stateBehavior,

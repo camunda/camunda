@@ -177,24 +177,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public void consumeToken(final long scopeKey) {
-    final ElementInstance elementInstance = getInstance(scopeKey);
-    if (elementInstance != null) {
-      elementInstance.consumeToken();
-      updateInstance(elementInstance);
-    }
-  }
-
-  @Override
-  public void spawnToken(final long scopeKey) {
-    final ElementInstance elementInstance = getInstance(scopeKey);
-    if (elementInstance != null) {
-      elementInstance.spawnToken();
-      updateInstance(elementInstance);
-    }
-  }
-
-  @Override
   public void storeRecord(
       final long key,
       final long scopeKey,

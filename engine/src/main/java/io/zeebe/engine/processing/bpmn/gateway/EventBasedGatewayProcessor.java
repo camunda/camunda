@@ -71,7 +71,6 @@ public final class EventBasedGatewayProcessor
     // according to the BPMN specification, the sequence flow to this event is not taken
     eventSubscriptionBehavior.publishTriggeredEventBasedGateway(context);
 
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 
@@ -92,7 +91,6 @@ public final class EventBasedGatewayProcessor
 
     stateTransitionBehavior.onElementTerminated(element, context);
 
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 

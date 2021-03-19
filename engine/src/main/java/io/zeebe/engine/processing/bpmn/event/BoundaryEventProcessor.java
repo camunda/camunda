@@ -66,7 +66,6 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
 
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
 
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 
@@ -85,7 +84,6 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
 
     stateTransitionBehavior.onElementTerminated(element, context);
 
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 

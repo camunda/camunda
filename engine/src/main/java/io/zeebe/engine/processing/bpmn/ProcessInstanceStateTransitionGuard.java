@@ -55,8 +55,6 @@ public final class ProcessInstanceStateTransitionGuard {
 
   private Either<String, ?> checkStateTransition(final BpmnElementContext context) {
     switch (context.getIntent()) {
-      case ACTIVATE_ELEMENT:
-        return Either.right(null);
       case COMPLETE_ELEMENT:
         return hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .flatMap(ok -> hasActiveFlowScopeInstance(context));
@@ -84,6 +82,7 @@ public final class ProcessInstanceStateTransitionGuard {
         }
         return hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
+      case ACTIVATE_ELEMENT:
       case SEQUENCE_FLOW_TAKEN:
         return hasActiveFlowScopeInstance(context);
 

@@ -68,7 +68,6 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   @Override
   public void onCompleted(final ExecutableReceiveTask element, final BpmnElementContext context) {
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 
@@ -83,7 +82,6 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
     eventSubscriptionBehavior.publishTriggeredBoundaryEvent(context);
     incidentBehavior.resolveIncidents(context);
     stateTransitionBehavior.onElementTerminated(element, context);
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 

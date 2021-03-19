@@ -30,7 +30,6 @@ final class ProcessInstanceElementCompletedApplier
   @Override
   public void applyState(final long key, final ProcessInstanceRecord value) {
     eventScopeInstanceState.deleteInstance(key);
-    elementInstanceState.consumeToken(value.getFlowScopeKey());
     elementInstanceState.removeInstance(key);
   }
 }

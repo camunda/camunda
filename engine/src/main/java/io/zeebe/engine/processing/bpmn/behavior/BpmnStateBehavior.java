@@ -73,14 +73,15 @@ public final class BpmnStateBehavior {
     return jobState;
   }
 
-  public boolean isLastActiveExecutionPathInScope(final BpmnElementContext context) {
+  // used by canceling, since we don't care about active sequence flows
+  public boolean canBeTerminated(final BpmnElementContext context) {
     final ElementInstance flowScopeInstance = getFlowScopeInstance(context);
 
     if (flowScopeInstance == null) {
       return false;
     }
 
-    final int activePaths = flowScopeInstance.getNumberOfActiveTokens();
+    final long activePaths = flowScopeInstance.getNumberOfActiveElementInstances();
     if (activePaths < 0) {
       throw new BpmnProcessingException(
           context,
@@ -89,6 +90,31 @@ public final class BpmnStateBehavior {
               activePaths, flowScopeInstance));
     }
 
+    return hasActivePaths(context, activePaths);
+  }
+
+  public boolean canBeCompleted(final BpmnElementContext context) {
+    final ElementInstance flowScopeInstance = getFlowScopeInstance(context);
+
+    if (flowScopeInstance == null) {
+      return false;
+    }
+
+    final long activePaths =
+        flowScopeInstance.getNumberOfActiveElementInstances()
+            + flowScopeInstance.getActiveSequenceFlows();
+    if (activePaths < 0) {
+      throw new BpmnProcessingException(
+          context,
+          String.format(
+              "Expected number of active paths to be positive but got %d for instance %s",
+              activePaths, flowScopeInstance));
+    }
+
+    return hasActivePaths(context, activePaths);
+  }
+
+  private boolean hasActivePaths(final BpmnElementContext context, final long activePaths) {
     if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
       return activePaths == 1;
     } else {
@@ -101,20 +127,6 @@ public final class BpmnStateBehavior {
       // The only reasonable choice is to decrease the active paths before the flowscope is
       // completed. As a result, this method has changed it's semantics.
       return activePaths == 0;
-    }
-  }
-
-  public void consumeToken(final BpmnElementContext context) {
-    final ElementInstance flowScopeInstance = getFlowScopeInstance(context);
-    if (flowScopeInstance != null) {
-      elementInstanceState.consumeToken(flowScopeInstance.getKey());
-    }
-  }
-
-  public void spawnToken(final BpmnElementContext context) {
-    final ElementInstance flowScopeInstance = getFlowScopeInstance(context);
-    if (flowScopeInstance != null) {
-      elementInstanceState.spawnToken(flowScopeInstance.getKey());
     }
   }
 
@@ -134,18 +146,6 @@ public final class BpmnStateBehavior {
                 context.copy(
                     childInstance.getKey(), childInstance.getValue(), childInstance.getState()))
         .collect(Collectors.toList());
-  }
-
-  public ElementInstance createChildElementInstance(
-      final BpmnElementContext context,
-      final long childInstanceKey,
-      final ProcessInstanceRecord childRecord) {
-    final var parentElementInstance = getElementInstance(context);
-    return elementInstanceState.newInstance(
-        parentElementInstance,
-        childInstanceKey,
-        childRecord,
-        ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
 
   public void createElementInstanceInFlowScope(
