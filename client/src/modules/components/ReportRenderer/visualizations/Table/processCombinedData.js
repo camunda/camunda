@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {getFormattedLabels, getBodyRows, getCombinedTableProps} from './service';
+import {sortColumns, getFormattedLabels, getBodyRows, getCombinedTableProps} from './service';
 import {uniteResults} from '../service';
 
 export default function processCombinedData({formatter, report}) {
@@ -14,7 +14,7 @@ export default function processCombinedData({formatter, report}) {
   );
 
   const {
-    configuration: {hideAbsoluteValue, hideRelativeValue},
+    configuration: {hideAbsoluteValue, hideRelativeValue, tableColumns},
   } = report.data;
   const {view, groupBy} = Object.values(report.result.data)[0].data;
 
@@ -57,8 +57,18 @@ export default function processCombinedData({formatter, report}) {
     groupedByDuration: groupBy.type === 'duration',
   });
 
+  const head = [{id: keysLabel, label: ' ', columns: [keysLabel]}, ...formattedLabels];
+
+  if (tableColumns) {
+    const {sortedHead, sortedBody} = sortColumns(head, rows, tableColumns.columnOrder);
+    return {
+      head: sortedHead,
+      body: sortedBody,
+    };
+  }
+
   return {
-    head: [keysLabel, ...formattedLabels],
+    head,
     body: rows,
   };
 }

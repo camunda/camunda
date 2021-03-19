@@ -93,11 +93,6 @@ export default withErrorHandling(
     variableExists = (varName) =>
       this.state.variables.some((variable) => variable.name === varName);
 
-    filterNonExistingVariables = (columns) =>
-      columns.filter((col) =>
-        col.startsWith('variable:') ? this.variableExists(col.split(':')[1]) : true
-      );
-
     getNewVariables = (columns) =>
       this.state.variables
         .map((col) => 'variable:' + col.name)
@@ -135,10 +130,13 @@ export default withErrorHandling(
 
     changeDefinition = async ({key, versions, tenantIds, name}) => {
       const {
-        tableColumns: {columnOrder, includedColumns, excludedColumns},
-        processPart,
-        heatmapTargetValue: {values},
-      } = this.props.report.data.configuration;
+        configuration: {
+          tableColumns: {columnOrder, includedColumns, excludedColumns},
+          processPart,
+          heatmapTargetValue: {values},
+        },
+        processDefinitionKey,
+      } = this.props.report.data;
       const targetFlowNodes = Object.keys(values);
 
       const definitionData = {
@@ -167,10 +165,8 @@ export default withErrorHandling(
         variableConfig.reset(change);
       }
 
-      if (columnOrder.length) {
-        change.configuration.tableColumns = {
-          columnOrder: {$set: this.filterNonExistingVariables(columnOrder)},
-        };
+      if (columnOrder.length && key !== processDefinitionKey) {
+        change.configuration.tableColumns = {columnOrder: {$set: []}};
       }
 
       if (includedColumns.length) {

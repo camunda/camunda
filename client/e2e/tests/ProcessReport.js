@@ -176,6 +176,29 @@ test('sort table columns', async (t) => {
   await t.expect(b >= c).ok();
 });
 
+test('drag raw data table columns', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Raw Data');
+
+  const originalPositionText = await e.tableHeader(3).textContent;
+  await t.drag(e.tableHeader(3), 350, 0);
+  const newPositionText = await e.tableHeader(4).textContent;
+  await t.expect(originalPositionText).eql(newPositionText);
+});
+
+test('drag distributed table columns', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'User Task', 'Count');
+  await u.selectGroupby(t, 'Candidate Group');
+
+  const originalPositionText = await e.tableGroup(1).textContent;
+  await t.drag(e.tableHeader(1), 600, 0);
+  const newPositionText = await e.tableGroup(2).textContent;
+  await t.expect(originalPositionText).eql(newPositionText);
+});
+
 test('exclude raw data columns', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');

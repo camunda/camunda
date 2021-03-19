@@ -462,14 +462,14 @@ it('should allow collapsing sections', () => {
   expect(node.find('.source')).not.toHaveClassName('hidden');
 });
 
-it('should filter non existing variables from columnOrder configuration', async () => {
-  loadVariables.mockReturnValueOnce([{name: 'existingVariable'}]);
+it('should reset columnOrder only when changing definition', async () => {
   const reportWithConfig = update(report, {
     data: {
+      processDefinitionKey: {$set: 'original'},
       configuration: {
         tableColumns: {
           columnOrder: {
-            $set: ['variable:nonExistingVariable', 'variable:existingVariable'],
+            $set: ['col1', 'col2'],
           },
         },
       },
@@ -481,11 +481,35 @@ it('should filter non existing variables from columnOrder configuration', async 
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionSelection).prop('onChange')({key: 'differentDefinition'});
 
   expect(spy.mock.calls[0][0].configuration.tableColumns).toEqual({
-    columnOrder: {$set: ['variable:existingVariable']},
+    columnOrder: {$set: []},
   });
+});
+
+it('should not reset columnOrder when changing version', async () => {
+  const reportWithConfig = update(report, {
+    data: {
+      processDefinitionKey: {$set: 'same'},
+      configuration: {
+        tableColumns: {
+          columnOrder: {
+            $set: ['col1', 'col2'],
+          },
+        },
+      },
+    },
+  });
+
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
+  );
+
+  await node.find(DefinitionSelection).prop('onChange')({key: 'same'});
+
+  expect(spy.mock.calls[0][0].configuration.tableColumns).not.toBeDefined();
 });
 
 it('should add new variables to includedColumns when switching definition/version', async () => {

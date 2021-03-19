@@ -7,6 +7,7 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import update from 'immutability-helper';
 
+import {getReportResult} from 'services';
 import {Table as TableRenderer, LoadingIndicator} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getWebappEndpoints} from 'config';
@@ -88,9 +89,11 @@ export function Table(props) {
     };
   }
 
+  const isHyper = getReportResult(report)?.type === 'hyperMap';
+
   return (
     <ColumnRearrangement
-      enabled={updateReport && !report.combined}
+      enabled={updateReport && (isHyper || !report.combined)}
       onChange={(oldIdx, newIdx) => {
         const list = tableProps.head.map((el) => el.id || el);
         // add the column at the specified position

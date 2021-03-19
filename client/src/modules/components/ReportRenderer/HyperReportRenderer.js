@@ -54,7 +54,7 @@ export default function HyperReportRenderer({report, ...rest}) {
 
   convertedReport.result = {
     ...result,
-    type: null,
+    type: 'hyperMap',
     data: newResultData,
   };
 
