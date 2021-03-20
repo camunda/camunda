@@ -36,6 +36,8 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_PROCESS_ID = "processId";
   public static final String ATTRIBUTE_PROPAGATE_ALL_CHILD_VARIABLES = "propagateAllChildVariables";
 
+  public static final String ATTRIBUTE_FORM_KEY = "formKey";
+
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";
   public static final String ELEMENT_IO_MAPPING = "ioMapping";
@@ -46,7 +48,15 @@ public class ZeebeConstants {
   public static final String ELEMENT_TASK_DEFINITION = "taskDefinition";
   public static final String ELEMENT_TASK_HEADERS = "taskHeaders";
 
+  public static final String ELEMENT_FORM_DEFINITION = "formDefinition";
+  public static final String ELEMENT_USER_TASK_FORM = "userTaskForm";
+
   public static final String ELEMENT_LOOP_CHARACTERISTICS = "loopCharacteristics";
 
   public static final String ELEMENT_CALLED_ELEMENT = "calledElement";
+
+  /** Form key format used for camunda-forms format */
+  public static final String USER_TASK_FORM_KEY_CAMUNDA_FORMS_FORMAT = "camunda-forms";
+  /** Form key location used for forms embedded in the same BPMN file, i.e. zeebeUserTaskForm */
+  public static final String USER_TASK_FORM_KEY_BPMN_LOCATION = "bpmn";
 }
