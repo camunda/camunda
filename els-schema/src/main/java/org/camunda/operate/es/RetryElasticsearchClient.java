@@ -21,6 +21,9 @@ import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.ingest.DeletePipelineRequest;
@@ -57,6 +60,7 @@ import java.nio.ByteBuffer;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static org.camunda.operate.util.CollectionUtil.map;
 
@@ -125,6 +129,17 @@ public class RetryElasticsearchClient {
       return true;
     });
   }
+
+  public boolean createOrUpdateDocument(String name, String id, Map source) {
+    return executeWithRetries(() -> {
+      final IndexResponse response = esClient
+          .index(new IndexRequest(name, ElasticsearchUtil.ES_INDEX_TYPE, id)
+              .source(source, XContentType.JSON), requestOptions);
+      DocWriteResponse.Result result = response.getResult();
+      return result.equals(DocWriteResponse.Result.CREATED) || result.equals(DocWriteResponse.Result.UPDATED);
+    });
+  }
+
   public boolean createOrUpdateDocument(String name, String id, String source) {
     return executeWithRetries(() -> {
       final IndexResponse response = esClient
@@ -132,6 +147,32 @@ public class RetryElasticsearchClient {
               .source(source, XContentType.JSON), requestOptions);
       DocWriteResponse.Result result = response.getResult();
       return result.equals(DocWriteResponse.Result.CREATED) || result.equals(DocWriteResponse.Result.UPDATED);
+    });
+  }
+
+  public boolean documentExists(String name, String id) {
+    return executeWithGivenRetries(10,String.format("Exists document from %s with id %s", name, id), () -> {
+      return esClient.exists(new GetRequest(name, ElasticsearchUtil.ES_INDEX_TYPE, id), requestOptions);
+    }, null);
+  }
+
+  public Map<String, Object> getDocument(String name, String id) {
+    return executeWithGivenRetries(10,String.format("Get document from %s with id %s", name, id), () -> {
+      GetRequest request = new GetRequest(name, ElasticsearchUtil.ES_INDEX_TYPE, id);
+      if( esClient.exists(request, requestOptions)) {
+        final GetResponse response = esClient.get(request, requestOptions);
+        return response.getSourceAsMap();
+      } else {
+        return null;
+      }
+    }, null);
+  }
+
+  public boolean deleteDocument(String name, String id) {
+    return executeWithRetries(() -> {
+      final DeleteResponse response = esClient.delete(new DeleteRequest(name, ElasticsearchUtil.ES_INDEX_TYPE, id), requestOptions);
+      DocWriteResponse.Result result = response.getResult();
+      return result.equals(DocWriteResponse.Result.DELETED);
     });
   }
 
@@ -267,6 +308,30 @@ public class RetryElasticsearchClient {
       // need to reindex again
       return false;
     }
+  }
+
+  public int doWithEachSearchResult(SearchRequest searchRequest, Consumer<SearchHit> searchHitConsumer) {
+    return executeWithRetries(() -> {
+      int doneOnSearchHits = 0;
+      searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+      SearchResponse response = esClient.search(searchRequest, requestOptions);
+
+      String scrollId = null;
+      while (response.getHits().getHits().length > 0) {
+        Arrays.stream(response.getHits().getHits()).sequential().forEach(searchHitConsumer);
+        doneOnSearchHits += response.getHits().getHits().length;
+
+        scrollId = response.getScrollId();
+        SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId).scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+        response = esClient.scroll(scrollRequest, requestOptions);
+      }
+      if (scrollId != null) {
+        ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+        clearScrollRequest.addScrollId(scrollId);
+        esClient.clearScroll(clearScrollRequest, requestOptions);
+      }
+      return doneOnSearchHits;
+    });
   }
 
   public <T> List<T> searchWithScroll(SearchRequest searchRequest,  Class<T> resultClass, ObjectMapper objectMapper){

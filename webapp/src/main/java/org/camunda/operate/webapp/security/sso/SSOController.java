@@ -13,12 +13,18 @@ import static org.camunda.operate.webapp.security.OperateURIs.ROOT;
 import static org.camunda.operate.webapp.security.OperateURIs.SSO_AUTH_PROFILE;
 
 import com.auth0.AuthenticationController;
+import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import org.camunda.operate.property.OperateProperties;
+import javax.servlet.http.HttpSession;
+
+import org.camunda.operate.util.RetryOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -37,6 +43,8 @@ public class SSOController {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
+  public static final String ACCESS_TOKENS = "access_tokens";
+
   @Autowired
   protected OperateProperties operateProperties;
 
@@ -52,7 +60,7 @@ public class SSOController {
    * @return a redirect command to auth0 authorize url
    */
   @RequestMapping(value = LOGIN_RESOURCE, method = { RequestMethod.GET, RequestMethod.POST })
-  public String login(final HttpServletRequest req,final HttpServletResponse res) {
+  public String login(final HttpServletRequest req,final HttpServletResponse res) throws IOException {
     final String authorizeUrl = getAuthorizeUrl(req, res);
     logger.debug("Redirect Login to {}", authorizeUrl);
     return "redirect:" + authorizeUrl;
@@ -77,23 +85,57 @@ public class SSOController {
    */
   @RequestMapping(value = CALLBACK_URI, method = RequestMethod.GET)
   public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res) throws IOException {
-    logger.debug("Called back by auth0 with {} {}", req.getRequestURI(), req.getQueryString());
+    logger.debug("Called back by auth0 with {} {} and SessionId: {}", req.getRequestURI(), req.getQueryString(), req.getSession().getId());
     try {
-      Tokens tokens = authenticationController.handle(req, res);
-      TokenAuthentication authentication =  beanFactory.getBean(TokenAuthentication.class);
-      authentication.authenticate(tokens);
-      SecurityContextHolder.getContext().setAuthentication(authentication);
-      Object originalRequestUrl = req.getSession().getAttribute(SSOWebSecurityConfig.REQUESTED_URL);
-      if(originalRequestUrl != null) {
-        res.sendRedirect(originalRequestUrl.toString());
-      }else {
-        res.sendRedirect(ROOT);
-      }
+      Tokens tokens = RetryOperation.<Tokens>newBuilder()
+          .noOfRetry(10)
+          .delayInterval(500, TimeUnit.MILLISECONDS)
+          .retryOn(IdentityVerificationException.class)
+          .retryConsumer(() -> retrieveToken(req, res))
+          .build()
+          .retry();
+      authenticate(tokens);
+      saveTokens(req, tokens);
+      redirectToPage(req, res);
     } catch (InsufficientAuthenticationException iae) {
       logoutAndRedirectToNoPermissionPage(req, res);
     } catch (Exception t /*AuthenticationException | IdentityVerificationException e*/) {
       clearContextAndRedirectToNoPermission(req,res, t);
     }
+  }
+
+  private Tokens retrieveToken(final HttpServletRequest request, final HttpServletResponse response) throws IdentityVerificationException {
+    Tokens tokens = (Tokens) request.getSession().getAttribute(ACCESS_TOKENS);
+    if( tokens == null) {
+      tokens = authenticationController.handle(request, response);
+    }
+    return tokens;
+  }
+
+  private boolean authenticate(final Tokens tokens) {
+    TokenAuthentication authentication =  beanFactory.getBean(TokenAuthentication.class);
+    authentication.authenticate(tokens);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+    return authentication.isAuthenticated();
+  }
+
+  private void redirectToPage(final HttpServletRequest req, final HttpServletResponse res) throws IOException {
+    Object originalRequestUrl = req.getSession().getAttribute(SSOWebSecurityConfig.REQUESTED_URL);
+    if (originalRequestUrl != null) {
+        res.sendRedirect(originalRequestUrl.toString());
+    } else {
+        res.sendRedirect(ROOT);
+    }
+  }
+
+  private void saveTokens(final HttpServletRequest req,final Tokens tokens) {
+    HttpSession httpSession = req.getSession();
+    httpSession.setMaxInactiveInterval(Long.valueOf(tokens.getExpiresIn()).intValue());
+    httpSession.setAttribute(ACCESS_TOKENS, tokens);
+  }
+
+  private Tokens readTokens(final HttpServletRequest req) {
+    return (Tokens) req.getSession().getAttribute(ACCESS_TOKENS);
   }
 
   /**

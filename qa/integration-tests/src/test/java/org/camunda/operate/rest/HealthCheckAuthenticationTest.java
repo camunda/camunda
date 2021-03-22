@@ -10,10 +10,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 
+import org.camunda.operate.es.RetryElasticsearchClient;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.HealthCheckTest.AddManagementPropertiesInitializer;
+import org.camunda.operate.schema.indices.OperateWebSessionIndex;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.camunda.operate.management.ElsIndicesHealthIndicator;
+import org.camunda.operate.webapp.security.ElasticsearchSessionRepository;
 import org.camunda.operate.webapp.security.OperateURIs;
 import org.camunda.operate.webapp.security.WebSecurityConfig;
 import org.junit.Test;
@@ -34,7 +37,8 @@ import org.springframework.test.context.junit4.SpringRunner;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = {OperateProperties.class,TestApplicationWithNoBeans.class, ElsIndicesHealthIndicator.class, WebSecurityConfig.class},
+  classes = {OperateProperties.class,TestApplicationWithNoBeans.class, ElsIndicesHealthIndicator.class, WebSecurityConfig.class,
+      ElasticsearchSessionRepository.class, RetryElasticsearchClient.class, OperateWebSessionIndex.class },
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)

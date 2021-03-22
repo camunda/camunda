@@ -33,15 +33,15 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 @Scope(SCOPE_PROTOTYPE)
 public class TokenAuthentication extends AbstractAuthenticationToken {
 
-  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+  protected final transient Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private DecodedJWT jwt;
   private boolean authenticated = false;
 
   @Autowired
-  private OperateProperties operateProperties;
+  private transient OperateProperties operateProperties;
 
-  private final Predicate<Map> idEqualsOrganization = new Predicate<>() {
+  private transient final Predicate<Map> idEqualsOrganization = new Predicate<>() {
     @Override public boolean test(Map orgs) {
       return orgs.containsKey("id") && orgs.get("id").equals(operateProperties.getAuth0()
           .getOrganization());
@@ -83,10 +83,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   public void authenticate(Tokens tokens) {
     jwt = JWT.decode(tokens.getIdToken());
     Claim claim = jwt.getClaim(operateProperties.getAuth0().getClaimName());
-    tryAuthenticateAsListOfStrings(claim);
-    if (!authenticated) {
-      tryAuthenticateAsListOfMaps(claim);
-    }
+    tryAuthenticateAsListOfMaps(claim);
     if (!authenticated) {
       throw new InsufficientAuthenticationException("No permission for operate - check your organization id");
     }
@@ -100,18 +97,6 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
       }
     } catch (JWTDecodeException e) {
       logger.debug("Read organization claim as list of maps failed.", e);
-    }
-  }
-
-  @Deprecated
-  private void tryAuthenticateAsListOfStrings(Claim claim) {
-    try {
-      List<String> claims = claim.asList(String.class);
-      if (claims != null) {
-        authenticated = claims.contains(operateProperties.getAuth0().getOrganization());
-      }
-    } catch (JWTDecodeException e) {
-      logger.debug("Read organization claim as list of strings failed.", e);
     }
   }
 

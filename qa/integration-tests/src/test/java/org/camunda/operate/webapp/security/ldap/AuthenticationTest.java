@@ -5,12 +5,15 @@
  */
 package org.camunda.operate.webapp.security.ldap;
 
+import org.camunda.operate.es.RetryElasticsearchClient;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.schema.indices.OperateWebSessionIndex;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.camunda.operate.webapp.rest.AuthenticationRestService;
 import org.camunda.operate.webapp.rest.dto.UserDto;
+import org.camunda.operate.webapp.security.AuthenticationTestable;
+import org.camunda.operate.webapp.security.ElasticsearchSessionRepository;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,27 +26,17 @@ import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.testcontainers.containers.GenericContainer;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
-import static org.camunda.operate.webapp.rest.AuthenticationRestService.USER_ENDPOINT;
-import static org.camunda.operate.webapp.security.OperateURIs.*;
-import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {
         OperateProperties.class,
         TestApplicationWithNoBeans.class, AuthenticationRestService.class,
-        LDAPWebSecurityConfig.class, LDAPUserService.class
+        LDAPWebSecurityConfig.class, LDAPUserService.class,
+        RetryElasticsearchClient.class, ElasticsearchSessionRepository.class, OperateWebSessionIndex.class
     },
     properties = {
         "camunda.operate.ldap.baseDn=dc=planetexpress,dc=com",
@@ -55,11 +48,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 )
 @ActiveProfiles({"ldap-auth", "test"})
 @ContextConfiguration(initializers = {AuthenticationTest.Initializer.class})
-@Ignore("https://github.com/rroemhild/docker-test-openldap/issues/23")
-public class AuthenticationTest {
-
-  private static final String SET_COOKIE_HEADER = "Set-Cookie";
-  private static final String CURRENT_USER_URL = AUTHENTICATION_URL + USER_ENDPOINT;
+public class AuthenticationTest implements AuthenticationTestable {
 
   @Autowired
   private TestRestTemplate testRestTemplate;
@@ -71,7 +60,12 @@ public class AuthenticationTest {
   public static GenericContainer<?> ldapServer =
       // https://github.com/rroemhild/docker-test-openldap
       new GenericContainer<>("rroemhild/test-openldap")
-          .withExposedPorts(389);
+          .withExposedPorts(10389);
+
+  @Override
+  public TestRestTemplate getTestRestTemplate() {
+    return testRestTemplate;
+  }
 
   static class Initializer
       implements ApplicationContextInitializer<ConfigurableApplicationContext> {
@@ -84,32 +78,32 @@ public class AuthenticationTest {
 
   @Test
   public void testLoginSuccess() {
-    ResponseEntity<?> response = loginAs("fry", "fry");
+    ResponseEntity<?> response = login("fry", "fry");
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesExists(response);
+    assertThatCookiesAreSet(response, operateProperties.isCsrfPreventionEnabled());
   }
 
   @Test
   public void testLoginFailed() {
-    ResponseEntity<?> response = loginAs("amy", "amy");
+    ResponseEntity<?> response = login("amy", "dont-know");
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
   }
 
   @Test
   public void testLogout() {
     // Given
-    ResponseEntity<?> response = loginAs("fry", "fry");
+    ResponseEntity<?> response = login("fry", "fry");
     // When
     ResponseEntity<?> logoutResponse = logout(response);
     // Then
     assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreDeleted(logoutResponse);
+    assertThatCookiesAreDeleted(logoutResponse, operateProperties.isCsrfPreventionEnabled());
   }
 
   @Test
   public void shouldReturnCurrentUser() {
     //given authenticated user
-    ResponseEntity<?> response = loginAs("bender", "bender");
+    ResponseEntity<?> response = login("bender", "bender");
     // when
     UserDto userInfo = getCurrentUser(response);
     //then
@@ -118,65 +112,4 @@ public class AuthenticationTest {
     assertThat(userInfo.getLastname()).isEqualTo("Rodríguez");
     assertThat(userInfo.isCanLogout()).isTrue();
   }
-
-  protected ResponseEntity<?> loginAs(String user, String password) {
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(APPLICATION_FORM_URLENCODED);
-
-    MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-    body.add("username", user);
-    body.add("password", password);
-
-    return testRestTemplate.postForEntity(LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class);
-  }
-
-  protected ResponseEntity<?> logout(ResponseEntity<?> previousResponse) {
-    HttpEntity<Map<String, String>> request = prepareRequestWithCookies(previousResponse);
-    return testRestTemplate.postForEntity(LOGOUT_RESOURCE, request, String.class);
-  }
-
-  protected UserDto getCurrentUser(ResponseEntity<?> previousResponse) {
-    final ResponseEntity<UserDto> responseEntity = testRestTemplate.exchange(CURRENT_USER_URL, HttpMethod.GET,
-        prepareRequestWithCookies(previousResponse), UserDto.class);
-    assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-    return responseEntity.getBody();
-  }
-
-  protected void assertThatCookiesExists(ResponseEntity<?> response) {
-    assertThat(response.getHeaders()).containsKey(SET_COOKIE_HEADER);
-    assertThat(response.getHeaders().get(SET_COOKIE_HEADER).get(0)).contains(COOKIE_JSESSIONID);
-  }
-
-  protected HttpHeaders getHeaderWithCSRF(HttpHeaders responseHeaders) {
-    HttpHeaders headers = new HttpHeaders();
-    if (responseHeaders.containsKey(X_CSRF_HEADER)) {
-      String csrfHeader = responseHeaders.get(X_CSRF_HEADER).get(0);
-      String csrfToken = responseHeaders.get(X_CSRF_TOKEN).get(0);
-      headers.set(csrfHeader, csrfToken);
-    }
-    return headers;
-  }
-
-  protected HttpEntity<Map<String, String>> prepareRequestWithCookies(ResponseEntity<?> response) {
-    HttpHeaders headers = getHeaderWithCSRF(response.getHeaders());
-    headers.setContentType(APPLICATION_JSON);
-    headers.add("Cookie", response.getHeaders().get(SET_COOKIE_HEADER).get(0));
-
-    Map<String, String> body = new HashMap<>();
-
-    return new HttpEntity<>(body, headers);
-  }
-
-  protected void assertThatCookiesAreDeleted(ResponseEntity<?> response) {
-    HttpHeaders headers = response.getHeaders();
-    assertThat(headers).containsKey(SET_COOKIE_HEADER);
-    assertThat(headers).doesNotContainKey(X_CSRF_TOKEN);
-    List<String> cookies = headers.get(SET_COOKIE_HEADER);
-    final String emptyValue = "=;";
-    if (operateProperties.isCsrfPreventionEnabled()) {
-      assertThat(cookies).anyMatch((cookie) -> cookie.contains(X_CSRF_TOKEN + emptyValue));
-    }
-    assertThat(cookies).anyMatch((cookie) -> cookie.contains(COOKIE_JSESSIONID + emptyValue));
-  }
-
 }

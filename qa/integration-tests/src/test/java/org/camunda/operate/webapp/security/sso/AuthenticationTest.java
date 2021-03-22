@@ -58,7 +58,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
 
-
 @RunWith(Parameterized.class)
 @SpringBootTest(
     classes = {
@@ -111,8 +110,7 @@ public class AuthenticationTest {
 
   @Parameters
   public static Collection<BiFunction<String, String, Tokens>> orgExtractors() {
-    return Arrays.asList((claimName, org) -> tokensWithOrgAsListFrom(claimName, org),
-        (claimName, org) -> tokensWithOrgAsMapFrom(claimName, org));
+    return Arrays.asList((claimName, org) -> tokensWithOrgAsMapFrom(claimName, org));
   }
 
   @Before
@@ -174,7 +172,7 @@ public class AuthenticationTest {
         operateProperties.getAuth0().getClientId(),
         operateProperties.getAuth0().getBackendDomain()
     );
-    // Step 3 Call back uri with invalid userdata  
+    // Step 3 Call back uri with invalid userdata
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(
             orgExtractor.apply(operateProperties.getAuth0().getClaimName(), "wrong-organization"));
@@ -237,7 +235,7 @@ public class AuthenticationTest {
         operateProperties.getAuth0().getClientId(),
         urlFor(ROOT)
     );
-    // Redirected to Login 
+    // Redirected to Login
     response = get(ROOT);
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
   }

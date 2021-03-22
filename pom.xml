@@ -32,6 +32,7 @@
     <version.log4j>2.13.3</version.log4j>
     <version.elasticsearch>6.8.14</version.elasticsearch>
     <version.spring.boot>2.4.3</version.spring.boot>
+    <version.spring.session>1.3.5.RELEASE</version.spring.session>
     <version.junit>4.13.1</version.junit>
     <version.swagger>3.0.0</version.swagger>
     <version.javax.json>1.1.4</version.javax.json>
@@ -194,6 +195,13 @@
         <artifactId>java-jwt</artifactId>
         <version>${version.auth0.jwt}</version>
       </dependency>
+
+      <dependency>
+        <groupId>org.springframework.session</groupId>
+        <artifactId>spring-session</artifactId>
+        <version>${version.spring.session}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 

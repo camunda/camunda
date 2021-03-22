@@ -27,6 +27,7 @@ public class OperateProperties {
   private boolean archiverEnabled = true;
   private boolean webappEnabled = true;
 
+  private boolean persistentSessionsEnabled = false;
   /**
    * Indicates, whether CSRF prevention is enabled.
    */
@@ -213,6 +214,15 @@ public class OperateProperties {
 
   public OperateProperties setAlert(final AlertingProperties alert) {
     this.alert = alert;
+    return this;
+  }
+
+  public boolean isPersistentSessionsEnabled() {
+    return persistentSessionsEnabled;
+  }
+
+  public OperateProperties setPersistentSessionsEnabled(boolean persistentSessionsEnabled) {
+    this.persistentSessionsEnabled = persistentSessionsEnabled;
     return this;
   }
 }

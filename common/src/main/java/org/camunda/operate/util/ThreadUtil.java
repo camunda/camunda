@@ -7,12 +7,13 @@ package org.camunda.operate.util;
 
 public class ThreadUtil {
 
-	public static void sleepFor(long milliseconds) {
+	public static long sleepFor(long milliseconds) {
 		try {
 			Thread.sleep(milliseconds);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
+		return milliseconds;
 	}
 
 }
