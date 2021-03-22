@@ -10,6 +10,7 @@ def developBranchName = 'develop'
 def isDevelopBranch = env.BRANCH_NAME == developBranchName
 def latestStableBranchName = 'stable/0.26'
 def isLatestStable = env.BRANCH_NAME == latestStableBranchName
+def generationVersion = 'Zeebe 0.26.1'
 
 //for develop branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
 def daysToKeep = isDevelopBranch ? '7' : '-1'
@@ -49,7 +50,7 @@ pipeline {
     parameters {
         booleanParam(name: 'SKIP_VERIFY', defaultValue: false, description: "Skip 'Verify' Stage")
         booleanParam(name: 'RUN_QA', defaultValue: false, description: "Run QA Stage")
-        string(name: 'GENERATION_TEMPLATE', defaultValue: 'Zeebe 0.x.0', description: "Generation template for QA tests (the QA test will be run with this Zeebe version and Operate/Elasticsearch version from the generation template)")
+        string(name: 'GENERATION_TEMPLATE', defaultValue: generationVersion, description: "Generation template for QA tests (the QA test will be run with this Zeebe version and Operate/Elasticsearch version from the generation template)")
     }
 
     stages {
