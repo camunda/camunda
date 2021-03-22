@@ -20,7 +20,7 @@
     "bpmn-js": "^8.2.2",
     "bpmn-moddle": "^7.0.4",
     "date-fns": "^2.19.0",
-    "eslint-plugin-testing-library": "^3.10.1",
+    "eslint-plugin-testing-library": "^3.10.2",
     "final-form": "^4.20.2",
     "lodash": "^4.17.21",
     "mobx": "^6.1.8",
