@@ -16,7 +16,7 @@ export default function SelectionPreview({disabled, onClick, highlighted, classN
     <span className={classnames('SelectionPreview', {highlighted}, {disabled}, className)}>
       {children}
       <Button disabled={disabled} onClick={onClick} icon>
-        <Icon type="close-large" />
+        <Icon type="close-small" />
       </Button>
     </span>
   );
