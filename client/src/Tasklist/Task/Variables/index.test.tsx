@@ -93,23 +93,23 @@ describe('<Variables />', () => {
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
 
     expect(
-      await screen.findAllByRole('textbox', {name: /new-variables/}),
+      await screen.findAllByRole('textbox', {name: /newVariables/}),
     ).toHaveLength(4);
 
     expect(
-      screen.getByRole('textbox', {name: 'new-variables[0].name'}),
+      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('textbox', {name: 'new-variables[0].value'}),
+      screen.getByRole('textbox', {name: 'newVariables[0].value'}),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('textbox', {name: 'new-variables[1].name'}),
+      screen.getByRole('textbox', {name: 'newVariables[1].name'}),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('textbox', {name: 'new-variables[1].value'}),
+      screen.getByRole('textbox', {name: 'newVariables[1].value'}),
     ).toBeInTheDocument();
 
     fireEvent.click(
@@ -117,23 +117,23 @@ describe('<Variables />', () => {
     );
 
     expect(
-      await screen.findAllByRole('textbox', {name: /new-variables/}),
+      await screen.findAllByRole('textbox', {name: /newVariables/}),
     ).toHaveLength(2);
 
     expect(
-      screen.getByRole('textbox', {name: 'new-variables[0].name'}),
+      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('textbox', {name: 'new-variables[0].value'}),
+      screen.getByRole('textbox', {name: 'newVariables[0].value'}),
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByRole('textbox', {name: 'new-variables[1].name'}),
+      screen.queryByRole('textbox', {name: 'newVariables[1].name'}),
     ).not.toBeInTheDocument();
 
     expect(
-      screen.queryByRole('textbox', {name: 'new-variables[1].value'}),
+      screen.queryByRole('textbox', {name: 'newVariables[1].value'}),
     ).not.toBeInTheDocument();
   });
 
@@ -145,11 +145,11 @@ describe('<Variables />', () => {
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
 
     expect(
-      screen.getByRole('textbox', {name: 'new-variables[0].name'}),
+      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('textbox', {name: 'new-variables[0].value'}),
+      screen.getByRole('textbox', {name: 'newVariables[0].value'}),
     ).toBeInTheDocument();
   });
 
@@ -161,7 +161,7 @@ describe('<Variables />', () => {
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
 
     fireEvent.change(
-      await screen.findByRole('textbox', {name: 'new-variables[0].value'}),
+      await screen.findByRole('textbox', {name: 'newVariables[0].value'}),
       {target: {value: '"valid_value"'}},
     );
 
@@ -178,7 +178,7 @@ describe('<Variables />', () => {
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
 
     fireEvent.change(
-      await screen.findByRole('textbox', {name: 'new-variables[0].name'}),
+      await screen.findByRole('textbox', {name: 'newVariables[0].name'}),
       {target: {value: 'valid_name'}},
     );
 
@@ -195,7 +195,7 @@ describe('<Variables />', () => {
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
 
     fireEvent.change(
-      await screen.findByRole('textbox', {name: 'new-variables[0].value'}),
+      await screen.findByRole('textbox', {name: 'newVariables[0].value'}),
       {target: {value: 'invalid_value}}}'}},
     );
 
@@ -214,12 +214,12 @@ describe('<Variables />', () => {
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
 
     fireEvent.change(
-      await screen.findByRole('textbox', {name: 'new-variables[0].name'}),
+      await screen.findByRole('textbox', {name: 'newVariables[0].name'}),
       {target: {value: 'valid_name'}},
     );
 
     fireEvent.change(
-      await screen.findByRole('textbox', {name: 'new-variables[0].value'}),
+      await screen.findByRole('textbox', {name: 'newVariables[0].value'}),
       {target: {value: '"valid_value"'}},
     );
 
@@ -255,20 +255,20 @@ describe('<Variables />', () => {
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
 
     fireEvent.change(
-      await screen.findByRole('textbox', {name: 'new-variables[0].name'}),
+      await screen.findByRole('textbox', {name: 'newVariables[0].name'}),
       {target: {value: 'valid_name'}},
     );
 
     fireEvent.change(
-      await screen.findByRole('textbox', {name: 'new-variables[0].value'}),
+      await screen.findByRole('textbox', {name: 'newVariables[0].value'}),
       {target: {value: '"valid_value"'}},
     );
 
     expect(
-      screen.getByRole('textbox', {name: 'new-variables[0].name'}),
+      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('textbox', {name: 'new-variables[0].value'}),
+      screen.getByRole('textbox', {name: 'newVariables[0].value'}),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', {name: 'Change route'}));

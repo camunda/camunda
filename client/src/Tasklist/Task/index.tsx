@@ -43,6 +43,13 @@ import {
   MAX_TASKS_DISPLAYED,
 } from 'modules/constants/tasks';
 import {getSortValues} from './getSortValues';
+import {createVariableFieldName} from './Variables/createVariableFieldName';
+
+type FormType = {
+  [key: string]: string;
+} & {
+  newVariables?: Variable[];
+};
 
 const Task: React.FC = () => {
   const {id} = useParams<{id: string}>();
@@ -94,8 +101,49 @@ const Task: React.FC = () => {
       {data !== undefined && (
         <>
           <Details />
-          <Form
+          <Form<FormType>
             mutators={{...arrayMutators}}
+            validate={(values) => {
+              const {newVariables} = values;
+
+              if (
+                newVariables !== undefined &&
+                newVariables.some((variable) => variable !== undefined)
+              ) {
+                return {
+                  newVariables: newVariables.map((variable, index) => {
+                    if (variable === undefined) {
+                      return undefined;
+                    }
+
+                    const {name} = variable;
+
+                    if (values.hasOwnProperty(createVariableFieldName(name))) {
+                      return {name: 'Variable must be unique'};
+                    }
+
+                    if (
+                      newVariables.filter((variable) => variable?.name === name)
+                        .length <= 1
+                    ) {
+                      return undefined;
+                    }
+
+                    if (
+                      newVariables.findIndex(
+                        (variable) => variable?.name === name,
+                      ) === index
+                    ) {
+                      return undefined;
+                    }
+
+                    return {name: 'Variable must be unique'};
+                  }),
+                };
+              }
+
+              return {};
+            }}
             onSubmit={async (values, form) => {
               const {dirtyFields, initialValues = []} = form.getState();
 
@@ -108,7 +156,7 @@ const Task: React.FC = () => {
               }));
 
               const newVariables: ReadonlyArray<Variable> =
-                get(values, 'new-variables') || [];
+                get(values, 'newVariables') || [];
 
               try {
                 await completeTask({

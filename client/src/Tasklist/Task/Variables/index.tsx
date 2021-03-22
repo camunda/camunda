@@ -41,7 +41,7 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
   const {id: taskId} = useParams<{id: string}>();
   const {data} = useTask(taskId);
   const form = useForm();
-  const newVariablesFieldArray = useField('new-variables');
+  const newVariablesFieldArray = useField('newVariables');
   const newVariableCount = useRef(newVariablesFieldArray.input.value.length);
 
   useEffect(() => {
@@ -73,7 +73,7 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
   }
 
   const handleAddVariable = () => {
-    form.mutators.push('new-variables');
+    form.mutators.push('newVariables');
   };
 
   const isVariableDirty = (variable: string): boolean => {
@@ -182,12 +182,12 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
                   );
                 })}
                 {canEdit && (
-                  <FieldArray name="new-variables">
+                  <FieldArray name="newVariables">
                     {({fields}) =>
                       fields.map((variable, index) => {
                         const error = getError(variable);
                         return (
-                          <TR key={variable}>
+                          <TR key={variable} data-testid={variable}>
                             <NameInputTD>
                               <Field
                                 name={`${variable}.name`}

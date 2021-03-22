@@ -15,6 +15,7 @@ import {
   fireEvent,
   waitFor,
   waitForElementToBeRemoved,
+  within,
 } from '@testing-library/react';
 import {MockedResponse} from '@apollo/client/testing';
 
@@ -235,14 +236,14 @@ describe('<Task />', () => {
     fireEvent.click(await screen.findByText('Add Variable'));
 
     fireEvent.change(
-      screen.getByRole('textbox', {name: 'new-variables[0].name'}),
+      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
       {
         target: {value: 'newVariableName'},
       },
     );
 
     fireEvent.change(
-      screen.getByRole('textbox', {name: 'new-variables[0].value'}),
+      screen.getByRole('textbox', {name: 'newVariables[0].value'}),
       {
         target: {value: '"newVariableValue"'},
       },
@@ -295,7 +296,7 @@ describe('<Task />', () => {
 
     fireEvent.click(await screen.findByText('Add Variable'));
     fireEvent.change(
-      screen.getByRole('textbox', {name: 'new-variables[0].value'}),
+      screen.getByRole('textbox', {name: 'newVariables[0].value'}),
       {
         target: {value: '{{ invalid value'},
       },
@@ -303,7 +304,7 @@ describe('<Task />', () => {
 
     expect(screen.getAllByTestId(/^warning-icon/)).toHaveLength(1);
     expect(
-      screen.getByTestId('warning-icon-new-variables[0].value'),
+      screen.getByTestId('warning-icon-newVariables[0].value'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Complete Task'})).toBeDisabled();
   });
@@ -346,20 +347,20 @@ describe('<Task />', () => {
     fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
 
     fireEvent.change(
-      await screen.findByRole('textbox', {name: 'new-variables[0].name'}),
+      await screen.findByRole('textbox', {name: 'newVariables[0].name'}),
       {target: {value: 'valid_name'}},
     );
 
     fireEvent.change(
-      await screen.findByRole('textbox', {name: 'new-variables[0].value'}),
+      await screen.findByRole('textbox', {name: 'newVariables[0].value'}),
       {target: {value: '"valid_value"'}},
     );
 
     expect(
-      screen.getByRole('textbox', {name: 'new-variables[0].name'}),
+      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('textbox', {name: 'new-variables[0].value'}),
+      screen.getByRole('textbox', {name: 'newVariables[0].value'}),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', {name: 'Unclaim'}));
@@ -373,5 +374,72 @@ describe('<Task />', () => {
     ).toBeInTheDocument();
 
     expect(screen.getByText(/Task has no Variables/)).toBeInTheDocument();
+  });
+
+  it('should not allow duplicate variables', async () => {
+    render(<Task />, {
+      wrapper: getWrapper({
+        history: createMemoryHistory({
+          initialEntries: ['/0'],
+        }),
+        mocks: [
+          mockGetCurrentUser,
+          mockGetTaskClaimedWithVariables,
+          mockUnclaimTask,
+          mockGetAllOpenTasks,
+          mockClaimTask,
+          mockGetAllOpenTasks,
+        ],
+      }),
+    });
+
+    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
+
+    // try to add a variable with a same name from one of the existing variables
+    fireEvent.change(
+      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
+      {target: {value: 'myVar'}},
+    );
+
+    expect(
+      screen.getByTitle('Variable must be unique and Value has to be JSON'),
+    ).toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
+      {target: {value: 'myVar2'}},
+    );
+
+    expect(
+      await screen.findByTitle('Value has to be JSON'),
+    ).toBeInTheDocument();
+
+    // try to add a variable with a same name from one of the new added variables
+    fireEvent.click(screen.getByRole('button', {name: /Add Variable/}));
+    fireEvent.change(
+      screen.getByRole('textbox', {name: 'newVariables[1].name'}),
+      {target: {value: 'myVar2'}},
+    );
+
+    expect(
+      within(screen.getByTestId('newVariables[1]')).getByTitle(
+        'Variable must be unique and Value has to be JSON',
+      ),
+    ).toBeInTheDocument();
+
+    const withinFirstVariable = within(screen.getByTestId('newVariables[0]'));
+    expect(
+      withinFirstVariable.queryByTitle(
+        'Variable must be unique and Value has to be JSON',
+      ),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', {name: 'Remove new variable 0'}),
+    );
+
+    expect(
+      screen.queryByTitle('Variable must be unique and Value has to be JSON'),
+    ).not.toBeInTheDocument();
   });
 });
