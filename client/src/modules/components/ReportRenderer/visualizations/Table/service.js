@@ -136,10 +136,26 @@ function byOrder(order) {
 }
 
 function valueForNewColumnPosition(head, sortedHead) {
+  const flattendHead = flatten(head);
+  const flattendSortedHead = flatten(sortedHead);
+
   return function (_, newPosition, cells) {
-    const headerAtNewPosition = sortedHead[newPosition];
-    const originalPosition = head.indexOf(headerAtNewPosition);
+    const headerAtNewPosition = flattendSortedHead[newPosition];
+    const originalPosition = flattendHead.indexOf(headerAtNewPosition);
 
     return cells[originalPosition];
   };
+}
+
+function flatten(head) {
+  const flattendHead = head.reduce((arr, el) => {
+    let headColumns = [el];
+    if (el.columns) {
+      headColumns = el.columns.map((col) => el.id + col);
+    }
+
+    return arr.concat(headColumns);
+  }, []);
+
+  return flattendHead;
 }

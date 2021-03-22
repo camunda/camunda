@@ -232,6 +232,27 @@ describe('sortColumns', () => {
     });
   });
 
+  it('should sort groups of columns', () => {
+    const head = [
+      'processInstanceId',
+      {id: 'prop2', columns: ['a']},
+      {id: 'variables', columns: ['var1', 'var2']},
+    ];
+    const columnOrder = ['variables', 'processInstanceId', 'prop2'];
+
+    expect(sortColumns(head, body, columnOrder)).toEqual({
+      sortedHead: [
+        {columns: ['var1', 'var2'], id: 'variables'},
+        'processInstanceId',
+        {columns: ['a'], id: 'prop2'},
+      ],
+      sortedBody: [
+        ['12', '', 'foo', 'bar'],
+        ['', 'true', 'xyz', 'abc'],
+      ],
+    });
+  });
+
   it('should return the original head and body if no sorting is applied', () => {
     const columnOrder = [];
 
