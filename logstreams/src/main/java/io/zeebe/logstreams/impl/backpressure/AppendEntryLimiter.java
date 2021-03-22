@@ -11,9 +11,13 @@ import com.netflix.concurrency.limits.limiter.AbstractLimiter;
 import io.zeebe.logstreams.impl.Loggers;
 import java.util.Optional;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class AppendEntryLimiter extends AbstractLimiter<Long> implements AppendLimiter {
 
+  private static final Logger LOG =
+      LoggerFactory.getLogger("io.zeebe.logstreams.impl.backpressure");
   private final Long2ObjectHashMap<Listener> appendedListeners = new Long2ObjectHashMap<>();
   private final AppendBackpressureMetrics metrics;
 
@@ -51,7 +55,14 @@ public final class AppendEntryLimiter extends AbstractLimiter<Long> implements A
   public void onCommit(final long position) {
     final Listener listener = appendedListeners.remove(position);
     if (listener != null) {
-      listener.onSuccess();
+      try {
+        listener.onSuccess();
+      } catch (final IllegalArgumentException e) {
+        listener.onIgnore();
+        LOG.warn(
+            "Could not register request RTT (likely caused by clock problems). Consider using the 'fixed' backpressure algorithm.",
+            e);
+      }
       metrics.decInflight();
     } else {
       Loggers.LOGSTREAMS_LOGGER.warn(
