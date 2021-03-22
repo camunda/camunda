@@ -130,7 +130,7 @@ public final class PartitionAwareRequestLimiter {
   }
 
   public void onResponse(final int partitionId, final int streamId, final long requestId) {
-    final RequestLimiter limiter = partitionLimiters.get(partitionId);
+    final RequestLimiter<Intent> limiter = partitionLimiters.get(partitionId);
     if (limiter != null) {
       limiter.onResponse(streamId, requestId);
     }
@@ -149,6 +149,6 @@ public final class PartitionAwareRequestLimiter {
   }
 
   private RequestLimiter<Intent> getOrCreateLimiter(final int partitionId) {
-    return partitionLimiters.computeIfAbsent(partitionId, limiterSupplier::apply);
+    return partitionLimiters.computeIfAbsent(partitionId, limiterSupplier);
   }
 }
