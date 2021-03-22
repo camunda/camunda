@@ -118,9 +118,16 @@ public class UpgradeProcedure {
   }
 
   private String getIndexNameForStep(final UpgradeStep step) {
-    return REINDEX.equals(step.getType())
-      ? String.format("%s and %s", ((ReindexStep) step).getSourceIndex(), ((ReindexStep) step).getTargetIndex())
-      : step.getIndex().getIndexName();
+    if (REINDEX.equals(step.getType())) {
+      final ReindexStep reindexStep = (ReindexStep) step;
+      return String.format(
+        "%s and %s",
+        esClient.getIndexNameService().getOptimizeIndexNameWithVersion(reindexStep.getSourceIndex()),
+        esClient.getIndexNameService().getOptimizeIndexNameWithVersion(reindexStep.getTargetIndex())
+      );
+    } else {
+      return esClient.getIndexNameService().getOptimizeIndexNameWithVersion(step.getIndex());
+    }
   }
 
 }

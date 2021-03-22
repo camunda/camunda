@@ -44,7 +44,8 @@ class UpgradeDataIT extends BaseUpgradeIT {
       oldElasticClient.deleteSnapshot()
 
       // run new optimize upgrade
-      newOptimize.runUpgrade().consumeProcessOutput()
+      newOptimize.startUpgrade().consumeProcessOutput()
+      newOptimize.waitForUpgradeToFinish()
       newOptimize.start().consumeProcessOutput()
       newOptimize.waitForImportToFinish()
 

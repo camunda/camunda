@@ -16,8 +16,10 @@ import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -31,6 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -49,8 +52,16 @@ public class UpgradeProcedureTest {
   private UpgradeValidationService validationService;
   @Mock
   private UpgradeStepLogService upgradeStepLogService;
-  @Mock
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private OptimizeElasticsearchClient esClient;
+
+  @BeforeEach
+  public void before() {
+    // this method might be called by some tests
+    // for the scope of these tests the value is not relevant though, thus returning static value
+    lenient().when(esClient.getIndexNameService().getOptimizeIndexNameWithVersion(any()))
+      .thenReturn("test");
+  }
 
   @Test
   public void initializeSchemaIsCalled() {

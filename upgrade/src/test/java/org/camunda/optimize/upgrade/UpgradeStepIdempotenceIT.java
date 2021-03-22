@@ -215,7 +215,7 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
     assertThat(updateLogEntries)
       .contains(
         UpgradeStepLogEntryDto.builder()
-          .indexName(upgradeStep.getIndex().getIndexName())
+          .indexName(getIndexNameWithVersion(upgradeStep.getIndex()))
           .optimizeVersion(TO_VERSION)
           .stepNumber(1)
           .stepType(stepType)

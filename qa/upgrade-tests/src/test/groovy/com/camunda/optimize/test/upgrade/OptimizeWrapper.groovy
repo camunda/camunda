@@ -22,6 +22,7 @@ class OptimizeWrapper {
   String optimizeDirectory
   String configDirectory
   Process process
+  Process upgradeProcess
   OptimizeRequestExecutor requestExecutor
   int elasticPort
 
@@ -41,16 +42,26 @@ class OptimizeWrapper {
     )
   }
 
-  def runUpgrade() {
+  def startUpgrade() {
+    if (this.upgradeProcess) {
+      throw new RuntimeException("Upgrade is already running, wait for it to finish.")
+    }
     println "Running upgrade to Optimize ${optimizeVersion} on Elasticsearch with port ${elasticPort}..."
     def environmentVars = getCurrentEnvironmentVariables()
     environmentVars.add("OPTIMIZE_ELASTICSEARCH_HTTP_PORT=${elasticPort}")
     def command = ["/bin/bash", "./upgrade/upgrade.sh", "--skip-warning"]
-    def upgradeProcess = command.execute(environmentVars, new File(optimizeDirectory))
-    upgradeProcess.waitFor()
-    if (upgradeProcess.exitValue() == 0) {
+    this.upgradeProcess = command.execute(environmentVars, new File(optimizeDirectory))
+    return this.upgradeProcess
+  }
+
+  def waitForUpgradeToFinish(int timeoutInMinutes = 90) {
+    if (this.upgradeProcess == null) {
+      throw new RuntimeException("No Upgrade running start one first.")
+    }
+    this.upgradeProcess.waitFor(timeoutInMinutes, MINUTES)
+    if (this.upgradeProcess.exitValue() == 0) {
       println "Successfully upgraded to Optimize ${optimizeVersion}"
-      return upgradeProcess
+      this.upgradeProcess = null;
     } else {
       println "Error output: ${upgradeProcess.text}"
       throw new Exception("Failed upgrading to Optimize ${optimizeVersion}!")

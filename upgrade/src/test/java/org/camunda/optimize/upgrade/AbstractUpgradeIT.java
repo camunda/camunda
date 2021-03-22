@@ -179,6 +179,10 @@ public abstract class AbstractUpgradeIT {
     prefixAwareClient.refresh(new RefreshRequest("*"));
   }
 
+  protected String getIndexNameWithVersion(final IndexMappingCreator testIndexV1) {
+    return indexNameService.getOptimizeIndexNameWithVersion(testIndexV1);
+  }
+
   protected String getVersionedIndexName(final String indexName, final int version) {
     return OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
       indexNameService.getOptimizeIndexAliasForIndex(indexName), String.valueOf(version)

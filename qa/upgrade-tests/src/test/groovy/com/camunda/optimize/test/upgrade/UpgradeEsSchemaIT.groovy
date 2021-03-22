@@ -58,7 +58,8 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
       // run the upgrade
       def upgradeLogPath = buildDirectory + "/optimize-upgrade.log"
       def optimizeUpgradeOutputWriter = new FileWriter(upgradeLogPath)
-      newOptimize.runUpgrade().consumeProcessOutputStream(optimizeUpgradeOutputWriter)
+      newOptimize.startUpgrade().consumeProcessOutputStream(optimizeUpgradeOutputWriter)
+      newOptimize.waitForUpgradeToFinish(360)
       // stop/delete async snapshot operation as upgrade completed already
       newElasticClient.deleteSnapshot()
 
