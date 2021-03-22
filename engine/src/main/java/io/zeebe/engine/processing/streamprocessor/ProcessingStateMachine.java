@@ -77,23 +77,23 @@ import org.slf4j.Logger;
  */
 public final class ProcessingStateMachine {
 
-  public static final String ERROR_MESSAGE_WRITE_EVENT_ABORTED =
-      "Expected to write one or more follow up events for event '{}' without errors, but exception was thrown.";
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
+  private static final String ERROR_MESSAGE_WRITE_EVENT_ABORTED =
+      "Expected to write one or more follow up events for event '{} {}' without errors, but exception was thrown.";
   private static final String ERROR_MESSAGE_ROLLBACK_ABORTED =
-      "Expected to roll back the current transaction for event '{}' successfully, but exception was thrown.";
+      "Expected to roll back the current transaction for event '{} {}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED =
-      "Expected to execute side effects for event '{}' successfully, but exception was thrown.";
+      "Expected to execute side effects for event '{} {}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_UPDATE_STATE_FAILED =
-      "Expected to successfully update state for event '{}', but caught an exception. Retry.";
+      "Expected to successfully update state for event '{} {}', but caught an exception. Retry.";
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
-      "Expected to find event processor for event '{}', but caught an exception. Skip this event.";
+      "Expected to find event processor for event '{} {}', but caught an exception. Skip this event.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT =
-      "Expected to successfully process event '{}' with processor, but caught an exception. Skip this event.";
+      "Expected to successfully process event '{} {}' with processor, but caught an exception. Skip this event.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING =
-      "Expected to process event '{}' successfully on stream processor, but caught recoverable exception. Retry processing.";
+      "Expected to process event '{} {}' successfully on stream processor, but caught recoverable exception. Retry processing.";
   private static final String PROCESSING_ERROR_MESSAGE =
-      "Expected to process event '%s' without errors, but exception occurred with message '%s' .";
+      "Expected to process event '%s' without errors, but exception occurred with message '%s'.";
   private static final String NOTIFY_LISTENER_ERROR_MESSAGE =
       "Expected to invoke processed listener for event {} successfully, but exception was thrown.";
 
@@ -233,10 +233,11 @@ public final class ProcessingStateMachine {
       writeEvent();
     } catch (final RecoverableException recoverableException) {
       // recoverable
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING, event, recoverableException);
+      LOG.error(
+          ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING, event, metadata, recoverableException);
       actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processEvent(currentEvent));
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, event, e);
+      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, event, metadata, e);
       onError(e, this::writeEvent);
     }
   }
@@ -249,7 +250,7 @@ public final class ProcessingStateMachine {
           recordProcessorMap.get(
               metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, event, e);
+      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, event, metadata, e);
     }
 
     return typedRecordProcessor;
@@ -305,7 +306,7 @@ public final class ProcessingStateMachine {
         retryFuture,
         (bool, throwable) -> {
           if (throwable != null) {
-            LOG.error(ERROR_MESSAGE_ROLLBACK_ABORTED, currentEvent, throwable);
+            LOG.error(ERROR_MESSAGE_ROLLBACK_ABORTED, currentEvent, metadata, throwable);
           }
           try {
             errorHandlingInTransaction(processingException);
@@ -366,7 +367,7 @@ public final class ProcessingStateMachine {
         retryFuture,
         (bool, t) -> {
           if (t != null) {
-            LOG.error(ERROR_MESSAGE_WRITE_EVENT_ABORTED, currentEvent, t);
+            LOG.error(ERROR_MESSAGE_WRITE_EVENT_ABORTED, currentEvent, metadata, t);
             onError(t, this::writeEvent);
           } else {
             updateState();
@@ -405,7 +406,7 @@ public final class ProcessingStateMachine {
         retryFuture,
         (bool, throwable) -> {
           if (throwable != null) {
-            LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentEvent, throwable);
+            LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentEvent, metadata, throwable);
             onError(throwable, this::updateState);
           } else {
             executeSideEffects();
@@ -417,7 +418,7 @@ public final class ProcessingStateMachine {
     try {
       onProcessed.accept(typedEvent);
     } catch (final Exception e) {
-      LOG.error(NOTIFY_LISTENER_ERROR_MESSAGE, currentEvent, e);
+      LOG.error(NOTIFY_LISTENER_ERROR_MESSAGE, typedEvent, e);
     }
   }
 
@@ -429,7 +430,7 @@ public final class ProcessingStateMachine {
         retryFuture,
         (bool, throwable) -> {
           if (throwable != null) {
-            LOG.error(ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED, currentEvent, throwable);
+            LOG.error(ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED, currentEvent, metadata, throwable);
           }
 
           notifyListener();
