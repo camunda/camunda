@@ -48,6 +48,7 @@ const report = {
   data: {
     configuration: {
       xml: 'some diagram XML',
+      aggregationTypes: ['avg'],
     },
     view: {
       properties: ['frequency'],
@@ -58,6 +59,7 @@ const report = {
     measures: [
       {
         property: 'frequency',
+        aggregationType: null,
         data: [
           {key: 'a', value: 1},
           {key: 'b', value: 2},
@@ -135,7 +137,13 @@ it('should convert the data to target value heat when target value mode is activ
 
   shallow(
     <Heatmap
-      report={{...report, data: {...report.data, configuration: {xml: 'test', heatmapTargetValue}}}}
+      report={update(report, {
+        data: {
+          view: {properties: {$set: ['duration']}},
+          configuration: {heatmapTargetValue: {$set: heatmapTargetValue}},
+        },
+        result: {measures: {0: {aggregationType: {$set: ['avg']}}}},
+      })}
     />
   );
 
@@ -159,13 +167,13 @@ it('should show a tooltip with information about actual and target value', () =>
 
   const node = shallow(
     <Heatmap
-      report={{
-        ...report,
+      report={update(report, {
         data: {
-          ...report.data,
-          configuration: {xml: 'test', heatmapTargetValue, aggregationType: 'avg'},
+          view: {properties: {$set: ['duration']}},
+          configuration: {heatmapTargetValue: {$set: heatmapTargetValue}},
         },
-      }}
+        result: {measures: {0: {aggregationType: {$set: ['avg']}}}},
+      })}
     />
   );
 
@@ -188,13 +196,13 @@ it('should inform if the actual value is less than 1% of the target value', () =
 
   const node = shallow(
     <Heatmap
-      report={{
-        ...report,
+      report={update(report, {
         data: {
-          ...report.data,
-          configuration: {xml: 'test', heatmapTargetValue, aggregationType: 'avg'},
+          view: {properties: {$set: ['duration']}},
+          configuration: {heatmapTargetValue: {$set: heatmapTargetValue}},
         },
-      }}
+        result: {measures: {0: {aggregationType: {$set: ['avg']}}}},
+      })}
     />
   );
 
@@ -223,7 +231,7 @@ it('should show a tooltip with information if no actual value is available', () 
         result: {
           measures: [
             {
-              property: 'frequency',
+              property: 'duration',
               data: [],
             },
           ],
@@ -231,7 +239,7 @@ it('should show a tooltip with information if no actual value is available', () 
         },
         data: {
           ...report.data,
-          configuration: {xml: 'test', heatmapTargetValue, aggregationType: 'avg'},
+          configuration: {xml: 'test', heatmapTargetValue, aggregationTypes: ['avg']},
         },
       }}
     />
@@ -256,13 +264,13 @@ it('should invoke report evaluation when clicking the download instances button'
   const node = shallow(
     <Heatmap
       mightFail={jest.fn().mockImplementation((a, b) => b(a))}
-      report={{
-        ...report,
+      report={update(report, {
         data: {
-          ...report.data,
-          configuration: {xml: 'test', heatmapTargetValue, aggregationType: 'avg'},
+          view: {properties: {$set: ['duration']}},
+          configuration: {heatmapTargetValue: {$set: heatmapTargetValue}},
         },
-      }}
+        result: {measures: {0: {aggregationType: {$set: ['avg']}}}},
+      })}
     />
   );
 

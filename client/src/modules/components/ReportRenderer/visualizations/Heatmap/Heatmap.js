@@ -32,13 +32,7 @@ export function Heatmap({report, mightFail, context}) {
     result,
     data: {
       view: {properties},
-      configuration: {
-        alwaysShowAbsolute,
-        alwaysShowRelative,
-        heatmapTargetValue: targetValue,
-        xml,
-        aggregationType,
-      },
+      configuration: {alwaysShowAbsolute, alwaysShowRelative, heatmapTargetValue: targetValue, xml},
     },
   } = report;
 
@@ -78,7 +72,7 @@ export function Heatmap({report, mightFail, context}) {
             const relation = (real / target) * 100;
 
             tooltipHTML +=
-              t(`report.heatTarget.duration.${aggregationType}`) +
+              t(`report.heatTarget.duration.${result.measures[selectedMeasure].aggregationType}`) +
               t('report.heatTarget.actualDuration', {
                 duration: formatters.duration(real),
                 percentage: relation < 1 ? '< 1' : Math.round(relation),
