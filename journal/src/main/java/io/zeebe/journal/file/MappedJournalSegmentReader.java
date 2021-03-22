@@ -19,15 +19,13 @@ package io.zeebe.journal.file;
 import io.zeebe.journal.JournalRecord;
 import io.zeebe.journal.file.record.JournalRecordReaderUtil;
 import io.zeebe.journal.file.record.SBESerializer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel.MapMode;
+import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
-import org.agrona.IoUtil;
 
 /** Log segment reader. */
 class MappedJournalSegmentReader {
 
-  private final MappedByteBuffer buffer;
+  private final ByteBuffer buffer;
   private final JournalIndex index;
   private final JournalSegment segment;
   private JournalRecord currentEntry;
@@ -35,13 +33,11 @@ class MappedJournalSegmentReader {
   private final JournalRecordReaderUtil recordReader;
 
   MappedJournalSegmentReader(
-      final JournalSegmentFile file, final JournalSegment segment, final JournalIndex index) {
+      final ByteBuffer buffer, final JournalSegment segment, final JournalIndex index) {
     this.index = index;
     this.segment = segment;
     recordReader = new JournalRecordReaderUtil(new SBESerializer());
-    buffer =
-        IoUtil.mapExistingFile(
-            file.file(), MapMode.READ_ONLY, file.name(), 0, segment.descriptor().maxSegmentSize());
+    this.buffer = buffer;
     reset();
   }
 
@@ -109,7 +105,6 @@ class MappedJournalSegmentReader {
   }
 
   public void close() {
-    IoUtil.unmap(buffer);
     segment.onReaderClosed(this);
   }
 
