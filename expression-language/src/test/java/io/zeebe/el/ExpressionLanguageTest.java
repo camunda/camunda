@@ -91,8 +91,7 @@ public class ExpressionLanguageTest {
     assertThat(expression.isValid()).isFalse();
     assertThat(expression.getExpression()).isEqualTo("x ?! 5");
     assertThat(expression.getVariableName()).isEmpty();
-    assertThat(expression.getFailureMessage())
-        .startsWith("failed to parse expression 'x ?! 5': [1.3] failure:");
+    assertThat(expression.getFailureMessage()).startsWith("failed to parse expression 'x ?! 5'");
   }
 
   @Test
