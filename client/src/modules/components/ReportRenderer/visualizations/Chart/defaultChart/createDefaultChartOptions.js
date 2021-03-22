@@ -152,6 +152,7 @@ export function createBarOptions({
       scaleLabel: {
         display: !!configuration.yLabel,
         labelString: configuration.yLabel,
+        fontStyle: 'bold',
       },
       ticks: {
         ...(maxDuration && !hasMultipleAxes
@@ -169,6 +170,7 @@ export function createBarOptions({
     yAxes[0].scaleLabel = {
       display: true,
       labelString: `${t('common.' + entity + '.label')} ${t('report.view.count')}`,
+      fontStyle: 'bold',
     };
 
     yAxes.push({
@@ -178,6 +180,7 @@ export function createBarOptions({
       scaleLabel: {
         display: true,
         labelString: `${t('common.' + entity + '.label')} ${t('report.view.duration')}`,
+        fontStyle: 'bold',
       },
       ticks: {
         ...createDurationFormattingOptions(targetLine, maxDuration),
@@ -209,6 +212,7 @@ export function createBarOptions({
           scaleLabel: {
             display: !!configuration.xLabel,
             labelString: configuration.xLabel,
+            fontStyle: 'bold',
           },
           ticks: {
             fontColor: getColorFor('label', isDark),

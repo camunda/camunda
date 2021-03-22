@@ -20,6 +20,7 @@ Object {
         },
         "scaleLabel": Object {
           "display": false,
+          "fontStyle": "bold",
           "labelString": undefined,
         },
         "stacked": undefined,
@@ -38,6 +39,7 @@ Object {
         "id": "axis-0",
         "scaleLabel": Object {
           "display": false,
+          "fontStyle": "bold",
           "labelString": undefined,
         },
         "ticks": Object {
@@ -75,6 +77,7 @@ Object {
         },
         "scaleLabel": Object {
           "display": false,
+          "fontStyle": "bold",
           "labelString": undefined,
         },
         "stacked": false,
@@ -93,6 +96,7 @@ Object {
         "id": "axis-0",
         "scaleLabel": Object {
           "display": true,
+          "fontStyle": "bold",
           "labelString": "Flow Node Count",
         },
         "ticks": Object {
@@ -109,6 +113,7 @@ Object {
         "position": "right",
         "scaleLabel": Object {
           "display": true,
+          "fontStyle": "bold",
           "labelString": "Flow Node Duration",
         },
         "ticks": Object {
