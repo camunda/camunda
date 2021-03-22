@@ -84,8 +84,7 @@ public final class SBESerializer implements JournalRecordSerializer {
     return headerEncoder.encodedLength() + metadataEncoder.sbeBlockLength();
   }
 
-  @Override
-  public boolean hasMetadata(final DirectBuffer buffer, final int offset) {
+  private boolean hasMetadata(final DirectBuffer buffer, final int offset) {
     headerDecoder.wrap(buffer, offset);
     return (headerDecoder.schemaId() == metadataDecoder.sbeSchemaId()
         && headerDecoder.templateId() == metadataDecoder.sbeTemplateId());
@@ -94,7 +93,7 @@ public final class SBESerializer implements JournalRecordSerializer {
   @Override
   public RecordMetadata readMetadata(final DirectBuffer buffer, final int offset) {
     if (!hasMetadata(buffer, offset)) {
-      throw new InvalidRecordException("Cannot read buffer. Header does not match.");
+      throw new CorruptedLogException("Cannot read metadata. Header does not match.");
     }
     metadataDecoder.wrap(
         buffer,
@@ -108,9 +107,9 @@ public final class SBESerializer implements JournalRecordSerializer {
   @Override
   public RecordData readData(final DirectBuffer buffer, final int offset, final int length) {
     headerDecoder.wrap(buffer, offset);
-    if (!(headerDecoder.schemaId() == recordDecoder.sbeSchemaId()
-        && headerDecoder.templateId() == recordDecoder.sbeTemplateId())) {
-      throw new InvalidRecordException("Cannot read buffer. Header does not match.");
+    if (headerDecoder.schemaId() != recordDecoder.sbeSchemaId()
+        || headerDecoder.templateId() != recordDecoder.sbeTemplateId()) {
+      throw new CorruptedLogException("Cannot read record. Header does not match.");
     }
     recordDecoder.wrap(
         buffer,

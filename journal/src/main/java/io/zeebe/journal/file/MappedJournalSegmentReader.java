@@ -21,6 +21,7 @@ import io.zeebe.journal.file.record.JournalRecordReaderUtil;
 import io.zeebe.journal.file.record.SBESerializer;
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 /** Log segment reader. */
 class MappedJournalSegmentReader {
@@ -114,6 +115,12 @@ class MappedJournalSegmentReader {
 
   /** Reads the next entry in the segment. */
   private void readNext(final long expectedIndex) {
+    final Optional<Integer> version = FrameUtil.readVersion(buffer);
+    if (version.isEmpty()) {
+      nextEntry = null;
+      return;
+    }
+
     nextEntry = recordReader.read(buffer, expectedIndex);
   }
 

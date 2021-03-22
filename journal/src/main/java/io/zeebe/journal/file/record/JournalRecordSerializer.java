@@ -51,14 +51,6 @@ public interface JournalRecordSerializer {
   int getMetadataLength();
 
   /**
-   * Checks if a valid metadata can be read from the buffer.
-   *
-   * @param buffer to read
-   * @return true if a valid metadata exists, false otherwise.
-   */
-  boolean hasMetadata(DirectBuffer buffer, int offset);
-
-  /**
    * Reads the {@link RecordMetadata} from the buffer at offset 0. A valid record must exist in the
    * buffer at this position.
    *
