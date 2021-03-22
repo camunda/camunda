@@ -637,6 +637,10 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       // all of our tests are running against a one node cluster. Since we're creating a lot of indexes,
       // we are easily hitting the default value of 1000. Thus, we need to increase this value for the test setup.
       .put("cluster.max_shards_per_node", 10_000)
+      // we usually run our integration tests in parallel, as some cleanup methods like #deleteAllOptimizeData
+      // internally make usage of scroll contexts this lead to hits on the scroll limit due concurrency.
+      // Thus this increased scroll context limit.
+      .put("search.max_open_scroll_context", 1000)
       .build();
     ClusterUpdateSettingsRequest clusterUpdateSettingsRequest = new ClusterUpdateSettingsRequest();
     clusterUpdateSettingsRequest.persistentSettings(settings);
