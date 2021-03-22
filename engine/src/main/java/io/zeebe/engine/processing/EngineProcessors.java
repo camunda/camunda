@@ -63,6 +63,7 @@ public final class EngineProcessors {
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(), variablesState::getVariable);
 
+    final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getTimerState());
     final CatchEventBehavior catchEventBehavior =
         new CatchEventBehavior(
             zeebeState,
@@ -92,7 +93,8 @@ public final class EngineProcessors {
             typedRecordProcessors,
             subscriptionCommandSender,
             catchEventBehavior,
-            writers);
+            writers,
+            timerChecker);
 
     addJobProcessors(
         zeebeState, typedRecordProcessors, onJobsAvailableCallback, maxFragmentSize, writers);
@@ -108,8 +110,8 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final CatchEventBehavior catchEventBehavior,
-      final Writers writers) {
-    final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getTimerState());
+      final Writers writers,
+      final DueDateTimerChecker timerChecker) {
     return ProcessEventProcessors.addProcessProcessors(
         zeebeState,
         expressionProcessor,

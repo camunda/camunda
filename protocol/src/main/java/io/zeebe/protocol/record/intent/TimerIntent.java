@@ -16,7 +16,10 @@
 package io.zeebe.protocol.record.intent;
 
 public enum TimerIntent implements ProcessInstanceRelatedIntent {
+  // TODO(npepinpe): remove as part of https://github.com/camunda-cloud/zeebe/issues/6589
+  @Deprecated
   CREATE((short) 0),
+
   CREATED((short) 1),
 
   TRIGGER((short) 2),

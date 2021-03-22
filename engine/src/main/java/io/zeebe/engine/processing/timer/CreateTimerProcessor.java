@@ -10,29 +10,33 @@ package io.zeebe.engine.processing.timer;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.instance.TimerInstance;
-import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import java.util.function.Consumer;
 
+/**
+ * Temporary processor for timer creation. Currently necessary until all processors which may
+ * produce Timer.CREATED have been migrated to event-sourcing, otherwise events may be applied
+ * twice.
+ *
+ * <p>TODO(npepinpe): remove as part of https://github.com/camunda-cloud/zeebe/issues/6589
+ */
 public final class CreateTimerProcessor implements TypedRecordProcessor<TimerRecord> {
-
-  private final DueDateTimerChecker timerChecker;
-
-  private final MutableTimerInstanceState timerInstanceState;
-  private final TimerInstance timerInstance = new TimerInstance();
+  private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
+  private final DueDateTimerChecker dueDateTimerChecker;
 
   public CreateTimerProcessor(
-      final MutableZeebeState zeebeState, final DueDateTimerChecker timerChecker) {
-    this.timerChecker = timerChecker;
-    timerInstanceState = zeebeState.getTimerState();
-    keyGenerator = zeebeState.getKeyGenerator();
+      final StateWriter stateWriter,
+      final KeyGenerator keyGenerator,
+      final DueDateTimerChecker dueDateTimerChecker) {
+    this.stateWriter = stateWriter;
+    this.keyGenerator = keyGenerator;
+    this.dueDateTimerChecker = dueDateTimerChecker;
   }
 
   @Override
@@ -41,29 +45,14 @@ public final class CreateTimerProcessor implements TypedRecordProcessor<TimerRec
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
-
-    final TimerRecord timer = record.getValue();
-
     final long timerKey = keyGenerator.nextKey();
+    final long dueDate = record.getValue().getDueDate();
+    sideEffect.accept(
+        () -> {
+          dueDateTimerChecker.scheduleTimer(dueDate);
+          return true;
+        });
 
-    timerInstance.setElementInstanceKey(timer.getElementInstanceKey());
-    timerInstance.setDueDate(timer.getDueDate());
-    timerInstance.setKey(timerKey);
-    timerInstance.setHandlerNodeId(timer.getTargetElementIdBuffer());
-    timerInstance.setRepetitions(timer.getRepetitions());
-    timerInstance.setProcessDefinitionKey(timer.getProcessDefinitionKey());
-    timerInstance.setProcessInstanceKey(timer.getProcessInstanceKey());
-
-    sideEffect.accept(this::scheduleTimer);
-
-    streamWriter.appendFollowUpEvent(timerKey, TimerIntent.CREATED, timer);
-
-    timerInstanceState.put(timerInstance);
-  }
-
-  private boolean scheduleTimer() {
-    timerChecker.scheduleTimer(timerInstance);
-
-    return true;
+    stateWriter.appendFollowUpEvent(timerKey, TimerIntent.CREATED, record.getValue());
   }
 }
