@@ -79,12 +79,13 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
       .addUpgradeStep(migrateEventPublishStateEventSources())
       .addUpgradeSteps(createDedicatedInstanceIndicesPerDefinition(DECISION, existingDecisionKeys))
       .addUpgradeSteps(migrateAllInstancesToDedicatedIndices(DECISION, existingDecisionKeys))
-      .addUpgradeStep(deleteOldInstanceIndex(DECISION))
       .addUpgradeSteps(createDedicatedInstanceIndicesPerDefinition(PROCESS, existingProcessKeys))
       .addUpgradeSteps(migrateAllInstancesToDedicatedIndices(PROCESS, existingProcessKeys))
-      .addUpgradeStep(deleteOldInstanceIndex(PROCESS))
       .addUpgradeSteps(upgradeAllEventProcessInstanceIndices(existingEventIndexIdToKeyMap.keySet()))
       .addUpgradeSteps(addReadAliasesToEventInstancesIndices(existingEventIndexIdToKeyMap))
+      // do delete as last step to ensure consistent steps are generated if upgrade is resumed on a previous step failure
+      .addUpgradeStep(deleteOldInstanceIndex(DECISION))
+      .addUpgradeStep(deleteOldInstanceIndex(PROCESS))
       .build();
   }
 
