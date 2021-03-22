@@ -73,44 +73,6 @@ export const FILTER_TYPES = {
   FINISHED: 'finished',
 };
 
-export const FILTER_SELECTION = {
-  running: {
-    active: true,
-    incidents: true,
-  },
-  incidents: {
-    active: false,
-    incidents: true,
-  },
-  active: {
-    active: true,
-    incidents: false,
-  },
-  finished: {
-    completed: true,
-    canceled: true,
-  },
-};
-
-// values that we read from the url and prefill the inputs
-export const DEFAULT_FILTER_CONTROLLED_VALUES = {
-  active: false,
-  incidents: false,
-  completed: false,
-  canceled: false,
-  ids: '',
-  errorMessage: '',
-  startDate: '',
-  endDate: '',
-  activityId: '',
-  version: '',
-  workflow: '',
-  batchOperationId: '',
-  variable: {name: '', value: ''},
-};
-
-export const DEFAULT_FILTER = FILTER_SELECTION.running;
-
 export const INSTANCES_LABELS = {
   running: 'Running Instances',
   active: 'Active',
@@ -132,14 +94,6 @@ export const SORT_ORDER = {
   ASC: 'asc',
   DESC: 'desc',
 } as const;
-
-export const DEFAULT_SORTING: {
-  sortBy: string;
-  sortOrder: 'desc' | 'asc';
-} = {
-  sortBy: 'workflowName',
-  sortOrder: SORT_ORDER.DESC,
-};
 
 export const PANE_ID = {
   TOP: 'TOP',

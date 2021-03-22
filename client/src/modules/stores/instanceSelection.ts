@@ -4,18 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {
-  makeAutoObservable,
-  autorun,
-  observe,
-  IReactionDisposer,
-  Lambda,
-} from 'mobx';
+import {makeAutoObservable, autorun, IReactionDisposer, Lambda} from 'mobx';
 import {instancesStore} from 'modules/stores/instances';
-import {filtersStore} from 'modules/stores/filters';
 import {INSTANCE_SELECTION_MODE} from 'modules/constants';
-import {isEqual} from 'lodash';
-import {IS_FILTERS_V2} from 'modules/feature-flags';
 
 type Mode = 'INCLUDE' | 'EXCLUDE' | 'ALL';
 type State = {
@@ -56,16 +47,6 @@ class InstanceSelection {
         this.setSelectedInstanceIds([]);
       }
     });
-
-    if (!IS_FILTERS_V2) {
-      this.observeDisposer = observe(filtersStore.state, 'filter', (change) => {
-        if (isEqual(filtersStore.state.filter, change.oldValue)) {
-          return;
-        }
-
-        this.resetState();
-      });
-    }
   }
 
   setMode(mode: Mode) {

@@ -11,13 +11,12 @@ import Diagram from 'modules/components/Diagram';
 import * as Styled from './styled';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {workflowStatisticsStore} from 'modules/stores/workflowStatistics';
-import {filtersStore} from 'modules/stores/filters';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {useHistory} from 'react-router-dom';
 import {Location} from 'history';
 import {getFilters} from 'modules/utils/filter';
-import {IS_FILTERS_V2} from 'modules/feature-flags';
+import {workflowsStore} from 'modules/stores/workflows';
 
 const Message: React.FC = ({children}) => {
   return (
@@ -60,27 +59,18 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
   const history = useHistory();
   const {status, diagramModel} = instancesDiagramStore.state;
   const {selectableIds} = instancesDiagramStore;
-  const {filter} = filtersStore.state;
-  // @ts-expect-error ts-migrate(2339) FIXME: Property 'activityId' does not exist on type '{}'.
-  const selectedFlowNodeId = selectableIds.includes(filter.activityId)
-    ? // @ts-expect-error ts-migrate(2339) FIXME: Property 'activityId' does not exist on type '{}'.
-      filter.activityId
-    : undefined;
   const {statistics} = workflowStatisticsStore.state;
-  const {workflow, workflowVersion, flowNodeId} = getFilters(
-    history.location.search
-  );
-  const isNoWorkflowSelected = IS_FILTERS_V2
-    ? workflow === undefined
-    : filtersStore.isNoWorkflowSelected;
-  const isNoVersionSelected = IS_FILTERS_V2
-    ? workflowVersion === 'all'
-    : filtersStore.isNoVersionSelected;
+  const {workflow, version, flowNodeId} = getFilters(history.location.search);
+  const isNoWorkflowSelected = workflow === undefined;
+  const isNoVersionSelected = version === 'all';
+  const workflowName = workflowsStore.state.workflows.find(
+    ({bpmnProcessId}) => bpmnProcessId === workflow
+  )?.name;
 
   return (
     <SplitPane.Pane {...props}>
       <Styled.PaneHeader>
-        <span>{filtersStore.workflowName}</span>
+        <span>{workflowName ?? 'Workflow'}</span>
       </Styled.PaneHeader>
       <SplitPane.Pane.Body style={{position: 'relative'}}>
         {(workflowStatisticsStore.state.isLoading || status === 'fetching') && (
@@ -100,9 +90,9 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
             }
           </Message>
         )}
-        {isNoVersionSelected ? (
+        {isNoVersionSelected && workflowName !== undefined ? (
           <Message>
-            {`There is more than one Version selected for Workflow "${filtersStore.workflowName}"
+            {`There is more than one Version selected for Workflow "${workflowName}"
                To see a Diagram, select a single Version`}
           </Message>
         ) : null}
@@ -112,26 +102,16 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
             // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
             definitions={diagramModel.definitions}
             onFlowNodeSelection={(flowNodeId) => {
-              if (IS_FILTERS_V2) {
-                if (flowNodeId === null || flowNodeId === undefined) {
-                  history.push(
-                    deleteSearchParam(history.location, 'flowNodeId')
-                  );
-                } else {
-                  history.push(
-                    setSearchParam(history.location, ['flowNodeId', flowNodeId])
-                  );
-                }
+              if (flowNodeId === null || flowNodeId === undefined) {
+                history.push(deleteSearchParam(history.location, 'flowNodeId'));
               } else {
-                filtersStore.setFilter({
-                  // @ts-expect-error
-                  ...filtersStore.state.filter,
-                  activityId: flowNodeId ?? '',
-                });
+                history.push(
+                  setSearchParam(history.location, ['flowNodeId', flowNodeId])
+                );
               }
             }}
             flowNodesStatistics={statistics}
-            selectedFlowNodeId={IS_FILTERS_V2 ? flowNodeId : selectedFlowNodeId}
+            selectedFlowNodeId={flowNodeId}
             selectableFlowNodes={selectableIds}
             expandState={props.expandState}
           />

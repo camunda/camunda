@@ -4,13 +4,24 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import {Router} from 'react-router-dom';
+import {createMemoryHistory} from 'history';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {DEFAULT_FILTER_CONTROLLED_VALUES} from 'modules/constants';
 import {OPERATIONS, mockProps} from './index.setup';
 import OperationsEntry from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {filtersStore} from 'modules/stores/filters';
+
+function createWrapper(history = createMemoryHistory()) {
+  const Wrapper: React.FC = ({children}) => {
+    return (
+      <ThemeProvider>
+        <Router history={history}>{children}</Router>
+      </ThemeProvider>
+    );
+  };
+
+  return Wrapper;
+}
 
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
@@ -22,7 +33,7 @@ describe('OperationsEntry', () => {
           instancesCount: 1,
         }}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: createWrapper()}
     );
 
     expect(screen.getByTestId('progress-bar')).toBeInTheDocument();
@@ -40,7 +51,7 @@ describe('OperationsEntry', () => {
           instancesCount: 1,
         }}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: createWrapper()}
     );
 
     expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
@@ -59,7 +70,7 @@ describe('OperationsEntry', () => {
           instancesCount: 1,
         }}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: createWrapper()}
     );
 
     expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
@@ -78,7 +89,7 @@ describe('OperationsEntry', () => {
           instancesCount: 1,
         }}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: createWrapper()}
     );
 
     expect(screen.getByText('1 Instance')).toBeInTheDocument();
@@ -93,13 +104,14 @@ describe('OperationsEntry', () => {
           instancesCount: 3,
         }}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: createWrapper()}
     );
 
     expect(screen.getByText('3 Instances')).toBeInTheDocument();
   });
 
-  it('should be able to handle instance click', () => {
+  it('should filter by Operation', () => {
+    const mockHistory = createMemoryHistory();
     render(
       <OperationsEntry
         {...mockProps}
@@ -108,20 +120,12 @@ describe('OperationsEntry', () => {
           instancesCount: 3,
         }}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: createWrapper(mockHistory)}
     );
 
-    expect(filtersStore.state.filter).toEqual({});
-
     fireEvent.click(screen.getByText('3 Instances'));
-
-    expect(filtersStore.state.filter).toEqual({
-      ...DEFAULT_FILTER_CONTROLLED_VALUES,
-      active: true,
-      incidents: true,
-      completed: true,
-      canceled: true,
-      batchOperationId: 'df325d44-6a4c-4428-b017-24f923f1d052',
-    });
+    expect(mockHistory.location.search).toBe(
+      '?active=true&incidents=true&completed=true&canceled=true&operationId=df325d44-6a4c-4428-b017-24f923f1d052'
+    );
   });
 });

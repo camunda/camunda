@@ -4,11 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import {rest} from 'msw';
-import {createMemoryHistory} from 'history';
-import {filtersStore} from 'modules/stores/filters';
 import {instancesStore} from 'modules/stores/instances';
 import {Operations} from './index';
 import {mockServer} from 'modules/mock-server/node';
@@ -136,15 +133,8 @@ describe('Operations', () => {
         )
       );
 
-      filtersStore.setUrlParameters(createMemoryHistory(), {
-        pathname: '/instances',
-      });
-      filtersStore.init();
-
-      await waitFor(() =>
-        expect(filtersStore.state.isInitialLoadComplete).toBe(true)
-      );
       instancesStore.init();
+      instancesStore.fetchInstancesFromFilters();
 
       render(
         <Operations
@@ -159,7 +149,9 @@ describe('Operations', () => {
       expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
-      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('operation-spinner')
+      ).toBeInTheDocument();
 
       mockServer.use(
         rest.post('/api/workflow-instances', (_, res, ctx) =>
@@ -179,7 +171,6 @@ describe('Operations', () => {
       );
 
       instancesStore.reset();
-      filtersStore.reset();
 
       // TODO: Normally this should not be necessary. all the ongoing requests should be canceled and state should not be updated if state is reset. this should also be removed when this problem is solved with https://jira.camunda.com/browse/OPE-1169
       await waitFor(() =>

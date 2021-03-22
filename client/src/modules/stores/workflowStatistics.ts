@@ -4,20 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {
-  makeAutoObservable,
-  reaction,
-  observe,
-  IReactionDisposer,
-  Lambda,
-} from 'mobx';
+import {makeAutoObservable, IReactionDisposer, Lambda} from 'mobx';
 import {fetchWorkflowInstancesStatistics} from 'modules/api/instances';
-import {filtersStore} from 'modules/stores/filters';
-import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {instancesStore} from 'modules/stores/instances';
-import {isEmpty, isEqual} from 'lodash';
 import {getRequestFilters} from 'modules/utils/filter';
-import {IS_FILTERS_V2} from 'modules/feature-flags';
 
 type NodeStatistics = {
   active: number;
@@ -46,49 +36,12 @@ class WorkflowStatistics {
   }
 
   init = () => {
-    if (!IS_FILTERS_V2) {
-      this.diagramReactionDisposer = reaction(
-        () => instancesDiagramStore.state.diagramModel,
-        () => {
-          if (instancesDiagramStore.state.diagramModel !== null) {
-            this.fetchWorkflowStatistics(filtersStore.getFiltersPayload());
-          }
-        }
-      );
-
-      this.filterObserveDisposer = observe(
-        filtersStore.state,
-        'filter',
-        (change) => {
-          if (isEqual(filtersStore.state.filter, change.oldValue)) {
-            return;
-          }
-
-          if (isEmpty(filtersStore.workflow)) {
-            this.resetState();
-          } else if (
-            // @ts-expect-error ts-migrate(2339) FIXME: Property 'workflow' does not exist on type '{}'.
-            filtersStore.state.filter.workflow === change.oldValue.workflow &&
-            // @ts-expect-error ts-migrate(2339) FIXME: Property 'version' does not exist on type '{}'.
-            filtersStore.state.filter.version === change.oldValue.version
-          ) {
-            this.fetchWorkflowStatistics(filtersStore.getFiltersPayload());
-          }
-        }
-      );
-    }
-
     instancesStore.addCompletedOperationsHandler(() => {
       const filters = getRequestFilters();
       const workflowIds = filters?.workflowIds || [];
-      const shouldRefetchStatistics = IS_FILTERS_V2
-        ? workflowIds.length > 0
-        : filtersStore.isSingleWorkflowSelected;
 
-      if (shouldRefetchStatistics) {
-        this.fetchWorkflowStatistics(
-          IS_FILTERS_V2 ? filters : filtersStore.getFiltersPayload()
-        );
+      if (workflowIds.length > 0) {
+        this.fetchWorkflowStatistics(filters);
       }
     });
   };

@@ -13,7 +13,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import {Router} from 'react-router-dom';
-import {createMemoryHistory} from 'history';
+import {createMemoryHistory, createLocation} from 'history';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -100,7 +100,9 @@ describe('<Login />', () => {
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text('')))
     );
 
-    const INITIAL_ROUTE = '/instances';
+    const INITIAL_ROUTE = createLocation({
+      pathname: '/instances',
+    });
     const mockHistory = createMemoryHistory();
     mockHistory.push({
       pathname: '/login',
@@ -126,7 +128,7 @@ describe('<Login />', () => {
     fireEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     await waitFor(() =>
-      expect(mockHistory.location.pathname).toBe(INITIAL_ROUTE)
+      expect(mockHistory.location.pathname).toBe(INITIAL_ROUTE.pathname)
     );
   });
 
@@ -135,7 +137,10 @@ describe('<Login />', () => {
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text('')))
     );
 
-    const INITIAL_ROUTE = '/instances';
+    const INITIAL_ROUTE = createLocation({
+      pathname: '/instances',
+      search: '?gseUrl=https://www.testUrl.com',
+    });
     const mockHistory = createMemoryHistory();
     mockHistory.push({
       pathname: '/login',
@@ -162,9 +167,9 @@ describe('<Login />', () => {
     fireEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     await waitFor(() =>
-      expect(mockHistory.location.pathname).toBe(INITIAL_ROUTE)
+      expect(mockHistory.location.pathname).toBe(INITIAL_ROUTE.pathname)
     );
-    expect(mockHistory.location.search).toBe('?gseUrl=https://www.testUrl.com');
+    expect(mockHistory.location.search).toBe(INITIAL_ROUTE.search);
   });
 
   it('should disable the login button when any field is empty', () => {

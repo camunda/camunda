@@ -5,91 +5,60 @@
  */
 
 import React from 'react';
+import {Field, useForm} from 'react-final-form';
 
 import Checkbox from 'modules/components/Checkbox';
-import {INSTANCES_LABELS} from 'modules/constants';
+import {Container, Group} from './styled';
 
-import * as Styled from './styled';
-
-type Props = {
-  filter: {
-    active?: boolean;
-    incidents?: boolean;
-    canceled?: boolean;
-    completed?: boolean;
-  };
-  onChange: (...args: any[]) => any;
-  type: 'running' | 'finished';
+type GroupItem = {
+  label: string;
+  name: string;
 };
 
-export default class CheckboxGroup extends React.Component<Props> {
-  childFilterTypes: any;
-  constructor(props: Props) {
-    super(props);
-    this.childFilterTypes = Object.keys(props.filter);
-  }
+type Props = {
+  groupLabel: string;
+  items: GroupItem[];
+};
 
-  getCheckedChildrenCount = () => {
-    return Object.values(this.props.filter).filter((value) => value).length;
-  };
+const CheckboxGroup: React.FC<Props> = ({groupLabel, items}) => {
+  const form = useForm();
+  const fieldValues = items.map(({name}) =>
+    Boolean(form.getState().values[name])
+  );
+  const isChecked = fieldValues.every((value) => value);
+  const isIndeterminate = fieldValues.some((value) => value);
 
-  areAllChildrenChecked = () => {
-    const childrenCount = this.getCheckedChildrenCount();
-    return this.childFilterTypes.length === childrenCount;
-  };
-
-  isIndeterminate = () => {
-    const childrenCount = this.getCheckedChildrenCount();
-    return childrenCount >= 1 && childrenCount < this.childFilterTypes.length;
-  };
-
-  handleChange = (type: any) => (event: any, isChecked: any) => {
-    this.props.onChange({[type]: isChecked});
-  };
-
-  onResetFilter = () => {
-    const change = {};
-    const allChildrenChecked = this.areAllChildrenChecked();
-
-    this.childFilterTypes.map((type: any) =>
-      Object.assign(change, {
-        [type]: !allChildrenChecked,
-      })
-    );
-
-    this.props.onChange(change);
-  };
-
-  render() {
-    const {type, filter, onChange: _, ...props} = this.props;
-
-    return (
-      <Styled.CheckboxGroup {...props}>
-        <div>
-          <Checkbox
-            id={type}
-            label={INSTANCES_LABELS[type]}
-            isIndeterminate={this.isIndeterminate()}
-            isChecked={this.areAllChildrenChecked()}
-            onChange={this.onResetFilter}
-          />
-        </div>
-        <Styled.NestedCheckboxes>
-          {this.childFilterTypes.map((type: any) => {
-            return (
+  return (
+    <Container>
+      <Checkbox
+        label={groupLabel}
+        id={groupLabel}
+        isChecked={isChecked}
+        isIndeterminate={isIndeterminate && !isChecked}
+        onChange={() => {
+          form.batch(() => {
+            items.forEach(({name}) => {
+              form.change(name, !isChecked);
+            });
+          });
+        }}
+      />
+      <Group>
+        {items.map(({label, name}) => (
+          <Field name={name} component="input" type="checkbox" key={name}>
+            {({input}) => (
               <Checkbox
-                key={type}
-                id={type}
-                // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-                label={INSTANCES_LABELS[type]}
-                // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-                isChecked={filter[type] || false}
-                onChange={this.handleChange(type)}
+                id={input.name}
+                isChecked={input.checked}
+                onChange={input.onChange}
+                label={label}
               />
-            );
-          })}
-        </Styled.NestedCheckboxes>
-      </Styled.CheckboxGroup>
-    );
-  }
-}
+            )}
+          </Field>
+        ))}
+      </Group>
+    </Container>
+  );
+};
+
+export {CheckboxGroup};

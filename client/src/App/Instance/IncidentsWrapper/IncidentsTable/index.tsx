@@ -5,7 +5,6 @@
  */
 
 import React, {useState} from 'react';
-
 import Table from 'modules/components/Table';
 import Button from 'modules/components/Button';
 import ColumnHeader from '../../../Instances/ListPanel/List/ColumnHeader';
@@ -13,7 +12,7 @@ import {TransitionGroup} from 'modules/components/Transition';
 import {IncidentOperation} from 'modules/components/IncidentOperation';
 
 import {formatDate} from 'modules/utils/date';
-import {SORT_ORDER} from 'modules/constants';
+import {getSorting} from 'modules/utils/filter';
 import {sortData} from './service';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
@@ -33,14 +32,8 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState<string | null>(null);
   const [modalTitle, setModalTitle] = useState<string | null>(null);
-  const [sorting, setSorting] = useState<{
-    sortBy: string;
-    sortOrder: 'desc' | 'asc';
-  }>({
-    sortBy: 'errorType',
-    sortOrder: SORT_ORDER.DESC,
-  });
   const {workflowInstanceId} = useInstancePageParams();
+  const {sortBy, sortOrder} = getSorting('instance');
 
   const handleModalClose = () => {
     setIsModalVisible(false);
@@ -56,20 +49,7 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
     setModalTitle(`Flow Node "${incident.flowNodeName}" Error`);
   };
 
-  const handleSort = (key: any) => {
-    let newSortOrder =
-      sorting.sortBy === key && sorting.sortOrder === SORT_ORDER.DESC
-        ? SORT_ORDER.ASC
-        : SORT_ORDER.DESC;
-
-    setSorting({sortOrder: newSortOrder, sortBy: key});
-  };
-
-  const sortedIncidents = sortData(
-    incidents,
-    sorting.sortBy,
-    sorting.sortOrder
-  );
+  const sortedIncidents = sortData(incidents, sortBy, sortOrder);
   const isJobIdPresent = (sortedIncidents: any) =>
     !Boolean(sortedIncidents.find((item: any) => Boolean(item.jobId)));
 
@@ -83,33 +63,29 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
               <ColumnHeader
                 sortKey="errorType"
                 label="Incident Type"
-                sorting={sorting}
-                onSort={handleSort}
+                table="instance"
               />
             </Styled.FirstTH>
             <TH>
               <ColumnHeader
                 sortKey="flowNodeName"
                 label="Flow Node"
-                sorting={sorting}
-                onSort={handleSort}
+                table="instance"
               />
             </TH>
             <TH>
               <ColumnHeader
                 sortKey="jobId"
                 label="Job Id"
-                sorting={sorting}
-                onSort={handleSort}
                 disabled={isJobIdPresent(sortedIncidents)}
+                table="instance"
               />
             </TH>
             <TH>
               <ColumnHeader
                 sortKey="creationTime"
                 label="Creation Time"
-                sorting={sorting}
-                onSort={handleSort}
+                table="instance"
               />
             </TH>
             <TH>

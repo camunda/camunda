@@ -118,7 +118,7 @@ describe('InstancesByWorkflow', () => {
     expect(workflowLink).toBeInTheDocument();
     fireEvent.click(workflowLink);
     expect(historyMock.location.search).toBe(
-      '?filter=%7B%22workflow%22%3A%22orderProcess%22%2C%22version%22%3A%22all%22%2C%22incidents%22%3Atrue%2C%22active%22%3Atrue%7D&name=%22Order+process%22'
+      '?workflow=orderProcess&version=all&active=true&incidents=true'
     );
 
     expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
@@ -153,7 +153,7 @@ describe('InstancesByWorkflow', () => {
 
     fireEvent.click(firstVersion);
     expect(historyMock.location.search).toBe(
-      '?filter=%7B%22workflow%22%3A%22mockWorkflow%22%2C%22version%22%3A%221%22%2C%22incidents%22%3Atrue%2C%22active%22%3Atrue%7D&name=%22First+Version%22'
+      '?workflow=mockWorkflow&version=1&active=true&incidents=true'
     );
 
     const secondVersion = screen.getByTitle(
@@ -174,7 +174,7 @@ describe('InstancesByWorkflow', () => {
 
     fireEvent.click(secondVersion);
     expect(historyMock.location.search).toBe(
-      '?filter=%7B%22workflow%22%3A%22mockWorkflow%22%2C%22version%22%3A%222%22%2C%22incidents%22%3Atrue%2C%22active%22%3Atrue%7D&name=%22Second+Version%22'
+      '?workflow=mockWorkflow&version=2&active=true&incidents=true'
     );
   });
 
@@ -208,7 +208,7 @@ describe('InstancesByWorkflow', () => {
     expect(workflowLink).toBeInTheDocument();
     fireEvent.click(workflowLink);
     expect(historyMock.location.search).toBe(
-      '?filter=%7B%22workflow%22%3A%22loanProcess%22%2C%22version%22%3A%221%22%2C%22incidents%22%3Atrue%2C%22active%22%3Atrue%7D&name=%22loanProcess%22'
+      '?workflow=loanProcess&version=1&active=true&incidents=true'
     );
 
     expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
@@ -219,7 +219,7 @@ describe('InstancesByWorkflow', () => {
     );
   });
 
-  it('should navigate to correct urls when gseUrl is provided', async () => {
+  it('should not erase persistent params', async () => {
     mockServer.use(
       rest.get('/api/incidents/byWorkflow', (_, res, ctx) =>
         res.once(ctx.json(mockWithMultipleVersions))
@@ -244,7 +244,7 @@ describe('InstancesByWorkflow', () => {
 
     fireEvent.click(workflowLink);
     expect(historyMock.location.search).toBe(
-      '?filter=%7B%22workflow%22%3A%22orderProcess%22%2C%22version%22%3A%22all%22%2C%22incidents%22%3Atrue%2C%22active%22%3Atrue%7D&name=%22Order+process%22&gseUrl=https%3A%2F%2Fwww.testUrl.com'
+      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&workflow=orderProcess&version=all&active=true&incidents=true'
     );
 
     fireEvent.click(
@@ -260,7 +260,7 @@ describe('InstancesByWorkflow', () => {
     );
 
     expect(historyMock.location.search).toBe(
-      '?filter=%7B%22workflow%22%3A%22mockWorkflow%22%2C%22version%22%3A%221%22%2C%22incidents%22%3Atrue%2C%22active%22%3Atrue%7D&name=%22First+Version%22&gseUrl=https%3A%2F%2Fwww.testUrl.com'
+      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&workflow=mockWorkflow&version=1&active=true&incidents=true'
     );
   });
 });

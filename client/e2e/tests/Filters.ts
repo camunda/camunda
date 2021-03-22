@@ -21,43 +21,21 @@ fixture('Filters')
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
     await t.maximizeWindow();
-    await t.navigateTo(`${config.endpoint}/#/instances`);
+    await t.navigateTo(
+      `${config.endpoint}/#/instances?${convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+      })}`
+    );
   });
 
 const getPathname = ClientFunction(() => window.location.hash);
-
-test('Initial url and filters should be correct', async (t) => {
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-      }),
-    })}`
-  );
-
-  await t
-    .expect(screen.getByRole('checkbox', {name: 'Running Instances'}).checked)
-    .ok()
-    .expect(screen.getByRole('checkbox', {name: 'Active'}).checked)
-    .ok()
-    .expect(screen.getByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok()
-    .expect(screen.getByRole('checkbox', {name: 'Finished Instances'}).checked)
-    .notOk()
-    .expect(screen.getByRole('checkbox', {name: 'Completed'}).checked)
-    .notOk()
-    .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
-    .notOk();
-});
 
 test('Navigating in header should affect filters and url correctly', async (t) => {
   await t.click(screen.getByRole('listitem', {name: 'Incidents'}));
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        incidents: true,
-      }),
+      incidents: 'true',
     })}`
   );
 
@@ -78,10 +56,8 @@ test('Navigating in header should affect filters and url correctly', async (t) =
   await t.click(screen.getByRole('listitem', {name: 'Running Instances'}));
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-      }),
+      active: 'true',
+      incidents: 'true',
     })}`
   );
 
@@ -125,11 +101,9 @@ test('Instance IDs filter', async (t) => {
   // changes reflected in the url
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-        ids: instanceId,
-      }),
+      active: 'true',
+      incidents: 'true',
+      ids: instanceId,
     })}`
   );
 
@@ -163,10 +137,8 @@ test('Instance IDs filter', async (t) => {
   // changes reflected in the url
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-      }),
+      active: 'true',
+      incidents: 'true',
     })}`
   );
 });
@@ -196,11 +168,9 @@ test('Error Message filter', async (t) => {
   // changes reflected in the url
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-        errorMessage: errorMessage,
-      }),
+      active: 'true',
+      incidents: 'true',
+      errorMessage,
     })}`
   );
 
@@ -221,10 +191,8 @@ test('Error Message filter', async (t) => {
   // changes reflected in the url
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-      }),
+      active: 'true',
+      incidents: 'true',
     })}`
   );
 });
@@ -296,13 +264,11 @@ test.skip('End Date filter', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-        completed: true,
-        canceled: true,
-        endDate,
-      }),
+      active: 'true',
+      incidents: 'true',
+      completed: 'true',
+      canceled: 'true',
+      endDate,
     })}`
   );
 
@@ -323,10 +289,8 @@ test.skip('End Date filter', async (t) => {
   // changes reflected in the url
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-      }),
+      active: 'true',
+      incidents: 'true',
     })}`
   );
 });
@@ -357,11 +321,10 @@ test('Variable filter', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-        variable: {name: 'filtersTest', value: '123'},
-      }),
+      active: 'true',
+      incidents: 'true',
+      variableName: 'filtersTest',
+      variableValue: '123',
     })}`
   );
 
@@ -383,10 +346,8 @@ test('Variable filter', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-      }),
+      active: 'true',
+      incidents: 'true',
     })}`
   );
 });
@@ -454,13 +415,11 @@ test.skip('Operation ID filter', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-        completed: true,
-        canceled: true,
-        batchOperationId: operationId,
-      }),
+      active: 'true',
+      incidents: 'true',
+      completed: 'true',
+      canceled: 'true',
+      batchOperationId: operationId,
     })}`
   );
 
@@ -480,10 +439,8 @@ test.skip('Operation ID filter', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-      }),
+      active: 'true',
+      incidents: 'true',
     })}`
   );
 });
@@ -504,11 +461,7 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .notOk();
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      filter: JSON.stringify({}),
-    })}`
-  );
+  await t.expect(await getPathname()).eql('#/instances');
 
   await t
     .click(screen.getByRole('checkbox', {name: 'Active'}))
@@ -527,9 +480,7 @@ test('Checkboxes', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-      }),
+      active: 'true',
     })}`
   );
 
@@ -550,10 +501,8 @@ test('Checkboxes', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-      }),
+      active: 'true',
+      incidents: 'true',
     })}`
   );
 
@@ -574,12 +523,10 @@ test('Checkboxes', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-        completed: true,
-        canceled: true,
-      }),
+      active: 'true',
+      incidents: 'true',
+      completed: 'true',
+      canceled: 'true',
     })}`
   );
 
@@ -600,11 +547,9 @@ test('Checkboxes', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-        canceled: true,
-      }),
+      active: 'true',
+      incidents: 'true',
+      canceled: 'true',
     })}`
   );
 
@@ -625,10 +570,8 @@ test('Checkboxes', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-      }),
+      active: 'true',
+      incidents: 'true',
     })}`
   );
 
@@ -649,12 +592,10 @@ test('Checkboxes', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-        completed: true,
-        canceled: true,
-      }),
+      active: 'true',
+      incidents: 'true',
+      completed: 'true',
+      canceled: 'true',
     })}`
   );
 
@@ -675,10 +616,8 @@ test('Checkboxes', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-      }),
+      active: 'true',
+      incidents: 'true',
     })}`
   );
 });
@@ -701,13 +640,10 @@ test('Workflow Filter', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-        version: '2',
-        workflow: 'processWithMultipleVersions',
-      }),
-      name: '"Process With Multiple Versions"',
+      active: 'true',
+      incidents: 'true',
+      workflow: 'processWithMultipleVersions',
+      version: '2',
     })}`
   );
 
@@ -738,13 +674,10 @@ test('Workflow Filter', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-        version: 'all',
-        workflow: 'processWithMultipleVersions',
-      }),
-      name: '"Process With Multiple Versions"',
+      active: 'true',
+      incidents: 'true',
+      workflow: 'processWithMultipleVersions',
+      version: 'all',
     })}`
   );
 
@@ -770,14 +703,11 @@ test('Workflow Filter', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-        activityId: 'StartEvent_1',
-        version: '2',
-        workflow: 'processWithMultipleVersions',
-      }),
-      name: '"Process With Multiple Versions"',
+      active: 'true',
+      incidents: 'true',
+      workflow: 'processWithMultipleVersions',
+      version: '2',
+      flowNodeId: 'StartEvent_1',
     })}`
   );
 
@@ -794,13 +724,10 @@ test('Workflow Filter', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-        version: '1',
-        workflow: 'orderProcess',
-      }),
-      name: '"Order process"',
+      active: 'true',
+      incidents: 'true',
+      workflow: 'orderProcess',
+      version: '1',
     })}`
   );
 });
@@ -838,10 +765,8 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
     .expect(await getPathname())
     .eql(
       `#/instances?${convertToQueryString({
-        filter: JSON.stringify({
-          active: true,
-          incidents: true,
-        }),
+        active: 'true',
+        incidents: 'true',
       })}`
     );
 
@@ -876,13 +801,10 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
     .expect(await getPathname())
     .eql(
       `#/instances?${convertToQueryString({
-        filter: JSON.stringify({
-          active: true,
-          incidents: true,
-          version: '1',
-          workflow: 'orderProcess',
-        }),
-        name: '"Order process"',
+        active: 'true',
+        incidents: 'true',
+        workflow: 'orderProcess',
+        version: '1',
       })}`
     );
 
@@ -898,14 +820,11 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-        version: '1',
-        workflow: 'orderProcess',
-        activityId: 'shipArticles',
-      }),
-      name: '"Order process"',
+      active: 'true',
+      incidents: 'true',
+      workflow: 'orderProcess',
+      version: '1',
+      flowNodeId: 'shipArticles',
     })}`
   );
 
@@ -922,14 +841,11 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
-      filter: JSON.stringify({
-        active: true,
-        incidents: true,
-        version: '1',
-        workflow: 'orderProcess',
-        activityId: 'checkPayment',
-      }),
-      name: '"Order process"',
+      active: 'true',
+      incidents: 'true',
+      workflow: 'orderProcess',
+      version: '1',
+      flowNodeId: 'checkPayment',
     })}`
   );
 
@@ -942,13 +858,10 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
     .expect(await getPathname())
     .eql(
       `#/instances?${convertToQueryString({
-        filter: JSON.stringify({
-          active: true,
-          incidents: true,
-          version: '1',
-          workflow: 'orderProcess',
-        }),
-        name: '"Order process"',
+        active: 'true',
+        incidents: 'true',
+        workflow: 'orderProcess',
+        version: '1',
       })}`
     )
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
@@ -957,7 +870,22 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
 
 test('Should set filters from url', async (t) => {
   await t.navigateTo(
-    `${config.endpoint}/#/instances?filter={"active":true,"incidents":true,"completed":true,"canceled":true,"ids":"2251799813685255","errorMessage":"some%20error%20message","startDate":"2020-09-10%2018:41:44","endDate":"2020-12-12%2012:12:12","version":"2","workflow":"processWithMultipleVersions","variable":{"name":"test","value":"123"},"batchOperationId":"5be8a137-fbb4-4c54-964c-9c7be98b80e6","activityId":"alwaysFails"}&name="Process%20With%20Multiple%20Versions"`
+    `${config.endpoint}/#/instances?${convertToQueryString({
+      active: 'true',
+      incidents: 'true',
+      completed: 'true',
+      canceled: 'true',
+      ids: '2251799813685255',
+      errorMessage: 'some error message',
+      startDate: '2020-09-10 18:41:44',
+      endDate: '2020-12-12 12:12:12',
+      version: '2',
+      workflow: 'processWithMultipleVersions',
+      variableName: 'test',
+      variableValue: '123',
+      operationId: '5be8a137-fbb4-4c54-964c-9c7be98b80e6',
+      flowNodeId: 'alwaysFails',
+    })}`
   );
 
   await t

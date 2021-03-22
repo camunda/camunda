@@ -17,10 +17,6 @@ import {
 } from './styled';
 import {statisticsStore} from 'modules/stores/statistics';
 import {StatusMessage} from 'modules/components/StatusMessage';
-import {generateQueryParams} from './generateQueryParams';
-import {mergeQueryParams} from 'modules/utils/mergeQueryParams';
-import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
-import {IS_FILTERS_V2} from 'modules/feature-flags';
 import {Locations} from 'modules/routes';
 
 const MetricPanel = observer(() => {
@@ -36,46 +32,27 @@ const MetricPanel = observer(() => {
 
   return (
     <Panel data-testid="metric-panel">
-      {IS_FILTERS_V2 ? (
-        <Title
-          data-testid="total-instances-link"
-          to={(location) =>
-            Locations.filters(
-              location,
-              running === 0
-                ? {
-                    completed: true,
-                    canceled: true,
-                    incidents: true,
-                    active: true,
-                  }
-                : {
-                    incidents: true,
-                    active: true,
-                  }
-            )
-          }
-        >
-          {status === 'fetched' && `${running} `}Running Instances in total
-        </Title>
-      ) : (
-        <Title
-          data-testid="total-instances-link"
-          to={(location) => ({
-            ...location,
-            pathname: '/instances',
-            search: mergeQueryParams({
-              newParams: generateQueryParams({
-                filter: {active: true, incidents: true},
-                hasFinishedInstances: running === 0,
-              }),
-              prevParams: getPersistentQueryParams(location.search),
-            }),
-          })}
-        >
-          {status === 'fetched' && `${running} `}Running Instances in total
-        </Title>
-      )}
+      <Title
+        data-testid="total-instances-link"
+        to={(location) =>
+          Locations.filters(
+            location,
+            running === 0
+              ? {
+                  completed: true,
+                  canceled: true,
+                  incidents: true,
+                  active: true,
+                }
+              : {
+                  incidents: true,
+                  active: true,
+                }
+          )
+        }
+      >
+        {status === 'fetched' && `${running} `}Running Instances in total
+      </Title>
       {status === 'fetched' && (
         <InstancesBar
           incidentsCount={withIncidents}
@@ -89,63 +66,26 @@ const MetricPanel = observer(() => {
       )}
 
       <LabelContainer>
-        {IS_FILTERS_V2 ? (
-          <>
-            <Label
-              data-testid="incident-instances-link"
-              to={(location) =>
-                Locations.filters(location, {
-                  incidents: true,
-                })
-              }
-            >
-              Instances with Incident
-            </Label>
-            <Label
-              data-testid="active-instances-link"
-              to={(location) =>
-                Locations.filters(location, {
-                  active: true,
-                })
-              }
-            >
-              Active Instances
-            </Label>
-          </>
-        ) : (
-          <>
-            <Label
-              data-testid="incident-instances-link"
-              to={(location) => ({
-                ...location,
-                pathname: '/instances',
-                search: mergeQueryParams({
-                  newParams: generateQueryParams({
-                    filter: {incidents: true},
-                  }),
-                  prevParams: getPersistentQueryParams(location.search),
-                }),
-              })}
-            >
-              Instances with Incident
-            </Label>
-            <Label
-              data-testid="active-instances-link"
-              to={(location) => ({
-                ...location,
-                pathname: '/instances',
-                search: mergeQueryParams({
-                  newParams: generateQueryParams({
-                    filter: {active: true},
-                  }),
-                  prevParams: getPersistentQueryParams(location.search),
-                }),
-              })}
-            >
-              Active Instances
-            </Label>
-          </>
-        )}
+        <Label
+          data-testid="incident-instances-link"
+          to={(location) =>
+            Locations.filters(location, {
+              incidents: true,
+            })
+          }
+        >
+          Instances with Incident
+        </Label>
+        <Label
+          data-testid="active-instances-link"
+          to={(location) =>
+            Locations.filters(location, {
+              active: true,
+            })
+          }
+        >
+          Active Instances
+        </Label>
       </LabelContainer>
     </Panel>
   );

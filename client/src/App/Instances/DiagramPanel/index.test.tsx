@@ -10,7 +10,7 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
-import {MemoryRouter} from 'react-router-dom';
+import {Router} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {createMemoryHistory} from 'history';
@@ -21,31 +21,28 @@ import {
   mockWorkflowInstances,
 } from 'modules/testUtils';
 import {DiagramPanel} from './index';
-
+import {workflowsStore} from 'modules/stores/workflows';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
-import {filtersStore} from 'modules/stores/filters';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 
 jest.mock('modules/utils/bpmn');
 
-type Props = {
-  children?: React.ReactNode;
-};
+function getWrapper(history = createMemoryHistory()) {
+  const Wrapper: React.FC = ({children}) => {
+    return (
+      <Router history={history}>
+        <ThemeProvider>
+          <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
+        </ThemeProvider>
+      </Router>
+    );
+  };
 
-const Wrapper = ({children}: Props) => {
-  return (
-    <MemoryRouter>
-      <ThemeProvider>
-        <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
-      </ThemeProvider>
-    </MemoryRouter>
-  );
-};
+  return Wrapper;
+}
 
 describe('DiagramPanel', () => {
-  const historyMock = createMemoryHistory();
-
   beforeEach(() => {
     mockServer.use(
       rest.post('/api/workflow-instances', (_, res, ctx) =>
@@ -61,36 +58,30 @@ describe('DiagramPanel', () => {
         res.once(ctx.json(mockWorkflowStatistics))
       )
     );
+
+    workflowsStore.fetchWorkflows();
   });
 
   afterEach(() => {
     instancesDiagramStore.reset();
-    filtersStore.reset();
+    workflowsStore.reset();
   });
 
   it('should render header', async () => {
-    const locationMock = {
-      pathname: '/instances',
-      search:
-        '?filter={%22active%22:true,%22incidents%22:true,%22version%22:%221%22,%22workflow%22:%22bigVarProcess%22}&name=%22Big%20variable%20process%22',
-    };
-    filtersStore.setUrlParameters(historyMock, locationMock);
-    await filtersStore.init();
-
     render(<DiagramPanel {...mockProps} />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(
+        createMemoryHistory({
+          initialEntries: ['/instances?workflow=bigVarProcess&version=1'],
+        })
+      ),
     });
 
-    expect(screen.getByText('Big variable process')).toBeInTheDocument();
+    expect(await screen.findByText('Big variable process')).toBeInTheDocument();
   });
 
   it('should show the loading indicator, when diagram is loading', async () => {
-    const locationMock = {
-      pathname: '/instances',
-    };
-    filtersStore.setUrlParameters(historyMock, locationMock);
     render(<DiagramPanel {...mockProps} />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
     instancesDiagramStore.fetchWorkflowXml('1');
 
@@ -103,17 +94,9 @@ describe('DiagramPanel', () => {
   });
 
   it('should show an empty state message when no workflow is selected', async () => {
-    const locationMock = {
-      pathname: '/instances',
-      search: '?filter={%22active%22:true,%22incidents%22:true}',
-    };
-    filtersStore.setUrlParameters(historyMock, locationMock);
-
     render(<DiagramPanel {...mockProps} />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
-
-    await filtersStore.init();
 
     expect(
       screen.getByText('There is no Workflow selected')
@@ -127,20 +110,16 @@ describe('DiagramPanel', () => {
   });
 
   it('should show a message when no workflow version is selected', async () => {
-    const locationMock = {
-      pathname: '/instances',
-      search:
-        '?filter={%22active%22:true,%22incidents%22:true,%22version%22:%22all%22,%22workflow%22:%22bigVarProcess%22}&name=%22Big%20variable%20process%22',
-    };
-    filtersStore.setUrlParameters(historyMock, locationMock);
-
     render(<DiagramPanel {...mockProps} />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(
+        createMemoryHistory({
+          initialEntries: ['/instances?workflow=bigVarProcess&version=all'],
+        })
+      ),
     });
-    await filtersStore.init();
 
     expect(
-      screen.getByText(
+      await screen.findByText(
         'There is more than one Version selected for Workflow "Big variable process"'
       )
     ).toBeInTheDocument();
@@ -159,7 +138,7 @@ describe('DiagramPanel', () => {
     );
 
     render(<DiagramPanel {...mockProps} />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     instancesDiagramStore.fetchWorkflowXml('1');

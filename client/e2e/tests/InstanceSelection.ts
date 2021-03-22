@@ -19,7 +19,9 @@ fixture('Select Instances')
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
     await t.maximizeWindow();
-    await t.navigateTo(`${config.endpoint}/#/instances`);
+    await t.navigateTo(
+      `${config.endpoint}/#/instances?active=true&incidents=true`
+    );
   });
 
 test('Selection of instances are removed on header navigation', async (t) => {

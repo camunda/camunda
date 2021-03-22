@@ -15,31 +15,35 @@ import {
 } from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockWorkflowInstances} from 'modules/testUtils';
-import {filtersStore} from 'modules/stores/filters';
 import CollapsablePanelContext from 'modules/contexts/CollapsablePanelContext';
-
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {ListPanel} from './index';
-import {MemoryRouter} from 'react-router-dom';
-import {DEFAULT_FILTER} from 'modules/constants';
+import {Router} from 'react-router-dom';
+import {createMemoryHistory, MemoryHistory} from 'history';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {instancesStore} from 'modules/stores/instances';
 import {NotificationProvider} from 'modules/notifications';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 
-function createWrapper(expandOperationsMock = jest.fn()) {
+function createWrapper({
+  expandOperationsMock,
+  history,
+}: {
+  expandOperationsMock?: jest.Mock;
+  history?: MemoryHistory;
+} = {}) {
   const Wrapper: React.FC = ({children}) => {
     return (
       <ThemeProvider>
         <NotificationProvider>
-          <MemoryRouter>
+          <Router history={history ?? createMemoryHistory()}>
             <CollapsablePanelContext.Provider
-              value={{expandOperations: expandOperationsMock}}
+              value={{expandOperations: expandOperationsMock ?? jest.fn()}}
             >
               {children}
             </CollapsablePanelContext.Provider>
-          </MemoryRouter>
+          </Router>
         </NotificationProvider>
       </ThemeProvider>
     );
@@ -49,7 +53,6 @@ function createWrapper(expandOperationsMock = jest.fn()) {
 
 describe('ListPanel', () => {
   afterEach(() => {
-    filtersStore.reset();
     instancesStore.reset();
     instancesDiagramStore.reset();
   });
@@ -62,8 +65,7 @@ describe('ListPanel', () => {
         )
       );
 
-      filtersStore.setFilter({});
-      instancesStore.fetchInitialInstances({query: {}});
+      instancesStore.fetchInstancesFromFilters();
 
       render(<ListPanel />, {
         wrapper: createWrapper(),
@@ -88,12 +90,14 @@ describe('ListPanel', () => {
         )
       );
 
-      filtersStore.setFilter(DEFAULT_FILTER);
-
-      instancesStore.fetchInitialInstances({query: {}});
+      instancesStore.fetchInstancesFromFilters();
 
       render(<ListPanel />, {
-        wrapper: createWrapper(),
+        wrapper: createWrapper({
+          history: createMemoryHistory({
+            initialEntries: ['/instances?incidents=true&active=true'],
+          }),
+        }),
       });
 
       await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
@@ -116,7 +120,7 @@ describe('ListPanel', () => {
           res.once(ctx.json({workflowInstances: [], totalCount: 0}))
         )
       );
-      instancesStore.fetchInitialInstances({query: {}});
+      instancesStore.fetchInstancesFromFilters();
 
       render(<ListPanel />, {
         wrapper: createWrapper(),
@@ -138,7 +142,7 @@ describe('ListPanel', () => {
         )
       );
 
-      instancesStore.fetchInitialInstances({query: {}});
+      instancesStore.fetchInstancesFromFilters();
 
       render(<ListPanel />, {wrapper: createWrapper()});
       await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
@@ -162,7 +166,7 @@ describe('ListPanel', () => {
         )
       );
 
-      instancesStore.fetchInitialInstances({query: {}});
+      instancesStore.fetchInstancesFromFilters();
 
       render(<ListPanel />, {
         wrapper: createWrapper(),
@@ -202,7 +206,7 @@ describe('ListPanel', () => {
       )
     );
 
-    instancesStore.fetchInitialInstances({query: {}});
+    instancesStore.fetchInstancesFromFilters();
     instancesStore.init();
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
@@ -256,12 +260,12 @@ describe('ListPanel', () => {
         )
       );
 
-      instancesStore.fetchInitialInstances({query: {}});
+      instancesStore.fetchInstancesFromFilters();
 
-      const mockExpandOperations = jest.fn();
+      const expandOperationsMock = jest.fn();
 
       render(<ListPanel />, {
-        wrapper: createWrapper(mockExpandOperations),
+        wrapper: createWrapper({expandOperationsMock}),
       });
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
@@ -280,11 +284,11 @@ describe('ListPanel', () => {
         )
       );
 
-      instancesStore.fetchInitialInstances({query: {}});
+      instancesStore.fetchInstancesFromFilters();
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
       expect(screen.queryAllByTestId('operation-spinner').length).toBe(0);
-      expect(mockExpandOperations).toHaveBeenCalledTimes(1);
+      expect(expandOperationsMock).toHaveBeenCalledTimes(1);
     });
 
     it('should remove spinners after batch operation if a server error occurs', async () => {
@@ -300,11 +304,11 @@ describe('ListPanel', () => {
         )
       );
 
-      instancesStore.fetchInitialInstances({query: {}});
+      instancesStore.fetchInstancesFromFilters();
 
-      const mockExpandOperations = jest.fn();
+      const expandOperationsMock = jest.fn();
       render(<ListPanel />, {
-        wrapper: createWrapper(mockExpandOperations),
+        wrapper: createWrapper({expandOperationsMock}),
       });
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
@@ -325,7 +329,7 @@ describe('ListPanel', () => {
         expect(instancesStore.state.filteredInstancesCount).toBe(1000)
       );
 
-      expect(mockExpandOperations).not.toHaveBeenCalled();
+      expect(expandOperationsMock).not.toHaveBeenCalled();
     });
 
     it('should remove spinners after batch operation if a network error occurs', async () => {
@@ -341,7 +345,7 @@ describe('ListPanel', () => {
         )
       );
 
-      instancesStore.fetchInitialInstances({query: {}});
+      instancesStore.fetchInstancesFromFilters();
 
       render(<ListPanel />, {
         wrapper: createWrapper(),
@@ -374,7 +378,7 @@ describe('ListPanel', () => {
       )
     );
 
-    instancesStore.fetchInitialInstances({query: {}});
+    instancesStore.fetchInstancesFromFilters();
 
     const {unmount} = render(<ListPanel />, {
       wrapper: createWrapper(),
@@ -393,7 +397,7 @@ describe('ListPanel', () => {
       )
     );
 
-    instancesStore.fetchInitialInstances({query: {}});
+    instancesStore.fetchInstancesFromFilters();
 
     render(<ListPanel />, {
       wrapper: createWrapper(),

@@ -13,7 +13,7 @@ import {sessionValidationStore} from 'modules/stores/sessionValidation';
 import {logoutUrl} from 'modules/api/header';
 import {Locations, RouterState} from 'modules/routes';
 import {Location} from 'history';
-import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
+import {observer} from 'mobx-react';
 
 type Props = {
   location: Location<RouterState>;
@@ -21,7 +21,7 @@ type Props = {
 };
 
 //@ts-expect-error
-const Authentication: React.FC<Props> = (props) => {
+const Authentication: React.FC<Props> = observer((props) => {
   const [forceRedirect, setForceRedirect] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -73,9 +73,8 @@ const Authentication: React.FC<Props> = (props) => {
         to={Locations.login({
           ...props.location,
           state: {
-            referrer: props.location.pathname,
+            referrer: props.location,
           },
-          search: getPersistentQueryParams(props.location.search),
         })}
         push={true}
       />
@@ -89,7 +88,7 @@ const Authentication: React.FC<Props> = (props) => {
   } else {
     return props.children;
   }
-};
+});
 
 // @ts-expect-error ts-migrate(2345) FIXME: Type 'unknown' is not assignable to type '{ isLogg... Remove this comment to see the full error message
 export default withRouter(Authentication);

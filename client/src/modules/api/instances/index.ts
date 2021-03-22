@@ -5,8 +5,7 @@
  */
 
 import {post, get} from 'modules/request';
-import {parseFilterForRequest, RequestFilters} from 'modules/utils/filter';
-import {FILTER_SELECTION} from 'modules/constants';
+import {RequestFilters} from 'modules/utils/filter';
 
 const URL = '/api/workflow-instances';
 
@@ -71,18 +70,18 @@ async function fetchWorkflowCoreStatistics() {
 async function fetchWorkflowInstancesByIds(
   ids: WorkflowInstanceEntity['id'][]
 ) {
-  const payload = parseFilterForRequest({
-    ...FILTER_SELECTION.running,
-    ...FILTER_SELECTION.finished,
-    ids: ids.join(','),
-  });
-
-  const options = {
+  return fetchWorkflowInstances({
     pageSize: ids.length,
-    query: {...payload},
-  };
-
-  return fetchWorkflowInstances(options);
+    query: {
+      running: true,
+      finished: true,
+      active: true,
+      incidents: true,
+      completed: true,
+      canceled: true,
+      ids,
+    },
+  });
 }
 
 async function fetchWorkflowInstancesStatistics(payload: any) {

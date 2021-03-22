@@ -36,7 +36,7 @@ type FormValues = {
 };
 
 type LocationState = {
-  referrer?: string;
+  referrer?: Location;
   isLoggedIn?: boolean;
 };
 
@@ -65,13 +65,22 @@ function Login() {
             };
           }
           clearStateLocally();
-          history.push({
-            pathname: history.location.state?.referrer ?? Routes.dashboard(),
-            search: history.location.search,
-            state: {
-              isLoggedIn: true,
-            },
-          });
+          history.push(
+            history.location.state?.referrer === undefined
+              ? {
+                  ...history.location,
+                  pathname: Routes.dashboard(),
+                  state: {
+                    isLoggedIn: true,
+                  },
+                }
+              : {
+                  ...history.location.state.referrer,
+                  state: {
+                    isLoggedIn: true,
+                  },
+                }
+          );
         } catch {
           return {
             [FORM_ERROR]: GENERIC_ERROR,

@@ -6,7 +6,6 @@
 
 import React, {useEffect} from 'react';
 import {Collapse} from '../Collapse';
-import {getFilterQueryString} from 'modules/utils/filter';
 import {PanelListItem} from '../PanelListItem';
 import {
   concatTitle,
@@ -20,10 +19,7 @@ import {incidentsByErrorStore} from 'modules/stores/incidentsByError';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {Skeleton} from '../Skeleton';
 import {observer} from 'mobx-react';
-import {IS_FILTERS_V2} from 'modules/feature-flags';
 import {Locations} from 'modules/routes';
-import {mergeQueryParams} from 'modules/utils/mergeQueryParams';
-import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 
 const IncidentsByError = observer(() => {
   useEffect(() => {
@@ -38,12 +34,6 @@ const IncidentsByError = observer(() => {
       <Styled.VersionUl>
         {items.map((item: any) => {
           const name = item.name || item.bpmnProcessId;
-          const queryParams = getFilterQueryString({
-            workflow: item.bpmnProcessId,
-            version: `${item.version}`,
-            errorMessage,
-            incidents: true,
-          });
           const title = concatTitle(
             name,
             item.instancesWithActiveIncidentsCount,
@@ -53,47 +43,25 @@ const IncidentsByError = observer(() => {
           const label = concatLabel(name, item.version);
           return (
             <Styled.VersionLi key={item.workflowId}>
-              {IS_FILTERS_V2 ? (
-                <PanelListItem
-                  to={(location) =>
-                    Locations.filters(location, {
-                      workflow: item.bpmnProcessId,
-                      workflowVersion: item.version,
-                      errorMessage,
-                      incidents: true,
-                    })
-                  }
-                  title={title}
-                  $boxSize="small"
-                >
-                  <Styled.VersionLiInstancesBar
-                    label={label}
-                    incidentsCount={item.instancesWithActiveIncidentsCount}
-                    barHeight={2}
-                    size="small"
-                  />
-                </PanelListItem>
-              ) : (
-                <PanelListItem
-                  to={(location) => ({
-                    ...location,
-                    pathname: '/instances',
-                    search: mergeQueryParams({
-                      newParams: queryParams,
-                      prevParams: getPersistentQueryParams(location.search),
-                    }),
-                  })}
-                  title={title}
-                  $boxSize="small"
-                >
-                  <Styled.VersionLiInstancesBar
-                    label={label}
-                    incidentsCount={item.instancesWithActiveIncidentsCount}
-                    barHeight={2}
-                    size="small"
-                  />
-                </PanelListItem>
-              )}
+              <PanelListItem
+                to={(location) =>
+                  Locations.filters(location, {
+                    workflow: item.bpmnProcessId,
+                    version: item.version,
+                    errorMessage,
+                    incidents: true,
+                  })
+                }
+                title={title}
+                $boxSize="small"
+              >
+                <Styled.VersionLiInstancesBar
+                  label={label}
+                  incidentsCount={item.instancesWithActiveIncidentsCount}
+                  barHeight={2}
+                  size="small"
+                />
+              </PanelListItem>
             </Styled.VersionLi>
           );
         })}
@@ -105,43 +73,16 @@ const IncidentsByError = observer(() => {
     errorMessage: any,
     instancesWithErrorCount: any
   ) => {
-    const queryParams = getFilterQueryString({
-      errorMessage,
-      incidents: true,
-    });
-
     const title = concatGroupTitle(instancesWithErrorCount, errorMessage);
-    if (IS_FILTERS_V2) {
-      return (
-        <PanelListItem
-          to={(location) =>
-            Locations.filters(location, {
-              errorMessage,
-              incidents: true,
-            })
-          }
-          title={title}
-        >
-          <Styled.LiInstancesBar
-            label={errorMessage}
-            incidentsCount={instancesWithErrorCount}
-            size="medium"
-            barHeight={2}
-          />
-        </PanelListItem>
-      );
-    }
 
     return (
       <PanelListItem
-        to={(location) => ({
-          ...location,
-          pathname: '/instances',
-          search: mergeQueryParams({
-            newParams: queryParams,
-            prevParams: getPersistentQueryParams(location.search),
-          }),
-        })}
+        to={(location) =>
+          Locations.filters(location, {
+            errorMessage,
+            incidents: true,
+          })
+        }
         title={title}
       >
         <Styled.LiInstancesBar

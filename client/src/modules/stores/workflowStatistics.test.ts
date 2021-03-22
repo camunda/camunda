@@ -6,17 +6,12 @@
 
 import {workflowStatisticsStore} from './workflowStatistics';
 import {instancesDiagramStore} from './instancesDiagram';
-import {createMemoryHistory} from 'history';
-import {filtersStore} from './filters';
-import {
-  groupedWorkflowsMock,
-  mockWorkflowXML,
-  mockWorkflowStatistics,
-} from 'modules/testUtils';
+import {mockWorkflowXML, mockWorkflowStatistics} from 'modules/testUtils';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
 import {instancesStore} from './instances';
+import {workflowsStore} from './workflows';
 
 const mockInstances = [
   {
@@ -50,17 +45,15 @@ const mockInstances = [
 describe('stores/workflowStatistics', () => {
   afterEach(() => {
     workflowStatisticsStore.reset();
-    filtersStore.reset();
     instancesStore.reset();
+    instancesDiagramStore.reset();
+    workflowsStore.reset();
   });
 
   beforeEach(() => {
     mockServer.use(
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockWorkflowXML))
-      ),
-      rest.get('/api/workflows/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedWorkflowsMock))
       )
     );
   });
@@ -122,122 +115,7 @@ describe('stores/workflowStatistics', () => {
     ]);
   });
 
-  it('should fetch and update workflow statistics every time diagram changes', async () => {
-    filtersStore.setUrlParameters(createMemoryHistory(), {
-      pathname: '/instances',
-    });
-    await filtersStore.init();
-    workflowStatisticsStore.init();
-
-    expect(workflowStatisticsStore.state.statistics).toEqual([]);
-
-    mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockWorkflowXML))
-      ),
-      rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowStatistics))
-      )
-    );
-
-    await instancesDiagramStore.fetchWorkflowXml('1');
-    await waitFor(() =>
-      expect(workflowStatisticsStore.state.statistics).toEqual(
-        mockWorkflowStatistics
-      )
-    );
-
-    mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockWorkflowXML))
-      ),
-      rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              activityId: 'ServiceTask_0kt6c5i',
-              active: 2,
-              canceled: 1,
-              incidents: 1,
-              completed: 1,
-            },
-          ])
-        )
-      )
-    );
-
-    await instancesDiagramStore.fetchWorkflowXml('1');
-    await waitFor(() =>
-      expect(workflowStatisticsStore.state.statistics).toEqual([
-        {
-          activityId: 'ServiceTask_0kt6c5i',
-          active: 2,
-          canceled: 1,
-          incidents: 1,
-          completed: 1,
-        },
-      ])
-    );
-  });
-
-  it('should fetch/reset workflow statistics depending on filters', async () => {
-    filtersStore.setUrlParameters(createMemoryHistory(), {
-      pathname: '/instances',
-    });
-    await filtersStore.init();
-    workflowStatisticsStore.init();
-
-    // should not fetch statistics on workflow or version change (handled by diagram reaction)
-    filtersStore.setFilter({workflow: 'bigVarProcess', version: '1'});
-    expect(workflowStatisticsStore.state.statistics).toEqual([]);
-
-    // should fetch when any other filter changes
-    mockServer.use(
-      rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowStatistics))
-      )
-    );
-    filtersStore.setFilter({
-      // @ts-expect-error
-      ...filtersStore.state.filter,
-      errorMessage: 'bigVarProcess',
-    });
-
-    await waitFor(() =>
-      expect(workflowStatisticsStore.state.statistics).toEqual(
-        mockWorkflowStatistics
-      )
-    );
-
-    // should reset statistics when workflow and version filters no longer exists
-    filtersStore.setFilter({
-      errorMessage: 'bigVarProcess',
-    });
-
-    await waitFor(() =>
-      expect(workflowStatisticsStore.state.statistics).toEqual([])
-    );
-
-    // should not react if filter is the same as previous
-    filtersStore.setFilter({
-      errorMessage: 'bigVarProcess',
-    });
-
-    await waitFor(() =>
-      expect(workflowStatisticsStore.state.statistics).toEqual([])
-    );
-  });
-
   it('should fetch workflow statistics depending on completed operations', async () => {
-    filtersStore.setUrlParameters(createMemoryHistory(), {
-      pathname: '/instances',
-    });
-    await filtersStore.init();
-    workflowStatisticsStore.init();
-
-    filtersStore.setFilter({workflow: 'bigVarProcess', version: '1'});
-
-    jest.useFakeTimers();
     mockServer.use(
       rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
@@ -250,49 +128,35 @@ describe('stores/workflowStatistics', () => {
         )
       )
     );
+    workflowStatisticsStore.init();
     instancesStore.init();
+    instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     expect(workflowStatisticsStore.state.statistics).toEqual([]);
+
     mockServer.use(
       rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({workflowInstances: [{...mockInstances[0]}], totalCount: 1})
         )
       ),
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({workflowInstances: [{...mockInstances[0]}], totalCount: 1})
-        )
-      )
-    );
-
-    mockServer.use(
       rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowStatistics))
       )
     );
 
-    jest.runOnlyPendingTimers();
+    workflowStatisticsStore.fetchWorkflowStatistics();
 
     await waitFor(() =>
       expect(workflowStatisticsStore.state.statistics).toEqual(
         mockWorkflowStatistics
       )
     );
-
-    jest.useRealTimers();
   });
 
   it('should not fetch workflow statistics depending on completed operations if workflow and version filter does not exist', async () => {
-    filtersStore.setUrlParameters(createMemoryHistory(), {
-      pathname: '/instances',
-    });
-    await filtersStore.init();
-    workflowStatisticsStore.init();
-
-    jest.useFakeTimers();
     mockServer.use(
       rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
@@ -305,17 +169,14 @@ describe('stores/workflowStatistics', () => {
         )
       )
     );
+    workflowStatisticsStore.init();
     instancesStore.init();
+    instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
     expect(workflowStatisticsStore.state.statistics).toEqual([]);
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({workflowInstances: [{...mockInstances[0]}], totalCount: 1})
-        )
-      ),
       rest.post('/api/workflow-instances', (_, res, ctx) =>
         res.once(
           ctx.json({workflowInstances: [{...mockInstances[0]}], totalCount: 2})
@@ -323,14 +184,12 @@ describe('stores/workflowStatistics', () => {
       )
     );
 
-    jest.runOnlyPendingTimers();
+    instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() =>
       expect(instancesStore.state.filteredInstancesCount).toBe(2)
     );
 
     expect(workflowStatisticsStore.state.statistics).toEqual([]);
-
-    jest.useRealTimers();
   });
 });

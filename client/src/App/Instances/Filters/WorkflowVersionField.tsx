@@ -24,7 +24,7 @@ const WorkflowVersionField: React.FC = observer(() => {
 
   return (
     <Field
-      name="workflowVersion"
+      name="version"
       initialValue={versions?.[versions.length - 1].version}
     >
       {({input}) => (

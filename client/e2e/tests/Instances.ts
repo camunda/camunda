@@ -117,15 +117,12 @@ test('Select flow node in diagram', async (t) => {
     .expect(getPathname())
     .eql(
       `#/instances?${convertToQueryString({
-        filter: JSON.stringify({
-          active: true,
-          incidents: true,
-          ids: instance.workflowInstanceKey,
-          version: '1',
-          workflow: 'orderProcess',
-          activityId: shipArticlesTaskId,
-        }),
-        name: '"Order process"',
+        active: 'true',
+        incidents: 'true',
+        ids: instance.workflowInstanceKey,
+        workflow: 'orderProcess',
+        version: '1',
+        flowNodeId: shipArticlesTaskId,
       })}`
     );
 
@@ -142,15 +139,12 @@ test('Select flow node in diagram', async (t) => {
     .expect(getPathname())
     .eql(
       `#/instances?${convertToQueryString({
-        filter: JSON.stringify({
-          active: true,
-          incidents: true,
-          ids: instance.workflowInstanceKey,
-          version: '1',
-          workflow: 'orderProcess',
-          activityId: checkPaymentTaskId,
-        }),
-        name: '"Order process"',
+        active: 'true',
+        incidents: 'true',
+        ids: instance.workflowInstanceKey,
+        workflow: 'orderProcess',
+        version: '1',
+        flowNodeId: checkPaymentTaskId,
       })}`
     );
 });

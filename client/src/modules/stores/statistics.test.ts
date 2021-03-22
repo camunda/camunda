@@ -10,9 +10,7 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
 import {instancesStore} from './instances';
-import {filtersStore} from './filters';
 import {mockWorkflowXML, groupedWorkflowsMock} from 'modules/testUtils';
-import {createMemoryHistory} from 'history';
 
 const mockInstance = {
   id: '2251799813685625',
@@ -47,7 +45,6 @@ describe('stores/statistics', () => {
     currentInstanceStore.reset();
     statisticsStore.reset();
     instancesStore.reset();
-    filtersStore.reset();
   });
 
   it('should reset state', async () => {
@@ -171,11 +168,8 @@ describe('stores/statistics', () => {
         )
       )
     );
-    filtersStore.setUrlParameters(createMemoryHistory(), {
-      pathname: '/instances',
-    });
-    filtersStore.init();
     instancesStore.init();
+    instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 

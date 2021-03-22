@@ -4,13 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {render, screen} from '@testing-library/react';
-
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {instancesStore} from 'modules/stores/instances';
-import {filtersStore} from 'modules/stores/filters';
-
 import ListFooter from './index';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 
@@ -56,9 +52,6 @@ const mockInstances = [
 ];
 
 describe('ListFooter', () => {
-  afterAll(() => {
-    filtersStore.reset();
-  });
   afterEach(() => {
     instanceSelectionStore.reset();
   });

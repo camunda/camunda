@@ -5,30 +5,27 @@
  */
 
 import React, {useEffect, useState, useRef} from 'react';
-
 import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
 import {Operations} from 'modules/components/Operations';
 import StateIcon from 'modules/components/StateIcon';
 import EmptyMessage from '../../EmptyMessage';
-
-import {EXPAND_STATE, SORT_ORDER, DEFAULT_SORTING} from 'modules/constants';
-
+import {EXPAND_STATE} from 'modules/constants';
 import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
-
 import ColumnHeader from './ColumnHeader';
 import ListContext, {useListContext} from './ListContext';
 import BaseSkeleton from './Skeleton';
 import * as Styled from './styled';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
-import {filtersStore} from 'modules/stores/filters';
 import {observer} from 'mobx-react';
 import {instancesStore, MAX_INSTANCES_STORED} from 'modules/stores/instances';
 import {useNotifications} from 'modules/notifications';
 import usePrevious from 'modules/hooks/usePrevious';
 import {autorun} from 'mobx';
 import {Locations} from 'modules/routes';
+import {getFilters} from 'modules/utils/filter';
+import {useLocation} from 'react-router-dom';
 
 const {TBody, TD} = Table;
 const ROW_HEIGHT = 38;
@@ -72,36 +69,6 @@ const List: React.FC<ListProps> = observer((props) => {
       }
     };
   }, []);
-
-  const shouldResetSorting = ({
-    filter = filtersStore.state.filter,
-    sorting = filtersStore.state.sorting,
-  }) => {
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'canceled' does not exist on type '{}'.
-    const isFinishedInFilter = filter.canceled || filter.completed;
-
-    // reset sorting  by endDate when no finished filter is selected
-    return !isFinishedInFilter && sorting.sortBy === 'endDate';
-  };
-
-  const handleSortingChange = (key: string) => {
-    const prevSorting = filtersStore.state.sorting;
-
-    const sorting = {
-      sortBy: key,
-      sortOrder:
-        prevSorting.sortBy === key && prevSorting.sortOrder === SORT_ORDER.DESC
-          ? SORT_ORDER.ASC
-          : SORT_ORDER.DESC,
-    };
-
-    // check if sorting needs to be reset
-    if (shouldResetSorting({sorting: sorting})) {
-      return filtersStore.setSorting(DEFAULT_SORTING);
-    }
-
-    return filtersStore.setSorting(sorting);
-  };
 
   return (
     <Styled.List
@@ -163,7 +130,6 @@ const List: React.FC<ListProps> = observer((props) => {
         <ListContext.Provider
           value={{
             data: props.data,
-            onSort: handleSortingChange,
             rowsToDisplay: entriesPerPage,
             isInitialDataLoaded: props.isInitialDataLoaded,
           }}
@@ -273,13 +239,13 @@ const Body = observer(function (props: any) {
 });
 
 const Header = observer(function (props: any) {
-  const {data, onSort, isInitialDataLoaded} = useListContext();
+  const {data, isInitialDataLoaded} = useListContext();
   const {isAllChecked} = instanceSelectionStore.state;
-  const {filter, sorting} = filtersStore.state;
-
+  const location = useLocation();
+  const {canceled, completed} = getFilters(location.search);
   const isListEmpty = !isInitialDataLoaded || data.length === 0;
-  // @ts-expect-error ts-migrate(2339) FIXME: Property 'canceled' does not exist on type '{}'.
-  const listHasFinishedInstances = filter.canceled || filter.completed;
+  const listHasFinishedInstances = canceled || completed;
+
   return (
     <Styled.THead {...props}>
       <Styled.TRHeader>
@@ -299,46 +265,36 @@ const Header = observer(function (props: any) {
           </Styled.CheckAll>
           <ColumnHeader
             disabled={isListEmpty}
-            onSort={onSort}
             label="Workflow"
             sortKey="workflowName"
-            sorting={sorting}
           />
         </Styled.TH>
         <Styled.TH>
           <ColumnHeader
             disabled={isListEmpty}
             label="Instance Id"
-            onSort={onSort}
             sortKey="id"
-            sorting={sorting}
           />
         </Styled.TH>
         <Styled.TH>
           <ColumnHeader
             disabled={isListEmpty}
             label="Version"
-            onSort={onSort}
             sortKey="workflowVersion"
-            sorting={sorting}
           />
         </Styled.TH>
         <Styled.TH>
           <ColumnHeader
             disabled={isListEmpty}
             label="Start Time"
-            onSort={onSort}
             sortKey="startDate"
-            sorting={sorting}
           />
         </Styled.TH>
         <Styled.TH>
           <ColumnHeader
             disabled={isListEmpty || !listHasFinishedInstances}
             label="End Time"
-            onSort={onSort}
             sortKey="endDate"
-            sorting={sorting}
           />
         </Styled.TH>
         <Styled.OperationsTH>

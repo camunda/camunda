@@ -10,7 +10,6 @@ import {
   concatLabel,
   concatGroupLabel,
   concatButtonTitle,
-  generateQueryParams,
 } from './service';
 
 describe('service', () => {
@@ -110,33 +109,6 @@ describe('service', () => {
     it('should get title for no instances', () => {
       expect(concatButtonTitle('myProcessName', 0)).toBe(
         'Expand 0 Instances of Workflow myProcessName'
-      );
-    });
-  });
-
-  describe('generateQueryParams', () => {
-    it('should get url - single version, finished instances', () => {
-      expect(
-        generateQueryParams({
-          bpmnProcessId: 'Process_1',
-          versions: [{version: 1}],
-          hasFinishedInstances: true,
-          name: 'Process_1',
-        })
-      ).toBe(
-        '?filter={"workflow":"Process_1","version":"1","incidents":true,"active":true,"completed":true,"canceled":true}&name="Process_1"'
-      );
-    });
-
-    it('should get url - all versions, no finished instances', () => {
-      expect(
-        generateQueryParams({
-          bpmnProcessId: 'Process_2',
-          versions: [{version: 1}, {version: 2}],
-          name: 'Process_2',
-        })
-      ).toBe(
-        '?filter={"workflow":"Process_2","version":"all","incidents":true,"active":true}&name="Process_2"'
       );
     });
   });

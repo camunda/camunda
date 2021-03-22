@@ -36,7 +36,9 @@ fixture('InstancesTable')
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
     await t.maximizeWindow();
-    await t.navigateTo(`${config.endpoint}/#/instances`);
+    await t.navigateTo(
+      `${config.endpoint}/#/instances?active=true&incidents=true`
+    );
   });
 
 test('Sorting', async (t) => {

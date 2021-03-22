@@ -9,14 +9,11 @@ import {
   observable,
   action,
   computed,
-  autorun,
   IReactionDisposer,
 } from 'mobx';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
-import {isEmpty} from 'lodash';
-import {filtersStore} from 'modules/stores/filters';
 import {logger} from 'modules/logger';
 
 type State = {
@@ -51,16 +48,6 @@ class InstancesDiagram {
       selectableIds: computed,
     });
   }
-
-  init = () => {
-    this.disposer = autorun(() => {
-      if (isEmpty(filtersStore.workflow)) {
-        this.resetDiagramModel();
-      } else {
-        this.fetchWorkflowXml(filtersStore.workflow.id);
-      }
-    });
-  };
 
   fetchWorkflowXml = async (
     workflowId: WorkflowInstanceEntity['workflowId']

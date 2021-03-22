@@ -10,13 +10,13 @@ import {Router} from 'react-router-dom';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import Header from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {createMemoryHistory, History, Location} from 'history';
+import {createMemoryHistory} from 'history';
 import {render, within, fireEvent, screen} from '@testing-library/react';
-import {location, mockCollapsablePanelProps} from './index.setup';
 import {instancesStore} from 'modules/stores/instances';
 import {statisticsStore} from 'modules/stores/statistics';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
 
 // Header component fetches user information in the background, which is an async action and might complete after the tests finished.
 // Tests also depend on the statistics fetch to be completed, in order to test the results that are rendered in the screen.
@@ -26,23 +26,14 @@ const waitForComponentToLoad = async () => {
   expect(await screen.findByTitle('View 731 Incidents')).toBeInTheDocument();
 };
 
-type Props = {
-  history?: History;
-  location: Location;
-  isFiltersCollapsed: boolean;
-  expandFilters: () => void;
-};
-
-const MockApp: React.FC<Props> = ({
-  history = createMemoryHistory(),
-  ...props
-}) => (
-  <ThemeProvider>
-    <Router history={history}>
-      <Header.WrappedComponent {...props} />
-    </Router>
-  </ThemeProvider>
-);
+function createWrapper(history = createMemoryHistory()) {
+  const Wrapper: React.FC = ({children}) => (
+    <ThemeProvider>
+      <Router history={history}>{children}</Router>
+    </ThemeProvider>
+  );
+  return Wrapper;
+}
 
 describe('Header', () => {
   beforeEach(() => {
@@ -79,14 +70,17 @@ describe('Header', () => {
     currentInstanceStore.reset();
     instancesStore.reset();
     statisticsStore.reset();
+    clearStateLocally();
   });
 
   it('should render all header links', async () => {
-    const mockProps = {
-      location: location.dashboard,
-      ...mockCollapsablePanelProps,
-    };
-    render(<MockApp {...mockProps} />);
+    render(<Header />, {
+      wrapper: createWrapper(
+        createMemoryHistory({
+          initialEntries: ['/'],
+        })
+      ),
+    });
 
     await waitForComponentToLoad();
 
@@ -99,16 +93,18 @@ describe('Header', () => {
   });
 
   it('should render incident, filter and instances counts correctly', async () => {
-    const mockProps = {
-      location: location.dashboard,
-      ...mockCollapsablePanelProps,
-    };
     instancesStore.setInstances({
       filteredInstancesCount: 200,
       workflowInstances: [],
     });
 
-    render(<MockApp {...mockProps} />);
+    render(<Header />, {
+      wrapper: createWrapper(
+        createMemoryHistory({
+          initialEntries: ['/'],
+        })
+      ),
+    });
 
     expect(
       within(screen.getByTestId('header-link-incidents')).getByTestId('badge')
@@ -134,22 +130,26 @@ describe('Header', () => {
   });
 
   it('should render user element', async () => {
-    const mockProps = {
-      location: location.dashboard,
-      ...mockCollapsablePanelProps,
-    };
-    render(<MockApp {...mockProps} />);
+    render(<Header />, {
+      wrapper: createWrapper(
+        createMemoryHistory({
+          initialEntries: ['/'],
+        })
+      ),
+    });
 
     await waitForComponentToLoad();
     expect(screen.getByText('firstname lastname')).toBeInTheDocument();
   });
 
   it('should highlight links correctly on dashboard page', async () => {
-    const mockProps = {
-      location: location.dashboard,
-      ...mockCollapsablePanelProps,
-    };
-    render(<MockApp {...mockProps} />);
+    render(<Header />, {
+      wrapper: createWrapper(
+        createMemoryHistory({
+          initialEntries: ['/'],
+        })
+      ),
+    });
     await waitForComponentToLoad();
 
     expect(screen.getByText('Dashboard')).not.toHaveStyleRule('opacity', '0.5');
@@ -162,11 +162,13 @@ describe('Header', () => {
   });
 
   it('should highlight links correctly on instances page', async () => {
-    const mockProps = {
-      location: location.instances,
-      ...mockCollapsablePanelProps,
-    };
-    render(<MockApp {...mockProps} />);
+    render(<Header />, {
+      wrapper: createWrapper(
+        createMemoryHistory({
+          initialEntries: ['/instances?active=true&incidents=true'],
+        })
+      ),
+    });
     await waitForComponentToLoad();
 
     expect(screen.getByText('Dashboard')).toHaveStyleRule('opacity', '0.5');
@@ -179,11 +181,13 @@ describe('Header', () => {
   });
 
   it('should render instance details skeleton on instance view', async () => {
-    const mockProps = {
-      location: location.instance,
-      ...mockCollapsablePanelProps,
-    };
-    render(<MockApp {...mockProps} />);
+    render(<Header />, {
+      wrapper: createWrapper(
+        createMemoryHistory({
+          initialEntries: ['/instances/1'],
+        })
+      ),
+    });
     await waitForComponentToLoad();
 
     expect(screen.queryByTestId(/state-icon/)).not.toBeInTheDocument();
@@ -194,11 +198,13 @@ describe('Header', () => {
   it('should render instance details on instance view', async () => {
     const MOCK_INSTANCE_ID = 'first_instance_id';
 
-    const mockProps = {
-      location: location.instance,
-      ...mockCollapsablePanelProps,
-    };
-    render(<MockApp {...mockProps} />);
+    render(<Header />, {
+      wrapper: createWrapper(
+        createMemoryHistory({
+          initialEntries: [`/instances/${MOCK_INSTANCE_ID}`],
+        })
+      ),
+    });
     await waitForComponentToLoad();
 
     currentInstanceStore.init(MOCK_INSTANCE_ID);
@@ -219,11 +225,13 @@ describe('Header', () => {
     const MOCK_FIRST_INSTANCE_ID = 'first_instance_id';
     const MOCK_SECOND_INSTANCE_ID = 'second_instance_id';
 
-    const mockProps = {
-      location: location.instance,
-      ...mockCollapsablePanelProps,
-    };
-    render(<MockApp {...mockProps} />);
+    render(<Header />, {
+      wrapper: createWrapper(
+        createMemoryHistory({
+          initialEntries: [`/instances/${MOCK_FIRST_INSTANCE_ID}`],
+        })
+      ),
+    });
     await waitForComponentToLoad();
 
     jest.useFakeTimers();
@@ -265,15 +273,18 @@ describe('Header', () => {
   });
 
   it('should go to the correct pages when clicking on header links', async () => {
+    storeStateLocally({
+      filters: {
+        active: true,
+        incidents: true,
+        completed: true,
+      },
+    });
     const MOCK_HISTORY = createMemoryHistory();
+    render(<Header />, {
+      wrapper: createWrapper(MOCK_HISTORY),
+    });
 
-    const mockProps = {
-      history: MOCK_HISTORY,
-      location: location.instance,
-      ...mockCollapsablePanelProps,
-    };
-
-    render(<MockApp {...mockProps} />);
     await waitForComponentToLoad();
 
     fireEvent.click(await screen.findByText('Camunda Operate'));
@@ -281,9 +292,7 @@ describe('Header', () => {
     expect(MOCK_HISTORY.location.search).toBe('');
 
     fireEvent.click(await screen.findByText('Running Instances'));
-    expect(MOCK_HISTORY.location.search).toBe(
-      '?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D'
-    );
+    expect(MOCK_HISTORY.location.search).toBe('?active=true&incidents=true');
 
     fireEvent.click(await screen.findByText('Dashboard'));
     expect(MOCK_HISTORY.location.pathname).toBe('/');
@@ -291,27 +300,28 @@ describe('Header', () => {
 
     fireEvent.click(await screen.findByText('Filters'));
     expect(MOCK_HISTORY.location.search).toBe(
-      '?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D'
+      '?active=true&incidents=true&completed=true'
     );
 
     fireEvent.click(await screen.findByText('Incidents'));
-    expect(MOCK_HISTORY.location.search).toBe(
-      '?filter=%7B%22incidents%22%3Atrue%7D'
-    );
+    expect(MOCK_HISTORY.location.search).toBe('?incidents=true');
   });
 
-  it('should go to the correct pages when clicking on header links (with gse url)', async () => {
+  it('should preserve persistent params', async () => {
+    storeStateLocally({
+      filters: {
+        active: true,
+        incidents: true,
+        completed: true,
+      },
+    });
     const MOCK_HISTORY = createMemoryHistory({
       initialEntries: ['/?gseUrl=https://www.testUrl.com'],
     });
+    render(<Header />, {
+      wrapper: createWrapper(MOCK_HISTORY),
+    });
 
-    const mockProps = {
-      history: MOCK_HISTORY,
-      location: location.instance,
-      ...mockCollapsablePanelProps,
-    };
-
-    render(<MockApp {...mockProps} />);
     await waitForComponentToLoad();
 
     fireEvent.click(await screen.findByText('Camunda Operate'));
@@ -322,7 +332,7 @@ describe('Header', () => {
 
     fireEvent.click(await screen.findByText('Running Instances'));
     expect(MOCK_HISTORY.location.search).toBe(
-      '?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D&gseUrl=https%3A%2F%2Fwww.testUrl.com'
+      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true&incidents=true'
     );
 
     fireEvent.click(await screen.findByText('Dashboard'));
@@ -333,12 +343,12 @@ describe('Header', () => {
 
     fireEvent.click(await screen.findByText('Filters'));
     expect(MOCK_HISTORY.location.search).toBe(
-      '?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D&gseUrl=https%3A%2F%2Fwww.testUrl.com'
+      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true&incidents=true&completed=true'
     );
 
     fireEvent.click(await screen.findByText('Incidents'));
     expect(MOCK_HISTORY.location.search).toBe(
-      '?filter=%7B%22incidents%22%3Atrue%7D&gseUrl=https%3A%2F%2Fwww.testUrl.com'
+      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&incidents=true'
     );
   });
 });

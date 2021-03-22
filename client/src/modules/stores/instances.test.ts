@@ -6,9 +6,6 @@
 
 import {instancesStore} from './instances';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
-import {filtersStore} from './filters';
-import {DEFAULT_FILTER, DEFAULT_SORTING} from 'modules/constants';
-import {createMemoryHistory} from 'history';
 import {groupedWorkflowsMock} from 'modules/testUtils';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
@@ -50,10 +47,6 @@ const mockWorkflowInstances = {
 };
 
 describe('stores/instances', () => {
-  const fetchInstancesSpy = jest.spyOn(instancesStore, 'fetchInstances');
-  const historyMock = createMemoryHistory();
-  const locationMock = {pathname: '/instances'};
-
   beforeEach(async () => {
     mockServer.use(
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
@@ -66,13 +59,10 @@ describe('stores/instances', () => {
         res.once(ctx.json({}))
       )
     );
-    filtersStore.setUrlParameters(historyMock, locationMock);
-    await filtersStore.init();
   });
   afterEach(() => {
     clearStateLocally();
     instancesStore.reset();
-    filtersStore.reset();
   });
 
   describe('filtered instances count', () => {
@@ -118,7 +108,7 @@ describe('stores/instances', () => {
 
     expect(instancesStore.state.status).toBe('initial');
 
-    instancesStore.fetchInitialInstances({query: {}});
+    instancesStore.fetchInstancesFromFilters();
 
     expect(instancesStore.state.status).toBe('first-fetch');
 
@@ -142,7 +132,7 @@ describe('stores/instances', () => {
 
     expect(instancesStore.state.status).toBe('initial');
 
-    instancesStore.fetchInitialInstances({query: {}});
+    instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
@@ -210,7 +200,7 @@ describe('stores/instances', () => {
 
     expect(instancesStore.state.status).toBe('initial');
 
-    instancesStore.fetchInitialInstances({query: {}});
+    instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
@@ -272,7 +262,7 @@ describe('stores/instances', () => {
       )
     );
 
-    instancesStore.fetchInitialInstances({query: {}});
+    instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
@@ -519,7 +509,7 @@ describe('stores/instances', () => {
       )
     );
 
-    instancesStore.fetchInitialInstances({query: {}});
+    instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
@@ -568,7 +558,7 @@ describe('stores/instances', () => {
       )
     );
 
-    instancesStore.fetchInitialInstances({query: {}});
+    instancesStore.fetchInstancesFromFilters();
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
       '1',
@@ -595,9 +585,10 @@ describe('stores/instances', () => {
     );
 
     instancesStore.init();
+    instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() =>
-      expect(instancesStore.state.workflowInstances.length).toBe(2)
+      expect(instancesStore.state.workflowInstances).toHaveLength(2)
     );
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
       '2251799813685627',
@@ -658,9 +649,10 @@ describe('stores/instances', () => {
     jest.useFakeTimers();
 
     instancesStore.init();
+    instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() =>
-      expect(instancesStore.state.workflowInstances.length).toBe(2)
+      expect(instancesStore.state.workflowInstances).toHaveLength(2)
     );
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['2']);
     mockServer.use(
@@ -705,51 +697,5 @@ describe('stores/instances', () => {
 
     jest.clearAllTimers();
     jest.useRealTimers();
-  });
-
-  describe('fetch instances autorun', () => {
-    beforeEach(() => {
-      mockServer.use(
-        rest.post('/api/workflow-instances', (_, res, ctx) =>
-          res.once(ctx.json(mockWorkflowInstances))
-        )
-      );
-      instancesStore.init();
-      fetchInstancesSpy.mockReset();
-    });
-
-    it('should fetch instances every time sorting changes', async () => {
-      expect(fetchInstancesSpy).toHaveBeenCalledTimes(0);
-      expect(filtersStore.state.sorting).toEqual(DEFAULT_SORTING);
-      filtersStore.setSorting({...DEFAULT_SORTING, sortBy: 'instanceId'});
-      expect(filtersStore.state.sorting).toEqual({
-        ...DEFAULT_SORTING,
-        sortBy: 'instanceId',
-      });
-
-      expect(fetchInstancesSpy).toHaveBeenCalledTimes(1);
-      await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
-
-      filtersStore.setSorting(DEFAULT_SORTING);
-      expect(filtersStore.state.sorting).toEqual(DEFAULT_SORTING);
-
-      expect(fetchInstancesSpy).toHaveBeenCalledTimes(2);
-    });
-
-    it('should fetch instances every time filter changes', () => {
-      expect(fetchInstancesSpy).toHaveBeenCalledTimes(0);
-
-      filtersStore.setFilter({
-        ...DEFAULT_FILTER,
-        startDate: '2020-01-01 12:30:00',
-      });
-      expect(fetchInstancesSpy).toHaveBeenCalledTimes(1);
-
-      filtersStore.setFilter({
-        ...DEFAULT_FILTER,
-        startDate: '2022-01-01 12:30:00',
-      });
-      expect(fetchInstancesSpy).toHaveBeenCalledTimes(2);
-    });
   });
 });

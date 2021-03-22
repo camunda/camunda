@@ -7,11 +7,10 @@
 import useOperationApply from './useOperationApply';
 import {renderHook} from '@testing-library/react-hooks';
 import {waitFor} from '@testing-library/react';
-import {createMemoryHistory} from 'history';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {operationsStore} from 'modules/stores/operations';
-import {filtersStore} from 'modules/stores/filters';
 import {instancesStore} from 'modules/stores/instances';
+import {workflowsStore} from 'modules/stores/workflows';
 import {INSTANCE_SELECTION_MODE} from 'modules/constants';
 import {mockData} from './useOperationApply.setup';
 import {
@@ -22,6 +21,13 @@ import {
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {isEqual} from 'lodash';
+import {getSearchString} from 'modules/utils/getSearchString';
+
+jest.mock('modules/utils/getSearchString');
+
+const mockedGetSearchString = getSearchString as jest.MockedFunction<
+  typeof getSearchString
+>;
 
 const OPERATION_TYPE = 'RESOLVE_INCIDENT';
 
@@ -32,9 +38,6 @@ function renderUseOperationApply() {
 }
 
 describe('useOperationApply', () => {
-  const locationMock = {pathname: '/instances'};
-  const historyMock = createMemoryHistory();
-
   beforeEach(async () => {
     mockServer.use(
       rest.post('/api/workflow-instances', (_, res, ctx) =>
@@ -53,14 +56,10 @@ describe('useOperationApply', () => {
         res.once(ctx.json({}))
       )
     );
-
-    filtersStore.setUrlParameters(historyMock, locationMock);
-    await filtersStore.init();
   });
 
   afterEach(() => {
     instanceSelectionStore.reset();
-    filtersStore.reset();
     instancesStore.reset();
     operationsStore.reset();
   });
@@ -77,6 +76,10 @@ describe('useOperationApply', () => {
       })
     );
 
+    mockedGetSearchString.mockImplementation(
+      () => '?active=true&running=true&incidents=true'
+    );
+
     expect(operationsStore.state.operations).toEqual([]);
     renderUseOperationApply();
 
@@ -88,6 +91,11 @@ describe('useOperationApply', () => {
   it('should call apply (set id filter, select all ids)', async () => {
     const {mockOperationCreated, expectedQuery} = mockData.setFilterSelectAll;
     instancesStore.init();
+    instancesStore.fetchInstancesFromFilters();
+
+    mockedGetSearchString.mockImplementation(
+      () => '?active=true&running=true&incidents=true&ids=1'
+    );
 
     mockServer.use(
       rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
@@ -105,12 +113,6 @@ describe('useOperationApply', () => {
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
-
-    filtersStore.setFilter({
-      // @ts-expect-error
-      ...filtersStore.state.filter,
-      ids: '1',
-    });
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
@@ -128,6 +130,10 @@ describe('useOperationApply', () => {
   it('should call apply (set id filter, select one id)', async () => {
     const {mockOperationCreated, expectedQuery} = mockData.setFilterSelectOne;
     instancesStore.init();
+    instancesStore.fetchInstancesFromFilters();
+    mockedGetSearchString.mockImplementation(
+      () => '?active=true&running=true&incidents=true&ids=1'
+    );
 
     mockServer.use(
       rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
@@ -145,11 +151,6 @@ describe('useOperationApply', () => {
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
-    filtersStore.setFilter({
-      // @ts-expect-error
-      ...filtersStore.state.filter,
-      ids: '1, 2',
-    });
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
@@ -170,6 +171,10 @@ describe('useOperationApply', () => {
       ...context
     } = mockData.setFilterExcludeOne;
     instancesStore.init();
+    instancesStore.fetchInstancesFromFilters();
+    mockedGetSearchString.mockImplementation(
+      () => '?active=true&running=true&incidents=true&ids=1,2'
+    );
 
     mockServer.use(
       rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
@@ -187,12 +192,6 @@ describe('useOperationApply', () => {
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
-
-    filtersStore.setFilter({
-      // @ts-expect-error
-      ...filtersStore.state.filter,
-      ids: '1, 2',
-    });
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
@@ -215,6 +214,12 @@ describe('useOperationApply', () => {
       ...context
     } = mockData.setWorkflowFilterSelectOne;
     instancesStore.init();
+    instancesStore.fetchInstancesFromFilters();
+    mockedGetSearchString.mockImplementation(
+      () =>
+        '?active=true&running=true&incidents=true&workflow=demoProcess&version=1&ids=1'
+    );
+    await workflowsStore.fetchWorkflows();
 
     mockServer.use(
       rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
@@ -231,12 +236,6 @@ describe('useOperationApply', () => {
         res.once(ctx.json(mockWorkflowInstances))
       )
     );
-    filtersStore.setFilter({
-      // @ts-expect-error
-      ...filtersStore.state.filter,
-      workflow: 'demoProcess',
-      version: '1',
-    });
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
@@ -257,6 +256,7 @@ describe('useOperationApply', () => {
 
     jest.useFakeTimers();
     instancesStore.init();
+    instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() =>
       expect(instancesStore.state.workflowInstances.length).toBe(2)
@@ -306,6 +306,7 @@ describe('useOperationApply', () => {
 
     jest.useFakeTimers();
     instancesStore.init();
+    instancesStore.fetchInstancesFromFilters();
     await waitFor(() =>
       expect(instancesStore.state.workflowInstances.length).toBe(2)
     );

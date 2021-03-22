@@ -5,10 +5,14 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
 import {Router, Route} from 'react-router-dom';
-import {createMemoryHistory, createLocation} from 'history';
-
+import {createMemoryHistory} from 'history';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Instances} from './index';
@@ -19,34 +23,37 @@ import {
   mockWorkflowInstances,
   operations,
 } from 'modules/testUtils';
-
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {instanceSelectionStore} from 'modules/stores/instanceSelection';
+import userEvent from '@testing-library/user-event';
+import {instancesStore} from 'modules/stores/instances';
+import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
+import {workflowStatisticsStore} from 'modules/stores/workflowStatistics';
+import {operationsStore} from 'modules/stores/operations';
+import {workflowsStore} from 'modules/stores/workflows';
 
 jest.mock('modules/utils/bpmn');
-jest.mock('modules/api/instances');
-jest.mock('modules/api/diagram');
 
-type Props = {
-  children?: React.ReactNode;
-  initialRoute?: string;
-};
+function getWrapper(
+  history = createMemoryHistory({
+    initialEntries: ['/instances'],
+  })
+) {
+  const Wrapper: React.FC = ({children}) => {
+    return (
+      <ThemeProvider>
+        <CollapsablePanelProvider>
+          <Router history={history}>
+            <Route path="/instances">{children} </Route>
+          </Router>
+        </CollapsablePanelProvider>
+      </ThemeProvider>
+    );
+  };
 
-const Wrapper = ({children}: Props) => {
-  return (
-    <ThemeProvider>
-      <CollapsablePanelProvider>
-        <Router
-          history={createMemoryHistory({
-            initialEntries: ['/instances'],
-          })}
-        >
-          <Route path="/instances">{children} </Route>
-        </Router>
-      </CollapsablePanelProvider>
-    </ThemeProvider>
-  );
-};
+  return Wrapper;
+}
 
 describe('Instances', () => {
   beforeEach(() => {
@@ -80,13 +87,22 @@ describe('Instances', () => {
     );
   });
 
+  afterEach(() => {
+    instanceSelectionStore.reset();
+    instancesStore.reset();
+    instancesDiagramStore.reset();
+    workflowStatisticsStore.reset();
+    operationsStore.reset();
+    workflowsStore.reset();
+  });
+
   it('should render title and document title', () => {
-    const mockHistory = createMemoryHistory({initialEntries: ['/instances']});
-    const mockLocation = createLocation({
-      search: '?filter={%22active%22:true,%22incidents%22:true}',
-    });
-    render(<Instances history={mockHistory} location={mockLocation} />, {
-      wrapper: Wrapper,
+    render(<Instances />, {
+      wrapper: getWrapper(
+        createMemoryHistory({
+          initialEntries: ['/instances?incidents=true&active=true'],
+        })
+      ),
     });
 
     expect(screen.getByText('Camunda Operate Instances')).toBeInTheDocument();
@@ -94,12 +110,12 @@ describe('Instances', () => {
   });
 
   it('should render page components', () => {
-    const mockHistory = createMemoryHistory({initialEntries: ['/instances']});
-    const mockLocation = createLocation({
-      search: '?filter={%22active%22:true,%22incidents%22:true}',
-    });
-    render(<Instances history={mockHistory} location={mockLocation} />, {
-      wrapper: Wrapper,
+    render(<Instances />, {
+      wrapper: getWrapper(
+        createMemoryHistory({
+          initialEntries: ['/instances?active=true&incidents=true'],
+        })
+      ),
     });
 
     // diagram panel
@@ -125,5 +141,123 @@ describe('Instances', () => {
     expect(
       screen.getByRole('button', {name: /expand operations/i})
     ).toBeInTheDocument();
+  });
+
+  it('should reset selected instances when filters change', async () => {
+    const mockHistory = createMemoryHistory({
+      initialEntries: ['/instances?active=true&incidents=true'],
+    });
+    mockServer.use(
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
+      ),
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
+
+    render(<Instances />, {
+      wrapper: getWrapper(mockHistory),
+    });
+
+    expect(instanceSelectionStore.state).toEqual({
+      selectedInstanceIds: [],
+      isAllChecked: false,
+      selectionMode: 'INCLUDE',
+    });
+
+    await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+
+    userEvent.click(
+      await screen.findByRole('checkbox', {
+        name: /select instance 2251799813685594/i,
+      })
+    );
+
+    expect(instanceSelectionStore.state).toEqual({
+      selectedInstanceIds: ['2251799813685594'],
+      isAllChecked: false,
+      selectionMode: 'INCLUDE',
+    });
+
+    mockHistory.push('/instances?active=true');
+
+    await waitFor(() =>
+      expect(instanceSelectionStore.state).toEqual({
+        selectedInstanceIds: [],
+        isAllChecked: false,
+        selectionMode: 'INCLUDE',
+      })
+    );
+  });
+
+  it('should fetch diagram and diagram statistics', async () => {
+    const mockHistory = createMemoryHistory({
+      initialEntries: ['/instances?workflow=bigVarProcess&version=1'],
+    });
+    const firstWorkflowStatisticsResponse = [
+      {
+        activityId: 'ServiceTask_0kt6c5i',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 10,
+      },
+    ];
+    mockServer.use(
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowInstances))
+      ),
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockWorkflowXML))
+      ),
+      rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json(firstWorkflowStatisticsResponse))
+      )
+    );
+
+    render(<Instances />, {
+      wrapper: getWrapper(mockHistory),
+    });
+
+    await waitFor(() =>
+      expect(instancesDiagramStore.state.status).toBe('fetched')
+    );
+    await waitFor(() =>
+      expect(workflowStatisticsStore.state.isLoading).toBe(false)
+    );
+    expect(instancesDiagramStore.state.diagramModel).not.toBe(null);
+    expect(workflowStatisticsStore.state.statistics).toEqual(
+      firstWorkflowStatisticsResponse
+    );
+
+    mockHistory.push('/instances?workflow=eventBasedGatewayProcess&version=1');
+
+    await waitFor(() =>
+      expect(instancesDiagramStore.state.status).toBe('fetching')
+    );
+    await waitFor(() =>
+      expect(workflowStatisticsStore.state.isLoading).toBe(true)
+    );
+
+    await waitFor(() =>
+      expect(instancesDiagramStore.state.status).toBe('fetched')
+    );
+    expect(instancesDiagramStore.state.diagramModel).not.toBe(null);
+    expect(workflowStatisticsStore.state.statistics).toEqual(
+      mockWorkflowStatistics
+    );
+
+    mockHistory.push('/instances');
+
+    mockServer.use(
+      rest.post('/api/workflow-instances', (_, res, ctx) =>
+        res.once(ctx.json({workflowInstances: []}))
+      )
+    );
+
+    await waitFor(() =>
+      expect(workflowStatisticsStore.state.statistics).toEqual([])
+    );
   });
 });

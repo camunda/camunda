@@ -6,18 +6,13 @@
 
 import React from 'react';
 import {LinkButton} from 'modules/components/LinkButton';
-import {
-  OPERATION_TYPE,
-  DEFAULT_FILTER_CONTROLLED_VALUES,
-} from 'modules/constants';
+import {OPERATION_TYPE} from 'modules/constants';
 import {formatDate} from 'modules/utils/date';
 import * as Styled from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {isOperationRunning} from '../service';
 import ProgressBar from './ProgressBar';
-import {filtersStore} from 'modules/stores/filters';
 import {useHistory} from 'react-router-dom';
-import {IS_FILTERS_V2} from 'modules/feature-flags';
 import {Locations} from 'modules/routes';
 
 const {
@@ -48,26 +43,15 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
   const history = useHistory();
 
   function handleInstancesClick(operationId: OperationEntity['id']) {
-    if (IS_FILTERS_V2) {
-      history.push(
-        Locations.filters(history.location, {
-          active: true,
-          incidents: true,
-          completed: true,
-          canceled: true,
-          operationId,
-        })
-      );
-    } else {
-      filtersStore.setFilter({
-        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+    history.push(
+      Locations.filters(history.location, {
         active: true,
         incidents: true,
         completed: true,
         canceled: true,
-        batchOperationId: operationId,
-      });
-    }
+        operationId,
+      })
+    );
   }
 
   return (

@@ -7,11 +7,14 @@
 import * as Styled from './styled';
 import {getSorting} from 'modules/utils/filter';
 import {useHistory} from 'react-router-dom';
-import {IS_FILTERS_V2} from 'modules/feature-flags';
 
-function toggleSorting(search: string, column: string) {
+function toggleSorting(
+  search: string,
+  column: string,
+  table: 'instances' | 'instance'
+) {
   const params = new URLSearchParams(search);
-  const {sortBy, sortOrder} = getSorting();
+  const {sortBy, sortOrder} = getSorting(table);
 
   if (params.get('sort') === null) {
     params.set('sort', `${column}+desc`);
@@ -34,20 +37,15 @@ type Props = {
   disabled?: boolean;
   label: string;
   sortKey?: string;
-  onSort?: (sortKey: string) => void;
-  sorting?: {
-    sortBy: string;
-    sortOrder: 'asc' | 'desc';
-  };
+  table?: 'instances' | 'instance';
 };
 
 function getSortOrder({
   disabled,
   sortKey,
-  sorting,
   sortBy,
   sortOrder,
-}: Pick<Props, 'disabled' | 'sortKey' | 'sorting'> & {
+}: Pick<Props, 'disabled' | 'sortKey'> & {
   sortBy: string;
   sortOrder: 'asc' | 'desc';
 }) {
@@ -55,28 +53,19 @@ function getSortOrder({
     return undefined;
   }
 
-  if (IS_FILTERS_V2) {
-    return sortKey === sortBy ? sortOrder : undefined;
-  }
-
-  return sorting?.sortBy === sortKey && sorting?.sortBy !== undefined
-    ? sorting?.sortOrder
-    : undefined;
+  return sortKey === sortBy ? sortOrder : undefined;
 }
 
 const ColumnHeader: React.FC<Props> = ({
   sortKey,
-  onSort,
   disabled,
-  sorting,
   label,
+  table = 'instances',
 }) => {
   const isSortable = sortKey !== undefined;
   const history = useHistory();
-  const {sortBy, sortOrder} = getSorting();
-  const isActive =
-    (isSortable && IS_FILTERS_V2 && sortKey === sortBy) ||
-    (isSortable && sorting?.sortBy === sortKey);
+  const {sortBy, sortOrder} = getSorting(table);
+  const isActive = isSortable && sortKey === sortBy;
 
   if (isSortable) {
     return (
@@ -84,14 +73,10 @@ const ColumnHeader: React.FC<Props> = ({
         disabled={disabled}
         onClick={() => {
           if (!disabled && sortKey !== undefined) {
-            if (IS_FILTERS_V2) {
-              history.push({
-                ...history.location,
-                search: toggleSorting(history.location.search, sortKey),
-              });
-            } else {
-              onSort?.(sortKey);
-            }
+            history.push({
+              ...history.location,
+              search: toggleSorting(history.location.search, sortKey, table),
+            });
           }
         }}
         title={`Sort by ${sortKey}`}
@@ -104,7 +89,6 @@ const ColumnHeader: React.FC<Props> = ({
           active={isActive}
           disabled={disabled}
           sortOrder={getSortOrder({
-            sorting,
             sortKey,
             disabled,
             sortBy,

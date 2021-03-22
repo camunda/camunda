@@ -5,12 +5,8 @@
  */
 
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
-import {filtersStore} from 'modules/stores/filters';
 import {operationsStore} from 'modules/stores/operations';
-import {
-  parseFilterForRequest,
-  getFilterWithWorkflowIds,
-} from 'modules/utils/filter';
+import {getRequestFilters} from 'modules/utils/filter';
 import {instancesStore} from 'modules/stores/instances';
 import {useNotifications} from 'modules/notifications';
 
@@ -28,11 +24,7 @@ export default function useOperationApply() {
       operationType: OperationEntityType,
       onSuccess: () => void
     ) => {
-      const {filter, groupedWorkflows} = filtersStore.state;
-
-      const query = parseFilterForRequest(
-        getFilterWithWorkflowIds(filter, groupedWorkflows)
-      );
+      const query = getRequestFilters();
       const filterIds = query.ids || [];
 
       // if ids are selected, ignore ids from filter

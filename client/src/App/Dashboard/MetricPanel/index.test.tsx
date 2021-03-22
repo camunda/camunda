@@ -92,32 +92,39 @@ describe('<MetricPanel />', () => {
 
     fireEvent.click(screen.getByText('Instances with Incident'));
 
-    const searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
-
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
-    expect(MOCK_HISTORY.location.search).toBe(
-      '?filter=%7B%22incidents%22%3Atrue%7D'
-    );
-    expect(searchParams.get('filter')).toBe('{"incidents":true}');
+    expect(MOCK_HISTORY.location.search).toBe('?incidents=true');
   });
 
-  it('should go to the correct page when clicking on instances with incidents (with gse url)', async () => {
+  it('should not erase pesistent params', async () => {
     const MOCK_HISTORY = createMemoryHistory({
       initialEntries: ['/?gseUrl=https://www.testUrl.com'],
     });
+    statisticsStore.fetchStatistics();
     render(<MetricPanel />, {
       wrapper: createWrapper(MOCK_HISTORY),
     });
 
     fireEvent.click(screen.getByText('Instances with Incident'));
 
-    const searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
+    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
+    expect(MOCK_HISTORY.location.search).toBe(
+      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&incidents=true'
+    );
+
+    fireEvent.click(screen.getByText('Active Instances'));
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
     expect(MOCK_HISTORY.location.search).toBe(
-      '?filter=%7B%22incidents%22%3Atrue%7D&gseUrl=https%3A%2F%2Fwww.testUrl.com'
+      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true'
     );
-    expect(searchParams.get('filter')).toBe('{"incidents":true}');
+
+    fireEvent.click(await screen.findByText('821 Running Instances in total'));
+
+    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
+    expect(MOCK_HISTORY.location.search).toBe(
+      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&incidents=true&active=true'
+    );
   });
 
   it('should go to the correct page when clicking on active instances', async () => {
@@ -128,32 +135,8 @@ describe('<MetricPanel />', () => {
 
     fireEvent.click(screen.getByText('Active Instances'));
 
-    const searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
-
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
-    expect(MOCK_HISTORY.location.search).toBe(
-      '?filter=%7B%22active%22%3Atrue%7D'
-    );
-    expect(searchParams.get('filter')).toBe('{"active":true}');
-  });
-
-  it('should go to the correct page when clicking on active instances (with gse url)', async () => {
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/?gseUrl=https://www.testUrl.com'],
-    });
-    render(<MetricPanel />, {
-      wrapper: createWrapper(MOCK_HISTORY),
-    });
-
-    fireEvent.click(screen.getByText('Active Instances'));
-
-    const searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
-
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
-    expect(MOCK_HISTORY.location.search).toBe(
-      '?filter=%7B%22active%22%3Atrue%7D&gseUrl=https%3A%2F%2Fwww.testUrl.com'
-    );
-    expect(searchParams.get('filter')).toBe('{"active":true}');
+    expect(MOCK_HISTORY.location.search).toBe('?active=true');
   });
 
   it('should go to the correct page when clicking on total instances', async () => {
@@ -165,33 +148,8 @@ describe('<MetricPanel />', () => {
     statisticsStore.fetchStatistics();
     fireEvent.click(await screen.findByText('821 Running Instances in total'));
 
-    const searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
-
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
-    expect(MOCK_HISTORY.location.search).toBe(
-      '?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D'
-    );
-    expect(searchParams.get('filter')).toBe('{"active":true,"incidents":true}');
-  });
-
-  it('should go to the correct page when clicking on total instances (with gse url)', async () => {
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/?gseUrl=https://www.testUrl.com'],
-    });
-    render(<MetricPanel />, {
-      wrapper: createWrapper(MOCK_HISTORY),
-    });
-
-    statisticsStore.fetchStatistics();
-    fireEvent.click(await screen.findByText('821 Running Instances in total'));
-
-    const searchParams = new URLSearchParams(MOCK_HISTORY.location.search);
-
-    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
-    expect(MOCK_HISTORY.location.search).toBe(
-      '?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D&gseUrl=https%3A%2F%2Fwww.testUrl.com'
-    );
-    expect(searchParams.get('filter')).toBe('{"active":true,"incidents":true}');
+    expect(MOCK_HISTORY.location.search).toBe('?incidents=true&active=true');
   });
 
   it('should handle server errors', async () => {

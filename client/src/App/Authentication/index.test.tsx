@@ -8,14 +8,14 @@ import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {Router, Route} from 'react-router-dom';
+import {Router, Route, Switch} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import Authentication from './index';
 import {createMemoryHistory, History} from 'history';
 
 const LOGIN_CONTENT = 'Login content';
 const PRIVATE_COMPONENT_CONTENT = 'Private component content';
-const PrivateComponent = () => <div>{PRIVATE_COMPONENT_CONTENT}</div>;
+const PrivateComponent: React.FC = () => <div>{PRIVATE_COMPONENT_CONTENT}</div>;
 
 jest.mock('modules/notifications', () => {
   return {
@@ -31,24 +31,29 @@ jest.mock('modules/notifications', () => {
   };
 });
 
-type Props = {
-  children?: React.ReactNode;
-};
+function createWrapper(history: History) {
+  const Wrapper: React.FC = ({children}) => (
+    <ThemeProvider>
+      <Router history={history}>
+        <Switch>
+          <Route path="/login">{<h1>{LOGIN_CONTENT}</h1>}</Route>
+          <Authentication>
+            <Route path="/instances/:instanceId">{children}</Route>
+          </Authentication>
+        </Switch>
+      </Router>
+    </ThemeProvider>
+  );
 
-const createWrapper = (history: History) => ({children}: Props) => (
-  <ThemeProvider>
-    <Router history={history}>
-      <Route path="/login" render={() => <h1>{LOGIN_CONTENT}</h1>} />
-      <Authentication>
-        <Route>{children} </Route>
-      </Authentication>
-    </Router>
-  </ThemeProvider>
-);
+  return Wrapper;
+}
 
 describe('Authentication', () => {
   it('should render component if user is logged in', async () => {
-    const historyMock = createMemoryHistory({initialEntries: ['/instances/1']});
+    const mockPathname = '/instances/1';
+    const historyMock = createMemoryHistory({
+      initialEntries: [mockPathname],
+    });
 
     mockServer.use(
       rest.get('/api/authentications/user', (_, res, ctx) =>
@@ -56,32 +61,37 @@ describe('Authentication', () => {
       )
     );
 
-    render(<PrivateComponent />, {wrapper: createWrapper(historyMock)});
+    render(<PrivateComponent />, {
+      wrapper: createWrapper(historyMock),
+    });
+
     expect(
       await screen.findByText(PRIVATE_COMPONENT_CONTENT)
     ).toBeInTheDocument();
-
-    expect(historyMock.location.search).toBe('');
+    expect(historyMock.location.pathname).toBe(mockPathname);
   });
 
   it('should redirect to login page if user is not authenticated (401)', async () => {
-    const historyMock = createMemoryHistory({initialEntries: ['/instances/1']});
+    const historyMock = createMemoryHistory({
+      initialEntries: ['/instances/1'],
+    });
 
     mockServer.use(
       rest.get('/api/authentications/user', (_, res, ctx) =>
         res.once(ctx.status(401), ctx.json({}))
       )
     );
-
-    render(<PrivateComponent />, {wrapper: createWrapper(historyMock)});
+    render(<PrivateComponent />, {
+      wrapper: createWrapper(historyMock),
+    });
 
     expect(await screen.findByText(LOGIN_CONTENT)).toBeInTheDocument();
-    expect(historyMock.location.search).toBe('');
+    expect(historyMock.location.pathname).toBe('/login');
   });
 
-  it('should redirect to login page with gse url if user is not authenticated (401)', async () => {
+  it('should not erase persistent params on session redirect (401)', async () => {
     const historyMock = createMemoryHistory({
-      initialEntries: ['/instances/1?gseUrl=https://www.testUrl.com'],
+      initialEntries: ['/instances/1?gseUrl=https%3A%2F%2Fwww.testUrl.com'],
     });
 
     mockServer.use(
@@ -90,32 +100,20 @@ describe('Authentication', () => {
       )
     );
 
-    render(<PrivateComponent />, {wrapper: createWrapper(historyMock)});
+    render(<PrivateComponent />, {
+      wrapper: createWrapper(historyMock),
+    });
 
     expect(await screen.findByText(LOGIN_CONTENT)).toBeInTheDocument();
+    expect(historyMock.location.pathname).toBe('/login');
     expect(historyMock.location.search).toBe(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com'
     );
   });
 
   it('should redirect to login page if user is authenticated (403)', async () => {
-    const historyMock = createMemoryHistory({initialEntries: ['/instances/1']});
-
-    mockServer.use(
-      rest.get('/api/authentications/user', (_, res, ctx) =>
-        res.once(ctx.status(403), ctx.json({}))
-      )
-    );
-
-    render(<PrivateComponent />, {wrapper: createWrapper(historyMock)});
-
-    expect(await screen.findByText(LOGIN_CONTENT)).toBeInTheDocument();
-    expect(historyMock.location.search).toBe('');
-  });
-
-  it('should redirect to login page  with gse url if user is authenticated (403)', async () => {
     const historyMock = createMemoryHistory({
-      initialEntries: ['/instances/1?gseUrl=https://www.testUrl.com'],
+      initialEntries: ['/instances/1'],
     });
 
     mockServer.use(
@@ -124,9 +122,31 @@ describe('Authentication', () => {
       )
     );
 
-    render(<PrivateComponent />, {wrapper: createWrapper(historyMock)});
+    render(<PrivateComponent />, {
+      wrapper: createWrapper(historyMock),
+    });
 
     expect(await screen.findByText(LOGIN_CONTENT)).toBeInTheDocument();
+    expect(historyMock.location.pathname).toBe('/login');
+  });
+
+  it('should not erase persistent params on session redirect (403)', async () => {
+    const historyMock = createMemoryHistory({
+      initialEntries: ['/instances/1?gseUrl=https%3A%2F%2Fwww.testUrl.com'],
+    });
+
+    mockServer.use(
+      rest.get('/api/authentications/user', (_, res, ctx) =>
+        res.once(ctx.status(403), ctx.json({}))
+      )
+    );
+
+    render(<PrivateComponent />, {
+      wrapper: createWrapper(historyMock),
+    });
+
+    expect(await screen.findByText(LOGIN_CONTENT)).toBeInTheDocument();
+    expect(historyMock.location.pathname).toBe('/login');
     expect(historyMock.location.search).toBe(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com'
     );

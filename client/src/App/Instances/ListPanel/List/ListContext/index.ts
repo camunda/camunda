@@ -8,7 +8,6 @@ import React, {useContext} from 'react';
 
 type ContextProps = {
   data: WorkflowInstanceEntity[];
-  onSort: (key: string) => void;
   rowsToDisplay: number;
   isInitialDataLoaded: boolean;
 };

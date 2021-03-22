@@ -55,23 +55,25 @@ test('Log out', async (t) => {
 
 test('Redirect to initial page after login', async (t) => {
   await t.expect(await getPathname()).eql('#/login');
-  await t.navigateTo(`${config.endpoint}/#/instances`);
+  await t.navigateTo(
+    `${config.endpoint}/#/instances?active=true&incidents=true`
+  );
   await t.expect(await getPathname()).eql('#/login');
 
   await t
-    .typeText(screen.getByRole('textbox', {name: 'Username'}), 'demo')
+    .typeText(
+      screen.getByRole('textbox', {
+        name: 'Username',
+      }),
+      'demo'
+    )
     .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Log in'}));
 
-  await t
-    .expect(await getPathname())
-
-    .eql(
-      `#/instances?${convertToQueryString({
-        filter: JSON.stringify({
-          active: true,
-          incidents: true,
-        }),
-      })}`
-    );
+  await t.expect(await getPathname()).eql(
+    `#/instances?${convertToQueryString({
+      active: 'true',
+      incidents: 'true',
+    })}`
+  );
 });

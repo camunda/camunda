@@ -13,33 +13,6 @@ export function isValidJSON(text: string) {
   }
 }
 
-export function tryDecodeURI(text: any) {
-  try {
-    return decodeURI(text);
-  } catch {
-    return text;
-  }
-}
-
-export function tryDecodeURIComponent(text: any) {
-  try {
-    return decodeURIComponent(text);
-  } catch {
-    return text;
-  }
-}
-
-/**
- * Similar to lodash's compact(array): Removes entries with falsy values from the object
- * i.e. false, null, 0, "", undefined, and NaN
- * @param {object} object: object to make compact
- */
-export function compactObject(object: any) {
-  return Object.entries(object).reduce((obj, [key, value]) => {
-    return !!value ? {...obj, [key]: value} : obj;
-  }, {});
-}
-
 /**
  * @returns a filtered object containing only entries of the provided keys
  * @param {*} object
@@ -60,8 +33,4 @@ export function pickFromObject(object: any, keys: any) {
  */
 export function immutableArraySet(array: any, index: any, updatedValue: any) {
   return [...array.slice(0, index), updatedValue, ...array.slice(index + 1)];
-}
-
-export function trimValue(value: any) {
-  return typeof value === 'string' ? value.trim() : value;
 }

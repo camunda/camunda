@@ -268,7 +268,7 @@ test('Add variables', async (t) => {
 
   // go to instance page, filter and find the instance by added variable
   await t
-    .navigateTo(`${config.endpoint}/#/instances`)
+    .navigateTo(`${config.endpoint}/#/instances?active=true&incidents=true`)
     .typeText(screen.getByRole('textbox', {name: 'Variable'}), 'secondTestKey')
     .typeText(screen.getByRole('textbox', {name: 'Value'}), '"secondTestValue"')
     .typeText(

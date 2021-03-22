@@ -6,31 +6,6 @@
 
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
-export function generateQueryParams({
-  bpmnProcessId,
-  versions,
-  hasFinishedInstances,
-  name,
-}: any) {
-  const versionId = versions.length === 1 ? versions[0].version : 'all';
-
-  const filter = {
-    workflow: bpmnProcessId,
-    version: versionId.toString(),
-    incidents: true,
-    active: true,
-  };
-
-  if (hasFinishedInstances) {
-    Object.assign(filter, {
-      completed: true,
-      canceled: true,
-    });
-  }
-
-  return `?filter=${JSON.stringify(filter)}&name=${JSON.stringify(name)}`;
-}
-
 export function concatGroupTitle(
   workflowName: any,
   instancesCount: any,

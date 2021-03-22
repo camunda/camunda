@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {Router} from 'react-router-dom';
 import {
   render,
@@ -124,7 +123,7 @@ describe('IncidentsByError', () => {
       )
     );
     expect(historyMock.location.search).toBe(
-      '?filter=%7B%22errorMessage%22%3A%22JSON+path+%27%24.paid%27+has+no+result.%22%2C%22incidents%22%3Atrue%7D'
+      '?errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
     );
 
     fireEvent.click(expandButton);
@@ -141,11 +140,11 @@ describe('IncidentsByError', () => {
 
     fireEvent.click(firstVersion);
     expect(historyMock.location.search).toBe(
-      '?filter=%7B%22workflow%22%3A%22mockWorkflow%22%2C%22version%22%3A%221%22%2C%22errorMessage%22%3A%22JSON+path+%27%24.paid%27+has+no+result.%22%2C%22incidents%22%3Atrue%7D'
+      '?workflow=mockWorkflow&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
     );
   });
 
-  it('should navigate to correct urls when gseUrl is provided', async () => {
+  it('should not erase persistent params', async () => {
     mockServer.use(
       rest.get('/api/incidents/byError', (_, res, ctx) =>
         res.once(ctx.json(mockIncidentsByError))
@@ -174,7 +173,7 @@ describe('IncidentsByError', () => {
       )
     );
     expect(historyMock.location.search).toBe(
-      `?filter=%7B%22errorMessage%22%3A%22JSON+path+%27%24.paid%27+has+no+result.%22%2C%22incidents%22%3Atrue%7D&gseUrl=https%3A%2F%2Fwww.testUrl.com`
+      `?gseUrl=https%3A%2F%2Fwww.testUrl.com&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true`
     );
 
     fireEvent.click(expandButton);
@@ -185,7 +184,7 @@ describe('IncidentsByError', () => {
 
     fireEvent.click(firstVersion);
     expect(historyMock.location.search).toBe(
-      '?filter=%7B%22workflow%22%3A%22mockWorkflow%22%2C%22version%22%3A%221%22%2C%22errorMessage%22%3A%22JSON+path+%27%24.paid%27+has+no+result.%22%2C%22incidents%22%3Atrue%7D&gseUrl=https%3A%2F%2Fwww.testUrl.com'
+      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&workflow=mockWorkflow&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
     );
   });
 });

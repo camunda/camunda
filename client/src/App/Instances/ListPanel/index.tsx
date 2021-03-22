@@ -6,7 +6,6 @@
 
 import {EXPAND_STATE} from 'modules/constants';
 import SplitPane from 'modules/components/SplitPane';
-import {filtersStore} from 'modules/stores/filters';
 import {observer} from 'mobx-react';
 import {instancesStore} from 'modules/stores/instances';
 import {useLocation} from 'react-router-dom';
@@ -15,7 +14,6 @@ import ListFooter from './ListFooter';
 import {Spinner, PaneBody} from './styled';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {getFilters} from 'modules/utils/filter';
-import {IS_FILTERS_V2} from 'modules/feature-flags';
 
 const ListPanel = observer((props: any) => {
   const {
@@ -26,22 +24,7 @@ const ListPanel = observer((props: any) => {
   const filters = getFilters(location.search);
 
   const getEmptyListMessage = () => {
-    if (IS_FILTERS_V2) {
-      const {active, incidents, completed, canceled} = filters;
-
-      let msg = 'There are no Instances matching this filter set';
-
-      if (!active && !incidents && !completed && !canceled) {
-        msg += '\n To see some results, select at least one Instance state';
-      }
-
-      return msg;
-    }
-
-    const {
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'active' does not exist on type '{}'.
-      filter: {active, incidents, completed, canceled},
-    } = filtersStore.state;
+    const {active, incidents, completed, canceled} = filters;
 
     let msg = 'There are no Instances matching this filter set';
 
