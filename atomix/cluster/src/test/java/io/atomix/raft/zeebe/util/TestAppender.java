@@ -15,7 +15,7 @@
  */
 package io.atomix.raft.zeebe.util;
 
-import io.atomix.raft.storage.log.IndexedRaftRecord;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import java.nio.ByteBuffer;
@@ -25,8 +25,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class TestAppender implements AppendListener {
-  private final BlockingQueue<IndexedRaftRecord> written;
-  private final BlockingQueue<IndexedRaftRecord> committed;
+  private final BlockingQueue<IndexedRaftLogEntry> written;
+  private final BlockingQueue<IndexedRaftLogEntry> committed;
   private final BlockingQueue<Throwable> errors;
 
   public TestAppender() {
@@ -36,7 +36,7 @@ public class TestAppender implements AppendListener {
   }
 
   @Override
-  public void onWrite(final IndexedRaftRecord indexed) {
+  public void onWrite(final IndexedRaftLogEntry indexed) {
     written.offer(indexed);
   }
 
@@ -46,16 +46,16 @@ public class TestAppender implements AppendListener {
   }
 
   @Override
-  public void onCommit(final IndexedRaftRecord indexed) {
+  public void onCommit(final IndexedRaftLogEntry indexed) {
     committed.offer(indexed);
   }
 
   @Override
-  public void onCommitError(final IndexedRaftRecord indexed, final Throwable error) {
+  public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {
     errors.offer(error);
   }
 
-  public IndexedRaftRecord append(
+  public IndexedRaftLogEntry append(
       final ZeebeLogAppender appender,
       final long lowest,
       final long highest,
@@ -64,11 +64,11 @@ public class TestAppender implements AppendListener {
     return pollWritten();
   }
 
-  public IndexedRaftRecord pollWritten() {
+  public IndexedRaftLogEntry pollWritten() {
     return takeUnchecked(written);
   }
 
-  public IndexedRaftRecord pollCommitted() {
+  public IndexedRaftLogEntry pollCommitted() {
     return takeUnchecked(committed);
   }
 
@@ -76,11 +76,11 @@ public class TestAppender implements AppendListener {
     return takeUnchecked(errors);
   }
 
-  public List<IndexedRaftRecord> getWritten() {
+  public List<IndexedRaftLogEntry> getWritten() {
     return new ArrayList<>(written);
   }
 
-  public List<IndexedRaftRecord> getCommitted() {
+  public List<IndexedRaftLogEntry> getCommitted() {
     return new ArrayList<>(committed);
   }
 

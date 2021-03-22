@@ -19,7 +19,7 @@ import static org.junit.Assert.assertTrue;
 
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
-import io.atomix.raft.storage.log.IndexedRaftRecord;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
@@ -70,29 +70,29 @@ public class ZeebeTestHelper {
         .findFirst();
   }
 
-  public void awaitAllContain(final int partitionId, final IndexedRaftRecord indexed) {
+  public void awaitAllContain(final int partitionId, final IndexedRaftLogEntry indexed) {
     awaitAllContains(nodes, partitionId, indexed);
   }
 
   public void awaitAllContains(
       final Collection<ZeebeTestNode> nodes,
       final int partitionId,
-      final IndexedRaftRecord indexed) {
+      final IndexedRaftLogEntry indexed) {
     await(() -> nodes.stream().allMatch(node -> containsIndexed(node, partitionId, indexed)));
   }
 
   public boolean containsIndexed(
-      final ZeebeTestNode node, final int partitionId, final IndexedRaftRecord indexed) {
+      final ZeebeTestNode node, final int partitionId, final IndexedRaftLogEntry indexed) {
     final RaftPartitionServer partition = node.getPartitionServer(partitionId);
     return containsIndexed(partition, indexed);
   }
 
   public boolean containsIndexed(
-      final RaftPartitionServer partition, final IndexedRaftRecord indexed) {
+      final RaftPartitionServer partition, final IndexedRaftLogEntry indexed) {
     try (final RaftLogReader reader = partition.openReader(indexed.index(), Mode.COMMITS)) {
 
       if (reader.hasNext()) {
-        final IndexedRaftRecord entry = reader.next();
+        final IndexedRaftLogEntry entry = reader.next();
         if (entry.index() == indexed.index()) {
           return isEntryEqualTo(entry, indexed);
         }
@@ -102,7 +102,8 @@ public class ZeebeTestHelper {
     return false;
   }
 
-  public boolean isEntryEqualTo(final IndexedRaftRecord indexed, final IndexedRaftRecord other) {
+  public boolean isEntryEqualTo(
+      final IndexedRaftLogEntry indexed, final IndexedRaftLogEntry other) {
     return indexed.equals(other);
   }
 
@@ -118,7 +119,7 @@ public class ZeebeTestHelper {
   }
 
   public void awaitContains(
-      final ZeebeTestNode node, final int partitionId, final IndexedRaftRecord indexed) {
+      final ZeebeTestNode node, final int partitionId, final IndexedRaftLogEntry indexed) {
     await(() -> containsIndexed(node, partitionId, indexed));
   }
 

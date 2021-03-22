@@ -41,7 +41,7 @@ import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
-import io.atomix.raft.storage.log.IndexedRaftRecord;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
@@ -372,7 +372,7 @@ public class RaftTest extends ConcurrentTestCase {
       final RaftLog raftLog = server.getContext().getLog();
       final RaftLogReader raftLogReader = raftLog.openReader(0, Mode.COMMITS);
       raftLogReader.reset(raftLog.getLastIndex());
-      final RaftLogEntry entry = raftLogReader.next().entry();
+      final IndexedRaftLogEntry entry = raftLogReader.next();
 
       assertTrue(entry.isApplicationEntry());
       assertEquals(term, entry.term());
@@ -591,12 +591,12 @@ public class RaftTest extends ConcurrentTestCase {
     }
 
     @Override
-    public void onCommit(final IndexedRaftRecord indexed) {
+    public void onCommit(final IndexedRaftLogEntry indexed) {
       commitFuture.complete(indexed.index());
     }
 
     @Override
-    public void onCommitError(final IndexedRaftRecord indexed, final Throwable error) {
+    public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {
       fail("Unexpected write error: " + error.getMessage());
     }
 

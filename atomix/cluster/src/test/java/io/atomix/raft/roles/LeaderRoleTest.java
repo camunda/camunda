@@ -29,10 +29,12 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.storage.RaftStorage;
-import io.atomix.raft.storage.log.IndexedRaftRecord;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.PersistedRaftRecord;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
+import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
@@ -77,7 +79,7 @@ public class LeaderRoleTest {
         .then(
             i -> {
               final ApplicationEntry applicationEntry = i.getArgument(0);
-              return new IndexedRaftRecord(1, new RaftLogEntry(1, applicationEntry), 45, -1);
+              return new TestIndexedRaftLogEntry(1, 1, applicationEntry);
             });
     when(context.getLog()).thenReturn(log);
 
@@ -103,7 +105,7 @@ public class LeaderRoleTest {
     final AppendListener listener =
         new AppendListener() {
           @Override
-          public void onWrite(final IndexedRaftRecord indexed) {
+          public void onWrite(final IndexedRaftLogEntry indexed) {
             latch.countDown();
           }
         };
@@ -125,7 +127,7 @@ public class LeaderRoleTest {
         .then(
             i -> {
               final ApplicationEntry applicationEntry = i.getArgument(0);
-              return new IndexedRaftRecord(1, new RaftLogEntry(1, applicationEntry), 45, -1);
+              return new TestIndexedRaftLogEntry(1, 1, applicationEntry);
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -133,7 +135,7 @@ public class LeaderRoleTest {
     final AppendListener listener =
         new AppendListener() {
           @Override
-          public void onWrite(final IndexedRaftRecord indexed) {
+          public void onWrite(final IndexedRaftLogEntry indexed) {
             latch.countDown();
           }
         };
@@ -300,7 +302,7 @@ public class LeaderRoleTest {
         .then(
             i -> {
               final ApplicationEntry applicationEntry = i.getArgument(0);
-              return new IndexedRaftRecord(1, new RaftLogEntry(1, applicationEntry), 45, -1);
+              return new TestIndexedRaftLogEntry(1, 1, applicationEntry);
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -309,8 +311,8 @@ public class LeaderRoleTest {
     final AppendListener listener =
         new AppendListener() {
           @Override
-          public void onWrite(final IndexedRaftRecord indexed) {
-            entries.add(indexed.entry().getApplicationEntry());
+          public void onWrite(final IndexedRaftLogEntry indexed) {
+            entries.add(indexed.getApplicationEntry());
             latch.countDown();
           }
         };
@@ -335,7 +337,7 @@ public class LeaderRoleTest {
         .then(
             i -> {
               final ApplicationEntry applicationEntry = i.getArgument(0);
-              return new IndexedRaftRecord(1, new RaftLogEntry(1, applicationEntry), 45, -1);
+              return new TestIndexedRaftLogEntry(1, 1, applicationEntry);
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -372,5 +374,43 @@ public class LeaderRoleTest {
     // then
     assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
     verify(leaderRole.raft, timeout(2000).atLeast(1)).transition(Role.FOLLOWER);
+  }
+
+  private class TestIndexedRaftLogEntry implements IndexedRaftLogEntry {
+
+    private final long index;
+    private final long term;
+    private final RaftEntry entry;
+
+    public TestIndexedRaftLogEntry(final long index, final long term, final RaftEntry entry) {
+      this.index = index;
+      this.term = term;
+      this.entry = entry;
+    }
+
+    @Override
+    public long index() {
+      return index;
+    }
+
+    @Override
+    public long term() {
+      return term;
+    }
+
+    @Override
+    public RaftEntry entry() {
+      return entry;
+    }
+
+    @Override
+    public ApplicationEntry getApplicationEntry() {
+      return (ApplicationEntry) entry;
+    }
+
+    @Override
+    public PersistedRaftRecord getPersistedRaftRecord() {
+      return null;
+    }
   }
 }

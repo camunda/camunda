@@ -24,25 +24,23 @@ import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.log.PersistedRaftRecord;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespace.Builder;
 import io.atomix.utils.serializer.Namespaces;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
-import java.nio.ByteBuffer;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.CRC32;
-import java.util.zip.Checksum;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.rules.Timeout;
 
 public class PassiveRoleTest {
@@ -50,17 +48,16 @@ public class PassiveRoleTest {
   private static final Namespace NAMESPACE =
       new Builder().register(Namespaces.BASIC).register(ApplicationEntry.class).build();
   @Rule public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
-  private final ApplicationEntry entry = new ApplicationEntry(0, 1, ByteBuffer.allocate(0));
+  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private RaftLog log;
   private PassiveRole role;
 
   @Before
-  public void setup() {
+  public void setup() throws IOException {
     final RaftStorage storage = mock(RaftStorage.class);
     when(storage.namespace()).thenReturn(NAMESPACE);
 
-    log = mock(RaftLog.class);
-    when(log.getLastIndex()).thenReturn(1L);
+    log = RaftLog.builder().withDirectory(temporaryFolder.newFolder("data")).build();
 
     final PersistedSnapshot snapshot = mock(PersistedSnapshot.class);
     when(snapshot.getIndex()).thenReturn(1L);
@@ -75,49 +72,21 @@ public class PassiveRoleTest {
     when(ctx.getPersistedSnapshotStore()).thenReturn(store);
     when(ctx.getTerm()).thenReturn(1L);
     when(ctx.getReplicationMetrics()).thenReturn(mock(RaftReplicationMetrics.class));
-    when(ctx.getLog()).thenReturn(mock(RaftLog.class));
 
     role = new PassiveRole(ctx);
   }
 
   @Test
-  public void shouldRejectRequestIfDifferentNumberEntriesAndChecksums() {
+  public void shouldFailAppendWithIncorrectChecksum() {
     // given
-    final List<RaftLogEntry> entries = generateEntries(1);
-    final AppendRequest request = new AppendRequest(2, "", 1, 1, entries, List.of(1L, 2L), 1);
+    final List<PersistedRaftRecord> entries = new ArrayList<>();
+    entries.add(new PersistedRaftRecord(1, 1, 1, 12345, new byte[1]));
+    final AppendRequest request = new AppendRequest(2, "", 0, 0, entries, 1);
 
     // when
     final AppendResponse response = role.handleAppend(request).join();
 
     // then
     assertThat(response.succeeded()).isFalse();
-  }
-
-  // TODO: should be replaced with a test that checks we correctly handle InvalidChecksum error
-  @Ignore("should be replaced with a test that checks we correctly handle InvalidChecksum error")
-  @Test
-  public void shouldFailAppendWithIncorrectChecksum() {}
-
-  private List<RaftLogEntry> generateEntries(final int numEntries) {
-    final List<RaftLogEntry> entries = new ArrayList<>();
-    for (int i = 0; i < numEntries; i++) {
-      entries.add(new RaftLogEntry(1, new ApplicationEntry(i + 1, i + 1, ByteBuffer.allocate(0))));
-    }
-
-    return entries;
-  }
-
-  private List<Long> getChecksums(final List<RaftLogEntry> entries) {
-    final List<Long> checksums = new ArrayList<>();
-
-    for (final RaftLogEntry entry : entries) {
-      final byte[] serialized = NAMESPACE.serialize(entry);
-      final Checksum crc32 = new CRC32();
-      crc32.update(serialized, 0, serialized.length);
-
-      checksums.add(crc32.getValue());
-    }
-
-    return checksums;
   }
 }

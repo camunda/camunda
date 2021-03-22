@@ -10,7 +10,7 @@ package io.zeebe.broker.logstreams;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.storage.RaftStorage;
-import io.atomix.raft.storage.log.IndexedRaftRecord;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
 import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStore;
@@ -82,7 +82,7 @@ public final class AtomixLogDeletionServiceTest {
     assertThat(entries)
         .isNotEmpty()
         .hasSize(2)
-        .extracting(IndexedRaftRecord::index)
+        .extracting(IndexedRaftLogEntry::index)
         .containsExactly(2L, 3L);
   }
 
@@ -104,7 +104,7 @@ public final class AtomixLogDeletionServiceTest {
     assertThat(entries)
         .isNotEmpty()
         .hasSize(3)
-        .extracting(IndexedRaftRecord::index)
+        .extracting(IndexedRaftLogEntry::index)
         .containsExactly(1L, 2L, 3L);
   }
 
@@ -126,7 +126,7 @@ public final class AtomixLogDeletionServiceTest {
     assertThat(entries)
         .isNotEmpty()
         .hasSize(1)
-        .extracting(IndexedRaftRecord::index)
+        .extracting(IndexedRaftLogEntry::index)
         .containsExactly(3L);
   }
 
@@ -151,8 +151,8 @@ public final class AtomixLogDeletionServiceTest {
     }
   }
 
-  private List<IndexedRaftRecord> readAllEntries(final RaftLogReader reader) {
-    final List<IndexedRaftRecord> entries = new ArrayList<>();
+  private List<IndexedRaftLogEntry> readAllEntries(final RaftLogReader reader) {
+    final List<IndexedRaftLogEntry> entries = new ArrayList<>();
     while (reader.hasNext()) {
       entries.add(reader.next());
     }

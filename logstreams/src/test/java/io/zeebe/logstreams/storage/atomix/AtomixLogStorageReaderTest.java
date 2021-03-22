@@ -9,7 +9,7 @@ package io.zeebe.logstreams.storage.atomix;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.storage.log.IndexedRaftRecord;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
@@ -172,7 +172,7 @@ final class AtomixLogStorageReaderTest {
         final ByteBuffer data,
         final AppendListener appendListener) {
       final ApplicationEntry entry = new ApplicationEntry(lowestPosition, highestPosition, data);
-      final IndexedRaftRecord indexedEntry = log.append(new RaftLogEntry(1, entry));
+      final IndexedRaftLogEntry indexedEntry = log.append(new RaftLogEntry(1, entry));
 
       appendListener.onWrite(indexedEntry);
       log.setCommitIndex(indexedEntry.index());

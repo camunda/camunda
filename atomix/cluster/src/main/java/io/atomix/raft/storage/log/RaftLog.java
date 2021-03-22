@@ -37,7 +37,7 @@ public class RaftLog implements Closeable {
   private final Namespace serializer;
   private final boolean flushExplicitly;
 
-  private IndexedRaftRecord lastAppendedEntry;
+  private IndexedRaftLogEntry lastAppendedEntry;
   private volatile long commitIndex;
 
   protected RaftLog(
@@ -112,7 +112,7 @@ public class RaftLog implements Closeable {
     return journal.getLastIndex();
   }
 
-  public IndexedRaftRecord getLastEntry() {
+  public IndexedRaftLogEntry getLastEntry() {
     if (lastAppendedEntry == null) {
       readLastEntry();
     }
@@ -132,7 +132,8 @@ public class RaftLog implements Closeable {
     return journal.isEmpty();
   }
 
-  public IndexedRaftRecord append(final RaftLogEntry entry) {
+  @SuppressWarnings("unchecked")
+  public IndexedRaftLogEntry append(final RaftLogEntry entry) {
     final byte[] serializedEntry = serializer.serialize(entry);
     final JournalRecord journalRecord;
 
@@ -143,9 +144,15 @@ public class RaftLog implements Closeable {
       journalRecord = journal.append(new UnsafeBuffer(serializedEntry));
     }
 
-    lastAppendedEntry =
-        new IndexedRaftRecord(
-            journalRecord.index(), entry, serializedEntry.length, journalRecord.checksum());
+    lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), entry.entry(), journalRecord);
+    return lastAppendedEntry;
+  }
+
+  public IndexedRaftLogEntry append(final PersistedRaftRecord entry) {
+    journal.append(entry);
+
+    final RaftLogEntry raftEntry = serializer.deserialize(entry.data().byteArray());
+    lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), raftEntry.entry(), entry);
     return lastAppendedEntry;
   }
 

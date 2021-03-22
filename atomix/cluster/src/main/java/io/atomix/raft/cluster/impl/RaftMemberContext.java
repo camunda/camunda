@@ -20,7 +20,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import io.atomix.raft.storage.log.IndexedRaftRecord;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
@@ -53,7 +53,7 @@ public final class RaftMemberContext {
   private long failureTime;
   private volatile RaftLogReader reader;
   private SnapshotChunkReader snapshotChunkReader;
-  private IndexedRaftRecord currentEntry;
+  private IndexedRaftLogEntry currentEntry;
 
   RaftMemberContext(
       final DefaultRaftMember member,
@@ -423,12 +423,12 @@ public final class RaftMemberContext {
     return reader.hasNext();
   }
 
-  public IndexedRaftRecord nextEntry() {
+  public IndexedRaftLogEntry nextEntry() {
     currentEntry = reader.next();
     return currentEntry;
   }
 
-  public IndexedRaftRecord getCurrentEntry() {
+  public IndexedRaftLogEntry getCurrentEntry() {
     return currentEntry;
   }
 

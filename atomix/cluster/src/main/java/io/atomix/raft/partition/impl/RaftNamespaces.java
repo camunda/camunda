@@ -33,6 +33,7 @@ import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
+import io.atomix.raft.storage.log.PersistedRaftRecord;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
@@ -83,6 +84,7 @@ public final class RaftNamespaces {
           .register(Configuration.class)
           .register(ApplicationEntry.class)
           .register(RaftLogEntry.class)
+          .register(PersistedRaftRecord.class)
           .name("RaftProtocol")
           .build();
 

@@ -7,7 +7,7 @@
  */
 package io.zeebe.logstreams.storage.atomix;
 
-import io.atomix.raft.storage.log.IndexedRaftRecord;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.zeebe.logstreams.storage.LogStorageReader;
@@ -89,9 +89,9 @@ public final class AtomixLogStorageReader implements LogStorageReader {
 
   private boolean readNextBlock() {
     while (reader.hasNext()) {
-      final IndexedRaftRecord entry = reader.next();
-      if (entry.entry().isApplicationEntry()) {
-        final ApplicationEntry nextEntry = entry.entry().getApplicationEntry();
+      final IndexedRaftLogEntry entry = reader.next();
+      if (entry.isApplicationEntry()) {
+        final ApplicationEntry nextEntry = entry.getApplicationEntry();
 
         nextBlockBuffer.wrap(nextEntry.data());
         return true;
