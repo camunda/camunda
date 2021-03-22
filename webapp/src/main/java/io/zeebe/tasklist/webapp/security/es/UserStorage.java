@@ -11,8 +11,8 @@ import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.zeebe.tasklist.entities.UserEntity;
-import io.zeebe.tasklist.es.schema.indices.UserIndex;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
+import io.zeebe.tasklist.schema.indices.UserIndex;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.webapp.es.reader.AbstractReader;
 import io.zeebe.tasklist.webapp.rest.exception.NotFoundException;
@@ -78,7 +78,8 @@ public class UserStorage extends AbstractReader {
   public void create(UserEntity user) {
     try {
       final IndexRequest request =
-          new IndexRequest(userIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, user.getId())
+          new IndexRequest(
+                  userIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, user.getId())
               .source(userEntityToJSONString(user), XCONTENT_TYPE);
       esClient.index(request, RequestOptions.DEFAULT);
     } catch (Exception e) {

@@ -14,9 +14,9 @@ import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.tasklist.entities.FormEntity;
 import io.zeebe.tasklist.entities.WorkflowEntity;
-import io.zeebe.tasklist.es.schema.indices.FormIndex;
-import io.zeebe.tasklist.es.schema.indices.WorkflowIndex;
 import io.zeebe.tasklist.exceptions.PersistenceException;
+import io.zeebe.tasklist.schema.indices.FormIndex;
+import io.zeebe.tasklist.schema.indices.WorkflowIndex;
 import io.zeebe.tasklist.util.ConversionUtils;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.zeebeimport.util.XMLUtil;
@@ -80,7 +80,7 @@ public class WorkflowZeebeRecordProcessor {
     try {
       bulkRequest.add(
           new IndexRequest(
-                  workflowIndex.getIndexName(),
+                  workflowIndex.getFullQualifiedName(),
                   ElasticsearchUtil.ES_INDEX_TYPE,
                   ConversionUtils.toStringOrNull(workflowEntity.getKey()))
               .source(objectMapper.writeValueAsString(workflowEntity), XContentType.JSON));
@@ -125,7 +125,7 @@ public class WorkflowZeebeRecordProcessor {
     try {
       bulkRequest.add(
           new IndexRequest(
-                  formIndex.getIndexName(),
+                  formIndex.getFullQualifiedName(),
                   ElasticsearchUtil.ES_INDEX_TYPE,
                   ConversionUtils.toStringOrNull(formEntity.getId()))
               .source(objectMapper.writeValueAsString(formEntity), XContentType.JSON));

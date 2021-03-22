@@ -7,6 +7,7 @@ package io.zeebe.tasklist;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.tasklist.management.ElsIndicesCheck;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.zeebe.tasklist.util.TestApplication;
@@ -21,7 +22,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = {TestApplication.class, TestElasticsearchSchemaManager.class, Probes.class},
+    classes = {TestApplication.class, TestElasticsearchSchemaManager.class},
     properties = {
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
       "graphql.servlet.websocket.enabled=false"
@@ -30,9 +31,9 @@ public class ProbesTestIT {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private TestElasticsearchSchemaManager elasticsearchSchemaManager;
+  @Autowired private TestElasticsearchSchemaManager schemaManager;
 
-  @Autowired private Probes probes;
+  @Autowired private ElsIndicesCheck probes;
 
   @Before
   public void before() {
@@ -43,29 +44,24 @@ public class ProbesTestIT {
 
   @After
   public void after() {
-    elasticsearchSchemaManager.deleteSchemaQuietly();
+    schemaManager.deleteSchemaQuietly();
     tasklistProperties.getElasticsearch().setDefaultIndexPrefix();
   }
 
   @Test
   public void testIsReady() {
-    elasticsearchSchemaManager.createSchema();
-    assertThat(probes.isReady()).isTrue();
+    enableCreateSchema(true);
+    schemaManager.createSchema();
+    assertThat(probes.indicesArePresent()).isTrue();
   }
 
   @Test
   public void testIsNotReady() {
-    assertThat(probes.isReady()).isFalse();
+    enableCreateSchema(false);
+    assertThat(probes.indicesArePresent()).isFalse();
   }
 
-  @Test
-  public void testIsLive() {
-    elasticsearchSchemaManager.createSchema();
-    assertThat(probes.isLive()).isTrue();
-  }
-
-  @Test
-  public void testIsNotLive() {
-    assertThat(probes.isLive()).isFalse();
+  protected void enableCreateSchema(boolean createSchema) {
+    tasklistProperties.getElasticsearch().setCreateSchema(createSchema);
   }
 }

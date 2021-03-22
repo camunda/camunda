@@ -9,8 +9,8 @@ import static io.zeebe.tasklist.util.ElasticsearchUtil.fromSearchHit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.tasklist.entities.FormEntity;
-import io.zeebe.tasklist.es.schema.indices.FormIndex;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
+import io.zeebe.tasklist.schema.indices.FormIndex;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.webapp.graphql.entity.FormDTO;
 import java.io.IOException;
@@ -33,7 +33,7 @@ public class FormReader {
   public FormDTO getFormDTO(final String id) {
     try {
       final GetRequest getRequest =
-          new GetRequest(formIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, id);
+          new GetRequest(formIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, id);
 
       final GetResponse response = esClient.get(getRequest, RequestOptions.DEFAULT);
       if (response.isExists()) {

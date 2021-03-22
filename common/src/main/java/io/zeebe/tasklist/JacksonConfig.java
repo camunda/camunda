@@ -26,7 +26,7 @@ public class JacksonConfig {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Bean
+  @Bean("tasklistObjectMapper")
   public ObjectMapper objectMapper() {
     final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(

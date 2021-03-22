@@ -5,18 +5,15 @@
  */
 package io.zeebe.tasklist.property;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 /** This class contains all project configuration parameters. */
 @Component
 @Configuration
 @ConfigurationProperties(TasklistProperties.PREFIX)
-@PropertySource("classpath:tasklist-version.properties")
 public class TasklistProperties {
 
   public static final String PREFIX = "zeebe.tasklist";
@@ -38,12 +35,6 @@ public class TasklistProperties {
   private Long batchOperationMaxSize = BATCH_OPERATION_MAX_SIZE_DEFAULT;
 
   private boolean enterprise = false;
-
-  @Value("${zeebe.tasklist.internal.schema.version}")
-  private String schemaVersion;
-
-  @Value("${zeebe.tasklist.internal.schema.previous_version}")
-  private String previousSchemaVersion;
 
   @NestedConfigurationProperty
   private TasklistElasticsearchProperties elasticsearch = new TasklistElasticsearchProperties();
@@ -172,22 +163,6 @@ public class TasklistProperties {
 
   public void setEnterprise(boolean enterprise) {
     this.enterprise = enterprise;
-  }
-
-  public String getSchemaVersion() {
-    return schemaVersion.toLowerCase();
-  }
-
-  public void setSchemaVersion(String schemaVersion) {
-    this.schemaVersion = schemaVersion;
-  }
-
-  public String getPreviousSchemaVersion() {
-    return previousSchemaVersion.toLowerCase();
-  }
-
-  public void setPreviousSchemaVersion(String previousSchemaVersion) {
-    this.previousSchemaVersion = previousSchemaVersion;
   }
 
   public ClientProperties getClient() {

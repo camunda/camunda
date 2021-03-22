@@ -19,11 +19,11 @@ import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.entities.TaskState;
 import io.zeebe.tasklist.entities.TaskVariableEntity;
 import io.zeebe.tasklist.entities.VariableEntity;
-import io.zeebe.tasklist.es.schema.indices.FlowNodeInstanceIndex;
-import io.zeebe.tasklist.es.schema.indices.VariableIndex;
-import io.zeebe.tasklist.es.schema.templates.TaskVariableTemplate;
 import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
+import io.zeebe.tasklist.schema.indices.FlowNodeInstanceIndex;
+import io.zeebe.tasklist.schema.indices.VariableIndex;
+import io.zeebe.tasklist.schema.templates.TaskVariableTemplate;
 import io.zeebe.tasklist.util.CollectionUtil;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
@@ -105,7 +105,7 @@ public class VariableReaderWriter {
           objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
 
       return new UpdateRequest(
-              taskVariableTemplate.getMainIndexName(),
+              taskVariableTemplate.getFullQualifiedName(),
               ElasticsearchUtil.ES_INDEX_TYPE,
               variableEntity.getId())
           .upsert(objectMapper.writeValueAsString(variableEntity), XContentType.JSON)

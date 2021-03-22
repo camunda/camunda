@@ -66,7 +66,6 @@ public class ElasticsearchConnectorBasicAuthIT {
       elasticsearch.start();
       final String elsUrl = String.format("http://%s", elasticsearch.getHttpHostAddress());
       TestPropertyValues.of(
-              ".operate.elasticsearch.url=" + elsUrl,
               // "zeebe.tasklist.elasticsearch.host="+elasticsearch.getHost(),
               // "zeebe.tasklist.elasticsearch.port="+elasticsearch.getFirstMappedPort(),
               "zeebe.tasklist.elasticsearch.username=elastic",

@@ -12,79 +12,26 @@
 	<name>Zeebe Tasklist ELS schema</name>
 	<artifactId>tasklist-els-schema</artifactId>
 
+	<dependencies>
+
+		<dependency>
+			<groupId>io.zeebe.tasklist</groupId>
+			<artifactId>tasklist-common</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+	</dependencies>
+
 	<build>
 		<plugins>
-	        <!-- 
-	        	* Used for lowercase the application version that is also used as schema version 
-	        	* Elasticsearch accepts only lowercase index names
-	        -->
+
+			<!-- LICENSE PLUGIN -->
 			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>build-helper-maven-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>project-version-property</id>
-						<goals>
-							<goal>regex-property</goal>
-						</goals>
-						<configuration>
-							<name>schema.version</name>
-							<value>${project.version}</value>
-							<regex>.*</regex>
-							<replacement>$0</replacement>
-							<failIfNoMatch>false</failIfNoMatch>
-							<toLowerCase>true</toLowerCase>
-						</configuration>
-					</execution>
-					<execution>
-						<id>project-previous_version</id>
-						<goals>
-							<goal>regex-property</goal>
-						</goals>
-						<configuration>
-							<name>schema.previous_version</name>
-							<value>${project.previous_version}</value>
-							<regex>.*</regex>
-							<replacement>$0</replacement>
-							<failIfNoMatch>false</failIfNoMatch>
-							<toLowerCase>true</toLowerCase>
-						</configuration>
-					</execution>
-				</executions>
+				<groupId>com.mycila</groupId>
+				<artifactId>license-maven-plugin</artifactId>
 			</plugin>
 
-			<!-- 
-				Defines packing of migration scripts
-			 -->
-			<plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<configuration>
-					<appendAssemblyId>false</appendAssemblyId>
-					<finalName>migration</finalName>
-					<descriptors>
-						<descriptor>${basedir}/assembly.xml</descriptor>
-					</descriptors>
-				</configuration>
-				<executions>
-					<execution>
-						<id>create-archive</id>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
 		</plugins>
-		<!-- 
-			Enabled setting of schemaversion in scripts and json files
-		 -->
-		<resources>
-			<resource>
-				<directory>src/main/resources/</directory>
-				<filtering>true</filtering>
-			</resource>
-		</resources>
 	</build>
 
 </project>

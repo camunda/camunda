@@ -10,8 +10,8 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.tasklist.entities.meta.ImportPositionEntity;
-import io.zeebe.tasklist.es.schema.indices.ImportPositionIndex;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
+import io.zeebe.tasklist.schema.indices.ImportPositionIndex;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
 import java.util.HashMap;
@@ -103,7 +103,7 @@ public class ImportPositionHolder {
     try {
       final UpdateRequest request =
           new UpdateRequest(
-                  importPositionType.getIndexName(),
+                  importPositionType.getFullQualifiedName(),
                   ElasticsearchUtil.ES_INDEX_TYPE,
                   lastProcessedPosition.getId())
               .upsert(objectMapper.writeValueAsString(lastProcessedPosition), XContentType.JSON)

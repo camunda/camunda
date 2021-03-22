@@ -16,9 +16,9 @@ import io.zeebe.tasklist.entities.FlowNodeInstanceEntity;
 import io.zeebe.tasklist.entities.FlowNodeType;
 import io.zeebe.tasklist.entities.WorkflowInstanceEntity;
 import io.zeebe.tasklist.entities.WorkflowInstanceState;
-import io.zeebe.tasklist.es.schema.indices.FlowNodeInstanceIndex;
-import io.zeebe.tasklist.es.schema.indices.WorkflowInstanceIndex;
 import io.zeebe.tasklist.exceptions.PersistenceException;
+import io.zeebe.tasklist.schema.indices.FlowNodeInstanceIndex;
+import io.zeebe.tasklist.schema.indices.WorkflowInstanceIndex;
 import io.zeebe.tasklist.util.ConversionUtils;
 import io.zeebe.tasklist.util.DateUtil;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
@@ -120,7 +120,9 @@ public class WorkflowInstanceZeebeRecordProcessor {
       LOGGER.debug("Flow node instance: id {}", entity.getId());
 
       return new IndexRequest(
-              flowNodeInstanceIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+              flowNodeInstanceIndex.getFullQualifiedName(),
+              ElasticsearchUtil.ES_INDEX_TYPE,
+              entity.getId())
           .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
     } catch (IOException e) {
       throw new PersistenceException(
@@ -136,7 +138,9 @@ public class WorkflowInstanceZeebeRecordProcessor {
       LOGGER.debug("Workflow instance: id {}", entity.getId());
 
       return new IndexRequest(
-              workflowInstanceIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+              workflowInstanceIndex.getFullQualifiedName(),
+              ElasticsearchUtil.ES_INDEX_TYPE,
+              entity.getId())
           .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
     } catch (IOException e) {
       throw new PersistenceException(

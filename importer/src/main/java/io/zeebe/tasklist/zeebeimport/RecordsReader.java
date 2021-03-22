@@ -14,10 +14,10 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 
 import io.zeebe.tasklist.Metrics;
 import io.zeebe.tasklist.entities.meta.ImportPositionEntity;
-import io.zeebe.tasklist.es.schema.indices.ImportPositionIndex;
 import io.zeebe.tasklist.exceptions.NoSuchIndexException;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.schema.indices.ImportPositionIndex;
 import io.zeebe.tasklist.zeebe.ImportValueType;
 import java.io.IOException;
 import java.time.OffsetDateTime;

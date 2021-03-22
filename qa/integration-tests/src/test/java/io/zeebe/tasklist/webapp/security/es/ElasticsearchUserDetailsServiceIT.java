@@ -7,8 +7,8 @@ package io.zeebe.tasklist.webapp.security.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.tasklist.es.schema.indices.UserIndex;
 import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.schema.indices.UserIndex;
 import io.zeebe.tasklist.util.ElasticsearchTestRule;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.util.TasklistIntegrationTest;
@@ -95,7 +95,7 @@ public class ElasticsearchUserDetailsServiceIT extends TasklistIntegrationTest {
       jsonMap.put(UserIndex.LASTNAME, TEST_LASTNAME);
       final UpdateRequest request =
           new UpdateRequest(
-                  userIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, TEST_USERNAME)
+                  userIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, TEST_USERNAME)
               .doc(jsonMap);
       esClient.update(request, RequestOptions.DEFAULT);
       elasticsearchTestRule.refreshTasklistESIndices();
@@ -106,7 +106,7 @@ public class ElasticsearchUserDetailsServiceIT extends TasklistIntegrationTest {
 
   public void deleteById(String id) throws IOException {
     final DeleteRequest request =
-        new DeleteRequest(userIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, id);
+        new DeleteRequest(userIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, id);
     esClient.delete(request, RequestOptions.DEFAULT);
   }
 }

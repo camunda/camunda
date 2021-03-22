@@ -16,11 +16,11 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 
 import io.micrometer.core.annotation.Timed;
 import io.zeebe.tasklist.Metrics;
-import io.zeebe.tasklist.es.schema.templates.TaskTemplate;
-import io.zeebe.tasklist.es.schema.templates.TaskVariableTemplate;
 import io.zeebe.tasklist.exceptions.ArchiverException;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.schema.templates.TaskTemplate;
+import io.zeebe.tasklist.schema.templates.TaskVariableTemplate;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -70,13 +70,13 @@ public class TaskArchiverJob extends AbstractArchiverJob {
 
         // archive task variables
         archiver.moveDocuments(
-            taskVariableTemplate.getMainIndexName(),
+            taskVariableTemplate.getFullQualifiedName(),
             TaskVariableTemplate.TASK_ID,
             archiveBatch.getFinishDate(),
             archiveBatch.getIds());
 
         archiver.moveDocuments(
-            taskTemplate.getMainIndexName(),
+            taskTemplate.getFullQualifiedName(),
             TaskTemplate.ID,
             archiveBatch.getFinishDate(),
             archiveBatch.getIds());
@@ -119,7 +119,7 @@ public class TaskArchiverJob extends AbstractArchiverJob {
     final ConstantScoreQueryBuilder q = constantScoreQuery(joinWithAnd(endDateQ, partitionQ));
 
     final SearchRequest searchRequest =
-        new SearchRequest(taskTemplate.getMainIndexName())
+        new SearchRequest(taskTemplate.getFullQualifiedName())
             .source(
                 new SearchSourceBuilder()
                     .query(q)

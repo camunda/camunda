@@ -20,8 +20,8 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.entities.TaskState;
-import io.zeebe.tasklist.es.schema.templates.TaskTemplate;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
+import io.zeebe.tasklist.schema.templates.TaskTemplate;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskQueryDTO;
@@ -353,7 +353,7 @@ public class TaskReaderWriter {
           objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
       final UpdateRequest updateRequest =
           new UpdateRequest(
-                  taskTemplate.getMainIndexName(),
+                  taskTemplate.getFullQualifiedName(),
                   ElasticsearchUtil.ES_INDEX_TYPE,
                   taskBeforeSearchHit.getId())
               .doc(jsonMap)
@@ -394,7 +394,7 @@ public class TaskReaderWriter {
           objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
       final UpdateRequest updateRequest =
           new UpdateRequest(
-                  taskTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, taskId)
+                  taskTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, taskId)
               .doc(jsonMap)
               .setRefreshPolicy(WAIT_UNTIL)
               .setIfSeqNo(searchHit.getSeqNo())

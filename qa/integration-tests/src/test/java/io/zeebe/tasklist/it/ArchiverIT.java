@@ -20,9 +20,9 @@ import io.zeebe.tasklist.archiver.Archiver;
 import io.zeebe.tasklist.archiver.TaskArchiverJob;
 import io.zeebe.tasklist.archiver.WorkflowInstanceArchiverJob;
 import io.zeebe.tasklist.entities.TaskEntity;
-import io.zeebe.tasklist.es.schema.templates.TaskTemplate;
-import io.zeebe.tasklist.es.schema.templates.TaskVariableTemplate;
 import io.zeebe.tasklist.exceptions.ArchiverException;
+import io.zeebe.tasklist.schema.templates.TaskTemplate;
+import io.zeebe.tasklist.schema.templates.TaskVariableTemplate;
 import io.zeebe.tasklist.util.CollectionUtil;
 import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.zeebe.tasklist.util.ElasticsearchHelper;
@@ -261,7 +261,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
       throws IOException {
     assertTaskIndex(tasksCount, ids, endDate);
     assertDependentIndex(
-        taskVariableTemplate.getMainIndexName(), TaskVariableTemplate.TASK_ID, ids, endDate);
+        taskVariableTemplate.getFullQualifiedName(), TaskVariableTemplate.TASK_ID, ids, endDate);
   }
 
   private void assertTaskIndex(int tasksCount, List<String> ids, Instant endDate)
@@ -270,9 +270,10 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     if (endDate != null) {
       destinationIndexName =
           archiver.getDestinationIndexName(
-              taskTemplate.getMainIndexName(), dateTimeFormatter.format(endDate));
+              taskTemplate.getFullQualifiedName(), dateTimeFormatter.format(endDate));
     } else {
-      destinationIndexName = archiver.getDestinationIndexName(taskTemplate.getMainIndexName(), "");
+      destinationIndexName =
+          archiver.getDestinationIndexName(taskTemplate.getFullQualifiedName(), "");
     }
     final IdsQueryBuilder idsQ = idsQuery().addIds(CollectionUtil.toSafeArrayOfStrings(ids));
 

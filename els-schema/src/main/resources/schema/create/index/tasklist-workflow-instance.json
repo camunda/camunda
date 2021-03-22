@@ -1,0 +1,23 @@
+{
+	"mappings": {
+		"dynamic": "strict",
+		"properties": {
+			"partitionId": {
+				"type": "integer"
+			},
+			"id": {
+				"type": "keyword"
+			},
+			"key": {
+				"type": "long"
+			},
+			"endDate": {
+				"format": "date_time",
+				"type": "date"
+			},
+			"state": {
+				"type": "keyword"
+			}
+		}
+	}
+}

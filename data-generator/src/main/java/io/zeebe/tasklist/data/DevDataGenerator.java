@@ -13,10 +13,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.tasklist.entities.FormEntity;
 import io.zeebe.tasklist.entities.UserEntity;
-import io.zeebe.tasklist.es.schema.indices.FormIndex;
-import io.zeebe.tasklist.es.schema.indices.UserIndex;
-import io.zeebe.tasklist.es.schema.templates.TaskTemplate;
 import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.schema.indices.FormIndex;
+import io.zeebe.tasklist.schema.indices.UserIndex;
+import io.zeebe.tasklist.schema.templates.TaskTemplate;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.util.ZeebeTestUtil;
 import java.io.IOException;
@@ -117,7 +117,8 @@ public class DevDataGenerator implements DataGenerator {
             .setLastname(lastname);
     try {
       final IndexRequest request =
-          new IndexRequest(userIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, user.getId())
+          new IndexRequest(
+                  userIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, user.getId())
               .source(userEntityToJSONString(user), XContentType.JSON);
       esClient.index(request, RequestOptions.DEFAULT);
     } catch (Exception t) {
@@ -194,7 +195,9 @@ public class DevDataGenerator implements DataGenerator {
       final FormEntity formEntity = new FormEntity("workflowId", "formKey", formJSON);
       final IndexRequest indexRequest =
           new IndexRequest(
-                  formIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, formEntity.getId())
+                  formIndex.getFullQualifiedName(),
+                  ElasticsearchUtil.ES_INDEX_TYPE,
+                  formEntity.getId())
               .source(objectMapper.writeValueAsString(formEntity), XContentType.JSON);
       try {
         esClient.index(indexRequest, RequestOptions.DEFAULT);
@@ -204,7 +207,7 @@ public class DevDataGenerator implements DataGenerator {
       sleepFor(10000L);
       // update registerPassenger tasks with formKey
       final UpdateByQueryRequest updateRequest =
-          new UpdateByQueryRequest(taskTemplate.getMainIndexName())
+          new UpdateByQueryRequest(taskTemplate.getFullQualifiedName())
               .setQuery(termQuery(TaskTemplate.FLOW_NODE_BPMN_ID, "registerPassenger"))
               .setScript(
                   new Script(

@@ -19,6 +19,12 @@
       <version>${project.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>io.zeebe.tasklist</groupId>
+      <artifactId>tasklist-els-schema</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- SPRING BOOT -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

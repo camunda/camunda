@@ -1,0 +1,20 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "workflowId": {
+        "type": "keyword"
+      },
+      "formKey": {
+        "type": "keyword"
+      },
+      "schema": {
+        "type": "text",
+        "index": false
+      }
+    }
+  }
+}

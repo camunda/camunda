@@ -5,13 +5,7 @@
  */
 package io.zeebe.tasklist.qa.util;
 
-import io.zeebe.tasklist.es.ElasticsearchSchemaManager;
-import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
-import java.io.IOException;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
-import org.elasticsearch.client.RequestOptions;
+import io.zeebe.tasklist.schema.ElasticsearchSchemaManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -31,16 +25,10 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager {
   }
 
   public void deleteSchema() {
-    try {
-      final String prefix = tasklistProperties.getElasticsearch().getIndexPrefix();
-      LOGGER.info("Removing indices " + prefix + "*");
-      esClient.indices().delete(new DeleteIndexRequest(prefix + "*"), RequestOptions.DEFAULT);
-      esClient
-          .indices()
-          .deleteTemplate(new DeleteIndexTemplateRequest(prefix + "*"), RequestOptions.DEFAULT);
-    } catch (ElasticsearchStatusException | IOException e) {
-      throw new TasklistRuntimeException("Failed to delete indices ", e);
-    }
+    final String prefix = tasklistProperties.getElasticsearch().getIndexPrefix();
+    LOGGER.info("Removing indices " + prefix + "*");
+    retryElasticsearchClient.deleteIndicesFor(prefix + "*");
+    retryElasticsearchClient.deleteTemplatesFor(prefix + "*");
   }
 
   public void deleteSchemaQuietly() {

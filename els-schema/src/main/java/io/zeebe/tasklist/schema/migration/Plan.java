@@ -1,0 +1,27 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package io.zeebe.tasklist.schema.migration;
+
+import io.zeebe.tasklist.es.RetryElasticsearchClient;
+import io.zeebe.tasklist.exceptions.MigrationException;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+
+/** A plan consists of executable Steps. The plan can be execute on an elasticsearch client. */
+public interface Plan {
+
+  static ReindexPlan forReindex() {
+    return new ReindexPlan();
+  }
+
+  default List<Step> getSteps() {
+    return Collections.emptyList();
+  }
+
+  void executeOn(final RetryElasticsearchClient retryElasticsearchClient)
+      throws IOException, MigrationException;
+}

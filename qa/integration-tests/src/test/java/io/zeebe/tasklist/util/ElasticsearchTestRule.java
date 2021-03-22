@@ -10,9 +10,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.tasklist.es.ElasticsearchSchemaManager;
 import io.zeebe.tasklist.property.TasklistElasticsearchProperties;
 import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.schema.ElasticsearchSchemaManager;
 import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.zeebe.tasklist.zeebe.ImportValueType;
 import io.zeebe.tasklist.zeebeimport.RecordsReader;

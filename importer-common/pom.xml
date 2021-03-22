@@ -7,12 +7,19 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
+  <name>Zeebe Tasklist Importer Common</name>
   <artifactId>tasklist-importer-common</artifactId>
 
   <dependencies>
     <dependency>
       <groupId>io.zeebe.tasklist</groupId>
       <artifactId>tasklist-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe.tasklist</groupId>
+      <artifactId>tasklist-els-schema</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>

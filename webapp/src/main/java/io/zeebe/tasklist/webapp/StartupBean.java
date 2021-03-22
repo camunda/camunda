@@ -39,7 +39,6 @@ public class StartupBean {
 
   @PostConstruct
   public void initApplication() {
-    LOGGER.info("Tasklist Version: " + tasklistProperties.getSchemaVersion());
     if (elasticsearchUserDetailsService != null) {
       LOGGER.info("INIT: Create users in elasticsearch if not exists ...");
       elasticsearchUserDetailsService.initializeUsers();

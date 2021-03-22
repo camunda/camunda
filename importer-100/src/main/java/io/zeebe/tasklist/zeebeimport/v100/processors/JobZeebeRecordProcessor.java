@@ -14,9 +14,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.entities.TaskState;
-import io.zeebe.tasklist.es.schema.templates.TaskTemplate;
 import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.schema.templates.TaskTemplate;
 import io.zeebe.tasklist.util.DateUtil;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.zeebeimport.v100.record.value.JobRecordValueImpl;
@@ -97,7 +97,7 @@ public class JobZeebeRecordProcessor {
           objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
 
       return new UpdateRequest(
-              taskTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+              taskTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
           .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
           .doc(jsonMap)
           .retryOnConflict(UPDATE_RETRY_COUNT);

@@ -15,10 +15,10 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.tasklist.archiver.Archiver;
 import io.zeebe.tasklist.archiver.TaskArchiverJob;
 import io.zeebe.tasklist.entities.TaskEntity;
-import io.zeebe.tasklist.es.schema.templates.TaskTemplate;
-import io.zeebe.tasklist.es.schema.templates.TaskVariableTemplate;
 import io.zeebe.tasklist.exceptions.ArchiverException;
 import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.schema.templates.TaskTemplate;
+import io.zeebe.tasklist.schema.templates.TaskVariableTemplate;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
 import io.zeebe.tasklist.zeebe.PartitionHolder;
@@ -132,9 +132,10 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
     if (endDate != null) {
       destinationIndexName =
           archiver.getDestinationIndexName(
-              taskTemplate.getMainIndexName(), dateTimeFormatter.format(endDate));
+              taskTemplate.getFullQualifiedName(), dateTimeFormatter.format(endDate));
     } else {
-      destinationIndexName = archiver.getDestinationIndexName(taskTemplate.getMainIndexName(), "");
+      destinationIndexName =
+          archiver.getDestinationIndexName(taskTemplate.getFullQualifiedName(), "");
     }
     final SearchRequest searchRequest =
         new SearchRequest(destinationIndexName)

@@ -13,13 +13,6 @@
 	<artifactId>tasklist-common</artifactId>
 
 	<dependencies>
-
-		<dependency>
-			<groupId>io.zeebe.tasklist</groupId>
-			<artifactId>tasklist-els-schema</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-
 		<!-- SPRING BOOT -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -67,6 +60,11 @@
 		<dependency>
 			<groupId>org.glassfish</groupId>
 			<artifactId>javax.json</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>net.jodah</groupId>
+			<artifactId>failsafe</artifactId>
 		</dependency>
 
 		<!-- Micrometer Prometheus -->

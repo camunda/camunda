@@ -14,13 +14,13 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 
 import io.micrometer.core.annotation.Timed;
 import io.zeebe.tasklist.Metrics;
-import io.zeebe.tasklist.es.schema.indices.FlowNodeInstanceIndex;
-import io.zeebe.tasklist.es.schema.indices.VariableIndex;
-import io.zeebe.tasklist.es.schema.indices.WorkflowInstanceIndex;
-import io.zeebe.tasklist.es.schema.templates.TaskTemplate;
 import io.zeebe.tasklist.exceptions.ArchiverException;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.schema.indices.FlowNodeInstanceIndex;
+import io.zeebe.tasklist.schema.indices.VariableIndex;
+import io.zeebe.tasklist.schema.indices.WorkflowInstanceIndex;
+import io.zeebe.tasklist.schema.templates.TaskTemplate;
 import java.io.IOException;
 import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;
@@ -67,13 +67,17 @@ public class WorkflowInstanceArchiverJob extends AbstractArchiverJob {
     if (archiveBatch != null) {
       LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
       archiver.deleteDocuments(
-          variableIndex.getIndexName(), VariableIndex.WORKFLOW_INSTANCE_ID, archiveBatch.getIds());
+          variableIndex.getFullQualifiedName(),
+          VariableIndex.WORKFLOW_INSTANCE_ID,
+          archiveBatch.getIds());
       archiver.deleteDocuments(
-          flowNodeInstanceIndex.getIndexName(),
+          flowNodeInstanceIndex.getFullQualifiedName(),
           FlowNodeInstanceIndex.WORKFLOW_INSTANCE_ID,
           archiveBatch.getIds());
       archiver.deleteDocuments(
-          workflowInstanceIndex.getIndexName(), WorkflowInstanceIndex.ID, archiveBatch.getIds());
+          workflowInstanceIndex.getFullQualifiedName(),
+          WorkflowInstanceIndex.ID,
+          archiveBatch.getIds());
       return archiveBatch.getIds().size();
     } else {
       LOGGER.debug("Nothing to archive");
@@ -114,7 +118,7 @@ public class WorkflowInstanceArchiverJob extends AbstractArchiverJob {
     final ConstantScoreQueryBuilder q = constantScoreQuery(joinWithAnd(endDateQ, partitionQ));
 
     final SearchRequest searchRequest =
-        new SearchRequest(workflowInstanceIndex.getIndexName())
+        new SearchRequest(workflowInstanceIndex.getFullQualifiedName())
             .source(
                 new SearchSourceBuilder()
                     .query(q)

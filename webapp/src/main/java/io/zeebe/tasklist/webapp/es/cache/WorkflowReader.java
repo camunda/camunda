@@ -7,8 +7,8 @@ package io.zeebe.tasklist.webapp.es.cache;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.tasklist.entities.WorkflowEntity;
-import io.zeebe.tasklist.es.schema.indices.WorkflowIndex;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
+import io.zeebe.tasklist.schema.indices.WorkflowIndex;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
 import org.elasticsearch.action.search.SearchRequest;

@@ -1,0 +1,29 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "flowNodes": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          }
+        }
+      },
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "keyword"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "partitionId": {
+        "type": "integer"
+      }
+    }
+  }
+}

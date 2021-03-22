@@ -88,7 +88,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     }
     if (!authenticated) {
       throw new InsufficientAuthenticationException(
-          "No permission for operate - check your organization id");
+          "No permission for Zeebe Tasklist - check your organization id");
     }
   }
 
