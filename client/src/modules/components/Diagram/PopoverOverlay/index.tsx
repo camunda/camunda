@@ -17,8 +17,6 @@ import {
   PeterCaseSummaryBody,
   SummaryHeader,
 } from './styled';
-import {PopoverPosition} from '../service';
-
 import {
   flowNodeMetaDataStore,
   InstanceMetaDataEntity,
@@ -30,6 +28,7 @@ import {SummaryData} from './styled';
 import {OverlayType} from 'modules/types/modeler';
 import {beautifyMetadata} from './beautifyMetadata';
 import {getModalHeadline} from './getModalHeadline';
+import {getPopoverPosition} from './getPopoverPosition';
 
 const InstanceMetaData: React.FC<{
   metaData: InstanceMetaDataEntity;
@@ -68,7 +67,8 @@ type PopoverOverlayProps = {
   ) => void;
   onOverlayClear: ({element}: {element: HTMLDivElement}) => void;
   isViewerLoaded: boolean;
-  position: PopoverPosition;
+  diagramContainer: HTMLElement;
+  flowNode: SVGGraphicsElement;
 };
 
 const PopoverOverlay = observer(
@@ -76,18 +76,22 @@ const PopoverOverlay = observer(
     onOverlayAdd,
     onOverlayClear,
     isViewerLoaded,
-    position,
+    diagramContainer,
+    flowNode,
   }: PopoverOverlayProps) => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
+    const {metaData} = flowNodeMetaDataStore.state;
 
-    if (flowNodeId !== undefined) {
+    if (flowNodeId !== undefined && metaData !== null) {
       const flowNodeMetaData = singleInstanceDiagramStore.getMetaData(
         flowNodeId || null
       );
       const flowNodeName = flowNodeMetaData?.name || flowNodeId;
-      const {metaData} = flowNodeMetaDataStore.state;
-
+      const position = getPopoverPosition(
+        {diagramContainer, flowNode},
+        flowNodeMetaDataStore.hasMultipleInstances
+      );
       return (
         <Overlay
           id={flowNodeId}

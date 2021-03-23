@@ -17,11 +17,11 @@ import DiagramControls from './DiagramControls';
 import StateOverlay from './StateOverlay';
 import StatisticOverlay from './StatisticOverlay';
 import {PopoverOverlay} from './PopoverOverlay';
-
-import {getPopoverPosition, isNonSelectableFlowNode} from './service';
+import {isNonSelectableFlowNode} from './isNonSelectableFlowNode';
 
 type BpmnJSElement = {
   id: string;
+  type: string;
   businessObject: {di: {set: Function}; loopCharacteristics?: {$type: string}};
 };
 
@@ -382,21 +382,6 @@ class Diagram extends React.PureComponent<Props, State> {
     });
   };
 
-  getPopoverPosition = (isSummaryPopover: any) => {
-    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-    const flowNode = this.Viewer.get('elementRegistry').getGraphics(
-      this.props.selectedFlowNodeId
-    );
-
-    return getPopoverPosition(
-      {
-        diagramContainer: this.containerRef.current,
-        flowNode,
-      },
-      isSummaryPopover
-    );
-  };
-
   render() {
     const overlayProps = {
       onOverlayAdd: this.handleOverlayAdd,
@@ -417,14 +402,19 @@ class Diagram extends React.PureComponent<Props, State> {
           />
         )}
 
-        {selectedFlowNodeId && this.state.isViewerLoaded && this.Viewer && (
-          <PopoverOverlay
-            position={this.getPopoverPosition(
-              false /*metadata.isMultiRowPeterCase*/
-            )}
-            {...overlayProps}
-          />
-        )}
+        {selectedFlowNodeId &&
+          this.state.isViewerLoaded &&
+          this.Viewer &&
+          this.containerRef.current && (
+            <PopoverOverlay
+              diagramContainer={this.containerRef.current}
+              // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
+              flowNode={this.Viewer.get('elementRegistry').getGraphics(
+                this.props.selectedFlowNodeId
+              )}
+              {...overlayProps}
+            />
+          )}
         {this.renderFlowNodeStateOverlays(overlayProps)}
         {this.renderStatisticsOverlays(overlayProps)}
       </Styled.Diagram>
@@ -433,3 +423,4 @@ class Diagram extends React.PureComponent<Props, State> {
 }
 
 export default withTheme(Diagram);
+export type {BpmnJSElement};

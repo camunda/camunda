@@ -71,6 +71,15 @@ class FlowNodeMetaData {
     this.state.metaData = metaData;
   };
 
+  get hasMultipleInstances() {
+    const {metaData} = this.state;
+    return (
+      metaData !== null &&
+      metaData.instanceCount !== null &&
+      metaData.instanceCount > 1
+    );
+  }
+
   handleFetchFailure = (error?: Error) => {
     logger.error('Failed to fetch flow node meta data');
     if (error !== undefined) {

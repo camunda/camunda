@@ -11,7 +11,7 @@ import styled, {
 } from 'styled-components';
 
 import Modal from 'modules/components/Modal';
-import {PopoverPosition} from '../service';
+import {PopoverPosition} from './getPopoverPosition';
 
 type Props = {
   side?: PopoverPosition['side'];

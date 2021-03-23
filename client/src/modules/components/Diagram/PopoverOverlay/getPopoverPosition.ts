@@ -5,7 +5,6 @@
  */
 
 import {OverlayType} from 'modules/types/modeler';
-import {isFlowNode} from 'modules/utils/flowNodes';
 
 const POPOVER_TO_FLOWNODE_SPACE = 16;
 
@@ -15,7 +14,10 @@ type PopoverPosition = {
 };
 
 function getPopoverPosition(
-  {diagramContainer, flowNode}: any,
+  {
+    diagramContainer,
+    flowNode,
+  }: {diagramContainer: HTMLElement; flowNode: SVGGraphicsElement},
   isSummaryPopover: boolean
 ): PopoverPosition {
   // we only know the popover dimensions after it's render, so we approximate
@@ -125,13 +127,5 @@ function getPopoverPosition(
   };
 }
 
-function isNonSelectableFlowNode(element: any, selectableFlowNodes: any) {
-  return (
-    !selectableFlowNodes.includes(element.id) &&
-    element.type !== 'label' &&
-    isFlowNode(element)
-  );
-}
-
-export {getPopoverPosition, isNonSelectableFlowNode};
+export {getPopoverPosition};
 export type {PopoverPosition};
