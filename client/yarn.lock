@@ -2490,10 +2490,10 @@
   dependencies:
     "@testing-library/dom" "^7.27.1"
 
-"@testing-library/user-event@^13.0.7":
-  version "13.0.7"
-  resolved "https://registry.yarnpkg.com/@testing-library/user-event/-/user-event-13.0.7.tgz#835634e4cd6db6d63eb9398bd62fb26120f85dfd"
-  integrity sha512-EJBruqe7mV9OwPrZBx9HhFXt84KLinNNiGB0gqVp6+gPJ1ZP99Nq5FieChb/54fzmddGLkMp5ndbZBaEADdxrQ==
+"@testing-library/user-event@^13.0.8":
+  version "13.0.8"
+  resolved "https://registry.yarnpkg.com/@testing-library/user-event/-/user-event-13.0.8.tgz#1cdba4aeaddca55b9fa21bb2d46fb887abc0d011"
+  integrity sha512-lIqDFl67+9SP7N3ASO3F9ZEsSAWJww2l3SQ02O0dW3IXNyrnWqW8X3ORky2dXb7lEqaMM4dc8j8nZfdQlT27jQ==
   dependencies:
     "@babel/runtime" "^7.12.5"
 
