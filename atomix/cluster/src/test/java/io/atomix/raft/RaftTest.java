@@ -16,6 +16,7 @@
  */
 package io.atomix.raft;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -45,7 +46,7 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
@@ -134,7 +135,7 @@ public class RaftTest extends ConcurrentTestCase {
       servers.add(server);
     }
 
-    latch.await(30 * nodes, TimeUnit.SECONDS);
+    assertThat(latch.await(30L * nodes, TimeUnit.SECONDS)).isTrue();
 
     return servers;
   }
@@ -268,7 +269,7 @@ public class RaftTest extends ConcurrentTestCase {
       servers.add(server);
     }
 
-    await(30000 * live, live);
+    await(30000L * live, live);
 
     return servers;
   }
@@ -351,8 +352,7 @@ public class RaftTest extends ConcurrentTestCase {
     leader.stepDown();
 
     // then
-    transitionCompleted.await(10, TimeUnit.SECONDS);
-    assertEquals(0, transitionCompleted.getCount());
+    assertTrue(transitionCompleted.await(1000, TimeUnit.SECONDS));
   }
 
   private Optional<RaftServer> getLeader(final List<RaftServer> servers) {
@@ -374,7 +374,7 @@ public class RaftTest extends ConcurrentTestCase {
       raftLogReader.reset(raftLog.getLastIndex());
       final IndexedRaftLogEntry entry = raftLogReader.next();
 
-      assertTrue(entry.isApplicationEntry());
+      assertThat(entry.entry()).isInstanceOf(InitialEntry.class);
       assertEquals(term, entry.term());
       transitionCompleted.countDown();
     }
@@ -402,10 +402,8 @@ public class RaftTest extends ConcurrentTestCase {
             });
 
     // then
-    firstListener.await(2, TimeUnit.SECONDS);
-    secondListener.await(1, TimeUnit.SECONDS);
-    assertEquals(0, firstListener.getCount());
-    assertEquals(0, secondListener.getCount());
+    assertThat(firstListener.await(2, TimeUnit.SECONDS)).isTrue();
+    assertThat(secondListener.await(1, TimeUnit.SECONDS)).isTrue();
 
     assertEquals(Role.INACTIVE, server.getRole());
   }
@@ -439,15 +437,7 @@ public class RaftTest extends ConcurrentTestCase {
     final RaftServer leader = getLeader(servers).get();
     final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
     final AtomicLong commitIndex = new AtomicLong();
-    leader
-        .getContext()
-        .addCommitListener(
-            new RaftCommitListener() {
-              @Override
-              public <T extends RaftLogEntry> void onCommit(final long index) {
-                commitIndex.set(index);
-              }
-            });
+    leader.getContext().addCommitListener(commitIndex::set);
     appendEntry(leader);
     protocolFactory.partition(leaderId);
     waitUntil(() -> !leader.isLeader(), 100);
@@ -524,7 +514,7 @@ public class RaftTest extends ConcurrentTestCase {
     verify(followerServer, timeout(5000).atLeast(2)).poll(any(), any());
   }
 
-  private void appendEntries(final RaftServer leader, final int count) throws Exception {
+  private void appendEntries(final RaftServer leader, final int count) {
     for (int i = 0; i < count; i++) {
       appendEntryAsync(leader, 1024);
     }
