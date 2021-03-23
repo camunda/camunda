@@ -299,7 +299,26 @@ public final class BpmnEventSubscriptionBehavior {
   }
 
   public void publishTriggeredEventBasedGateway(final BpmnElementContext context) {
-    publishTriggeredEvent(context, BpmnElementType.INTERMEDIATE_CATCH_EVENT);
+    // TODO (saig0): move the behavior in the processor (#6191)
+    elementInstanceState.getDeferredRecords(context.getElementInstanceKey()).stream()
+        .filter(
+            record ->
+                record.getValue().getBpmnElementType() == BpmnElementType.INTERMEDIATE_CATCH_EVENT)
+        .filter(record -> record.getState() == ProcessInstanceIntent.ELEMENT_ACTIVATING)
+        .findFirst()
+        .ifPresent(
+            deferredRecord -> {
+              // activate the catch element directly to pass the variables
+              final var elementInstanceKey = deferredRecord.getKey();
+              final var elementRecord = deferredRecord.getValue();
+
+              stateWriter.appendFollowUpEvent(
+                  elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, elementRecord);
+              stateWriter.appendFollowUpEvent(
+                  elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, elementRecord);
+              commandWriter.appendFollowUpCommand(
+                  elementInstanceKey, ProcessInstanceIntent.COMPLETE_ELEMENT, elementRecord);
+            });
   }
 
   public void triggerStartEvent(final BpmnElementContext context) {

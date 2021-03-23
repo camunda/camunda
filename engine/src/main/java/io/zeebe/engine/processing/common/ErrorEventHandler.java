@@ -8,6 +8,7 @@
 package io.zeebe.engine.processing.common;
 
 import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
@@ -28,9 +29,10 @@ public final class ErrorEventHandler {
       final ProcessState processState,
       final ElementInstanceState elementInstanceState,
       final MutableEventScopeInstanceState eventScopeInstanceState,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final Writers writers) {
 
-    eventHandle = new EventHandle(keyGenerator, eventScopeInstanceState);
+    eventHandle = new EventHandle(keyGenerator, eventScopeInstanceState, writers);
     stateAnalyzer = new CatchEventAnalyzer(processState, elementInstanceState);
   }
 
@@ -53,10 +55,7 @@ public final class ErrorEventHandler {
     if (foundCatchEvent != null) {
 
       eventHandle.triggerEvent(
-          eventWriter,
-          foundCatchEvent.getElementInstance(),
-          foundCatchEvent.getCatchEvent(),
-          NO_VARIABLES);
+          foundCatchEvent.getElementInstance(), foundCatchEvent.getCatchEvent(), NO_VARIABLES);
 
       return true;
     }

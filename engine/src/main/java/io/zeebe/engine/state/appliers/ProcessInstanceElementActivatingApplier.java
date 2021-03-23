@@ -8,12 +8,14 @@
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -27,20 +29,25 @@ final class ProcessInstanceElementActivatingApplier
   private final MutableElementInstanceState elementInstanceState;
   private final MutableVariableState variableState;
   private final ProcessState processState;
+  private final MutableEventScopeInstanceState eventScopeInstanceState;
 
   public ProcessInstanceElementActivatingApplier(
       final MutableElementInstanceState elementInstanceState,
       final ProcessState processState,
-      final MutableVariableState variableState) {
+      final MutableVariableState variableState,
+      final MutableEventScopeInstanceState eventScopeInstanceState) {
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
     this.variableState = variableState;
+    this.eventScopeInstanceState = eventScopeInstanceState;
   }
 
   @Override
   public void applyState(final long elementInstanceKey, final ProcessInstanceRecord value) {
-    final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
 
+    createEventScope(elementInstanceKey, value);
+
+    final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
     elementInstanceState.newInstance(
         flowScopeInstance, elementInstanceKey, value, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
@@ -171,5 +178,25 @@ final class ProcessInstanceElementActivatingApplier
       final BpmnElementType flowScopeElementType, final BpmnElementType currentElementType) {
     return currentElementType == BpmnElementType.START_EVENT
         && flowScopeElementType == BpmnElementType.SUB_PROCESS;
+  }
+
+  private void createEventScope(
+      final long elementInstanceKey, final ProcessInstanceRecord elementRecord) {
+
+    final var flowElement =
+        processState.getFlowElement(
+            elementRecord.getProcessDefinitionKey(),
+            elementRecord.getElementIdBuffer(),
+            ExecutableFlowNode.class);
+
+    if (flowElement instanceof ExecutableCatchEventSupplier) {
+      final var eventSupplier = (ExecutableCatchEventSupplier) flowElement;
+
+      final var hasEvents = !eventSupplier.getEvents().isEmpty();
+      if (hasEvents) {
+        eventScopeInstanceState.createInstance(
+            elementInstanceKey, eventSupplier.getInterruptingElementIds());
+      }
+    }
   }
 }

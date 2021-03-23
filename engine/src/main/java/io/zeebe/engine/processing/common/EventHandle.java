@@ -9,8 +9,10 @@ package io.zeebe.engine.processing.common;
 
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
@@ -25,12 +27,18 @@ public final class EventHandle {
   private final KeyGenerator keyGenerator;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
+  private final TypedCommandWriter commandWriter;
+  private final StateWriter stateWriter;
+
   // TODO (saig0): use immutable states only (#6200)
   public EventHandle(
       final KeyGenerator keyGenerator,
-      final MutableEventScopeInstanceState eventScopeInstanceState) {
+      final MutableEventScopeInstanceState eventScopeInstanceState,
+      final Writers writers) {
     this.keyGenerator = keyGenerator;
     this.eventScopeInstanceState = eventScopeInstanceState;
+    commandWriter = writers.command();
+    stateWriter = writers.state();
   }
 
   public boolean canTriggerElement(final ElementInstance eventScopeInstance) {
@@ -40,7 +48,6 @@ public final class EventHandle {
   }
 
   public boolean triggerEvent(
-      final TypedEventWriter eventWriter,
       final ElementInstance eventScopeInstance,
       final ExecutableFlowElement catchEvent,
       final DirectBuffer variables) {
@@ -55,43 +62,54 @@ public final class EventHandle {
       eventScopeInstanceState.triggerEvent(
           eventScopeInstance.getKey(), newElementInstanceKey, catchEvent.getId(), variables);
 
-      activateElement(eventWriter, catchEvent, eventScopeKey, elementRecord);
+      activateElement(catchEvent, eventScopeKey, elementRecord);
     }
 
     return canTriggerElement;
   }
 
   public void activateElement(
-      final TypedEventWriter eventWriter,
       final ExecutableFlowElement catchEvent,
       final long eventScopeKey,
       final ProcessInstanceRecord elementRecord) {
 
-    final long eventOccurredKey;
+    if (MigratedStreamProcessors.isMigrated(elementRecord.getBpmnElementType())) {
 
-    if (isEventSubprocess(catchEvent)) {
-      eventOccurredKey = keyGenerator.nextKey();
-      eventOccurredRecord.wrap(elementRecord);
-      eventOccurredRecord
-          .setElementId(catchEvent.getId())
-          .setBpmnElementType(BpmnElementType.START_EVENT)
-          .setFlowScopeKey(eventScopeKey);
+      if (catchEvent.getElementType() == BpmnElementType.INTERMEDIATE_CATCH_EVENT
+          || catchEvent.getElementType() == BpmnElementType.RECEIVE_TASK
+          || catchEvent.getElementType() == BpmnElementType.EVENT_BASED_GATEWAY) {
+        commandWriter.appendFollowUpCommand(
+            eventScopeKey, ProcessInstanceIntent.COMPLETE_ELEMENT, elementRecord);
+
+      } else {
+        commandWriter.appendNewCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
+      }
 
     } else {
-      eventOccurredKey = eventScopeKey;
-      eventOccurredRecord.wrap(elementRecord);
-    }
 
-    // TODO (saig0): trigger the element by writing an ACTIVATE/COMPLETE command (#6186/#6187/#6196)
-    eventWriter.appendFollowUpEvent(
-        eventOccurredKey, ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
+      final long eventOccurredKey;
+
+      if (isEventSubprocess(catchEvent)) {
+        eventOccurredKey = keyGenerator.nextKey();
+        eventOccurredRecord.wrap(elementRecord);
+        eventOccurredRecord
+            .setElementId(catchEvent.getId())
+            .setBpmnElementType(BpmnElementType.START_EVENT)
+            .setFlowScopeKey(eventScopeKey);
+
+      } else {
+        eventOccurredKey = eventScopeKey;
+        eventOccurredRecord.wrap(elementRecord);
+      }
+
+      // TODO (saig0): don't write EVENT_OCCURRED when processors are migrated (#6187/#6196)
+      stateWriter.appendFollowUpEvent(
+          eventOccurredKey, ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
+    }
   }
 
   public long triggerStartEvent(
-      final TypedStreamWriter streamWriter,
-      final long processDefinitionKey,
-      final DirectBuffer elementId,
-      final DirectBuffer variables) {
+      final long processDefinitionKey, final DirectBuffer elementId, final DirectBuffer variables) {
 
     final var newElementInstanceKey = keyGenerator.nextKey();
     final var triggered =
@@ -100,7 +118,7 @@ public final class EventHandle {
 
     if (triggered) {
       final var processInstanceKey = keyGenerator.nextKey();
-      activateStartEvent(streamWriter, processDefinitionKey, processInstanceKey, elementId);
+      activateStartEvent(processDefinitionKey, processInstanceKey, elementId);
       return processInstanceKey;
 
     } else {
@@ -109,7 +127,6 @@ public final class EventHandle {
   }
 
   public void activateStartEvent(
-      final TypedStreamWriter streamWriter,
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer elementId) {
@@ -123,7 +140,7 @@ public final class EventHandle {
         .setElementId(elementId);
 
     // TODO (saig0): create the process instance by writing an ACTIVATE command (#6184)
-    streamWriter.appendFollowUpEvent(
+    stateWriter.appendFollowUpEvent(
         eventOccurredKey, ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
   }
 

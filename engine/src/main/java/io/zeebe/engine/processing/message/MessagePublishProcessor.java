@@ -66,7 +66,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
 
-    eventHandle = new EventHandle(keyGenerator, eventScopeInstanceState);
+    eventHandle = new EventHandle(keyGenerator, eventScopeInstanceState, writers);
   }
 
   @Override
@@ -182,7 +182,6 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
                 -1L, MessageStartEventSubscriptionIntent.CORRELATED, subscription);
 
             eventHandle.activateStartEvent(
-                streamWriter,
                 subscription.getProcessDefinitionKey(),
                 processInstanceKey,
                 subscription.getStartEventIdBuffer());
