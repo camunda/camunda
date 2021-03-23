@@ -386,9 +386,9 @@ describe('<Task />', () => {
           mockGetCurrentUser,
           mockGetTaskClaimedWithVariables,
           mockUnclaimTask,
-          mockGetAllOpenTasks,
+          mockGetAllOpenTasks(true),
           mockClaimTask,
-          mockGetAllOpenTasks,
+          mockGetAllOpenTasks(true),
         ],
       }),
     });
