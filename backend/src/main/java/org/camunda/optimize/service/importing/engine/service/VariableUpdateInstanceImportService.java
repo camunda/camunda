@@ -154,9 +154,10 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
       return false;
     } else if (isNullOrEmpty(variableDto.getType()) || !isVariableTypeSupported(variableDto.getType())) {
       log.info(
-        "Refuse to add variable [{}] from variable import adapter plugin. Variable has no type or type is not " +
-          "supported.",
-        variableDto.getName()
+        "Refuse to add variable [{}] with type [{}] from variable import adapter plugin. " +
+          "Variable has no type or type is not supported.",
+        variableDto.getName(),
+        variableDto.getType()
       );
       return false;
     } else if (variableDto.getTimestamp() == null) {

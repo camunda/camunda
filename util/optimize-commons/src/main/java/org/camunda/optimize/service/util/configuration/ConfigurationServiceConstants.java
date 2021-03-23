@@ -47,6 +47,7 @@ public class ConfigurationServiceConstants {
   public static final String ENGINE_IMPORT_USER_OPERATION_LOG_MAX_PAGE_SIZE = "$.import.data.user-operation-log.maxPageSize";
   public static final String ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE = "$.import.data.process-instance.maxPageSize";
   public static final String ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE = "$.import.data.variable.maxPageSize";
+  public static final String ENGINE_IMPORT_VARIABLE_INCLUDE_OBJECT_VARIABLE_VALUE = "$.import.data.variable.includeObjectVariableValue";
   public static final String ENGINE_IMPORT_DECISION_DEFINITION_MAX_PAGE_SIZE = "$.import.data.decision-definition.maxPageSize";
   public static final String ENGINE_IMPORT_DECISION_DEFINITION_XML_MAX_PAGE_SIZE = "$.import.data.decision-definition-xml.maxPageSize";
   public static final String ENGINE_IMPORT_DECISION_INSTANCE_MAX_PAGE_SIZE = "$.import.data.decision-instance.maxPageSize";

@@ -112,4 +112,7 @@ public class EngineConstants {
   public static final String FAILED_JOB_INCIDENT_TYPE = "failedJob";
   public static final String FAILED_EXTERNAL_TASK_INCIDENT_TYPE = "failedExternalTask";
 
+  // variable types
+  public static final String VARIABLE_TYPE_OBJECT = "Object";
+
 }

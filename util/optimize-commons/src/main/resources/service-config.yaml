@@ -155,6 +155,10 @@ import:
     variable:
       # Determines the page size for historic variable instance fetching.
       maxPageSize: 10000
+      # Controls whether Optimize fetches the serialized value of object variables from the Camunda Runtime REST API.
+      # By default this is active for backwards compatibility. If no variable plugin to handle object
+      # variables is installed, it can be turned off to reduce the overhead of the variable import.
+      includeObjectVariableValue: true
     user-task-instance:
       # Determines the page size for historic user task instance fetching
       maxPageSize: 10000

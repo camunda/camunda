@@ -112,6 +112,7 @@ public class ConfigurationService {
   private Integer currentTimeBackoffMilliseconds;
   private Integer engineImportProcessInstanceMaxPageSize;
   private Integer engineImportVariableInstanceMaxPageSize;
+  private Boolean engineImportVariableIncludeObjectVariableValue;
   private Integer engineImportProcessDefinitionXmlMaxPageSize;
   private Integer engineImportProcessDefinitionMaxPageSize;
   private Integer engineImportActivityInstanceMaxPageSize;
@@ -438,6 +439,15 @@ public class ConfigurationService {
     }
     ensureGreaterThanZero(engineImportVariableInstanceMaxPageSize);
     return engineImportVariableInstanceMaxPageSize;
+  }
+
+  public boolean getEngineImportVariableIncludeObjectVariableValue() {
+    if (engineImportVariableIncludeObjectVariableValue == null) {
+      engineImportVariableIncludeObjectVariableValue = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_VARIABLE_INCLUDE_OBJECT_VARIABLE_VALUE, Boolean.class
+      );
+    }
+    return engineImportVariableIncludeObjectVariableValue;
   }
 
   public int getEsAggregationBucketLimit() {

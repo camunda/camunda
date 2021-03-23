@@ -15,10 +15,12 @@ import org.camunda.optimize.data.generation.generators.impl.incident.IdleInciden
 import org.camunda.optimize.data.generation.generators.impl.incident.IncidentResolver;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -123,11 +125,11 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
       logger.warn("Could not serialize complex variable!", e);
     }
     ComplexVariableDto complexVariableDto = new ComplexVariableDto();
-    complexVariableDto.setType("Object");
+    complexVariableDto.setType(EngineConstants.VARIABLE_TYPE_OBJECT);
     complexVariableDto.setValue(personAsString);
     ComplexVariableDto.ValueInfo info = new ComplexVariableDto.ValueInfo();
     info.setObjectTypeName("java.lang.Object");
-    info.setSerializationDataFormat("application/json");
+    info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
     complexVariableDto.setValueInfo(info);
 
 

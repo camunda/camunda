@@ -28,6 +28,12 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.VARIAB
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class VariableUpdateInstanceFetcher extends RetryBackoffEngineEntityFetcher<HistoricVariableUpdateInstanceDto> {
 
+  private static final String PARAM_EXCLUDE_OBJECT_VALUES = "excludeObjectValues";
+  // @formatter:off
+  private static final GenericType<List<HistoricVariableUpdateInstanceDto>> RESULT_TYPE_VARIABLE_LIST =
+    new GenericType<List<HistoricVariableUpdateInstanceDto>>() {};
+  // @formatter:on
+
   private DateTimeFormatter dateTimeFormatter;
 
   public VariableUpdateInstanceFetcher(final EngineContext engineContext) {
@@ -84,10 +90,10 @@ public class VariableUpdateInstanceFetcher extends RetryBackoffEngineEntityFetch
       .path(VARIABLE_UPDATE_ENDPOINT)
       .queryParam(OCCURRED_AFTER, dateTimeFormatter.format(timeStamp))
       .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
+      .queryParam(PARAM_EXCLUDE_OBJECT_VALUES, configurationService.getEngineImportVariableIncludeObjectVariableValue())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricVariableUpdateInstanceDto>>() {
-      });
+      .get(RESULT_TYPE_VARIABLE_LIST);
   }
 
   private List<HistoricVariableUpdateInstanceDto> performGetVariableInstanceUpdateRequest(OffsetDateTime endTimeOfLastInstance) {
@@ -96,10 +102,10 @@ public class VariableUpdateInstanceFetcher extends RetryBackoffEngineEntityFetch
       .path(VARIABLE_UPDATE_ENDPOINT)
       .queryParam(OCCURRED_AT, dateTimeFormatter.format(endTimeOfLastInstance))
       .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportVariableInstanceMaxPageSize())
+      .queryParam(PARAM_EXCLUDE_OBJECT_VALUES, configurationService.getEngineImportVariableIncludeObjectVariableValue())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricVariableUpdateInstanceDto>>() {
-      });
+      .get(RESULT_TYPE_VARIABLE_LIST);
   }
 
 }
