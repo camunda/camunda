@@ -24,25 +24,23 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
   CREATE((short) 0),
   CREATED((short) 1),
 
-  ACTIVATED((short) 2),
+  COMPLETE((short) 2, false),
+  COMPLETED((short) 3),
 
-  COMPLETE((short) 3, false),
-  COMPLETED((short) 4),
+  TIME_OUT((short) 4),
+  TIMED_OUT((short) 5),
 
-  TIME_OUT((short) 5),
-  TIMED_OUT((short) 6),
+  FAIL((short) 6, false),
+  FAILED((short) 7),
 
-  FAIL((short) 7, false),
-  FAILED((short) 8),
+  UPDATE_RETRIES((short) 8, false),
+  RETRIES_UPDATED((short) 9),
 
-  UPDATE_RETRIES((short) 9, false),
-  RETRIES_UPDATED((short) 10),
+  CANCEL((short) 10),
+  CANCELED((short) 11),
 
-  CANCEL((short) 11),
-  CANCELED((short) 12),
-
-  THROW_ERROR((short) 13, false),
-  ERROR_THROWN((short) 14);
+  THROW_ERROR((short) 12, false),
+  ERROR_THROWN((short) 13);
 
   private final short value;
   private final boolean shouldBlacklist;
@@ -67,30 +65,28 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
       case 1:
         return CREATED;
       case 2:
-        return ACTIVATED;
-      case 3:
         return COMPLETE;
-      case 4:
+      case 3:
         return COMPLETED;
-      case 5:
+      case 4:
         return TIME_OUT;
-      case 6:
+      case 5:
         return TIMED_OUT;
-      case 7:
+      case 6:
         return FAIL;
-      case 8:
+      case 7:
         return FAILED;
-      case 9:
+      case 8:
         return UPDATE_RETRIES;
-      case 10:
+      case 9:
         return RETRIES_UPDATED;
-      case 11:
+      case 10:
         return CANCEL;
-      case 12:
+      case 11:
         return CANCELED;
-      case 13:
+      case 12:
         return THROW_ERROR;
-      case 14:
+      case 13:
         return ERROR_THROWN;
       default:
         return UNKNOWN;

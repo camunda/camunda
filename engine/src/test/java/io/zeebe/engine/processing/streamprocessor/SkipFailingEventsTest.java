@@ -259,7 +259,7 @@ public final class SkipFailingEventsTest {
             .newRecord(STREAM_NAME)
             .event(Records.job(1))
             .recordType(RecordType.EVENT)
-            .intent(JobIntent.ACTIVATED)
+            .intent(JobIntent.CREATED)
             .key(keyGenerator.nextKey())
             .write();
     streams
@@ -286,7 +286,7 @@ public final class SkipFailingEventsTest {
                       latch.countDown();
                     }
                   })
-              .onEvent(ValueType.JOB, JobIntent.ACTIVATED, new DumpProcessor());
+              .onEvent(ValueType.JOB, JobIntent.CREATED, new DumpProcessor());
         });
 
     // when
@@ -339,7 +339,7 @@ public final class SkipFailingEventsTest {
           return TypedRecordProcessors.processors(
                   zeebeState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(ValueType.JOB, JobIntent.COMPLETE, errorProneProcessor)
-              .onEvent(ValueType.JOB, JobIntent.ACTIVATED, dumpProcessor);
+              .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, dumpProcessor);
         });
 
     streams
@@ -352,8 +352,8 @@ public final class SkipFailingEventsTest {
     streams
         .newRecord(STREAM_NAME)
         .event(Records.job(1))
-        .recordType(RecordType.EVENT)
-        .intent(JobIntent.ACTIVATED)
+        .recordType(RecordType.COMMAND)
+        .intent(JobIntent.THROW_ERROR)
         .key(keyGenerator.nextKey())
         .write();
 
@@ -361,8 +361,8 @@ public final class SkipFailingEventsTest {
     streams
         .newRecord(STREAM_NAME)
         .event(Records.job(2))
-        .recordType(RecordType.EVENT)
-        .intent(JobIntent.ACTIVATED)
+        .recordType(RecordType.COMMAND)
+        .intent(JobIntent.THROW_ERROR)
         .key(keyGenerator.nextKey())
         .write();
 

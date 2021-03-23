@@ -7,7 +7,7 @@
  */
 package io.zeebe.test.broker.protocol.commandapi;
 
-import static io.zeebe.protocol.record.intent.JobIntent.ACTIVATED;
+import static io.zeebe.protocol.record.intent.JobIntent.CREATED;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -367,11 +367,11 @@ public final class PartitionTestClient {
 
     final Record<JobRecordValue> jobEvent =
         receiveJobs()
-            .withIntent(ACTIVATED)
+            .withIntent(CREATED)
             .withType(jobType)
             .filter(jobEventFilter)
             .findFirst()
-            .orElseThrow(() -> new AssertionError("Expected job locked event but not found."));
+            .orElseThrow(() -> new AssertionError("Expected job to be created but not found."));
 
     final ExecuteCommandResponse response = completeJob(jobEvent.getKey(), variables);
 
