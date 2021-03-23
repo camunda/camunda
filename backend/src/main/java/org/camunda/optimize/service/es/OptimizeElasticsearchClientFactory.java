@@ -51,10 +51,13 @@ public class OptimizeElasticsearchClientFactory {
         isConnected = getNumberOfClusterNodes(esClient) > 0;
         if (!isConnected) {
           long sleepTime = backoffCalculator.calculateSleepTime();
-          log.info("No elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
+          log.info("No Elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
           Thread.sleep(sleepTime);
         }
-      } catch (Exception e) {
+      } catch (final InterruptedException e) {
+        log.warn("Got interrupted while waiting to retry connecting to Elasticsearch.", e);
+        Thread.currentThread().interrupt();
+      } catch (final Exception e) {
         String message = "Can't connect to Elasticsearch. Please check the connection!";
         log.error(message, e);
         throw new OptimizeRuntimeException(message, e);
