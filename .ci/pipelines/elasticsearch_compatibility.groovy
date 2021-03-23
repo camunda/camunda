@@ -13,7 +13,7 @@ def static CAMBPM_DOCKER_IMAGE(String camBpmVersion) {
 }
 
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
-  return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}"
+  return "docker.elastic.co/elasticsearch/elasticsearch:${esVersion}"
 }
 
 static String mavenElasticsearchIntegrationTestAgent(esVersion, camBpmVersion) {
@@ -162,42 +162,6 @@ pipeline {
     stage('Elasticsearch Integration Tests') {
       failFast false
       parallel {
-        stage("Elasticsearch 7.3.0 Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-7.3.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("7.3.0", "${env.CAMBPM_VERSION}")
-            }
-          }
-          steps {
-            integrationTestSteps()
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
-        stage("Elasticsearch 7.4.0 Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-7.4.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("7.4.0", "${env.CAMBPM_VERSION}")
-            }
-          }
-          steps {
-            integrationTestSteps()
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
         stage("Elasticsearch 7.5.0 Integration") {
           agent {
             kubernetes {
@@ -295,6 +259,24 @@ pipeline {
               label "optimize-ci-build_es-7.10.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml mavenElasticsearchIntegrationTestAgent("7.10.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          steps {
+            integrationTestSteps()
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage("Elasticsearch 7.11.0 Integration") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_es-7.11.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("7.11.0", "${env.CAMBPM_VERSION}")
             }
           }
           steps {

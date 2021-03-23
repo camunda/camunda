@@ -154,7 +154,7 @@ spec:
             memory: "256Mi"
 ################################################################################
       - name: elasticsearch
-        image: "docker.elastic.co/elasticsearch/elasticsearch-oss:@ES_VERSION@"
+        image: "docker.elastic.co/elasticsearch/elasticsearch:@ES_VERSION@"
         env:
         - name: ES_JAVA_OPTS
           value: "-Xms512m -Xmx512m"

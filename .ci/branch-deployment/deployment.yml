@@ -129,7 +129,7 @@ spec:
           mountPath: /camunda/configure-and-run.sh
           subPath: configure-and-run.sh
       - name: elasticsearch
-        image: "docker.elastic.co/elasticsearch/elasticsearch-oss:@ES_VERSION@"
+        image: "docker.elastic.co/elasticsearch/elasticsearch:@ES_VERSION@"
         env:
         - name: ES_JAVA_OPTS
           value: "-Xms4g -Xmx4g"

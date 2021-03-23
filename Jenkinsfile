@@ -137,7 +137,7 @@ String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Intege
   Integer jvmMemory = memoryLimitInGb / 2
   return """
   - name: elasticsearch-${httpPort}
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${esVersion}
     securityContext:
       privileged: true
       capabilities:
@@ -176,7 +176,7 @@ String elasticSearchUpgradeContainerSpec(String esVersion) {
   String httpPort = "9250"
   return """
   - name: elasticsearch-old
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${esVersion}
     securityContext:
       privileged: true
       capabilities:

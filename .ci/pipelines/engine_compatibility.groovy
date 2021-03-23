@@ -66,7 +66,7 @@ spec:
 String elasticSearchContainerSpec(def esVersion) {
   return """
   - name: elasticsearch-9200
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${esVersion}
     securityContext:
       privileged: true
       capabilities:

@@ -174,7 +174,7 @@ spec:
         cpu: 1
         memory: 2Gi
   - name: elasticsearch
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${esVersion}
     securityContext:
       privileged: true
       capabilities:

@@ -13,7 +13,7 @@ def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) {
 }
 
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
-  return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}"
+  return "docker.elastic.co/elasticsearch/elasticsearch:${esVersion}"
 }
 
 static String e2eTestConfig(esVersion, camBpmVersion) {
