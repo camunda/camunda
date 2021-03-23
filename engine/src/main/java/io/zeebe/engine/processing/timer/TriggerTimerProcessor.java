@@ -15,12 +15,15 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
+import io.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.model.bpmn.util.time.Interval;
@@ -32,36 +35,42 @@ import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.util.Either;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> {
+
   private static final String NO_TIMER_FOUND_MESSAGE =
       "Expected to trigger timer with key '%d', but no such timer was found";
   private static final String NO_ACTIVE_TIMER_MESSAGE =
       "Expected to trigger a timer with key '%d', but the timer is not active anymore";
 
-  private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
-
   private final CatchEventBehavior catchEventBehavior;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
   private final MutableTimerInstanceState timerInstanceState;
-  private final EventHandle eventHandle;
   private final ExpressionProcessor expressionProcessor;
+  private final KeyGenerator keyGenerator;
+  private final EventScopeInstanceState eventScopeInstanceState;
+  private final StateWriter stateWriter;
+  private final TypedRejectionWriter rejectionWriter;
+  private final EventHandle eventHandle;
 
   public TriggerTimerProcessor(
       final MutableZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
-      final ExpressionProcessor expressionProcessor) {
+      final ExpressionProcessor expressionProcessor,
+      final StateWriter stateWriter,
+      final TypedRejectionWriter rejectionWriter) {
     this.catchEventBehavior = catchEventBehavior;
     this.expressionProcessor = expressionProcessor;
+    this.stateWriter = stateWriter;
+    this.rejectionWriter = rejectionWriter;
+
     processState = zeebeState.getProcessState();
     elementInstanceState = zeebeState.getElementInstanceState();
     timerInstanceState = zeebeState.getTimerState();
-
-    eventHandle =
-        new EventHandle(zeebeState.getKeyGenerator(), zeebeState.getEventScopeInstanceState());
+    keyGenerator = zeebeState.getKeyGenerator();
+    eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
+    eventHandle = new EventHandle(keyGenerator, zeebeState.getEventScopeInstanceState());
   }
 
   @Override
@@ -70,72 +79,55 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffects) {
-    final TimerRecord timer = record.getValue();
-    final long elementInstanceKey = timer.getElementInstanceKey();
-
-    final TimerInstance timerInstance = timerInstanceState.get(elementInstanceKey, record.getKey());
+    final var timer = record.getValue();
+    final var elementInstanceKey = timer.getElementInstanceKey();
+    final var processDefinitionKey = timer.getProcessDefinitionKey();
+    final var timerInstance = timerInstanceState.get(elementInstanceKey, record.getKey());
     if (timerInstance == null) {
-      streamWriter.appendRejection(
+      rejectionWriter.appendRejection(
           record, RejectionType.NOT_FOUND, String.format(NO_TIMER_FOUND_MESSAGE, record.getKey()));
       return;
     }
-    timerInstanceState.remove(timerInstance);
 
-    processTimerTrigger(record, streamWriter, timer, elementInstanceKey);
-  }
-
-  private void processTimerTrigger(
-      final TypedRecord<TimerRecord> record,
-      final TypedStreamWriter streamWriter,
-      final TimerRecord timer,
-      final long elementInstanceKey) {
-
-    final var processDefinitionKey = timer.getProcessDefinitionKey();
     final var catchEvent =
         processState.getFlowElement(
             processDefinitionKey, timer.getTargetElementIdBuffer(), ExecutableCatchEvent.class);
-
-    final boolean isTriggered =
-        triggerEvent(streamWriter, timer, elementInstanceKey, processDefinitionKey, catchEvent);
-
-    if (isTriggered) {
-      streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
-
-      if (shouldReschedule(timer)) {
-        rescheduleTimer(timer, catchEvent, streamWriter);
+    if (isStartEvent(elementInstanceKey)) {
+      if (!eventScopeInstanceState.isAcceptingEvent(processDefinitionKey)) {
+        rejectNoActiveTimer(record);
+        return;
       }
+
+      stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
+      final long processInstanceKey = keyGenerator.nextKey();
+      eventHandle.activateStartEvent(
+          streamWriter, processDefinitionKey, processInstanceKey, timer.getTargetElementIdBuffer());
     } else {
-      streamWriter.appendRejection(
-          record,
-          RejectionType.INVALID_STATE,
-          String.format(NO_ACTIVE_TIMER_MESSAGE, record.getKey()));
+      final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+      if (!eventHandle.canTriggerElement(elementInstance)) {
+        rejectNoActiveTimer(record);
+        return;
+      }
+
+      stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
+      eventHandle.activateElement(
+          streamWriter, catchEvent, elementInstanceKey, elementInstance.getValue());
+    }
+
+    if (shouldReschedule(timer)) {
+      rescheduleTimer(timer, catchEvent, streamWriter);
     }
   }
 
-  private boolean triggerEvent(
-      final TypedStreamWriter streamWriter,
-      final TimerRecord timer,
-      final long elementInstanceKey,
-      final long processDefinitionKey,
-      final ExecutableCatchEvent catchEvent) {
+  private void rejectNoActiveTimer(final TypedRecord<TimerRecord> record) {
+    rejectionWriter.appendRejection(
+        record,
+        RejectionType.INVALID_STATE,
+        String.format(NO_ACTIVE_TIMER_MESSAGE, record.getKey()));
+  }
 
-    if (elementInstanceKey > 0) {
-      final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
-
-      if (elementInstance != null && elementInstance.isActive()) {
-        return eventHandle.triggerEvent(streamWriter, elementInstance, catchEvent, NO_VARIABLES);
-
-      } else {
-        return false;
-      }
-
-    } else {
-      final var processInstanceKey =
-          eventHandle.triggerStartEvent(
-              streamWriter, processDefinitionKey, timer.getTargetElementIdBuffer(), NO_VARIABLES);
-
-      return processInstanceKey > 0;
-    }
+  private boolean isStartEvent(final long elementInstanceKey) {
+    return elementInstanceKey < 0;
   }
 
   private boolean shouldReschedule(final TimerRecord timer) {

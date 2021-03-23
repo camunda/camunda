@@ -19,11 +19,8 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -44,10 +41,6 @@ public final class ReplayStateTest {
 
   private static final String PROCESS_ID = "process";
   @Parameter public TestCase testCase;
-
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
 
   private long lastProcessedPosition = -1L;
 
@@ -100,31 +93,28 @@ public final class ReplayStateTest {
             .withProcess(
                 Bpmn.createExecutableProcess(PROCESS_ID)
                     .startEvent("timer")
-                    .timerWithCycle("R/PT1M")
+                    .timerWithDateExpression("now()")
                     .endEvent()
                     .done())
             .withExecution(
-                engine -> RecordingExporter.timerRecords(TimerIntent.CREATED).getFirst()),
+                engine ->
+                    RecordingExporter.processInstanceRecords(
+                            ProcessInstanceIntent.ELEMENT_COMPLETED)
+                        .withBpmnProcessId(PROCESS_ID)
+                        .withElementType(BpmnElementType.PROCESS)
+                        .getFirst()),
         // TODO(npepinpe): remove after https://github.com/camunda-cloud/zeebe/issues/6568
         testCase("intermediate timer catch event")
             .withProcess(
                 Bpmn.createExecutableProcess(PROCESS_ID)
                     .startEvent()
                     .intermediateCatchEvent("timer")
-                    .timerWithDuration("PT30S")
+                    .timerWithDuration("PT0S")
                     .endEvent()
                     .done())
             .withExecution(
                 engine -> {
                   final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-                  final Record<TimerRecordValue> timer =
-                      RecordingExporter.timerRecords(TimerIntent.CREATED)
-                          .withProcessInstanceKey(piKey)
-                          .getFirst();
-
-                  assertThat(timer).as("timer start event was created").isNotNull();
-                  engine.getClock().addTime(Duration.ofSeconds(30));
-
                   return RecordingExporter.processInstanceRecords(
                           ProcessInstanceIntent.ELEMENT_COMPLETED)
                       .withProcessInstanceKey(piKey)
@@ -138,20 +128,12 @@ public final class ReplayStateTest {
                     .startEvent()
                     .serviceTask("task", b -> b.zeebeJobType("type"))
                     .boundaryEvent("timer", b -> b.cancelActivity(true))
-                    .timerWithDuration("PT30S")
+                    .timerWithDuration("PT0S")
                     .endEvent("end")
                     .done())
             .withExecution(
                 engine -> {
                   final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-                  final Record<TimerRecordValue> timer =
-                      RecordingExporter.timerRecords(TimerIntent.CREATED)
-                          .withProcessInstanceKey(piKey)
-                          .getFirst();
-
-                  assertThat(timer).as("timer start event was created").isNotNull();
-                  engine.getClock().addTime(Duration.ofSeconds(30));
-
                   return RecordingExporter.processInstanceRecords(
                           ProcessInstanceIntent.ELEMENT_COMPLETED)
                       .withProcessInstanceKey(piKey)
@@ -165,20 +147,12 @@ public final class ReplayStateTest {
                     .startEvent()
                     .serviceTask("task", b -> b.zeebeJobType("type"))
                     .boundaryEvent("timer", b -> b.cancelActivity(false))
-                    .timerWithCycle("R/PT30S")
+                    .timerWithCycle("R1/PT0S")
                     .endEvent("end")
                     .done())
             .withExecution(
                 engine -> {
                   final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-                  final Record<TimerRecordValue> timer =
-                      RecordingExporter.timerRecords(TimerIntent.CREATED)
-                          .withProcessInstanceKey(piKey)
-                          .getFirst();
-
-                  assertThat(timer).as("timer start event was created").isNotNull();
-                  engine.getClock().addTime(Duration.ofSeconds(30));
-
                   return RecordingExporter.processInstanceRecords(
                           ProcessInstanceIntent.ELEMENT_COMPLETED)
                       .withProcessInstanceKey(piKey)

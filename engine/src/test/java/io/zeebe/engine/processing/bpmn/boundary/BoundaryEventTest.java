@@ -128,8 +128,8 @@ public final class BoundaryEventTest {
     assertThat(records)
         .extracting(Record::getValueType, Record::getIntent)
         .containsSequence(
-            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(ValueType.JOB, JobIntent.CANCEL),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED),
@@ -252,8 +252,8 @@ public final class BoundaryEventTest {
     assertThat(records)
         .extracting(Record::getValueType, Record::getIntent)
         .endsWith(
-            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(ValueType.JOB, JobIntent.CANCEL),
@@ -299,8 +299,8 @@ public final class BoundaryEventTest {
     assertThat(records)
         .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
-            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(ValueType.TIMER, TimerIntent.CREATE),
             tuple(ValueType.JOB, JobIntent.COMPLETED),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETING),
