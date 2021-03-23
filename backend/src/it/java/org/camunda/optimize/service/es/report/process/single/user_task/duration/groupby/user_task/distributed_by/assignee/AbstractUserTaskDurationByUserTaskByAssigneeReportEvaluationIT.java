@@ -1165,7 +1165,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     assertThat(resultReportDataDto.getView().getEntity())
       .withFailMessage("View should be USER_TASKS.")
       .isEqualTo(ProcessViewEntity.USER_TASK);
-    assertThat(resultReportDataDto.getView().getProperty())
+    assertThat(resultReportDataDto.getView().getFirstProperty())
       .withFailMessage("View property should be DURATION.")
       .isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTime())

@@ -104,7 +104,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ViewProperty.DURATION));
+    assertThat(resultReportDataDto.getView().getFirstProperty(), is(ViewProperty.DURATION));
     assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTime(), is(getUserTaskDurationTime()));
     assertThat(resultReportDataDto.getDistributedBy().getType(), is(DistributedByType.USER_TASK));
 
@@ -191,7 +191,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ViewProperty.DURATION));
+    assertThat(resultReportDataDto.getView().getFirstProperty(), is(ViewProperty.DURATION));
     assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTime(), is(getUserTaskDurationTime()));
     assertThat(resultReportDataDto.getDistributedBy().getType(), is(DistributedByType.USER_TASK));
 

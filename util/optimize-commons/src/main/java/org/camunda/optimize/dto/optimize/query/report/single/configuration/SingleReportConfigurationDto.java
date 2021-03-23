@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
@@ -33,7 +34,7 @@ import java.util.Set;
 @Data
 @FieldNameConstants
 @NoArgsConstructor
-public class SingleReportConfigurationDto {
+public class SingleReportConfigurationDto implements Combinable {
   @Builder.Default
   private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
   @Builder.Default
@@ -96,13 +97,25 @@ public class SingleReportConfigurationDto {
     return getProcessPart().map(ProcessPartDto::createCommandKey).orElse(null);
   }
 
+  @Override
+  public boolean isCombinable(final Object o) {
+    if (!(o instanceof SingleReportConfigurationDto)) {
+      return false;
+    }
+    final SingleReportConfigurationDto that = (SingleReportConfigurationDto) o;
+    final int aggregationTypesAmount = getAggregationTypes().size();
+    final int userTaskDurationTimesAmount = getUserTaskDurationTimes().size();
+    return aggregationTypesAmount <= 1 && aggregationTypesAmount == that.getAggregationTypes().size()
+      && userTaskDurationTimesAmount <= 1 && userTaskDurationTimesAmount == that.getUserTaskDurationTimes().size();
+  }
+
   // to be removed with OPT-4871 when the result evaluation needs to read all values
   @Deprecated
   public AggregationType getAggregationType() {
     return this.aggregationTypes != null && !this.aggregationTypes.isEmpty() ? this.aggregationTypes.iterator().next() : null;
   }
-
   // to be removed with OPT-4871 when the result evaluation needs to read all values
+
   @Deprecated
   public void setAggregationType(final AggregationType aggregationType) {
     if (this.aggregationTypes == null || this.aggregationTypes.isEmpty()) {
@@ -118,16 +131,16 @@ public class SingleReportConfigurationDto {
     // deduplication using an intermediate set
     this.aggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
   }
-
   // to be removed with OPT-4871 when the result evaluation needs to read all values
+
   @Deprecated
   public UserTaskDurationTime getUserTaskDurationTime() {
     return this.userTaskDurationTimes != null && !this.userTaskDurationTimes.isEmpty()
       ? this.userTaskDurationTimes.iterator().next()
       : null;
   }
-
   // to be removed with OPT-4871 when the result evaluation needs to read all values
+
   @Deprecated
   public void setUserTaskDurationTime(final UserTaskDurationTime userTaskDurationTime) {
     if (this.userTaskDurationTimes == null || this.userTaskDurationTimes.isEmpty()) {
@@ -151,5 +164,4 @@ public class SingleReportConfigurationDto {
   public Optional<ProcessPartDto> getProcessPart() {
     return Optional.ofNullable(processPart);
   }
-
 }

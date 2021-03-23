@@ -208,7 +208,7 @@ public class AlertJob implements Job {
   private boolean isDurationReport(ReportDefinitionDto reportDefinition) {
     if (reportDefinition.getData() instanceof ProcessReportDataDto) {
       ProcessReportDataDto data = (ProcessReportDataDto) reportDefinition.getData();
-      return data.getView().getProperty().equals(ViewProperty.DURATION);
+      return data.getView().getFirstProperty().equals(ViewProperty.DURATION);
     }
     return false;
   }

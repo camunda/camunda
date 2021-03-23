@@ -96,7 +96,7 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
     assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ViewProperty.FREQUENCY));
+    assertThat(resultReportDataDto.getView().getFirstProperty(), is(ViewProperty.FREQUENCY));
 
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off

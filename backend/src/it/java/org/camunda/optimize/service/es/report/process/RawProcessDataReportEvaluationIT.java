@@ -460,7 +460,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(resultDataDto1.getDefinitionVersions()).containsExactly(processInstance.getProcessDefinitionVersion());
     assertThat(resultDataDto1.getView())
       .isNotNull()
-      .extracting(ProcessViewDto::getProperty)
+      .extracting(ProcessViewDto::getFirstProperty)
       .isEqualTo(ViewProperty.RAW_DATA);
     assertThat(result1.getData()).isNotNull().isEmpty();
 
@@ -509,7 +509,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(resultDataDto1.getProcessDefinitionKey()).isEqualTo(processInstance.getProcessDefinitionKey());
     assertThat(resultDataDto1.getDefinitionVersions()).containsExactly(processInstance.getProcessDefinitionVersion());
     assertThat(resultDataDto1.getView()).isNotNull();
-    assertThat(resultDataDto1.getView().getProperty()).isEqualTo(ViewProperty.RAW_DATA);
+    assertThat(resultDataDto1.getView().getFirstProperty()).isEqualTo(ViewProperty.RAW_DATA);
     assertThat(result1.getData()).isNotNull();
     assertThat(result1.getData()).isEmpty();
 
@@ -1083,7 +1083,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(resultDataDto.getDefinitionVersions()).containsExactly(instance.getProcessDefinitionVersion());
     assertThat(resultDataDto.getView())
       .isNotNull()
-      .extracting(ProcessViewDto::getProperty)
+      .extracting(ProcessViewDto::getFirstProperty)
       .isEqualTo(ViewProperty.RAW_DATA);
     assertThat(result.getResult().getData()).isNotNull().hasSize(expectedDataSize);
   }

@@ -64,7 +64,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.VARIABLE);
-    assertThat(resultReportDataDto.getView().getProperty())
+    assertThat(resultReportDataDto.getView().getFirstProperty())
       .isEqualTo(ViewProperty.VARIABLE(TEST_VARIABLE, VariableType.INTEGER));
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
 

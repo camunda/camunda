@@ -104,7 +104,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ViewProperty.FREQUENCY));
+    assertThat(resultReportDataDto.getView().getFirstProperty(), is(ViewProperty.FREQUENCY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(getGroupByType()));
     assertThat(
       ((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit(),
@@ -140,7 +140,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ViewProperty.FREQUENCY));
+    assertThat(resultReportDataDto.getView().getFirstProperty(), is(ViewProperty.FREQUENCY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(getGroupByType()));
     assertThat(
       ((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit(),

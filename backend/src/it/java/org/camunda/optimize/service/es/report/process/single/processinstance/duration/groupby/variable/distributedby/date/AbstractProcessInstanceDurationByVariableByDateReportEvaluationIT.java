@@ -69,7 +69,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(procInstance.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(getDistributeByType());
     assertThat(((DateDistributedByValueDto) resultReportDataDto.getDistributedBy().getValue()).getUnit())
@@ -108,7 +108,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(procInstance.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
     assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(getDistributeByType());
     assertThat(((DateDistributedByValueDto) resultReportDataDto.getDistributedBy().getValue()).getUnit())
