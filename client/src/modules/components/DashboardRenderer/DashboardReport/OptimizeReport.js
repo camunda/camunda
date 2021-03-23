@@ -79,12 +79,6 @@ export class OptimizeReport extends React.Component {
 
   refreshReport = () => this.loadReport(this.state.lastParams);
 
-  getName = () => {
-    if (this.state.data) {
-      return this.state.data.name;
-    }
-  };
-
   exitDarkmode = () => {
     if (this.props.theme === 'dark') {
       this.props.toggleTheme();
@@ -100,19 +94,19 @@ export class OptimizeReport extends React.Component {
 
     const {disableNameLink, filter, children = () => {}} = this.props;
 
-    const reportName = this.getName();
-
     return (
       <div className="OptimizeReport DashboardReport__wrapper">
-        <div className="titleBar" tabIndex="-1">
-          <EntityName
-            linkTo={!disableNameLink && `report/${data.id}/`}
-            details={<ReportDetails report={data} />}
-          >
-            {reportName}
-          </EntityName>
-          <InstanceCount report={data} additionalFilter={filter} useIcon="filter" />
-        </div>
+        {data && (
+          <div className="titleBar" tabIndex="-1">
+            <EntityName
+              linkTo={!disableNameLink && `report/${data.id}/`}
+              details={<ReportDetails report={data} />}
+            >
+              {data.name}
+            </EntityName>
+            <InstanceCount report={data} additionalFilter={filter} useIcon="filter" />
+          </div>
+        )}
         <div className="visualization">
           {error ? (
             <NoDataNotice title={error.title}>{error.text}</NoDataNotice>
