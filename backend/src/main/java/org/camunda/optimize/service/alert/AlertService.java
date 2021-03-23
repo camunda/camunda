@@ -398,7 +398,10 @@ public class AlertService implements ReportReferencingService {
     final ProcessReportDataDto data = report.getData();
     return data != null && data.getGroupBy() != null
       && ProcessGroupByType.NONE.equals(data.getGroupBy().getType())
-      && ProcessVisualization.NUMBER.equals(data.getVisualization());
+      && ProcessVisualization.NUMBER.equals(data.getVisualization())
+      && data.getView().getProperties().size() == 1
+      && data.getConfiguration().getAggregationTypes().size() == 1
+      && data.getConfiguration().getUserTaskDurationTimes().size() == 1;
   }
 
   private boolean validateIfReportIsSuitableForAlert(SingleDecisionReportDefinitionRequestDto report) {

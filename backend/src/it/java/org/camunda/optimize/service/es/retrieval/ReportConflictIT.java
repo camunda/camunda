@@ -16,6 +16,9 @@ import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -55,7 +58,7 @@ public class ReportConflictIT extends AbstractIT {
 
   @ParameterizedTest(name = "update single report fails with conflict if used in combined report and not combinable " +
     "anymore when force set to {0}")
-  @MethodSource("provideForceParameterAsBoolean")
+  @MethodSource("notForcedValues")
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndNotCombinableAnymoreWhenForceSet(Boolean force) {
     // given
     String firstSingleReportId = createAndStoreProcessReportWithDefinition(createRandomRawDataReport());
@@ -93,7 +96,7 @@ public class ReportConflictIT extends AbstractIT {
 
   @ParameterizedTest(name = "update single report fails with conflict if used in combined report and configuration " +
     "not combinable anymore when force set to {0}")
-  @MethodSource("provideForceParameterAsBoolean")
+  @MethodSource("notForcedValues")
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndConfigurationNotCombinableAnymoreWhenForceSet(Boolean force) {
     // given
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
@@ -124,7 +127,7 @@ public class ReportConflictIT extends AbstractIT {
 
   @ParameterizedTest(name = "update single process report fails with conflict if used in alert and suitable for alert" +
     " anymore when force set to {0}")
-  @MethodSource("provideForceParameterAsBoolean")
+  @MethodSource("notForcedValues")
   public void updateSingleProcessReportFailsWithConflictIfUsedInAlertAndSuitableForAlertAnymoreWhenForceSet(Boolean force) {
     // given
     ProcessReportDataDto numberReport = createProcessReport(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE);
@@ -153,9 +156,83 @@ public class ReportConflictIT extends AbstractIT {
     checkAlertsStillExist(expectedConflictedItemIds);
   }
 
+  @ParameterizedTest
+  @MethodSource("notForcedValues")
+  public void updateSingleProcessToMultiViewReportFailsWithConflictIfUsedInAlert(Boolean force) {
+    // given
+    final ProcessReportDataDto numberReportData =
+      createProcessReport(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE);
+    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
+    String reportId = createAndStoreProcessReportWithDefinition(collectionId, numberReportData);
+    String alertForReport = createNewAlertForReport(reportId);
+    String[] expectedConflictedItemIds = new String[]{alertForReport};
+
+    // when
+    final SingleProcessReportDefinitionRequestDto singleReport =
+      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(reportId);
+    singleReport.getData().getView().setProperties(ViewProperty.FREQUENCY, ViewProperty.DURATION);
+
+    ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(reportId, singleReport, force);
+
+    // then
+    checkConflictedItems(conflictResponseDto, ConflictedItemType.ALERT, expectedConflictedItemIds);
+    checkReportStillExistsInCollection(reportId, collectionId);
+    checkAlertsStillExist(expectedConflictedItemIds);
+  }
+
+  @ParameterizedTest
+  @MethodSource("notForcedValues")
+  public void updateSingleProcessToMultiAggregationReportFailsWithConflictIfUsedInAlert(Boolean force) {
+    // given
+    final ProcessReportDataDto numberReportData =
+      createProcessReport(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE);
+    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
+    String reportId = createAndStoreProcessReportWithDefinition(collectionId, numberReportData);
+    String alertForReport = createNewAlertForReport(reportId);
+    String[] expectedConflictedItemIds = new String[]{alertForReport};
+
+    // when
+    final SingleProcessReportDefinitionRequestDto singleReport =
+      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(reportId);
+    singleReport.getData().getConfiguration().setAggregationTypes(AggregationType.MIN, AggregationType.MAX);
+
+    ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(reportId, singleReport, force);
+
+    // then
+    checkConflictedItems(conflictResponseDto, ConflictedItemType.ALERT, expectedConflictedItemIds);
+    checkReportStillExistsInCollection(reportId, collectionId);
+    checkAlertsStillExist(expectedConflictedItemIds);
+  }
+
+  @ParameterizedTest
+  @MethodSource("notForcedValues")
+  public void updateSingleProcessToMultiUserTaskDurationReportFailsWithConflictIfUsedInAlert(Boolean force) {
+    // given
+    final ProcessReportDataDto numberReportData =
+      createProcessReport(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE);
+    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
+    String reportId = createAndStoreProcessReportWithDefinition(collectionId, numberReportData);
+    String alertForReport = createNewAlertForReport(reportId);
+    String[] expectedConflictedItemIds = new String[]{alertForReport};
+
+    // when
+    final SingleProcessReportDefinitionRequestDto singleReport =
+      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(reportId);
+    singleReport.getData()
+      .getConfiguration()
+      .setUserTaskDurationTimes(UserTaskDurationTime.WORK, UserTaskDurationTime.IDLE);
+
+    ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(reportId, singleReport, force);
+
+    // then
+    checkConflictedItems(conflictResponseDto, ConflictedItemType.ALERT, expectedConflictedItemIds);
+    checkReportStillExistsInCollection(reportId, collectionId);
+    checkAlertsStillExist(expectedConflictedItemIds);
+  }
+
   @ParameterizedTest(name = "update single decision report fails with conflict if sued in alert and suitable for " +
     "alert anymore when force set to {0}")
-  @MethodSource("provideForceParameterAsBoolean")
+  @MethodSource("notForcedValues")
   public void updateSingleDecisionReportFailsWithConflictIfUsedInAlertAndSuitableForAlertAnymoreWhenForceSet(Boolean force) {
     // given
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -181,7 +258,7 @@ public class ReportConflictIT extends AbstractIT {
   }
 
   @ParameterizedTest
-  @MethodSource("provideForceParameterAsBoolean")
+  @MethodSource("notForcedValues")
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndConfigurationNotNoneWhenForceSet(Boolean force) {
     // given
     String firstSingleReportId = createAndStoreProcessReportWithDefinition(
@@ -203,6 +280,35 @@ public class ReportConflictIT extends AbstractIT {
       firstSingleReportId,
       firstSingleReport,
       force
+    );
+
+    // then
+    checkConflictedItems(conflictResponseDto, ConflictedItemType.COMBINED_REPORT, expectedConflictedItemIds);
+    checkPrivateReportsStillExist(expectedReportIds);
+    checkCombinedReportContainsSingleReports(combinedReportId, firstSingleReportId, secondSingleReportId);
+  }
+
+  @ParameterizedTest
+  @MethodSource("notForcedValues")
+  public void updateSingleReportToMultiMeasureFailsWithConflictIfUsedInCombinedReportWhenForceSet(Boolean force) {
+    // given
+    String firstSingleReportId = createAndStoreProcessReportWithDefinition(
+      createProcessReport(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK));
+    String secondSingleReportId = createAndStoreProcessReportWithDefinition(
+      createProcessReport(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK));
+    String combinedReportId = reportClient.createCombinedReport(
+      null,
+      Arrays.asList(firstSingleReportId, secondSingleReportId)
+    );
+    String[] expectedReportIds = new String[]{firstSingleReportId, secondSingleReportId, combinedReportId};
+    String[] expectedConflictedItemIds = new String[]{combinedReportId};
+
+    // when
+    final SingleProcessReportDefinitionRequestDto firstSingleReport =
+      (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(firstSingleReportId);
+    firstSingleReport.getData().getView().setProperties(ViewProperty.DURATION, ViewProperty.FREQUENCY);
+    ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(
+      firstSingleReportId, firstSingleReport, force
     );
 
     // then
@@ -241,7 +347,7 @@ public class ReportConflictIT extends AbstractIT {
 
   @ParameterizedTest(name = "delete single reports fails with conflict if used by combined report when force set to " +
     "{0}")
-  @MethodSource("provideForceParameterAsBoolean")
+  @MethodSource("notForcedValues")
   public void deleteSingleReportsFailsWithConflictIfUsedByCombinedReportWhenForceSet(Boolean force) {
     // given
     String firstSingleReportId = reportClient.createEmptySingleProcessReport();
@@ -276,7 +382,7 @@ public class ReportConflictIT extends AbstractIT {
   }
 
   @ParameterizedTest(name = "delete single reports fails with conflict if used by alert when force set to {0}")
-  @MethodSource("provideForceParameterAsBoolean")
+  @MethodSource("notForcedValues")
   public void deleteSingleReportsFailsWithConflictIfUsedByAlertWhenForceSet(Boolean force) {
     // given
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
@@ -295,7 +401,7 @@ public class ReportConflictIT extends AbstractIT {
   }
 
   @ParameterizedTest(name = "delete single reports fails with conflict if sued by dashboard when force set to {0}")
-  @MethodSource("provideForceParameterAsBoolean")
+  @MethodSource("notForcedValues")
   public void deleteSingleReportsFailsWithConflictIfUsedByDashboardWhenForceSet(Boolean force) {
     // given
     String reportId = reportClient.createEmptySingleProcessReport();
@@ -356,7 +462,8 @@ public class ReportConflictIT extends AbstractIT {
   }
 
   private void checkReportStillExistsInCollection(String reportId, String collectionId) {
-    List<AuthorizedReportDefinitionResponseDto> reportDefinitionDtos = collectionClient.getReportsForCollection(collectionId);
+    List<AuthorizedReportDefinitionResponseDto> reportDefinitionDtos = collectionClient.getReportsForCollection(
+      collectionId);
 
     assertThat(reportDefinitionDtos)
       .extracting(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
@@ -403,7 +510,8 @@ public class ReportConflictIT extends AbstractIT {
 
   private String createAndStoreProcessReportWithDefinition(String collectionId,
                                                            ProcessReportDataDto reportDataViewRawAsTable) {
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportDataViewRawAsTable);
     singleProcessReportDefinitionDto.setId(RANDOM_STRING);
     singleProcessReportDefinitionDto.setLastModifier(RANDOM_STRING);
@@ -417,7 +525,8 @@ public class ReportConflictIT extends AbstractIT {
   }
 
   private String createAndStoreDefaultDecisionReportDefinition(String collectionId, DecisionReportDataDto reportData) {
-    SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
+    SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto =
+      new SingleDecisionReportDefinitionRequestDto();
     singleDecisionReportDefinitionDto.setData(reportData);
     singleDecisionReportDefinitionDto.setId(RANDOM_STRING);
     singleDecisionReportDefinitionDto.setLastModifier(RANDOM_STRING);
@@ -456,7 +565,7 @@ public class ReportConflictIT extends AbstractIT {
       .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
   }
 
-  private static Stream<Boolean> provideForceParameterAsBoolean() {
+  private static Stream<Boolean> notForcedValues() {
     return Stream.of(null, false);
   }
 
