@@ -34,6 +34,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
   extends AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluationIT {
+//  protected static final Double UNASSIGNED_TASK_DURATION = null;
+
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
     return UserTaskDurationTime.WORK;
@@ -104,7 +106,7 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void assertHyperMap_ForOneProcessWithUnassignedTasks(final ReportResultResponseDto<List<HyperMapResultEntryDto>>result) {
+  protected void assertHyperMap_forOneProcessWithUnassignedTasks(final ReportResultResponseDto<List<HyperMapResultEntryDto>>result) {
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)

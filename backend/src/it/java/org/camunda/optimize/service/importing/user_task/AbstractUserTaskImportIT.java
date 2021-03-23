@@ -16,6 +16,7 @@ import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.sql.SQLException;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
@@ -40,7 +41,7 @@ public abstract class AbstractUserTaskImportIT extends AbstractIT {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(historicUserTaskInstanceDto -> {
         try {
-          engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
+          engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
             historicUserTaskInstanceDto.getId(),
             historicUserTaskInstanceDto.getStartTime().plus(idleDuration, ChronoUnit.MILLIS)
           );
@@ -56,7 +57,7 @@ public abstract class AbstractUserTaskImportIT extends AbstractIT {
       .forEach(historicUserTaskInstanceDto -> {
         if (historicUserTaskInstanceDto.getEndTime() != null) {
           try {
-            engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
+            engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
               historicUserTaskInstanceDto.getId(),
               historicUserTaskInstanceDto.getEndTime().minus(workDuration, ChronoUnit.MILLIS)
             );
@@ -64,6 +65,65 @@ public abstract class AbstractUserTaskImportIT extends AbstractIT {
             throw new OptimizeIntegrationTestException(e);
           }
         }
+      });
+  }
+
+
+  protected void changeUnclaimTimestampForAssigneeId(final ProcessInstanceEngineDto processInstanceDto,
+                                                     final OffsetDateTime timestamp,
+                                                     final String assigneeId) {
+    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
+      .forEach(historicUserTaskInstanceDto -> {
+        try {
+          engineDatabaseExtension.changeUserTaskAssigneeDeleteOperationWithAssigneeIdTimestamp(
+            historicUserTaskInstanceDto.getId(),
+            timestamp,
+            assigneeId
+          );
+        } catch (SQLException e) {
+          throw new OptimizeIntegrationTestException(e);
+        }
+      });
+  }
+
+  protected void changeClaimTimestampForAssigneeId(final ProcessInstanceEngineDto processInstanceDto,
+                                                   final OffsetDateTime timestamp,
+                                                   final String assigneeId) {
+    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
+      .forEach(historicUserTaskInstanceDto -> {
+        try {
+          engineDatabaseExtension.changeUserTaskAssigneeAddOperationWithAssigneeIdTimestamp(
+            historicUserTaskInstanceDto.getId(),
+            timestamp,
+            assigneeId
+          );
+        } catch (SQLException e) {
+          throw new OptimizeIntegrationTestException(e);
+        }
+      });
+  }
+
+  protected void changeUserTaskEndTime(final ProcessInstanceEngineDto processInstanceDto,
+                                       final OffsetDateTime endTime) {
+    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
+      .forEach(historicUserTaskInstanceDto -> {
+        engineDatabaseExtension.changeUserTaskEndDate(
+          processInstanceDto.getId(),
+          historicUserTaskInstanceDto.getTaskDefinitionKey(),
+          endTime
+        );
+      });
+  }
+
+  protected void changeUserTaskStartTime(final ProcessInstanceEngineDto processInstanceDto,
+                                         final OffsetDateTime startTime) {
+    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
+      .forEach(historicUserTaskInstanceDto -> {
+        engineDatabaseExtension.changeUserTaskStartDate(
+          processInstanceDto.getId(),
+          historicUserTaskInstanceDto.getTaskDefinitionKey(),
+          startTime
+        );
       });
   }
 

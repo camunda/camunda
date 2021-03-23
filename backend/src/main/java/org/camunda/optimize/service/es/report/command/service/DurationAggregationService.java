@@ -19,7 +19,7 @@ import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
-import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
+import org.camunda.optimize.service.es.report.command.util.DurationScriptUtil;
 import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
@@ -49,6 +49,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_START_DATE;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
 import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
@@ -213,7 +214,7 @@ public class DurationAggregationService {
       filterOperator,
       (long) filterValueInMillis,
       USER_TASKS + "." + userTaskDurationTime.getDurationFieldName(),
-      USER_TASKS + "." + userTaskDurationTime.getStartDateFieldName(),
+      USER_TASKS + "." + USER_TASK_START_DATE,
       // user task duration calculations can be null (e.g. work time if the userTask hasn't been claimed)
       true
     );
@@ -241,7 +242,7 @@ public class DurationAggregationService {
                                                        final String referenceDateFieldName,
                                                        final boolean includeNull) {
     return QueryBuilders.scriptQuery(
-      AggregationFilterUtil.getDurationFilterScript(
+      DurationScriptUtil.getDurationFilterScript(
         LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
         durationFieldName,
         referenceDateFieldName,

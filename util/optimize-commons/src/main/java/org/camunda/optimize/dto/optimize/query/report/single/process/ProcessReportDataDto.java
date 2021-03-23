@@ -158,6 +158,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return Collections.emptyList();
   }
 
+  public boolean isUserTaskReport() {
+    return nonNull(view) && ProcessViewEntity.USER_TASK.equals(view.getEntity());
+  }
+
   private boolean isGroupByCombinable(final ProcessReportDataDto that) {
     if (Combinable.isCombinable(this.groupBy, that.groupBy)) {
       if (isGroupByDateVariableReport()) {

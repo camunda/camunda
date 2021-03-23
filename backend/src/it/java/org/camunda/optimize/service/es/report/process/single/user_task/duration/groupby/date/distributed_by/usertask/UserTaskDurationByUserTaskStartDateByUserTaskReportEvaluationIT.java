@@ -27,7 +27,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 public abstract class UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluationIT
@@ -96,7 +95,8 @@ public abstract class UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluat
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
     reportData.setFilter(flowNodeStatusTestValues.processFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -122,15 +122,4 @@ public abstract class UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluat
     return ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE_BY_USER_TASK;
   }
 
-  @Override
-  protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
-    engineDatabaseExtension.changeUserTaskStartDates(updates);
-  }
-
-  @Override
-  protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
-                                        final String userTaskKey,
-                                        final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
-  }
 }

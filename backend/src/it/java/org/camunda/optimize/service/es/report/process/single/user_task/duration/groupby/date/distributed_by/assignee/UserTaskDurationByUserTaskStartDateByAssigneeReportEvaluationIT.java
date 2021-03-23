@@ -33,7 +33,6 @@ import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -57,7 +56,8 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -99,7 +99,8 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
     reportData.setFilter(processFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -153,7 +154,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
         historicUserTaskInstanceDto ->
         {
           try {
-            engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
+            engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
               historicUserTaskInstanceDto.getId(),
               now.minus(offsetDurationInMs, ChronoUnit.MILLIS)
             );
@@ -174,17 +175,5 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
   @Override
   protected ProcessReportDataType getReportDataType() {
     return ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE_BY_ASSIGNEE;
-  }
-
-  @Override
-  protected void changeUserTaskDates(final Map<String, OffsetDateTime> updates) {
-    engineDatabaseExtension.changeUserTaskStartDates(updates);
-  }
-
-  @Override
-  protected void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
-                                    final String userTaskKey,
-                                    final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
   }
 }

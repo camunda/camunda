@@ -14,7 +14,7 @@ import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.es.report.command.service.DurationAggregationService;
-import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
+import org.camunda.optimize.service.es.report.command.util.DurationScriptUtil;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
@@ -77,11 +77,16 @@ public class ProcessGroupByDuration extends ProcessGroupByPart {
 
   private MinMaxStatDto retrieveMinMaxDurationStats(final ExecutionContext<ProcessReportDataDto> context,
                                                     final QueryBuilder baseQuery) {
-    return minMaxStatsService.getScriptedMinMaxStats(baseQuery, getIndexName(context), null, getDurationScript());
+    return minMaxStatsService.getScriptedMinMaxStats(
+      baseQuery,
+      getIndexName(context),
+      null,
+      getDurationScript()
+    );
   }
 
   private Script getDurationScript() {
-    return AggregationFilterUtil.getDurationScript(
+    return DurationScriptUtil.getDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
       ProcessInstanceIndex.DURATION,
       ProcessInstanceIndex.START_DATE

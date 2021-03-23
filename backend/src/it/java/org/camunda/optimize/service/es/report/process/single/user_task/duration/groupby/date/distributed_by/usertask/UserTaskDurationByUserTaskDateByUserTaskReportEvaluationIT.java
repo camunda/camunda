@@ -538,7 +538,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCountWithoutFilters(1L)
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-      .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -1157,7 +1157,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
         historicUserTaskInstanceDto ->
         {
           try {
-            engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
+            engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
               historicUserTaskInstanceDto.getId(),
               now.minus(offsetDurationInMs, ChronoUnit.MILLIS)
             );
@@ -1182,5 +1182,19 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
   }
 
   protected abstract UserTaskDurationTime getUserTaskDurationTime();
+
+  @Override
+  protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
+    engineDatabaseExtension.changeUserTaskStartDates(updates);
+    engineDatabaseExtension.changeUserTaskEndDates(updates);
+  }
+
+  @Override
+  protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
+                                        final String userTaskKey,
+                                        final OffsetDateTime dateToChangeTo) {
+    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+    engineDatabaseExtension.changeUserTaskEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+  }
 
 }

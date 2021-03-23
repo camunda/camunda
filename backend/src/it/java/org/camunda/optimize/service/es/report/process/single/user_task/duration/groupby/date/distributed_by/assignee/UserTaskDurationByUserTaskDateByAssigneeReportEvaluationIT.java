@@ -1036,9 +1036,15 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
 
   protected abstract ProcessReportDataType getReportDataType();
 
-  protected abstract void changeUserTaskDates(final Map<String, OffsetDateTime> updates);
+  protected void changeUserTaskDates(final Map<String, OffsetDateTime> updates) {
+    engineDatabaseExtension.changeUserTaskStartDates(updates);
+    engineDatabaseExtension.changeUserTaskEndDates(updates);
+  }
 
-  protected abstract void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
-                                             final String userTaskKey,
-                                             final OffsetDateTime dateToChangeTo);
+  protected void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
+                                    final String userTaskKey,
+                                    final OffsetDateTime dateToChangeTo) {
+    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+    engineDatabaseExtension.changeUserTaskEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+  }
 }

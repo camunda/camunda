@@ -14,7 +14,7 @@ import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.service.DurationAggregationService;
-import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
+import org.camunda.optimize.service.es.report.command.util.DurationScriptUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -95,10 +95,9 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
   }
 
   private Script getDurationScript(final UserTaskDurationTime userTaskDurationTime) {
-    return AggregationFilterUtil.getDurationScript(
+    return DurationScriptUtil.getUserTaskDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-      USER_TASKS + "." + userTaskDurationTime.getDurationFieldName(),
-      USER_TASKS + "." + userTaskDurationTime.getStartDateFieldName()
+      USER_TASKS + "." + userTaskDurationTime.getDurationFieldName()
     );
   }
 

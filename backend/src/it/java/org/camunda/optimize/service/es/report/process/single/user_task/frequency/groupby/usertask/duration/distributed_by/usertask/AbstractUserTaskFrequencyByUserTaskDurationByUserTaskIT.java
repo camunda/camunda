@@ -18,7 +18,6 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.ModelElementFrequencyByModelElementDurationByModelElementIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
-import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +26,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION_BY_USER_TASK;
 
 public abstract class AbstractUserTaskFrequencyByUserTaskDurationByUserTaskIT
@@ -69,7 +69,8 @@ public abstract class AbstractUserTaskFrequencyByUserTaskDurationByUserTaskIT
   public void multipleProcessInstances_runningInstanceDurationIsCalculated() {
     // given
     final int completedModelElementInstanceDuration = 1000;
-    final OffsetDateTime startTime = DateCreationFreezer.dateFreezer(OffsetDateTime.now()).freezeDateAndReturn();
+    final OffsetDateTime startTime = dateFreezer().freezeDateAndReturn();
+      dateFreezer(startTime).freezeDateAndReturn();
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
     startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), completedModelElementInstanceDuration);
 
@@ -79,9 +80,8 @@ public abstract class AbstractUserTaskFrequencyByUserTaskDurationByUserTaskIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    final OffsetDateTime currentTime = DateCreationFreezer
-      // just one more ms to ensure we only get back two buckets for easier assertion
-      .dateFreezer(startTime.plus(completedModelElementInstanceDuration + 1, ChronoUnit.MILLIS))
+    final OffsetDateTime currentTime = // just one more ms to ensure we only get back two buckets for easier assertion
+      dateFreezer(startTime.plus(completedModelElementInstanceDuration + 1, ChronoUnit.MILLIS))
       .freezeDateAndReturn();
     final ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
     AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =

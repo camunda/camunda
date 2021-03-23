@@ -671,7 +671,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
         historicUserTaskInstanceDto ->
         {
           try {
-            engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
+            engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
               historicUserTaskInstanceDto.getId(),
               now.minus(offsetDurationInMs, ChronoUnit.MILLIS)
             );
@@ -704,4 +704,17 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
     return deployOneUserTaskDefinition();
   }
 
+  @Override
+  protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
+    engineDatabaseExtension.changeUserTaskStartDates(updates);
+    engineDatabaseExtension.changeUserTaskEndDates(updates);
+  }
+
+  @Override
+  protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
+                                        final String modelElementId,
+                                        final OffsetDateTime dateToChangeTo) {
+    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), modelElementId, dateToChangeTo);
+    engineDatabaseExtension.changeUserTaskEndDate(processInstance.getId(), modelElementId, dateToChangeTo);
+  }
 }

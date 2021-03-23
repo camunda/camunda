@@ -71,7 +71,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
   protected static final String USER_TASK_2 = "userTask2";
   protected static final String USER_TASK_A = "userTaskA";
   protected static final String USER_TASK_B = "userTaskB";
-  private static final Double UNASSIGNED_TASK_DURATION = 500.;
+  protected static final Double UNASSIGNED_TASK_DURATION = 500.;
   protected static final Double[] SET_DURATIONS = new Double[]{10., 20.};
 
   @BeforeEach
@@ -187,10 +187,10 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     doReportDataAssertions(resultReportDataDto, processDefinition);
 
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
-    assertHyperMap_ForOneProcessWithUnassignedTasks(actualResult);
+    assertHyperMap_forOneProcessWithUnassignedTasks(actualResult);
   }
 
-  protected void assertHyperMap_ForOneProcessWithUnassignedTasks(final ReportResultResponseDto<List<HyperMapResultEntryDto>> result) {
+  protected void assertHyperMap_forOneProcessWithUnassignedTasks(final ReportResultResponseDto<List<HyperMapResultEntryDto>> result) {
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)

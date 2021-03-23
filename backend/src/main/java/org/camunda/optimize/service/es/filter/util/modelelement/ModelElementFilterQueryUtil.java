@@ -22,7 +22,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil.getDurationFilterScript;
+import static org.camunda.optimize.service.es.report.command.util.DurationScriptUtil.getDurationFilterScript;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 

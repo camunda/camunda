@@ -73,7 +73,6 @@ public class CompletedProcessInstanceMediatorPermutationsImportIT extends Abstra
           .singleElement()
           .satisfies(userTask -> {
             assertThat(userTask.getStartDate()).isNotNull();
-            assertThat(userTask.getClaimDate()).isNotNull();
             assertThat(userTask.getEndDate()).isNotNull();
             assertThat(userTask.getAssignee()).isEqualTo(DEFAULT_USERNAME);
             assertThat(userTask.getCandidateGroups()).containsOnly(CANDIDATE_GROUP);

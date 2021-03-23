@@ -12,7 +12,6 @@ import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewMeasure;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewMultiAggregation;
-import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.script.Script;
@@ -21,6 +20,9 @@ import org.elasticsearch.search.aggregations.Aggregations;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.camunda.optimize.service.es.report.command.util.DurationScriptUtil.getDurationScript;
+import static org.camunda.optimize.service.es.report.command.util.DurationScriptUtil.getUserTaskDurationScript;
 
 public abstract class ProcessViewDuration extends ProcessViewMultiAggregation {
 
@@ -60,7 +62,12 @@ public abstract class ProcessViewDuration extends ProcessViewMultiAggregation {
   protected abstract String getDurationFieldName(final ProcessReportDataDto reportData);
 
   private Script getScriptedAggregationField(final ProcessReportDataDto reportData) {
-    return AggregationFilterUtil.getDurationScript(
+    return reportData.isUserTaskReport()
+      ? getUserTaskDurationScript(
+      LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
+      getDurationFieldName(reportData)
+    )
+      : getDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
       getDurationFieldName(reportData),
       getReferenceDateFieldName(reportData)

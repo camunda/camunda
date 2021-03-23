@@ -146,7 +146,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
@@ -184,7 +184,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -234,7 +235,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -292,7 +294,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -338,7 +341,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -373,7 +377,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -420,7 +425,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, groupByDateUnit);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // we need to do the first assert here so that every loop has access to the the groupByAdder
@@ -464,7 +470,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition1);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -493,7 +500,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     // when
     final ProcessReportDataDto reportData = createReportData(processKey, "1", AggregateByDateUnit.DAY);
     reportData.setTenantIds(selectedTenants);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -518,7 +526,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     final List<ProcessFilterDto<?>> processFilterDtoList = ProcessFilterBuilder.filter()
       .completedInstancesOnly().add().buildList();
     reportData.setFilter(processFilterDtoList);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -583,7 +592,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -649,7 +659,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -708,7 +719,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .filter().candidateGroups().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -776,7 +788,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
       .filter().candidateGroups().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -812,7 +825,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -847,7 +861,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -872,7 +887,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -890,7 +906,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then the single data point should be grouped by month
     final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -923,7 +940,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
     reportData.setProcessDefinitionVersions(definitionVersionsThatSpanMultipleDefinitions);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -961,7 +979,8 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
     reportData.setProcessDefinitionVersions(definitionVersionsThatSpanMultipleDefinitions);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -1112,9 +1131,15 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
 
   protected abstract ProcessReportDataType getReportDataType();
 
-  protected abstract void changeUserTaskDates(final Map<String, OffsetDateTime> updates);
+  protected void changeUserTaskDates(final Map<String, OffsetDateTime> updates) {
+    engineDatabaseExtension.changeUserTaskStartDates(updates);
+    engineDatabaseExtension.changeUserTaskEndDates(updates);
+  }
 
-  protected abstract void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
-                                             final String userTaskKey,
-                                             final OffsetDateTime dateToChangeTo);
+  protected void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
+                                    final String userTaskKey,
+                                    final OffsetDateTime dateToChangeTo) {
+    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+    engineDatabaseExtension.changeUserTaskEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+  }
 }

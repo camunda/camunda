@@ -30,6 +30,8 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 
 import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -39,6 +41,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
@@ -74,7 +77,6 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
           assertThat(simpleUserTaskInstanceDto.getStartDate()).isNotNull();
           assertThat(simpleUserTaskInstanceDto.getEndDate()).isNotNull();
           assertThat(simpleUserTaskInstanceDto.getDueDate()).isNull();
-          assertThat(simpleUserTaskInstanceDto.getClaimDate()).isNotNull();
           assertThat(simpleUserTaskInstanceDto.getDeleteReason()).isNotNull();
           assertThat(simpleUserTaskInstanceDto.getTotalDurationInMs()).isNotNull();
           assertThat(simpleUserTaskInstanceDto.getIdleDurationInMs()).isNotNull();
@@ -108,7 +110,6 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
           assertThat(userTask.getActivityInstanceId()).isNotNull();
           assertThat(userTask.getStartDate()).isNotNull();
           assertThat(userTask.getEndDate()).isNull();
-          assertThat(userTask.getClaimDate()).isNull();
           assertThat(userTask.getTotalDurationInMs()).isNull();
         });
       });
@@ -224,10 +225,8 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
         processInstanceDto.getUserTasks().forEach(userTask -> {
           if (USER_TASK_1.equals(userTask.getActivityId())) {
             assertThat(userTask.getEndDate()).isNotNull();
-            assertThat(userTask.getClaimDate()).isNotNull();
           } else {
             assertThat(userTask.getEndDate()).isNull();
-            assertThat(userTask.getClaimDate()).isNull();
           }
         });
       });
@@ -272,10 +271,8 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
         processInstanceDto.getUserTasks().forEach(userTask -> {
           if (USER_TASK_1.equals(userTask.getActivityId())) {
             assertThat(userTask.getEndDate()).isNotNull();
-            assertThat(userTask.getClaimDate()).isNotNull();
           } else {
             assertThat(userTask.getEndDate()).isNull();
-            assertThat(userTask.getClaimDate()).isNull();
           }
         });
       });
@@ -375,36 +372,10 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   }
 
   @Test
-  public void defaultIdleTimeOnNoClaimOperation() {
-    // given
-    final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoUserTasksProcess();
-    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
-
-    // when
-    importAllEngineEntitiesFromScratch();
-
-    // then
-    final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
-    assertThat(storedProcessInstances)
-      .hasSize(1)
-      .allSatisfy(persistedProcessInstanceDto -> {
-        persistedProcessInstanceDto.getUserTasks().forEach(userTask -> {
-          if (USER_TASK_1.equals(userTask.getActivityId())) {
-            assertThat(userTask.getIdleDurationInMs()).isEqualTo(0L);
-          } else if (USER_TASK_2.equals(userTask.getActivityId())) {
-            assertThat(userTask.getIdleDurationInMs()).isNull();
-          }
-          assertThat(userTask.getClaimDate()).isNull();
-        });
-      });
-  }
-
-  @Test
   public void idleTimeMetricIsCalculatedOnClaimOperationImport() {
     // given
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.deployAndStartProcess(
-      BpmnModels.getSingleUserTaskDiagram());
+    final ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.finishAllRunningUserTasks();
     final long idleDuration = 500;
     changeUserTaskIdleDuration(processInstanceDto, idleDuration);
@@ -424,45 +395,112 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   }
 
   @Test
-  public void defaultWorkTimeOnNoClaimOperation() {
-    // given
-    final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoUserTasksProcess();
+  public void workAndIdleTimeCalculationsForMultipleClaimOperations() {
+    // given a userTask that is claimed and unclaimed multiple times before completion
+    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
+    final String firstClaimUser = "firstClaimUser";
+    final String secondClaimUser = "secondClaimUser";
+    final ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
+
+    // timeline:
+    // start userTask now --+5secs--> claim --+4secs--> unclaim --+3secs--> claim --+2secs--> finish.
+    changeUserTaskStartTime(processInstanceDto, now);
+    importAllEngineEntitiesFromScratch();
+
+    // claim usertask after 5s
+    engineIntegrationExtension.claimAllRunningUserTasksWithAssignee(firstClaimUser, processInstanceDto.getId());
+    engineIntegrationExtension.claimAllRunningUserTasksWithAssignee(firstClaimUser, processInstanceDto.getId());
+    final long firstIdleDuration = 500;
+    final OffsetDateTime timeOfFirstClaim = now.plus(firstIdleDuration, ChronoUnit.MILLIS);
+    changeClaimTimestampForAssigneeId(processInstanceDto, timeOfFirstClaim, firstClaimUser);
+    importAllEngineEntitiesFromScratch();
+
+    // unclaim 4s later
+    engineIntegrationExtension.unclaimAllRunningUserTasks();
+    final long firstWorkDuration = 400;
+    final OffsetDateTime timeOfFirstUnclaim = timeOfFirstClaim.plus(firstWorkDuration, ChronoUnit.MILLIS);
+    changeUnclaimTimestampForAssigneeId(processInstanceDto, timeOfFirstUnclaim, firstClaimUser);
+    importAllEngineEntitiesFromScratch();
+
+    // claim 3s later
+    engineIntegrationExtension.claimAllRunningUserTasksWithAssignee(secondClaimUser, processInstanceDto.getId());
+    final long secondIdleDuration = 300;
+    final OffsetDateTime timeOfSecondClaim = timeOfFirstUnclaim.plus(secondIdleDuration, ChronoUnit.MILLIS);
+    changeClaimTimestampForAssigneeId(processInstanceDto, timeOfSecondClaim, secondClaimUser);
+    importAllEngineEntitiesFromScratch();
+
+    // finish 2s after last claim
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
+    final long secondWorkDuration = 200;
+    final OffsetDateTime timeOfFinish = timeOfSecondClaim.plus(secondWorkDuration, ChronoUnit.MILLIS);
+    changeUserTaskEndTime(processInstanceDto, timeOfFinish);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    // workDuration is the sum of all durations during which the usertask was assigned and
+    // idleDuration is the sum of all durations during which the userTask was unassigned
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(1)
+      .allSatisfy(persistedProcessInstanceDto -> {
+        persistedProcessInstanceDto.getUserTasks()
+          .forEach(userTask -> assertThat(userTask.getWorkDurationInMs()).isEqualTo(firstWorkDuration + secondWorkDuration));
+      });
+    assertThat(storedProcessInstances)
+      .hasSize(1)
+      .allSatisfy(persistedProcessInstanceDto -> {
+        persistedProcessInstanceDto.getUserTasks()
+          .forEach(userTask -> assertThat(userTask.getIdleDurationInMs()).isEqualTo(firstIdleDuration + secondIdleDuration));
+      });
+  }
+
+  @Test
+  public void defaultTimesOnCompletionWithNoClaimOperation() {
+    // given a usertask that has been started and then completed with no claim/unclaim operations
+    final ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
 
     // when
     importAllEngineEntitiesFromScratch();
 
-    // then
+    // then the usertask is assumed to be worked on programmatically only via API,
+    // meaning totalDuration == workDuration and idleDuration == null
     final List<ProcessInstanceDto> storedProcessInstances =
       elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .allSatisfy(persistedProcessInstanceDto -> {
-        persistedProcessInstanceDto.getUserTasks()
-          .forEach(userTask -> assertThat(userTask.getWorkDurationInMs()).isEqualTo(userTask.getTotalDurationInMs()));
+      .flatExtracting(ProcessInstanceDto::getUserTasks)
+      .allSatisfy(userTask -> {
+        assertThat(userTask.getWorkDurationInMs()).isNotNull();
+        assertThat(userTask.getIdleDurationInMs()).isZero();
+        assertThat(userTask.getWorkDurationInMs()).isEqualTo(userTask.getTotalDurationInMs());
       });
   }
 
   @Test
-  public void workTimeMetricIsCalculatedOnClaimOperationImport() {
-    // given
-    final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoUserTasksProcess();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    final long workDuration = 500;
-    changeUserTaskWorkDuration(processInstanceDto, workDuration);
+  public void defaultTimesOnCancellationWithNoClaimOperation() {
+    // given a userTask that has been started and then cancelled with no claim/unclaim
+    final ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
+    engineIntegrationExtension.cancelActivityInstance(processInstanceDto.getId(), USER_TASK_1);
 
     // when
     importAllEngineEntitiesFromScratch();
 
-    // then
+    // then the usertask is assumed to have been idle the entire time,
+    // meaning idle == total and work == 0
     final List<ProcessInstanceDto> storedProcessInstances =
       elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .allSatisfy(persistedProcessInstanceDto -> {
-        persistedProcessInstanceDto.getUserTasks()
-          .forEach(userTask -> assertThat(userTask.getWorkDurationInMs()).isEqualTo(workDuration));
+      .flatExtracting(ProcessInstanceDto::getUserTasks)
+      .allSatisfy(userTask -> {
+        assertThat(userTask.getWorkDurationInMs()).isNotNull();
+        assertThat(userTask.getIdleDurationInMs()).isEqualTo(userTask.getTotalDurationInMs());
+        assertThat(userTask.getWorkDurationInMs()).isZero();
       });
   }
 

@@ -179,6 +179,10 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     engineClient.claimAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
   }
 
+  public void claimAllRunningUserTasksWithAssignee(final String assigneeId, final String processInstanceId) {
+    engineClient.claimAllRunningUserTasksWithAssignee(assigneeId, DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
+  }
+
   public void claimAllRunningUserTasks(final String user, final String password, final String processInstanceId) {
     engineClient.claimAllRunningUserTasks(user, password, processInstanceId);
   }

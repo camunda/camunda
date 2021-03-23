@@ -6,11 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.date.distributed_by.usertask;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-
-import java.time.OffsetDateTime;
-import java.util.Map;
 
 public abstract class UserTaskDurationByUserTaskEndDateByUserTaskReportEvaluationIT
   extends UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT {
@@ -25,15 +21,4 @@ public abstract class UserTaskDurationByUserTaskEndDateByUserTaskReportEvaluatio
     return ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_END_DATE_BY_USER_TASK;
   }
 
-  @Override
-  protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
-    engineDatabaseExtension.changeUserTaskEndDates(updates);
-  }
-
-  @Override
-  protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
-                                        final String userTaskKey,
-                                        final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeUserTaskEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
-  }
 }

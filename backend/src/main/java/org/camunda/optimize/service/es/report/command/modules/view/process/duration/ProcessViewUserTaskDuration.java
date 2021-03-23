@@ -16,7 +16,6 @@ import org.camunda.optimize.service.es.report.command.modules.result.CompositeCo
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult.ViewResultBuilder;
 import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewMultiAggregation;
-import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.script.Script;
@@ -30,6 +29,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.report.command.util.DurationScriptUtil.getUserTaskDurationScript;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 
 @Component
@@ -102,15 +102,10 @@ public class ProcessViewUserTaskDuration extends ProcessViewMultiAggregation {
   }
 
   private Script getScriptedAggregationField(final UserTaskDurationTime userTaskDurationTime) {
-    return AggregationFilterUtil.getDurationScript(
+    return getUserTaskDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-      getDurationFieldName(userTaskDurationTime),
-      getReferenceDateFieldName(userTaskDurationTime)
+      getDurationFieldName(userTaskDurationTime)
     );
-  }
-
-  private String getReferenceDateFieldName(final UserTaskDurationTime userTaskDurationTime) {
-    return USER_TASKS + "." + userTaskDurationTime.getStartDateFieldName();
   }
 
   private String getDurationFieldName(final UserTaskDurationTime userTaskDurationTime) {
