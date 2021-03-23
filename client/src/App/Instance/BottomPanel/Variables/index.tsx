@@ -20,6 +20,7 @@ import {Skeleton} from './Skeleton';
 import {VARIABLE_MODE} from './constants';
 import {Table, TH, TR} from './VariablesTable';
 import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 
 const Variables: React.FC = observer(function Variables() {
   const {
@@ -307,10 +308,9 @@ const Variables: React.FC = observer(function Variables() {
           disabled={
             status === 'first-fetch' ||
             editMode !== '' ||
-            !(
-              flowNodeMetaDataStore.isSelectedInstanceRunning ||
-              currentInstanceStore.isRunning
-            )
+            (flowNodeSelectionStore.isRootNodeSelected
+              ? !currentInstanceStore.isRunning
+              : !flowNodeMetaDataStore.isSelectedInstanceRunning)
           }
         >
           <Styled.Plus /> Add Variable

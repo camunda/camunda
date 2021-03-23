@@ -69,6 +69,13 @@ class FlowNodeSelection {
     };
   }
 
+  get isRootNodeSelected() {
+    return (
+      this.state.selection?.flowNodeInstanceId ===
+      currentInstanceStore.state.instance?.id
+    );
+  }
+
   isSelected = ({
     flowNodeId,
     flowNodeInstanceId,

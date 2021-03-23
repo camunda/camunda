@@ -11,6 +11,7 @@ import {
   screen,
   fireEvent,
   within,
+  waitFor,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -20,6 +21,8 @@ import Variables from './index';
 import {mockVariables} from './index.setup';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no variables.';
 
@@ -38,9 +41,13 @@ const Wrapper = ({children}: Props) => {
 };
 
 describe('Variables', () => {
+  beforeEach(() => {
+    flowNodeSelectionStore.init();
+  });
   afterEach(() => {
     currentInstanceStore.reset();
     variablesStore.reset();
+    flowNodeSelectionStore.reset();
   });
 
   describe('Skeleton', () => {
@@ -566,6 +573,85 @@ describe('Variables', () => {
       expect(screen.getByText('Add Variable')).toBeEnabled();
       fireEvent.click(screen.getByText('Add Variable'));
       expect(screen.getByText('Add Variable')).toBeDisabled();
+    });
+
+    it('should disable add variable button when selected flow node is not running', async () => {
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/variables',
+          (_, res, ctx) => res.once(ctx.json([]))
+        )
+      );
+
+      flowNodeMetaDataStore.init();
+      currentInstanceStore.setCurrentInstance({id: '1', state: 'ACTIVE'});
+
+      render(<Variables />, {wrapper: Wrapper});
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      expect(screen.getByText('Add Variable')).toBeEnabled();
+
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances/1/flow-node-metadata',
+          (_, res, ctx) =>
+            res.once(
+              ctx.json({
+                instanceMetadata: {
+                  endDate: null,
+                },
+              })
+            )
+        )
+      );
+
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'start',
+        flowNodeInstanceId: '2',
+        isMultiInstance: false,
+      });
+
+      await waitFor(() =>
+        expect(flowNodeMetaDataStore.state.metaData).toEqual({
+          instanceMetadata: {
+            endDate: null,
+          },
+        })
+      );
+
+      expect(screen.getByText('Add Variable')).toBeEnabled();
+
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances/1/flow-node-metadata',
+          (_, res, ctx) =>
+            res.once(
+              ctx.json({
+                instanceMetadata: {
+                  endDate: '2021-03-22T12:28:00.393+0000',
+                },
+              })
+            )
+        )
+      );
+
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'neverFails',
+        flowNodeInstanceId: '3',
+        isMultiInstance: false,
+      });
+
+      await waitFor(() =>
+        expect(flowNodeMetaDataStore.state.metaData).toEqual({
+          instanceMetadata: {
+            endDate: '2021-03-22T12:28:00.393+0000',
+          },
+        })
+      );
+
+      expect(screen.getByText('Add Variable')).toBeDisabled();
+
+      flowNodeMetaDataStore.reset();
     });
   });
 });
