@@ -11,6 +11,7 @@ import io.zeebe.db.TransactionContext;
 import io.zeebe.db.TransactionOperation;
 import io.zeebe.db.ZeebeDbTransaction;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
+import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.ReprocessingStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -82,10 +83,9 @@ import org.slf4j.Logger;
  */
 public final class ReProcessingStateMachine {
 
-  public static final Consumer NOOP_SIDE_EFFECT_CONSUMER = (sideEffect) -> {};
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
-      "Expected to find event processor for event '{}', but caught an exception. Skip this event.";
+      "Expected to find event processor for event '{} {}', but caught an exception. Skip this event.";
   private static final String ERROR_MESSAGE_REPROCESSING_NO_FOLLOW_UP_EVENT =
       "Expected to find last follow-up event position '%d', but last position was '%d'. Failed to reprocess on processor";
   private static final String ERROR_MESSAGE_REPROCESSING_NO_NEXT_EVENT =
@@ -94,10 +94,10 @@ public final class ReProcessingStateMachine {
       "Processor finished reprocessing at event position {}";
   private static final String LOG_STMT_FAILED_ON_PROCESSING =
       "Event {} failed on processing last time, will call #onError to update process instance blacklist.";
-
   private static final String ERROR_INCONSISTENT_LOG =
       "Expected that position '%d' of current event is higher then position '%d' of last event, but was not. Inconsistent log detected!";
 
+  private static final Consumer<SideEffectProducer> NOOP_SIDE_EFFECT_CONSUMER = (sideEffect) -> {};
   private static final Consumer<Long> NOOP_LONG_CONSUMER = (instanceKey) -> {};
 
   private static final MetadataFilter REPLAY_FILTER =
@@ -298,7 +298,9 @@ public final class ReProcessingStateMachine {
       }
 
     } catch (final RuntimeException e) {
-      recoveryFuture.completeExceptionally(e);
+      final var processingException =
+          new ProcessingException("Unable to reprocess record", currentEvent, metadata, e);
+      recoveryFuture.completeExceptionally(processingException);
     }
   }
 
@@ -312,7 +314,7 @@ public final class ReProcessingStateMachine {
           recordProcessorMap.get(
               metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, currentEvent, e);
+      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, currentEvent, metadata, e);
     }
 
     final UnifiedRecordValue value =
