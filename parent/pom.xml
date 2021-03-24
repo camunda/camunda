@@ -88,7 +88,7 @@
     <version.zeebe-test-container>1.0.1</version.zeebe-test-container>
     <version.feel-scala>1.13.1</version.feel-scala>
     <version.restassert>4.3.3</version.restassert>
-    <version.spring-boot>2.4.3</version.spring-boot>
+    <version.spring-boot>2.4.4</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
     <version.kryo>5.0.3</version.kryo>
@@ -119,7 +119,7 @@
     <plugin.version.versions>2.8.1</plugin.version.versions>
     <plugin.version.enforcer>3.0.0-M3</plugin.version.enforcer>
     <plugin.version.dependency>3.1.2</plugin.version.dependency>
-    <plugin.version.spotbugs>4.2.0</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.2.2</plugin.version.spotbugs>
     <plugin.version.sonar>3.8.0.2131</plugin.version.sonar>
     <plugin.version.clirr>2.8</plugin.version.clirr>
     <plugin.version.maven-jar>3.2.0</plugin.version.maven-jar>
