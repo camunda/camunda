@@ -66,7 +66,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
     rejectionWriter = writers.rejection();
 
     eventHandle =
-        new EventHandle(zeebeState.getKeyGenerator(), zeebeState.getEventScopeInstanceState());
+        new EventHandle(
+            zeebeState.getKeyGenerator(), zeebeState.getEventScopeInstanceState(), writers);
   }
 
   @Override
@@ -107,8 +108,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
         final var catchEvent =
             getCatchEvent(elementInstance.getValue(), subscriptionRecord.getElementIdBuffer());
-        eventHandle.activateElement(
-            stateWriter, catchEvent, elementInstanceKey, elementInstance.getValue());
+        eventHandle.activateElement(catchEvent, elementInstanceKey, elementInstance.getValue());
 
         sendAcknowledgeCommand(subscriptionRecord);
       }

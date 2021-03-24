@@ -137,22 +137,17 @@ public final class EventbasedGatewayTest {
                                 == BpmnElementType.EVENT_BASED_GATEWAY)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getElementId(), r.getIntent()))
-        .containsExactly(
+        .containsSequence(
             tuple("gateway", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("gateway", ProcessInstanceIntent.EVENT_OCCURRED),
             tuple("gateway", ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple("gateway", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("timer-1", ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple("timer-1", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("timer-1", ProcessInstanceIntent.COMPLETE_ELEMENT),
             tuple("timer-1", ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple("timer-1", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple("to-end1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("end1", ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            tuple("end1", ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("end1", ProcessInstanceIntent.ELEMENT_COMPLETING),
-            tuple("end1", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple("PROCESS_WITH_TIMERS", ProcessInstanceIntent.ELEMENT_COMPLETING),
-            tuple("PROCESS_WITH_TIMERS", ProcessInstanceIntent.ELEMENT_COMPLETED));
+            tuple("to-end1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN));
   }
 
   @Test

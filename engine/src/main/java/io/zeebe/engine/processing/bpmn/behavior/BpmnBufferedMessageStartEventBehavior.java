@@ -10,7 +10,7 @@ package io.zeebe.engine.processing.bpmn.behavior;
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.common.EventHandle;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.deployment.DeployedProcess;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.message.StoredMessage;
@@ -25,18 +25,17 @@ public final class BpmnBufferedMessageStartEventBehavior {
 
   private final MutableMessageState messageState;
   private final ProcessState processState;
-  private final TypedStreamWriter streamWriter;
 
   private final EventHandle eventHandle;
 
   public BpmnBufferedMessageStartEventBehavior(
-      final MutableZeebeState zeebeState, final TypedStreamWriter streamWriter) {
+      final MutableZeebeState zeebeState, final Writers writers) {
     messageState = zeebeState.getMessageState();
     processState = zeebeState.getProcessState();
-    this.streamWriter = streamWriter;
 
     eventHandle =
-        new EventHandle(zeebeState.getKeyGenerator(), zeebeState.getEventScopeInstanceState());
+        new EventHandle(
+            zeebeState.getKeyGenerator(), zeebeState.getEventScopeInstanceState(), writers);
   }
 
   public void correlateMessage(final BpmnElementContext context) {
@@ -123,10 +122,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
 
     final var processInstanceKey =
         eventHandle.triggerStartEvent(
-            streamWriter,
-            process.getKey(),
-            elementId,
-            storedMessage.getMessage().getVariablesBuffer());
+            process.getKey(), elementId, storedMessage.getMessage().getVariablesBuffer());
 
     if (processInstanceKey > 0) {
       // mark the message as correlated

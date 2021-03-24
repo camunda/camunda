@@ -253,6 +253,19 @@ public final class BpmnStateTransitionBehavior {
     }
   }
 
+  public void completeElement(final BpmnElementContext context) {
+
+    if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      commandWriter.appendFollowUpCommand(
+          context.getElementInstanceKey(),
+          ProcessInstanceIntent.COMPLETE_ELEMENT,
+          context.getRecordValue());
+
+    } else {
+      transitionToCompleting(context);
+    }
+  }
+
   /**
    * Terminate all child instances of the given scope.
    *

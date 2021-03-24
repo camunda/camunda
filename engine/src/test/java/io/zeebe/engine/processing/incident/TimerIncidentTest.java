@@ -187,8 +187,9 @@ public final class TimerIncidentTest {
     // then
     assertThat(
             RecordingExporter.processInstanceRecords()
-                .withRecordKey(incident.getValue().getElementInstanceKey())
-                .limit(2))
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withRecordKey(incident.getValue().getElementInstanceKey()))
         .extracting(Record::getIntent)
         .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
   }

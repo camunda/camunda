@@ -724,13 +724,14 @@ public final class MessageCorrelationTest {
 
     assertThat(events)
         .filteredOn(r -> r.getValue().getElementId().equals("receive-message"))
-        .extracting(Record::getIntent)
+        .extracting(Record::getRecordType, Record::getIntent)
         .containsExactly(
-            ProcessInstanceIntent.ELEMENT_ACTIVATING,
-            ProcessInstanceIntent.ELEMENT_ACTIVATED,
-            ProcessInstanceIntent.EVENT_OCCURRED,
-            ProcessInstanceIntent.ELEMENT_COMPLETING,
-            ProcessInstanceIntent.ELEMENT_COMPLETED);
+            tuple(RecordType.COMMAND, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(RecordType.EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(RecordType.EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(RecordType.COMMAND, ProcessInstanceIntent.COMPLETE_ELEMENT),
+            tuple(RecordType.EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(RecordType.EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test

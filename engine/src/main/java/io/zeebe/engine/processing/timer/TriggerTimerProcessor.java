@@ -20,6 +20,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -58,19 +59,18 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       final MutableZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
       final ExpressionProcessor expressionProcessor,
-      final StateWriter stateWriter,
-      final TypedRejectionWriter rejectionWriter) {
+      final Writers writers) {
     this.catchEventBehavior = catchEventBehavior;
     this.expressionProcessor = expressionProcessor;
-    this.stateWriter = stateWriter;
-    this.rejectionWriter = rejectionWriter;
+    stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
 
     processState = zeebeState.getProcessState();
     elementInstanceState = zeebeState.getElementInstanceState();
     timerInstanceState = zeebeState.getTimerState();
     keyGenerator = zeebeState.getKeyGenerator();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
-    eventHandle = new EventHandle(keyGenerator, zeebeState.getEventScopeInstanceState());
+    eventHandle = new EventHandle(keyGenerator, zeebeState.getEventScopeInstanceState(), writers);
   }
 
   @Override
@@ -101,7 +101,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
       final long processInstanceKey = keyGenerator.nextKey();
       eventHandle.activateStartEvent(
-          streamWriter, processDefinitionKey, processInstanceKey, timer.getTargetElementIdBuffer());
+          processDefinitionKey, processInstanceKey, timer.getTargetElementIdBuffer());
     } else {
       final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
       if (!eventHandle.canTriggerElement(elementInstance)) {
@@ -110,8 +110,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       }
 
       stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
-      eventHandle.activateElement(
-          streamWriter, catchEvent, elementInstanceKey, elementInstance.getValue());
+      eventHandle.activateElement(catchEvent, elementInstanceKey, elementInstance.getValue());
     }
 
     if (shouldReschedule(timer)) {

@@ -106,7 +106,7 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceIntent.ELEMENT_ACTIVATING,
         new ProcessInstanceElementActivatingApplier(
-            elementInstanceState, processState, variableState));
+            elementInstanceState, processState, variableState, eventScopeInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_ACTIVATED,
         new ProcessInstanceElementActivatedApplier(
@@ -116,7 +116,8 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceElementCompletingApplier(elementInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_COMPLETED,
-        new ProcessInstanceElementCompletedApplier(elementInstanceState, eventScopeInstanceState));
+        new ProcessInstanceElementCompletedApplier(
+            elementInstanceState, eventScopeInstanceState, variableState));
     register(
         ProcessInstanceIntent.ELEMENT_TERMINATING,
         new ProcessInstanceElementTerminatingApplier(elementInstanceState));
@@ -196,7 +197,9 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessMessageSubscriptionIntent.CORRELATED,
         new ProcessMessageSubscriptionCorrelatedApplier(
-            state.getProcessMessageSubscriptionState(), state.getEventScopeInstanceState()));
+            state.getProcessMessageSubscriptionState(),
+            state.getEventScopeInstanceState(),
+            state.getVariableState()));
     register(
         ProcessMessageSubscriptionIntent.DELETED,
         new ProcessMessageSubscriptionDeletedApplier(state.getProcessMessageSubscriptionState()));
