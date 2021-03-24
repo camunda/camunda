@@ -88,7 +88,7 @@
     <version.zeebe-test-container>1.0.1</version.zeebe-test-container>
     <version.feel-scala>1.12.4</version.feel-scala>
     <version.restassert>4.3.3</version.restassert>
-    <version.spring-boot>2.4.1</version.spring-boot>
+    <version.spring-boot>2.4.3</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
     <version.kryo>4.0.2</version.kryo>
@@ -981,7 +981,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore/>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -1076,7 +1076,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence />
+                  <dependencyConvergence/>
                 </rules>
               </configuration>
             </execution>
@@ -1087,7 +1087,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions />
+                  <banDuplicatePomDependencyVersions/>
                 </rules>
               </configuration>
             </execution>
