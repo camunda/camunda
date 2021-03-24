@@ -21,7 +21,7 @@ import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.ElasticsearchConnector;
@@ -308,8 +308,8 @@ public class ElasticsearchTestRule extends TestWatcher {
         final IndexRequest indexRequest =
           new IndexRequest(alias, ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
             .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
-        if (entity instanceof ActivityInstanceForListViewEntity) {
-          indexRequest.routing(((ActivityInstanceForListViewEntity)entity).getWorkflowInstanceKey().toString());
+        if (entity instanceof FlowNodeInstanceForListViewEntity) {
+          indexRequest.routing(((FlowNodeInstanceForListViewEntity)entity).getWorkflowInstanceKey().toString());
         }
         if (entity instanceof VariableForListViewEntity) {
           indexRequest.routing(((VariableForListViewEntity)entity).getWorkflowInstanceKey().toString());
@@ -329,7 +329,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       entityToESAliasMap.put(WorkflowEntity.class, workflowIndex.getFullQualifiedName());
       entityToESAliasMap.put(IncidentEntity.class, incidentTemplate.getFullQualifiedName());
       entityToESAliasMap.put(WorkflowInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(ActivityInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(FlowNodeInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
       entityToESAliasMap.put(VariableForListViewEntity.class, listViewTemplate.getFullQualifiedName());
       entityToESAliasMap.put(VariableEntity.class, variableTemplate.getFullQualifiedName());
       entityToESAliasMap.put(OperationEntity.class, operationTemplate.getFullQualifiedName());

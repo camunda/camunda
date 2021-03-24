@@ -13,8 +13,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 
-import org.camunda.operate.entities.ActivityInstanceEntity;
-import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
+import org.camunda.operate.entities.FlowNodeInstanceEntity;
+import org.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
@@ -28,7 +28,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 public class VariableIT extends OperateZeebeIntegrationTest {
 
   @Autowired
-  private ActivityInstanceReader activityInstanceReader;
+  private FlowNodeInstanceReader flowNodeInstanceReader;
 
   protected String getVariablesURL(Long workflowInstanceKey) {
     return String.format(WORKFLOW_INSTANCE_URL + "/%s/variables", workflowInstanceKey);
@@ -61,7 +61,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
     //TC 1 - when workflow instance is started
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "task1");
     elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, "otherVar");
 
     //then
@@ -72,7 +72,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
     //TC2 - when subprocess and task with input mapping are activated
     completeTask(workflowInstanceKey, "task1", null);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "task2");
     elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, "taskVarIn");
 
 
@@ -87,7 +87,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
     //TC3 - when activity with output mapping is completed
     completeTask(workflowInstanceKey, "task2", "{\"taskVarOut\": \"someResult\", \"otherTaskVar\": 456}");
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task3");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "task3");
     elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, "otherTaskVar");
 
     //then
@@ -157,7 +157,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
   }
 
   protected List<VariableDto> getVariables(Long workflowInstanceKey, String activityId) throws Exception {
-    final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
+    final List<FlowNodeInstanceEntity> allActivityInstances = tester.getAllFlowNodeInstances(workflowInstanceKey);
     final Long task1Id = findActivityInstanceId(allActivityInstances, activityId);
     MvcResult mvcResult = mockMvc
       .perform(get(getVariablesURL(workflowInstanceKey, task1Id)))
@@ -167,9 +167,9 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     return mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
   }
 
-  protected Long findActivityInstanceId(List<ActivityInstanceEntity> allActivityInstances, String activityId) {
-    assertThat(allActivityInstances).filteredOn(ai -> ai.getActivityId().equals(activityId)).hasSize(1);
-    return Long.valueOf(allActivityInstances.stream().filter(ai -> ai.getActivityId().equals(activityId)).findFirst().get().getId());
+  protected Long findActivityInstanceId(List<FlowNodeInstanceEntity> allActivityInstances, String activityId) {
+    assertThat(allActivityInstances).filteredOn(ai -> ai.getFlowNodeId().equals(activityId)).hasSize(1);
+    return Long.valueOf(allActivityInstances.stream().filter(ai -> ai.getFlowNodeId().equals(activityId)).findFirst().get().getId());
   }
 
 }

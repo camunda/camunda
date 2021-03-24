@@ -28,7 +28,6 @@ import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.DateUtil;
@@ -266,7 +265,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     try {
       logger.debug("Flow node instance: id {}", entity.getId());
       Map<String, Object> jsonMap = new HashMap<>();
-      jsonMap.put(ActivityInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
+      jsonMap.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
 
       return new UpdateRequest(flowNodeInstanceTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)

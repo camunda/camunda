@@ -10,9 +10,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import java.util.Random;
 
-import org.camunda.operate.entities.ActivityInstanceEntity;
+import org.camunda.operate.entities.FlowNodeInstanceEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
 import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
@@ -24,10 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class WorkflowInstanceReaderIT extends OperateZeebeIntegrationTest {
 
   @Autowired
-  WorkflowInstanceReader workflowInstanceReader;
-
-  @Autowired
-  ActivityInstanceReader activityInstanceReader;
+  private WorkflowInstanceReader workflowInstanceReader;
 
   private Long workflowInstanceKey;
 
@@ -62,7 +58,7 @@ public class WorkflowInstanceReaderIT extends OperateZeebeIntegrationTest {
   @Test(expected = NotFoundException.class)
   public void testGetWorkflowInstanceWithOperationsByKeyWithActivityKey() {
     // get a random activity id
-    List<ActivityInstanceEntity> activities = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
+    List<FlowNodeInstanceEntity> activities = tester.getAllFlowNodeInstances(workflowInstanceKey);
     Long activityId = activities.get(random.nextInt(activities.size())).getKey();
     // When
     workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(activityId);

@@ -45,7 +45,7 @@ public abstract class AbstractMigrationTest {
   protected SequenceFlowTemplate sequenceFlowTemplate;
 
   @Autowired
-  protected ActivityInstanceTemplate activityInstanceTemplate;
+  protected FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired
   protected VariableTemplate variableTemplate;

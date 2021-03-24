@@ -5,17 +5,17 @@
  */
 package org.camunda.operate.entities.listview;
 
-import org.camunda.operate.entities.ActivityState;
-import org.camunda.operate.entities.ActivityType;
+import org.camunda.operate.entities.FlowNodeState;
+import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.schema.templates.ListViewTemplate;
 
-public class ActivityInstanceForListViewEntity extends OperateZeebeEntity<ActivityInstanceForListViewEntity> {
+public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNodeInstanceForListViewEntity> {
 
   private Long workflowInstanceKey;
   private String activityId;
-  private ActivityState activityState;
-  private ActivityType activityType;
+  private FlowNodeState activityState;
+  private FlowNodeType activityType;
   private Long incidentKey;
   private String errorMessage;
   private Long incidentJobKey;
@@ -38,19 +38,19 @@ public class ActivityInstanceForListViewEntity extends OperateZeebeEntity<Activi
     this.activityId = activityId;
   }
 
-  public ActivityState getActivityState() {
+  public FlowNodeState getActivityState() {
     return activityState;
   }
 
-  public void setActivityState(ActivityState activityState) {
+  public void setActivityState(FlowNodeState activityState) {
     this.activityState = activityState;
   }
 
-  public ActivityType getActivityType() {
+  public FlowNodeType getActivityType() {
     return activityType;
   }
 
-  public void setActivityType(ActivityType activityType) {
+  public void setActivityType(FlowNodeType activityType) {
     this.activityType = activityType;
   }
 
@@ -95,7 +95,7 @@ public class ActivityInstanceForListViewEntity extends OperateZeebeEntity<Activi
     if (!super.equals(o))
       return false;
 
-    ActivityInstanceForListViewEntity that = (ActivityInstanceForListViewEntity) o;
+    FlowNodeInstanceForListViewEntity that = (FlowNodeInstanceForListViewEntity) o;
 
     if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey != null)
       return false;

@@ -13,20 +13,17 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import org.camunda.operate.entities.ActivityState;
-import org.camunda.operate.entities.ActivityType;
+import org.camunda.operate.entities.FlowNodeInstanceEntity;
+import org.camunda.operate.entities.FlowNodeState;
+import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
-import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
+import org.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceDto;
-import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeDto;
-import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeRequestDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
@@ -49,7 +46,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   private WorkflowInstanceReader workflowInstanceReader;
 
   @Autowired
-  private ActivityInstanceReader activityInstanceReader;
+  private FlowNodeInstanceReader flowNodeInstanceReader;
 
   @Autowired
   private IncidentReader incidentReader;
@@ -65,7 +62,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "taskA");
 
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
@@ -90,11 +87,12 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(wi.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(wi.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
-    //assert activity instance tree
-    final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
-    assertThat(tree.getChildren()).hasSize(2);
-    assertStartActivityCompleted(tree.getChildren().get(0));
-    assertActivityIsActive(tree.getChildren().get(1), "taskA");
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(workflowInstanceKey);
+    assertThat(allFlowNodeInstances).hasSize(2);
+    assertStartFlowNodeCompleted(allFlowNodeInstances.get(0));
+    assertFlowNodeIsActive(allFlowNodeInstances.get(1), "taskA");
   }
 
   @Test
@@ -105,7 +103,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when TC 1
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "taskA");
     elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, "a");
 
     //then we can find the instance by 2 variable values: a = b, foo = b
@@ -143,10 +141,6 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(listViewResponse.getWorkflowInstances()).hasSize(0);
   }
 
-  private ActivityInstanceTreeDto getActivityInstanceTree(Long workflowInstanceKey) {
-    return activityInstanceReader.getActivityInstanceTree(new ActivityInstanceTreeRequestDto(workflowInstanceKey.toString()));
-  }
-
   private ListViewWorkflowInstanceDto getSingleWorkflowInstanceForListView(ListViewRequestDto request) {
     final ListViewResponseDto listViewResponse = listViewReader.queryWorkflowInstances(request);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(1);
@@ -171,7 +165,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "task1");
 
     completeTask(workflowInstanceKey, "task1", null);
 
@@ -185,13 +179,13 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.COMPLETED);
 
-    //assert activity instance tree
-    final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
-    assertThat(tree.getChildren()).hasSize(3);
-    final ActivityInstanceDto activity = tree.getChildren().get(1);
-    assertThat(activity.getState()).isEqualTo(ActivityState.COMPLETED);
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(workflowInstanceKey);
+    assertThat(allFlowNodeInstances).hasSize(3);
+    final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
+    assertThat(activity.getState()).isEqualTo(FlowNodeState.COMPLETED);
     assertThat(activity.getEndDate()).isAfterOrEqualTo(testStartTime);
-
   }
 
   @Test
@@ -205,7 +199,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
       .done();
     deployWorkflow(workflow, "demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "task1");
     //remember start date
     final OffsetDateTime startDate = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey).getStartDate();
 
@@ -251,13 +245,13 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.ACTIVE);
 
-    //assert activity instance tree
-    final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
-    assertThat(tree.getChildren()).hasSize(2);
-    final ActivityInstanceDto activity = tree.getChildren().get(1);
-    assertThat(activity.getState()).isEqualTo(ActivityState.ACTIVE);
-    assertThat(activity.getActivityId()).isEqualTo(activityId);
-
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(workflowInstanceKey);
+    assertThat(allFlowNodeInstances).hasSize(2);
+    final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
+    assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
+    assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
   }
 
   @Test
@@ -289,13 +283,14 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.INCIDENT);
 
-    //assert activity instance tree
-    final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
-    assertThat(tree.getChildren()).hasSize(2);
-    final ActivityInstanceDto activity = tree.getChildren().get(1);
-    assertThat(activity.getState()).isEqualTo(ActivityState.INCIDENT);
-    assertThat(activity.getActivityId()).isEqualTo(activityId);
-
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(workflowInstanceKey);
+    assertThat(allFlowNodeInstances).hasSize(2);
+    final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
+    assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
+    assertThat(activity.getIncidentKey()).isNotNull();
+    assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
   }
 
   @Test
@@ -337,12 +332,14 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.INCIDENT);
 
-    //assert activity instance tree
-    final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
-    assertThat(tree.getChildren()).hasSize(2);
-    final ActivityInstanceDto activity = tree.getChildren().get(1);
-    assertThat(activity.getState()).isEqualTo(ActivityState.INCIDENT);
-    assertThat(activity.getActivityId()).isEqualTo(activityId);
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(workflowInstanceKey);
+    assertThat(allFlowNodeInstances).hasSize(2);
+    final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
+    assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
+    assertThat(activity.getIncidentKey()).isNotNull();
+    assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
 
     //when payload updated
 //TODO    ZeebeUtil.updateVariables(zeebeClient, gatewayActivity.getKey(), workflowInstanceKey, "{\"foo\": 7}", processId, workflowId);
@@ -408,14 +405,14 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.CANCELED);
 
-    //assert activity instance tree
-    final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
-    assertThat(tree.getChildren()).hasSize(2);
-    final ActivityInstanceDto activity = tree.getChildren().get(1);
-    assertThat(activity.getState()).isEqualTo(ActivityState.TERMINATED);
-    assertThat(activity.getActivityId()).isEqualTo(activityId);
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(workflowInstanceKey);
+    assertThat(allFlowNodeInstances).hasSize(2);
+    final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
+    assertThat(activity.getState()).isEqualTo(FlowNodeState.TERMINATED);
+    assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(activity.getEndDate()).isNotNull();
-
   }
 
   @Test
@@ -440,16 +437,16 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"foo\": 6}");
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "task2");
 
-    //assert activity instance tree
-    final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
-    assertThat(tree.getChildren().size()).isGreaterThanOrEqualTo(2);
-    final ActivityInstanceDto activity = tree.getChildren().get(1);
-    assertThat(activity.getState()).isEqualTo(ActivityState.COMPLETED);
-    assertThat(activity.getActivityId()).isEqualTo(activityId);
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(workflowInstanceKey);
+    assertThat(allFlowNodeInstances.size()).isGreaterThanOrEqualTo(2);
+    final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
+    assertThat(activity.getState()).isEqualTo(FlowNodeState.COMPLETED);
+    assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(activity.getEndDate()).isNotNull();
-
   }
 
   @Test
@@ -474,14 +471,15 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"key1\": \"value1\", \"key2\": \"value2\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "gateway");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "gateway");
 
-    //assert activity instance tree
-    final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
-    assertThat(tree.getChildren()).hasSize(2);
-    final ActivityInstanceDto activity = tree.getChildren().get(1);
-    assertThat(activity.getState()).isEqualTo(ActivityState.ACTIVE);
-    assertThat(activity.getActivityId()).isEqualTo(activityId);
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(workflowInstanceKey);
+    assertThat(allFlowNodeInstances).hasSize(2);
+    final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
+    assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
+    assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(activity.getEndDate()).isNull();
 
   }
@@ -494,7 +492,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     deployWorkflow("demoProcess_v_1.bpmn");
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "taskA");
 
     //when
     cancelWorkflowInstance(workflowInstanceKey);
@@ -516,11 +514,12 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(wi.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(wi.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
-    //assert activity instance tree
-    final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
-    assertThat(tree.getChildren()).hasSize(2);
-    final ActivityInstanceDto activity = tree.getChildren().get(1);
-    assertThat(activity.getState()).isEqualTo(ActivityState.TERMINATED);
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(workflowInstanceKey);
+    assertThat(allFlowNodeInstances).hasSize(2);
+    final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
+    assertThat(activity.getState()).isEqualTo(FlowNodeState.TERMINATED);
     assertThat(activity.getEndDate()).isNotNull();
     assertThat(activity.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
@@ -558,11 +557,12 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(wi.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(wi.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
-    //assert activity instance tree
-    final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
-    assertThat(tree.getChildren()).hasSize(2);
-    final ActivityInstanceDto activity = tree.getChildren().get(1);
-    assertThat(activity.getState()).isEqualTo(ActivityState.TERMINATED);
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(workflowInstanceKey);
+    assertThat(allFlowNodeInstances).hasSize(2);
+    final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
+    assertThat(activity.getState()).isEqualTo(FlowNodeState.TERMINATED);
     assertThat(activity.getEndDate()).isNotNull();
     assertThat(activity.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
@@ -581,13 +581,14 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 20);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "taskA");
 
-    //assert activity instance tree
-    final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
-    assertThat(tree.getChildren()).hasSize(3);
-    final ActivityInstanceDto activity = tree.getChildren().get(1);
-    assertThat(activity.getState()).isEqualTo(ActivityState.COMPLETED);
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(workflowInstanceKey);
+    assertThat(allFlowNodeInstances).hasSize(3);
+    final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
+    assertThat(activity.getState()).isEqualTo(FlowNodeState.COMPLETED);
     assertThat(activity.getEndDate()).isNotNull();
     assertThat(activity.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
@@ -649,22 +650,22 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     /*final WorkflowInstanceForListViewEntity workflowInstanceById =*/ workflowInstanceReader.getWorkflowInstanceByKey(-42L);
   }
 
-  private void assertStartActivityCompleted(ActivityInstanceDto startActivity) {
-    assertThat(startActivity.getActivityId()).isEqualTo("start");
-    assertThat(startActivity.getState()).isEqualTo(ActivityState.COMPLETED);
-    assertThat(startActivity.getType()).isEqualTo(ActivityType.START_EVENT);
+  private void assertStartFlowNodeCompleted(FlowNodeInstanceEntity startActivity) {
+    assertThat(startActivity.getFlowNodeId()).isEqualTo("start");
+    assertThat(startActivity.getState()).isEqualTo(FlowNodeState.COMPLETED);
+    assertThat(startActivity.getType()).isEqualTo(FlowNodeType.START_EVENT);
     assertThat(startActivity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(startActivity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
     assertThat(startActivity.getEndDate()).isAfterOrEqualTo(startActivity.getStartDate());
     assertThat(startActivity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
   }
 
-  private void assertActivityIsActive(ActivityInstanceDto activity, String activityId) {
-    assertThat(activity.getActivityId()).isEqualTo(activityId);
-    assertThat(activity.getState()).isEqualTo(ActivityState.ACTIVE);
-    assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
-    assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
-    assertThat(activity.getEndDate()).isNull();
+  private void assertFlowNodeIsActive(FlowNodeInstanceEntity flowNodeEntity, String flowNodeId) {
+    assertThat(flowNodeEntity.getFlowNodeId()).isEqualTo(flowNodeId);
+    assertThat(flowNodeEntity.getState()).isEqualTo(FlowNodeState.ACTIVE);
+    assertThat(flowNodeEntity.getStartDate()).isAfterOrEqualTo(testStartTime);
+    assertThat(flowNodeEntity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+    assertThat(flowNodeEntity.getEndDate()).isNull();
   }
 
 }

@@ -7,14 +7,18 @@ package org.camunda.operate.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.util.CollectionUtil.filter;
+import static org.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -30,10 +34,13 @@ import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.archiver.AbstractArchiverJob;
 import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
+import org.camunda.operate.entities.FlowNodeInstanceEntity;
 import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.exceptions.ArchiverException;
+import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
@@ -50,6 +57,11 @@ import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebeimport.RecordsReader;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -98,12 +110,12 @@ public class OperateTester {
   private Predicate<Object[]> incidentIsActiveCheck;
 
   @Autowired
-  @Qualifier("activityIsActiveCheck")
-  private Predicate<Object[]> activityIsActiveCheck;
+  @Qualifier("flowNodeIsActiveCheck")
+  private Predicate<Object[]> flowNodeIsActiveCheck;
 
   @Autowired
-  @Qualifier("activityIsCompletedCheck")
-  private Predicate<Object[]> activityIsCompletedCheck;
+  @Qualifier("flowNodeIsCompletedCheck")
+  private Predicate<Object[]> flowNodeIsCompletedCheck;
 
   @Autowired
   @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
@@ -124,6 +136,15 @@ public class OperateTester {
 
   @Autowired
   protected IncidentReader incidentReader;
+
+  @Autowired
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+
+  @Autowired
+  private RestHighLevelClient esClient;
+
+  @Autowired
+  private ObjectMapper objectMapper;
 
   private boolean operationExecutorEnabled = true;
 
@@ -208,13 +229,13 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester activityIsActive(String activityId) {
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey,activityId);
+  public OperateTester flowNodeIsActive(String activityId) {
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey,activityId);
     return this;
   }
 
-  public OperateTester activityIsCompleted(String activityId) {
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey,activityId);
+  public OperateTester flowNodeIsCompleted(String activityId) {
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsCompletedCheck, workflowInstanceKey, activityId);
     return this;
   }
 
@@ -230,9 +251,9 @@ public class OperateTester {
     return completeTask(activityId, null);
   }
 
-  public OperateTester completeTask(String activityId,String payload) {
+  public OperateTester completeTask(String activityId, String payload) {
     ZeebeTestUtil.completeTask(zeebeClient, activityId, TestUtil.createRandomString(10), payload);
-    return activityIsCompleted(activityId);
+    return flowNodeIsCompleted(activityId);
   }
 
   public OperateTester and() {
@@ -382,6 +403,19 @@ public class OperateTester {
 
   public List<IncidentEntity> getIncidentsFor(Long workflowInstanceKey) {
     return incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
+  }
+
+  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long workflowInstanceKey) {
+    final TermQueryBuilder workflowInstanceKeyQuery = termQuery(FlowNodeInstanceTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
+        .source(new SearchSourceBuilder()
+            .query(constantScoreQuery(workflowInstanceKeyQuery))
+            .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
+    try {
+      return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
+    } catch (IOException e) {
+      throw new OperateRuntimeException(e);
+    }
   }
 
   public boolean hasIncidentWithErrorMessage(String errorMessage) {

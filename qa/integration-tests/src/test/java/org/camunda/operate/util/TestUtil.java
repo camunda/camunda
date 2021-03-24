@@ -16,9 +16,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.function.Consumer;
-import org.camunda.operate.entities.ActivityState;
-import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.BatchOperationEntity;
+import org.camunda.operate.entities.FlowNodeState;
+import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperationEntity;
@@ -26,7 +26,7 @@ import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
@@ -101,13 +101,14 @@ public abstract class TestUtil {
     return workflowInstance;
   }
 
-  public static ActivityInstanceForListViewEntity createActivityInstanceWithIncident(Long workflowInstanceKey, ActivityState state, String errorMsg, Long incidentKey) {
-    ActivityInstanceForListViewEntity activityInstanceForListViewEntity = createActivityInstance(workflowInstanceKey, state);
+  public static FlowNodeInstanceForListViewEntity createFlowNodeInstanceWithIncident(Long workflowInstanceKey, FlowNodeState state, String errorMsg, Long incidentKey) {
+    FlowNodeInstanceForListViewEntity activityInstanceForListViewEntity = createFlowNodeInstance(workflowInstanceKey, state);
     createIncident(activityInstanceForListViewEntity, errorMsg, incidentKey);
     return activityInstanceForListViewEntity;
   }
 
-  public static void createIncident(ActivityInstanceForListViewEntity activityInstanceForListViewEntity, String errorMsg, Long incidentKey) {
+  public static void createIncident(
+      FlowNodeInstanceForListViewEntity activityInstanceForListViewEntity, String errorMsg, Long incidentKey) {
     if (incidentKey != null) {
       activityInstanceForListViewEntity.setIncidentKey(incidentKey);
     } else {
@@ -120,12 +121,12 @@ public abstract class TestUtil {
     }
   }
 
-  public static ActivityInstanceForListViewEntity createActivityInstance(Long workflowInstanceKey, ActivityState state) {
-    return createActivityInstance(workflowInstanceKey, state, "start", null);
+  public static FlowNodeInstanceForListViewEntity createFlowNodeInstance(Long workflowInstanceKey, FlowNodeState state) {
+    return createFlowNodeInstance(workflowInstanceKey, state, "start", null);
   }
 
-  public static ActivityInstanceForListViewEntity createActivityInstance(Long workflowInstanceKey, ActivityState state, String activityId, ActivityType activityType) {
-    ActivityInstanceForListViewEntity activityInstanceEntity = new ActivityInstanceForListViewEntity();
+  public static FlowNodeInstanceForListViewEntity createFlowNodeInstance(Long workflowInstanceKey, FlowNodeState state, String activityId, FlowNodeType activityType) {
+    FlowNodeInstanceForListViewEntity activityInstanceEntity = new FlowNodeInstanceForListViewEntity();
     activityInstanceEntity.setWorkflowInstanceKey(workflowInstanceKey);
     Long activityInstanceId = random.nextLong();
     activityInstanceEntity.setId(activityInstanceId.toString());
@@ -137,8 +138,8 @@ public abstract class TestUtil {
     return activityInstanceEntity;
   }
 
-  public static ActivityInstanceForListViewEntity createActivityInstance(Long workflowInstanceKey, ActivityState state, String activityId) {
-    return createActivityInstance(workflowInstanceKey, state, activityId, ActivityType.SERVICE_TASK);
+  public static FlowNodeInstanceForListViewEntity createFlowNodeInstance(Long workflowInstanceKey, FlowNodeState state, String activityId) {
+    return createFlowNodeInstance(workflowInstanceKey, state, activityId, FlowNodeType.SERVICE_TASK);
   }
 
 

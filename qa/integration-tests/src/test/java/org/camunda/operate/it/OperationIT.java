@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.http.HttpStatus;
-import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.BatchOperationEntity;
+import org.camunda.operate.entities.FlowNodeInstanceEntity;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
@@ -30,7 +30,6 @@ import org.camunda.operate.schema.templates.OperationTemplate;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.es.reader.OperationReader;
@@ -70,9 +69,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
-
-  @Autowired
-  private ActivityInstanceReader activityInstanceReader;
 
   @Autowired
   private IncidentReader incidentReader;
@@ -408,7 +404,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   public void testAddVariableOnTask() throws Exception {
     // given
     final Long workflowInstanceKey = startDemoWorkflowInstance();
-    final Long taskAId = getActivityInstanceId(workflowInstanceKey, "taskA");
+    final Long taskAId = getFlowNodeInstanceId(workflowInstanceKey, "taskA");
 
     //TC1 we call UPDATE_VARIABLE operation on instance
     final String newVar1Name = "newVar1";
@@ -463,7 +459,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call UPDATE_VARIABLE operation on task level
-    final Long taskAId = getActivityInstanceId(workflowInstanceKey, "taskA");
+    final Long taskAId = getFlowNodeInstanceId(workflowInstanceKey, "taskA");
     final String varName = "foo";
     final String varValue = "\"newFooValue\"";
     postUpdateVariableOperation(workflowInstanceKey, taskAId, varName, varValue);
@@ -499,9 +495,9 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(variables.get(0).getValue()).isEqualTo(varValue);
   }
 
-  protected Long getActivityInstanceId(Long workflowInstanceKey, String activityId) {
-    final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
-    final Optional<ActivityInstanceEntity> first = allActivityInstances.stream().filter(ai -> ai.getActivityId().equals(activityId)).findFirst();
+  protected Long getFlowNodeInstanceId(Long workflowInstanceKey, String activityId) {
+    final List<FlowNodeInstanceEntity> allActivityInstances = tester.getAllFlowNodeInstances(workflowInstanceKey);
+    final Optional<FlowNodeInstanceEntity> first = allActivityInstances.stream().filter(ai -> ai.getFlowNodeId().equals(activityId)).findFirst();
     assertThat(first.isPresent()).isTrue();
     return Long.valueOf(first.get().getId());
   }

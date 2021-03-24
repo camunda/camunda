@@ -12,10 +12,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.camunda.operate.entities.ActivityState;
-import org.camunda.operate.entities.ActivityType;
+import org.camunda.operate.entities.FlowNodeState;
+import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
@@ -78,7 +78,7 @@ public class ListViewZeebeRecordProcessor {
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
 
     //update activity instance
-    bulkRequest.add(persistActivityInstanceFromIncident(record, intentStr, recordValue));
+    bulkRequest.add(persistFlowNodeInstanceFromIncident(record, intentStr, recordValue));
 
   }
 
@@ -94,7 +94,7 @@ public class ListViewZeebeRecordProcessor {
 
     for (Map.Entry<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
       WorkflowInstanceForListViewEntity wiEntity = null;
-      Map<Long, ActivityInstanceForListViewEntity> actEntities = new HashMap<Long, ActivityInstanceForListViewEntity>();
+      Map<Long, FlowNodeInstanceForListViewEntity> actEntities = new HashMap<Long, FlowNodeInstanceForListViewEntity>();
       Long workflowInstanceKey = null;
       for (RecordImpl record: wiRecordsEntry.getValue()) {
         workflowInstanceKey = wiRecordsEntry.getKey();
@@ -108,14 +108,14 @@ public class ListViewZeebeRecordProcessor {
           }
           wiEntity = updateWorkflowInstance(importBatch, record, intentStr, recordValue, wiEntity);
         } else if (!intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
-          updateActivityInstance(record, intentStr, recordValue, actEntities);
+          updateFlowNodeInstance(record, intentStr, recordValue, actEntities);
         }
       }
       if (wiEntity != null) {
         bulkRequest.add(getWorfklowInstanceQuery(wiEntity));
       }
-      for (ActivityInstanceForListViewEntity actEntity: actEntities.values()) {
-        bulkRequest.add(getActivityInstanceQuery(actEntity, workflowInstanceKey));
+      for (FlowNodeInstanceForListViewEntity actEntity: actEntities.values()) {
+        bulkRequest.add(getFlowNodeInstanceQuery(actEntity, workflowInstanceKey));
       }
     }
   }
@@ -155,11 +155,11 @@ public class ListViewZeebeRecordProcessor {
     return wiEntity;
   }
 
-  private void updateActivityInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue, Map<Long, ActivityInstanceForListViewEntity> entities) {
+  private void updateFlowNodeInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue, Map<Long, FlowNodeInstanceForListViewEntity> entities) {
     if (entities.get(record.getKey()) == null) {
-      entities.put(record.getKey(), new ActivityInstanceForListViewEntity());
+      entities.put(record.getKey(), new FlowNodeInstanceForListViewEntity());
     }
-    ActivityInstanceForListViewEntity entity = entities.get(record.getKey());
+    FlowNodeInstanceForListViewEntity entity = entities.get(record.getKey());
     entity.setKey(record.getKey());
     entity.setId( ConversionUtils.toStringOrNull(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
@@ -168,15 +168,15 @@ public class ListViewZeebeRecordProcessor {
 
     if (AI_FINISH_STATES.contains(intentStr)) {
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
-        entity.setActivityState(ActivityState.TERMINATED);
+        entity.setActivityState(FlowNodeState.TERMINATED);
       } else {
-        entity.setActivityState(ActivityState.COMPLETED);
+        entity.setActivityState(FlowNodeState.COMPLETED);
       }
     } else {
-      entity.setActivityState(ActivityState.ACTIVE);
+      entity.setActivityState(FlowNodeState.ACTIVE);
     }
 
-    entity.setActivityType(ActivityType.fromZeebeBpmnElementType(recordValue.getBpmnElementType() == null ? null : recordValue.getBpmnElementType().name()));
+    entity.setActivityType(FlowNodeType.fromZeebeBpmnElementType(recordValue.getBpmnElementType() == null ? null : recordValue.getBpmnElementType().name()));
 
     //set parent
     Long workflowInstanceKey = recordValue.getWorkflowInstanceKey();
@@ -184,8 +184,8 @@ public class ListViewZeebeRecordProcessor {
 
   }
 
-  private UpdateRequest persistActivityInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
-    ActivityInstanceForListViewEntity entity = new ActivityInstanceForListViewEntity();
+  private UpdateRequest persistFlowNodeInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
+    FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
     entity.setId( ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
     entity.setKey(recordValue.getElementInstanceKey());
     entity.setPartitionId(record.getPartitionId());
@@ -225,9 +225,9 @@ public class ListViewZeebeRecordProcessor {
     return getVariableQuery(entity, workflowInstanceKey);
   }
 
-  private UpdateRequest getActivityInstanceQuery(ActivityInstanceForListViewEntity entity, Long workflowInstanceKey) throws PersistenceException {
+  private UpdateRequest getFlowNodeInstanceQuery(FlowNodeInstanceForListViewEntity entity, Long workflowInstanceKey) throws PersistenceException {
     try {
-      logger.debug("Activity instance for list view: id {}", entity.getId());
+      logger.debug("Flow node instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ListViewTemplate.ID, entity.getId());
       updateFields.put(ListViewTemplate.PARTITION_ID, entity.getPartitionId());
@@ -265,7 +265,8 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
-  private UpdateRequest getActivityInstanceFromIncidentQuery(ActivityInstanceForListViewEntity entity, Long workflowInstanceKey) throws PersistenceException {
+  private UpdateRequest getActivityInstanceFromIncidentQuery(
+      FlowNodeInstanceForListViewEntity entity, Long workflowInstanceKey) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();

@@ -119,21 +119,6 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected Predicate<Object[]> workflowInstanceIsCanceledCheck;
 
   @Autowired
-  @Qualifier("activityIsTerminatedCheck")
-  @Deprecated
-  protected Predicate<Object[]> activityIsTerminatedCheck;
-
-  @Autowired
-  @Qualifier("activityIsCompletedCheck")
-  @Deprecated
-  protected Predicate<Object[]> activityIsCompletedCheck;
-
-  @Autowired
-  @Qualifier("activityIsActiveCheck")
-  @Deprecated
-  protected Predicate<Object[]> activityIsActiveCheck;
-
-  @Autowired
   @Qualifier("flowNodeIsTerminatedCheck")
   protected Predicate<Object[]> flowNodeIsTerminatedCheck;
 
@@ -243,7 +228,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected void completeTask(long workflowInstanceKey, String activityId, String payload, boolean waitForData) {
     ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
     if (waitForData) {
-      elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey, activityId);
+      elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsCompletedCheck, workflowInstanceKey, activityId);
     }
   }
 
@@ -294,7 +279,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected long startDemoWorkflowInstance() {
     String processId = "demoProcess";
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(getClient(), processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "taskA");
     //elasticsearchTestRule.refreshIndexesInElasticsearch();
     return workflowInstanceKey;
   }

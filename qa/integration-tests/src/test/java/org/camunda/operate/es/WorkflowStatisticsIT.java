@@ -6,18 +6,17 @@
 package org.camunda.operate.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.util.TestUtil.createActivityInstance;
-import static org.camunda.operate.util.TestUtil.createActivityInstanceWithIncident;
+import static org.camunda.operate.util.TestUtil.createFlowNodeInstanceWithIncident;
 import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.camunda.operate.entities.ActivityState;
-import org.camunda.operate.entities.ActivityType;
+import org.camunda.operate.entities.FlowNodeState;
+import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.entities.OperateEntity;
-import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.util.TestUtil;
@@ -198,95 +197,144 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     List<OperateEntity> entities = new ArrayList<>();
 
     WorkflowInstanceForListViewEntity inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowKey);
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.ACTIVE, "taskA", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.ACTIVE, "taskA", null));    //duplicated on purpose, to be sure, that we count workflow instances, but not activity instances
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "start", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.ACTIVE, "taskA", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.ACTIVE, "taskA", null));    //duplicated on purpose, to be sure, that we count workflow instances, but not activity instances
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowKey);
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.ACTIVE, "taskA", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "start", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.ACTIVE, "taskA", null));
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.CANCELED, workflowKey);
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskB", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.TERMINATED, "taskC", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "start", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskA", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskB", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.TERMINATED, "taskC", null));
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.CANCELED, workflowKey);
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskB", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.TERMINATED, "taskC", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "start", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskA", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskB", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.TERMINATED, "taskC", null));
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowKey);
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskB", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "start", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskA", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskB", null));
     String error = "error";
-    ActivityInstanceForListViewEntity task = createActivityInstanceWithIncident(inst.getWorkflowInstanceKey(), ActivityState.ACTIVE, error, null);
+    FlowNodeInstanceForListViewEntity task = createFlowNodeInstanceWithIncident(inst.getWorkflowInstanceKey(), FlowNodeState.ACTIVE, error, null);
     task.setActivityId("taskC");
     entities.add(task);
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowKey);
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskB", null));
-    task = createActivityInstanceWithIncident(inst.getWorkflowInstanceKey(), ActivityState.ACTIVE, error, null);
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "start", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskA", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskB", null));
+    task = createFlowNodeInstanceWithIncident(inst.getWorkflowInstanceKey(), FlowNodeState.ACTIVE, error, null);
     task.setActivityId("taskC");
     entities.add(task);
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.CANCELED, workflowKey);
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskB", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskC", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.TERMINATED, "taskD", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "start", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskA", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskB", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskC", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.TERMINATED, "taskD", null));
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowKey);
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskB", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskC", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskD", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.ACTIVE, "taskE", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "start", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskA", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskB", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskC", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskD", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.ACTIVE, "taskE", null));
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowKey);
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskB", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskC", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskD", null));
-    task = createActivityInstanceWithIncident(inst.getWorkflowInstanceKey(), ActivityState.ACTIVE, error, null);
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "start", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskA", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskB", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskC", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskD", null));
+    task = createFlowNodeInstanceWithIncident(inst.getWorkflowInstanceKey(), FlowNodeState.ACTIVE, error, null);
     task.setActivityId("taskE");
     entities.add(task);
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowKey);
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskB", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskC", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskD", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskE", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "end", ActivityType.END_EVENT));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "start", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskA", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskB", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskC", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskD", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskE", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "end", FlowNodeType.END_EVENT));
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowKey);
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskB", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskC", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskD", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskE", null));
-    entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "end", ActivityType.END_EVENT));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "start", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskA", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskB", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskC", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskD", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "taskE", null));
+    entities.add(TestUtil
+        .createFlowNodeInstance(inst.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "end", FlowNodeType.END_EVENT));
     entities.add(inst);
 
     elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));

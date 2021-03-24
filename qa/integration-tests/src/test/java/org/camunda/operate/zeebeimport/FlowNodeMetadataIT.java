@@ -9,14 +9,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.entities.FlowNodeType.MULTI_INSTANCE_BODY;
 import static org.camunda.operate.entities.FlowNodeType.SERVICE_TASK;
 import static org.camunda.operate.entities.FlowNodeType.SUB_PROCESS;
-import static org.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.camunda.operate.entities.EventSourceType;
@@ -25,8 +22,6 @@ import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
-import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
-import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceBreadcrumbEntryDto;
 import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
@@ -67,7 +62,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .startWorkflowInstance(workflowId)
         .and()
         .waitUntil()
-        .activityIsActive(taskId)
+        .flowNodeIsActive(taskId)
         .getWorkflowInstanceKey();
 
     //when 1.1
@@ -127,7 +122,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .deployWorkflow(testProcess, "testProcess.bpmn")
         .startWorkflowInstance(workflowId, "{\"items\": [0, 1]}")
         .and().waitUntil()
-        .activityIsActive(taskId)
+        .flowNodeIsActive(taskId)
         .getWorkflowInstanceKey();
 
     //when 1.2
@@ -238,7 +233,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .deployWorkflow(testProcess, "testProcess.bpmn")
         .startWorkflowInstance(workflowId)
         .and().waitUntil()
-        .activityIsActive(taskId)
+        .flowNodeIsActive(taskId)
         .getWorkflowInstanceKey();
 
     //when 1.3 - instance count by flowNodeId
@@ -284,7 +279,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .deployWorkflow(testProcess, "testProcess.bpmn")
         .startWorkflowInstance(workflowId)
         .and().waitUntil()
-        .activityIsActive(taskId)
+        .flowNodeIsActive(taskId)
         .getWorkflowInstanceKey();
     final List<FlowNodeInstanceDto> flowNodeInstances = tester.getFlowNodeInstanceOneListFromRest(
         String.valueOf(workflowInstanceKey));
@@ -335,7 +330,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .deployWorkflow(testProcess, "testProcess.bpmn")
         .startWorkflowInstance(workflowId, "{\"items\": [0, 1, 2]}")
         .and().waitUntil()
-        .activityIsActive(taskId)
+        .flowNodeIsActive(taskId)
         .getWorkflowInstanceKey();
 
     //when 3.3 - instance count by breadcrump
@@ -389,11 +384,11 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .and()
         .resolveIncident()
         .waitUntil()
-        .activityIsActive(taskA)
+        .flowNodeIsActive(taskA)
         .and()
         .completeTask(taskA, "{\"goToTaskC\":true}")
         .waitUntil()
-        .activityIsActive(taskC)
+        .flowNodeIsActive(taskC)
         .and()
         .completeTask(taskC, "{\"b\": \"d\"}")
         .waitUntil()

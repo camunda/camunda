@@ -40,9 +40,6 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
   private ListViewZeebeRecordProcessor listViewZeebeRecordProcessor;
 
   @Autowired
-  private ActivityInstanceZeebeRecordProcessor activityInstanceZeebeRecordProcessor;
-
-  @Autowired
   private FlowNodeInstanceZeebeRecordProcessor flowNodeInstanceZeebeRecordProcessor;
 
   @Autowired
@@ -83,7 +80,6 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
       listViewZeebeRecordProcessor.processWorkflowInstanceRecord(groupedWIRecords, bulkRequest, importBatch);
       Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> groupedWIRecordsPerActivityInst = zeebeRecords.stream()
           .map(obj -> (RecordImpl<WorkflowInstanceRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getKey()));
-      activityInstanceZeebeRecordProcessor.processWorkflowInstanceRecord(groupedWIRecordsPerActivityInst, bulkRequest);
       List<Long> flowNodeInstanceKeysOrdered = zeebeRecords.stream()
           .map(Record::getKey)
           .collect(Collectors.toList());
@@ -97,7 +93,6 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
       // old style
       for (Record record : zeebeRecords) {
         listViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
-        activityInstanceZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
         flowNodeInstanceZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
       }
       incidentZeebeRecordProcessor.processIncidentRecord(zeebeRecords, bulkRequest);

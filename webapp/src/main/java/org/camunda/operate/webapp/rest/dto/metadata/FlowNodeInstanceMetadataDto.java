@@ -13,7 +13,6 @@ import org.camunda.operate.entities.EventMetadataEntity;
 import org.camunda.operate.entities.FlowNodeInstanceEntity;
 import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.util.ConversionUtils;
-import org.camunda.operate.webapp.rest.dto.EventMetadataDto;
 
 public class FlowNodeInstanceMetadataDto {
 

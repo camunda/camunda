@@ -11,9 +11,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.camunda.operate.entities.FlowNodeState;
+import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.entities.ActivityState;
-import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
@@ -452,7 +452,7 @@ public class ListViewReader {
     }
     QueryBuilder activeActivityIdQuery = null;
     if (query.isActive() && queryType != ONLY_ARCHIVE) {
-      activeActivityIdQuery = createActivityIdQuery(query.getActivityId(), ActivityState.ACTIVE);
+      activeActivityIdQuery = createActivityIdQuery(query.getActivityId(), FlowNodeState.ACTIVE);
     }
     QueryBuilder incidentActivityIdQuery = null;
     if (query.isIncidents() && queryType != ONLY_ARCHIVE) {
@@ -460,11 +460,11 @@ public class ListViewReader {
     }
     QueryBuilder completedActivityIdQuery = null;
     if (query.isCompleted()) {
-      completedActivityIdQuery = createActivityIdQuery(query.getActivityId(), ActivityState.COMPLETED);
+      completedActivityIdQuery = createActivityIdQuery(query.getActivityId(), FlowNodeState.COMPLETED);
     }
     QueryBuilder canceledActivityIdQuery = null;
     if (query.isCanceled()) {
-      canceledActivityIdQuery = createActivityIdQuery(query.getActivityId(), ActivityState.TERMINATED);
+      canceledActivityIdQuery = createActivityIdQuery(query.getActivityId(), FlowNodeState.TERMINATED);
     }
     return joinWithOr(activeActivityIdQuery, incidentActivityIdQuery, completedActivityIdQuery, canceledActivityIdQuery);
   }
@@ -498,19 +498,19 @@ public class ListViewReader {
 
   }
 
-  private QueryBuilder createActivityIdQuery(String activityId, ActivityState state) {
+  private QueryBuilder createActivityIdQuery(String activityId, FlowNodeState state) {
     final QueryBuilder activitiesQuery = termQuery(ACTIVITY_STATE, state.name());
     final QueryBuilder activityIdQuery = termQuery(ACTIVITY_ID, activityId);
     QueryBuilder activityIsEndNodeQuery = null;
-    if (state.equals(ActivityState.COMPLETED)) {
-      activityIsEndNodeQuery = termQuery(ACTIVITY_TYPE, ActivityType.END_EVENT.name());
+    if (state.equals(FlowNodeState.COMPLETED)) {
+      activityIsEndNodeQuery = termQuery(ACTIVITY_TYPE, FlowNodeType.END_EVENT.name());
     }
 
     return hasChildQuery(ACTIVITIES_JOIN_RELATION,  joinWithAnd(activitiesQuery, activityIdQuery, activityIsEndNodeQuery), None);
   }
 
   private QueryBuilder createActivityIdIncidentQuery(String activityId) {
-    final QueryBuilder activitiesQuery = termQuery(ACTIVITY_STATE, ActivityState.ACTIVE.name());
+    final QueryBuilder activitiesQuery = termQuery(ACTIVITY_STATE, FlowNodeState.ACTIVE.name());
     final QueryBuilder activityIdQuery = termQuery(ACTIVITY_ID, activityId);
     final ExistsQueryBuilder incidentExists = existsQuery(ERROR_MSG);
 

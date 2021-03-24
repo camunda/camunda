@@ -9,20 +9,18 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import org.camunda.operate.entities.FlowNodeInstanceEntity;
+import org.camunda.operate.entities.FlowNodeState;
 import org.camunda.operate.util.TestApplication;
-import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceDto;
-import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeDto;
-import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeRequestDto;
 import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -41,13 +39,8 @@ import static org.camunda.operate.util.ThreadUtil.sleepFor;
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"})
 public class ImportMidnightIT extends OperateZeebeIntegrationTest {
 
-  private static final Logger logger = LoggerFactory.getLogger(ImportMidnightIT.class);
-
   @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
-
-  @Autowired
-  private ActivityInstanceReader activityInstanceReader;
 
   @Autowired
   private ListViewReader listViewReader;
@@ -63,10 +56,6 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
   @Override
   public void before() {
     super.before();
-  }
-
-  private ActivityInstanceTreeDto getActivityInstanceTree(Long workflowInstanceKey) {
-    return activityInstanceReader.getActivityInstanceTree(new ActivityInstanceTreeRequestDto(workflowInstanceKey.toString()));
   }
 
   @Test
@@ -109,16 +98,18 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
     WorkflowInstanceForListViewEntity wi = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceState.COMPLETED);
 
-    ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
-    assertThat(tree.getChildren()).hasSize(4);
-    ActivityInstanceDto activity = tree.getChildren().get(1);
-    assertThat(activity.getActivityId()).isEqualTo("task1");
-    assertThat(activity.getState()).isEqualTo(ActivityState.COMPLETED);
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(workflowInstanceKey);
+    assertThat(allFlowNodeInstances).hasSize(4);
+    FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
+    assertThat(activity.getFlowNodeId()).isEqualTo("task1");
+    assertThat(activity.getState()).isEqualTo(FlowNodeState.COMPLETED);
     assertThat(activity.getEndDate()).isAfterOrEqualTo(OffsetDateTime.ofInstant(firstDate, ZoneOffset.systemDefault()));
 
-    activity = tree.getChildren().get(2);
-    assertThat(activity.getActivityId()).isEqualTo("task2");
-    assertThat(activity.getState()).isEqualTo(ActivityState.COMPLETED);
+    activity = allFlowNodeInstances.get(2);
+    assertThat(activity.getFlowNodeId()).isEqualTo("task2");
+    assertThat(activity.getState()).isEqualTo(FlowNodeState.COMPLETED);
     assertThat(activity.getEndDate()).isAfterOrEqualTo(OffsetDateTime.ofInstant(secondDate, ZoneOffset.systemDefault()));
 
   }

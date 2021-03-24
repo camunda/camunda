@@ -14,8 +14,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.camunda.operate.entities.ActivityInstanceEntity;
-import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.FlowNodeInstanceEntity;
 import org.camunda.operate.entities.FlowNodeState;
 import org.camunda.operate.entities.IncidentEntity;
@@ -25,7 +23,6 @@ import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
 import org.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
@@ -64,9 +61,6 @@ public class ElasticsearchChecks {
   private WorkflowInstanceReader workflowInstanceReader;
 
   @Autowired
-  private ActivityInstanceReader activityInstanceReader;
-
-  @Autowired
   private FlowNodeInstanceReader flowNodeInstanceReader;
 
   @Autowired
@@ -94,34 +88,6 @@ public class ElasticsearchChecks {
       try {
         final WorkflowEntity workflow = workflowReader.getWorkflow(workflowKey);
         return workflow != null;
-      } catch (NotFoundException ex) {
-        return false;
-      }
-    };
-  }
-
-  /**
-   * Checks whether the activity of given args[0] workflowInstanceKey (Long) and args[1] activityId (String) is in state ACTIVE
-   * @return
-   */
-  @Bean(name = "activityIsActiveCheck")
-  @Deprecated
-  public Predicate<Object[]> getActivityIsActiveCheck() {
-    return objects -> {
-      assertThat(objects).hasSize(2);
-      assertThat(objects[0]).isInstanceOf(Long.class);
-      assertThat(objects[1]).isInstanceOf(String.class);
-      Long workflowInstanceKey = (Long)objects[0];
-      String activityId = (String)objects[1];
-      try {
-        List<ActivityInstanceEntity> activityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
-        final List<ActivityInstanceEntity> activities = activityInstances.stream().filter(a -> a.getActivityId().equals(activityId))
-            .collect(Collectors.toList());
-        if (activities.size() == 0) {
-          return false;
-        } else {
-          return activities.get(0).getState().equals(ActivityState.ACTIVE);
-        }
       } catch (NotFoundException ex) {
         return false;
       }
@@ -305,62 +271,6 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the activity of given args[0] workflowInstanceKey (Long) and args[1] activityId (String) is in state COMPLETED
-   * @return
-   */
-  @Bean(name = "activityIsCompletedCheck")
-  @Deprecated
-  public Predicate<Object[]> getActivityIsCompletedCheck() {
-    return objects -> {
-      assertThat(objects).hasSize(2);
-      assertThat(objects[0]).isInstanceOf(Long.class);
-      assertThat(objects[1]).isInstanceOf(String.class);
-      Long workflowInstanceKey = (Long)objects[0];
-      String activityId = (String)objects[1];
-      try {
-        List<ActivityInstanceEntity> activityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
-        final List<ActivityInstanceEntity> activities = activityInstances.stream().filter(a -> a.getActivityId().equals(activityId))
-          .collect(Collectors.toList());
-        if (activities.size() == 0) {
-          return false;
-        } else {
-          return activities.get(0).getState().equals(ActivityState.COMPLETED);
-        }
-      } catch (NotFoundException ex) {
-        return false;
-      }
-    };
-  }
-
-  /**
-   * Checks whether the activity of given args[0] workflowInstanceKey (Long) and args[1] activityId (String) is in state TERMINATED
-   * @return
-   */
-  @Bean(name = "activityIsTerminatedCheck")
-  @Deprecated
-  public Predicate<Object[]> getActivityIsTerminatedCheck() {
-    return objects -> {
-      assertThat(objects).hasSize(2);
-      assertThat(objects[0]).isInstanceOf(Long.class);
-      assertThat(objects[1]).isInstanceOf(String.class);
-      Long workflowInstanceKey = (Long)objects[0];
-      String activityId = (String)objects[1];
-      try {
-        List<ActivityInstanceEntity> activityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
-        final List<ActivityInstanceEntity> activities = activityInstances.stream().filter(a -> a.getActivityId().equals(activityId))
-          .collect(Collectors.toList());
-        if (activities.size() == 0) {
-          return false;
-        } else {
-          return activities.get(0).getState().equals(ActivityState.TERMINATED);
-        }
-      } catch (NotFoundException ex) {
-        return false;
-      }
-    };
-  }
-
-  /**
    * Checks whether any incidents is active in workflowInstance of given workflowInstanceKey (Long)
    * @return
    */
@@ -371,7 +281,7 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       Long workflowInstanceKey = (Long)objects[0];
       try {
-        final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
+        final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(workflowInstanceKey);
         boolean found = allActivityInstances.stream().anyMatch(ai -> ai.getIncidentKey() != null);
         if (found) {
           List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
@@ -397,7 +307,7 @@ public class ElasticsearchChecks {
       Long workflowInstanceKey = (Long)objects[0];
       int incidentsCount = (int)objects[1];
       try {
-        final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
+        final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(workflowInstanceKey);
         return allActivityInstances.stream().filter(ai -> ai.getIncidentKey() != null).count() == incidentsCount;
       } catch (NotFoundException ex) {
         return false;
@@ -416,7 +326,7 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       Long workflowInstanceKey = (Long)objects[0];
       try {
-        final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
+        final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(workflowInstanceKey);
         return allActivityInstances.stream().noneMatch(ai -> ai.getIncidentKey() != null);
       } catch (NotFoundException ex) {
         return false;

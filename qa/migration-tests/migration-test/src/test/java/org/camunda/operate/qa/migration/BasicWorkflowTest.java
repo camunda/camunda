@@ -9,24 +9,23 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Set;
-import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.EventEntity;
+import org.camunda.operate.entities.FlowNodeInstanceEntity;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.UserEntity;
 import org.camunda.operate.entities.VariableEntity;
-import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.meta.ImportPositionEntity;
 import org.camunda.operate.qa.migration.util.AbstractMigrationTest;
 import org.camunda.operate.qa.migration.v120.BasicWorkflowDataGenerator;
 import org.camunda.operate.schema.indices.UserIndex;
-import org.camunda.operate.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.schema.templates.EventTemplate;
+import org.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import org.camunda.operate.schema.templates.IncidentTemplate;
 import org.camunda.operate.schema.templates.ListViewTemplate;
-import org.camunda.operate.schema.templates.OperationTemplate;
 import org.camunda.operate.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.schema.templates.VariableTemplate;
 import org.camunda.operate.util.ElasticsearchUtil;
@@ -94,13 +93,13 @@ public class BasicWorkflowTest extends AbstractMigrationTest {
   }
 
   @Test
-  public void testActivityInstances() {
-    SearchRequest searchRequest = new SearchRequest(activityInstanceTemplate.getAlias());
-    searchRequest.source().query(termsQuery(ActivityInstanceTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceIds));
-    List<ActivityInstanceEntity> activityInstances = entityReader.searchEntitiesFor(searchRequest, ActivityInstanceEntity.class);
+  public void testFlowNodeInstances() {
+    SearchRequest searchRequest = new SearchRequest(flowNodeInstanceTemplate.getAlias());
+    searchRequest.source().query(termsQuery(FlowNodeInstanceTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceIds));
+    List<FlowNodeInstanceEntity> activityInstances = entityReader.searchEntitiesFor(searchRequest, FlowNodeInstanceEntity.class);
     assertThat(activityInstances.size()).isEqualTo(BasicWorkflowDataGenerator.WORKFLOW_INSTANCE_COUNT * 3);
-    assertThat(activityInstances.stream().allMatch( a -> a.getType() != null)).as("All activity instances have a type").isTrue();
-    assertThat(activityInstances.stream().allMatch( a -> a.getState()!= null)).as("All activity instances have a state").isTrue();
+    assertThat(activityInstances.stream().allMatch( a -> a.getType() != null)).as("All flow node instances have a type").isTrue();
+    assertThat(activityInstances.stream().allMatch( a -> a.getState()!= null)).as("All flow node instances have a state").isTrue();
   }
 
   @Test
@@ -132,7 +131,7 @@ public class BasicWorkflowTest extends AbstractMigrationTest {
     // Activity instances list
     searchRequest.source().query(joinWithAnd(termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
         termsQuery(ListViewTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceIds)));
-    List<ActivityInstanceForListViewEntity> activitiesList = entityReader.searchEntitiesFor(searchRequest, ActivityInstanceForListViewEntity.class);
+    List<FlowNodeInstanceForListViewEntity> activitiesList = entityReader.searchEntitiesFor(searchRequest, FlowNodeInstanceForListViewEntity.class);
     assertThat(activitiesList.size()).isEqualTo(workflowInstancesCount * 3);
   }
 

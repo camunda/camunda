@@ -7,7 +7,6 @@ package org.camunda.operate.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.webapp.rest.IncidentRestService.INCIDENT_URL;
-import static org.camunda.operate.util.TestUtil.createActivityInstance;
 import static org.camunda.operate.util.TestUtil.createIncident;
 import static org.camunda.operate.util.TestUtil.createWorkflowInstanceEntity;
 import static org.camunda.operate.util.TestUtil.createWorkflowVersions;
@@ -17,12 +16,12 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.FlowNodeState;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentByWorkflowStatisticsDto;
@@ -337,7 +336,8 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     boolean withOtherMsg) {
     List<OperateEntity> entities = new ArrayList<>();
     for (int i = 0; i < activeIncidentsCount; i++) {
-      final ActivityInstanceForListViewEntity activityInstance = createActivityInstance(workflowInstance.getWorkflowInstanceKey(), ActivityState.ACTIVE);
+      final FlowNodeInstanceForListViewEntity activityInstance = TestUtil
+          .createFlowNodeInstance(workflowInstance.getWorkflowInstanceKey(), FlowNodeState.ACTIVE);
       createIncident(activityInstance, withOtherMsg ? ERRMSG_OTHER : null, null);
       entities.add(activityInstance);
       IncidentEntity incidentEntity = TestUtil.createIncident(IncidentState.ACTIVE,activityInstance.getActivityId(), Long.valueOf(activityInstance.getId()),activityInstance.getErrorMessage());
@@ -346,7 +346,8 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
       entities.add(incidentEntity);
     }
     for (int i = 0; i < resolvedIncidentsCount; i++) {
-      final ActivityInstanceForListViewEntity activityInstance = createActivityInstance(workflowInstance.getWorkflowInstanceKey(), ActivityState.ACTIVE);
+      final FlowNodeInstanceForListViewEntity activityInstance = TestUtil
+          .createFlowNodeInstance(workflowInstance.getWorkflowInstanceKey(), FlowNodeState.ACTIVE);
       entities.add(activityInstance);
     }
     return entities;

@@ -9,9 +9,9 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import org.camunda.operate.entities.FlowNodeState;
+import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.entities.ActivityState;
-import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.webapp.rest.dto.ActivityStatisticsDto;
@@ -157,7 +157,7 @@ public class ActivityStatisticsReader {
     }
   }
   private FilterAggregationBuilder getTerminatedActivitiesAgg() {
-    return filter(AGG_TERMINATED_ACTIVITIES, termQuery(ACTIVITY_STATE, ActivityState.TERMINATED)).subAggregation(
+    return filter(AGG_TERMINATED_ACTIVITIES, termQuery(ACTIVITY_STATE, FlowNodeState.TERMINATED)).subAggregation(
         terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
             .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
             //we need this to count workflow instances, not the activity instances
@@ -166,7 +166,7 @@ public class ActivityStatisticsReader {
 
   private FilterAggregationBuilder getActiveActivitiesAgg() {
     return filter(AGG_ACTIVE_ACTIVITIES,
-        boolQuery().mustNot(existsQuery(INCIDENT_KEY)).must(termQuery(ACTIVITY_STATE, ActivityState.ACTIVE.toString()))).subAggregation(
+        boolQuery().mustNot(existsQuery(INCIDENT_KEY)).must(termQuery(ACTIVITY_STATE, FlowNodeState.ACTIVE.toString()))).subAggregation(
         terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
             .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
             //we need this to count workflow instances, not the activity instances
@@ -182,7 +182,7 @@ public class ActivityStatisticsReader {
   }
 
   private FilterAggregationBuilder getFinishedActivitiesAgg() {
-    final QueryBuilder completedEndEventsQ = joinWithAnd(termQuery(ACTIVITY_TYPE, ActivityType.END_EVENT.toString()), termQuery(ACTIVITY_STATE, ActivityState.COMPLETED.toString()));
+    final QueryBuilder completedEndEventsQ = joinWithAnd(termQuery(ACTIVITY_TYPE, FlowNodeType.END_EVENT.toString()), termQuery(ACTIVITY_STATE, FlowNodeState.COMPLETED.toString()));
     return filter(AGG_FINISHED_ACTIVITIES, completedEndEventsQ).subAggregation(
         terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
             .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))

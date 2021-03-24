@@ -43,9 +43,9 @@ public class SequenceFlowIT extends OperateZeebeIntegrationTest {
     deployWorkflow(workflow, processId + ".bpmn");
 
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "task1");
     ZeebeTestUtil.completeTask(zeebeClient, "task1", getWorkerName(), null);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "task2");
 
 
     //when
