@@ -71,6 +71,7 @@ Array [
         "width": 180,
       },
     ],
+    "id": "a",
   },
 ]
 `;
@@ -136,6 +137,7 @@ Array [
         "width": 180,
       },
     ],
+    "id": "column1",
   },
   Object {
     "Header": "Y",
@@ -171,6 +173,7 @@ Array [
         "width": 180,
       },
     ],
+    "id": "Z",
   },
 ]
 `;

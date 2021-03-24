@@ -291,6 +291,7 @@ Table.formatColumns = (head, ctx = '', columnWidths = {}, group) => {
     }
 
     return {
+      id: elem.id || elem.label,
       Header: elem.label,
       columns: Table.formatColumns(elem.columns, ctx + (elem.id || elem.label), columnWidths, idx),
     };
