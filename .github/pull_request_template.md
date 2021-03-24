@@ -8,7 +8,18 @@
 
 closes #
 
+## Definition of Ready
+
+Please check the items that apply, before requesting a review.
+
+* [ ] I've reviewed my own code
+* [ ] I've written a clear changelist description
+* [ ] I've narrowly scoped my changes
+* [ ] I've separated structural from behavioural changes
+
 ## Definition of Done
+
+Please the items that apply, before merging or (if possible) before requesting a review.
 
 _Not all items need to be done depending on the issue and the pull request._
 
