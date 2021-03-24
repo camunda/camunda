@@ -130,6 +130,24 @@ describe('DiagramPanel', () => {
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
   });
 
+  it('should display bpmnProcessId as workflow name in the message when no workflow version is selected', async () => {
+    render(<DiagramPanel {...mockProps} />, {
+      wrapper: getWrapper(
+        createMemoryHistory({
+          initialEntries: [
+            '/instances?workflow=eventBasedGatewayProcess&version=all',
+          ],
+        })
+      ),
+    });
+
+    expect(
+      await screen.findByText(
+        'There is more than one Version selected for Workflow "eventBasedGatewayProcess"'
+      )
+    ).toBeInTheDocument();
+  });
+
   it('should show an error message', async () => {
     mockServer.use(
       rest.get('/api/workflows/:workflowId/xml', (_, res) =>

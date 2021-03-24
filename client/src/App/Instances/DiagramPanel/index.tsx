@@ -63,9 +63,13 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
   const {workflow, version, flowNodeId} = getFilters(history.location.search);
   const isNoWorkflowSelected = workflow === undefined;
   const isNoVersionSelected = version === 'all';
-  const workflowName = workflowsStore.state.workflows.find(
+
+  const selectedWorkflow = workflowsStore.state.workflows.find(
     ({bpmnProcessId}) => bpmnProcessId === workflow
-  )?.name;
+  );
+
+  const workflowName =
+    selectedWorkflow?.name || selectedWorkflow?.bpmnProcessId;
 
   return (
     <SplitPane.Pane {...props}>

@@ -237,6 +237,7 @@ export const groupedWorkflowsMock = [
   },
   {
     bpmnProcessId: 'eventBasedGatewayProcess',
+    name: null,
     workflows: [
       {
         id: '2251799813696866',
