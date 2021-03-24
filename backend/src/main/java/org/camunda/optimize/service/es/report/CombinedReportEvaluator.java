@@ -84,7 +84,8 @@ public class CombinedReportEvaluator {
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(e)) {
         log.info(
-          "Could not evaluate combined instance count. No instance indices exist. Returning a count of 0 instead.",
+          "Could not evaluate combined instance count because no instance indices exist. " +
+            "Returning a count of 0 instead.",
           e
         );
         return 0L;

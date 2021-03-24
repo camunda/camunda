@@ -48,6 +48,7 @@ public class CompositeAggregationScroller {
 
   /**
    * Consumes next page of the composite aggregation.
+   *
    * @return {@code true} if a page was present, {@code false} else
    */
   public boolean consumePage() {
@@ -73,6 +74,12 @@ public class CompositeAggregationScroller {
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(e)) {
+        log.info(
+          "Was not able to get next page of {} aggregation because at least one instance from {} does not exist.",
+          pathToAggregation.getLast(),
+          Arrays.toString(searchRequest.indices()),
+          e
+        );
         return Collections.emptyList();
       }
       throw e;

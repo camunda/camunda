@@ -181,7 +181,8 @@ public class BranchAnalysisReader {
     return executeQuery(request, query, timezone);
   }
 
-  private BoolQueryBuilder buildBaseQuery(final BranchAnalysisRequestDto request, final Set<String> activitiesToExclude) {
+  private BoolQueryBuilder buildBaseQuery(final BranchAnalysisRequestDto request,
+                                          final Set<String> activitiesToExclude) {
     final BoolQueryBuilder query = createDefinitionQuery(
       request.getProcessDefinitionKey(),
       request.getProcessDefinitionVersions(),
@@ -227,6 +228,12 @@ public class BranchAnalysisReader {
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to perform branch analysis because the required instance index {} does not " +
+            "exist. Returning 0 instead.",
+          getProcessInstanceIndexAliasName(request.getProcessDefinitionKey()),
+          e
+        );
         return 0L;
       }
       throw e;

@@ -61,6 +61,7 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
@@ -99,7 +100,6 @@ import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.map
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -252,7 +252,6 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   /**
-   * parsed to json and then later
    * This class adds a document entry to elasticsearch (ES). Thereby, the
    * the entry is added to the optimize index and the given type under
    * the given id.
@@ -362,10 +361,10 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     try {
       return getAllDocumentsOfIndicesAs(new String[]{indexName}, type);
     } catch (ElasticsearchStatusException e) {
-      if (isInstanceIndexNotFoundException(e)) {
-        return Collections.emptyList();
-      }
-      throw e;
+      throw new OptimizeIntegrationTestException(
+        "Cannot evaluate document count for index " + indexName,
+        e
+      );
     }
   }
 
@@ -401,13 +400,11 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       final CountResponse countResponse = getOptimizeElasticClient()
         .count(new CountRequest(indexName).query(documentQuery), RequestOptions.DEFAULT);
       return Long.valueOf(countResponse.getCount()).intValue();
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not query the import count!", e);
-    } catch (ElasticsearchStatusException e) {
-      if (isInstanceIndexNotFoundException(e)) {
-        return 0;
-      }
-      throw e;
+    } catch (IOException | ElasticsearchStatusException e) {
+      throw new OptimizeIntegrationTestException(
+        "Cannot evaluate document count for index " + indexName,
+        e
+      );
     }
   }
 
@@ -435,13 +432,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     SearchResponse searchResponse;
     try {
       searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not query the activity count!", e);
-    } catch (ElasticsearchStatusException e) {
-      if (isInstanceIndexNotFoundException(e)) {
-        return 0;
-      }
-      throw e;
+    } catch (IOException | ElasticsearchStatusException e) {
+      throw new OptimizeIntegrationTestException("Could not evaluate activity count in process instance indices.", e);
     }
 
     Nested nested = searchResponse.getAggregations()
@@ -477,13 +469,11 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     SearchResponse searchResponse;
     try {
       searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not query the variable instance count!", e);
-    } catch (ElasticsearchStatusException e) {
-      if (isInstanceIndexNotFoundException(e)) {
-        return 0;
-      }
-      throw e;
+    } catch (IOException | ElasticsearchStatusException e) {
+      throw new OptimizeIntegrationTestException(
+        "Cannot evaluate variable instance count in process instance indices.",
+        e
+      );
     }
 
     Nested nestedAgg = searchResponse.getAggregations().get(VARIABLES);
@@ -524,13 +514,11 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     SearchResponse searchResponse;
     try {
       searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not query the variable instance count!", e);
-    } catch (ElasticsearchStatusException e) {
-      if (isInstanceIndexNotFoundException(e)) {
-        return 0;
-      }
-      throw e;
+    } catch (IOException | ElasticsearchStatusException e) {
+      throw new OptimizeIntegrationTestException(
+        "Cannot evaluate variable instance count in process instance indices.",
+        e
+      );
     }
 
     Nested nestedAgg = searchResponse.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
@@ -556,7 +544,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     );
   }
 
-  public void deleteAllProcessInstanceIndices(){
+  public void deleteAllProcessInstanceIndices() {
     getOptimizeElasticClient().deleteIndexByRawIndexNames(
       getIndexNameService().getOptimizeIndexAliasForIndex(new ProcessInstanceIndex("*"))
     );
@@ -570,17 +558,11 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
     try {
       getOptimizeElasticClient().getHighLevelClient().deleteByQuery(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
+    } catch (IOException | ElasticsearchStatusException e) {
       throw new OptimizeIntegrationTestException(
-        "Could not delete all data in Index with alias " + getIndexNameService().getOptimizeIndexAliasForIndex(index),
+        "Could not delete data in index " + getIndexNameService().getOptimizeIndexAliasForIndex(index),
         e
       );
-    } catch (ElasticsearchStatusException e) {
-      if (isInstanceIndexNotFoundException(e)) {
-        // tried to delete instances that do not exist, nothing to do
-        return;
-      }
-      throw e;
     }
   }
 
@@ -827,6 +809,18 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     getOptimizeElasticClient().deleteIndexByRawIndexNames(
       getIndexNameService().getOptimizeIndexAliasForIndex(VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "*")
     );
+  }
+
+  public boolean indexExists(final String indexOrAliasName) {
+    final GetIndexRequest request = new GetIndexRequest(indexOrAliasName);
+    try {
+      return getOptimizeElasticClient().exists(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      final String message = String.format(
+        "Could not check if [%s] index already exist.", String.join(",", indexOrAliasName)
+      );
+      throw new OptimizeRuntimeException(message, e);
+    }
   }
 
   public OptimizeElasticsearchClient getOptimizeElasticClient() {

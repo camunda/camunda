@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
@@ -39,6 +40,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
 @Component
+@Slf4j
 public class DefinitionInstanceReader {
   private final OptimizeElasticsearchClient esClient;
 
@@ -72,6 +74,12 @@ public class DefinitionInstanceReader {
       ), e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(type, e)) {
+        log.info(
+          "Was not able to retrieve definition keys for instances because no {} instance indices exist. " +
+            "Returning empty set.",
+          type,
+          e
+        );
         return Collections.emptySet();
       }
       throw e;

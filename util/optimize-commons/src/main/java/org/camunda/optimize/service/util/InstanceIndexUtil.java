@@ -14,8 +14,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
 
 import java.util.Arrays;
-import java.util.Objects;
-import java.util.Set;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -42,16 +40,6 @@ public class InstanceIndexUtil {
     } else {
       return new ProcessInstanceIndex(processDefinitionKey).getIndexName();
     }
-  }
-
-  public static String[] getProcessInstanceIndexAliasNames(final Set<String> processDefinitionKeys) {
-    final String[] indexAliases = processDefinitionKeys.stream()
-      .filter(Objects::nonNull)
-      .map(key -> new ProcessInstanceIndex(key).getIndexName())
-      .toArray(String[]::new);
-    return indexAliases.length == 0
-      ? new String[]{PROCESS_INSTANCE_MULTI_ALIAS}
-      : indexAliases;
   }
 
   public static boolean isInstanceIndexNotFoundException(final ElasticsearchStatusException e) {

@@ -45,16 +45,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.es.schema.index.InstanceType.LOWERCASE_FIELD;
 import static org.camunda.optimize.service.es.schema.index.InstanceType.N_GRAM_FIELD;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.buildWildcardQuery;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
@@ -62,6 +58,7 @@ import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedV
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getValueSearchField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
@@ -131,7 +128,7 @@ public class ProcessVariableReader {
       .query(query)
       .aggregation(nested(VARIABLES, VARIABLES).subAggregation(varNameAndTypeAgg))
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(getInstanceIndicesFromVariableRequests(variableNameRequests))
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS)
       .source(searchSourceBuilder);
 
     List<ProcessVariableNameResponseDto> variableNames = new ArrayList<>();
@@ -182,8 +179,7 @@ public class ProcessVariableReader {
       .size(0);
 
     final SearchRequest searchRequest =
-      new SearchRequest(getInstanceIndicesFromVariableSources(requestDto.getProcessVariableSources()))
-        .source(searchSourceBuilder);
+      new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -200,6 +196,7 @@ public class ProcessVariableReader {
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info("Was not able to fetch variable values because no instance indices exist. Returning empty list.", e);
         return Collections.emptyList();
       }
       throw e;
@@ -268,21 +265,6 @@ public class ProcessVariableReader {
 
       filterQuery.must(filter);
     }
-  }
-
-  private String[] getInstanceIndicesFromVariableSources(final List<ProcessVariableSourceDto> processVariableSources) {
-    final Set<String> definitionKeys = processVariableSources.stream()
-      .map(ProcessVariableSourceDto::getProcessDefinitionKey)
-      .collect(toSet());
-    return getProcessInstanceIndexAliasNames(definitionKeys);
-  }
-
-  private String[] getInstanceIndicesFromVariableRequests(final List<ProcessVariableNameRequestDto> processVariableNameRequestDtos) {
-    final Set<String> definitionKeys = processVariableNameRequestDtos.stream()
-      .filter(Objects::nonNull)
-      .map(ProcessVariableNameRequestDto::getProcessDefinitionKey)
-      .collect(toSet());
-    return getProcessInstanceIndexAliasNames(definitionKeys);
   }
 
 }

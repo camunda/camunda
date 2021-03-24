@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.PageResultDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -44,6 +45,7 @@ import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 
 @AllArgsConstructor
 @Component
+@Slf4j
 public class ProcessInstanceReader {
   private final ConfigurationService configurationService;
   private final OptimizeElasticsearchClient esClient;
@@ -154,6 +156,11 @@ public class ProcessInstanceReader {
       throw new OptimizeRuntimeException("Could not obtain process instance ids.", e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to obtain process instance IDs because instance index {} does not exist. Returning empty result.",
+          getProcessInstanceIndexAliasName(processDefinitionKey),
+          e
+        );
         result.setPagingState(null);
         return result;
       }

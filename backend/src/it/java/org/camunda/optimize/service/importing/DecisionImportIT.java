@@ -107,7 +107,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     // then
     assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
-    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances()).isEmpty();
+    assertThat(elasticSearchIntegrationTestExtension.indexExists(DECISION_INSTANCE_MULTI_ALIAS)).isFalse();
     assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_MULTI_ALIAS, 1L);
     assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 1L);
   }
@@ -147,7 +147,7 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances()).isEmpty();
+    assertThat(elasticSearchIntegrationTestExtension.indexExists(DECISION_INSTANCE_MULTI_ALIAS)).isFalse();
 
     // given failed ES update requests to store new instance
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
@@ -854,7 +854,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     // then no definition or instances are saved
     assertThat(definitionClient.getAllDecisionDefinitions()).isEmpty();
-    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances()).isEmpty();
+    assertThat(elasticSearchIntegrationTestExtension.indexExists(DECISION_INSTANCE_MULTI_ALIAS)).isFalse();
     importServiceLogCapturer.assertContains(String.format(
       "Cannot retrieve definition for definition with ID %s.", decisionDefinitionEngineDto.getId()));
   }

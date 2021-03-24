@@ -166,6 +166,12 @@ public class DecisionVariableReader {
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(DECISION, e)) {
+        log.info(
+          "Was not able to fetch variable values because no instance index with alias {} exists. " +
+            "Returning empty list.",
+          getDecisionInstanceIndexAliasName(requestDto.getDecisionDefinitionKey()),
+          e
+        );
         return Collections.emptyList();
       }
       throw e;

@@ -151,10 +151,7 @@ public class MinMaxStatsService {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
-      if (isInstanceIndexNotFoundException(e)) {
-        return new MinMaxStatDto(0, 0);
-      }
-      throw e;
+      return returnEmptyResultIfInstanceIndexNotFound(e, indexName);
     }
 
     final Stats minMaxStats = Optional.ofNullable(pathForNestedStatsAgg)
@@ -228,10 +225,7 @@ public class MinMaxStatsService {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
-      if (isInstanceIndexNotFoundException(e)) {
-        return new MinMaxStatDto(0, 0);
-      }
-      throw e;
+      return returnEmptyResultIfInstanceIndexNotFound(e, indexName);
     }
     return mapCrossFieldStatAggregationsToStatDto(response);
   }
@@ -287,5 +281,19 @@ public class MinMaxStatsService {
     final Optional<Aggregations> unwrappedAggs =
       unwrapFilterLimitedAggregations(filterAggName, unnestedAggs);
     return unwrappedAggs.orElse(unnestedAggs).get(statsAggName);
+  }
+
+  private MinMaxStatDto returnEmptyResultIfInstanceIndexNotFound(final ElasticsearchStatusException e,
+                                                                 final String indexName) {
+    if (isInstanceIndexNotFoundException(e)) {
+      log.info(
+        "Could not calculate minMaxStats because required instance index with name {} does not exist. " +
+          "Returning min and max 0 instead.",
+        indexName,
+        e
+      );
+      return new MinMaxStatDto(0, 0);
+    }
+    throw e;
   }
 }

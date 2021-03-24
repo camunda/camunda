@@ -36,8 +36,6 @@ import java.util.function.Consumer;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.TENANT_ID;
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
-import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -105,7 +103,6 @@ public class AssigneeAndCandidateGroupsReader {
         definitionKeyToTenantsMap, PROCESS_DEFINITION_KEY, TENANT_ID
       );
       consumeUserTaskFieldTermsInBatches(
-        definitionKeyToTenantsMap.keySet(),
         definitionQuery,
         userTaskFieldName,
         result::addAll
@@ -135,7 +132,6 @@ public class AssigneeAndCandidateGroupsReader {
 
     final List<String> result = new ArrayList<>();
     consumeUserTaskFieldTermsInBatches(
-      Collections.singleton(requestDto.getProcessDefinitionKey()),
       definitionQuery,
       field,
       result::addAll
@@ -143,12 +139,11 @@ public class AssigneeAndCandidateGroupsReader {
     return result;
   }
 
-  private void consumeUserTaskFieldTermsInBatches(final Set<String> definitionKeys,
-                                                  final QueryBuilder filterQuery,
+  private void consumeUserTaskFieldTermsInBatches(final QueryBuilder filterQuery,
                                                   final String fieldName,
                                                   final Consumer<List<String>> termBatchConsumer) {
     consumeUserTaskFieldTermsInBatches(
-      getProcessInstanceIndexAliasNames(definitionKeys),
+      PROCESS_INSTANCE_MULTI_ALIAS,
       filterQuery,
       fieldName,
       termBatchConsumer,
@@ -161,7 +156,7 @@ public class AssigneeAndCandidateGroupsReader {
                                                   final Consumer<List<String>> termBatchConsumer,
                                                   final int batchSize) {
     consumeUserTaskFieldTermsInBatches(
-      new String[]{PROCESS_INSTANCE_MULTI_ALIAS},
+      PROCESS_INSTANCE_MULTI_ALIAS,
       filterQuery,
       fieldName,
       termBatchConsumer,
@@ -170,7 +165,7 @@ public class AssigneeAndCandidateGroupsReader {
   }
 
 
-  private void consumeUserTaskFieldTermsInBatches(final String[] indexNames,
+  private void consumeUserTaskFieldTermsInBatches(final String indexName,
                                                   final QueryBuilder filterQuery,
                                                   final String fieldName,
                                                   final Consumer<List<String>> termBatchConsumer,
@@ -186,7 +181,7 @@ public class AssigneeAndCandidateGroupsReader {
       .aggregation(userTasksAgg)
       .size(0);
     final SearchRequest searchRequest =
-      new SearchRequest(indexNames).source(searchSourceBuilder);
+      new SearchRequest(indexName).source(searchSourceBuilder);
 
     final List<String> termsBatch = new ArrayList<>();
     final CompositeAggregationScroller compositeAggregationScroller = CompositeAggregationScroller.create()

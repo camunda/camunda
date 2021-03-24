@@ -39,11 +39,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
@@ -53,11 +51,11 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToLatest;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -107,8 +105,7 @@ public class CorrelatedCamundaProcessInstanceReader {
                .must(functionScoreQuery(matchAllQuery(), ScoreFunctionBuilders.randomFunction())))
       .size(0);
 
-    SearchRequest searchRequest = new SearchRequest(getInstanceIndices(camundaSources))
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
     addCorrelationValuesAggregation(searchSourceBuilder, camundaSources);
 
     SearchResponse searchResponse;
@@ -120,6 +117,8 @@ public class CorrelatedCamundaProcessInstanceReader {
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.warn("Was not able to fetch sample correlation values because no instance indices exist. " +
+                    "Returning empty list.", e);
         return Collections.emptyList();
       }
       throw e;
@@ -154,7 +153,7 @@ public class CorrelatedCamundaProcessInstanceReader {
                .filter(matchesSourceQuery)
                .must(functionScoreQuery(matchAllQuery(), ScoreFunctionBuilders.randomFunction())))
       .size(MAX_RESPONSE_SIZE_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(getInstanceIndices(camundaSources))
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS)
       .source(searchSourceBuilder)
       .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
@@ -167,6 +166,8 @@ public class CorrelatedCamundaProcessInstanceReader {
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info("Was not able to fetch instances for correlation values because no instance indices exist. " +
+            "Returning empty list.", e);
         return Collections.emptyList();
       }
       throw e;
@@ -304,13 +305,6 @@ public class CorrelatedCamundaProcessInstanceReader {
       tenantQuery.should(termsQuery(TENANT_ID, nonNullTenants));
     }
     return tenantQuery;
-  }
-
-  private String[] getInstanceIndices(final List<CamundaEventSourceEntryDto> eventSources) {
-    final Set<String> definitionKeys = eventSources.stream()
-      .map(source -> source.getConfiguration().getProcessDefinitionKey())
-      .collect(toSet());
-    return getProcessInstanceIndexAliasNames(definitionKeys);
   }
 
 }

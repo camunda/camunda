@@ -136,6 +136,12 @@ public class DurationOutliersReader {
       throw new OptimizeRuntimeException(e.getMessage(), e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to evaluate count by duration chart because instance index with alias {} does not exist. " +
+            "Returning empty list.",
+          getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey()),
+          e
+        );
         return Collections.emptyList();
       }
       throw e;
@@ -250,6 +256,12 @@ public class DurationOutliersReader {
       throw new OptimizeRuntimeException(e.getMessage(), e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to determine significant outlier variable terms because instance index with name {} does not " +
+            "exist. Returning empty list.",
+          getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey()),
+          e
+        );
         return Collections.emptyList();
       }
       throw e;
@@ -294,6 +306,12 @@ public class DurationOutliersReader {
       throw new OptimizeRuntimeException("Could not obtain outlier instance ids.", e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to obtain outlier instance IDs because instance index with name {} does not exist. " +
+            "Returning empty list.",
+          getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey()),
+          e
+        );
         return Collections.emptyList();
       }
       throw e;
@@ -572,6 +590,12 @@ public class DurationOutliersReader {
       throw new OptimizeRuntimeException(e.getMessage(), e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to retrieve flownode outlier map because instance index with alias {} does not exist. " +
+            "Returning empty map.",
+          getProcessInstanceIndexAliasName(processDefinitionKey),
+          e
+        );
         return Collections.emptyMap();
       }
       throw e;
@@ -658,8 +682,7 @@ public class DurationOutliersReader {
       .size(0);
 
     SearchRequest searchRequest =
-      new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
-        .source(searchSourceBuilder);
+      new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionKey)).source(searchSourceBuilder);
 
     SearchResponse search;
     try {
@@ -668,6 +691,11 @@ public class DurationOutliersReader {
       throw new OptimizeRuntimeException(e.getMessage(), e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to determine interval because instance index {} does not exist. Returning 0.",
+          getProcessInstanceIndexAliasName(processDefinitionKey),
+          e
+        );
         return 0L;
       }
       throw e;

@@ -207,7 +207,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
 
     // then
     assertThat(getAllProcessDefinitionKeys()).isEmpty();
-    assertThat(getProcessInstanceIds()).isEmpty();
+    assertThat(elasticSearchIntegrationTestExtension.indexExists(PROCESS_INSTANCE_MULTI_ALIAS)).isFalse();
     assertThat(eventProcessClient.getAllEventProcessMappings())
       .isEqualTo(allEventProcessMappings)
       .extracting(EventProcessMappingDto::getState)

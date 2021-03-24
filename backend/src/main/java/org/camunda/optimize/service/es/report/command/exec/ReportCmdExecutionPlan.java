@@ -94,9 +94,9 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(e)) {
-        log.warn(
-          "Could not evaluate report. Required instance index does not exist, no instances have been imported yet" +
-            " for the specified definition. Returning empty result instead",
+        log.info(
+          "Could not evaluate report because required instance index {} does not exist. Returning empty result instead",
+          getIndexName(executionContext),
           e
         );
         return mapToReportResult.apply(new CompositeCommandResult(
