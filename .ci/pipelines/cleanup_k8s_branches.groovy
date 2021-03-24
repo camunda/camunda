@@ -84,12 +84,13 @@ pipeline {
     stage('Cleanup K8s branches') {
       steps {
         container('gcloud') {
-          sshagent(['camunda-jenkins-github-ssh']) {
+          withCredentials([usernamePassword(credentialsId: 'github-cloud-operate-app', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
             sh("""
               ./cmd/k8s/cleanup-branch-deployment \
               camunda-cloud/operate \
               operate \
-              gcr.io/ci-30-162810/camunda-operate
+              gcr.io/ci-30-162810/camunda-operate \
+              ${GITHUB_APP}:${GITHUB_ACCESS_TOKEN}
             """)
           }
         }
