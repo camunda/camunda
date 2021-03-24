@@ -12,7 +12,7 @@ updates:
     open-pull-requests-limit: 5
   # Enable version updates for the go client
   - package-ecosystem: "gomod"
-    directory: "/clients/go"
+    directory: "/"
     schedule:
       interval: "daily"
     commit-message:
