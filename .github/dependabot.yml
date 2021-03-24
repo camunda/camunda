@@ -1,14 +1,33 @@
 version: 2
 updates:
-  # Enable version updates for master
+  # Enable version updates for the BOM
   - package-ecosystem: "maven"
-    # Look for the root pom
-    directory: "/"
+    directory: "/bom"
     schedule:
       interval: "daily"
     commit-message:
       prefix: "fix(deps): "
     labels:
       - "dependencies"
-    target-branch: "master"
     open-pull-requests-limit: 5
+  # Enable version updates for the parent project
+  - package-ecosystem: "maven"
+    directory: "/parent"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "fix(deps): "
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 5
+  # Enable version updates for the go client
+  - package-ecosystem: "gomod"
+    directory: "/clients/go"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "fix(deps): "
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 5
+    
