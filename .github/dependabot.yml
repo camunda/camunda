@@ -1,18 +1,8 @@
 version: 2
 updates:
-  # Enable version updates for the BOM
+  # Enable version updates for Java
   - package-ecosystem: "maven"
-    directory: "/bom"
-    schedule:
-      interval: "daily"
-    commit-message:
-      prefix: "fix(deps): "
-    labels:
-      - "dependencies"
-    open-pull-requests-limit: 5
-  # Enable version updates for the parent project
-  - package-ecosystem: "maven"
-    directory: "/parent"
+    directory: "/"
     schedule:
       interval: "daily"
     commit-message:
