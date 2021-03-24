@@ -59,7 +59,6 @@ public class LeaderRoleTest {
   private LeaderRole leaderRole;
   private RaftContext context;
   private RaftLog log;
-  private RaftLogReader reader;
 
   @Before
   public void setup() {
@@ -78,8 +77,8 @@ public class LeaderRoleTest {
     when(log.append(any(RaftLogEntry.class)))
         .then(
             i -> {
-              final ApplicationEntry applicationEntry = i.getArgument(0);
-              return new TestIndexedRaftLogEntry(1, 1, applicationEntry);
+              final RaftLogEntry raftEntry = i.getArgument(0);
+              return new TestIndexedRaftLogEntry(1, 1, raftEntry.getApplicationEntry());
             });
     when(context.getLog()).thenReturn(log);
 
@@ -93,7 +92,7 @@ public class LeaderRoleTest {
     doAnswer(i -> leaderRole.stop().join()).when(context).transition(Role.FOLLOWER);
     when(context.getMembershipService()).thenReturn(mock(ClusterMembershipService.class));
 
-    reader = mock(RaftLogReader.class);
+    final RaftLogReader reader = mock(RaftLogReader.class);
     when(context.getLogReader()).thenReturn(reader);
   }
 
@@ -114,7 +113,7 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(0, 1, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     assertThat(latch.getCount()).isZero();
   }
 
@@ -126,8 +125,8 @@ public class LeaderRoleTest {
         .thenThrow(new StorageException(new IOException()))
         .then(
             i -> {
-              final ApplicationEntry applicationEntry = i.getArgument(0);
-              return new TestIndexedRaftLogEntry(1, 1, applicationEntry);
+              final RaftLogEntry raftLogEntry = i.getArgument(0);
+              return new TestIndexedRaftLogEntry(1, 1, raftLogEntry.getApplicationEntry());
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -144,7 +143,7 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(0, 1, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(log, timeout(1000).atLeast(3)).append(any(RaftLogEntry.class));
   }
 
@@ -169,7 +168,7 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(0, 1, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(log, timeout(1000).atLeast(5)).append(any(RaftLogEntry.class));
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
     assertThat(caughtError.get()).isInstanceOf(IOException.class);
@@ -197,7 +196,7 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(0, 1, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
     verify(log, timeout(1000)).append(any(RaftLogEntry.class));
 
@@ -226,7 +225,7 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(0, 1, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(log, timeout(1000)).append(any(RaftLogEntry.class));
 
     assertThat(caughtError.get()).isInstanceOf(StorageException.TooLarge.class);
@@ -253,7 +252,7 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(2, 3, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(log, timeout(1000)).append(any(RaftLogEntry.class));
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
 
@@ -284,7 +283,7 @@ public class LeaderRoleTest {
         });
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
     verify(log, timeout(1000)).append(any(RaftLogEntry.class));
 
@@ -301,8 +300,8 @@ public class LeaderRoleTest {
         .thenThrow(new StorageException(new IOException()))
         .then(
             i -> {
-              final ApplicationEntry applicationEntry = i.getArgument(0);
-              return new TestIndexedRaftLogEntry(1, 1, applicationEntry);
+              final RaftLogEntry raftEntry = i.getArgument(0);
+              return new TestIndexedRaftLogEntry(1, 1, raftEntry.getApplicationEntry());
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -322,7 +321,7 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(1, 2, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(log, timeout(1000).atLeast(3)).append(any(RaftLogEntry.class));
 
     assertThat(entries).hasSize(2);
@@ -336,8 +335,8 @@ public class LeaderRoleTest {
     when(log.append(any(RaftLogEntry.class)))
         .then(
             i -> {
-              final ApplicationEntry applicationEntry = i.getArgument(0);
-              return new TestIndexedRaftLogEntry(1, 1, applicationEntry);
+              final RaftLogEntry raftLogEntry = i.getArgument(0);
+              return new TestIndexedRaftLogEntry(1, 1, raftLogEntry.getApplicationEntry());
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -376,7 +375,7 @@ public class LeaderRoleTest {
     verify(leaderRole.raft, timeout(2000).atLeast(1)).transition(Role.FOLLOWER);
   }
 
-  private class TestIndexedRaftLogEntry implements IndexedRaftLogEntry {
+  private static class TestIndexedRaftLogEntry implements IndexedRaftLogEntry {
 
     private final long index;
     private final long term;
@@ -411,6 +410,11 @@ public class LeaderRoleTest {
     @Override
     public PersistedRaftRecord getPersistedRaftRecord() {
       return null;
+    }
+
+    @Override
+    public boolean isApplicationEntry() {
+      return true;
     }
   }
 }
