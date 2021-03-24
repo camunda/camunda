@@ -105,6 +105,11 @@ static String elasticSearchContainerSpec(esVersion) {
       value: single-node
     - name: bootstrap.memory_lock
       value: true
+    # We usually run our integration tests concurrently, as some cleanup methods like #deleteAllOptimizeData
+    # internally make usage of scroll contexts this lead to hits on the scroll limit.
+    # Thus this increased scroll context limit.
+    - name: search.max_open_scroll_context
+      value: 1000
     securityContext:
       privileged: true
       capabilities:
