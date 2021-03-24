@@ -99,8 +99,6 @@ spec:
       value: elasticsearch
     - name: discovery.type
       value: single-node
-    - name: action.auto_create_index
-      value: false
     - name: bootstrap.memory_lock
       value: true
     securityContext:
