@@ -84,12 +84,13 @@ pipeline {
     stage('Cleanup K8s branches') {
       steps {
         container('gcloud') {
-          sshagent(['camunda-jenkins-github-ssh']) {
+          withCredentials([usernamePassword(credentialsId: 'github-cloud-zeebe-tasklist-app', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_ACCESS_TOKEN')]) {
             sh("""
               ./cmd/k8s/cleanup-branch-deployment \
               camunda-cloud/tasklist \
               zeebe-tasklist \
-              gcr.io/ci-30-162810/zeebe-tasklist
+              gcr.io/ci-30-162810/zeebe-tasklist \
+              ${GITHUB_APP}:${GITHUB_ACCESS_TOKEN}
             """)
           }
         }
