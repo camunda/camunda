@@ -90,7 +90,7 @@ public class VariableUpdateInstanceFetcher extends RetryBackoffEngineEntityFetch
       .path(VARIABLE_UPDATE_ENDPOINT)
       .queryParam(OCCURRED_AFTER, dateTimeFormatter.format(timeStamp))
       .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
-      .queryParam(PARAM_EXCLUDE_OBJECT_VALUES, configurationService.getEngineImportVariableIncludeObjectVariableValue())
+      .queryParam(PARAM_EXCLUDE_OBJECT_VALUES, !configurationService.getEngineImportVariableIncludeObjectVariableValue())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(RESULT_TYPE_VARIABLE_LIST);
@@ -102,7 +102,7 @@ public class VariableUpdateInstanceFetcher extends RetryBackoffEngineEntityFetch
       .path(VARIABLE_UPDATE_ENDPOINT)
       .queryParam(OCCURRED_AT, dateTimeFormatter.format(endTimeOfLastInstance))
       .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportVariableInstanceMaxPageSize())
-      .queryParam(PARAM_EXCLUDE_OBJECT_VALUES, configurationService.getEngineImportVariableIncludeObjectVariableValue())
+      .queryParam(PARAM_EXCLUDE_OBJECT_VALUES, !configurationService.getEngineImportVariableIncludeObjectVariableValue())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(RESULT_TYPE_VARIABLE_LIST);

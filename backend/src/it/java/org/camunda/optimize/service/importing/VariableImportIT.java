@@ -208,14 +208,16 @@ public class VariableImportIT extends AbstractImportIT {
       request()
         .withPath(engineIntegrationExtension.getEnginePath() + EngineConstants.VARIABLE_UPDATE_ENDPOINT)
         .withQueryStringParameter("occurredAfter", ".*")
-        .withQueryStringParameter("excludeObjectValues", String.valueOf(includeObjectVariableValue)),
+        // our config has include semantics, api has exclude semantics, thus opposite is expected
+        .withQueryStringParameter("excludeObjectValues", String.valueOf(!includeObjectVariableValue)),
       VerificationTimes.once()
     );
     engineMockServer.verify(
       request()
         .withPath(engineIntegrationExtension.getEnginePath() + EngineConstants.VARIABLE_UPDATE_ENDPOINT)
         .withQueryStringParameter("occurredAt", ".*")
-        .withQueryStringParameter("excludeObjectValues", String.valueOf(includeObjectVariableValue)),
+        // our config has include semantics, api has exclude semantics, thus opposite is expected
+        .withQueryStringParameter("excludeObjectValues", String.valueOf(!includeObjectVariableValue)),
       VerificationTimes.once()
     );
   }
