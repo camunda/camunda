@@ -49,7 +49,7 @@
     <version.error-prone>2.5.1</version.error-prone>
     <version.grpc>1.36.0</version.grpc>
     <version.gson>2.8.6</version.gson>
-    <version.guava>30.1-jre</version.guava>
+    <version.guava>30.1.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
     <version.hppc>0.8.1</version.hppc>
     <version.httpasyncclient>4.1.4</version.httpasyncclient>
@@ -68,9 +68,9 @@
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.22</version.msgpack>
     <version.netty-tcnative>2.0.36.Final</version.netty-tcnative>
-    <version.objenesis>3.1</version.objenesis>
+    <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.10.0</version.prometheus>
-    <version.protobuf>3.15.5</version.protobuf>
+    <version.protobuf>3.15.6</version.protobuf>
     <version.protobuf-common>2.1.0</version.protobuf-common>
     <version.micrometer>1.6.4</version.micrometer>
     <version.rocksdbjni>6.15.2</version.rocksdbjni>
