@@ -51,15 +51,20 @@ import java.util.stream.Collectors;
  *
  * <p>Output variable mappings differ from input mappings that the result variables needs to be
  * merged with the existing variables if the variable is a JSON object. The merging is done by
- * calling the FEEL function 'appendTo()' and referencing the variable.
+ * calling the FEEL function 'put all()' and referencing the variable.
  *
  * <pre>
  *   {
  *     a: x,
- *     b: appendTo(b, {
- *       c: y,
- *       d: z
- *     }
+ *     b: if (b = null)
+ *        then {
+ *          c: y,
+ *          d: z
+ *        }
+ *        else put all(b, {
+ *          c: y,
+ *          d: z
+ *       })
  *   }
  * </pre>
  */
@@ -84,7 +89,7 @@ public final class VariableMappingTransformer {
 
     final var mappings = toMappings(outputMappings, expressionLanguage);
     final var context = asContext(mappings);
-    final var contextExpression = asFeelContextExpression(context, this::appendContextExpression);
+    final var contextExpression = asFeelContextExpression(context, this::mergeContextExpression);
     return parseExpression(contextExpression, expressionLanguage);
   }
 
@@ -161,13 +166,15 @@ public final class VariableMappingTransformer {
     };
   }
 
-  private String appendContextExpression(
+  private String mergeContextExpression(
       final String nestedContext, final List<String> contextPath) {
     // for a nested target mapping 'x -> a.b', append the nested property 'b' to
     // the existing context variable 'a' (instead of overriding 'a')
     // example: x = 1 and a = {'c':2} results in a = {'b':1, 'c':2}
     final var existingContext = String.join(".", contextPath);
-    return "appendTo(" + existingContext + "," + nestedContext + ")";
+    return String.format(
+        "if (%s = null) then %s else put all(%s,%s)",
+        existingContext, nestedContext, existingContext, nestedContext);
   }
 
   private Expression parseExpression(

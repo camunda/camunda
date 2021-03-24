@@ -94,7 +94,7 @@ public final class BpmnEventSubscriptionBehavior {
       final T element, final BpmnElementContext context) {
 
     try {
-      catchEventBehavior.subscribeToEvents(context, element, commandWriter, sideEffects);
+      catchEventBehavior.subscribeToEvents(context, element, sideEffects, commandWriter);
       return Either.right(null);
 
     } catch (final MessageCorrelationKeyException e) {
@@ -299,7 +299,26 @@ public final class BpmnEventSubscriptionBehavior {
   }
 
   public void publishTriggeredEventBasedGateway(final BpmnElementContext context) {
-    publishTriggeredEvent(context, BpmnElementType.INTERMEDIATE_CATCH_EVENT);
+    // TODO (saig0): move the behavior in the processor (#6191)
+    elementInstanceState.getDeferredRecords(context.getElementInstanceKey()).stream()
+        .filter(
+            record ->
+                record.getValue().getBpmnElementType() == BpmnElementType.INTERMEDIATE_CATCH_EVENT)
+        .filter(record -> record.getState() == ProcessInstanceIntent.ELEMENT_ACTIVATING)
+        .findFirst()
+        .ifPresent(
+            deferredRecord -> {
+              // activate the catch element directly to pass the variables
+              final var elementInstanceKey = deferredRecord.getKey();
+              final var elementRecord = deferredRecord.getValue();
+
+              stateWriter.appendFollowUpEvent(
+                  elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, elementRecord);
+              stateWriter.appendFollowUpEvent(
+                  elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, elementRecord);
+              commandWriter.appendFollowUpCommand(
+                  elementInstanceKey, ProcessInstanceIntent.COMPLETE_ELEMENT, elementRecord);
+            });
   }
 
   public void triggerStartEvent(final BpmnElementContext context) {
@@ -431,15 +450,15 @@ public final class BpmnEventSubscriptionBehavior {
     stateBehavior.updateFlowScopeInstance(
         context,
         flowScopeInstance -> {
-          flowScopeInstance.spawnToken();
           flowScopeInstance.setInterruptingEventKey(eventElementInstanceKey);
         });
   }
 
-  public void publishTriggeredEventSubProcess(final BpmnElementContext context) {
+  public void publishTriggeredEventSubProcess(
+      final boolean isChildMigrated, final BpmnElementContext context) {
     final var elementInstance = stateBehavior.getElementInstance(context);
 
-    if (isInterrupted(elementInstance)) {
+    if (isInterrupted(isChildMigrated, elementInstance)) {
       elementInstanceState.getDeferredRecords(context.getElementInstanceKey()).stream()
           .filter(record -> record.getKey() == elementInstance.getInterruptingEventKey())
           .filter(record -> record.getValue().getBpmnElementType() == BpmnElementType.SUB_PROCESS)
@@ -457,8 +476,10 @@ public final class BpmnEventSubscriptionBehavior {
     }
   }
 
-  private boolean isInterrupted(final ElementInstance elementInstance) {
-    return elementInstance.getNumberOfActiveTokens() == 2
+  private boolean isInterrupted(
+      final boolean isChildMigrated, final ElementInstance elementInstance) {
+    final int expectedActiveInstanceCount = isChildMigrated ? 0 : 1;
+    return elementInstance.getNumberOfActiveElementInstances() == expectedActiveInstanceCount
         && elementInstance.isInterrupted()
         && elementInstance.isActive();
   }

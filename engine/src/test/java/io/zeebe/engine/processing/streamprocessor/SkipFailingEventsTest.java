@@ -31,14 +31,18 @@ import io.zeebe.engine.util.Records;
 import io.zeebe.engine.util.TestStreams;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.util.SynchronousLogStream;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.ErrorIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -255,7 +259,7 @@ public final class SkipFailingEventsTest {
             .newRecord(STREAM_NAME)
             .event(Records.job(1))
             .recordType(RecordType.EVENT)
-            .intent(JobIntent.ACTIVATED)
+            .intent(JobIntent.CREATED)
             .key(keyGenerator.nextKey())
             .write();
     streams
@@ -282,7 +286,7 @@ public final class SkipFailingEventsTest {
                       latch.countDown();
                     }
                   })
-              .onEvent(ValueType.JOB, JobIntent.ACTIVATED, new DumpProcessor());
+              .onEvent(ValueType.JOB, JobIntent.CREATED, new DumpProcessor());
         });
 
     // when
@@ -335,7 +339,7 @@ public final class SkipFailingEventsTest {
           return TypedRecordProcessors.processors(
                   zeebeState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(ValueType.JOB, JobIntent.COMPLETE, errorProneProcessor)
-              .onEvent(ValueType.JOB, JobIntent.ACTIVATED, dumpProcessor);
+              .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, dumpProcessor);
         });
 
     streams
@@ -348,8 +352,8 @@ public final class SkipFailingEventsTest {
     streams
         .newRecord(STREAM_NAME)
         .event(Records.job(1))
-        .recordType(RecordType.EVENT)
-        .intent(JobIntent.ACTIVATED)
+        .recordType(RecordType.COMMAND)
+        .intent(JobIntent.THROW_ERROR)
         .key(keyGenerator.nextKey())
         .write();
 
@@ -357,8 +361,8 @@ public final class SkipFailingEventsTest {
     streams
         .newRecord(STREAM_NAME)
         .event(Records.job(2))
-        .recordType(RecordType.EVENT)
-        .intent(JobIntent.ACTIVATED)
+        .recordType(RecordType.COMMAND)
+        .intent(JobIntent.THROW_ERROR)
         .key(keyGenerator.nextKey())
         .write();
 
@@ -384,23 +388,35 @@ public final class SkipFailingEventsTest {
     // given
     when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     final List<Long> processedInstances = new ArrayList<>();
-    final TypedRecordProcessor<TimerRecord> errorProneProcessor =
+    final TypedRecordProcessor<DeploymentRecord> errorProneProcessor =
         new TypedRecordProcessor<>() {
           @Override
           public void processRecord(
-              final TypedRecord<TimerRecord> record,
+              final TypedRecord<DeploymentRecord> record,
               final TypedResponseWriter responseWriter,
               final TypedStreamWriter streamWriter) {
             if (record.getKey() == 0) {
               throw new RuntimeException("expected");
             }
-            processedInstances.add(record.getValue().getProcessInstanceKey());
+            processedInstances.add(TimerInstance.NO_ELEMENT_INSTANCE);
             streamWriter.appendFollowUpEvent(
                 record.getKey(),
                 TimerIntent.CREATED,
                 Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
           }
         };
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .timerWithDuration("PT1S")
+            .endEvent()
+            .done();
+    final DeploymentRecord deploymentRecord = new DeploymentRecord();
+    deploymentRecord
+        .resources()
+        .add()
+        .setResourceName("process.bpmn")
+        .setResource(Bpmn.convertToString(process).getBytes());
 
     streams.startStreamProcessor(
         STREAM_NAME,
@@ -409,22 +425,22 @@ public final class SkipFailingEventsTest {
           zeebeState = processingContext.getZeebeState();
           return TypedRecordProcessors.processors(
                   zeebeState.getKeyGenerator(), processingContext.getWriters())
-              .onCommand(ValueType.TIMER, TimerIntent.CREATE, errorProneProcessor);
+              .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, errorProneProcessor);
         });
 
     streams
         .newRecord(STREAM_NAME)
-        .event(Records.timer(TimerInstance.NO_ELEMENT_INSTANCE))
+        .event(deploymentRecord)
         .recordType(RecordType.COMMAND)
-        .intent(TimerIntent.CREATE)
-        .key(keyGenerator.nextKey())
+        .intent(DeploymentIntent.CREATE)
+        .key(0)
         .write();
     streams
         .newRecord(STREAM_NAME)
-        .event(Records.timer(TimerInstance.NO_ELEMENT_INSTANCE))
+        .event(deploymentRecord)
         .recordType(RecordType.COMMAND)
-        .intent(TimerIntent.CREATE)
-        .key(keyGenerator.nextKey())
+        .intent(DeploymentIntent.CREATE)
+        .key(1)
         .write();
 
     // when
@@ -436,7 +452,7 @@ public final class SkipFailingEventsTest {
     final MockTypedRecord<TimerRecord> mockTypedRecord =
         new MockTypedRecord<>(0, metadata, Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
     Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isFalse();
-    assertThat(processedInstances).containsExactly((long) TimerInstance.NO_ELEMENT_INSTANCE);
+    assertThat(processedInstances).containsExactly(TimerInstance.NO_ELEMENT_INSTANCE);
   }
 
   private void waitForRecordWhichSatisfies(final Predicate<LoggedEvent> filter) {

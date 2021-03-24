@@ -100,13 +100,14 @@ public final class TimerCatchEventTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementId("timer")
-                .limit(5))
+                .limitToProcessInstanceCompleted()
+                .withElementId("timer"))
         .extracting(Record::getIntent)
         .containsExactly(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
-            ProcessInstanceIntent.EVENT_OCCURRED,
+            ProcessInstanceIntent.COMPLETE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED);
 

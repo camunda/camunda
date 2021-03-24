@@ -10,6 +10,7 @@ package io.zeebe.engine.state.appliers;
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
@@ -19,18 +20,21 @@ final class ProcessInstanceElementCompletedApplier
 
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final MutableVariableState variableState;
 
   public ProcessInstanceElementCompletedApplier(
       final MutableElementInstanceState elementInstanceState,
-      final MutableEventScopeInstanceState eventScopeInstanceState) {
+      final MutableEventScopeInstanceState eventScopeInstanceState,
+      final MutableVariableState variableState) {
     this.elementInstanceState = elementInstanceState;
     this.eventScopeInstanceState = eventScopeInstanceState;
+    this.variableState = variableState;
   }
 
   @Override
   public void applyState(final long key, final ProcessInstanceRecord value) {
     eventScopeInstanceState.deleteInstance(key);
-    elementInstanceState.consumeToken(value.getFlowScopeKey());
     elementInstanceState.removeInstance(key);
+    variableState.removeTemporaryVariables(key);
   }
 }

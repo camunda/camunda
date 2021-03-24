@@ -24,6 +24,7 @@ import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.ProcessIntent;
 import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,6 +67,15 @@ public final class EventAppliers implements EventApplier {
     register(JobBatchIntent.ACTIVATED, new JobBatchActivatedApplier(state));
     registerIncidentEventAppliers(state);
     registerProcessMessageSubscriptionEventAppliers(state);
+    registerTimeEventAppliers(state);
+  }
+
+  private void registerTimeEventAppliers(final MutableZeebeState state) {
+    register(TimerIntent.CREATED, new TimerCreatedApplier(state.getTimerState()));
+    register(TimerIntent.CANCELED, new TimerCancelledApplier(state.getTimerState()));
+    register(
+        TimerIntent.TRIGGERED,
+        new TimerTriggeredApplier(state.getEventScopeInstanceState(), state.getTimerState()));
   }
 
   private void registerDeploymentAppliers(final MutableZeebeState state) {
@@ -96,7 +106,7 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceIntent.ELEMENT_ACTIVATING,
         new ProcessInstanceElementActivatingApplier(
-            elementInstanceState, processState, variableState));
+            elementInstanceState, processState, variableState, eventScopeInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_ACTIVATED,
         new ProcessInstanceElementActivatedApplier(
@@ -106,7 +116,8 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceElementCompletingApplier(elementInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_COMPLETED,
-        new ProcessInstanceElementCompletedApplier(elementInstanceState, eventScopeInstanceState));
+        new ProcessInstanceElementCompletedApplier(
+            elementInstanceState, eventScopeInstanceState, variableState));
     register(
         ProcessInstanceIntent.ELEMENT_TERMINATING,
         new ProcessInstanceElementTerminatingApplier(elementInstanceState));
@@ -186,7 +197,9 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessMessageSubscriptionIntent.CORRELATED,
         new ProcessMessageSubscriptionCorrelatedApplier(
-            state.getProcessMessageSubscriptionState(), state.getEventScopeInstanceState()));
+            state.getProcessMessageSubscriptionState(),
+            state.getEventScopeInstanceState(),
+            state.getVariableState()));
     register(
         ProcessMessageSubscriptionIntent.DELETED,
         new ProcessMessageSubscriptionDeletedApplier(state.getProcessMessageSubscriptionState()));

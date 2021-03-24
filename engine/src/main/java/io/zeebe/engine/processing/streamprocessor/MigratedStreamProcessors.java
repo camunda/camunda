@@ -10,7 +10,6 @@ package io.zeebe.engine.processing.streamprocessor;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -40,28 +39,13 @@ public final class MigratedStreamProcessors {
           final var bpmnElementType = recordValue.getBpmnElementType();
           return MIGRATED_BPMN_PROCESSORS.contains(bpmnElementType);
         });
-    MIGRATED_VALUE_TYPES.put(
-        ValueType.JOB,
-        MIGRATED_INTENT_FILTER_FACTORY.apply(
-            List.of(
-                JobIntent.CREATE,
-                JobIntent.CREATED,
-                JobIntent.COMPLETE,
-                JobIntent.COMPLETED,
-                JobIntent.FAIL,
-                JobIntent.FAILED,
-                JobIntent.THROW_ERROR,
-                JobIntent.ERROR_THROWN,
-                JobIntent.TIME_OUT,
-                JobIntent.TIMED_OUT,
-                JobIntent.UPDATE_RETRIES,
-                JobIntent.RETRIES_UPDATED,
-                JobIntent.CANCEL,
-                JobIntent.CANCELED)));
-    MIGRATED_VALUE_TYPES.put(ValueType.JOB_BATCH, MIGRATED);
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.TESTING_ONLY);
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.EXCLUSIVE_GATEWAY);
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.PARALLEL_GATEWAY);
+    MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.INTERMEDIATE_CATCH_EVENT);
+
+    MIGRATED_VALUE_TYPES.put(ValueType.JOB, MIGRATED);
+    MIGRATED_VALUE_TYPES.put(ValueType.JOB_BATCH, MIGRATED);
 
     MIGRATED_VALUE_TYPES.put(ValueType.ERROR, MIGRATED);
     MIGRATED_VALUE_TYPES.put(ValueType.PROCESS, MIGRATED);
@@ -76,6 +60,7 @@ public final class MigratedStreamProcessors {
     MIGRATED_VALUE_TYPES.put(ValueType.VARIABLE_DOCUMENT, MIGRATED);
     MIGRATED_VALUE_TYPES.put(ValueType.VARIABLE, MIGRATED);
     MIGRATED_VALUE_TYPES.put(ValueType.INCIDENT, MIGRATED);
+    MIGRATED_VALUE_TYPES.put(ValueType.TIMER, MIGRATED);
   }
 
   private MigratedStreamProcessors() {}

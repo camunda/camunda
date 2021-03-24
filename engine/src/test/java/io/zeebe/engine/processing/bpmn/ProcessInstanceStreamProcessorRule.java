@@ -112,6 +112,8 @@ public final class ProcessInstanceStreamProcessorRule extends ExternalResource
                   variablesState::getVariable);
 
           final var writers = processingContext.getWriters();
+          final DueDateTimerChecker dueDateTimerChecker =
+              new DueDateTimerChecker(zeebeState.getTimerState());
           ProcessEventProcessors.addProcessProcessors(
               zeebeState,
               expressionProcessor,
@@ -123,7 +125,7 @@ public final class ProcessInstanceStreamProcessorRule extends ExternalResource
                   mockSubscriptionCommandSender,
                   writers.state(),
                   1),
-              new DueDateTimerChecker(zeebeState.getTimerState()),
+              dueDateTimerChecker,
               writers);
 
           JobEventProcessors.addJobProcessors(

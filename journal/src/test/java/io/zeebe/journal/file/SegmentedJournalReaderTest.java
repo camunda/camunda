@@ -42,7 +42,7 @@ class SegmentedJournalReaderTest {
 
   @BeforeEach
   void setup() {
-    final int entrySize = getSerializedSize(data);
+    final int entrySize = FrameUtil.getLength() + getSerializedSize(data);
 
     journal =
         SegmentedJournal.builder()

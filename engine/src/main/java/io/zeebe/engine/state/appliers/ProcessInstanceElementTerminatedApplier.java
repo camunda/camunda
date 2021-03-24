@@ -29,7 +29,6 @@ final class ProcessInstanceElementTerminatedApplier
 
   @Override
   public void applyState(final long key, final ProcessInstanceRecord value) {
-    elementInstanceState.consumeToken(value.getFlowScopeKey());
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
   }

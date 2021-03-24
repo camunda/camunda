@@ -40,16 +40,15 @@ import org.junit.runners.Parameterized.Parameters;
 public final class ReplayStateTest {
 
   private static final String PROCESS_ID = "process";
+  @Parameter public TestCase testCase;
+
+  private long lastProcessedPosition = -1L;
 
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withOnProcessedCallback(record -> lastProcessedPosition = record.getPosition())
           .withOnSkippedCallback(record -> lastProcessedPosition = record.getPosition());
-
-  @Parameter public TestCase testCase;
-
-  private long lastProcessedPosition = -1L;
 
   @Parameters(name = "{0}")
   public static Collection<TestCase> testRecords() {
@@ -88,6 +87,78 @@ public final class ReplayStateTest {
                           timeToLive.plus(MessageObserver.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL));
 
                   return RecordingExporter.messageRecords(MessageIntent.EXPIRED).getFirst();
+                }),
+        // TODO(npepinpe): remove after https://github.com/camunda-cloud/zeebe/issues/6568
+        testCase("timer start event")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent("timer")
+                    .timerWithDateExpression("now()")
+                    .endEvent()
+                    .done())
+            .withExecution(
+                engine ->
+                    RecordingExporter.processInstanceRecords(
+                            ProcessInstanceIntent.ELEMENT_COMPLETED)
+                        .withBpmnProcessId(PROCESS_ID)
+                        .withElementType(BpmnElementType.PROCESS)
+                        .getFirst()),
+        // TODO(npepinpe): remove after https://github.com/camunda-cloud/zeebe/issues/6568
+        testCase("intermediate timer catch event")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .intermediateCatchEvent("timer")
+                    .timerWithDuration("PT0S")
+                    .endEvent()
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.PROCESS)
+                      .getFirst();
+                }),
+        // TODO(npepinpe): remove after https://github.com/camunda-cloud/zeebe/issues/6568
+        testCase("interrupting timer boundary event")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask("task", b -> b.zeebeJobType("type"))
+                    .boundaryEvent("timer", b -> b.cancelActivity(true))
+                    .timerWithDuration("PT0S")
+                    .endEvent("end")
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.PROCESS)
+                      .getFirst();
+                }),
+        // TODO(npepinpe): remove after https://github.com/camunda-cloud/zeebe/issues/6568
+        testCase("non-interrupting timer boundary event")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask("task", b -> b.zeebeJobType("type"))
+                    .boundaryEvent("timer", b -> b.cancelActivity(false))
+                    .timerWithCycle("R1/PT0S")
+                    .endEvent("end")
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.END_EVENT)
+                      .withElementId("end")
+                      .getFirst();
                 }));
   }
 

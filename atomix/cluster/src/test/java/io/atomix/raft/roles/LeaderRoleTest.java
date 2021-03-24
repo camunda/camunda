@@ -29,10 +29,12 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.storage.RaftStorage;
-import io.atomix.raft.storage.log.IndexedRaftRecord;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.PersistedRaftRecord;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
+import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
@@ -57,7 +59,6 @@ public class LeaderRoleTest {
   private LeaderRole leaderRole;
   private RaftContext context;
   private RaftLog log;
-  private RaftLogReader reader;
 
   @Before
   public void setup() {
@@ -76,8 +77,8 @@ public class LeaderRoleTest {
     when(log.append(any(RaftLogEntry.class)))
         .then(
             i -> {
-              final ApplicationEntry applicationEntry = i.getArgument(0);
-              return new IndexedRaftRecord(1, new RaftLogEntry(1, applicationEntry), 45, -1);
+              final RaftLogEntry raftEntry = i.getArgument(0);
+              return new TestIndexedRaftLogEntry(1, 1, raftEntry.getApplicationEntry());
             });
     when(context.getLog()).thenReturn(log);
 
@@ -91,7 +92,7 @@ public class LeaderRoleTest {
     doAnswer(i -> leaderRole.stop().join()).when(context).transition(Role.FOLLOWER);
     when(context.getMembershipService()).thenReturn(mock(ClusterMembershipService.class));
 
-    reader = mock(RaftLogReader.class);
+    final RaftLogReader reader = mock(RaftLogReader.class);
     when(context.getLogReader()).thenReturn(reader);
   }
 
@@ -103,7 +104,7 @@ public class LeaderRoleTest {
     final AppendListener listener =
         new AppendListener() {
           @Override
-          public void onWrite(final IndexedRaftRecord indexed) {
+          public void onWrite(final IndexedRaftLogEntry indexed) {
             latch.countDown();
           }
         };
@@ -112,7 +113,7 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(0, 1, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     assertThat(latch.getCount()).isZero();
   }
 
@@ -124,8 +125,8 @@ public class LeaderRoleTest {
         .thenThrow(new StorageException(new IOException()))
         .then(
             i -> {
-              final ApplicationEntry applicationEntry = i.getArgument(0);
-              return new IndexedRaftRecord(1, new RaftLogEntry(1, applicationEntry), 45, -1);
+              final RaftLogEntry raftLogEntry = i.getArgument(0);
+              return new TestIndexedRaftLogEntry(1, 1, raftLogEntry.getApplicationEntry());
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -133,7 +134,7 @@ public class LeaderRoleTest {
     final AppendListener listener =
         new AppendListener() {
           @Override
-          public void onWrite(final IndexedRaftRecord indexed) {
+          public void onWrite(final IndexedRaftLogEntry indexed) {
             latch.countDown();
           }
         };
@@ -142,7 +143,7 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(0, 1, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(log, timeout(1000).atLeast(3)).append(any(RaftLogEntry.class));
   }
 
@@ -167,7 +168,7 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(0, 1, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(log, timeout(1000).atLeast(5)).append(any(RaftLogEntry.class));
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
     assertThat(caughtError.get()).isInstanceOf(IOException.class);
@@ -195,7 +196,7 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(0, 1, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
     verify(log, timeout(1000)).append(any(RaftLogEntry.class));
 
@@ -224,7 +225,7 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(0, 1, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(log, timeout(1000)).append(any(RaftLogEntry.class));
 
     assertThat(caughtError.get()).isInstanceOf(StorageException.TooLarge.class);
@@ -251,7 +252,7 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(2, 3, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(log, timeout(1000)).append(any(RaftLogEntry.class));
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
 
@@ -282,7 +283,7 @@ public class LeaderRoleTest {
         });
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
     verify(log, timeout(1000)).append(any(RaftLogEntry.class));
 
@@ -299,8 +300,8 @@ public class LeaderRoleTest {
         .thenThrow(new StorageException(new IOException()))
         .then(
             i -> {
-              final ApplicationEntry applicationEntry = i.getArgument(0);
-              return new IndexedRaftRecord(1, new RaftLogEntry(1, applicationEntry), 45, -1);
+              final RaftLogEntry raftEntry = i.getArgument(0);
+              return new TestIndexedRaftLogEntry(1, 1, raftEntry.getApplicationEntry());
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -309,8 +310,8 @@ public class LeaderRoleTest {
     final AppendListener listener =
         new AppendListener() {
           @Override
-          public void onWrite(final IndexedRaftRecord indexed) {
-            entries.add(indexed.entry().getApplicationEntry());
+          public void onWrite(final IndexedRaftLogEntry indexed) {
+            entries.add(indexed.getApplicationEntry());
             latch.countDown();
           }
         };
@@ -320,7 +321,7 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(1, 2, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(log, timeout(1000).atLeast(3)).append(any(RaftLogEntry.class));
 
     assertThat(entries).hasSize(2);
@@ -334,8 +335,8 @@ public class LeaderRoleTest {
     when(log.append(any(RaftLogEntry.class)))
         .then(
             i -> {
-              final ApplicationEntry applicationEntry = i.getArgument(0);
-              return new IndexedRaftRecord(1, new RaftLogEntry(1, applicationEntry), 45, -1);
+              final RaftLogEntry raftLogEntry = i.getArgument(0);
+              return new TestIndexedRaftLogEntry(1, 1, raftLogEntry.getApplicationEntry());
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -372,5 +373,48 @@ public class LeaderRoleTest {
     // then
     assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
     verify(leaderRole.raft, timeout(2000).atLeast(1)).transition(Role.FOLLOWER);
+  }
+
+  private static class TestIndexedRaftLogEntry implements IndexedRaftLogEntry {
+
+    private final long index;
+    private final long term;
+    private final RaftEntry entry;
+
+    public TestIndexedRaftLogEntry(final long index, final long term, final RaftEntry entry) {
+      this.index = index;
+      this.term = term;
+      this.entry = entry;
+    }
+
+    @Override
+    public long index() {
+      return index;
+    }
+
+    @Override
+    public long term() {
+      return term;
+    }
+
+    @Override
+    public RaftEntry entry() {
+      return entry;
+    }
+
+    @Override
+    public ApplicationEntry getApplicationEntry() {
+      return (ApplicationEntry) entry;
+    }
+
+    @Override
+    public PersistedRaftRecord getPersistedRaftRecord() {
+      return null;
+    }
+
+    @Override
+    public boolean isApplicationEntry() {
+      return true;
+    }
   }
 }

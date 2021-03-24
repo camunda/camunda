@@ -107,14 +107,7 @@ public final class TimerValidationTest {
 
     final var process = timerEventWithExpressionBuilder.apply("!");
 
-    validateProcess(
-        process,
-        expect(
-            TimerEventDefinition.class,
-            "failed to parse expression '!': [1.1] failure: '{' expected but '!' found\n"
-                + "\n"
-                + "!\n"
-                + "^"));
+    validateProcess(process, expect(TimerEventDefinition.class, "failed to parse expression '!'"));
   }
 
   private static Stream<Arguments> timerEvents() {

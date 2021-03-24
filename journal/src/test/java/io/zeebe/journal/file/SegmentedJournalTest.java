@@ -330,6 +330,7 @@ class SegmentedJournalTest {
     final var serializer = new SBESerializer();
     final ByteBuffer buffer = ByteBuffer.allocate(128);
     return serializer.writeData(record, new UnsafeBuffer(buffer), 0)
+        + FrameUtil.getLength()
         + serializer.getMetadataLength();
   }
 }

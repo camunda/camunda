@@ -50,11 +50,4 @@ public class StorageException extends RuntimeException {
       super(message);
     }
   }
-
-  /** Exception thrown when an entry has an invalid checksum. */
-  public static class InvalidChecksum extends StorageException {
-    public InvalidChecksum(final String message) {
-      super(message);
-    }
-  }
 }

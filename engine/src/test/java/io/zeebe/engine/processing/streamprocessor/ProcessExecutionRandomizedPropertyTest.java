@@ -19,13 +19,14 @@ import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Collection;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ProcessExecutionRandomizedPropertyTest {
+public class ProcessExecutionRandomizedPropertyTest implements PropertyBasedTest {
 
   /*
    * Some notes on scaling of these tests:
@@ -43,11 +44,17 @@ public class ProcessExecutionRandomizedPropertyTest {
   private static final int PROCESS_COUNT = 10;
   private static final int EXECUTION_PATH_COUNT = 100;
 
+  @Rule public TestWatcher failedTestDataPrinter = new FailedPropertyBasedTestDataPrinter(this);
   @Rule public final EngineRule engineRule = EngineRule.singlePartition();
 
   @Parameter public TestDataRecord record;
 
   private final ProcessExecutor processExecutor = new ProcessExecutor(engineRule);
+
+  @Override
+  public TestDataRecord getDataRecord() {
+    return record;
+  }
 
   /**
    * This test takes a random process and execution path in that process. A process instance is

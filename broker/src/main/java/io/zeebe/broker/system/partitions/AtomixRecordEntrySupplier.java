@@ -7,18 +7,18 @@
  */
 package io.zeebe.broker.system.partitions;
 
-import io.atomix.raft.storage.log.IndexedRaftRecord;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import java.util.Optional;
 
 /**
- * Implementations of this interface should return the previous {@link IndexedRaftRecord
+ * Implementations of this interface should return the previous {@link IndexedRaftLogEntry
  * <RaftLogEntry>} of a RaftLogEntry that contains a {@link ApplicationEntry} with the given
  * position.
  */
 @FunctionalInterface
 public interface AtomixRecordEntrySupplier extends AutoCloseable {
-  Optional<IndexedRaftRecord> getPreviousIndexedEntry(long position);
+  Optional<IndexedRaftLogEntry> getPreviousIndexedEntry(long position);
 
   @Override
   default void close() {}

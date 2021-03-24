@@ -18,6 +18,7 @@ import io.zeebe.engine.processing.bpmn.behavior.BpmnProcessResultSenderBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
+import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
 public final class ProcessProcessor
@@ -152,7 +153,7 @@ public final class ProcessProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
 
-    if (stateBehavior.isLastActiveExecutionPathInScope(childContext)) {
+    if (stateBehavior.canBeCompleted(childContext)) {
       stateTransitionBehavior.transitionToCompleting(flowScopeContext);
     }
   }
@@ -164,11 +165,12 @@ public final class ProcessProcessor
       final BpmnElementContext childContext) {
 
     if (flowScopeContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
-        && stateBehavior.isLastActiveExecutionPathInScope(childContext)) {
+        && stateBehavior.canBeTerminated(childContext)) {
       stateTransitionBehavior.transitionToTerminated(flowScopeContext);
 
     } else {
-      eventSubscriptionBehavior.publishTriggeredEventSubProcess(flowScopeContext);
+      eventSubscriptionBehavior.publishTriggeredEventSubProcess(
+          MigratedStreamProcessors.isMigrated(childContext.getBpmnElementType()), flowScopeContext);
     }
   }
 }

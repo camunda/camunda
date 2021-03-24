@@ -18,6 +18,7 @@ import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
@@ -130,7 +131,6 @@ public final class MultiInstanceBodyProcessor
 
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
 
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 
@@ -156,7 +156,6 @@ public final class MultiInstanceBodyProcessor
 
     stateTransitionBehavior.onElementTerminated(element, context);
 
-    stateBehavior.consumeToken(context);
     stateBehavior.removeElementInstance(context);
   }
 
@@ -199,7 +198,7 @@ public final class MultiInstanceBodyProcessor
       }
     }
 
-    if (stateBehavior.isLastActiveExecutionPathInScope(childContext)) {
+    if (stateBehavior.canBeCompleted(childContext)) {
       stateTransitionBehavior.transitionToCompleting(flowScopeContext);
     }
   }
@@ -211,11 +210,12 @@ public final class MultiInstanceBodyProcessor
       final BpmnElementContext childContext) {
 
     if (flowScopeContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
-        && stateBehavior.isLastActiveExecutionPathInScope(childContext)) {
+        && stateBehavior.canBeTerminated(childContext)) {
       stateTransitionBehavior.transitionToTerminated(flowScopeContext);
 
     } else {
-      eventSubscriptionBehavior.publishTriggeredEventSubProcess(flowScopeContext);
+      eventSubscriptionBehavior.publishTriggeredEventSubProcess(
+          MigratedStreamProcessors.isMigrated(childContext.getBpmnElementType()), flowScopeContext);
     }
   }
 

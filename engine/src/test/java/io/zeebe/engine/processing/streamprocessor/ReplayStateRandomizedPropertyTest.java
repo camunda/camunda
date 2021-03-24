@@ -13,7 +13,6 @@ import io.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.engine.util.ProcessExecutor;
-import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -23,14 +22,12 @@ import io.zeebe.test.util.bpmn.random.TestDataGenerator;
 import io.zeebe.test.util.bpmn.random.TestDataGenerator.TestDataRecord;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Collection;
-import java.util.stream.Collectors;
 import org.assertj.core.api.SoftAssertions;
 import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -39,7 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RunWith(Parameterized.class)
-public class ReplayStateRandomizedPropertyTest {
+public class ReplayStateRandomizedPropertyTest implements PropertyBasedTest {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ReplayStateRandomizedPropertyTest.class);
@@ -47,7 +44,7 @@ public class ReplayStateRandomizedPropertyTest {
   private static final int PROCESS_COUNT = 5;
   private static final int EXECUTION_PATH_COUNT = 5;
 
-  @Rule public TestWatcher failedTestDataPrinter = new FailedTestDataPrinter();
+  @Rule public TestWatcher failedTestDataPrinter = new FailedPropertyBasedTestDataPrinter(this);
   @Parameter public TestDataRecord record;
   private long lastProcessedPosition = -1L;
 
@@ -62,6 +59,11 @@ public class ReplayStateRandomizedPropertyTest {
   @Before
   public void init() {
     lastProcessedPosition = -1L;
+  }
+
+  @Override
+  public TestDataRecord getDataRecord() {
+    return record;
   }
 
   /**
@@ -171,23 +173,5 @@ public class ReplayStateRandomizedPropertyTest {
     //    final var executionPathSeed = 3627169465144620203L;
     //    return List.of(TestDataGenerator.regenerateTestRecord(processSeed, executionPathSeed));
     return TestDataGenerator.generateTestRecords(PROCESS_COUNT, EXECUTION_PATH_COUNT);
-  }
-
-  private final class FailedTestDataPrinter extends TestWatcher {
-
-    @Override
-    protected void failed(final Throwable e, final Description description) {
-      LOGGER.info("Data of failed test case: {}", record);
-      LOGGER.info(
-          "Process of failed test case:{}{}",
-          System.lineSeparator(),
-          Bpmn.convertToString(record.getBpmnModel()));
-      LOGGER.info(
-          "Execution path of failed test case:{}{}",
-          System.lineSeparator(),
-          record.getExecutionPath().getSteps().stream()
-              .map(AbstractExecutionStep::toString)
-              .collect(Collectors.joining(System.lineSeparator())));
-    }
   }
 }

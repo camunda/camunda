@@ -9,10 +9,9 @@ package io.zeebe.broker.system.partitions.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.storage.log.IndexedRaftRecord;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.zeebe.broker.system.partitions.SnapshotReplication;
+import io.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.util.RocksDBWrapper;
 import io.zeebe.snapshots.broker.ConstructableSnapshotStore;
@@ -72,10 +71,7 @@ public final class ReplicateStateControllerTest {
             senderFactory.getReceivableSnapshotStore(1),
             senderRoot.resolve("runtime"),
             replicator,
-            l ->
-                Optional.of(
-                    new IndexedRaftRecord(
-                        l, new RaftLogEntry(1, new ApplicationEntry(1, 10, null)), 0, -1)),
+            l -> Optional.of(new TestIndexedRaftLogEntry(l, 1, new ApplicationEntry(1, 10, null))),
             db -> Long.MAX_VALUE);
     senderStore.addSnapshotListener(replicatorSnapshotController);
 
@@ -87,10 +83,7 @@ public final class ReplicateStateControllerTest {
             receiverStore,
             receiverRoot.resolve("runtime"),
             replicator,
-            l ->
-                Optional.of(
-                    new IndexedRaftRecord(
-                        l, new RaftLogEntry(1, new ApplicationEntry(1, 10, null)), 0, -1)),
+            l -> Optional.of(new TestIndexedRaftLogEntry(l, 1, new ApplicationEntry(1, 10, null))),
             db -> Long.MAX_VALUE);
     receiverStore.addSnapshotListener(receiverSnapshotController);
 

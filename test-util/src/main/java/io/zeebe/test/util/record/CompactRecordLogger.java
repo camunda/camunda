@@ -29,9 +29,14 @@ import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,6 +63,12 @@ public class CompactRecordLogger {
           entry("ELEMENT", "ELMNT"));
 
   private final Map<ValueType, Function<Record<?>, String>> valueLoggers = new HashMap<>();
+  private final int keyDigits;
+  private final int valueTypeChars;
+  private final int intentChars;
+  private final boolean singlePartition;
+  private final Map<Long, String> substitutions = new HashMap<>();
+  private final ArrayList<Record<?>> records;
 
   {
     valueLoggers.put(ValueType.DEPLOYMENT, this::summarizeDeployment);
@@ -74,16 +85,9 @@ public class CompactRecordLogger {
     valueLoggers.put(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION, this::summarizeProcessInstanceSubscription);
     valueLoggers.put(ValueType.VARIABLE, this::summarizeVariable);
+    valueLoggers.put(ValueType.TIMER, this::summarizeTimer);
     // TODO please extend list
   }
-
-  private final int keyDigits;
-  private final int valueTypeChars;
-  private final int intentChars;
-  private final boolean singlePartition;
-
-  private final Map<Long, String> substitutions = new HashMap<>();
-  private final ArrayList<Record<?>> records;
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
     this.records = new ArrayList<>(records);
@@ -455,6 +459,28 @@ public class CompactRecordLogger {
         .append(record.getRejectionReason());
   }
 
+  private String summarizeTimer(final Record<?> record) {
+    final var value = (TimerRecordValue) record.getValue();
+    final var builder = new StringBuilder();
+    final var dueTime = Instant.ofEpochMilli(value.getDueDate()).atZone(ZoneId.systemDefault());
+
+    builder
+        .append(
+            summarizeElementInformation(value.getTargetElementId(), value.getElementInstanceKey()))
+        .append(" ")
+        .append(
+            summarizeProcessInformation(
+                shortenKey(value.getProcessDefinitionKey()), value.getProcessInstanceKey()))
+        .append(" due ")
+        .append(shortenDateTime(dueTime));
+
+    if (value.getRepetitions() > 1) {
+      builder.append(value.getRepetitions()).append(" reps");
+    }
+
+    return builder.toString();
+  }
+
   private String shortenKey(final long input) {
     return substitutions.computeIfAbsent(input, this::formatKey);
   }
@@ -500,5 +526,18 @@ public class CompactRecordLogger {
     }
 
     return result;
+  }
+
+  // omit the date part if it's the same as right now
+  private String shortenDateTime(final ZonedDateTime time) {
+    final ZonedDateTime now = ZonedDateTime.now();
+    final StringBuilder builder = new StringBuilder();
+
+    if (!now.toLocalDate().isEqual(time.toLocalDate())) {
+      builder.append(DateTimeFormatter.ISO_LOCAL_DATE.format(time));
+    }
+
+    builder.append("T").append(DateTimeFormatter.ISO_LOCAL_TIME.format(time));
+    return builder.toString();
   }
 }

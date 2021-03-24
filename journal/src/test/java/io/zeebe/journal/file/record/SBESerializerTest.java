@@ -93,32 +93,14 @@ public class SBESerializerTest {
   }
 
   @Test
-  public void shouldReturnFalseWhenInvalidMetadata() {
+  public void shouldThrowCorruptLogExceptionIfMetadataIsInvalid() {
     // given
     serializer.writeMetadata(metadata, writeBuffer, 0);
-    writeBuffer.putLong(0, 0);
-
-    // when - then
-    assertThat(serializer.hasMetadata(writeBuffer, 0)).isFalse();
-  }
-
-  @Test
-  public void shouldReturnTrueWhenValidMetadata() {
-    // given
-    serializer.writeMetadata(metadata, writeBuffer, 0);
-
-    // when - then
-    assertThat(serializer.hasMetadata(writeBuffer, 0)).isTrue();
-  }
-
-  @Test
-  public void shouldThrowExceptionWhenInvalidMetadata() {
-    // given
     writeBuffer.putLong(0, 0);
 
     // when - then
     assertThatThrownBy(() -> serializer.readMetadata(writeBuffer, 0))
-        .isInstanceOf(InvalidRecordException.class);
+        .isInstanceOf(CorruptedLogException.class);
   }
 
   @Test
@@ -128,7 +110,7 @@ public class SBESerializerTest {
 
     // when - then
     assertThatThrownBy(() -> serializer.readData(writeBuffer, 0, 1))
-        .isInstanceOf(InvalidRecordException.class);
+        .isInstanceOf(CorruptedLogException.class);
   }
 
   @Test

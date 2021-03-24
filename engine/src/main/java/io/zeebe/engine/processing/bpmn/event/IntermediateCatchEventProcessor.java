@@ -12,7 +12,6 @@ import io.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
-import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
@@ -22,14 +21,12 @@ public class IntermediateCatchEventProcessor
 
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
-  private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
 
   public IntermediateCatchEventProcessor(final BpmnBehaviors bpmnBehaviors) {
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
-    stateBehavior = bpmnBehaviors.stateBehavior();
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
   }
@@ -40,75 +37,53 @@ public class IntermediateCatchEventProcessor
   }
 
   @Override
-  public void onActivating(
+  public void onActivate(
       final ExecutableCatchEventElement element, final BpmnElementContext context) {
 
-    if (element.isConnectedToEventBasedGateway()) {
-      // the event is already triggered on the event-based gateway when the activating record is
-      // written for the intermediate catch event
-      stateTransitionBehavior.transitionToActivated(context);
-      return;
-    }
+    final var activating = stateTransitionBehavior.transitionToActivating(context);
 
     variableMappingBehavior
-        .applyInputMappings(context, element)
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
+        .applyInputMappings(activating, element)
+        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, activating))
         .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToActivated(context),
-            failure -> incidentBehavior.createIncident(failure, context));
+            ok -> stateTransitionBehavior.transitionToActivated(activating),
+            failure -> incidentBehavior.createIncident(failure, activating));
   }
 
   @Override
-  public void onActivated(
+  public void onComplete(
       final ExecutableCatchEventElement element, final BpmnElementContext context) {
 
-    if (element.isConnectedToEventBasedGateway()) {
-      stateTransitionBehavior.transitionToCompleting(context);
-    }
-  }
+    final var completing = stateTransitionBehavior.transitionToCompleting(context);
 
-  @Override
-  public void onCompleting(
-      final ExecutableCatchEventElement element, final BpmnElementContext context) {
     variableMappingBehavior
-        .applyOutputMappings(context, element)
+        .applyOutputMappings(completing, element)
         .ifRightOrLeft(
             ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              stateTransitionBehavior.transitionToCompleted(context);
+              eventSubscriptionBehavior.unsubscribeFromEvents(completing);
+              final var completed = stateTransitionBehavior.transitionToCompleted(completing);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             },
-            failure -> incidentBehavior.createIncident(failure, context));
+            failure -> incidentBehavior.createIncident(failure, completing));
   }
 
   @Override
-  public void onCompleted(
+  public void onTerminate(
       final ExecutableCatchEventElement element, final BpmnElementContext context) {
-    stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
-    stateBehavior.consumeToken(context);
-    stateBehavior.removeElementInstance(context);
-  }
 
-  @Override
-  public void onTerminating(
-      final ExecutableCatchEventElement element, final BpmnElementContext context) {
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
-    stateTransitionBehavior.transitionToTerminated(context);
-  }
+    final var terminating = stateTransitionBehavior.transitionToTerminating(context);
 
-  @Override
-  public void onTerminated(
-      final ExecutableCatchEventElement element, final BpmnElementContext context) {
-    incidentBehavior.resolveIncidents(context);
+    eventSubscriptionBehavior.unsubscribeFromEvents(terminating);
+    incidentBehavior.resolveIncidents(terminating);
 
-    stateTransitionBehavior.onElementTerminated(element, context);
-
-    stateBehavior.consumeToken(context);
-    stateBehavior.removeElementInstance(context);
+    final var terminated = stateTransitionBehavior.transitionToTerminated(terminating);
+    stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 
   @Override
   public void onEventOccurred(
       final ExecutableCatchEventElement element, final BpmnElementContext context) {
-    eventSubscriptionBehavior.triggerIntermediateEvent(context);
+    throw new UnsupportedOperationException(
+        "supported commands: activate, complete, and terminate.");
   }
 }
