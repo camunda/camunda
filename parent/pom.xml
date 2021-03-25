@@ -47,7 +47,7 @@
     <version.docker-java-api>3.2.7</version.docker-java-api>
     <version.elasticsearch>6.8.14</version.elasticsearch>
     <version.error-prone>2.5.1</version.error-prone>
-    <version.grpc>1.36.0</version.grpc>
+    <version.grpc>1.36.1</version.grpc>
     <version.gson>2.8.6</version.gson>
     <version.guava>30.1.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -91,7 +91,7 @@
     <version.spring-boot>2.4.4</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
-    <version.kryo>5.0.3</version.kryo>
+    <version.kryo>5.0.4</version.kryo>
     <version.awaitility>4.0.3</version.awaitility>
     <version.failsafe>2.4.0</version.failsafe>
     <version.jqwik>1.5.0</version.jqwik>
