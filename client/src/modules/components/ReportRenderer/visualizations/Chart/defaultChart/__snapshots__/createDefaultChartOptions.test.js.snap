@@ -9,6 +9,9 @@ Object {
   },
   "legend": Object {
     "display": false,
+    "labels": Object {
+      "boxWidth": 12,
+    },
     "onClick": [Function],
   },
   "lineAt": undefined,
@@ -64,6 +67,9 @@ Object {
   },
   "legend": Object {
     "display": true,
+    "labels": Object {
+      "boxWidth": 12,
+    },
     "onClick": [Function],
   },
   "lineAt": undefined,

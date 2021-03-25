@@ -31,9 +31,20 @@ export default function processDefaultData({report}) {
 
   const selectedView = config.findSelectedOption(config.options.view, 'data', view);
   const viewString = t('report.view.' + selectedView.key.split('_')[0]);
+  const groupString = config.getLabelFor('groupBy', config.options.groupBy, groupBy);
 
-  const head = [config.getLabelFor('groupBy', config.options.groupBy, groupBy)];
+  const head = [];
   const body = [];
+
+  if (reportType === 'process' && (groupBy.type === 'duration' || groupBy.type.includes('Date'))) {
+    head.push(viewString + ' ' + groupString);
+  } else if (view.entity === 'processInstance' && groupBy.type === 'variable') {
+    head.push(`${viewString} ${t('report.table.rawData.variable')}: ${groupBy.value.name}`);
+  } else if (view.entity === 'incident' && groupBy.type === 'flowNodes') {
+    head.push(t('common.incident.byFlowNode'));
+  } else {
+    head.push(groupString);
+  }
 
   result.measures.forEach((measure) => {
     const result = processResult({...report, result: measure});
@@ -46,7 +57,7 @@ export default function processDefaultData({report}) {
 
     if (measure.property === 'frequency') {
       if (!hideAbsoluteValue) {
-        const title = viewString + ': ' + t('report.view.count');
+        const title = t('report.view.count');
         head.push({label: title, id: title, sortable: !isMultiMeasure});
         formattedResult.forEach(({value}, idx) => {
           body[idx].push(frequency(value));
@@ -60,13 +71,13 @@ export default function processDefaultData({report}) {
         });
       }
     } else if (measure.property === 'duration') {
-      const title = `${viewString}: ${
-        view.entity === 'incident' ? t('report.view.resolutionDuration') : t('report.view.duration')
-      } - ${t('report.config.aggregation.' + measure.aggregationType)}${
+      const title = `${
         measure.userTaskDurationTime
-          ? ` (${t('report.config.userTaskDuration.' + measure.userTaskDurationTime)})`
+          ? `${t('report.config.userTaskDuration.' + measure.userTaskDurationTime)} `
           : ''
-      }`;
+      }${
+        view.entity === 'incident' ? t('report.view.resolutionDuration') : t('report.view.duration')
+      } - ${t('report.config.aggregationShort.' + measure.aggregationType)}`;
 
       head.push({label: title, id: title, sortable: !isMultiMeasure});
       formattedResult.forEach(({value}, idx) => {

@@ -771,7 +771,8 @@
     },
     "incident": {
       "label": "Zwischenfall",
-      "label-plural": "Zwischenfälle"
+      "label-plural": "Zwischenfälle",
+      "byFlowNode": "Zwischenfälle nach Prozessknoten"
     },
     "flowNode": {
       "label": "Prozessknoten",

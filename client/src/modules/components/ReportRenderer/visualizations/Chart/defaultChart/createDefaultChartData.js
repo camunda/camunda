@@ -5,7 +5,7 @@
  */
 
 import {createDatasetOptions} from './createDefaultChartOptions';
-import {reportConfig, formatters, processResult} from 'services';
+import {formatters, processResult} from 'services';
 import {t} from 'translation';
 
 const {formatReportResult} = formatters;
@@ -14,13 +14,9 @@ export default function createDefaultChartData(props) {
   const datasets = [];
   let labels = [];
 
-  const {data, result, reportType} = props.report;
+  const {result} = props.report;
 
   const measures = result.measures;
-  const config = reportConfig[reportType];
-
-  const selectedView = config.findSelectedOption(config.options.view, 'data', data.view);
-  const viewString = t('report.view.' + selectedView.key.split('_')[0]);
 
   function getAxisIdx({property}) {
     if (measures.every(({property}) => property === measures[0].property)) {
@@ -32,23 +28,11 @@ export default function createDefaultChartData(props) {
 
   function getLabel({property, aggregationType, userTaskDurationTime}) {
     return (
-      viewString +
-      ' ' +
-      t('report.view.' + (property === 'frequency' ? 'count' : 'duration')) +
-      (aggregationType ? ` - ${t('report.config.aggregation.' + aggregationType)}` : '') +
       (userTaskDurationTime
-        ? ` (${t('report.config.userTaskDuration.' + userTaskDurationTime)})`
-        : '')
-    );
-  }
-
-  function getShortLabel({property, aggregationType, userTaskDurationTime}) {
-    return (
+        ? `${t('report.config.userTaskDuration.' + userTaskDurationTime)} `
+        : '') +
       t('report.view.' + (property === 'frequency' ? 'count' : 'duration')) +
-      (aggregationType ? ` - ${t('report.config.aggregationShort.' + aggregationType)}` : '') +
-      (userTaskDurationTime
-        ? ` (${t('report.config.userTaskDuration.' + userTaskDurationTime)})`
-        : '')
+      (aggregationType ? ` - ${t('report.config.aggregationShort.' + aggregationType)}` : '')
     );
   }
 
@@ -65,7 +49,6 @@ export default function createDefaultChartData(props) {
     datasets.push({
       yAxisID: 'axis-' + getAxisIdx(measure),
       label: getLabel(measure),
-      shortLabel: getShortLabel(measure),
       data: formattedResult.map(({value}) => value),
       formatter: formatters[measure.property],
       ...createDatasetOptions({

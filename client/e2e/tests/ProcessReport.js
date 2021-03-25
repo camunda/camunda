@@ -347,7 +347,7 @@ test('select process instance count grouped by variable', async (t) => {
   await t.click(e.visualizationDropdown);
 
   await u.selectVisualization(t, 'Table');
-  await t.expect(e.reportTable.textContent).contains('Variable: amount');
+  await t.expect(e.reportTable.textContent).contains('Process Instance Var: amount');
 });
 
 test('variable report', async (t) => {
@@ -863,5 +863,5 @@ test('incident reports', async (t) => {
 
   await u.selectVisualization(t, 'Table');
 
-  await t.expect(e.reportRenderer.textContent).contains('Incident: Resolution Duration');
+  await t.expect(e.reportRenderer.textContent).contains('Resolution Duration');
 });

@@ -45,5 +45,14 @@
   h4 {
     font-size: 12px;
     color: var(--grey-lighten-50);
+    padding-top: 10px;
+  }
+
+  .Switch:first-child {
+    margin-top: 14px;
+  }
+
+  .Form fieldset {
+    padding-bottom: 14px;
   }
 }

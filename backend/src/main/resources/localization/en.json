@@ -771,7 +771,8 @@
     },
     "incident": {
       "label": "Incident",
-      "label-plural": "Incidents"
+      "label-plural": "Incidents",
+      "byFlowNode": "Incidents by Flow Node"
     },
     "flowNode": {
       "label": "Flow Node",

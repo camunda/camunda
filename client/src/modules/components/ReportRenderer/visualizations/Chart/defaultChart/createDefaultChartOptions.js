@@ -63,9 +63,9 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
 
   const tooltipCallbacks = {
     label: (tooltipItem, data) => {
-      const {shortLabel, formatter} = data.datasets[tooltipItem.datasetIndex];
+      const {label, formatter} = data.datasets[tooltipItem.datasetIndex];
       return (
-        shortLabel +
+        label +
         ': ' +
         formatTooltip(tooltipItem, data, configuration, formatter, result.instanceCount, isDuration)
       );
@@ -198,6 +198,9 @@ export function createBarOptions({
     legend: {
       display: measures.length > 1,
       onClick: (e) => e.stopPropagation(),
+      labels: {
+        boxWidth: 12,
+      },
     },
     layout: {
       padding: {top: isPersistedTooltips ? 30 : 0},

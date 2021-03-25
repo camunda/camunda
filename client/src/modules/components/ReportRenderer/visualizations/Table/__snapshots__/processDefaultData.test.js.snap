@@ -20,15 +20,15 @@ Object {
     ],
   ],
   "head": Array [
-    "Start Date: Automatic",
+    "Process Instance Start Date: Automatic",
     Object {
-      "id": "Process Instance: Count",
-      "label": "Process Instance: Count",
+      "id": "Count",
+      "label": "Count",
       "sortable": false,
     },
     Object {
-      "id": "Process Instance: Duration - Average",
-      "label": "Process Instance: Duration - Average",
+      "id": "Duration - Avg",
+      "label": "Duration - Avg",
       "sortable": false,
     },
   ],
