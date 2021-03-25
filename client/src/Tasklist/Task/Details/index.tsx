@@ -5,7 +5,7 @@
  */
 
 import {useQuery, useMutation} from '@apollo/client';
-import {useParams} from 'react-router-dom';
+import {useParams, useLocation} from 'react-router-dom';
 import * as React from 'react';
 
 import {GetTask, useTask} from 'modules/queries/get-task';
@@ -30,7 +30,6 @@ import {FilterValues} from 'modules/constants/filterValues';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
 import {getUserDisplayName} from 'modules/utils/getUserDisplayName';
-import {useLocation} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
 import {shouldFetchMore} from './shouldFetchMore';
 import {shouldDisplayNotification} from './shouldDisplayNotification';

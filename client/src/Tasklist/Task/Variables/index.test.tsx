@@ -7,7 +7,7 @@
 import * as React from 'react';
 import {MockedResponse} from '@apollo/client/testing';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {Route, MemoryRouter} from 'react-router-dom';
+import {Route, MemoryRouter, Link} from 'react-router-dom';
 import {Form} from 'react-final-form';
 import arrayMutators from 'final-form-arrays';
 
@@ -19,7 +19,6 @@ import {
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './';
-import {Link} from 'react-router-dom';
 
 const getWrapper = ({mocks}: {mocks: Array<MockedResponse>}) => {
   const Wrapper: React.FC = ({children}) => (

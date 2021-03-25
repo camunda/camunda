@@ -5,13 +5,11 @@
  */
 
 import React from 'react';
-import {useParams, useLocation} from 'react-router-dom';
+import {useParams, useLocation, useHistory} from 'react-router-dom';
 import {useQuery, useMutation} from '@apollo/client';
 import {Form} from 'react-final-form';
 import {get, intersection} from 'lodash';
 import arrayMutators from 'final-form-arrays';
-
-import {useHistory} from 'react-router-dom';
 
 import {TaskStates} from 'modules/constants/taskStates';
 import {GetTask, useTask} from 'modules/queries/get-task';

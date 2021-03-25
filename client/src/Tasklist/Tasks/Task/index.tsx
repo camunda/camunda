@@ -14,9 +14,8 @@ import {
   Assignee,
   CreationTime,
 } from './styled';
-import {useParams} from 'react-router-dom';
+import {useParams, Link} from 'react-router-dom';
 import {Location} from 'history';
-import {Link} from 'react-router-dom';
 import {Pages} from 'modules/constants/pages';
 import {formatDate} from 'modules/utils/formatDate';
 import {getUserDisplayName} from 'modules/utils/getUserDisplayName';

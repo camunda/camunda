@@ -4,8 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useQuery, useLazyQuery} from '@apollo/client';
-import {NetworkStatus} from '@apollo/client';
+import {useQuery, useLazyQuery, NetworkStatus} from '@apollo/client';
 import {useLocation} from 'react-router-dom';
 
 import {
