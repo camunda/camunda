@@ -23,7 +23,7 @@ describe('<Disclaimer />', () => {
     // we need this custom selector because the text contains a link
     expect(
       screen.getByText((content, element) => {
-        return content !== '' && element.textContent === DISCLAIMER_TEXT;
+        return content !== '' && element?.textContent === DISCLAIMER_TEXT;
       })
     ).toBeInTheDocument();
     expect(
@@ -40,7 +40,7 @@ describe('<Disclaimer />', () => {
 
     expect(
       screen.getByText((content, element) => {
-        return content !== '' && element.textContent === DISCLAIMER_TEXT;
+        return content !== '' && element?.textContent === DISCLAIMER_TEXT;
       })
     ).toBeInTheDocument();
     expect(
@@ -59,7 +59,7 @@ describe('<Disclaimer />', () => {
 
     expect(
       screen.queryByText((content, element) => {
-        return content !== '' && element.textContent === DISCLAIMER_TEXT;
+        return content !== '' && element?.textContent === DISCLAIMER_TEXT;
       })
     ).not.toBeInTheDocument();
     expect(
