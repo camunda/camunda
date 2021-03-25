@@ -42,11 +42,11 @@ public class EmbeddedCamundaOptimizeIT extends AbstractIT {
       }
     });
 
-    final Set<Thread> threadsAfterStart = threadsAfterStartup.get(30, TimeUnit.SECONDS);
+    final Set<Thread> threadsAfterStart = threadsAfterStartup.get(60, TimeUnit.SECONDS);
     embeddedCamundaOptimize.destroyOptimize();
 
     optimizeApplicationThread.shutdown();
-    optimizeApplicationThread.awaitTermination(30, TimeUnit.SECONDS);
+    optimizeApplicationThread.awaitTermination(60, TimeUnit.SECONDS);
 
     assertThat(threadsAfterStart).isNotEqualTo(baseThreadSet);
     assertThat(getCurrentThreads()).isEqualTo(baseThreadSet);
