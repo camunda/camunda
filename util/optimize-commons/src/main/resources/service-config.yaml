@@ -307,7 +307,7 @@ es:
       # the schema/mapping is deployed on Elasticsearch. If you want to take
       # this property to take effect again, you need to delete all indexes (with it all data)
       # and restart Optimize.
-      number_of_shards: 5
+      number_of_shards: 1
       # How long Elasticsearch waits until the documents are available
       # for search. A positive value defines the duration in seconds.
       # A value of -1 means that a refresh needs to be done manually.
