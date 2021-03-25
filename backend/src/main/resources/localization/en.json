@@ -353,14 +353,10 @@
       "noValueAvailable": "No actual value available.<br/>Cannot compare target and actual value."
     },
     "invalidCombinationError": "Cannot display data for the given report settings. Please choose another combination!",
-    "noDataNotice": "No data to display",
+    "noDataNotice": "No data",
     "editSetupMessage": "To display this report, edit your report set-up.",
-    "incompleteNotice": {
-      "message": "To display this Report,",
-      "action": "complete set-up…"
-    },
+    "incompleteNotice": "Report configuration is incomplete",
     "setupNotice": "Set-up your Report",
-    "editReportMessage": "<p>Select the <b>Edit</b> button above.</p>",
     "totalCount": {
       "instance": "Total Instance</br> Count: <b>{count}</b>",
       "evaluation": "Total Evaluation</br> Count: <b>{count}</b>"
@@ -738,7 +734,6 @@
     "below": "below",
     "viewDetails": "View Details",
     "notFound": "No results found",
-    "noData": "No data available",
     "searchForMore": "Displaying {count} results only. Search to refine.",
     "goToHome": "Go to Home",
     "editAccess": "Edit Access",

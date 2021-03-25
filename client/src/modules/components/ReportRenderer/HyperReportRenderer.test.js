@@ -76,6 +76,38 @@ it('should convert a hypermap to a combined report', () => {
   expect(node).toMatchSnapshot();
 });
 
+it('should render single process report if report result is empty', () => {
+  const node = shallow(
+    <HyperReportRenderer
+      report={{
+        result: {
+          measures: [{data: []}],
+          instanceCount: 0,
+          type: 'hyperMap',
+        },
+      }}
+    />
+  );
+
+  expect(node).toMatchSnapshot();
+});
+
+it('should render single process report if there are no legend values', () => {
+  const node = shallow(
+    <HyperReportRenderer
+      report={{
+        result: {
+          measures: [{data: [{key: 'a', label: 'A', value: []}]}],
+          instanceCount: 0,
+          type: 'hyperMap',
+        },
+      }}
+    />
+  );
+
+  expect(node).toMatchSnapshot();
+});
+
 it('should format single reports names for hyper reports distributed by date variable', () => {
   const node = shallow(
     <HyperReportRenderer

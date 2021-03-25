@@ -166,7 +166,7 @@ it('should show no data message when all column are excluded', () => {
   expect(processRawData({report: {data, result}})).toEqual({
     body: [],
     head: [],
-    noData: <NoDataNotice>You need to enable at least one table column</NoDataNotice>,
+    noData: <NoDataNotice type="info">You need to enable at least one table column</NoDataNotice>,
   });
 });
 

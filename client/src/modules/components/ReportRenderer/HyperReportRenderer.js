@@ -5,32 +5,27 @@
  */
 
 import React from 'react';
+import update from 'immutability-helper';
 
 import {ColorPicker} from 'components';
 import {formatters, getReportResult} from 'services';
 
 import CombinedReportRenderer from './CombinedReportRenderer';
+import ProcessReportRenderer from './ProcessReportRenderer';
 
 const {formatReportResult} = formatters;
 
 export default function HyperReportRenderer({report, ...rest}) {
-  const convertedReport = {
-    ...report,
-  };
-
   const result = getReportResult(report);
 
+  if (!result.data.length || result.data.some(({value}) => value.length === 0)) {
+    const data = result.data.map((entry) => ({...entry, value: 0}));
+    const emptyReport = update(report, {result: {measures: {$set: [{data}]}}});
+    return <ProcessReportRenderer {...rest} report={emptyReport} />;
+  }
+
   const firstEntryResult = result.data[0].value.filter(isVisible(report));
-
   const colors = ColorPicker.getGeneratedColors(firstEntryResult.length);
-
-  convertedReport.combined = true;
-  convertedReport.data = {
-    configuration: report.data.configuration,
-    reports: firstEntryResult.map(({key}, i) => ({id: key, color: colors[i]})),
-    visualization: getVisualization(report.data.visualization),
-  };
-
   const newResultData = {};
 
   formatResult(report.data, firstEntryResult).forEach(({key, label}) => {
@@ -55,10 +50,19 @@ export default function HyperReportRenderer({report, ...rest}) {
     };
   });
 
-  convertedReport.result = {
-    ...result,
-    type: 'hyperMap',
-    data: newResultData,
+  const convertedReport = {
+    ...report,
+    combined: true,
+    data: {
+      configuration: report.data.configuration,
+      reports: firstEntryResult.map(({key}, i) => ({id: key, color: colors[i]})),
+      visualization: getVisualization(report.data.visualization),
+    },
+    result: {
+      ...result,
+      type: 'hyperMap',
+      data: newResultData,
+    },
   };
 
   return <CombinedReportRenderer {...rest} report={convertedReport} />;

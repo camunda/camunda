@@ -9,7 +9,6 @@ import React from 'react';
 import {
   ReportRenderer,
   LoadingIndicator,
-  NoDataNotice,
   EntityName,
   ReportDetails,
   InstanceCount,
@@ -20,7 +19,6 @@ import deepEqual from 'fast-deep-equal';
 import {themed} from 'theme';
 
 import './OptimizeReport.scss';
-import {t} from 'translation';
 
 export class OptimizeReport extends React.Component {
   constructor(props) {
@@ -68,7 +66,7 @@ export class OptimizeReport extends React.Component {
           this.setState(
             {
               data: errorData.reportDefinition,
-              error: formatError(e, errorData),
+              error: {status: e.status, data: errorData},
             },
             resolve
           );
@@ -108,11 +106,12 @@ export class OptimizeReport extends React.Component {
           </div>
         )}
         <div className="visualization">
-          {error ? (
-            <NoDataNotice title={error.title}>{error.text}</NoDataNotice>
-          ) : (
-            <ReportRenderer report={data} context="dashboard" loadReport={this.loadReport} />
-          )}
+          <ReportRenderer
+            error={error}
+            report={data}
+            context="dashboard"
+            loadReport={this.loadReport}
+          />
         </div>
         {children({loadReportData: this.refreshReport})}
       </div>
@@ -121,16 +120,3 @@ export class OptimizeReport extends React.Component {
 }
 
 export default themed(withErrorHandling(OptimizeReport));
-
-function formatError(e, {errorCode, errorMessage}) {
-  if (e.status === 403) {
-    return {
-      title: t('dashboard.noAuthorization'),
-      text: t('dashboard.noReportAccess'),
-    };
-  }
-
-  return {
-    text: errorCode ? t('apiErrors.' + errorCode) : errorMessage,
-  };
-}

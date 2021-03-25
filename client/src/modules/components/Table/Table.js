@@ -9,7 +9,7 @@ import classnames from 'classnames';
 import {useTable, useSortBy, usePagination, useResizeColumns, useFlexLayout} from 'react-table';
 
 import {t} from 'translation';
-import {Select, Icon, Button, LoadingIndicator, Tooltip} from 'components';
+import {Select, Icon, Button, LoadingIndicator, Tooltip, NoDataNotice} from 'components';
 
 import {flatten} from './service';
 
@@ -25,7 +25,7 @@ export default function Table({
   sorting,
   disablePagination,
   noHighlight,
-  noData = t('common.noData'),
+  noData = <NoDataNotice type="info" />,
   onScroll,
   fetchData = () => {},
   defaultPageSize = 20,

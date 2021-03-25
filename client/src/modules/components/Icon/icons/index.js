@@ -58,6 +58,8 @@ import {ReactComponent as sortMenu} from './sort-menu.svg';
 import {ReactComponent as info} from './info.svg';
 import {ReactComponent as show} from './show.svg';
 import {ReactComponent as hide} from './hide.svg';
+import {ReactComponent as warningOutline} from './warning-outline.svg';
+import {ReactComponent as infoOutline} from './info-outline.svg';
 
 const icons = {
   autorefresh,
@@ -114,6 +116,8 @@ const icons = {
   info,
   hide,
   show,
+  'warning-outline': warningOutline,
+  'info-outline': infoOutline,
 };
 
 export default icons;

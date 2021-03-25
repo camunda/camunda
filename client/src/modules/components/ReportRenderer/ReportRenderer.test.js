@@ -10,7 +10,6 @@ import {shallow} from 'enzyme';
 import ReportRenderer from './ReportRenderer';
 import CombinedReportRenderer from './CombinedReportRenderer';
 import NoDataNotice from './NoDataNotice';
-import IncompleteReport from './IncompleteReport';
 
 const reportTemplate = {
   combined: false,
@@ -77,13 +76,6 @@ it('should render CombinedReportRenderer if the report is combined and all repor
   expect(node.find(CombinedReportRenderer)).toExist();
 });
 
-it('should display an error message the report is defined', () => {
-  const report = null;
-  const node = shallow(<ReportRenderer report={report} />);
-
-  expect(node.find('MessageBox')).toExist();
-});
-
 it('should include the instance count if indicated in the config', () => {
   const report = {
     ...reportTemplate,
@@ -100,21 +92,7 @@ it('should include the instance count if indicated in the config', () => {
   expect(node.find('.additionalInfo').html()).toContain('723');
 });
 
-it('should show an incomplete report notice when inside a dashboard', () => {
-  const node = shallow(<ReportRenderer report={{data: {}}} context="dashboard" />);
-
-  expect(node.find(IncompleteReport)).toExist();
-});
-
 describe('SetupNotice', () => {
-  it('should instruct to click the edit button in report view', () => {
-    const newReport = {data: {}};
-
-    const node = shallow(<ReportRenderer report={newReport} />);
-
-    expect(node).toMatchSnapshot();
-  });
-
   it('should instruct to add a process definition key if not available', () => {
     const newReport = {
       ...reportTemplate,
@@ -216,141 +194,44 @@ describe('SetupNotice', () => {
 });
 
 describe('NoDataNotice', () => {
-  it('should show a no data notice if the result does not contain process instances', () => {
-    const report = {
-      ...reportTemplate,
-      result: {
-        ...reportTemplate.result,
-        instanceCount: 0,
-      },
-    };
-
+  it('should display an error message if the report is not defined', () => {
+    const report = null;
     const node = shallow(<ReportRenderer report={report} />);
 
-    expect(node.find(NoDataNotice)).toExist();
+    expect(node.find({type: 'error'})).toExist();
   });
 
-  it('should not show a no data notice for single number frequency reports', () => {
+  it('should display warning notice if report is incomplete in view mode', () => {
+    const node = shallow(<ReportRenderer report={{data: {}}} context="dashboard" />);
+
+    expect(node.find({type: 'warning'})).toExist();
+  });
+
+  it('should display an info notice to edit setup when evaluation fails on preconfigured report', () => {
     const report = {
       ...reportTemplate,
-      data: {
-        ...reportTemplate.data,
-        view: {
-          properties: ['frequency'],
-          entity: 'processInstance',
-        },
-        groupBy: {
-          type: 'none',
-        },
-        visualization: 'number',
-      },
-      result: {
-        ...reportTemplate.result,
-        instanceCount: 0,
-      },
+      result: undefined,
     };
 
     const node = shallow(<ReportRenderer report={report} />);
+
+    expect(node.find({type: 'info'})).toExist();
+  });
+
+  it('should display a notice based on error type if evaluation fails while loading the report', () => {
+    const node = shallow(
+      <ReportRenderer
+        report={undefined}
+        error={{status: 400, data: {errorMessage: 'test error'}}}
+      />
+    );
+
+    expect(node).toMatchSnapshot();
+  });
+
+  it('should not show a no data notice for fully configured reports', () => {
+    const node = shallow(<ReportRenderer report={reportTemplate} />);
 
     expect(node.find(NoDataNotice)).not.toExist();
-  });
-
-  it('should show a no data notice if a combined report contains no data', () => {
-    const report = {
-      ...reportTemplate,
-      data: {
-        ...reportTemplate.data,
-        reports: [1, 2],
-      },
-      result: {
-        data: {
-          1: {
-            ...reportTemplate,
-            result: {
-              ...reportTemplate.result,
-              instanceCount: 0,
-            },
-          },
-          2: {
-            ...reportTemplate,
-            result: {
-              ...reportTemplate.result,
-              instanceCount: 0,
-            },
-          },
-        },
-      },
-      combined: true,
-    };
-
-    const node = shallow(<ReportRenderer report={report} />);
-
-    expect(node.find(NoDataNotice)).toExist();
-  });
-
-  it('should not show a no data notice if a combined report contains at least one report with data', () => {
-    const report = {
-      ...reportTemplate,
-      data: {
-        ...reportTemplate.data,
-        reports: [1, 2],
-      },
-      result: {
-        data: {
-          1: {
-            ...reportTemplate,
-            result: {
-              ...reportTemplate.result,
-              instanceCount: 0,
-            },
-          },
-          2: {
-            ...reportTemplate,
-            result: {
-              ...reportTemplate.result,
-              instanceCount: 1,
-            },
-          },
-        },
-      },
-      combined: true,
-    };
-
-    const node = shallow(<ReportRenderer report={report} />);
-
-    expect(node.find(NoDataNotice)).not.toExist();
-  });
-
-  it('should show a no data notice if the reports contains process instances, but no meaningful datapoints', () => {
-    const report = {
-      ...reportTemplate,
-      result: {
-        ...reportTemplate.result,
-        type: 'map',
-        data: [],
-      },
-    };
-
-    const node = shallow(<ReportRenderer report={report} />);
-
-    expect(node.find(NoDataNotice)).toExist();
-  });
-
-  it('should show a no data notice for empty hyper report', () => {
-    const report = {
-      ...reportTemplate,
-      result: {
-        ...reportTemplate.result,
-        type: 'hyperMap',
-        data: [
-          {key: 'true', value: []},
-          {key: 'false', value: []},
-        ],
-      },
-    };
-
-    const node = shallow(<ReportRenderer report={report} />);
-
-    expect(node.find(NoDataNotice)).toExist();
   });
 });

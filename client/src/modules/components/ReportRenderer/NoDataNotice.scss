@@ -1,20 +1,39 @@
 .NoDataNotice {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   height: 100%;
-  padding-top: 38px;
   border-radius: 8px;
-  color: var(--grey-lighten-56);
-  text-align: center;
-  overflow: auto;
+  margin: 0 auto;
+
+  &.warning .Icon {
+    color: var(--orange-base-60);
+  }
+
+  &.error .Icon {
+    color: var(--red-darken-38);
+  }
+
+  &.info .Icon {
+    color: var(--grey-lighten-56);
+  }
 
   h1 {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: bold;
-    margin-bottom: 12px;
+    margin-bottom: 3px;
+    position: relative;
+    color: var(--grey-darken-36);
+
+    .Icon {
+      position: absolute;
+      left: -25px;
+      margin-right: 10px;
+    }
   }
 
   p {
-    font-size: 14px;
+    font-size: 12px;
     margin: 0;
   }
 }

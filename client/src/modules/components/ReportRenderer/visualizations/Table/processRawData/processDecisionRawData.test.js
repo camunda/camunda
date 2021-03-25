@@ -118,7 +118,7 @@ it('should show no data message when all column are excluded for decision tables
   ).toEqual({
     body: [],
     head: [],
-    noData: <NoDataNotice>You need to enable at least one table column</NoDataNotice>,
+    noData: <NoDataNotice type="info">You need to enable at least one table column</NoDataNotice>,
   });
 });
 

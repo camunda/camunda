@@ -12,7 +12,7 @@ import {NoDataNotice} from 'components';
 export const getNoDataMessage = () => ({
   head: [],
   body: [],
-  noData: <NoDataNotice>{t('report.table.noData')}</NoDataNotice>,
+  noData: <NoDataNotice type="info">{t('report.table.noData')}</NoDataNotice>,
 });
 
 export function cockpitLink(endpoints, instance, type) {

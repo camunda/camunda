@@ -355,12 +355,8 @@
     "invalidCombinationError": "Es können keine Daten für die angegebenen Einstellungen angezeigt werden. Bitte wählen Sie eine andere Kombination!",
     "noDataNotice": "Keine Daten zur Ansicht vorhanden",
     "editSetupMessage": "Um diesen Bericht anzuzeigen, bearbeiten Sie Ihre Einstellungen.",
-    "incompleteNotice": {
-      "message": "Um diesen Bericht anzuzeigen,",
-      "action": "Konfiguration vervollständigen ... "
-    },
+    "incompleteNotice": "Die Berichtskonfiguration ist unvollständig",
     "setupNotice": "Konfigurieren Sie Ihren Bericht",
-    "editReportMessage": "<p>Wählen Sie oben die Schaltfläche <b> Bearbeiten</b>.</p>",
     "totalCount": {
       "instance": "Gesamtanzahl der Instanzen: <b>{count}</b>",
       "evaluation": "Gesamtanzahl</br> Evaluierungen: <b>{count}</b>"
@@ -738,7 +734,6 @@
     "below": "unter",
     "viewDetails": "Details anzeigen",
     "notFound": "keine Ergebnisse gefunden",
-    "noData": "Keine Daten verfügbar",
     "searchForMore": "Es werden nur {count} Einträge angezeigt. Suche verfeinern.",
     "goToHome": "zur Homepage",
     "editAccess": "Zugriff bearbeiten",
