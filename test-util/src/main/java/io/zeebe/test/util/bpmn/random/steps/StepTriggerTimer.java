@@ -7,24 +7,18 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
-import java.util.Collections;
-import java.util.Map;
+import java.time.Duration;
 
-public final class StepActivateAndCompleteJob extends AbstractExecutionStep {
+public final class StepTriggerTimer extends AbstractExecutionStep {
 
-  private final String jobType;
+  private final Duration timeToAdd;
 
-  public StepActivateAndCompleteJob(final String jobType) {
-    this(jobType, Collections.emptyMap());
+  public StepTriggerTimer(final Duration timeToAdd) {
+    this.timeToAdd = timeToAdd;
   }
 
-  public StepActivateAndCompleteJob(final String jobType, final Map<String, Object> variables) {
-    this.jobType = jobType;
-    this.variables.putAll(variables);
-  }
-
-  public String getJobType() {
-    return jobType;
+  public Duration getTimeToAdd() {
+    return timeToAdd;
   }
 
   @Override
@@ -36,9 +30,9 @@ public final class StepActivateAndCompleteJob extends AbstractExecutionStep {
       return false;
     }
 
-    final StepActivateAndCompleteJob that = (StepActivateAndCompleteJob) o;
+    final StepTriggerTimer that = (StepTriggerTimer) o;
 
-    if (jobType != null ? !jobType.equals(that.jobType) : that.jobType != null) {
+    if (timeToAdd != null ? !timeToAdd.equals(that.timeToAdd) : that.timeToAdd != null) {
       return false;
     }
     return variables.equals(that.variables);
@@ -46,7 +40,7 @@ public final class StepActivateAndCompleteJob extends AbstractExecutionStep {
 
   @Override
   public int hashCode() {
-    int result = jobType != null ? jobType.hashCode() : 0;
+    int result = timeToAdd != null ? timeToAdd.hashCode() : 0;
     result = 31 * result + variables.hashCode();
     return result;
   }

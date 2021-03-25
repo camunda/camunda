@@ -7,8 +7,8 @@
  */
 package io.zeebe.test.util.bpmn.random;
 
+import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
-import io.zeebe.model.bpmn.builder.StartEventBuilder;
 import java.util.Map;
 
 /**
@@ -33,7 +33,8 @@ public interface StartEventBlockBuilder {
    * <p><strong>Contract: </strong> this method must be deterministic. It must not have any random
    * behavior.
    */
-  StartEventBuilder buildStartEvent(final ProcessBuilder processBuilder);
+  @SuppressWarnings("java:S1452")
+  AbstractFlowNodeBuilder<?, ?> buildStartEvent(final ProcessBuilder processBuilder);
 
   /** Creates a random execution path segment. */
   ExecutionPathSegment findRandomExecutionPath(String processId, Map<String, Object> variables);
