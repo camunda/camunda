@@ -4,11 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {createInstance} from 'modules/testUtils';
+import {createInstance, xTimes, createOperation} from 'modules/testUtils';
 import {STATE} from 'modules/constants';
 
 import * as instanceUtils from './index';
-import {xTimes, createOperation} from 'modules/testUtils';
 import {isWithIncident, isRunning} from 'modules/utils/instance';
 
 const mockIncidentInstance = {

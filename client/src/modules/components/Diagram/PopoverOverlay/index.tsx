@@ -16,6 +16,7 @@ import {
   PeterCaseSummaryHeader,
   PeterCaseSummaryBody,
   SummaryHeader,
+  SummaryData,
 } from './styled';
 import {
   flowNodeMetaDataStore,
@@ -24,7 +25,6 @@ import {
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {observer} from 'mobx-react';
-import {SummaryData} from './styled';
 import {OverlayType} from 'modules/types/modeler';
 import {beautifyMetadata} from './beautifyMetadata';
 import {getModalHeadline} from './getModalHeadline';

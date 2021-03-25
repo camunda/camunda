@@ -13,7 +13,8 @@
     "testing-library/prefer-presence-queries": "error",
     "testing-library/prefer-screen-queries": "error",
     "testing-library/prefer-wait-for": "error",
-    "import/no-anonymous-default-export": "off"
+    "import/no-anonymous-default-export": "off",
+    "no-duplicate-imports": "error"
   },
   "extends": ["react-app", "plugin:camunda-licensed/commercial"],
   "settings": {
