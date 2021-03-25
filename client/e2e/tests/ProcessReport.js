@@ -865,3 +865,94 @@ test('incident reports', async (t) => {
 
   await t.expect(e.reportRenderer.textContent).contains('Resolution Duration');
 });
+
+test('multi-measure reports', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Hiring Demo 5 Tenants', 'All');
+  await u.selectView(t, 'Process Instance', 'Count');
+
+  await t.click(e.addMeasureButton);
+
+  await t.expect(e.reportNumber.visible).ok();
+  await t.expect(e.reportRenderer.textContent).contains('Process Instance Count');
+  await t.expect(e.reportRenderer.textContent).contains('Process Instance Duration');
+
+  await u.selectGroupby(t, 'Start Date', 'Automatic');
+
+  await t.expect(e.reportRenderer.textContent).contains('Count');
+  await t.expect(e.reportRenderer.textContent).contains('Duration');
+
+  await u.selectVisualization(t, 'Bar Chart');
+  await t.expect(e.reportChart.visible).ok();
+  await u.selectVisualization(t, 'Line Chart');
+  await t.expect(e.reportChart.visible).ok();
+  await u.selectVisualization(t, 'Pie Chart');
+  await t.expect(e.reportChart.visible).ok();
+
+  await u.selectView(t, 'Flow Node');
+  await u.selectGroupby(t, 'Flow Nodes');
+  await u.selectVisualization(t, 'Heatmap');
+
+  await t.expect(e.reportDiagram.visible).ok();
+
+  await t.click(e.heatDropdown);
+  await t.click(e.option('Heat: Duration - Avg'));
+
+  await t.expect(e.reportDiagram.visible).ok();
+});
+
+test('multi-aggregation reports', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Hiring Demo 5 Tenants', 'All');
+  await u.selectView(t, 'Process Instance', 'Duration');
+
+  await t.click(e.aggregationTypeSelect);
+  await t.click(e.aggregationOption('Maximum'));
+
+  await t.expect(e.reportNumber.visible).ok();
+  await t.expect(e.reportRenderer.textContent).contains('Avg');
+  await t.expect(e.reportRenderer.textContent).contains('Max');
+
+  await u.selectView(t, 'User Task', 'Duration');
+  await t.click(e.aggregationTypeSelect);
+  await t.click(e.aggregationOption('Work'));
+
+  await t.expect(e.reportRenderer.textContent).contains('Total Duration - Avg');
+  await t.expect(e.reportRenderer.textContent).contains('Total Duration - Max');
+  await t.expect(e.reportRenderer.textContent).contains('Work Duration - Avg');
+  await t.expect(e.reportRenderer.textContent).contains('Work Duration - Max');
+
+  await u.selectVisualization(t, 'Bar Chart');
+  await t.expect(e.reportChart.visible).ok();
+  await u.selectVisualization(t, 'Line Chart');
+  await t.expect(e.reportChart.visible).ok();
+  await u.selectVisualization(t, 'Pie Chart');
+  await t.expect(e.reportChart.visible).ok();
+  await u.selectVisualization(t, 'Heatmap');
+  await t.expect(e.reportDiagram.visible).ok();
+
+  await t.hover(e.flowNode('ConductPhoneInterview'));
+  await t.expect(e.tooltip.textContent).contains('Avg (Total)');
+  await t.expect(e.tooltip.textContent).contains('Max (Total)');
+  await t.expect(e.tooltip.textContent).contains('Avg (Work)');
+  await t.expect(e.tooltip.textContent).contains('Max (Work)');
+});
+
+test('distributed multi-measure reports', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+
+  await u.selectView(t, 'Process Instance', 'Duration');
+  await u.selectGroupby(t, 'Start Date', 'Automatic');
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.click(e.distributedBySelect);
+  await t.click(e.dropdownOption('Variable'));
+  await t.click(e.submenuOption('invoiceCategory'));
+
+  await t.click(e.addMeasureButton);
+
+  await t.expect(e.reportRenderer.textContent).contains('Count');
+  await t.expect(e.reportRenderer.textContent).contains('Duration');
+  await t.expect(e.reportRenderer.textContent).contains('Misc');
+});

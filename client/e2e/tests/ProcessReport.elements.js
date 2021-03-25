@@ -112,3 +112,5 @@ export const bucketSizeUnitSelect = Selector('.BucketSize .Select').nth(0);
 export const submenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);
 export const nextPageButton = Selector('.Table .Button.next');
 export const rowsPerPageButton = Selector('.Table .size .Button');
+export const addMeasureButton = Selector('.addMeasure button');
+export const heatDropdown = Selector('.Heatmap .Select');
