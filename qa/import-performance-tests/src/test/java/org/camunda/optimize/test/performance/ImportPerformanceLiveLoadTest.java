@@ -38,8 +38,6 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
     final Future<Long> dataGenerationTask = startDataGeneration(totalInstanceCountPerGenerationBatch);
     waitForDataGenerationTaskToComplete(dataGenerationTask);
 
-    logStats();
-
     // AND I start optimize & schedule imports
     logger.info("Starting import of engine data to Optimize...");
     embeddedOptimizeExtension.startContinuousImportScheduling();
