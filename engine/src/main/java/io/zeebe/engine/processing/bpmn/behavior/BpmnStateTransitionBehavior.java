@@ -255,7 +255,20 @@ public final class BpmnStateTransitionBehavior {
     }
   }
 
-  public long activateChildInstance(
+  public void completeElement(final BpmnElementContext context) {
+
+    if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      commandWriter.appendFollowUpCommand(
+          context.getElementInstanceKey(),
+          ProcessInstanceIntent.COMPLETE_ELEMENT,
+          context.getRecordValue());
+
+    } else {
+      transitionToCompleting(context);
+    }
+  }
+
+  public void activateChildInstance(
       final BpmnElementContext context, final ExecutableFlowElement childElement) {
 
     final var childInstanceRecord =
@@ -265,10 +278,32 @@ public final class BpmnStateTransitionBehavior {
             .setElementId(childElement.getId())
             .setBpmnElementType(childElement.getElementType());
 
-    final var childInstanceKey = keyGenerator.nextKey();
+    if (MigratedStreamProcessors.isMigrated(childElement.getElementType())) {
+      commandWriter.appendNewCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
+    } else {
+      stateWriter.appendFollowUpEvent(
+          keyGenerator.nextKey(), ProcessInstanceIntent.ELEMENT_ACTIVATING, childInstanceRecord);
+    }
+  }
 
-    stateWriter.appendFollowUpEvent(
-        childInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, childInstanceRecord);
+  public long activateChildInstanceWithKey(
+      final BpmnElementContext context, final ExecutableFlowElement childElement) {
+
+    final var childInstanceRecord =
+        context
+            .getRecordValue()
+            .setFlowScopeKey(context.getElementInstanceKey())
+            .setElementId(childElement.getId())
+            .setBpmnElementType(childElement.getElementType());
+
+    final long childInstanceKey = keyGenerator.nextKey();
+    if (MigratedStreamProcessors.isMigrated(childElement.getElementType())) {
+      commandWriter.appendFollowUpCommand(
+          childInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
+    } else {
+      stateWriter.appendFollowUpEvent(
+          childInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, childInstanceRecord);
+    }
 
     return childInstanceKey;
   }

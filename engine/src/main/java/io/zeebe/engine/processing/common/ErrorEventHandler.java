@@ -30,9 +30,12 @@ public final class ErrorEventHandler {
       final ElementInstanceState elementInstanceState,
       final MutableEventScopeInstanceState eventScopeInstanceState,
       final KeyGenerator keyGenerator,
+      final EventTriggerBehavior eventTriggerBehavior,
       final Writers writers) {
 
-    eventHandle = new EventHandle(keyGenerator, eventScopeInstanceState, writers);
+    eventHandle =
+        new EventHandle(
+            keyGenerator, eventScopeInstanceState, writers, processState, eventTriggerBehavior);
     stateAnalyzer = new CatchEventAnalyzer(processState, elementInstanceState);
   }
 

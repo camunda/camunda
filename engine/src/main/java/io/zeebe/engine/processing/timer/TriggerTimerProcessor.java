@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.timer;
 
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.EventHandle;
+import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
@@ -58,6 +59,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   public TriggerTimerProcessor(
       final MutableZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
+      final EventTriggerBehavior eventTriggerBehavior,
       final ExpressionProcessor expressionProcessor,
       final Writers writers) {
     this.catchEventBehavior = catchEventBehavior;
@@ -70,7 +72,13 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     timerInstanceState = zeebeState.getTimerState();
     keyGenerator = zeebeState.getKeyGenerator();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
-    eventHandle = new EventHandle(keyGenerator, zeebeState.getEventScopeInstanceState(), writers);
+    eventHandle =
+        new EventHandle(
+            keyGenerator,
+            zeebeState.getEventScopeInstanceState(),
+            writers,
+            processState,
+            eventTriggerBehavior);
   }
 
   @Override
@@ -100,8 +108,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
 
       stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
       final long processInstanceKey = keyGenerator.nextKey();
-      eventHandle.activateStartEvent(
-          processDefinitionKey, processInstanceKey, timer.getTargetElementIdBuffer());
+      eventHandle.activateProcessInstanceForStartEvent(processDefinitionKey, processInstanceKey);
     } else {
       final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
       if (!eventHandle.canTriggerElement(elementInstance)) {

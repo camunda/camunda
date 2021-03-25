@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.message;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.engine.processing.common.EventHandle;
+import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
@@ -57,6 +58,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       final ProcessMessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender,
       final MutableZeebeState zeebeState,
+      final EventTriggerBehavior eventTriggerBehavior,
       final Writers writers) {
     this.subscriptionState = subscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
@@ -67,7 +69,11 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
     eventHandle =
         new EventHandle(
-            zeebeState.getKeyGenerator(), zeebeState.getEventScopeInstanceState(), writers);
+            zeebeState.getKeyGenerator(),
+            zeebeState.getEventScopeInstanceState(),
+            writers,
+            processState,
+            eventTriggerBehavior);
   }
 
   @Override

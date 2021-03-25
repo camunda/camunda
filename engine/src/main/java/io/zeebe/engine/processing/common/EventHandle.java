@@ -14,6 +14,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
+import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -23,22 +24,29 @@ import org.agrona.DirectBuffer;
 
 public final class EventHandle {
 
+  private final ProcessInstanceRecord recordForPICreation = new ProcessInstanceRecord();
   private final ProcessInstanceRecord eventOccurredRecord = new ProcessInstanceRecord();
   private final KeyGenerator keyGenerator;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
+  private final ProcessState processState;
+  private final EventTriggerBehavior eventTriggerBehavior;
 
   // TODO (saig0): use immutable states only (#6200)
   public EventHandle(
       final KeyGenerator keyGenerator,
       final MutableEventScopeInstanceState eventScopeInstanceState,
-      final Writers writers) {
+      final Writers writers,
+      final ProcessState processState,
+      final EventTriggerBehavior eventTriggerBehavior) {
     this.keyGenerator = keyGenerator;
     this.eventScopeInstanceState = eventScopeInstanceState;
     commandWriter = writers.command();
     stateWriter = writers.state();
+    this.processState = processState;
+    this.eventTriggerBehavior = eventTriggerBehavior;
   }
 
   public boolean canTriggerElement(final ElementInstance eventScopeInstance) {
@@ -87,24 +95,18 @@ public final class EventHandle {
 
     } else {
 
-      final long eventOccurredKey;
-
       if (isEventSubprocess(catchEvent)) {
-        eventOccurredKey = keyGenerator.nextKey();
-        eventOccurredRecord.wrap(elementRecord);
-        eventOccurredRecord
-            .setElementId(catchEvent.getId())
-            .setBpmnElementType(BpmnElementType.START_EVENT)
-            .setFlowScopeKey(eventScopeKey);
+        final var executableStartEvent = (ExecutableStartEvent) catchEvent;
 
+        eventTriggerBehavior.triggerEventSubProcess(
+            executableStartEvent, eventScopeKey, elementRecord);
       } else {
-        eventOccurredKey = eventScopeKey;
         eventOccurredRecord.wrap(elementRecord);
-      }
 
-      // TODO (saig0): don't write EVENT_OCCURRED when processors are migrated (#6187/#6196)
-      stateWriter.appendFollowUpEvent(
-          eventOccurredKey, ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
+        // TODO (saig0): don't write EVENT_OCCURRED when processors are migrated (#6187/#6196)
+        stateWriter.appendFollowUpEvent(
+            eventScopeKey, ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
+      }
     }
   }
 
@@ -118,7 +120,7 @@ public final class EventHandle {
 
     if (triggered) {
       final var processInstanceKey = keyGenerator.nextKey();
-      activateStartEvent(processDefinitionKey, processInstanceKey, elementId);
+      activateProcessInstanceForStartEvent(processDefinitionKey, processInstanceKey);
       return processInstanceKey;
 
     } else {
@@ -126,22 +128,24 @@ public final class EventHandle {
     }
   }
 
-  public void activateStartEvent(
-      final long processDefinitionKey,
-      final long processInstanceKey,
-      final DirectBuffer elementId) {
+  public void activateProcessInstanceForStartEvent(
+      final long processDefinitionKey, final long processInstanceKey) {
 
-    final var eventOccurredKey = keyGenerator.nextKey();
+    // todo: after migrating Process Processor we can write here the ACTIVATE command
+    // https://github.com/camunda-cloud/zeebe/issues/6194
 
-    eventOccurredRecord
-        .setBpmnElementType(BpmnElementType.START_EVENT)
-        .setProcessDefinitionKey(processDefinitionKey)
+    final var process = processState.getProcessByKey(processDefinitionKey);
+
+    recordForPICreation
+        .setBpmnProcessId(process.getBpmnProcessId())
+        .setProcessDefinitionKey(process.getKey())
+        .setVersion(process.getVersion())
         .setProcessInstanceKey(processInstanceKey)
-        .setElementId(elementId);
+        .setElementId(process.getProcess().getId())
+        .setBpmnElementType(process.getProcess().getElementType());
 
-    // TODO (saig0): create the process instance by writing an ACTIVATE command (#6184)
     stateWriter.appendFollowUpEvent(
-        eventOccurredKey, ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
+        processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, recordForPICreation);
   }
 
   private boolean isEventSubprocess(final ExecutableFlowElement catchEvent) {

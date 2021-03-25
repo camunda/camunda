@@ -232,7 +232,7 @@ public final class MultiInstanceBodyProcessor
       final DirectBuffer item) {
 
     final var innerInstanceKey =
-        stateTransitionBehavior.activateChildInstance(
+        stateTransitionBehavior.activateChildInstanceWithKey(
             context, multiInstanceBody.getInnerActivity());
 
     final var innerInstance = stateBehavior.getElementInstance(innerInstanceKey);
