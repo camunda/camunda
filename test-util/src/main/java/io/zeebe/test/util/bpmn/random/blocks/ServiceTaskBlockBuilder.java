@@ -10,12 +10,16 @@ package io.zeebe.test.util.bpmn.random.blocks;
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
-import io.zeebe.test.util.bpmn.random.AbstractExecutionStep;
 import io.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.zeebe.test.util.bpmn.random.IDGenerator;
+import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
+import io.zeebe.test.util.bpmn.random.steps.StepActivateAndCompleteJob;
+import io.zeebe.test.util.bpmn.random.steps.StepActivateAndFailJob;
+import io.zeebe.test.util.bpmn.random.steps.StepActivateAndTimeoutJob;
+import io.zeebe.test.util.bpmn.random.steps.StepActivateJobAndThrowError;
 import java.util.Random;
 
 /** Generates a service task. The service task may have boundary events */
@@ -112,172 +116,6 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
     }
 
     return result;
-  }
-
-  public static final class StepActivateAndCompleteJob extends AbstractExecutionStep {
-    private final String jobType;
-
-    public StepActivateAndCompleteJob(final String jobType) {
-      this.jobType = jobType;
-    }
-
-    public String getJobType() {
-      return jobType;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-
-      final StepActivateAndCompleteJob that = (StepActivateAndCompleteJob) o;
-
-      if (jobType != null ? !jobType.equals(that.jobType) : that.jobType != null) {
-        return false;
-      }
-      return variables.equals(that.variables);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = jobType != null ? jobType.hashCode() : 0;
-      result = 31 * result + variables.hashCode();
-      return result;
-    }
-  }
-
-  public static final class StepActivateAndFailJob extends AbstractExecutionStep {
-    private final String jobType;
-    private final boolean updateRetries;
-
-    public StepActivateAndFailJob(final String jobType, final boolean updateRetries) {
-      this.jobType = jobType;
-      this.updateRetries = updateRetries;
-    }
-
-    public String getJobType() {
-      return jobType;
-    }
-
-    public boolean isUpdateRetries() {
-      return updateRetries;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-
-      final StepActivateAndFailJob that = (StepActivateAndFailJob) o;
-
-      if (updateRetries != that.updateRetries) {
-        return false;
-      }
-      if (jobType != null ? !jobType.equals(that.jobType) : that.jobType != null) {
-        return false;
-      }
-      return variables.equals(that.variables);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = jobType != null ? jobType.hashCode() : 0;
-      result = 31 * result + (updateRetries ? 1 : 0);
-      result = 31 * result + variables.hashCode();
-      return result;
-    }
-  }
-
-  public static final class StepActivateAndTimeoutJob extends AbstractExecutionStep {
-    private final String jobType;
-
-    public StepActivateAndTimeoutJob(final String jobType) {
-      this.jobType = jobType;
-    }
-
-    public String getJobType() {
-      return jobType;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-
-      final StepActivateAndTimeoutJob that = (StepActivateAndTimeoutJob) o;
-
-      if (jobType != null ? !jobType.equals(that.jobType) : that.jobType != null) {
-        return false;
-      }
-      return variables.equals(that.variables);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = jobType != null ? jobType.hashCode() : 0;
-      result = 31 * result + variables.hashCode();
-      return result;
-    }
-  }
-
-  public static class StepActivateJobAndThrowError extends AbstractExecutionStep {
-
-    private final String jobType;
-    private final String errorCode;
-
-    public StepActivateJobAndThrowError(final String jobType, final String errorCode) {
-      super();
-      this.jobType = jobType;
-      this.errorCode = errorCode;
-    }
-
-    public String getJobType() {
-      return jobType;
-    }
-
-    public String getErrorCode() {
-      return errorCode;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-
-      final StepActivateJobAndThrowError that = (StepActivateJobAndThrowError) o;
-
-      if (jobType != null ? !jobType.equals(that.jobType) : that.jobType != null) {
-        return false;
-      }
-      if (errorCode != null ? !errorCode.equals(that.errorCode) : that.errorCode != null) {
-        return false;
-      }
-      return variables.equals(that.variables);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = jobType != null ? jobType.hashCode() : 0;
-      result = errorCode != null ? errorCode.hashCode() : 0;
-      result = 31 * result + variables.hashCode();
-      return result;
-    }
   }
 
   public static class Factory implements BlockBuilderFactory {

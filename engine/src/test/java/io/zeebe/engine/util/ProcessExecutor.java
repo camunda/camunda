@@ -13,18 +13,17 @@ import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.test.util.bpmn.random.AbstractExecutionStep;
-import io.zeebe.test.util.bpmn.random.blocks.ExclusiveGatewayBlockBuilder.StepExpressionIncidentCase;
-import io.zeebe.test.util.bpmn.random.blocks.ExclusiveGatewayBlockBuilder.StepPickConditionCase;
-import io.zeebe.test.util.bpmn.random.blocks.ExclusiveGatewayBlockBuilder.StepPickDefaultCase;
-import io.zeebe.test.util.bpmn.random.blocks.IntermediateMessageCatchEventBlockBuilder;
-import io.zeebe.test.util.bpmn.random.blocks.IntermediateMessageCatchEventBlockBuilder.StepPublishMessage;
-import io.zeebe.test.util.bpmn.random.blocks.MessageStartEventBuilder.StepPublishStartMessage;
-import io.zeebe.test.util.bpmn.random.blocks.NoneStartEventBuilder.StepStartProcessInstance;
-import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateAndCompleteJob;
-import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateAndFailJob;
-import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateAndTimeoutJob;
-import io.zeebe.test.util.bpmn.random.blocks.ServiceTaskBlockBuilder.StepActivateJobAndThrowError;
+import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
+import io.zeebe.test.util.bpmn.random.steps.StepActivateAndCompleteJob;
+import io.zeebe.test.util.bpmn.random.steps.StepActivateAndFailJob;
+import io.zeebe.test.util.bpmn.random.steps.StepActivateAndTimeoutJob;
+import io.zeebe.test.util.bpmn.random.steps.StepActivateJobAndThrowError;
+import io.zeebe.test.util.bpmn.random.steps.StepExpressionIncidentCase;
+import io.zeebe.test.util.bpmn.random.steps.StepPickConditionCase;
+import io.zeebe.test.util.bpmn.random.steps.StepPickDefaultCase;
+import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
+import io.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
+import io.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
@@ -173,13 +172,13 @@ public class ProcessExecutor {
   private void publishMessage(final StepPublishMessage publishMessage) {
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
         .withMessageName(publishMessage.getMessageName())
-        .withCorrelationKey(IntermediateMessageCatchEventBlockBuilder.CORRELATION_KEY_VALUE)
+        .withCorrelationKey(publishMessage.getCorrelationKeyValue())
         .await();
 
     engineRule
         .message()
         .withName(publishMessage.getMessageName())
-        .withCorrelationKey(IntermediateMessageCatchEventBlockBuilder.CORRELATION_KEY_VALUE)
+        .withCorrelationKey(publishMessage.getCorrelationKeyValue())
         .withVariables(publishMessage.getVariables())
         .publish();
 

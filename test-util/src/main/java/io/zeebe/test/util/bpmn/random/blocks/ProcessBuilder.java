@@ -7,8 +7,6 @@
  */
 package io.zeebe.test.util.bpmn.random.blocks;
 
-import static io.zeebe.test.util.bpmn.random.blocks.IntermediateMessageCatchEventBlockBuilder.CORRELATION_KEY_VALUE;
-
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
@@ -16,12 +14,14 @@ import io.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.zeebe.test.util.bpmn.random.ExecutionPath;
 import io.zeebe.test.util.bpmn.random.StartEventBlockBuilder;
-import io.zeebe.test.util.bpmn.random.blocks.IntermediateMessageCatchEventBlockBuilder.StepPublishMessage;
+import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
 
 public final class ProcessBuilder {
+
+  private static final String EVENT_SUBPROCESS_CORRELATION_KEY_VALUE = "default_correlation_key";
 
   private static final List<Function<ConstructionContext, StartEventBlockBuilder>>
       START_EVENT_BUILDER_FACTORIES =
@@ -94,7 +94,8 @@ public final class ProcessBuilder {
                 //
                 // See https://github.com/camunda-cloud/zeebe/issues/4099
                 b.name(eventSubProcessMessageName)
-                    .zeebeCorrelationKeyExpression('\"' + CORRELATION_KEY_VALUE + '\"'))
+                    .zeebeCorrelationKeyExpression(
+                        '\"' + EVENT_SUBPROCESS_CORRELATION_KEY_VALUE + '\"'))
         .endEvent("end_event_" + eventSubProcessId);
   }
 
@@ -131,12 +132,16 @@ public final class ProcessBuilder {
       return;
     }
 
+    final var executionStep =
+        new StepPublishMessage(
+            eventSubProcessMessageName, "", EVENT_SUBPROCESS_CORRELATION_KEY_VALUE);
+
     final var index = random.nextInt(size);
     if (isEventSubProcessInterrupting) {
       // if it is interrupting we remove the other execution path
-      followingPath.replace(index, new StepPublishMessage(eventSubProcessMessageName));
+      followingPath.replace(index, executionStep);
     } else {
-      followingPath.insert(index, new StepPublishMessage(eventSubProcessMessageName));
+      followingPath.insert(index, executionStep);
     }
   }
 }

@@ -9,12 +9,12 @@ package io.zeebe.test.util.bpmn.random.blocks;
 
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.zeebe.model.bpmn.builder.IntermediateCatchEventBuilder;
-import io.zeebe.test.util.bpmn.random.AbstractExecutionStep;
 import io.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.zeebe.test.util.bpmn.random.IDGenerator;
+import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import java.util.Random;
 
 /**
@@ -53,47 +53,10 @@ public class IntermediateMessageCatchEventBlockBuilder implements BlockBuilder {
   public ExecutionPathSegment findRandomExecutionPath(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    result.append(new StepPublishMessage(messageName));
+    result.append(
+        new StepPublishMessage(messageName, CORRELATION_KEY_FIELD, CORRELATION_KEY_VALUE));
 
     return result;
-  }
-
-  public static final class StepPublishMessage extends AbstractExecutionStep {
-
-    private final String messageName;
-
-    public StepPublishMessage(final String messageName) {
-      this.messageName = messageName;
-      variables.put(CORRELATION_KEY_FIELD, CORRELATION_KEY_VALUE);
-    }
-
-    public String getMessageName() {
-      return messageName;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-
-      final StepPublishMessage that = (StepPublishMessage) o;
-
-      if (messageName != null ? !messageName.equals(that.messageName) : that.messageName != null) {
-        return false;
-      }
-      return variables.equals(that.variables);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = messageName != null ? messageName.hashCode() : 0;
-      result = 31 * result + variables.hashCode();
-      return result;
-    }
   }
 
   public static class Factory implements BlockBuilderFactory {

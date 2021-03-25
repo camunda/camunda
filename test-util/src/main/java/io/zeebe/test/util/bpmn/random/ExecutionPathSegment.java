@@ -7,7 +7,8 @@
  */
 package io.zeebe.test.util.bpmn.random;
 
-import io.zeebe.test.util.bpmn.random.blocks.IntermediateMessageCatchEventBlockBuilder.StepPublishMessage;
+import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
+import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;

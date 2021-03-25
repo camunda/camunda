@@ -13,7 +13,7 @@ import io.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.zeebe.test.util.bpmn.random.IDGenerator;
-import io.zeebe.test.util.bpmn.random.blocks.IntermediateMessageCatchEventBlockBuilder.StepPublishMessage;
+import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import java.util.Random;
 
 /**
@@ -51,7 +51,8 @@ public class ReceiveTaskBlockBuilder implements BlockBuilder {
   public ExecutionPathSegment findRandomExecutionPath(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    result.append(new StepPublishMessage(messageName));
+    result.append(
+        new StepPublishMessage(messageName, CORRELATION_KEY_FIELD, CORRELATION_KEY_VALUE));
 
     return result;
   }
