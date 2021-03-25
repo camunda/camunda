@@ -12868,10 +12868,10 @@ react-error-overlay@^6.0.9:
   resolved "https://registry.yarnpkg.com/react-error-overlay/-/react-error-overlay-6.0.9.tgz#3c743010c9359608c375ecd6bc76f35d93995b0a"
   integrity sha512-nQTTcUu+ATDbrSD1BZHr5kgSD4oF8OFjxun8uAaL8RwPBacGBNPf/yAuVVdx17N8XNzRDMrZ9XcKZHCjPW+9ew==
 
-react-full-screen@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/react-full-screen/-/react-full-screen-1.0.1.tgz#b54b1701dca4a42d541a829665005c74d969d3e0"
-  integrity sha512-bBqfTko6LCieRRoKi7iYS6guARN5rP7OwH1O0rRyIwLu8A/7OVzCWcJpcaZhY5DR+G07ydsdC2535DAfC6AE2A==
+react-full-screen@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/react-full-screen/-/react-full-screen-1.0.2.tgz#bacaa3232f7d7241eab60be1c2802c15d6b1067f"
+  integrity sha512-3K1vC+HNt7355T5xI8ExkWC2o8mJohRoIk2BAWVJGv7aLyXNjBv8+a0v3Q4GwigU8AEG/FibSNEGDzwGUflMsA==
   dependencies:
     fscreen "^1.0.2"
 
