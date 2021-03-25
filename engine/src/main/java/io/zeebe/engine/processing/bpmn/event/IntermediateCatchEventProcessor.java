@@ -71,12 +71,10 @@ public class IntermediateCatchEventProcessor
   public void onTerminate(
       final ExecutableCatchEventElement element, final BpmnElementContext context) {
 
-    final var terminating = stateTransitionBehavior.transitionToTerminating(context);
+    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    incidentBehavior.resolveIncidents(context);
 
-    eventSubscriptionBehavior.unsubscribeFromEvents(terminating);
-    incidentBehavior.resolveIncidents(terminating);
-
-    final var terminated = stateTransitionBehavior.transitionToTerminated(terminating);
+    final var terminated = stateTransitionBehavior.transitionToTerminated(context);
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 
