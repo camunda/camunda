@@ -92,7 +92,8 @@ public class Workflow0230Test extends AbstractMigrationTest {
     assertThat(sequenceFlows.size()).isEqualTo(Workflow0230DataGenerator.WORKFLOW_INSTANCE_COUNT * 2);
   }
 
-  @Ignore("No migration of activity-instances to flow node instances") @Test
+  @Test
+  @Ignore("No migration of activity-instances to flow node instances")
   public void testFlowNodeInstances() {
     SearchRequest searchRequest = new SearchRequest(flowNodeInstanceTemplate.getAlias());
     searchRequest.source().query(termsQuery(FlowNodeInstanceTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceIds));
