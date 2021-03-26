@@ -27,6 +27,7 @@ import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.ClientTransport;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
@@ -240,13 +241,39 @@ final class BrokerRequestManager extends Actor {
       throw new NoTopologyAvailableException(
           String.format(
               "Expected to pick partition for message with correlation key '%s', but no topology is available",
-              request.getCorrelationKey()));
+              BufferUtil.bufferAsString(request.getCorrelationKey())));
     }
 
     final int partitionId =
         SubscriptionUtil.getSubscriptionPartitionId(
             request.getCorrelationKey(), topology.getPartitionsCount());
     request.setPartitionId(partitionId);
+  }
+
+  private static class RequestResult {
+    private final boolean processed;
+    private final ErrorCode errorCode;
+
+    RequestResult(final boolean processed, final ErrorCode errorCode) {
+      this.processed = processed;
+      this.errorCode = errorCode;
+    }
+
+    boolean wasProcessed() {
+      return processed;
+    }
+
+    public ErrorCode getErrorCode() {
+      return errorCode;
+    }
+
+    static RequestResult processed() {
+      return new RequestResult(true, null);
+    }
+
+    static RequestResult failed(final ErrorCode code) {
+      return new RequestResult(false, code);
+    }
   }
 
   private interface TransportRequestSender {
@@ -282,32 +309,6 @@ final class BrokerRequestManager extends Actor {
       } else {
         return null;
       }
-    }
-  }
-
-  private static class RequestResult {
-    private final boolean processed;
-    private final ErrorCode errorCode;
-
-    RequestResult(final boolean processed, final ErrorCode errorCode) {
-      this.processed = processed;
-      this.errorCode = errorCode;
-    }
-
-    boolean wasProcessed() {
-      return processed;
-    }
-
-    public ErrorCode getErrorCode() {
-      return errorCode;
-    }
-
-    static RequestResult processed() {
-      return new RequestResult(true, null);
-    }
-
-    static RequestResult failed(final ErrorCode code) {
-      return new RequestResult(false, code);
     }
   }
 }
