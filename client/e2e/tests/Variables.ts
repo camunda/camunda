@@ -189,9 +189,7 @@ test('Edit variables', async (t) => {
 
   // refresh the page and see the variable is still there.
   await t
-    .navigateTo(
-      `${config.endpoint}/#/instances/${instance.processInstanceKey}`
-    )
+    .navigateTo(`${config.endpoint}/#/instances/${instance.processInstanceKey}`)
     .expect(Selector('[data-testid="testData"]').exists)
     .ok();
 });
@@ -258,9 +256,7 @@ test('Add variables', async (t) => {
 
   // refresh the page and see the variable is still there.
   await t
-    .navigateTo(
-      `${config.endpoint}/#/instances/${instance.processInstanceKey}`
-    )
+    .navigateTo(`${config.endpoint}/#/instances/${instance.processInstanceKey}`)
     .expect(screen.getByRole('cell', {name: 'secondTestKey'}).exists)
     .ok()
     .expect(screen.getByRole('cell', {name: '"secondTestValue"'}).exists)
