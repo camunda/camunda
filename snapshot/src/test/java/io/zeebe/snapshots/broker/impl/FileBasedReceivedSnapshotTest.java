@@ -27,12 +27,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -165,17 +167,21 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
 
     assertThat(receiverSnapshotsDir).exists();
-    final var files = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(files).isNotNull().hasSize(1);
+    final var files = listSortedFiles(receiverSnapshotsDir);
+    assertThat(files).hasSize(2);
 
     final var dir = files[0];
     assertThat(dir).hasName(snapshot.getId());
+
+    final var sumFile = files[1];
+    assertThat(sumFile).hasName(snapshot.getChecksumPath().toFile().getName());
 
     final var snapshotFileList = dir.listFiles();
     assertThat(snapshotFileList)
         .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder(persistedSnapshotFiles);
+    assertThat(sumFile).hasBinaryContent(getBinaryChecksum(snapshot));
   }
 
   @Test
@@ -195,17 +201,21 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
 
     assertThat(receiverSnapshotsDir).exists();
-    final var files = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(files).isNotNull().hasSize(1);
+    final var files = listSortedFiles(receiverSnapshotsDir);
+    assertThat(files).hasSize(2);
 
     final var dir = files[0];
     assertThat(dir).hasName(persistedSnapshot.getId());
+
+    final var sumFile = files[1];
+    assertThat(sumFile).hasName(persistedSnapshot.getChecksumPath().getFileName().toString());
 
     final var snapshotFileList = dir.listFiles();
     assertThat(snapshotFileList)
         .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder(persistedSnapshotFiles);
+    assertThat(sumFile).hasBinaryContent(getBinaryChecksum(persistedSnapshot));
   }
 
   @Test
@@ -221,8 +231,8 @@ public class FileBasedReceivedSnapshotTest {
     // then
     assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
 
-    final var snapshotDirs = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    final var snapshotDirs = listSortedFiles(receiverSnapshotsDir);
+    assertThat(snapshotDirs).isNotNull().hasSize(2);
 
     final var committedSnapshotDir = snapshotDirs[0];
     assertThat(
@@ -232,6 +242,7 @@ public class FileBasedReceivedSnapshotTest {
         .isNotNull()
         .extracting(File::getName)
         .containsExactly(committedSnapshot.getPath().toFile().list());
+    assertThat(snapshotDirs[1]).hasBinaryContent(getBinaryChecksum(committedSnapshot));
   }
 
   @Test
@@ -248,8 +259,8 @@ public class FileBasedReceivedSnapshotTest {
     // then
     assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
 
-    final var snapshotDirs = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    final var snapshotDirs = listSortedFiles(receiverSnapshotsDir);
+    assertThat(snapshotDirs).hasSize(2);
 
     final var committedSnapshotDir = snapshotDirs[0];
     assertThat(
@@ -259,6 +270,7 @@ public class FileBasedReceivedSnapshotTest {
         .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder(committedSnapshotFiles);
+    assertThat(snapshotDirs[1]).hasBinaryContent(getBinaryChecksum(committedSnapshot));
   }
 
   @Test
@@ -294,8 +306,8 @@ public class FileBasedReceivedSnapshotTest {
         .extracting(File::getName)
         .containsExactlyInAnyOrder(newPersistedSnapshot.getPath().toFile().list());
 
-    final var snapshotDirs = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    final var snapshotDirs = listSortedFiles(receiverSnapshotsDir);
+    assertThat(snapshotDirs).hasSize(2);
 
     final var committedSnapshotDir = snapshotDirs[0];
     assertThat(committedSnapshotDir.getName()).isEqualTo(olderPersistedSnapshot.getId());
@@ -303,6 +315,7 @@ public class FileBasedReceivedSnapshotTest {
         .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder(olderPersistedSnapshot.getPath().toFile().list());
+    assertThat(snapshotDirs[1]).hasBinaryContent(getBinaryChecksum(olderPersistedSnapshot));
   }
 
   @Test
@@ -392,8 +405,8 @@ public class FileBasedReceivedSnapshotTest {
     // then
     assertThat(receivedPersisted).isEqualTo(otherReceivedPersisted);
 
-    final var snapshotDirs = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    final var snapshotDirs = listSortedFiles(receiverSnapshotsDir);
+    assertThat(snapshotDirs).hasSize(2);
 
     final var committedSnapshotDir = snapshotDirs[0];
     assertThat(committedSnapshotDir.getName()).isEqualTo(persistedSnapshot.getId());
@@ -401,6 +414,7 @@ public class FileBasedReceivedSnapshotTest {
         .isNotNull()
         .extracting(File::getName)
         .containsExactly(persistedSnapshot.getPath().toFile().list());
+    assertThat(snapshotDirs[1]).hasBinaryContent(getBinaryChecksum(persistedSnapshot));
 
     assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
   }
@@ -421,8 +435,8 @@ public class FileBasedReceivedSnapshotTest {
     // then
     assertThat(receivedPersisted).isEqualTo(otherReceivedPersisted);
 
-    final var snapshotDirs = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    final var snapshotDirs = listSortedFiles(receiverSnapshotsDir);
+    assertThat(snapshotDirs).hasSize(2);
 
     final var committedSnapshotDir = snapshotDirs[0];
     assertThat(committedSnapshotDir.getName()).isEqualTo(persistedSnapshot.getId());
@@ -430,6 +444,7 @@ public class FileBasedReceivedSnapshotTest {
         .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder(persistedSnapshot.getPath().toFile().list());
+    assertThat(snapshotDirs[1]).hasBinaryContent(getBinaryChecksum(persistedSnapshot));
 
     assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
   }
@@ -546,8 +561,7 @@ public class FileBasedReceivedSnapshotTest {
 
     // then
     assertThatThrownBy(() -> receivedSnapshot.persist().join())
-        .hasCauseInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Snapshot is corrupted");
+        .hasCauseInstanceOf(IllegalStateException.class);
   }
 
   @Test
@@ -574,8 +588,7 @@ public class FileBasedReceivedSnapshotTest {
 
     // then
     assertThatThrownBy(() -> receivedSnapshot.persist().join())
-        .hasCauseInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Snapshot is corrupted");
+        .hasCauseInstanceOf(IllegalStateException.class);
   }
 
   @Test
@@ -659,6 +672,10 @@ public class FileBasedReceivedSnapshotTest {
     }
   }
 
+  private byte[] getBinaryChecksum(final PersistedSnapshot persistedSnapshot) {
+    return ByteBuffer.allocate(Long.BYTES).putLong(0, persistedSnapshot.getChecksum()).array();
+  }
+
   private ReceivedSnapshot takeAndReceiveSnapshot(final long index, final long term)
       throws IOException {
     final PersistedSnapshot persistedSnapshot = takeSnapshot(index, term);
@@ -722,5 +739,11 @@ public class FileBasedReceivedSnapshotTest {
   private void deleteSnapshotFile(
       final PersistedSnapshot persistedSnapshot, final String deletedFileName) {
     persistedSnapshot.getPath().resolve(deletedFileName).toFile().delete();
+  }
+
+  private File[] listSortedFiles(final Path directory) throws IOException {
+    try (final Stream<Path> paths = Files.list(directory)) {
+      return paths.sorted().map(Path::toFile).toArray(File[]::new);
+    }
   }
 }

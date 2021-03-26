@@ -22,6 +22,7 @@ import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -194,7 +195,11 @@ public class TransientSnapshotTest {
     assertThat(committedSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
+        .containsExactlyInAnyOrder("file1.txt");
+    assertThat(persistedSnapshot.getChecksumPath())
+        .exists()
+        .hasBinaryContent(
+            ByteBuffer.allocate(Long.BYTES).putLong(0, persistedSnapshot.getChecksum()).array());
   }
 
   @Test
@@ -254,6 +259,7 @@ public class TransientSnapshotTest {
 
     // then
     assertThat(previousSnapshot.getPath()).doesNotExist();
+    assertThat(previousSnapshot.getChecksumPath()).doesNotExist();
 
     final var snapshotPath = persistedSnapshot.getPath();
     assertThat(snapshotPath).exists();
@@ -264,7 +270,7 @@ public class TransientSnapshotTest {
     assertThat(committedSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
+        .containsExactlyInAnyOrder("file1.txt");
   }
 
   @Test

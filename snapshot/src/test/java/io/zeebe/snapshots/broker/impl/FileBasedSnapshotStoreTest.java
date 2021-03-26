@@ -12,12 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.utils.time.WallClockTimestamp;
+import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -141,11 +143,35 @@ public class FileBasedSnapshotStoreTest {
 
     // then
     final var currentSnapshotIndex = snapshotStore.getCurrentSnapshotIndex();
+    final PersistedSnapshot persistedSnapshot = snapshotStore.getLatestSnapshot().get();
     assertThat(currentSnapshotIndex).isEqualTo(10L);
-    // should delete older snapshots
-    assertThat(snapshotsDir.toFile().list()).hasSize(1);
-    assertThat(snapshotsDir.toFile().list())
-        .containsExactly(snapshotStore.getLatestSnapshot().get().getId());
+    assertThat(Files.list(snapshotsDir))
+        .hasSize(2)
+        .containsExactlyInAnyOrder(
+            persistedSnapshot.getPath(), persistedSnapshot.getChecksumPath());
+  }
+
+  @Test
+  public void shouldPersistChecksumForExistingSnapshotWithoutChecksumFile() throws IOException {
+    // given
+    final var timeStamp = WallClockTimestamp.from(System.currentTimeMillis());
+    final FileBasedSnapshotMetadata snapshotId =
+        new FileBasedSnapshotMetadata(1, 1, timeStamp, 1, 1);
+    final var snapshot = snapshotsDir.resolve(snapshotId.getSnapshotIdAsString());
+    Files.createDirectories(snapshot);
+    createSnapshotDir(snapshot);
+
+    // when
+    final var snapshotStore =
+        new FileBasedSnapshotStoreFactory(createActorScheduler())
+            .createReceivableSnapshotStore(root.toPath(), partitionName);
+
+    // then
+    final var expectedChecksum = SnapshotChecksum.calculate(snapshot);
+    final var checksumFile = snapshotsDir.resolve(snapshotId.getSnapshotIdAsString() + ".checksum");
+    assertThat(checksumFile)
+        .exists()
+        .hasBinaryContent(ByteBuffer.allocate(Long.BYTES).putLong(0, expectedChecksum).array());
   }
 
   @Test

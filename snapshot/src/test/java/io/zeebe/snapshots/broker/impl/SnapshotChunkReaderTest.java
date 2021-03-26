@@ -77,30 +77,26 @@ public class SnapshotChunkReaderTest {
     }
 
     // then
-    assertThat(snapshotChunkIds).hasSize(4); // 3 snapshot files + 1 checksum
-    assertThat(snapshotChunks).hasSize(4);
+    assertThat(snapshotChunkIds).hasSize(3);
+    assertThat(snapshotChunks).hasSize(3);
 
     assertThat(snapshotChunkIds)
-        .containsExactly(
-            asByteBuffer("CHECKSUM"),
-            asByteBuffer("file1"),
-            asByteBuffer("file2"),
-            asByteBuffer("file3"));
+        .containsExactly(asByteBuffer("file1"), asByteBuffer("file2"), asByteBuffer("file3"));
 
     final var expectedSnapshotChecksum = SnapshotChecksum.calculate(persistedSnapshot.getPath());
 
     // chunks should always read in order
     assertSnapshotChunk(
         expectedSnapshotChecksum,
-        snapshotChunks.get(1),
+        snapshotChunks.get(0),
         "file1",
         "this",
         persistedSnapshot.getId());
     assertSnapshotChunk(
-        expectedSnapshotChecksum, snapshotChunks.get(2), "file2", "is", persistedSnapshot.getId());
+        expectedSnapshotChecksum, snapshotChunks.get(1), "file2", "is", persistedSnapshot.getId());
     assertSnapshotChunk(
         expectedSnapshotChecksum,
-        snapshotChunks.get(3),
+        snapshotChunks.get(2),
         "file3",
         "content",
         persistedSnapshot.getId());
@@ -182,7 +178,7 @@ public class SnapshotChunkReaderTest {
     assertThat(snapshotChunk.getSnapshotId()).isEqualTo(snapshotId);
     assertThat(snapshotChunk.getChunkName()).isEqualTo(fileName);
     assertThat(snapshotChunk.getContent()).isEqualTo(chunkContent.getBytes());
-    assertThat(snapshotChunk.getTotalCount()).isEqualTo(4);
+    assertThat(snapshotChunk.getTotalCount()).isEqualTo(3);
     final var crc32 = new CRC32();
     crc32.update(asByteBuffer(chunkContent));
     assertThat(snapshotChunk.getChecksum()).isEqualTo(crc32.getValue());

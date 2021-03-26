@@ -20,41 +20,29 @@ import java.util.zip.Checksum;
 
 final class SnapshotChecksum {
 
-  private static final String CHECKSUM_FILE_NAME = "CHECKSUM";
-
   private SnapshotChecksum() {
     throw new IllegalStateException("Utility class");
   }
 
-  public static boolean hasChecksum(final Path snapshotDirectory) {
-    final var file = snapshotDirectory.resolve(CHECKSUM_FILE_NAME).toFile();
-    return file.exists();
-  }
-
-  public static long read(final Path snapshotDirectory) throws IOException {
-    final var file = snapshotDirectory.resolve(CHECKSUM_FILE_NAME).toFile();
-    if (!file.exists()) {
+  public static long read(final Path checksumPath) throws IOException {
+    if (!Files.exists(checksumPath)) {
       throw new IllegalStateException(
           String.format(
-              "Expected to find a checksum file named %s, but no such file exists.",
-              CHECKSUM_FILE_NAME));
+              "Expected to find a checksum file named %s, but no such file exists.", checksumPath));
     }
-    try (final RandomAccessFile checksumFile = new RandomAccessFile(file, "r")) {
+    try (final RandomAccessFile checksumFile = new RandomAccessFile(checksumPath.toFile(), "r")) {
       return checksumFile.readLong();
     }
   }
 
   public static long calculate(final Path snapshotDirectory) throws IOException {
     try (final var fileStream = Files.list(snapshotDirectory).sorted()) {
-      return createCombinedChecksum(
-          fileStream
-              .filter(path -> !path.endsWith(CHECKSUM_FILE_NAME))
-              .collect(Collectors.toList()));
+      return createCombinedChecksum(fileStream.collect(Collectors.toList()));
     }
   }
 
-  public static void persist(final Path snapshotDirectory, final long checksum) throws IOException {
-    final var file = snapshotDirectory.resolve(CHECKSUM_FILE_NAME).toFile();
+  public static void persist(final Path checksumPath, final long checksum) throws IOException {
+    final var file = checksumPath.toFile();
     // If checksum file already exists, don't overwrite it
     if (file.createNewFile()) {
       try (final RandomAccessFile checksumFile = new RandomAccessFile(file, "rw")) {
@@ -75,11 +63,9 @@ final class SnapshotChecksum {
     final List<Long> chunkChecksum = new ArrayList<>();
 
     for (final var path : paths) {
-      if (!path.endsWith(CHECKSUM_FILE_NAME)) {
-        checksumGenerator.update(Files.readAllBytes(path));
-        chunkChecksum.add(checksumGenerator.getValue());
-        checksumGenerator.reset();
-      }
+      checksumGenerator.update(Files.readAllBytes(path));
+      chunkChecksum.add(checksumGenerator.getValue());
+      checksumGenerator.reset();
     }
 
     chunkChecksum.forEach(

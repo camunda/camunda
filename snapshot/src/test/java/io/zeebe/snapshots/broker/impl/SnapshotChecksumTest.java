@@ -10,7 +10,6 @@ package io.zeebe.snapshots.broker.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
-import java.io.IOException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -80,38 +79,13 @@ public class SnapshotChecksumTest {
   public void shouldPersistChecksum() throws Exception {
     // given
     final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot.toPath());
-    SnapshotChecksum.persist(multipleFileSnapshot.toPath(), expectedChecksum);
+    final var checksumFilePath = multipleFileSnapshot.toPath().resolveSibling("checksum");
+    SnapshotChecksum.persist(checksumFilePath, expectedChecksum);
 
     // when
-    final var actual = SnapshotChecksum.read(multipleFileSnapshot.toPath());
+    final var actual = SnapshotChecksum.read(checksumFilePath);
 
     // then
     assertThat(actual).isEqualTo(expectedChecksum);
-  }
-
-  @Test
-  public void shouldGenerateTheSameWithPersistedChecksum() throws Exception {
-    // given
-    final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot.toPath());
-    SnapshotChecksum.persist(multipleFileSnapshot.toPath(), expectedChecksum);
-
-    // when
-    final var actual = SnapshotChecksum.calculate(multipleFileSnapshot.toPath());
-
-    // then
-    assertThat(actual).isEqualTo(expectedChecksum);
-  }
-
-  @Test
-  public void shouldDetectCorruptedSnapshot() throws IOException {
-    // given
-    final var expectedChecksum = SnapshotChecksum.calculate(corruptedSnapshot.toPath());
-    SnapshotChecksum.persist(corruptedSnapshot.toPath(), expectedChecksum);
-
-    // when
-    corruptedSnapshot.toPath().resolve("file1.txt").toFile().delete();
-
-    // then
-    assertThat(SnapshotChecksum.verify(corruptedSnapshot.toPath())).isFalse();
   }
 }

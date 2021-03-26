@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,11 +24,19 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshot.class);
 
   private final Path directory;
+  private final Path checksumFile;
   private final FileBasedSnapshotMetadata metadata;
+  private final long checksum;
 
-  FileBasedSnapshot(final Path directory, final FileBasedSnapshotMetadata metadata) {
+  FileBasedSnapshot(
+      final Path directory,
+      final Path checksumFile,
+      final FileBasedSnapshotMetadata metadata,
+      final long checksum) {
     this.directory = directory;
+    this.checksumFile = checksumFile;
     this.metadata = metadata;
+    this.checksum = checksum;
   }
 
   public FileBasedSnapshotMetadata getMetadata() {
@@ -63,7 +70,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   @Override
   public SnapshotChunkReader newChunkReader() {
     try {
-      return new FileBasedSnapshotChunkReader(directory, SnapshotChecksum.read(directory));
+      return new FileBasedSnapshotChunkReader(directory, checksum);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -71,20 +78,29 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
 
   @Override
   public void delete() {
-    if (!Files.exists(directory)) {
-      return;
+    if (Files.exists(directory)) {
+      try {
+        FileUtil.deleteFolder(directory);
+      } catch (final IOException e) {
+        LOGGER.warn("Failed to delete snapshot {}", this, e);
+      }
     }
 
     try {
-      FileUtil.deleteFolder(directory);
+      Files.deleteIfExists(checksumFile);
     } catch (final IOException e) {
-      LOGGER.warn("Failed to delete snapshot {}", this, e);
+      LOGGER.warn("Failed to delete snapshot checksum file {}", checksumFile, e);
     }
   }
 
   @Override
   public Path getPath() {
     return getDirectory();
+  }
+
+  @Override
+  public Path getChecksumPath() {
+    return checksumFile;
   }
 
   @Override
@@ -98,13 +114,22 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
+  public long getChecksum() {
+    return checksum;
+  }
+
+  @Override
   public void close() {
     // nothing to be done
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(getDirectory(), getMetadata());
+    int result = getDirectory().hashCode();
+    result = 31 * result + checksumFile.hashCode();
+    result = 31 * result + getMetadata().hashCode();
+    result = 31 * result + (int) (getChecksum() ^ (getChecksum() >>> 32));
+    return result;
   }
 
   @Override
@@ -112,17 +137,35 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     if (this == o) {
       return true;
     }
-
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
 
     final FileBasedSnapshot that = (FileBasedSnapshot) o;
-    return getDirectory().equals(that.getDirectory()) && getMetadata().equals(that.getMetadata());
+
+    if (getChecksum() != that.getChecksum()) {
+      return false;
+    }
+    if (!getDirectory().equals(that.getDirectory())) {
+      return false;
+    }
+    if (!checksumFile.equals(that.checksumFile)) {
+      return false;
+    }
+    return getMetadata().equals(that.getMetadata());
   }
 
   @Override
   public String toString() {
-    return "FileBasedSnapshot{" + "directory=" + directory + ", metadata=" + metadata + '}';
+    return "FileBasedSnapshot{"
+        + "directory="
+        + directory
+        + ", checksumFile="
+        + checksumFile
+        + ", metadata="
+        + metadata
+        + ", checksum="
+        + checksum
+        + '}';
   }
 }

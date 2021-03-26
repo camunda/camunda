@@ -65,6 +65,9 @@ public interface PersistedSnapshot extends CloseableSilently {
   /** @return a path to the snapshot location */
   Path getPath();
 
+  /** @return a path to the snapshot's checksum location */
+  Path getChecksumPath();
+
   /**
    * Returns an implementation specific compaction bound, e.g. a log stream position, a timestamp,
    * etc., used during compaction
@@ -75,4 +78,7 @@ public interface PersistedSnapshot extends CloseableSilently {
 
   /** @return the identifier of the snapshot */
   String getId();
+
+  /** @return the snapshot's checksum */
+  long getChecksum();
 }

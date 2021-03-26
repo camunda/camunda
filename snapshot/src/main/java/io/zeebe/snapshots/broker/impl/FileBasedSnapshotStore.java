@@ -44,6 +44,7 @@ public final class FileBasedSnapshotStore extends Actor
     implements ConstructableSnapshotStore, ReceivableSnapshotStore {
   // first is the metadata and the second the the received snapshot count
   private static final String RECEIVING_DIR_FORMAT = "%s-%d";
+  private static final String CHECKSUM_SUFFIX = ".checksum";
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotStore.class);
 
@@ -115,12 +116,25 @@ public final class FileBasedSnapshotStore extends Actor
     if (optionalMeta.isPresent()) {
       final var metadata = optionalMeta.get();
       try {
-        if (SnapshotChecksum.verify(path)) {
-          return new FileBasedSnapshot(path, metadata);
+        final Path checksumFile = buildChecksumFilePath(metadata);
+        final long actualChecksum = SnapshotChecksum.calculate(path);
+
+        // to allow backwards compatibility, simply compute a checksum file if it doesn't already
+        // exist
+        if (!Files.exists(checksumFile)) {
+          SnapshotChecksum.persist(checksumFile, actualChecksum);
+          return new FileBasedSnapshot(path, checksumFile, metadata, actualChecksum);
+        }
+
+        final long persistedChecksum = SnapshotChecksum.read(checksumFile);
+        if (persistedChecksum == actualChecksum) {
+          return new FileBasedSnapshot(path, checksumFile, metadata, persistedChecksum);
         } else {
           LOGGER.warn(
-              "Cannot load snapshot in {}. The checksum stored does not match the checksum calculated.",
-              path);
+              "Cannot load snapshot in {}. The checksum stored [{}] does not match the checksum calculated [{}].",
+              path,
+              persistedChecksum,
+              actualChecksum);
         }
       } catch (final Exception e) {
         LOGGER.warn("Could not load snapshot in {}", path, e);
@@ -344,7 +358,8 @@ public final class FileBasedSnapshotStore extends Actor
     return (persistedSnapshot != null && persistedSnapshot.getMetadata().compareTo(metadata) >= 0);
   }
 
-  PersistedSnapshot newSnapshot(final FileBasedSnapshotMetadata metadata, final Path directory) {
+  PersistedSnapshot newSnapshot(
+      final FileBasedSnapshotMetadata metadata, final Path directory, final long checksum) {
     final var currentPersistedSnapshot = currentPersistedSnapshotRef.get();
 
     if (isCurrentSnapshotNewer(metadata)) {
@@ -354,9 +369,12 @@ public final class FileBasedSnapshotStore extends Actor
     }
 
     final var destination = buildSnapshotDirectory(metadata);
+    final var checksumFile = buildChecksumFilePath(metadata);
+    writeChecksumFile(checksumFile, checksum);
     moveToSnapshotDirectory(directory, destination);
 
-    final var newPersistedSnapshot = new FileBasedSnapshot(destination, metadata);
+    final var newPersistedSnapshot =
+        new FileBasedSnapshot(destination, checksumFile, metadata, checksum);
     final var failed =
         !currentPersistedSnapshotRef.compareAndSet(currentPersistedSnapshot, newPersistedSnapshot);
     if (failed) {
@@ -386,6 +404,23 @@ public final class FileBasedSnapshotStore extends Actor
 
     LOGGER.debug("Created new snapshot {}", newPersistedSnapshot);
     return newPersistedSnapshot;
+  }
+
+  private Path buildChecksumFilePath(final FileBasedSnapshotMetadata metadata) {
+    return snapshotsDirectory.resolve(metadata.getSnapshotIdAsString() + CHECKSUM_SUFFIX);
+  }
+
+  private void writeChecksumFile(final Path checksumFile, final long checksum) {
+    try {
+      SnapshotChecksum.persist(checksumFile, checksum);
+    } catch (final IOException e) {
+      LOGGER.error(
+          "Failed to persist snapshot checksum file at path {} with checksum {}",
+          checksumFile,
+          checksum,
+          e);
+      throw new UncheckedIOException(e);
+    }
   }
 
   private void moveToSnapshotDirectory(final Path directory, final Path destination) {

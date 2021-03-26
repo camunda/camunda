@@ -242,26 +242,30 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       return;
     }
 
-    if (!verifyChecksums(future)) {
+    if (!verifySnapshotChecksum(future)) {
       return;
     }
 
     try {
-      final PersistedSnapshot value = snapshotStore.newSnapshot(metadata, directory);
+      final PersistedSnapshot value =
+          snapshotStore.newSnapshot(metadata, directory, expectedSnapshotChecksum);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);
     }
   }
 
-  private boolean verifyChecksums(final CompletableActorFuture<PersistedSnapshot> future) {
-
+  private boolean verifySnapshotChecksum(final CompletableActorFuture<PersistedSnapshot> future) {
     try {
-      if (SnapshotChecksum.verify(directory)) {
+      final long actualChecksum = SnapshotChecksum.calculate(directory);
+      if (actualChecksum == expectedSnapshotChecksum) {
         return true;
       } else {
         future.completeExceptionally(
-            new IllegalStateException("Snapshot is corrupted. Checksum does not match"));
+            new IllegalStateException(
+                String.format(
+                    "Expected snapshot to have checksum %d, but was %d",
+                    expectedSnapshotChecksum, actualChecksum)));
         return false;
       }
     } catch (final IOException e) {
@@ -280,6 +284,10 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         + snapshotStore
         + ", metadata="
         + metadata
+        + ", expectedSnapshotChecksum="
+        + expectedSnapshotChecksum
+        + ", expectedTotalCount="
+        + expectedTotalCount
         + '}';
   }
 }
