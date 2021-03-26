@@ -48,9 +48,9 @@ import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.zeebe.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.atomix.storage.StorageException;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.Scheduled;
+import io.zeebe.journal.JournalException;
 import io.zeebe.snapshots.raft.PersistedSnapshotListener;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -490,7 +490,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     do {
       try {
         resultingFuture = tryToAppend(entry);
-      } catch (final StorageException storageException) {
+      } catch (final JournalException storageException) {
 
         // storage exception wraps IOException's
         retries++;
@@ -521,13 +521,13 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       raft.getReplicationMetrics().setAppendIndex(indexedEntry.index());
       log.trace("Appended {}", indexedEntry);
       resultingFuture = CompletableFuture.completedFuture(indexedEntry);
-    } catch (final StorageException.TooLarge e) {
+    } catch (final JournalException.TooLarge e) {
 
       // the entry was to large, we can't handle this case
       log.error("Failed to append entry {}, because it was to large.", entry, e);
       resultingFuture = Futures.exceptionalFuture(e);
 
-    } catch (final StorageException.OutOfDiskSpace e) {
+    } catch (final JournalException.OutOfDiskSpace e) {
 
       // if this happens then compact will also not help, since we need to create a snapshot
       // before. Furthermore we do snapshot's on regular basis, which mean it had delete data
@@ -577,7 +577,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               (indexed, error) -> {
                 if (error != null) {
                   appendListener.onWriteError(Throwables.getRootCause(error));
-                  if (!(error instanceof StorageException)) {
+                  if (!(error instanceof JournalException)) {
                     // step down. Otherwise the following event can get appended resulting in gaps
                     log.info(
                         "Unexpected error occurred while appending to local log, stepping down");
