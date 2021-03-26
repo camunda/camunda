@@ -9,7 +9,6 @@ import React, {useEffect, useState, useCallback} from 'react';
 import {Modal, Button, ReportRenderer, LoadingIndicator} from 'components';
 import {withErrorHandling} from 'HOC';
 import {evaluateReport} from 'services';
-import {showError} from 'notifications';
 import {t} from 'translation';
 import {newReport} from 'config';
 
@@ -17,6 +16,7 @@ import './RawDataModal.scss';
 
 export function RawDataModal({name, report, close, mightFail}) {
   const [rawDataReport, setRawDataReport] = useState();
+  const [error, setError] = useState();
 
   const loadReport = useCallback(
     (query) => {
@@ -48,7 +48,7 @@ export function RawDataModal({name, report, close, mightFail}) {
           query
         ),
         setRawDataReport,
-        showError
+        async (e) => setError({status: e.status, data: await e.json()})
       );
     },
     [mightFail, report]
@@ -62,10 +62,10 @@ export function RawDataModal({name, report, close, mightFail}) {
     <Modal className="RawDataModal" open size="max" onClose={close}>
       <Modal.Header>{name}</Modal.Header>
       <Modal.Content>
-        {!rawDataReport ? (
+        {!rawDataReport && !error ? (
           <LoadingIndicator />
         ) : (
-          <ReportRenderer report={rawDataReport} loadReport={loadReport} />
+          <ReportRenderer error={error} report={rawDataReport} loadReport={loadReport} />
         )}
       </Modal.Content>
       <Modal.Actions>

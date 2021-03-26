@@ -82,22 +82,18 @@ export class Report extends React.Component {
         });
       },
       async (e) => {
-        const report = (await e.json()).reportDefinition;
-        if (report) {
-          this.setState({report});
-        } else {
-          this.setState({
-            serverError: e.status,
-          });
-        }
-        return;
+        const errorData = await e.json();
+        this.setState({
+          report: errorData.reportDefinition,
+          serverError: {status: e.status, data: errorData},
+        });
       }
     );
 
   render() {
     const {report, serverError} = this.state;
 
-    if (serverError) {
+    if (!report && serverError) {
       return <ErrorPage />;
     }
 
@@ -111,6 +107,7 @@ export class Report extends React.Component {
       <div className="Report-container">
         {viewMode === 'edit' ? (
           <ReportEdit
+            error={serverError}
             isNew={this.isNew()}
             updateOverview={(newReport) => {
               const {mightFail, getUser} = this.props;
@@ -128,7 +125,7 @@ export class Report extends React.Component {
             report={report}
           />
         ) : (
-          <ReportView report={report} loadReport={this.loadReport} />
+          <ReportView error={serverError} report={report} loadReport={this.loadReport} />
         )}
       </div>
     );

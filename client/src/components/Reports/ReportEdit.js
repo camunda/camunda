@@ -36,6 +36,7 @@ export class ReportEdit extends React.Component {
     updatePromise: null,
     optimizeVersion: 'latest',
     report: this.props.report,
+    serverError: this.props.error,
   };
 
   async componentDidMount() {
@@ -201,12 +202,28 @@ export class ReportEdit extends React.Component {
       (response) =>
         this.setState({
           report: response,
+          serverError: null,
         }),
-      showError
+      async (e) => {
+        const errorData = await e.json();
+        if (errorData) {
+          this.setState({
+            report: errorData.reportDefinition,
+            serverError: {status: e.status, data: errorData},
+          });
+        } else {
+          this.setState({
+            serverError: {
+              status: e.status,
+              data: {errorMessage: t('apiErrors.reportEvaluationError')},
+            },
+          });
+        }
+      }
     );
 
   render() {
-    const {report, loadingReportData, conflict, redirect} = this.state;
+    const {report, serverError, loadingReportData, conflict, redirect} = this.state;
     const {name, data, combined, reportType} = report;
 
     if (redirect) {
@@ -266,6 +283,7 @@ export class ReportEdit extends React.Component {
               <LoadingIndicator />
             ) : (
               <ReportRenderer
+                error={serverError}
                 report={report}
                 updateReport={this.updateReport}
                 loadReport={this.loadReport}

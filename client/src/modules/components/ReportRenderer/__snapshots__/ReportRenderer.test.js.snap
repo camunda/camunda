@@ -1,9 +1,16 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`NoDataNotice should display a notice based on error type if evaluation fails while loading the report 1`] = `
-<NoDataNotice>
-  test error
-</NoDataNotice>
+<ReportErrorNotice
+  error={
+    Object {
+      "data": Object {
+        "errorMessage": "test error",
+      },
+      "status": 400,
+    }
+  }
+/>
 `;
 
 exports[`SetupNotice should instruct to add a process definition key if not available 1`] = `

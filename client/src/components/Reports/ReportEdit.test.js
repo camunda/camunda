@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import {updateEntity, createEntity, evaluateReport} from 'services';
 import {nowDirty, nowPristine} from 'saveGuard';
-import {EntityNameForm, InstanceCount} from 'components';
+import {EntityNameForm, InstanceCount, ReportRenderer} from 'components';
 
 import {ReportEdit} from './ReportEdit';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
@@ -317,4 +317,14 @@ it('should show loading indicator if specified by children components', () => {
   node.find(ReportControlPanel).prop('setLoading')(false);
 
   expect(node.find('LoadingIndicator')).not.toExist();
+});
+
+it('should pass the error to reportRenderer if evaluation fails', async () => {
+  const testError = {errorMessage: 'testError', reportDefinition: report};
+  const mightFail = (promise, cb, err) => err({status: 400, json: () => testError});
+
+  const node = shallow(<ReportEdit {...props} mightFail={mightFail} />);
+  await node.instance().loadReport(undefined, report);
+
+  expect(node.find(ReportRenderer).prop('error')).toEqual({status: 400, data: testError});
 });

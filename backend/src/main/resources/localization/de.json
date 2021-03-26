@@ -354,6 +354,7 @@
     },
     "invalidCombinationError": "Es können keine Daten für die angegebenen Einstellungen angezeigt werden. Bitte wählen Sie eine andere Kombination!",
     "noDataNotice": "Keine Daten zur Ansicht vorhanden",
+    "errorNotice": "Fehler beim Laden von Daten",
     "editSetupMessage": "Um diesen Bericht anzuzeigen, bearbeiten Sie Ihre Einstellungen.",
     "incompleteNotice": "Die Berichtskonfiguration ist unvollständig",
     "setupNotice": "Konfigurieren Sie Ihren Bericht",

@@ -26,6 +26,7 @@ const props = {
     },
   },
   location: {search: ''},
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should render without crashing', () => {
@@ -39,7 +40,7 @@ it('should initially load data', () => {
 });
 
 it('should display a loading indicator', () => {
-  const node = shallow(<Sharing {...props} />);
+  const node = shallow(<Sharing {...props} mightFail={() => {}} />);
 
   expect(node.find('LoadingIndicator')).toExist();
 });
@@ -54,6 +55,15 @@ it('should display an error message if evaluation was unsuccessful', () => {
   });
 
   expect(node.find('ErrorPage')).toExist();
+});
+
+it('should pass the error to reportRenderer if evaluation fails', async () => {
+  const testError = {errorMessage: 'testError', reportDefinition: {}};
+  const mightFail = (promise, cb, err) => err({status: 400, json: () => testError});
+
+  const node = await shallow(<Sharing {...props} mightFail={mightFail} />);
+
+  expect(node.find(ReportRenderer).prop('error')).toEqual({status: 400, data: testError});
 });
 
 it('should display an error message if type is invalid', () => {

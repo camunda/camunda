@@ -5,8 +5,8 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 
-import './Sharing.scss';
 import {
   ReportRenderer,
   DashboardRenderer,
@@ -19,9 +19,11 @@ import {
   InstanceCount,
   DiagramScrollLock,
 } from 'components';
-import {withRouter} from 'react-router-dom';
+import {withErrorHandling} from 'HOC';
 import {evaluateEntity, createLoadReportCallback} from './service';
 import {t} from 'translation';
+
+import './Sharing.scss';
 
 export class Sharing extends React.Component {
   constructor(props) {
@@ -30,8 +32,11 @@ export class Sharing extends React.Component {
     this.state = {
       evaluationResult: null,
       loading: true,
+      error: null,
     };
+  }
 
+  componentDidMount() {
     this.performEvaluation();
   }
 
@@ -44,18 +49,30 @@ export class Sharing extends React.Component {
   };
 
   performEvaluation = async (params) => {
-    const evaluationResult = await evaluateEntity(this.getId(), this.getType(), params);
-
-    this.setState({
-      evaluationResult,
-      loading: false,
-    });
+    this.props.mightFail(
+      evaluateEntity(this.getId(), this.getType(), params),
+      (evaluationResult) => {
+        this.setState({
+          evaluationResult,
+          loading: false,
+        });
+      },
+      async (e) => {
+        const errorData = await e.json();
+        this.setState({
+          evaluationResult: errorData.reportDefinition,
+          error: {status: e.status, data: errorData},
+          loading: false,
+        });
+      }
+    );
   };
 
   getSharingView = () => {
     if (this.getType() === 'report') {
       return (
         <ReportRenderer
+          error={this.state.error}
           report={this.state.evaluationResult}
           context="shared"
           loadReport={this.performEvaluation}
@@ -138,4 +155,4 @@ export class Sharing extends React.Component {
   }
 }
 
-export default withRouter(Sharing);
+export default withErrorHandling(withRouter(Sharing));

@@ -17,6 +17,7 @@ import DecisionReportRenderer from './DecisionReportRenderer';
 import HyperReportRenderer from './HyperReportRenderer';
 import SetupNotice from './SetupNotice';
 import NoDataNotice from './NoDataNotice';
+import ReportErrorNotice from './ReportErrorNotice';
 
 import {isEmpty} from './service';
 
@@ -50,6 +51,10 @@ function ReportRenderer(props) {
       }
     }
 
+    if (error) {
+      return <ReportErrorNotice error={error} />;
+    }
+
     if (!result) {
       return <NoDataNotice type="info">{t('report.editSetupMessage')}</NoDataNotice>;
     }
@@ -74,12 +79,7 @@ function ReportRenderer(props) {
   }
 
   if (error) {
-    const formattedError = formatError(error);
-    return (
-      <NoDataNotice type={error.type} title={formattedError.title}>
-        {formattedError.text}
-      </NoDataNotice>
-    );
+    return <ReportErrorNotice error={error} />;
   }
 
   return <NoDataNotice type="error">{t('report.invalidCombinationError')}</NoDataNotice>;
@@ -128,19 +128,4 @@ function checkSingleReport(data) {
   } else {
     return;
   }
-}
-
-function formatError({status, data: {errorCode, errorMessage}}) {
-  if (status === 403) {
-    return {
-      type: 'info',
-      title: t('dashboard.noAuthorization'),
-      text: t('dashboard.noReportAccess'),
-    };
-  }
-
-  return {
-    type: 'error',
-    text: errorCode ? t('apiErrors.' + errorCode) : errorMessage,
-  };
 }

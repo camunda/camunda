@@ -60,10 +60,21 @@ it('should display a loading indicator', () => {
 it("should show an error page if report doesn't exist", () => {
   const node = shallow(<Report {...props} />);
   node.setState({
-    serverError: 404,
+    report: undefined,
+    serverError: {status: 404, data: {errorMessage: 'testError'}},
   });
 
   expect(node.find('ErrorPage')).toExist();
+});
+
+it('should pass the error to report view and edit mode if evaluation fails', async () => {
+  const testError = {errorMessage: 'testError', reportDefinition: report};
+  const mightFail = (promise, cb, err) => err({status: 400, json: () => testError});
+
+  const node = shallow(<Report {...props} mightFail={mightFail} />);
+  await node.instance().loadReport();
+
+  expect(node.find('ReportView').prop('error')).toEqual({status: 400, data: testError});
 });
 
 it('should initially evaluate the report', () => {

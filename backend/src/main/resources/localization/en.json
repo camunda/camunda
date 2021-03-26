@@ -354,6 +354,7 @@
     },
     "invalidCombinationError": "Cannot display data for the given report settings. Please choose another combination!",
     "noDataNotice": "No data",
+    "errorNotice": "Error loading data",
     "editSetupMessage": "To display this report, edit your report set-up.",
     "incompleteNotice": "Report configuration is incomplete",
     "setupNotice": "Set-up your Report",
