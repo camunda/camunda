@@ -7,6 +7,7 @@
  */
 package io.zeebe.test.util.bpmn.random;
 
+import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
