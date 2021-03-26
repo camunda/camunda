@@ -31,21 +31,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @RunWith(Parameterized.class)
-public class ReplayStateRandomizedPropertyTest implements PropertyBasedTest {
+public class ReplayStateRandomizedPropertyTest {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(ReplayStateRandomizedPropertyTest.class);
-
-  private static final int PROCESS_COUNT = 5;
+  private static final int PROCESS_COUNT = 10;
   private static final int EXECUTION_PATH_COUNT = 5;
 
-  @Rule public TestWatcher failedTestDataPrinter = new FailedPropertyBasedTestDataPrinter(this);
-  @Parameter public TestDataRecord record;
-  private long lastProcessedPosition = -1L;
+  @Rule
+  public TestWatcher failedTestDataPrinter =
+      new FailedPropertyBasedTestDataPrinter(this::getDataRecord);
 
   @Rule
   public final EngineRule engineRule =
@@ -53,6 +48,9 @@ public class ReplayStateRandomizedPropertyTest implements PropertyBasedTest {
           .withOnProcessedCallback(record -> lastProcessedPosition = record.getPosition())
           .withOnSkippedCallback(record -> lastProcessedPosition = record.getPosition());
 
+  @Parameter public TestDataRecord record;
+
+  private long lastProcessedPosition = -1L;
   private final ProcessExecutor processExecutor = new ProcessExecutor(engineRule);
 
   @Before
@@ -60,7 +58,6 @@ public class ReplayStateRandomizedPropertyTest implements PropertyBasedTest {
     lastProcessedPosition = -1L;
   }
 
-  @Override
   public TestDataRecord getDataRecord() {
     return record;
   }

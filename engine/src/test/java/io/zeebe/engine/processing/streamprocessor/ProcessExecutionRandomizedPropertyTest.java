@@ -25,7 +25,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ProcessExecutionRandomizedPropertyTest implements PropertyBasedTest {
+public class ProcessExecutionRandomizedPropertyTest {
 
   /*
    * Some notes on scaling of these tests:
@@ -43,14 +43,16 @@ public class ProcessExecutionRandomizedPropertyTest implements PropertyBasedTest
   private static final int PROCESS_COUNT = 10;
   private static final int EXECUTION_PATH_COUNT = 100;
 
-  @Rule public TestWatcher failedTestDataPrinter = new FailedPropertyBasedTestDataPrinter(this);
+  @Rule
+  public TestWatcher failedTestDataPrinter =
+      new FailedPropertyBasedTestDataPrinter(this::getDataRecord);
+
   @Rule public final EngineRule engineRule = EngineRule.singlePartition();
 
   @Parameter public TestDataRecord record;
 
   private final ProcessExecutor processExecutor = new ProcessExecutor(engineRule);
 
-  @Override
   public TestDataRecord getDataRecord() {
     return record;
   }
