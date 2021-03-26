@@ -61,7 +61,7 @@ pipeline {
           sh '''
             cd ./client
             yarn install --frozen-lockfile
-            yarn run eslint src/
+            yarn lint
             yarn build
           '''
         }
