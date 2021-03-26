@@ -123,7 +123,7 @@
     <plugin.version.sonar>3.8.0.2131</plugin.version.sonar>
     <plugin.version.clirr>2.8</plugin.version.clirr>
     <plugin.version.maven-jar>3.2.0</plugin.version.maven-jar>
-    <plugin.version.dependency-analyzer>1.11.1</plugin.version.dependency-analyzer>
+    <plugin.version.dependency-analyzer>1.11.3</plugin.version.dependency-analyzer>
     <plugin.version.jacoco>0.8.6</plugin.version.jacoco>
 
     <!-- maven extensions -->
