@@ -66,7 +66,7 @@ public class OperationsManager {
       return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, jsonMap);
     } catch (IOException e) {
       logger.error("Error preparing the query to update batch operation", e);
-      throw new PersistenceException("Error preparing the query to insert workflow", e);
+      throw new PersistenceException("Error preparing the query to insert process", e);
     }
 
   }

@@ -48,6 +48,13 @@ pipeline {
   }
 
   stages {
+    stage('Prepare') {
+      steps {
+        container('maven') {
+          sh '.ci/scripts/ensure-naming-for-process.sh'
+        }
+      }
+    }
     stage('Frontend - Build') {
       steps {
         container('node') {
@@ -96,6 +103,8 @@ pipeline {
           }
         }
         stage('Backend - Tests (old Zeebe)') {
+          // TODO(menski): re-enable after 1.0
+          when { expression { return false } }
           steps {
             container('maven') {
               configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {

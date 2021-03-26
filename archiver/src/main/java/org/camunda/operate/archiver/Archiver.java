@@ -93,7 +93,7 @@ public class Archiver {
       for (int i=0; i < threadsCount; i++) {
         List<Integer> partitionIdsSubset = CollectionUtil.splitAndGetSublist(partitionIds, threadsCount, i);
         if (!partitionIdsSubset.isEmpty()) {
-          WorkflowInstancesArchiverJob archiverJob = beanFactory.getBean(WorkflowInstancesArchiverJob.class, partitionIdsSubset);
+          ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, partitionIdsSubset);
           archiverExecutor.execute(archiverJob);
         }
         if (partitionIdsSubset.contains(1)) {
@@ -138,9 +138,9 @@ public class Archiver {
     return String.format(INDEX_NAME_PATTERN, sourceIndexName, finishDate);
   }
 
-  private long deleteDocuments(String sourceIndexName, String idFieldName, List<Object> workflowInstanceKeys) throws ArchiverException {
+  private long deleteDocuments(String sourceIndexName, String idFieldName, List<Object> processInstanceKeys) throws ArchiverException {
     try {
-      final String query = termsQuery(idFieldName, workflowInstanceKeys).toString();
+      final String query = termsQuery(idFieldName, processInstanceKeys).toString();
       return deleteWithTimer(
           () -> delete(query, sourceIndexName));
     } catch (ArchiverException ex) {
@@ -180,14 +180,14 @@ public class Archiver {
   }
 
   private long reindexDocuments(String sourceIndexName, String destinationIndexName,
-      String idFieldName, List<Object> workflowInstanceKeys)
+      String idFieldName, List<Object> processInstanceKeys)
       throws ArchiverException {
 
     ReindexRequest reindexRequest = new ReindexRequest()
         .setSourceIndices(sourceIndexName)
-        .setSourceBatchSize(workflowInstanceKeys.size())
+        .setSourceBatchSize(processInstanceKeys.size())
         .setDestIndex(destinationIndexName)
-        .setSourceQuery(termsQuery(idFieldName, workflowInstanceKeys));
+        .setSourceQuery(termsQuery(idFieldName, processInstanceKeys));
 
     reindexRequest = applyDefaultSettings(reindexRequest);
 

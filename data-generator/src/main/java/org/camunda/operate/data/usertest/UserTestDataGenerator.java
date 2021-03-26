@@ -43,8 +43,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   protected Random random = new Random();
 
-  protected List<Long> workflowInstanceKeys = new ArrayList<>();
-  protected List<Long> doNotTouchWorkflowInstanceKeys = new ArrayList<>();
+  protected List<Long> processInstanceKeys = new ArrayList<>();
+  protected List<Long> doNotTouchProcessInstanceKeys = new ArrayList<>();
 
   protected List<JobWorker> jobWorkers = new ArrayList<>();
 
@@ -58,102 +58,102 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     }
     logger.debug("Test data will be generated");
 
-    createWorkflowWithoutInstances();
-    createWorkflowWithInstancesThatHasOnlyIncidents(5 + random.nextInt(17), 5 + random.nextInt(17));
-    createWorkflowWithInstancesWithoutIncidents(5 + random.nextInt(23), 5 + random.nextInt(23));
+    createProcessWithoutInstances();
+    createProcessWithInstancesThatHasOnlyIncidents(5 + random.nextInt(17), 5 + random.nextInt(17));
+    createProcessWithInstancesWithoutIncidents(5 + random.nextInt(23), 5 + random.nextInt(23));
 
-    createAndStartWorkflowWithLargeVariableValue();
+    createAndStartProcessWithLargeVariableValue();
 
     deployVersion1();
 
     createSpecialDataV1();
 
-    startWorkflowInstances(1);
+    startProcessInstances(1);
 
     deployVersion2();
 
     createSpecialDataV2();
 
-    startWorkflowInstances(2);
+    startProcessInstances(2);
 
     deployVersion3();
 
-    startWorkflowInstances(3);
+    startProcessInstances(3);
 
     createOperations();
 
-    progressWorkflowInstances();
+    progressProcessInstances();
 
     return true;
 
   }
 
-  private void createAndStartWorkflowWithLargeVariableValue() {
-    logger.debug("Deploy and start workflow with large variable value >32kb");
-    ZeebeTestUtil.deployWorkflow(client, "usertest/single-task.bpmn");
+  private void createAndStartProcessWithLargeVariableValue() {
+    logger.debug("Deploy and start process with large variable value >32kb");
+    ZeebeTestUtil.deployProcess(client, "usertest/single-task.bpmn");
     String jsonString = payloadUtil.readJSONStringFromClasspath("/usertest/large-payload.json");
-    ZeebeTestUtil.startWorkflowInstance(client, "bigVarProcess", jsonString);
+    ZeebeTestUtil.startProcessInstance(client, "bigVarProcess", jsonString);
   }
 
   public void createSpecialDataV1() {
-    doNotTouchWorkflowInstanceKeys.add(startLoanProcess());
+    doNotTouchProcessInstanceKeys.add(startLoanProcess());
 
     final long instanceKey2 = startLoanProcess();
     completeTask(instanceKey2, "reviewLoanRequest", null);
     failTask(instanceKey2, "checkSchufa", "Schufa system is not accessible");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey2);
+    doNotTouchProcessInstanceKeys.add(instanceKey2);
 
     final long instanceKey3 = startLoanProcess();
     completeTask(instanceKey3, "reviewLoanRequest", null);
     completeTask(instanceKey3, "checkSchufa", null);
-    ZeebeTestUtil.cancelWorkflowInstance(client, instanceKey3);
-    doNotTouchWorkflowInstanceKeys.add(instanceKey3);
+    ZeebeTestUtil.cancelProcessInstance(client, instanceKey3);
+    doNotTouchProcessInstanceKeys.add(instanceKey3);
 
     final long instanceKey4 = startLoanProcess();
     completeTask(instanceKey4, "reviewLoanRequest", null);
     completeTask(instanceKey4, "checkSchufa", null);
     completeTask(instanceKey4, "sendTheLoanDecision", null);
-    doNotTouchWorkflowInstanceKeys.add(instanceKey4);
+    doNotTouchProcessInstanceKeys.add(instanceKey4);
 
-    doNotTouchWorkflowInstanceKeys.add(startOrderProcess());
+    doNotTouchProcessInstanceKeys.add(startOrderProcess());
 
     final long instanceKey5 = startOrderProcess();
     completeTask(instanceKey5, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     failTask(instanceKey5, "shipArticles", "Cannot connect to server delivery05");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey5);
+    doNotTouchProcessInstanceKeys.add(instanceKey5);
 
     final long instanceKey6 = startOrderProcess();
     completeTask(instanceKey6, "checkPayment", "{\"paid\":false}");
-    ZeebeTestUtil.cancelWorkflowInstance(client, instanceKey6);
-    doNotTouchWorkflowInstanceKeys.add(instanceKey6);
+    ZeebeTestUtil.cancelProcessInstance(client, instanceKey6);
+    doNotTouchProcessInstanceKeys.add(instanceKey6);
 
     final long instanceKey7 = startOrderProcess();
     completeTask(instanceKey7, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey7, "shipArticles", "{\"orderStatus\":\"SHIPPED\"}");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey7);
+    doNotTouchProcessInstanceKeys.add(instanceKey7);
 
-    doNotTouchWorkflowInstanceKeys.add(startFlightRegistrationProcess());
+    doNotTouchProcessInstanceKeys.add(startFlightRegistrationProcess());
 
     final long instanceKey8 = startFlightRegistrationProcess();
     completeTask(instanceKey8, "registerPassenger", null);
-    doNotTouchWorkflowInstanceKeys.add(instanceKey8);
+    doNotTouchProcessInstanceKeys.add(instanceKey8);
 
     final long instanceKey9 = startFlightRegistrationProcess();
     completeTask(instanceKey9, "registerPassenger", null);
     failTask(instanceKey9, "registerCabinBag", "No more stickers available");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey9);
+    doNotTouchProcessInstanceKeys.add(instanceKey9);
 
     final long instanceKey10 = startFlightRegistrationProcess();
     completeTask(instanceKey10, "registerPassenger", null);
     completeTask(instanceKey10, "registerCabinBag", "{\"luggage\":true}");
-    ZeebeTestUtil.cancelWorkflowInstance(client, instanceKey10);
-    doNotTouchWorkflowInstanceKeys.add(instanceKey10);
+    ZeebeTestUtil.cancelProcessInstance(client, instanceKey10);
+    doNotTouchProcessInstanceKeys.add(instanceKey10);
 
     final long instanceKey11 = startFlightRegistrationProcess();
     completeTask(instanceKey11, "registerPassenger", null);
     completeTask(instanceKey11, "registerCabinBag", "{\"luggage\":false}");
     completeTask(instanceKey11, "printOutBoardingPass", null);
-    doNotTouchWorkflowInstanceKeys.add(instanceKey11);
+    doNotTouchProcessInstanceKeys.add(instanceKey11);
 
   }
 
@@ -161,58 +161,58 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     final long instanceKey4 = startOrderProcess();
     completeTask(instanceKey4, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey4, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
-    doNotTouchWorkflowInstanceKeys.add(instanceKey4);
+    doNotTouchProcessInstanceKeys.add(instanceKey4);
 
     final long instanceKey5 = startOrderProcess();
     completeTask(instanceKey5, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     failTask(instanceKey5, "checkItems", "Order information is not complete");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey5);
+    doNotTouchProcessInstanceKeys.add(instanceKey5);
 
     final long instanceKey3 = startOrderProcess();
     completeTask(instanceKey3, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey3, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
     failTask(instanceKey3, "shipArticles", "Cannot connect to server delivery05");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey3);
+    doNotTouchProcessInstanceKeys.add(instanceKey3);
 
     final long instanceKey2 = startOrderProcess();
     completeTask(instanceKey2, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey2, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
     failTask(instanceKey2, "shipArticles", "Order information is not complete");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey2);
+    doNotTouchProcessInstanceKeys.add(instanceKey2);
 
     final long instanceKey1 = startOrderProcess();
     completeTask(instanceKey1, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey1, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
     failTask(instanceKey1, "shipArticles", "Cannot connect to server delivery05");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey1);
+    doNotTouchProcessInstanceKeys.add(instanceKey1);
 
     final long instanceKey7 = startOrderProcess();
     completeTask(instanceKey7, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey7, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
     completeTask(instanceKey7, "shipArticles", "{\"orderStatus\":\"SHIPPED\"}");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey7);
+    doNotTouchProcessInstanceKeys.add(instanceKey7);
 
     final long instanceKey6 = startOrderProcess();
     completeTask(instanceKey6, "checkPayment", "{\"paid\":false}");
-    ZeebeTestUtil.cancelWorkflowInstance(client, instanceKey6);
-    doNotTouchWorkflowInstanceKeys.add(instanceKey6);
+    ZeebeTestUtil.cancelProcessInstance(client, instanceKey6);
+    doNotTouchProcessInstanceKeys.add(instanceKey6);
 
-    doNotTouchWorkflowInstanceKeys.add(startFlightRegistrationProcess());
+    doNotTouchProcessInstanceKeys.add(startFlightRegistrationProcess());
 
     final long instanceKey8 = startFlightRegistrationProcess();
     completeTask(instanceKey8, "registerPassenger", null);
-    doNotTouchWorkflowInstanceKeys.add(instanceKey8);
+    doNotTouchProcessInstanceKeys.add(instanceKey8);
 
     final long instanceKey9 = startFlightRegistrationProcess();
     completeTask(instanceKey9, "registerPassenger", null);
     failTask(instanceKey9, "registerCabinBag", "Cannot connect to server fly-host");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey9);
+    doNotTouchProcessInstanceKeys.add(instanceKey9);
 
     final long instanceKey10 = startFlightRegistrationProcess();
     completeTask(instanceKey10, "registerPassenger", null);
     completeTask(instanceKey10, "registerCabinBag", "{\"luggage\":true}");
-    ZeebeTestUtil.cancelWorkflowInstance(client, instanceKey10);
-    doNotTouchWorkflowInstanceKeys.add(instanceKey10);
+    ZeebeTestUtil.cancelProcessInstance(client, instanceKey10);
+    doNotTouchProcessInstanceKeys.add(instanceKey10);
 
     final long instanceKey11 = startFlightRegistrationProcess();
     completeTask(instanceKey11, "registerPassenger", null);
@@ -220,12 +220,12 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     completeTask(instanceKey11, "determineLuggageWeight", "{\"luggageWeight\":21}");
     completeTask(instanceKey11, "registerLuggage", null);
     completeTask(instanceKey11, "printOutBoardingPass", null);
-    doNotTouchWorkflowInstanceKeys.add(instanceKey11);
+    doNotTouchProcessInstanceKeys.add(instanceKey11);
 
   }
 
-  public void completeTask(long workflowInstanceKey, String jobType, String payload) {
-    final CompleteJobHandler completeJobHandler = new CompleteJobHandler(payload, workflowInstanceKey);
+  public void completeTask(long processInstanceKey, String jobType, String payload) {
+    final CompleteJobHandler completeJobHandler = new CompleteJobHandler(payload, processInstanceKey);
     JobWorker jobWorker = client.newWorker()
       .jobType(jobType)
       .handler(completeJobHandler)
@@ -239,13 +239,13 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       attempts++;
     }
     if (attempts == 10) {
-      logger.debug("Could not complete the task {} for workflow instance id {}", jobType, workflowInstanceKey);
+      logger.debug("Could not complete the task {} for process instance id {}", jobType, processInstanceKey);
     }
     jobWorker.close();
   }
 
-  public void failTask(long workflowInstanceKey, String jobType, String errorMessage) {
-    final FailJobHandler failJobHandler = new FailJobHandler(workflowInstanceKey, errorMessage);
+  public void failTask(long processInstanceKey, String jobType, String errorMessage) {
+    final FailJobHandler failJobHandler = new FailJobHandler(processInstanceKey, errorMessage);
     JobWorker jobWorker = client.newWorker()
       .jobType(jobType)
       .handler(failJobHandler)
@@ -259,12 +259,12 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       attempts++;
     }
     if (attempts == 10) {
-      logger.debug("Could not fail the task {} for workflow instance id {}", jobType, workflowInstanceKey);
+      logger.debug("Could not fail the task {} for process instance id {}", jobType, processInstanceKey);
     }
     jobWorker.close();
   }
 
-  protected void progressWorkflowInstances() {
+  protected void progressProcessInstances() {
     jobWorkers.add(progressReviewLoanRequestTask());
     jobWorkers.add(progressCheckSchufaTask());
     jobWorkers.add(progressSimpleTask("sendTheLoanDecision"));
@@ -293,7 +293,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     //start more instances after 1 minute
     scheduler.schedule(() ->
-        startWorkflowInstances(3)
+        startProcessInstances(3)
       , 1, TimeUnit.MINUTES);
 
     scheduler.schedule(() -> {
@@ -357,14 +357,14 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private void cancelSomeInstances() {
-    final Iterator<Long> iterator = workflowInstanceKeys.iterator();
+    final Iterator<Long> iterator = processInstanceKeys.iterator();
     while (iterator.hasNext()) {
-      long workflowInstanceKey = iterator.next();
+      long processInstanceKey = iterator.next();
       if (random.nextInt(15) == 1) {
         try {
-          client.newCancelInstanceCommand(workflowInstanceKey).send().join();
+          client.newCancelInstanceCommand(processInstanceKey).send().join();
         } catch (ClientException ex) {
-          logger.error("Error occurred when cancelling workflow instance:", ex);
+          logger.error("Error occurred when cancelling process instance:", ex);
         }
       }
       iterator.remove();
@@ -380,7 +380,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .newWorker()
       .jobType("checkPayment")
       .handler((jobClient, job) -> {
-        if (!canProgress(job.getWorkflowInstanceKey()))
+        if (!canProgress(job.getProcessInstanceKey()))
           return;
         final int scenario = random.nextInt(5);
         switch (scenario){
@@ -406,7 +406,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return client.newWorker()
       .jobType("checkItems")
       .handler((jobClient, job) -> {
-        if (!canProgress(job.getWorkflowInstanceKey()))
+        if (!canProgress(job.getProcessInstanceKey()))
           return;
         final int scenario = random.nextInt(4);
         switch (scenario) {
@@ -429,7 +429,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return client.newWorker()
       .jobType("shipArticles")
       .handler((jobClient, job) -> {
-        if (!canProgress(job.getWorkflowInstanceKey()))
+        if (!canProgress(job.getProcessInstanceKey()))
           return;
         final int scenario = random.nextInt(2);
         switch (scenario) {
@@ -450,7 +450,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return client.newWorker()
       .jobType("registerCabinBag")
       .handler((jobClient, job) -> {
-        if (!canProgress(job.getWorkflowInstanceKey()))
+        if (!canProgress(job.getProcessInstanceKey()))
           return;
         final int scenario = random.nextInt(4);
         switch (scenario) {
@@ -473,7 +473,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return client.newWorker()
       .jobType("determineLuggageWeight")
       .handler((jobClient, job) -> {
-        if (!canProgress(job.getWorkflowInstanceKey()))
+        if (!canProgress(job.getProcessInstanceKey()))
           return;
         jobClient.newCompleteCommand(job.getKey()).variables("{\"luggageWeight\":" + (random.nextInt(10) + 20) + "}").send().join();
       })
@@ -487,7 +487,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .jobType(taskType)
       .handler((jobClient, job) ->
       {
-        if (!canProgress(job.getWorkflowInstanceKey()))
+        if (!canProgress(job.getProcessInstanceKey()))
           return;
         final int scenarioCount = random.nextInt(3);
         switch (scenarioCount) {
@@ -513,7 +513,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return client.newWorker()
       .jobType("reviewLoanRequest")
       .handler((jobClient, job) -> {
-        if (!canProgress(job.getWorkflowInstanceKey()))
+        if (!canProgress(job.getProcessInstanceKey()))
           return;
         final int scenarioCount = random.nextInt(3);
         switch (scenarioCount) {
@@ -539,7 +539,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return client.newWorker()
       .jobType("checkSchufa")
       .handler((jobClient, job) -> {
-        if (!canProgress(job.getWorkflowInstanceKey()))
+        if (!canProgress(job.getProcessInstanceKey()))
           return;
         final int scenarioCount = random.nextInt(3);
         switch (scenarioCount) {
@@ -562,71 +562,71 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private boolean canProgress(long key) {
-    return !doNotTouchWorkflowInstanceKeys.contains(key);
+    return !doNotTouchProcessInstanceKeys.contains(key);
   }
 
-  protected void createWorkflowWithoutInstances() {
-    Long workflowKeyVersion1 = ZeebeTestUtil.deployWorkflow(client, "usertest/withoutInstancesProcess_v_1.bpmn");
-    Long workflowKeyVersion2 = ZeebeTestUtil.deployWorkflow(client, "usertest/withoutInstancesProcess_v_2.bpmn");
-    logger.info("Created workflow 'withoutInstancesProcess' version 1: {} and version 2: {}", workflowKeyVersion1, workflowKeyVersion2);
+  protected void createProcessWithoutInstances() {
+    Long processDefinitionKeyVersion1 = ZeebeTestUtil.deployProcess(client, "usertest/withoutInstancesProcess_v_1.bpmn");
+    Long processDefinitionKeyVersion2 = ZeebeTestUtil.deployProcess(client, "usertest/withoutInstancesProcess_v_2.bpmn");
+    logger.info("Created process 'withoutInstancesProcess' version 1: {} and version 2: {}", processDefinitionKeyVersion1, processDefinitionKeyVersion2);
   }
 
-  protected void createWorkflowWithInstancesThatHasOnlyIncidents(int forVersion1,int forVersion2) {
-    ZeebeTestUtil.deployWorkflow(client, "usertest/onlyIncidentsProcess_v_1.bpmn");
+  protected void createProcessWithInstancesThatHasOnlyIncidents(int forVersion1,int forVersion2) {
+    ZeebeTestUtil.deployProcess(client, "usertest/onlyIncidentsProcess_v_1.bpmn");
     for (int i = 0; i < forVersion1; i++) {
-      Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(client, "onlyIncidentsProcess", null);
-      failTask(workflowInstanceKey, "alwaysFails", "No memory left.");
+      Long processInstanceKey = ZeebeTestUtil.startProcessInstance(client, "onlyIncidentsProcess", null);
+      failTask(processInstanceKey, "alwaysFails", "No memory left.");
     }
-    ZeebeTestUtil.deployWorkflow(client, "usertest/onlyIncidentsProcess_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, "usertest/onlyIncidentsProcess_v_2.bpmn");
     for (int i = 0; i < forVersion2; i++) {
-      Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(client, "onlyIncidentsProcess", null);
-      failTask(workflowInstanceKey, "alwaysFails", "No space left on device.");
-      failTask(workflowInstanceKey, "alwaysFails2", "No space left on device.");
+      Long processInstanceKey = ZeebeTestUtil.startProcessInstance(client, "onlyIncidentsProcess", null);
+      failTask(processInstanceKey, "alwaysFails", "No space left on device.");
+      failTask(processInstanceKey, "alwaysFails2", "No space left on device.");
     }
-    logger.info("Created workflow 'onlyIncidentsProcess' with {} instances for version 1 and {} instances for version 2", forVersion1, forVersion2);
+    logger.info("Created process 'onlyIncidentsProcess' with {} instances for version 1 and {} instances for version 2", forVersion1, forVersion2);
   }
 
-  protected void createWorkflowWithInstancesWithoutIncidents(int forVersion1,int forVersion2) {
-    ZeebeTestUtil.deployWorkflow(client, "usertest/withoutIncidentsProcess_v_1.bpmn");
+  protected void createProcessWithInstancesWithoutIncidents(int forVersion1,int forVersion2) {
+    ZeebeTestUtil.deployProcess(client, "usertest/withoutIncidentsProcess_v_1.bpmn");
     for (int i = 0; i < forVersion1; i++) {
-      ZeebeTestUtil.startWorkflowInstance(client, "withoutIncidentsProcess", null);
+      ZeebeTestUtil.startProcessInstance(client, "withoutIncidentsProcess", null);
     }
-    ZeebeTestUtil.deployWorkflow(client, "usertest/withoutIncidentsProcess_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, "usertest/withoutIncidentsProcess_v_2.bpmn");
     for (int i = 0; i < forVersion2; i++) {
-      Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(client, "withoutIncidentsProcess", null);
-      completeTask(workflowInstanceKey, "neverFails", null);
+      Long processInstanceKey = ZeebeTestUtil.startProcessInstance(client, "withoutIncidentsProcess", null);
+      completeTask(processInstanceKey, "neverFails", null);
     }
-    logger.info("Created workflow 'withoutIncidentsProcess' with {} instances for version 1 and {} instances for version 2", forVersion1, forVersion2);
+    logger.info("Created process 'withoutIncidentsProcess' with {} instances for version 1 and {} instances for version 2", forVersion1, forVersion2);
   }
 
   protected void deployVersion1() {
-    //deploy workflows v.1
-    ZeebeTestUtil.deployWorkflow(client, "usertest/orderProcess_v_1.bpmn");
+    //deploy processes v.1
+    ZeebeTestUtil.deployProcess(client, "usertest/orderProcess_v_1.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "usertest/loanProcess_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, "usertest/loanProcess_v_1.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "usertest/registerPassenger_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, "usertest/registerPassenger_v_1.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "usertest/multiInstance_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, "usertest/multiInstance_v_1.bpmn");
   }
 
-  protected void startWorkflowInstances(int version) {
+  protected void startProcessInstances(int version) {
     final int instancesCount = random.nextInt(50) + 50;
     for (int i = 0; i < instancesCount; i++) {
       if (version < 2) {
-        workflowInstanceKeys.add(startLoanProcess());
+        processInstanceKeys.add(startLoanProcess());
       }
       if (version < 3) {
-        workflowInstanceKeys.add(startOrderProcess());
-        workflowInstanceKeys.add(startFlightRegistrationProcess());
-        workflowInstanceKeys.add(startMultiInstanceProcess());
+        processInstanceKeys.add(startOrderProcess());
+        processInstanceKeys.add(startFlightRegistrationProcess());
+        processInstanceKeys.add(startMultiInstanceProcess());
       }
 
     }
   }
 
   private long startFlightRegistrationProcess() {
-    return ZeebeTestUtil.startWorkflowInstance(client, "flightRegistration",
+    return ZeebeTestUtil.startProcessInstance(client, "flightRegistration",
       "{\n"
         + "  \"firstName\": \"" + NameGenerator.getRandomFirstName() + "\",\n"
         + "  \"lastName\": \"" + NameGenerator.getRandomLastName() + "\",\n"
@@ -638,7 +638,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   private long startOrderProcess() {
     float price1 = Math.round(random.nextFloat() * 100000) / 100;
     float price2 = Math.round(random.nextFloat() * 10000) / 100;
-    return ZeebeTestUtil.startWorkflowInstance(client, "orderProcess", "{\n"
+    return ZeebeTestUtil.startProcessInstance(client, "orderProcess", "{\n"
       + "  \"clientNo\": \"CNT-1211132-02\",\n"
       + "  \"orderNo\": \"CMD0001-01\",\n"
       + "  \"items\": [\n"
@@ -662,7 +662,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private long startLoanProcess() {
-    return ZeebeTestUtil.startWorkflowInstance(client, "loanProcess",
+    return ZeebeTestUtil.startProcessInstance(client, "loanProcess",
       "{\"requestId\": \"RDG123000001\",\n"
         + "  \"amount\": " + (random.nextInt(10000) + 20000) + ",\n"
         + "  \"applier\": {\n"
@@ -687,16 +687,16 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private long startMultiInstanceProcess() {
-    return ZeebeTestUtil.startWorkflowInstance(client, "multiInstanceProcess", "{\"items\": [1, 2, 3]}");
+    return ZeebeTestUtil.startProcessInstance(client, "multiInstanceProcess", "{\"items\": [1, 2, 3]}");
   }
 
   protected void deployVersion2() {
-    //deploy workflows v.2
-    ZeebeTestUtil.deployWorkflow(client, "usertest/orderProcess_v_2.bpmn");
+    //deploy processes v.2
+    ZeebeTestUtil.deployProcess(client, "usertest/orderProcess_v_2.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "usertest/registerPassenger_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, "usertest/registerPassenger_v_2.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "usertest/multiInstance_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, "usertest/multiInstance_v_2.bpmn");
 
   }
 
@@ -705,17 +705,17 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   private static class CompleteJobHandler implements JobHandler {
     private final String payload;
-    private final long workflowInstanceKey;
+    private final long processInstanceKey;
     private boolean taskCompleted = false;
 
-    public CompleteJobHandler(String payload, long workflowInstanceKey) {
+    public CompleteJobHandler(String payload, long processInstanceKey) {
       this.payload = payload;
-      this.workflowInstanceKey = workflowInstanceKey;
+      this.processInstanceKey = processInstanceKey;
     }
 
     @Override
     public void handle(JobClient jobClient, ActivatedJob job) {
-      if (!taskCompleted && workflowInstanceKey == job.getWorkflowInstanceKey()) {
+      if (!taskCompleted && processInstanceKey == job.getProcessInstanceKey()) {
         if (payload == null) {
           jobClient.newCompleteCommand(job.getKey()).variables(job.getVariables()).send().join();
         } else {
@@ -731,18 +731,18 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private static class FailJobHandler implements JobHandler {
-    private final long workflowInstanceKey;
+    private final long processInstanceKey;
     private final String errorMessage;
     private boolean taskFailed = false;
 
-    public FailJobHandler(long workflowInstanceKey, String errorMessage) {
-      this.workflowInstanceKey = workflowInstanceKey;
+    public FailJobHandler(long processInstanceKey, String errorMessage) {
+      this.processInstanceKey = processInstanceKey;
       this.errorMessage = errorMessage;
     }
 
     @Override
     public void handle(JobClient jobClient, ActivatedJob job) {
-      if (!taskFailed && workflowInstanceKey == job.getWorkflowInstanceKey()) {
+      if (!taskFailed && processInstanceKey == job.getProcessInstanceKey()) {
         FinalCommandStep failCmd = jobClient.newFailCommand(job.getKey()).retries(0);
         if (errorMessage != null) {
           failCmd = ((FailJobCommandStep1.FailJobCommandStep2) failCmd).errorMessage(errorMessage);

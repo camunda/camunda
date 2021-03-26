@@ -59,13 +59,13 @@ const mockIncidents = () => {
 
 const noIncidents = {count: 0, incidents: [], errorTypes: [], flowNodes: []};
 
-const workflowInstance = createInstance({
+const processInstance = createInstance({
   id: '4294980768',
   state: STATE.ACTIVE,
-  workflowId: 'workflowId',
+  processId: 'processId',
 });
 
-const workflowInstanceWithIncident = createInstance({
+const processInstanceWithIncident = createInstance({
   id: '4294980768',
   state: STATE.INCIDENT,
 });
@@ -73,9 +73,9 @@ const workflowInstanceWithIncident = createInstance({
 export const testData = {
   fetch: {
     onPageLoad: {
-      workflowXML: '<foo />',
-      workflowInstance,
-      workflowInstanceWithIncident,
+      processXML: '<foo />',
+      processInstance,
+      processInstanceWithIncident,
       diagramNodes: createDiagramNodes(),
       incidents: mockIncidents(),
       noIncidents,

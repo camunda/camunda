@@ -5,20 +5,20 @@
  */
 
 import {
-  createWorkflow,
+  createProcess,
   createIncidentsByError,
   createInstanceByError,
 } from 'modules/testUtils';
 
 const mockIncidentsByError = createIncidentsByError([
   createInstanceByError({
-    workflows: [createWorkflow()],
+    processes: [createProcess()],
   }),
   createInstanceByError({
     errorMessage: 'No space left on device.',
-    workflows: [
-      createWorkflow({name: 'workflowA', version: 42}),
-      createWorkflow({name: 'workflowB', version: 23}),
+    processes: [
+      createProcess({name: 'processA', version: 42}),
+      createProcess({name: 'processB', version: 23}),
     ],
   }),
 ]);

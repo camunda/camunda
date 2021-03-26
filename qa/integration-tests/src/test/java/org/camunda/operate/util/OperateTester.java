@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.util.CollectionUtil.filter;
 import static org.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
-import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
@@ -33,7 +33,7 @@ import java.util.function.Predicate;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.archiver.AbstractArchiverJob;
-import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
+import org.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import org.camunda.operate.entities.FlowNodeInstanceEntity;
 import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.entities.IncidentEntity;
@@ -85,25 +85,25 @@ public class OperateTester {
   private MockMvcTestRule mockMvcTestRule;
   private ElasticsearchTestRule elasticsearchTestRule;
 
-  private Long workflowKey;
-  private Long workflowInstanceKey;
+  private Long processDefinitionKey;
+  private Long processInstanceKey;
   private Long jobKey;
 
   @Autowired
-  @Qualifier("workflowIsDeployedCheck")
-  private Predicate<Object[]> workflowIsDeployedCheck;
+  @Qualifier("processIsDeployedCheck")
+  private Predicate<Object[]> processIsDeployedCheck;
 
   @Autowired
-  @Qualifier("workflowInstancesAreStartedCheck")
-  private Predicate<Object[]> workflowInstancesAreStartedCheck;
+  @Qualifier("processInstancesAreStartedCheck")
+  private Predicate<Object[]> processInstancesAreStartedCheck;
 
   @Autowired
-  @Qualifier("workflowInstancesAreFinishedCheck")
-  private Predicate<Object[]> workflowInstancesAreFinishedCheck;
+  @Qualifier("processInstancesAreFinishedCheck")
+  private Predicate<Object[]> processInstancesAreFinishedCheck;
 
   @Autowired
-  @Qualifier("workflowInstanceIsCompletedCheck")
-  private Predicate<Object[]> workflowInstanceIsCompletedCheck;
+  @Qualifier("processInstanceIsCompletedCheck")
+  private Predicate<Object[]> processInstanceIsCompletedCheck;
 
   @Autowired
   @Qualifier("incidentIsActiveCheck")
@@ -118,8 +118,8 @@ public class OperateTester {
   private Predicate<Object[]> flowNodeIsCompletedCheck;
 
   @Autowired
-  @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
-  private Predicate<Object[]> operationsByWorkflowInstanceAreCompletedCheck;
+  @Qualifier("operationsByProcessInstanceAreCompletedCheck")
+  private Predicate<Object[]> operationsByProcessInstanceAreCompletedCheck;
 
   @Autowired
   @Qualifier("variableExistsCheck")
@@ -154,57 +154,57 @@ public class OperateTester {
     this.elasticsearchTestRule = elasticsearchTestRule;
   }
 
-  public Long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public OperateTester createAndDeploySimpleWorkflow(String processId,String activityId) {
-    BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
+  public OperateTester createAndDeploySimpleProcess(String processId,String activityId) {
+    BpmnModelInstance process = Bpmn.createExecutableProcess(processId)
         .startEvent("start")
         .serviceTask(activityId).zeebeJobType(activityId)
         .endEvent()
         .done();
-    workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, workflow,processId+".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process,processId+".bpmn");
     return this;
   }
 
-  public OperateTester deployWorkflow(String... classpathResources) {
+  public OperateTester deployProcess(String... classpathResources) {
     Validate.notNull(zeebeClient, "ZeebeClient should be set.");
-    workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, classpathResources);
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, classpathResources);
     return this;
   }
 
-  public OperateTester deployWorkflow(BpmnModelInstance workflowModel, String resourceName) {
-    workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, workflowModel, resourceName);
+  public OperateTester deployProcess(BpmnModelInstance processModel, String resourceName) {
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, processModel, resourceName);
     return this;
   }
 
-  public OperateTester workflowIsDeployed() {
-    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey);
+  public OperateTester processIsDeployed() {
+    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
     return this;
   }
 
-  public OperateTester startWorkflowInstance(String bpmnProcessId) {
-   return startWorkflowInstance(bpmnProcessId, null);
+  public OperateTester startProcessInstance(String bpmnProcessId) {
+   return startProcessInstance(bpmnProcessId, null);
   }
 
-  public OperateTester startWorkflowInstance(String bpmnProcessId, String payload) {
-    workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, bpmnProcessId, payload);
+  public OperateTester startProcessInstance(String bpmnProcessId, String payload) {
+    processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
     return this;
   }
 
-  public OperateTester workflowInstanceIsStarted() {
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreStartedCheck, Arrays.asList(workflowInstanceKey));
+  public OperateTester processInstanceIsStarted() {
+    elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreStartedCheck, Arrays.asList(processInstanceKey));
     return this;
   }
 
-  public OperateTester workflowInstanceIsFinished() {
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreFinishedCheck, Arrays.asList(workflowInstanceKey));
+  public OperateTester processInstanceIsFinished() {
+    elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, Arrays.asList(processInstanceKey));
     return this;
   }
 
-  public OperateTester workflowInstanceIsCompleted() {
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
+  public OperateTester processInstanceIsCompleted() {
+    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey);
     return this;
   }
 
@@ -225,17 +225,17 @@ public class OperateTester {
   }
 
   public OperateTester incidentIsActive() {
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
     return this;
   }
 
   public OperateTester flowNodeIsActive(String activityId) {
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey,activityId);
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey,activityId);
     return this;
   }
 
   public OperateTester flowNodeIsCompleted(String activityId) {
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsCompletedCheck, workflowInstanceKey, activityId);
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsCompletedCheck, processInstanceKey, activityId);
     return this;
   }
 
@@ -268,7 +268,7 @@ public class OperateTester {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setVariableName(varName);
     op.setVariableValue(varValue);
-    op.setVariableScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
+    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
     postOperation(op);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     return this;
@@ -276,7 +276,7 @@ public class OperateTester {
 
   private MvcResult postOperation(CreateOperationRequestDto operationRequest) throws Exception {
     MockHttpServletRequestBuilder postOperationRequest =
-        post(String.format( "/api/workflow-instances/%s/operation", workflowInstanceKey))
+        post(String.format( "/api/process-instances/%s/operation", processInstanceKey))
             .content(mockMvcTestRule.json(operationRequest))
             .contentType(mockMvcTestRule.getContentType());
 
@@ -287,12 +287,12 @@ public class OperateTester {
     return mvcResult;
   }
 
-  public OperateTester cancelWorkflowInstanceOperation() throws Exception {
-    final ListViewQueryDto workflowInstanceQuery = TestUtil.createGetAllWorkflowInstancesQuery()
-        .setIds(Collections.singletonList(workflowInstanceKey.toString()));
+  public OperateTester cancelProcessInstanceOperation() throws Exception {
+    final ListViewQueryDto processInstanceQuery = TestUtil.createGetAllProcessInstancesQuery()
+        .setIds(Collections.singletonList(processInstanceKey.toString()));
 
     CreateBatchOperationRequestDto batchOperationDto
-        = new CreateBatchOperationRequestDto(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
+        = new CreateBatchOperationRequestDto(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE);
 
     postOperation(batchOperationDto);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
@@ -301,13 +301,13 @@ public class OperateTester {
 
   public OperateTester operationIsCompleted() throws Exception {
     executeOneBatch();
-    elasticsearchTestRule.processAllRecordsAndWait(operationsByWorkflowInstanceAreCompletedCheck, workflowInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreCompletedCheck, processInstanceKey);
     return this;
   }
 
   private MvcResult postOperation(CreateBatchOperationRequestDto operationRequest) throws Exception {
     MockHttpServletRequestBuilder postOperationRequest =
-      post(String.format( "/api/workflow-instances/%s/operation", workflowInstanceKey))
+      post(String.format( "/api/process-instances/%s/operation", processInstanceKey))
         .content(mockMvcTestRule.json(operationRequest))
         .contentType(mockMvcTestRule.getContentType());
 
@@ -355,8 +355,8 @@ public class OperateTester {
 
   public OperateTester archive() {
     try {
-      WorkflowInstancesArchiverJob.ArchiveBatch finishedAtDateIds = new AbstractArchiverJob.ArchiveBatch("_test_archived", Arrays.asList(workflowInstanceKey));
-      WorkflowInstancesArchiverJob archiverJob = beanFactory.getBean(WorkflowInstancesArchiverJob.class);
+      ProcessInstancesArchiverJob.ArchiveBatch finishedAtDateIds = new AbstractArchiverJob.ArchiveBatch("_test_archived", Arrays.asList(processInstanceKey));
+      ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class);
       archiverJob.archiveBatch(finishedAtDateIds);
     } catch (ArchiverException e) {
       return this;
@@ -375,16 +375,16 @@ public class OperateTester {
   }
 
   public OperateTester variableExists(String name) {
-    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey,name);
+    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, processInstanceKey,name);
     return this;
   }
 
   public String getVariable(String name) {
-   return getVariable(name,workflowInstanceKey);
+   return getVariable(name,processInstanceKey);
   }
 
   public String getVariable(String name,Long scopeKey) {
-    List<VariableDto> variables = variableReader.getVariables(workflowInstanceKey, scopeKey);
+    List<VariableDto> variables = variableReader.getVariables(processInstanceKey, scopeKey);
     List<VariableDto> variablesWithGivenName = filter(variables, variable -> variable.getName().equals(name));
     if(variablesWithGivenName.isEmpty()) {
       return null;
@@ -398,18 +398,18 @@ public class OperateTester {
   }
 
   public List<IncidentEntity> getIncidents() {
-    return getIncidentsFor(workflowInstanceKey);
+    return getIncidentsFor(processInstanceKey);
   }
 
-  public List<IncidentEntity> getIncidentsFor(Long workflowInstanceKey) {
-    return incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
+  public List<IncidentEntity> getIncidentsFor(Long processInstanceKey) {
+    return incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
   }
 
-  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long workflowInstanceKey) {
-    final TermQueryBuilder workflowInstanceKeyQuery = termQuery(FlowNodeInstanceTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {
+    final TermQueryBuilder processInstanceKeyQuery = termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
         .source(new SearchSourceBuilder()
-            .query(constantScoreQuery(workflowInstanceKeyQuery))
+            .query(constantScoreQuery(processInstanceKeyQuery))
             .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
     try {
       return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
@@ -423,9 +423,9 @@ public class OperateTester {
   }
 
   public List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
-      String workflowInstanceId) throws Exception {
+      String processInstanceId) throws Exception {
     return getFlowNodeInstanceOneListFromRest(
-        new FlowNodeInstanceQueryDto(workflowInstanceId, workflowInstanceId));
+        new FlowNodeInstanceQueryDto(processInstanceId, processInstanceId));
   }
 
   public List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
@@ -439,7 +439,7 @@ public class OperateTester {
     return response.values().iterator().next().getChildren();
   }
 
-  public FlowNodeMetadataDto getFlowNodeMetadataFromRest(String workflowInstanceId,
+  public FlowNodeMetadataDto getFlowNodeMetadataFromRest(String processInstanceId,
       String flowNodeId, FlowNodeType flowNodeType, String flowNodeInstanceId)
       throws Exception {
     final FlowNodeMetadataRequestDto request = new FlowNodeMetadataRequestDto()
@@ -447,7 +447,7 @@ public class OperateTester {
         .setFlowNodeType(flowNodeType)
         .setFlowNodeInstanceId(flowNodeInstanceId);
     MvcResult mvcResult = postRequest(
-        String.format(WORKFLOW_INSTANCE_URL + "/%s/flow-node-metadata", workflowInstanceId),
+        String.format(PROCESS_INSTANCE_URL + "/%s/flow-node-metadata", processInstanceId),
         request);
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
     });

@@ -141,7 +141,7 @@ const InstanceAnchor = styled(Link)`
   }}
 `;
 
-const WorkflowName = styled.span`
+const ProcessName = styled.span`
   margin-left: 6px;
 `;
 
@@ -163,7 +163,7 @@ export {
   CheckAll,
   Cell,
   InstanceAnchor,
-  WorkflowName,
+  ProcessName,
   EmptyTR,
   EmptyTD,
   THead,

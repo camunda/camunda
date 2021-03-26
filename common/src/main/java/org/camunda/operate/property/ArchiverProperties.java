@@ -29,7 +29,7 @@ public class ArchiverProperties {
   private String waitPeriodBeforeArchiving = "1h";
 
   /**
-   * In case archiver runs without delays, two subsequent runs may try to process the same workflow entities (because of Elasticsearch refresh behaviour).
+   * In case archiver runs without delays, two subsequent runs may try to process the same process entities (because of Elasticsearch refresh behaviour).
    * In general, it's fine, but there are two side effects:
    * 1. We do the job, that is not needed anymore -> wasting CPU time
    * 2. Metrics will become incorrect, as it's not possible to distinguish such (duplicated) calls from normal ones.

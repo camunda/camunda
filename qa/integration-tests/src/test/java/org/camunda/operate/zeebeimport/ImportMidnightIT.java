@@ -13,14 +13,14 @@ import java.util.List;
 import org.camunda.operate.entities.FlowNodeInstanceEntity;
 import org.camunda.operate.entities.FlowNodeState;
 import org.camunda.operate.util.TestApplication;
-import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.entities.listview.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.ProcessInstanceState;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
-import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
+import org.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ import static org.camunda.operate.util.ThreadUtil.sleepFor;
 public class ImportMidnightIT extends OperateZeebeIntegrationTest {
 
   @Autowired
-  private WorkflowInstanceReader workflowInstanceReader;
+  private ProcessInstanceReader processInstanceReader;
 
   @Autowired
   private ListViewReader listViewReader;
@@ -59,15 +59,15 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testWorkflowInstancesCompletedNextDay() {
+  public void testProcessInstancesCompletedNextDay() {
     // having
     String processId = "demoProcess";
-    BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
+    BpmnModelInstance process = Bpmn.createExecutableProcess(processId)
         .startEvent("start")
           .serviceTask("task1").zeebeJobType("task1")
           .serviceTask("task2").zeebeJobType("task2")
         .endEvent().done();
-    deployWorkflow(workflow, "demoProcess_v_1.bpmn");
+    deployProcess(process, "demoProcess_v_1.bpmn");
 
     //disable automatic index refreshes
     zeebeRule.updateRefreshInterval("-1");
@@ -75,32 +75,32 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
     final Instant firstDate = brokerRule.getClock().getCurrentTime();
     fillIndicesWithData(processId, firstDate);
 
-    //start workflow instance
-    long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    completeTask(workflowInstanceKey, "task1", null, false);
+    //start process instance
+    long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    completeTask(processInstanceKey, "task1", null, false);
     //let Zeebe export data
     sleepFor(5000);
     //complete instances next day
     Instant secondDate = firstDate.plus(1, ChronoUnit.DAYS);
     brokerRule.getClock().setCurrentTime(secondDate);
-    completeTask(workflowInstanceKey, "task2", null, false);
+    completeTask(processInstanceKey, "task2", null, false);
     //let Zeebe export data
     sleepFor(5000);
 
     //when
     //refresh 2nd date index and load all data
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCompletedCheck, () -> {
+    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, () -> {
       zeebeRule.refreshIndices(secondDate);
       return null;
-    }, workflowInstanceKey);
+    }, processInstanceKey);
 
     //then internally previous index will also be refreshed and full data will be loaded
-    WorkflowInstanceForListViewEntity wi = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
-    assertThat(wi.getState()).isEqualTo(WorkflowInstanceState.COMPLETED);
+    ProcessInstanceForListViewEntity wi = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    assertThat(wi.getState()).isEqualTo(ProcessInstanceState.COMPLETED);
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(workflowInstanceKey);
+        .getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances).hasSize(4);
     FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
     assertThat(activity.getFlowNodeId()).isEqualTo("task1");
@@ -116,16 +116,16 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
 
   public void fillIndicesWithData(String processId, Instant firstDate) {
     //two instances for two partitions
-    long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    cancelWorkflowInstance(workflowInstanceKey, false);
+    long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    cancelProcessInstance(processInstanceKey, false);
     sleepFor(2000);
     zeebeRule.refreshIndices(firstDate);
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
-    workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    cancelWorkflowInstance(workflowInstanceKey, false);
+    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
+    processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    cancelProcessInstance(processInstanceKey, false);
     sleepFor(2000);
     zeebeRule.refreshIndices(firstDate);
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
   }
 
 }

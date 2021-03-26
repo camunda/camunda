@@ -39,11 +39,11 @@ public class VariableReader extends AbstractReader {
   @Autowired
   private OperationReader operationReader;
 
-  public List<VariableDto> getVariables(Long workflowInstanceKey, Long scopeKey) {
-    final TermQueryBuilder workflowInstanceKeyQuery = termQuery(VariableTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+  public List<VariableDto> getVariables(Long processInstanceKey, Long scopeKey) {
+    final TermQueryBuilder processInstanceKeyQuery = termQuery(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final TermQueryBuilder scopeKeyQuery = termQuery(VariableTemplate.SCOPE_KEY, scopeKey);
 
-    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceKeyQuery, scopeKeyQuery));
+    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(processInstanceKeyQuery, scopeKeyQuery));
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
       .source(new SearchSourceBuilder()
@@ -51,7 +51,7 @@ public class VariableReader extends AbstractReader {
         .sort(VariableTemplate.NAME, SortOrder.ASC));
     try {
       final List<VariableEntity> variableEntities = scroll(searchRequest, VariableEntity.class);
-      final Map<String, List<OperationEntity>> operations = operationReader.getOperationsPerVariableName(workflowInstanceKey, scopeKey);
+      final Map<String, List<OperationEntity>> operations = operationReader.getOperationsPerVariableName(processInstanceKey, scopeKey);
       return VariableDto.createFrom(variableEntities, operations);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining variables: %s", e.getMessage());

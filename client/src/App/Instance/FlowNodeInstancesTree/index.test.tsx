@@ -26,22 +26,22 @@ import {FlowNodeInstancesTree} from './index';
 import {CURRENT_INSTANCE} from './index.setup';
 import {
   createMultiInstanceFlowNodeInstances,
-  multiInstanceWorkflow,
+  multiInstanceProcess,
 } from 'modules/testUtils';
 
-const workflowId = '1';
-const workflowInstanceId = CURRENT_INSTANCE.id;
+const processId = '1';
+const processInstanceId = CURRENT_INSTANCE.id;
 
 const flowNodeInstances = createMultiInstanceFlowNodeInstances(
-  workflowInstanceId
+  processInstanceId
 );
 
 const mockFlowNodeInstance: FlowNodeInstance = {
-  id: workflowInstanceId,
-  type: 'WORKFLOW',
+  id: processInstanceId,
+  type: 'PROCESS',
   state: 'COMPLETED',
-  flowNodeId: workflowId,
-  treePath: workflowInstanceId,
+  flowNodeId: processId,
+  treePath: processInstanceId,
   startDate: '',
   endDate: null,
   sortValues: [],
@@ -53,17 +53,17 @@ describe('<FlowNodeInstancesTree />', () => {
       rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
         res.once(ctx.json(flowNodeInstances.level1))
       ),
-      rest.get(`/api/workflow-instances/:workflowInstanceId`, (_, res, ctx) =>
+      rest.get(`/api/process-instances/:processInstanceId`, (_, res, ctx) =>
         res.once(ctx.json(CURRENT_INSTANCE))
       ),
-      rest.get(`/api/workflows/:workflowId/xml`, (_, res, ctx) =>
-        res.once(ctx.text(multiInstanceWorkflow))
+      rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
+        res.once(ctx.text(multiInstanceProcess))
       )
     );
 
     await Promise.all([
-      currentInstanceStore.init(workflowInstanceId),
-      singleInstanceDiagramStore.fetchWorkflowXml(workflowId),
+      currentInstanceStore.init(processInstanceId),
+      singleInstanceDiagramStore.fetchProcessXml(processId),
     ]);
 
     jest.useFakeTimers();
@@ -212,7 +212,7 @@ describe('<FlowNodeInstancesTree />', () => {
 
     const withinMultiInstanceFlowNode = within(
       screen.getByTestId(
-        `tree-node-${flowNodeInstances.level1Poll[workflowInstanceId].children[1].id}`
+        `tree-node-${flowNodeInstances.level1Poll[processInstanceId].children[1].id}`
       )
     );
 

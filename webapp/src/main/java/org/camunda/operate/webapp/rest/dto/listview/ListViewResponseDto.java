@@ -10,16 +10,16 @@ import java.util.List;
 
 public class ListViewResponseDto {
 
-  private List<ListViewWorkflowInstanceDto> workflowInstances = new ArrayList<>();
+  private List<ListViewProcessInstanceDto> processInstances = new ArrayList<>();
 
   private long totalCount;
 
-  public List<ListViewWorkflowInstanceDto> getWorkflowInstances() {
-    return workflowInstances;
+  public List<ListViewProcessInstanceDto> getProcessInstances() {
+    return processInstances;
   }
 
-  public void setWorkflowInstances(List<ListViewWorkflowInstanceDto> workflowInstances) {
-    this.workflowInstances = workflowInstances;
+  public void setProcessInstances(List<ListViewProcessInstanceDto> processInstances) {
+    this.processInstances = processInstances;
   }
 
   public long getTotalCount() {
@@ -41,12 +41,12 @@ public class ListViewResponseDto {
 
     if (totalCount != that.totalCount)
       return false;
-    return workflowInstances != null ? workflowInstances.equals(that.workflowInstances) : that.workflowInstances == null;
+    return processInstances != null ? processInstances.equals(that.processInstances) : that.processInstances == null;
   }
 
   @Override
   public int hashCode() {
-    int result = workflowInstances != null ? workflowInstances.hashCode() : 0;
+    int result = processInstances != null ? processInstances.hashCode() : 0;
     result = 31 * result + (int) (totalCount ^ (totalCount >>> 32));
     return result;
   }

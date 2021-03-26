@@ -25,9 +25,9 @@ const defaultProps = {
 const mockInstances = [
   {
     id: '2251799813685625',
-    workflowId: '2251799813685623',
-    workflowName: 'Without Incidents Process',
-    workflowVersion: 1,
+    processId: '2251799813685623',
+    processName: 'Without Incidents Process',
+    processVersion: 1,
     startDate: '2020-11-19T08:14:05.406+0000',
     endDate: null,
     state: 'ACTIVE',
@@ -38,9 +38,9 @@ const mockInstances = [
   } as const,
   {
     id: '2251799813685627',
-    workflowId: '2251799813685623',
-    workflowName: 'Without Incidents Process',
-    workflowVersion: 1,
+    processId: '2251799813685623',
+    processName: 'Without Incidents Process',
+    processVersion: 1,
     startDate: '2020-11-19T08:14:05.490+0000',
     endDate: null,
     state: 'ACTIVE',
@@ -58,7 +58,7 @@ describe('ListFooter', () => {
   it('should show copyright, no dropdown', () => {
     instancesStore.setInstances({
       filteredInstancesCount: 11,
-      workflowInstances: mockInstances,
+      processInstances: mockInstances,
     });
 
     render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
@@ -73,7 +73,7 @@ describe('ListFooter', () => {
   it('should show Dropdown when there is selection', () => {
     instancesStore.setInstances({
       filteredInstancesCount: 9,
-      workflowInstances: mockInstances,
+      processInstances: mockInstances,
     });
     render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
     instanceSelectionStore.selectInstance('1');

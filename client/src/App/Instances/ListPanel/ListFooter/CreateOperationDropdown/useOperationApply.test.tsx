@@ -10,13 +10,13 @@ import {waitFor} from '@testing-library/react';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {operationsStore} from 'modules/stores/operations';
 import {instancesStore} from 'modules/stores/instances';
-import {workflowsStore} from 'modules/stores/workflows';
+import {processesStore} from 'modules/stores/processes';
 import {INSTANCE_SELECTION_MODE} from 'modules/constants';
 import {mockData} from './useOperationApply.setup';
 import {
-  groupedWorkflowsMock,
-  mockWorkflowStatistics,
-  mockWorkflowInstances,
+  groupedProcessesMock,
+  mockProcessStatistics,
+  mockProcessInstances,
 } from 'modules/testUtils';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
@@ -40,19 +40,19 @@ function renderUseOperationApply() {
 describe('useOperationApply', () => {
   beforeEach(async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       ),
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       ),
-      rest.get('/api/workflows/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedWorkflowsMock))
+      rest.get('/api/processes/grouped', (_, res, ctx) =>
+        res.once(ctx.json(groupedProcessesMock))
       ),
-      rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowStatistics))
+      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessStatistics))
       ),
-      rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
+      rest.post('/api/process-instances/batch-operation', (_, res, ctx) =>
         res.once(ctx.json({}))
       )
     );
@@ -68,7 +68,7 @@ describe('useOperationApply', () => {
     const {mockOperationCreated, expectedQuery} = mockData.noFilterSelectAll;
 
     mockServer.use(
-      rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
+      rest.post('/api/process-instances/batch-operation', (req, res, ctx) => {
         // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
         if (isEqual(req.body.query, expectedQuery)) {
           return res.once(ctx.json(mockOperationCreated));
@@ -98,7 +98,7 @@ describe('useOperationApply', () => {
     );
 
     mockServer.use(
-      rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
+      rest.post('/api/process-instances/batch-operation', (req, res, ctx) => {
         // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
         if (isEqual(req.body.query, expectedQuery)) {
           return res.once(ctx.json(mockOperationCreated));
@@ -109,8 +109,8 @@ describe('useOperationApply', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       )
     );
 
@@ -136,7 +136,7 @@ describe('useOperationApply', () => {
     );
 
     mockServer.use(
-      rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
+      rest.post('/api/process-instances/batch-operation', (req, res, ctx) => {
         // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
         if (isEqual(req.body.query, expectedQuery)) {
           return res.once(ctx.json(mockOperationCreated));
@@ -147,8 +147,8 @@ describe('useOperationApply', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       )
     );
 
@@ -177,7 +177,7 @@ describe('useOperationApply', () => {
     );
 
     mockServer.use(
-      rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
+      rest.post('/api/process-instances/batch-operation', (req, res, ctx) => {
         // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
         if (isEqual(req.body.query, expectedQuery)) {
           return res.once(ctx.json(mockOperationCreated));
@@ -188,8 +188,8 @@ describe('useOperationApply', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       )
     );
 
@@ -207,22 +207,22 @@ describe('useOperationApply', () => {
     );
   });
 
-  it('should call apply (set workflow filter, select one)', async () => {
+  it('should call apply (set process filter, select one)', async () => {
     const {
       mockOperationCreated,
       expectedQuery,
       ...context
-    } = mockData.setWorkflowFilterSelectOne;
+    } = mockData.setProcessFilterSelectOne;
     instancesStore.init();
     instancesStore.fetchInstancesFromFilters();
     mockedGetSearchString.mockImplementation(
       () =>
-        '?active=true&running=true&incidents=true&workflow=demoProcess&version=1&ids=1'
+        '?active=true&running=true&incidents=true&process=demoProcess&version=1&ids=1'
     );
-    await workflowsStore.fetchWorkflows();
+    await processesStore.fetchProcesses();
 
     mockServer.use(
-      rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
+      rest.post('/api/process-instances/batch-operation', (req, res, ctx) => {
         // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
         if (isEqual(req.body.query, expectedQuery)) {
           return res.once(ctx.json(mockOperationCreated));
@@ -232,8 +232,8 @@ describe('useOperationApply', () => {
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       )
     );
 
@@ -259,23 +259,23 @@ describe('useOperationApply', () => {
     instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() =>
-      expect(instancesStore.state.workflowInstances.length).toBe(2)
+      expect(instancesStore.state.processInstances.length).toBe(2)
     );
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
-            workflowInstances: mockWorkflowInstances.workflowInstances,
+            processInstances: mockProcessInstances.processInstances,
           })
         )
       ),
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 200,
-            workflowInstances: mockWorkflowInstances.workflowInstances,
+            processInstances: mockProcessInstances.processInstances,
           })
         )
       )
@@ -301,14 +301,14 @@ describe('useOperationApply', () => {
   });
 
   it('should poll the selected instances', async () => {
-    const {expectedQuery, ...context} = mockData.setWorkflowFilterSelectOne;
+    const {expectedQuery, ...context} = mockData.setProcessFilterSelectOne;
     instanceSelectionStore.selectInstance('2251799813685594');
 
     jest.useFakeTimers();
     instancesStore.init();
     instancesStore.fetchInstancesFromFilters();
     await waitFor(() =>
-      expect(instancesStore.state.workflowInstances.length).toBe(2)
+      expect(instancesStore.state.processInstances.length).toBe(2)
     );
 
     // @ts-expect-error ts-migrate(2554) FIXME: Expected 0 arguments, but got 1.
@@ -318,19 +318,19 @@ describe('useOperationApply', () => {
       '2251799813685594',
     ]);
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
-            workflowInstances: mockWorkflowInstances.workflowInstances,
+            processInstances: mockProcessInstances.processInstances,
           })
         )
       ),
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 200,
-            workflowInstances: mockWorkflowInstances.workflowInstances,
+            processInstances: mockProcessInstances.processInstances,
           })
         )
       )

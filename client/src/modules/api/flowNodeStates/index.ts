@@ -7,9 +7,9 @@
 import {get} from 'modules/request';
 
 async function fetchFlowNodeStates(
-  workflowInstanceId: WorkflowInstanceEntity['id']
+  processInstanceId: ProcessInstanceEntity['id']
 ) {
-  return get(`/api/workflow-instances/${workflowInstanceId}/flow-node-states`);
+  return get(`/api/process-instances/${processInstanceId}/flow-node-states`);
 }
 
 export {fetchFlowNodeStates};

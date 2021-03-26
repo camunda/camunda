@@ -25,7 +25,7 @@ const MetricPanel = observer(() => {
   if (status === 'error') {
     return (
       <StatusMessage variant="error">
-        Workflow statistics could not be fetched
+        Process statistics could not be fetched
       </StatusMessage>
     );
   }

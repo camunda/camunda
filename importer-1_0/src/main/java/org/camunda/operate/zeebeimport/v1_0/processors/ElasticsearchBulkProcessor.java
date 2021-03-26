@@ -20,7 +20,7 @@ import org.camunda.operate.zeebeimport.AbstractImportBatchProcessor;
 import org.camunda.operate.zeebeimport.ImportBatch;
 import org.camunda.operate.zeebeimport.v1_0.record.RecordImpl;
 import org.camunda.operate.zeebeimport.v1_0.record.value.JobRecordValueImpl;
-import org.camunda.operate.zeebeimport.v1_0.record.value.WorkflowInstanceRecordValueImpl;
+import org.camunda.operate.zeebeimport.v1_0.record.value.ProcessInstanceRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +52,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
   private IncidentZeebeRecordProcessor incidentZeebeRecordProcessor;
 
   @Autowired
-  private WorkflowZeebeRecordProcessor workflowZeebeRecordProcessor;
+  private ProcessZeebeRecordProcessor processZeebeRecordProcessor;
 
   @Autowired
   private EventZeebeRecordProcessor eventZeebeRecordProcessor;
@@ -74,17 +74,17 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
     logger.debug("Writing {} Zeebe records to Elasticsearch, version={}, importValueType={}, partition={}", zeebeRecords.size(), "0.26", importBatch.getImportValueType(), importBatch.getPartitionId());
 
     switch (importValueType) {
-    case WORKFLOW_INSTANCE:
-      Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> groupedWIRecords = zeebeRecords.stream()
-          .map(obj -> (RecordImpl<WorkflowInstanceRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getValue().getWorkflowInstanceKey()));
-      listViewZeebeRecordProcessor.processWorkflowInstanceRecord(groupedWIRecords, bulkRequest, importBatch);
-      Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> groupedWIRecordsPerActivityInst = zeebeRecords.stream()
-          .map(obj -> (RecordImpl<WorkflowInstanceRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getKey()));
+    case PROCESS_INSTANCE:
+      Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> groupedWIRecords = zeebeRecords.stream()
+          .map(obj -> (RecordImpl<ProcessInstanceRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getValue().getProcessInstanceKey()));
+      listViewZeebeRecordProcessor.processProcessInstanceRecord(groupedWIRecords, bulkRequest, importBatch);
+      Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> groupedWIRecordsPerActivityInst = zeebeRecords.stream()
+          .map(obj -> (RecordImpl<ProcessInstanceRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getKey()));
       List<Long> flowNodeInstanceKeysOrdered = zeebeRecords.stream()
           .map(Record::getKey)
           .collect(Collectors.toList());
-      flowNodeInstanceZeebeRecordProcessor.processWorkflowInstanceRecord(groupedWIRecordsPerActivityInst, flowNodeInstanceKeysOrdered, bulkRequest);
-      eventZeebeRecordProcessor.processWorkflowInstanceRecords(groupedWIRecordsPerActivityInst, bulkRequest);
+      flowNodeInstanceZeebeRecordProcessor.processProcessInstanceRecord(groupedWIRecordsPerActivityInst, flowNodeInstanceKeysOrdered, bulkRequest);
+      eventZeebeRecordProcessor.processProcessInstanceRecords(groupedWIRecordsPerActivityInst, bulkRequest);
       for (Record record : zeebeRecords) {
         sequenceFlowZeebeRecordProcessor.processSequenceFlowRecord(record, bulkRequest);
       }
@@ -115,7 +115,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
     case DEPLOYMENT:
       for (Record record : zeebeRecords) {
         // deployment records can be processed one by one
-        workflowZeebeRecordProcessor.processDeploymentRecord(record, bulkRequest);
+        processZeebeRecordProcessor.processDeploymentRecord(record, bulkRequest);
       }
       break;
     case JOB:
@@ -135,8 +135,8 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
     switch (importValueType) {
     case DEPLOYMENT:
       return DeploymentRecordValueImpl.class;
-    case WORKFLOW_INSTANCE:
-      return WorkflowInstanceRecordValueImpl.class;
+    case PROCESS_INSTANCE:
+      return ProcessInstanceRecordValueImpl.class;
     case JOB:
       return JobRecordValueImpl.class;
     case INCIDENT:

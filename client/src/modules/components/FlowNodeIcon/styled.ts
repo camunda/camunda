@@ -6,7 +6,7 @@
 
 import styled, {css} from 'styled-components';
 
-import {ReactComponent as FlowNodeWorkFlow} from 'modules/components/Icon/flow-node-workflow-root.svg';
+import {ReactComponent as FlowNodeProcess} from 'modules/components/Icon/flow-node-process-root.svg';
 
 /**
  * Gateway Imports
@@ -64,7 +64,7 @@ const newIconStyle = ({theme}: any) => {
   `;
 };
 
-const WORKFLOW = styled(FlowNodeWorkFlow)`
+const PROCESS = styled(FlowNodeProcess)`
   ${newIconStyle}
 `;
 
@@ -237,7 +237,7 @@ const EVENT_TIMER_BOUNDARY_INTERRUPTING = styled(
 `;
 
 export {
-  WORKFLOW,
+  PROCESS,
   GATEWAY_EXCLUSIVE,
   GATEWAY_PARALLEL,
   GATEWAY_EVENT_BASED,

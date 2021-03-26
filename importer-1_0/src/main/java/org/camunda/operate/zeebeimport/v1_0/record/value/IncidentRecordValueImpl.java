@@ -15,8 +15,8 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl implemen
   private String errorMessage;
   private String bpmnProcessId;
   private String elementId;
-  private long workflowKey;
-  private long workflowInstanceKey;
+  private long processDefinitionKey;
+  private long processInstanceKey;
   private long elementInstanceKey;
   private long jobKey;
   private long variableScopeKey;
@@ -45,13 +45,13 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl implemen
   }
 
   @Override
-  public long getWorkflowKey() {
-    return workflowKey;
+  public long getProcessDefinitionKey() {
+    return processDefinitionKey;
   }
 
   @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
   @Override
@@ -85,12 +85,12 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl implemen
     this.elementId = elementId;
   }
 
-  public void setWorkflowKey(long workflowKey) {
-    this.workflowKey = workflowKey;
+  public void setProcessDefinitionKey(long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
   }
 
-  public void setWorkflowInstanceKey(long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public void setElementInstanceKey(long elementInstanceKey) {
@@ -116,9 +116,9 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl implemen
 
     IncidentRecordValueImpl that = (IncidentRecordValueImpl) o;
 
-    if (workflowKey != that.workflowKey)
+    if (processDefinitionKey != that.processDefinitionKey)
       return false;
-    if (workflowInstanceKey != that.workflowInstanceKey)
+    if (processInstanceKey != that.processInstanceKey)
       return false;
     if (elementInstanceKey != that.elementInstanceKey)
       return false;
@@ -142,8 +142,8 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl implemen
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (elementId != null ? elementId.hashCode() : 0);
-    result = 31 * result + (int) (workflowKey ^ (workflowKey >>> 32));
-    result = 31 * result + (int) (workflowInstanceKey ^ (workflowInstanceKey >>> 32));
+    result = 31 * result + (int) (processDefinitionKey ^ (processDefinitionKey >>> 32));
+    result = 31 * result + (int) (processInstanceKey ^ (processInstanceKey >>> 32));
     result = 31 * result + (int) (elementInstanceKey ^ (elementInstanceKey >>> 32));
     result = 31 * result + (int) (jobKey ^ (jobKey >>> 32));
     result = 31 * result + (int) (variableScopeKey ^ (variableScopeKey >>> 32));
@@ -153,7 +153,7 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl implemen
   @Override
   public String toString() {
     return "IncidentRecordValueImpl{" + "errorType='" + errorType + '\'' + ", errorMessage='" + errorMessage + '\'' + ", bpmnProcessId='" + bpmnProcessId + '\''
-        + ", elementId='" + elementId + '\'' + ", workflowKey=" + workflowKey + ", workflowInstanceKey=" + workflowInstanceKey + ", elementInstanceKey=" + elementInstanceKey + ", jobKey="
+        + ", elementId='" + elementId + '\'' + ", processDefinitionKey=" + processDefinitionKey + ", processInstanceKey=" + processInstanceKey + ", elementInstanceKey=" + elementInstanceKey + ", jobKey="
         + jobKey + ", variableScopeKey=" + variableScopeKey + "} " + super.toString();
   }
 }

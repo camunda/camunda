@@ -35,8 +35,8 @@ public class ResultChecker {
   public void assertResults() throws IOException {
     sleepFor(1000L);
     esClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
-    assertWorkflowCount();
-    assertWorkflowInstanceCount();
+    assertProcessCount();
+    assertProcessInstanceCount();
 //    assertIncidentCount();
     logger.info("Assertions passed");
   }
@@ -61,40 +61,40 @@ public class ResultChecker {
     }
   }
 
-  private void assertWorkflowCount() {
-    final int expectedCount = dataGeneratorProperties.getWorkflowCount() + 1;
-    final Supplier<Integer> workflowCounter = () -> {
+  private void assertProcessCount() {
+    final int expectedCount = dataGeneratorProperties.getProcessCount() + 1;
+    final Supplier<Integer> processCounter = () -> {
       try {
-        return ElasticsearchUtil.getFieldCardinality(esClient, getAliasName(ZeebeESConstants.DEPLOYMENT_INDEX_NAME), "value.deployedWorkflows.bpmnProcessId");
+        return ElasticsearchUtil.getFieldCardinality(esClient, getAliasName(ZeebeESConstants.DEPLOYMENT_INDEX_NAME), "value.deployedProcesses.bpmnProcessId");
       } catch (IOException e) {
         throw new DataGenerationException("Exception occurred while performing assertions", e);
       }
     };
-    if (!assertDocsCountWithRetry(0, expectedCount, workflowCounter)) {
-      throw new DataGenerationException(String.format("Expected to have %s workflows, but was %s", expectedCount, workflowCounter.get()));
+    if (!assertDocsCountWithRetry(0, expectedCount, processCounter)) {
+      throw new DataGenerationException(String.format("Expected to have %s processes, but was %s", expectedCount, processCounter.get()));
     }
   }
 
-  private void assertWorkflowInstanceCount() {
-    final int expectedCount = dataGeneratorProperties.getWorkflowInstanceCount();
-    final Supplier<Integer> workflowCounter = () -> {
+  private void assertProcessInstanceCount() {
+    final int expectedCount = dataGeneratorProperties.getProcessInstanceCount();
+    final Supplier<Integer> processCounter = () -> {
       try {
-        return ElasticsearchUtil.getFieldCardinality(esClient, getAliasName(ZeebeESConstants.WORKFLOW_INSTANCE_INDEX_NAME), "value.workflowInstanceKey");
+        return ElasticsearchUtil.getFieldCardinality(esClient, getAliasName(ZeebeESConstants.PROCESS_INSTANCE_INDEX_NAME), "value.processInstanceKey");
       } catch (IOException e) {
         throw new DataGenerationException("Exception occurred while performing assertions", e);
       }
     };
-    if (!assertDocsCountWithRetry(0, expectedCount, workflowCounter)) {
-      throw new DataGenerationException(String.format("Expected to have %s workflow instances, but was %s", expectedCount, workflowCounter.get()));
+    if (!assertDocsCountWithRetry(0, expectedCount, processCounter)) {
+      throw new DataGenerationException(String.format("Expected to have %s process instances, but was %s", expectedCount, processCounter.get()));
     }
   }
 
 //  private void assertIncidentCount() {
 //    try {
-//      int workflowInstanceCount = getFieldCardinality(getAliasName(INCIDENT_INDEX_NAME), "value.workflowInstanceKey");
-//      final int expectedWorkflowInstanceCount = dataGeneratorProperties.getWorkflowInstanceCount();
-//      if (workflowInstanceCount != expectedWorkflowInstanceCount) {
-//        throw new DataGenerationException(String.format("Expected to have %s workflow instances, but was %s", expectedWorkflowInstanceCount, workflowInstanceCount));
+//      int processInstanceCount = getFieldCardinality(getAliasName(INCIDENT_INDEX_NAME), "value.processInstanceKey");
+//      final int expectedProcessInstanceCount = dataGeneratorProperties.getProcessInstanceCount();
+//      if (processInstanceCount != expectedProcessInstanceCount) {
+//        throw new DataGenerationException(String.format("Expected to have %s process instances, but was %s", expectedProcessInstanceCount, processInstanceCount));
 //      }
 //    } catch (IOException ex) {
 //      throw new DataGenerationException("Exception occurred while performing assertions", ex);

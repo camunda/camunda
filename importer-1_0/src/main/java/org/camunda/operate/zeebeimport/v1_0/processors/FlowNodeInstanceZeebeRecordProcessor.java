@@ -5,9 +5,9 @@
  */
 package org.camunda.operate.zeebeimport.v1_0.processors;
 
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -38,7 +38,7 @@ import org.camunda.operate.util.ThreadUtil;
 import org.camunda.operate.zeebeimport.v1_0.record.Intent;
 import org.camunda.operate.zeebeimport.v1_0.record.RecordImpl;
 import org.camunda.operate.zeebeimport.v1_0.record.value.IncidentRecordValueImpl;
-import org.camunda.operate.zeebeimport.v1_0.record.value.WorkflowInstanceRecordValueImpl;
+import org.camunda.operate.zeebeimport.v1_0.record.value.ProcessInstanceRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -89,16 +89,16 @@ public class FlowNodeInstanceZeebeRecordProcessor {
 
   }
 
-  public void processWorkflowInstanceRecord(
-      Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> records,
+  public void processProcessInstanceRecord(
+      Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> records,
       final List<Long> flowNodeInstanceKeysOrdered, BulkRequest bulkRequest) throws PersistenceException {
 
     for (Long key: flowNodeInstanceKeysOrdered) {
-      List<RecordImpl<WorkflowInstanceRecordValueImpl>> wiRecords = records.get(key);
+      List<RecordImpl<ProcessInstanceRecordValueImpl>> wiRecords = records.get(key);
       FlowNodeInstanceEntity fniEntity = null;
       for (RecordImpl record: wiRecords) {
         final String intentStr = record.getIntent().name();
-        WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
+        ProcessInstanceRecordValueImpl recordValue = (ProcessInstanceRecordValueImpl)record.getValue();
         if (!isProcessEvent(recordValue) && !intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
           fniEntity = updateFlowNodeInstance(record, intentStr, recordValue, fniEntity);
         }
@@ -110,7 +110,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   }
 
   private FlowNodeInstanceEntity updateFlowNodeInstance(Record record, String intentStr,
-      WorkflowInstanceRecordValueImpl recordValue, FlowNodeInstanceEntity entity) {
+      ProcessInstanceRecordValueImpl recordValue, FlowNodeInstanceEntity entity) {
     if (entity == null) {
       entity = new FlowNodeInstanceEntity();
     }
@@ -118,7 +118,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
     entity.setFlowNodeId(recordValue.getElementId());
-    entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
+    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
 
     if (entity.getTreePath() == null) {
 
@@ -153,11 +153,11 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   }
 
   private String getParentTreePath(final Record record,
-      final WorkflowInstanceRecordValueImpl recordValue) {
+      final ProcessInstanceRecordValueImpl recordValue) {
     String parentTreePath;
-    //if scopeKey differs from workflowInstanceKey, then it's inner tree level and we need to search for parent 1st
-    if (recordValue.getFlowScopeKey() == recordValue.getWorkflowInstanceKey()) {
-      parentTreePath = ConversionUtils.toStringOrNull(recordValue.getWorkflowInstanceKey());
+    //if scopeKey differs from processInstanceKey, then it's inner tree level and we need to search for parent 1st
+    if (recordValue.getFlowScopeKey() == recordValue.getProcessInstanceKey()) {
+      parentTreePath = ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey());
     } else {
       //find parent flow node instance
       parentTreePath = null;
@@ -205,7 +205,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       }
     } catch (IOException e) {
       final String message = String
-          .format("Exception occurred, while searching for parent flow node instance workflows: %s",
+          .format("Exception occurred, while searching for parent flow node instance processes: %s",
               e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
@@ -217,7 +217,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     entity.setKey(recordValue.getElementInstanceKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setFlowNodeId(recordValue.getElementId());
-    entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
+    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setIncidentKey(record.getKey());
     } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
@@ -277,11 +277,11 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     }
   }
 
-  private boolean isProcessEvent(WorkflowInstanceRecordValueImpl recordValue) {
+  private boolean isProcessEvent(ProcessInstanceRecordValueImpl recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }
 
-  private boolean isOfType(WorkflowInstanceRecordValueImpl recordValue, BpmnElementType type) {
+  private boolean isOfType(ProcessInstanceRecordValueImpl recordValue, BpmnElementType type) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;

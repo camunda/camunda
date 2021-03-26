@@ -8,7 +8,7 @@ package org.camunda.operate.zeebe;
 public enum ImportValueType {
 
 
-  WORKFLOW_INSTANCE(ZeebeESConstants.WORKFLOW_INSTANCE_INDEX_NAME),
+  PROCESS_INSTANCE(ZeebeESConstants.PROCESS_INSTANCE_INDEX_NAME),
   JOB(ZeebeESConstants.JOB_INDEX_NAME),
   INCIDENT(ZeebeESConstants.INCIDENT_INDEX_NAME),
   DEPLOYMENT(ZeebeESConstants.DEPLOYMENT_INDEX_NAME),
@@ -22,7 +22,7 @@ public enum ImportValueType {
 
   public static final ImportValueType[] IMPORT_VALUE_TYPES = new ImportValueType[]{
       ImportValueType.DEPLOYMENT,
-      ImportValueType.WORKFLOW_INSTANCE,
+      ImportValueType.PROCESS_INSTANCE,
       ImportValueType.JOB,
       ImportValueType.INCIDENT,
       ImportValueType.VARIABLE,

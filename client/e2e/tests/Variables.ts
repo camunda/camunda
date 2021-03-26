@@ -25,7 +25,7 @@ fixture('Add/Edit Variables')
     await t.useRole(demoUser);
     await t.maximizeWindow();
     await t.navigateTo(
-      `${config.endpoint}/#/instances/${instance.workflowInstanceKey}`
+      `${config.endpoint}/#/instances/${instance.processInstanceKey}`
     );
   });
 
@@ -190,7 +190,7 @@ test('Edit variables', async (t) => {
   // refresh the page and see the variable is still there.
   await t
     .navigateTo(
-      `${config.endpoint}/#/instances/${instance.workflowInstanceKey}`
+      `${config.endpoint}/#/instances/${instance.processInstanceKey}`
     )
     .expect(Selector('[data-testid="testData"]').exists)
     .ok();
@@ -259,7 +259,7 @@ test('Add variables', async (t) => {
   // refresh the page and see the variable is still there.
   await t
     .navigateTo(
-      `${config.endpoint}/#/instances/${instance.workflowInstanceKey}`
+      `${config.endpoint}/#/instances/${instance.processInstanceKey}`
     )
     .expect(screen.getByRole('cell', {name: 'secondTestKey'}).exists)
     .ok()
@@ -275,13 +275,13 @@ test('Add variables', async (t) => {
       screen.getByRole('textbox', {
         name: /instance id\(s\) separated by space or comma/i,
       }),
-      instance.workflowInstanceKey
+      instance.processInstanceKey
     );
 
   await t
     .expect(
       within(screen.getByTestId('instances-list')).queryByRole('cell', {
-        name: `View instance ${instance.workflowInstanceKey}`,
+        name: `View instance ${instance.processInstanceKey}`,
       }).exists
     )
     .ok();

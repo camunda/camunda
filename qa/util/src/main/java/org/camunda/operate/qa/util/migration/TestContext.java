@@ -28,7 +28,7 @@ public class TestContext {
   private Integer externalOperatePort;
   private String externalOperateContextPath = "/";
 
-  private List<String> workflowsToAssert = new ArrayList<>();
+  private List<String> processesToAssert = new ArrayList<>();
 
   public File getZeebeDataFolder() {
     return zeebeDataFolder;
@@ -110,12 +110,12 @@ public class TestContext {
     this.externalOperatePort = externalOperatePort;
   }
 
-  public List<String> getWorkflowsToAssert() {
-    return workflowsToAssert;
+  public List<String> getProcessesToAssert() {
+    return processesToAssert;
   }
 
-  public void setWorkflowsToAssert(List<String> workflowsToAssert) {
-    this.workflowsToAssert = workflowsToAssert;
+  public void setProcessesToAssert(List<String> processesToAssert) {
+    this.processesToAssert = processesToAssert;
   }
 
   public String getExternalOperateContextPath() {
@@ -126,10 +126,10 @@ public class TestContext {
     this.externalOperateContextPath = externalOperateContextPath;
   }
 
-  public void addWorkflow(String bpmnProcessId) {
-    if (workflowsToAssert.contains(bpmnProcessId)) {
-      throw new AssertionFailedError("Workflow was already created earlier: " + bpmnProcessId);
+  public void addProcess(String bpmnProcessId) {
+    if (processesToAssert.contains(bpmnProcessId)) {
+      throw new AssertionFailedError("Process was already created earlier: " + bpmnProcessId);
     }
-    workflowsToAssert.add(bpmnProcessId);
+    processesToAssert.add(bpmnProcessId);
   }
 }

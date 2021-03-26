@@ -67,7 +67,7 @@ const createRandomId = function* createRandomId(type: string) {
 
 const randomIdIterator = createRandomId('id');
 const randomActivityIdIterator = createRandomId('activityId');
-const randomWorkflowIdInterator = createRandomId('workflowId');
+const randomProcessIdInterator = createRandomId('processId');
 const randomJobIdIterator = createRandomId('jobId');
 
 /**
@@ -92,7 +92,7 @@ export const createQuery = (options = {}) => {
       name: 'string',
       value: {},
     },
-    workflowIds: [],
+    processIds: [],
     ...options,
   };
 };
@@ -169,9 +169,9 @@ export const createActivity = (options = {}) => {
 export const createInstance = (options = {}) => {
   return {
     id: randomIdIterator.next().value,
-    workflowId: '2',
-    workflowName: 'someWorkflowName',
-    workflowVersion: 1,
+    processId: '2',
+    processName: 'someProcessName',
+    processVersion: 1,
     startDate: '2018-06-21',
     endDate: null,
     state: 'ACTIVE',
@@ -184,7 +184,7 @@ export const createInstance = (options = {}) => {
 };
 
 export const createMockInstancesObject = (amount = 5, options = {}) => ({
-  workflowInstances: createArrayOfMockInstances(amount),
+  processInstances: createArrayOfMockInstances(amount),
   totalCount: amount,
   ...options,
 });
@@ -208,13 +208,13 @@ export const createArrayOfMockInstances = (amount: any, options = {}) => {
 };
 
 /**
- * A hard coded object to use when mocking fetchGroupedWorkflows api/instances.js
+ * A hard coded object to use when mocking fetchGroupedProcesses api/instances.js
  */
-export const groupedWorkflowsMock = [
+export const groupedProcessesMock = [
   {
     bpmnProcessId: 'demoProcess',
     name: 'New demo process',
-    workflows: [
+    processes: [
       {
         id: 'demoProcess3',
         name: 'New demo process',
@@ -238,7 +238,7 @@ export const groupedWorkflowsMock = [
   {
     bpmnProcessId: 'eventBasedGatewayProcess',
     name: null,
-    workflows: [
+    processes: [
       {
         id: '2251799813696866',
         name: 'Event based gateway with timer start',
@@ -256,7 +256,7 @@ export const groupedWorkflowsMock = [
   {
     bpmnProcessId: 'bigVarProcess',
     name: 'Big variable process',
-    workflows: [
+    processes: [
       {
         id: '2251799813685892',
         name: 'Big variable process',
@@ -268,7 +268,7 @@ export const groupedWorkflowsMock = [
   {
     bpmnProcessId: 'orderProcess',
     name: 'Order',
-    workflows: [],
+    processes: [],
   },
 ];
 
@@ -278,7 +278,7 @@ export const groupedWorkflowsMock = [
  */
 export const createFilter = (options = {}) => {
   return {
-    workflow: groupedWorkflowsMock[0].bpmnProcessId,
+    process: groupedProcessesMock[0].bpmnProcessId,
     version: '1',
     active: true,
     ids: '1,2,3',
@@ -295,15 +295,15 @@ export const createFilter = (options = {}) => {
 };
 
 /**
- * @returns a mocked workflow Object with a unique id
+ * @returns a mocked process Object with a unique id
  * @param {*} customProps Obj with any type of custom property
  */
-export const createWorkflow = (options = {}) => {
+export const createProcess = (options = {}) => {
   return {
-    workflowId: randomWorkflowIdInterator.next().value,
-    name: 'mockWorkflow',
+    processId: randomProcessIdInterator.next().value,
+    name: 'mockProcess',
     version: 1,
-    bpmnProcessId: 'mockWorkflow',
+    bpmnProcessId: 'mockProcess',
     errorMessage: 'JSON path $.paid has no result.',
     instancesWithActiveIncidentsCount: 37,
     activeInstancesCount: 5,
@@ -312,17 +312,17 @@ export const createWorkflow = (options = {}) => {
 };
 
 /**
- * @returns a single mocked instanceByWorkflow Object
+ * @returns a single mocked instanceByProcess Object
  * @param {*} customProps Obj with any type of custom property
  */
-export const createInstanceByWorkflow = (options = {}) => {
+export const createInstanceByProcess = (options = {}) => {
   return {
     bpmnProcessId: 'loanProcess',
-    workflowName: null,
+    processName: null,
     instancesWithActiveIncidentsCount: 16,
     activeInstancesCount: 122,
-    workflows: [
-      createWorkflow({
+    processes: [
+      createProcess({
         name: null,
         bpmnProcessId: 'loanProcess',
         instancesWithActiveIncidentsCount: 16,
@@ -334,24 +334,24 @@ export const createInstanceByWorkflow = (options = {}) => {
 };
 
 /**
- * @returns a mocked InstancesByWorkflow Object as exposed by 'api/incidents/byWorkflow'
- * @param {*} customProps array with any number of instanceByWorkflow Objects
+ * @returns a mocked InstancesByProcess Object as exposed by 'api/incidents/byProcess'
+ * @param {*} customProps array with any number of instanceByProcess Objects
  */
-export const createInstancesByWorkflow = (options: any) => {
-  return options || [createInstanceByWorkflow()];
+export const createInstancesByProcess = (options: any) => {
+  return options || [createInstanceByProcess()];
 };
 
 /**
- * @returns a single mocked instanceByWorkflow Object
+ * @returns a single mocked instanceByProcess Object
  * @param {*} customProps Obj with any type of custom property
  */
 export const createInstanceByError = (options = {}) => {
   return {
     errorMessage: "JSON path '$.paid' has no result.",
     instancesWithErrorCount: 36,
-    workflows: [
-      createWorkflow({
-        workflowId: '1',
+    processes: [
+      createProcess({
+        processId: '1',
         version: 1,
         name: 'Order process',
         bpmnProcessId: 'orderProcess',
@@ -405,28 +405,28 @@ export const createSequenceFlows = () => {
   return [
     {
       id: '2251799813695632',
-      workflowInstanceId: '2251799813693731',
+      processInstanceId: '2251799813693731',
       activityId: 'SequenceFlow_0drux68',
     },
     {
       id: '2251799813693749',
-      workflowInstanceId: '2251799813693731',
+      processInstanceId: '2251799813693731',
       activityId: 'SequenceFlow_0j6tsnn',
     },
     {
       id: '2251799813695543',
-      workflowInstanceId: '2251799813693731',
+      processInstanceId: '2251799813693731',
       activityId: 'SequenceFlow_1dwqvrt',
     },
     {
       id: '2251799813695629',
-      workflowInstanceId: '2251799813693731',
+      processInstanceId: '2251799813693731',
       activityId: 'SequenceFlow_1fgekwd',
     },
   ];
 };
 
-export const mockWorkflowStatistics = [
+export const mockProcessStatistics = [
   {
     activityId: 'ServiceTask_0kt6c5i',
     active: 1,
@@ -436,7 +436,7 @@ export const mockWorkflowStatistics = [
   },
 ];
 
-export const mockWorkflowXML = `<?xml version="1.0" encoding="UTF-8"?>
+export const mockProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1771k9d" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.5.0">
   <bpmn:process id="bigVarProcess" isExecutable="true" name="Big variable process">
     <bpmn:startEvent id="StartEvent_1">
@@ -478,13 +478,13 @@ export const mockWorkflowXML = `<?xml version="1.0" encoding="UTF-8"?>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
 
-export const mockWorkflowInstances = {
-  workflowInstances: [
+export const mockProcessInstances = {
+  processInstances: [
     {
       id: '2251799813685594',
-      workflowId: '2251799813685592',
-      workflowName: 'Without Incidents Process',
-      workflowVersion: 1,
+      processId: '2251799813685592',
+      processName: 'Without Incidents Process',
+      processVersion: 1,
       startDate: '2020-09-03T15:42:25.107+0000',
       endDate: null,
       state: 'ACTIVE',
@@ -494,9 +494,9 @@ export const mockWorkflowInstances = {
     },
     {
       id: '2251799813685596',
-      workflowId: '2251799813685592',
-      workflowName: 'Without Incidents Process',
-      workflowVersion: 1,
+      processId: '2251799813685592',
+      processName: 'Without Incidents Process',
+      processVersion: 1,
       startDate: '2020-09-03T15:42:25.200+0000',
       endDate: null,
       state: 'ACTIVE',
@@ -512,7 +512,7 @@ export const operations = [
   {
     id: '921455fd-849a-49c5-be17-c92eb6d9e946',
     name: null,
-    type: 'CANCEL_WORKFLOW_INSTANCE',
+    type: 'CANCEL_PROCESS_INSTANCE',
     startDate: '2020-09-30T06:02:32.748+0000',
     endDate: '2020-09-29T15:38:34.372+0000',
     instancesCount: 1,
@@ -523,7 +523,7 @@ export const operations = [
   {
     id: 'd116b2a3-eb19-47f1-85c0-60b3e1814aa2',
     name: null,
-    type: 'CANCEL_WORKFLOW_INSTANCE',
+    type: 'CANCEL_PROCESS_INSTANCE',
     startDate: '2020-09-29T15:37:20.187+0000',
     endDate: '2020-09-29T15:38:34.372+0000',
     instancesCount: 1,
@@ -534,7 +534,7 @@ export const operations = [
   {
     id: '68d41595-bbee-49d0-84c8-8713dc8584d5',
     name: null,
-    type: 'CANCEL_WORKFLOW_INSTANCE',
+    type: 'CANCEL_PROCESS_INSTANCE',
     startDate: '2020-09-29T15:37:16.052+0000',
     endDate: '2020-09-29T15:38:22.227+0000',
     instancesCount: 1,
@@ -544,7 +544,7 @@ export const operations = [
   },
 ];
 
-export const multiInstanceWorkflow = `<?xml version="1.0" encoding="UTF-8"?>
+export const multiInstanceProcess = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1kgscet" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.16.0">
   <bpmn:process id="multiInstanceProcess" name="Multi-Instance Process" isExecutable="true">
     <bpmn:startEvent id="start" name="Start">
@@ -728,7 +728,7 @@ export const multiInstanceWorkflow = `<?xml version="1.0" encoding="UTF-8"?>
 `;
 
 export const createMultiInstanceFlowNodeInstances = (
-  workflowInstanceId: string
+  processInstanceId: string
 ): {
   level1: FlowNodeInstances;
   level1Poll: FlowNodeInstances;
@@ -737,7 +737,7 @@ export const createMultiInstanceFlowNodeInstances = (
 } => {
   return {
     level1: {
-      [workflowInstanceId]: {
+      [processInstanceId]: {
         running: null,
         children: [
           {
@@ -747,7 +747,7 @@ export const createMultiInstanceFlowNodeInstances = (
             flowNodeId: 'peterFork',
             startDate: '2020-08-18T12:07:33.953+0000',
             endDate: '2020-08-18T12:07:34.034+0000',
-            treePath: `${workflowInstanceId}/2251799813686130`,
+            treePath: `${processInstanceId}/2251799813686130`,
             sortValues: [1606300828415, '2251799813686130'],
           },
           {
@@ -757,14 +757,14 @@ export const createMultiInstanceFlowNodeInstances = (
             flowNodeId: 'filterMapSubProcess',
             startDate: '2020-08-18T12:07:34.205+0000',
             endDate: null,
-            treePath: `${workflowInstanceId}/2251799813686156`,
+            treePath: `${processInstanceId}/2251799813686156`,
             sortValues: [1606300828415, '2251799813686156'],
           },
         ],
       },
     },
     level1Poll: {
-      [workflowInstanceId]: {
+      [processInstanceId]: {
         running: null,
         children: [
           {
@@ -774,7 +774,7 @@ export const createMultiInstanceFlowNodeInstances = (
             flowNodeId: 'peterFork',
             startDate: '2020-08-18T12:07:33.953+0000',
             endDate: '2020-08-18T12:07:34.034+0000',
-            treePath: `${workflowInstanceId}/2251799813686130`,
+            treePath: `${processInstanceId}/2251799813686130`,
             sortValues: [1606300828415, '2251799813686130'],
           },
           {
@@ -784,14 +784,14 @@ export const createMultiInstanceFlowNodeInstances = (
             flowNodeId: 'filterMapSubProcess',
             startDate: '2020-08-18T12:07:34.205+0000',
             endDate: '2020-08-18T12:07:34.034+0000',
-            treePath: `${workflowInstanceId}/2251799813686156`,
+            treePath: `${processInstanceId}/2251799813686156`,
             sortValues: [1606300828415, '2251799813686156'],
           },
         ],
       },
     },
     level2: {
-      [`${workflowInstanceId}/2251799813686156`]: {
+      [`${processInstanceId}/2251799813686156`]: {
         running: true,
         children: [
           {
@@ -801,14 +801,14 @@ export const createMultiInstanceFlowNodeInstances = (
             flowNodeId: 'filterMapSubProcess',
             startDate: '2020-08-18T12:07:34.281+0000',
             endDate: null,
-            treePath: `${workflowInstanceId}/2251799813686156/2251799813686166`,
+            treePath: `${processInstanceId}/2251799813686156/2251799813686166`,
             sortValues: [1606300828415, '2251799813686166'],
           },
         ],
       },
     },
     level3: {
-      [`${workflowInstanceId}/2251799813686156/2251799813686166`]: {
+      [`${processInstanceId}/2251799813686156/2251799813686166`]: {
         running: false,
         children: [
           {
@@ -818,7 +818,7 @@ export const createMultiInstanceFlowNodeInstances = (
             flowNodeId: 'startFilterMap',
             startDate: '2020-08-18T12:07:34.337+0000',
             endDate: '2020-08-18T12:07:34.445+0000',
-            treePath: `${workflowInstanceId}/2251799813686156/2251799813686166/2251799813686204`,
+            treePath: `${processInstanceId}/2251799813686156/2251799813686166/2251799813686204`,
             sortValues: [1606300828415, '2251799813686204'],
           },
         ],

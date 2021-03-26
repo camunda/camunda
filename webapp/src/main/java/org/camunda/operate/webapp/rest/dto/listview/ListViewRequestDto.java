@@ -14,14 +14,14 @@ import java.util.Objects;
 import org.camunda.operate.webapp.rest.dto.SortingDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
 
-@ApiModel("Workflow instances request")
+@ApiModel("Process instances request")
 public class ListViewRequestDto {
 
   public static final String SORT_BY_ID = "id";
   public static final String SORT_BY_START_DATE = "startDate";
   public static final String SORT_BY_END_DATE = "endDate";
-  public static final String SORT_BY_WORKFLOW_NAME = "workflowName";
-  public static final String SORT_BY_WORFLOW_VERSION = "workflowVersion";
+  public static final String SORT_BY_PROCESS_NAME = "processName";
+  public static final String SORT_BY_WORFLOW_VERSION = "processVersion";
 
   public static final List<String> VALID_SORT_BY_VALUES;
   static {
@@ -29,7 +29,7 @@ public class ListViewRequestDto {
     VALID_SORT_BY_VALUES.add(SORT_BY_ID);
     VALID_SORT_BY_VALUES.add(SORT_BY_START_DATE);
     VALID_SORT_BY_VALUES.add(SORT_BY_END_DATE);
-    VALID_SORT_BY_VALUES.add(SORT_BY_WORKFLOW_NAME);
+    VALID_SORT_BY_VALUES.add(SORT_BY_PROCESS_NAME);
     VALID_SORT_BY_VALUES.add(SORT_BY_WORFLOW_VERSION);
   }
 
@@ -38,12 +38,12 @@ public class ListViewRequestDto {
   private SortingDto sorting;
 
   /**
-   * Search for workflow instances that goes exactly after the given sort values.
+   * Search for process instances that goes exactly after the given sort values.
    */
   private Object[] searchAfter;
 
   /**
-   * Search for workflow instance that goes exactly before the given sort values.
+   * Search for process instance that goes exactly before the given sort values.
    */
   private Object[] searchBefore;
 
@@ -78,7 +78,7 @@ public class ListViewRequestDto {
     this.sorting = sorting;
   }
 
-  @ApiModelProperty(value= "Array of two values: copy/paste of sortValues field from one of the workflow instances.",
+  @ApiModelProperty(value= "Array of two values: copy/paste of sortValues field from one of the process instances.",
       example = "[1605160098477, 4629710542312628000]")
   public Object[] getSearchAfter() {
     return searchAfter;
@@ -88,7 +88,7 @@ public class ListViewRequestDto {
     this.searchAfter = searchAfter;
   }
 
-  @ApiModelProperty(value= "Array of two values: copy/paste of sortValues field from one of the workflow instances.",
+  @ApiModelProperty(value= "Array of two values: copy/paste of sortValues field from one of the process instances.",
       example = "[1605160098477, 4629710542312628000]")
   public Object[] getSearchBefore() {
     return searchBefore;

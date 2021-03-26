@@ -12,7 +12,7 @@ import {
   autorun,
   IReactionDisposer,
 } from 'mobx';
-import {fetchWorkflowInstanceIncidents} from 'modules/api/instances';
+import {fetchProcessInstanceIncidents} from 'modules/api/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {addFlowNodeName, mapify} from './mappers';
@@ -89,7 +89,7 @@ class Incidents {
   };
 
   fetchIncidents = async (id: string) => {
-    const response = await fetchWorkflowInstanceIncidents(id);
+    const response = await fetchProcessInstanceIncidents(id);
     if (response.ok) {
       this.setIncidents(await response.json());
     }
@@ -105,7 +105,7 @@ class Incidents {
   };
 
   handlePolling = async (id: any) => {
-    const response = await fetchWorkflowInstanceIncidents(id);
+    const response = await fetchProcessInstanceIncidents(id);
     if (this.intervalId !== null && response.ok) {
       this.setIncidents(await response.json());
     }

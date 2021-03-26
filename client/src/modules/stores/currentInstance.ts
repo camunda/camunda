@@ -12,14 +12,14 @@ import {
   autorun,
   IReactionDisposer,
 } from 'mobx';
-import {fetchWorkflowInstance} from 'modules/api/instances';
-import {getWorkflowName} from 'modules/utils/instance';
+import {fetchProcessInstance} from 'modules/api/instances';
+import {getProcessName} from 'modules/utils/instance';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 
 import {PAGE_TITLE} from 'modules/constants';
 
 type State = {
-  instance: null | WorkflowInstanceEntity;
+  instance: null | ProcessInstanceEntity;
 };
 
 const DEFAULT_STATE: State = {
@@ -40,12 +40,12 @@ class CurrentInstance {
       setCurrentInstance: action,
       activateOperation: action,
       deactivateOperation: action,
-      workflowTitle: computed,
+      processTitle: computed,
     });
   }
 
   async init(id: any) {
-    const response = await fetchWorkflowInstance(id);
+    const response = await fetchProcessInstance(id);
     if (response.ok) {
       this.setCurrentInstance(await response.json());
     }
@@ -77,14 +77,14 @@ class CurrentInstance {
     }
   };
 
-  get workflowTitle() {
+  get processTitle() {
     if (this.state.instance === null) {
       return null;
     }
 
     return PAGE_TITLE.INSTANCE(
       this.state.instance.id,
-      getWorkflowName(this.state.instance)
+      getProcessName(this.state.instance)
     );
   }
 
@@ -99,7 +99,7 @@ class CurrentInstance {
   }
 
   handlePolling = async (instanceId: any) => {
-    const response = await fetchWorkflowInstance(instanceId);
+    const response = await fetchProcessInstance(instanceId);
 
     if (this.intervalId !== null && response.ok) {
       this.setCurrentInstance(await response.json());

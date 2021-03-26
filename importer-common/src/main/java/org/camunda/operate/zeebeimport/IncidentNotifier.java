@@ -16,9 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.camunda.operate.entities.IncidentEntity;
-import org.camunda.operate.entities.WorkflowEntity;
+import org.camunda.operate.entities.ProcessEntity;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.zeebeimport.cache.WorkflowCache;
+import org.camunda.operate.zeebeimport.cache.ProcessCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +42,7 @@ public class IncidentNotifier {
   protected static final String FIELD_NAME_MESSAGE = "message";
   protected static final String MESSAGE = "Incident created";
   protected static final String FIELD_NAME_ID = "id";
-  protected static final String FIELD_NAME_WORKFLOW_INSTANCE_ID = "workflowInstanceId";
+  protected static final String FIELD_NAME_PROCESS_INSTANCE_ID = "processInstanceId";
   protected static final String FIELD_NAME_CREATION_TIME = "creationTime";
   protected static final String FIELD_NAME_STATE = "state";
   protected static final String FIELD_NAME_ERROR_MESSAGE = "errorMessage";
@@ -50,9 +50,9 @@ public class IncidentNotifier {
   protected static final String FIELD_NAME_FLOW_NODE_ID = "flowNodeId";
   protected static final String FIELD_NAME_FLOW_NODE_INSTANCE_KEY = "flowNodeInstanceKey";
   protected static final String FIELD_NAME_JOB_KEY = "jobKey";
-  protected static final String FIELD_NAME_WORKFLOW_KEY = "workflowKey";
-  protected static final String FIELD_NAME_WORKFLOW_NAME = "workflowName";
-  protected static final String FIELD_NAME_WORKFLOW_VERSION = "workflowVersion";
+  protected static final String FIELD_NAME_PROCESS_KEY = "processDefinitionKey";
+  protected static final String FIELD_NAME_PROCESS_NAME = "processName";
+  protected static final String FIELD_NAME_PROCESS_VERSION = "processVersion";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -68,7 +68,7 @@ public class IncidentNotifier {
   private RestTemplate restTemplate;
 
   @Autowired
-  private WorkflowCache workflowCache;
+  private ProcessCache processCache;
 
   public void notifyOnIncidents(List<IncidentEntity> incidents) {
     try {
@@ -116,7 +116,7 @@ public class IncidentNotifier {
       Map<String, Object> incidentFields = new HashMap<>();
       incidentFields.put(FIELD_NAME_MESSAGE, MESSAGE);
       incidentFields.put(FIELD_NAME_ID, inc.getId());
-      incidentFields.put(FIELD_NAME_WORKFLOW_INSTANCE_ID, String.valueOf(inc.getWorkflowInstanceKey()));
+      incidentFields.put(FIELD_NAME_PROCESS_INSTANCE_ID, String.valueOf(inc.getProcessInstanceKey()));
       incidentFields.put(FIELD_NAME_CREATION_TIME, inc.getCreationTime());
       incidentFields.put(FIELD_NAME_STATE, inc.getState());
       incidentFields.put(FIELD_NAME_ERROR_MESSAGE, inc.getErrorMessage());
@@ -124,12 +124,12 @@ public class IncidentNotifier {
       incidentFields.put(FIELD_NAME_FLOW_NODE_ID, inc.getFlowNodeId());
       incidentFields.put(FIELD_NAME_FLOW_NODE_INSTANCE_KEY, inc.getFlowNodeInstanceKey());
       incidentFields.put(FIELD_NAME_JOB_KEY, inc.getJobKey());
-      incidentFields.put(FIELD_NAME_WORKFLOW_KEY, inc.getWorkflowKey());
-      final Optional<WorkflowEntity> workflow = workflowCache
-          .findOrWaitWorkflow(inc.getWorkflowKey(), 2, 1000L);
-      if (workflow.isPresent()) {
-        incidentFields.put(FIELD_NAME_WORKFLOW_NAME, workflow.get().getName());
-        incidentFields.put(FIELD_NAME_WORKFLOW_VERSION, workflow.get().getVersion());
+      incidentFields.put(FIELD_NAME_PROCESS_KEY, inc.getProcessDefinitionKey());
+      final Optional<ProcessEntity> process = processCache
+          .findOrWaitProcess(inc.getProcessDefinitionKey(), 2, 1000L);
+      if (process.isPresent()) {
+        incidentFields.put(FIELD_NAME_PROCESS_NAME, process.get().getName());
+        incidentFields.put(FIELD_NAME_PROCESS_VERSION, process.get().getVersion());
       }
       incidentList.add(incidentFields);
     }

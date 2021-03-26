@@ -11,7 +11,7 @@ import {Operations} from 'modules/components/Operations';
 import StateIcon from 'modules/components/StateIcon';
 import EmptyMessage from '../../EmptyMessage';
 import {EXPAND_STATE} from 'modules/constants';
-import {getWorkflowName} from 'modules/utils/instance';
+import {getProcessName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
 import ColumnHeader from './ColumnHeader';
 import ListContext, {useListContext} from './ListContext';
@@ -31,7 +31,7 @@ const {TBody, TD} = Table;
 const ROW_HEIGHT = 38;
 
 type ListProps = {
-  data: WorkflowInstanceEntity[];
+  data: ProcessInstanceEntity[];
   Overlay?: any;
   isInitialDataLoaded: boolean;
   onSort?: () => void;
@@ -86,7 +86,7 @@ const List: React.FC<ListProps> = observer((props) => {
         if (shouldFetchNextInstances) {
           // scroll positioning works well automatically but since we remove items manually after `max instances stored` limit is reached, it fails. so we need to position scroll by ourselves according to the previous state before next fetch.
           const shouldScrollUp =
-            instancesStore.state.workflowInstances.length ===
+            instancesStore.state.processInstances.length ===
             MAX_INSTANCES_STORED;
 
           await instancesStore.fetchNextInstances();
@@ -96,7 +96,7 @@ const List: React.FC<ListProps> = observer((props) => {
               target.scrollTo(
                 0,
                 target.scrollTop -
-                  instancesStore.state.latestFetch.workflowInstancesCount *
+                  instancesStore.state.latestFetch.processInstancesCount *
                     ROW_HEIGHT
               );
             }
@@ -105,18 +105,18 @@ const List: React.FC<ListProps> = observer((props) => {
         if (shouldFetchPreviousInstances) {
           // scroll positioning works well automatically but since we remove items manually after `max instances stored` limit is reached, it fails. so we need to position scroll by ourselves according to the previous state before next fetch.
           const shouldScrollDown =
-            instancesStore.state.workflowInstances.length ===
+            instancesStore.state.processInstances.length ===
             MAX_INSTANCES_STORED;
           await instancesStore.fetchPreviousInstances();
           if (
             shouldScrollDown &&
-            instancesStore.state.latestFetch?.workflowInstancesCount !== 0
+            instancesStore.state.latestFetch?.processInstancesCount !== 0
           ) {
             if (instancesStore.state.latestFetch !== null) {
               target.scrollTo(
                 0,
                 target.scrollTop +
-                  instancesStore.state.latestFetch.workflowInstancesCount *
+                  instancesStore.state.latestFetch.processInstancesCount *
                     ROW_HEIGHT
               );
             }
@@ -196,9 +196,9 @@ const Body = observer(function (props: any) {
                   state={instance.state}
                   data-testid={`${instance.state}-icon-${instance.id}`}
                 />
-                <Styled.WorkflowName>
-                  {getWorkflowName(instance)}
-                </Styled.WorkflowName>
+                <Styled.ProcessName>
+                  {getProcessName(instance)}
+                </Styled.ProcessName>
               </Styled.Cell>
             </TD>
             <TD>
@@ -209,7 +209,7 @@ const Body = observer(function (props: any) {
                 {instance.id}
               </Styled.InstanceAnchor>
             </TD>
-            <TD>{`Version ${instance.workflowVersion}`}</TD>
+            <TD>{`Version ${instance.processVersion}`}</TD>
             <TD data-testid="start-time">{formatDate(instance.startDate)}</TD>
             <TD data-testid="end-time">{formatDate(instance.endDate)}</TD>
             <TD>
@@ -265,8 +265,8 @@ const Header = observer(function (props: any) {
           </Styled.CheckAll>
           <ColumnHeader
             disabled={isListEmpty}
-            label="Workflow"
-            sortKey="workflowName"
+            label="Process"
+            sortKey="processName"
           />
         </Styled.TH>
         <Styled.TH>
@@ -280,7 +280,7 @@ const Header = observer(function (props: any) {
           <ColumnHeader
             disabled={isListEmpty}
             label="Version"
-            sortKey="workflowVersion"
+            sortKey="processVersion"
           />
         </Styled.TH>
         <Styled.TH>

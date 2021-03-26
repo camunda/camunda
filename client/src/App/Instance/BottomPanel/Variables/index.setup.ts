@@ -10,7 +10,7 @@ const mockVariables = [
     name: 'clientNo',
     value: '"CNT-1211132-0223222"',
     scopeId: '2251799813686037',
-    workflowInstanceId: '2251799813686037',
+    processInstanceId: '2251799813686037',
     hasActiveOperation: false,
   },
   {
@@ -18,7 +18,7 @@ const mockVariables = [
     name: 'mwst',
     value: '124.26',
     scopeId: '2251799813686037',
-    workflowInstanceId: '2251799813686037',
+    processInstanceId: '2251799813686037',
     hasActiveOperation: false,
   },
   {
@@ -26,7 +26,7 @@ const mockVariables = [
     name: 'active-operation-variable',
     value: '1',
     scopeId: '2251799813686037',
-    workflowInstanceId: '2251799813686037',
+    processInstanceId: '2251799813686037',
     hasActiveOperation: true,
   },
 ];

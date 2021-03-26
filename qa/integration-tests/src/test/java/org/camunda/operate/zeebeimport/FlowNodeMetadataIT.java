@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.entities.FlowNodeType.MULTI_INSTANCE_BODY;
 import static org.camunda.operate.entities.FlowNodeType.SERVICE_TASK;
 import static org.camunda.operate.entities.FlowNodeType.SUB_PROCESS;
-import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -26,7 +26,7 @@ import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceBreadcrumbEn
 import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
-import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
+import org.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,12 +35,12 @@ import org.springframework.test.web.servlet.MvcResult;
 public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
 
   @Autowired
-  private CancelWorkflowInstanceHandler cancelWorkflowInstanceHandler;
+  private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
   @Before
   public void before() {
     super.before();
-    cancelWorkflowInstanceHandler.setZeebeClient(zeebeClient);
+    cancelProcessInstanceHandler.setZeebeClient(zeebeClient);
   }
 
   /**
@@ -50,24 +50,24 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
   public void shouldReturnOneInstanceMetadata() throws Exception {
     //having
     final String taskId = "taskA";
-    final String workflowId = "testProcess";
+    final String processId = "testProcess";
     final BpmnModelInstance testProcess =
-        Bpmn.createExecutableProcess(workflowId)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask(taskId).zeebeJobType(taskId)
             .endEvent()
             .done();
-    final long workflowInstanceKey = tester
-        .deployWorkflow(testProcess, "testProcess.bpmn")
-        .startWorkflowInstance(workflowId)
+    final long processInstanceKey = tester
+        .deployProcess(testProcess, "testProcess.bpmn")
+        .startProcessInstance(processId)
         .and()
         .waitUntil()
         .flowNodeIsActive(taskId)
-        .getWorkflowInstanceKey();
+        .getProcessInstanceKey();
 
     //when 1.1
     FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
-        String.valueOf(workflowInstanceKey), taskId, null, null);
+        String.valueOf(processInstanceKey), taskId, null, null);
 
     //then
     assertThat(flowNodeMetadata.getBreadcrumb()).isEmpty();
@@ -82,7 +82,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
 
     //when 2.1
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
-        String.valueOf(workflowInstanceKey), null, null, flowNodeInstanceId1);
+        String.valueOf(processInstanceKey), null, null, flowNodeInstanceId1);
 
     //then
     assertThat(flowNodeMetadata.getBreadcrumb()).isEmpty();
@@ -103,10 +103,10 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
   public void shouldReturnOneInstanceMetadataWithBreadcrumb() throws Exception {
     //having process with sequential multi-instance subprocess
     final String taskId = "taskA";
-    final String workflowId = "testProcess";
+    final String processId = "testProcess";
     final String subprocessId = "subprocess";
     final BpmnModelInstance testProcess =
-        Bpmn.createExecutableProcess(workflowId)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .subProcess(
                 subprocessId,
@@ -118,16 +118,16 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
                     .endEvent())
             .endEvent()
             .done();
-    final long workflowInstanceKey = tester
-        .deployWorkflow(testProcess, "testProcess.bpmn")
-        .startWorkflowInstance(workflowId, "{\"items\": [0, 1]}")
+    final long processInstanceKey = tester
+        .deployProcess(testProcess, "testProcess.bpmn")
+        .startProcessInstance(processId, "{\"items\": [0, 1]}")
         .and().waitUntil()
         .flowNodeIsActive(taskId)
-        .getWorkflowInstanceKey();
+        .getProcessInstanceKey();
 
     //when 1.2
     FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
-        String.valueOf(workflowInstanceKey), subprocessId, null, null);
+        String.valueOf(processInstanceKey), subprocessId, null, null);
 
     //then
     assertBreadcrumb(flowNodeMetadata.getBreadcrumb(),
@@ -143,7 +143,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
 
     //when 2.2 (is multi-instance body itseld)
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
-        String.valueOf(workflowInstanceKey), null, null, flowNodeInstanceId1);
+        String.valueOf(processInstanceKey), null, null, flowNodeInstanceId1);
 
     //then
     assertBreadcrumb(flowNodeMetadata.getBreadcrumb(),
@@ -161,7 +161,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     final FlowNodeInstanceBreadcrumbEntryDto breadcrumb = flowNodeMetadata
         .getBreadcrumb().get(0);
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
-        String.valueOf(workflowInstanceKey), breadcrumb.getFlowNodeId(),
+        String.valueOf(processInstanceKey), breadcrumb.getFlowNodeId(),
         breadcrumb.getFlowNodeType(), null);
 
     //then
@@ -178,7 +178,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
 
     //when 3.1 (breadcrumb for subprocess)
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
-        String.valueOf(workflowInstanceKey), subprocessId, SUB_PROCESS, null);
+        String.valueOf(processInstanceKey), subprocessId, SUB_PROCESS, null);
 
     //then
     assertBreadcrumb(flowNodeMetadata.getBreadcrumb(),
@@ -195,7 +195,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
 
     //when 2.2 (is included in multi-instance)
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
-        String.valueOf(workflowInstanceKey), null, null, subprocessInstanceId1);
+        String.valueOf(processInstanceKey), null, null, subprocessInstanceId1);
 
     //then
     assertBreadcrumb(flowNodeMetadata.getBreadcrumb(),
@@ -218,9 +218,9 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
   public void shouldReturnInstanceCountPeterCase() throws Exception {
     //having process with Peter case, two instances of task are active
     final String taskId = "taskA";
-    final String workflowId = "testProcess";
+    final String processId = "testProcess";
     final BpmnModelInstance testProcess =
-        Bpmn.createExecutableProcess(workflowId)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .parallelGateway("parallel")
             .exclusiveGateway("exclusive")
@@ -229,16 +229,16 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
             .serviceTask(taskId).zeebeJobType(taskId)
             .endEvent()
             .done();
-    final long workflowInstanceKey = tester
-        .deployWorkflow(testProcess, "testProcess.bpmn")
-        .startWorkflowInstance(workflowId)
+    final long processInstanceKey = tester
+        .deployProcess(testProcess, "testProcess.bpmn")
+        .startProcessInstance(processId)
         .and().waitUntil()
         .flowNodeIsActive(taskId)
-        .getWorkflowInstanceKey();
+        .getProcessInstanceKey();
 
     //when 1.3 - instance count by flowNodeId
     FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
-        String.valueOf(workflowInstanceKey), taskId, null, null);
+        String.valueOf(processInstanceKey), taskId, null, null);
 
     //then
     assertThat(flowNodeMetadata.getInstanceCount()).isEqualTo(2);
@@ -248,7 +248,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
 
     //when 3.2 - instance count by breadcrump
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
-        String.valueOf(workflowInstanceKey), taskId, SERVICE_TASK, null);
+        String.valueOf(processInstanceKey), taskId, SERVICE_TASK, null);
 
     //then
     assertThat(flowNodeMetadata.getInstanceCount()).isEqualTo(2);
@@ -264,9 +264,9 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
   public void shouldReturnBreadcrumbForPeterCase() throws Exception {
     //having process with Peter case, two instances of task are active
     final String taskId = "taskA";
-    final String workflowId = "testProcess";
+    final String processId = "testProcess";
     final BpmnModelInstance testProcess =
-        Bpmn.createExecutableProcess(workflowId)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .parallelGateway("parallel")
             .exclusiveGateway("exclusive")
@@ -275,21 +275,21 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
             .serviceTask(taskId).zeebeJobType(taskId)
             .endEvent()
             .done();
-    final long workflowInstanceKey = tester
-        .deployWorkflow(testProcess, "testProcess.bpmn")
-        .startWorkflowInstance(workflowId)
+    final long processInstanceKey = tester
+        .deployProcess(testProcess, "testProcess.bpmn")
+        .startProcessInstance(processId)
         .and().waitUntil()
         .flowNodeIsActive(taskId)
-        .getWorkflowInstanceKey();
+        .getProcessInstanceKey();
     final List<FlowNodeInstanceDto> flowNodeInstances = tester.getFlowNodeInstanceOneListFromRest(
-        String.valueOf(workflowInstanceKey));
+        String.valueOf(processInstanceKey));
     final List<FlowNodeInstanceDto> tasks = flowNodeInstances.stream()
         .filter(fni -> fni.getType().equals(SERVICE_TASK)).collect(Collectors.toList());
     final String flowNodeInstanceId = tasks.get(0).getId();
 
     //when 2.3 - one instance out of several (Peter case)
     FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
-        String.valueOf(workflowInstanceKey), null, null, flowNodeInstanceId);
+        String.valueOf(processInstanceKey), null, null, flowNodeInstanceId);
 
     //then
     assertBreadcrumb(flowNodeMetadata.getBreadcrumb(),
@@ -311,10 +311,10 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
   public void shouldReturnInstanceCountInsideMultiInstance() throws Exception {
     //having process with parallel multi-instance subprocess
     final String taskId = "taskA";
-    final String workflowId = "testProcess";
+    final String processId = "testProcess";
     final String subprocessId = "subprocess";
     final BpmnModelInstance testProcess =
-        Bpmn.createExecutableProcess(workflowId)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .subProcess(
                 subprocessId,
@@ -326,16 +326,16 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
                     .endEvent())
             .endEvent()
             .done();
-    final long workflowInstanceKey = tester
-        .deployWorkflow(testProcess, "testProcess.bpmn")
-        .startWorkflowInstance(workflowId, "{\"items\": [0, 1, 2]}")
+    final long processInstanceKey = tester
+        .deployProcess(testProcess, "testProcess.bpmn")
+        .startProcessInstance(processId, "{\"items\": [0, 1, 2]}")
         .and().waitUntil()
         .flowNodeIsActive(taskId)
-        .getWorkflowInstanceKey();
+        .getProcessInstanceKey();
 
     //when 3.3 - instance count by breadcrump
     FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
-        String.valueOf(workflowInstanceKey), subprocessId, SUB_PROCESS, null);
+        String.valueOf(processInstanceKey), subprocessId, SUB_PROCESS, null);
 
     //then
     assertThat(flowNodeMetadata.getInstanceCount()).isEqualTo(3);
@@ -369,14 +369,14 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testMetadataForFinishedWorkflow() throws Exception {
+  public void testMetadataForFinishedProcess() throws Exception {
     // having
     final String processId = "processWithGateway";
     final String taskA = "taskA";
     final String taskC = "taskC";
     final String errorMessage = "Some error";
-    final Long workflowInstanceKey = tester.deployWorkflow("processWithGateway.bpmn")
-        .startWorkflowInstance(processId, "{\"a\": \"b\"}")
+    final Long processInstanceKey = tester.deployProcess("processWithGateway.bpmn")
+        .startProcessInstance(processId, "{\"a\": \"b\"}")
         .and()
         .failTask(taskA, errorMessage)
         .waitUntil()
@@ -392,35 +392,35 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .and()
         .completeTask(taskC, "{\"b\": \"d\"}")
         .waitUntil()
-        .workflowInstanceIsCompleted()
-        .getWorkflowInstanceKey();
+        .processInstanceIsCompleted()
+        .getProcessInstanceKey();
 
     //get flow node instance tree
-    final String workflowInstanceId = String.valueOf(workflowInstanceKey);
+    final String processInstanceId = String.valueOf(processInstanceKey);
     FlowNodeInstanceQueryDto request = new FlowNodeInstanceQueryDto(
-        workflowInstanceId, workflowInstanceId);
+        processInstanceId, processInstanceId);
     List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
 
-    assertMetadata(instances, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED,
-        workflowInstanceKey, "start");
+    assertMetadata(instances, EventSourceType.PROCESS_INSTANCE, EventType.ELEMENT_COMPLETED,
+        processInstanceKey, "start");
     try {
-      assertMetadata(instances, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED,
-          workflowInstanceKey, "taskA");
+      assertMetadata(instances, EventSourceType.PROCESS_INSTANCE, EventType.ELEMENT_COMPLETED,
+          processInstanceKey, "taskA");
     } catch (AssertionError ae) {
-      assertMetadata(instances, EventSourceType.JOB, EventType.COMPLETED, workflowInstanceKey,
+      assertMetadata(instances, EventSourceType.JOB, EventType.COMPLETED, processInstanceKey,
           "taskA");
     }
-    assertMetadata(instances, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED,
-        workflowInstanceKey, "gateway");
+    assertMetadata(instances, EventSourceType.PROCESS_INSTANCE, EventType.ELEMENT_COMPLETED,
+        processInstanceKey, "gateway");
     try {
-      assertMetadata(instances, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED,
-          workflowInstanceKey, "taskC");
+      assertMetadata(instances, EventSourceType.PROCESS_INSTANCE, EventType.ELEMENT_COMPLETED,
+          processInstanceKey, "taskC");
     } catch (AssertionError ae) {
-      assertMetadata(instances, EventSourceType.JOB, EventType.COMPLETED, workflowInstanceKey,
+      assertMetadata(instances, EventSourceType.JOB, EventType.COMPLETED, processInstanceKey,
           "taskC");
     }
-    assertMetadata(instances, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED,
-        workflowInstanceKey, "end1");
+    assertMetadata(instances, EventSourceType.PROCESS_INSTANCE, EventType.ELEMENT_COMPLETED,
+        processInstanceKey, "end1");
 
   }
 
@@ -430,31 +430,31 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     String flowNodeId = "taskA";
 
     String processId = "demoProcess";
-    final Long workflowInstanceKey = tester.deployWorkflow("demoProcess_v_1.bpmn")
-        .startWorkflowInstance(processId, null)
+    final Long processInstanceKey = tester.deployProcess("demoProcess_v_1.bpmn")
+        .startProcessInstance(processId, null)
         .waitUntil()
         .incidentIsActive()
         .and()
-        .cancelWorkflowInstanceOperation()
+        .cancelProcessInstanceOperation()
         .waitUntil()
         .operationIsCompleted()
         .and()
-        .workflowInstanceIsFinished()
-        .getWorkflowInstanceKey();
+        .processInstanceIsFinished()
+        .getProcessInstanceKey();
 
     //when
     //get flow node instance tree
-    final String workflowInstanceId = String.valueOf(workflowInstanceKey);
+    final String processInstanceId = String.valueOf(processInstanceKey);
     FlowNodeInstanceQueryDto request = new FlowNodeInstanceQueryDto(
-        workflowInstanceId, workflowInstanceId);
+        processInstanceId, processInstanceId);
     List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
 
     //then
     try {
-      assertMetadata(instances, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_TERMINATED,
-          workflowInstanceKey, flowNodeId);
+      assertMetadata(instances, EventSourceType.PROCESS_INSTANCE, EventType.ELEMENT_TERMINATED,
+          processInstanceKey, flowNodeId);
     } catch (AssertionError ae) {
-      assertMetadata(instances, EventSourceType.INCIDENT, EventType.RESOLVED, workflowInstanceKey,
+      assertMetadata(instances, EventSourceType.INCIDENT, EventType.RESOLVED, processInstanceKey,
           flowNodeId);
     }
 
@@ -464,29 +464,29 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
   public void testMetadataIncidentOnInputMapping() throws Exception {
     // having
     String processId = "demoProcess";
-    BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
+    BpmnModelInstance process = Bpmn.createExecutableProcess(processId)
         .startEvent("start")
         .serviceTask("task1").zeebeJobType("task1")
         .zeebeInput("=var", "varIn")
         .endEvent()
         .done();
 
-    final Long workflowInstanceKey = tester.deployWorkflow(workflow, processId + ".bpmn")
-        .startWorkflowInstance(processId, "{\"a\": \"b\"}")      //wrong payload provokes incident
+    final Long processInstanceKey = tester.deployProcess(process, processId + ".bpmn")
+        .startProcessInstance(processId, "{\"a\": \"b\"}")      //wrong payload provokes incident
         .waitUntil()
         .incidentIsActive()
-        .getWorkflowInstanceKey();
+        .getProcessInstanceKey();
 
     //when
     //get flow node instance tree
-    final String workflowInstanceId = String.valueOf(workflowInstanceKey);
+    final String processInstanceId = String.valueOf(processInstanceKey);
     FlowNodeInstanceQueryDto request = new FlowNodeInstanceQueryDto(
-        workflowInstanceId, workflowInstanceId);
+        processInstanceId, processInstanceId);
     List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
 
     //then last event does not have a jobId
     final FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
-        String.valueOf(workflowInstanceKey),
+        String.valueOf(processInstanceKey),
         null, null, instances.get(instances.size() - 1).getId());
     FlowNodeInstanceMetadataDto flowNodeInstanceMetadata = flowNodeMetadata.getInstanceMetadata();
     assertThat(flowNodeInstanceMetadata.getJobId()).isNull();
@@ -501,26 +501,26 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     FlowNodeMetadataRequestDto request = new FlowNodeMetadataRequestDto();
 
     MvcResult mvcResult = postRequestThatShouldFail(
-        WORKFLOW_INSTANCE_URL + "/111/flow-node-metadata", request);
+        PROCESS_INSTANCE_URL + "/111/flow-node-metadata", request);
     assertErrorMessageIsEqualTo(mvcResult,
         "At least flowNodeId or flowNodeInstanceId must be specifies in the request.");
 
     request = new FlowNodeMetadataRequestDto("flowNodeId", "flowNodeInstanceId", null);
     mvcResult = postRequestThatShouldFail(
-        WORKFLOW_INSTANCE_URL + "/111/flow-node-metadata", request);
+        PROCESS_INSTANCE_URL + "/111/flow-node-metadata", request);
     assertErrorMessageIsEqualTo(mvcResult,
         "Only one of flowNodeId or flowNodeInstanceId must be specifies in the request.");
   }
 
   private void assertMetadata(List<FlowNodeInstanceDto> flowNodes, EventSourceType eventSourceType,
       EventType eventType,
-      Long workflowInstanceKey, String activityId)
+      Long processInstanceKey, String activityId)
       throws Exception {
-    assertMetadata(flowNodes, eventSourceType, eventType, workflowInstanceKey, activityId, null);
+    assertMetadata(flowNodes, eventSourceType, eventType, processInstanceKey, activityId, null);
   }
 
   private void assertMetadata(List<FlowNodeInstanceDto> flowNodes, EventSourceType eventSourceType,
-      EventType eventType, Long workflowInstanceKey, String flowNodeId, String errorMessage)
+      EventType eventType, Long processInstanceKey, String flowNodeId, String errorMessage)
       throws Exception {
 
     final Optional<FlowNodeInstanceDto> flowNodeInstance = flowNodes.stream()
@@ -529,7 +529,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
 
     //call REST API to get metadata
     final FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
-        String.valueOf(workflowInstanceKey),
+        String.valueOf(processInstanceKey),
         null, null, flowNodeInstance.get().getId());
 
     String assertionName = String.format("%s.%s", eventSourceType, eventType);

@@ -7,7 +7,7 @@
 import React, {useContext} from 'react';
 
 type ContextProps = {
-  data: WorkflowInstanceEntity[];
+  data: ProcessInstanceEntity[];
   rowsToDisplay: number;
   isInitialDataLoaded: boolean;
 };

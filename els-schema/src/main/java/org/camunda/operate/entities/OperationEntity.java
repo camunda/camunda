@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public class OperationEntity extends OperateEntity<OperationEntity> {
 
-  private Long workflowInstanceKey;
+  private Long processInstanceKey;
   private Long incidentKey;
   private Long scopeKey;
   private String variableName;
@@ -24,12 +24,12 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
   private Long zeebeCommandKey;
   private String username;
 
-  public Long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public Long getIncidentKey() {
@@ -143,7 +143,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
 
     OperationEntity that = (OperationEntity) o;
 
-    if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey != null)
+    if (processInstanceKey != null ? !processInstanceKey.equals(that.processInstanceKey) : that.processInstanceKey != null)
       return false;
     if (incidentKey != null ? !incidentKey.equals(that.incidentKey) : that.incidentKey != null)
       return false;
@@ -174,7 +174,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
+    result = 31 * result + (processInstanceKey != null ? processInstanceKey.hashCode() : 0);
     result = 31 * result + (incidentKey != null ? incidentKey.hashCode() : 0);
     result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
     result = 31 * result + (variableName != null ? variableName.hashCode() : 0);
@@ -192,7 +192,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
 
   @Override
   public String toString() {
-    return "OperationEntity{" + "workflowInstanceKey=" + workflowInstanceKey + ", incidentKey=" + incidentKey + ", scopeKey=" + scopeKey + ", variableName='"
+    return "OperationEntity{" + "processInstanceKey=" + processInstanceKey + ", incidentKey=" + incidentKey + ", scopeKey=" + scopeKey + ", variableName='"
         + variableName + '\'' + ", variableValue='" + variableValue + '\'' + ", type=" + type + ", lockExpirationTime=" + lockExpirationTime + ", lockOwner='"
         + lockOwner + '\'' + ", state=" + state + ", errorMessage='" + errorMessage + '\'' + ", batchOperationId='" + batchOperationId + '\''
         + ", zeebeCommandKey=" + zeebeCommandKey + '}';

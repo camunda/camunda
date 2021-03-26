@@ -27,13 +27,13 @@ const Variables: React.FC = observer(function Variables() {
     state: {items, status},
     hasNoVariables,
   } = variablesStore;
-  const {workflowInstanceId} = useInstancePageParams();
+  const {processInstanceId} = useInstancePageParams();
   const notifications = useNotifications();
 
   useEffect(() => {
-    variablesStore.fetchVariables(workflowInstanceId);
+    variablesStore.fetchVariables(processInstanceId);
     return () => variablesStore.clearItems();
-  }, [workflowInstanceId]);
+  }, [processInstanceId]);
 
   const [editMode, setEditMode] = useState('');
   const [key, setKey] = useState('');
@@ -93,14 +93,14 @@ const Variables: React.FC = observer(function Variables() {
   function saveVariable() {
     if (editMode === VARIABLE_MODE.ADD) {
       variablesStore.addVariable({
-        id: workflowInstanceId,
+        id: processInstanceId,
         name: key,
         value,
         onError: handleError,
       });
     } else if (editMode === VARIABLE_MODE.EDIT) {
       variablesStore.updateVariable({
-        id: workflowInstanceId,
+        id: processInstanceId,
         name: key,
         value,
         onError: handleError,

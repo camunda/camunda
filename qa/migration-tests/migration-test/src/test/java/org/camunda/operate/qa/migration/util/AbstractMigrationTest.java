@@ -68,8 +68,8 @@ public abstract class AbstractMigrationTest {
   @Autowired
   protected TestContext testContext;
 
-  protected void assumeThatWorkflowIsUnderTest(String bpmnProcessId) {
-    assumeTrue(testContext.getWorkflowsToAssert().contains(bpmnProcessId));
+  protected void assumeThatProcessIsUnderTest(String bpmnProcessId) {
+    assumeTrue(testContext.getProcessesToAssert().contains(bpmnProcessId));
   }
 
   @Configuration

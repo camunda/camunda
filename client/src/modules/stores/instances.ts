@@ -14,21 +14,21 @@ import {
 } from 'mobx';
 import {storeStateLocally, getStateLocally} from 'modules/utils/localStorage';
 import {
-  fetchWorkflowInstances,
-  fetchWorkflowInstancesByIds,
+  fetchProcessInstances,
+  fetchProcessInstancesByIds,
 } from 'modules/api/instances';
 import {logger} from 'modules/logger';
 import {getRequestFilters, getSorting} from 'modules/utils/filter';
 
-type Payload = Parameters<typeof fetchWorkflowInstances>['0'];
+type Payload = Parameters<typeof fetchProcessInstances>['0'];
 
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
   filteredInstancesCount: null | number;
-  workflowInstances: WorkflowInstanceEntity[];
+  processInstances: ProcessInstanceEntity[];
   latestFetch: {
     fetchType: FetchType;
-    workflowInstancesCount: number;
+    processInstancesCount: number;
   } | null;
   status:
     | 'initial'
@@ -45,7 +45,7 @@ const MAX_INSTANCES_PER_REQUEST = 50;
 
 const DEFAULT_STATE: State = {
   filteredInstancesCount: null,
-  workflowInstances: [],
+  processInstances: [],
   latestFetch: null,
   status: 'initial',
 };
@@ -73,7 +73,7 @@ class Instances {
       markInstancesWithActiveOperations: action,
       unmarkInstancesWithActiveOperations: action,
       visibleIdsInListPanel: computed,
-      areWorkflowInstancesEmpty: computed,
+      areProcessInstancesEmpty: computed,
       instanceIdsWithActiveOperations: computed,
       setLatestFetchDetails: action,
     });
@@ -99,71 +99,71 @@ class Instances {
   }
 
   get instanceIdsWithActiveOperations() {
-    return this.state.workflowInstances
+    return this.state.processInstances
       .filter((instance) => instance.hasActiveOperation)
       .map((instance) => instance.id);
   }
 
   setLatestFetchDetails = (
     fetchType: FetchType,
-    workflowInstancesCount: number
+    processInstancesCount: number
   ) => {
     this.state.latestFetch = {
       fetchType,
-      workflowInstancesCount,
+      processInstancesCount,
     };
   };
 
-  getWorkflowInstances = (
+  getProcessInstances = (
     fetchType: FetchType,
-    workflowInstances: WorkflowInstanceEntity[]
+    processInstances: ProcessInstanceEntity[]
   ) => {
     switch (fetchType) {
       case 'next':
-        const allWorkflowInstances = [
-          ...this.state.workflowInstances,
-          ...workflowInstances,
+        const allProcessInstances = [
+          ...this.state.processInstances,
+          ...processInstances,
         ];
 
-        return allWorkflowInstances.slice(
-          Math.max(allWorkflowInstances.length - MAX_INSTANCES_STORED, 0)
+        return allProcessInstances.slice(
+          Math.max(allProcessInstances.length - MAX_INSTANCES_STORED, 0)
         );
       case 'prev':
-        return [...workflowInstances, ...this.state.workflowInstances].slice(
+        return [...processInstances, ...this.state.processInstances].slice(
           0,
           MAX_INSTANCES_STORED
         );
       case 'initial':
       default:
-        return workflowInstances;
+        return processInstances;
     }
   };
 
   shouldFetchPreviousInstances = () => {
-    const {latestFetch, workflowInstances, status} = this.state;
+    const {latestFetch, processInstances, status} = this.state;
     if (['fetching-prev', 'fetching-next', 'fetching'].includes(status)) {
       return false;
     }
 
     return (
       (latestFetch?.fetchType === 'next' &&
-        workflowInstances.length === MAX_INSTANCES_STORED) ||
+        processInstances.length === MAX_INSTANCES_STORED) ||
       (latestFetch?.fetchType === 'prev' &&
-        latestFetch?.workflowInstancesCount === MAX_INSTANCES_PER_REQUEST)
+        latestFetch?.processInstancesCount === MAX_INSTANCES_PER_REQUEST)
     );
   };
 
   shouldFetchNextInstances = () => {
-    const {latestFetch, workflowInstances, status} = this.state;
+    const {latestFetch, processInstances, status} = this.state;
     if (['fetching-prev', 'fetching-next', 'fetching'].includes(status)) {
       return false;
     }
 
     return (
       (latestFetch?.fetchType === 'next' &&
-        latestFetch?.workflowInstancesCount === MAX_INSTANCES_PER_REQUEST) ||
+        latestFetch?.processInstancesCount === MAX_INSTANCES_PER_REQUEST) ||
       (latestFetch?.fetchType === 'prev' &&
-        workflowInstances.length === MAX_INSTANCES_STORED) ||
+        processInstances.length === MAX_INSTANCES_STORED) ||
       latestFetch?.fetchType === 'initial'
     );
   };
@@ -176,7 +176,7 @@ class Instances {
       payload: {
         query: getRequestFilters(),
         sorting: getSorting(),
-        searchBefore: instancesStore.state.workflowInstances[0]?.sortValues,
+        searchBefore: instancesStore.state.processInstances[0]?.sortValues,
         pageSize: MAX_INSTANCES_PER_REQUEST,
       },
     });
@@ -190,8 +190,8 @@ class Instances {
       payload: {
         query: getRequestFilters(),
         sorting: getSorting(),
-        searchAfter: this.state.workflowInstances[
-          this.state.workflowInstances.length - 1
+        searchAfter: this.state.processInstances[
+          this.state.processInstances.length - 1
         ]?.sortValues,
         pageSize: MAX_INSTANCES_PER_REQUEST,
       },
@@ -220,19 +220,19 @@ class Instances {
     payload: Payload;
   }) => {
     try {
-      const response = await fetchWorkflowInstances(payload);
+      const response = await fetchProcessInstances(payload);
 
       if (response.ok) {
-        const {workflowInstances, totalCount} = await response.json();
+        const {processInstances, totalCount} = await response.json();
         this.setInstances({
           filteredInstancesCount: totalCount,
-          workflowInstances: this.getWorkflowInstances(
+          processInstances: this.getProcessInstances(
             fetchType,
-            workflowInstances
+            processInstances
           ),
         });
 
-        this.setLatestFetchDetails(fetchType, workflowInstances.length);
+        this.setLatestFetchDetails(fetchType, processInstances.length);
         this.handleFetchSuccess();
       } else {
         this.handleFetchError();
@@ -244,13 +244,13 @@ class Instances {
 
   refreshAllInstances = async (payload: Payload) => {
     try {
-      const response = await fetchWorkflowInstances(payload);
+      const response = await fetchProcessInstances(payload);
 
       if (response.ok) {
-        const {workflowInstances, totalCount} = await response.json();
+        const {processInstances, totalCount} = await response.json();
         this.setInstances({
           filteredInstancesCount: totalCount,
-          workflowInstances,
+          processInstances,
         });
       } else {
         logger.error('Failed to refresh instances');
@@ -284,7 +284,7 @@ class Instances {
   handleFetchError = (error?: Error) => {
     this.state.status = 'error';
     this.state.filteredInstancesCount = 0;
-    this.state.workflowInstances = [];
+    this.state.processInstances = [];
 
     logger.error('Failed to fetch instances');
     if (error !== undefined) {
@@ -294,40 +294,40 @@ class Instances {
 
   setInstances = ({
     filteredInstancesCount,
-    workflowInstances,
+    processInstances,
   }: {
     filteredInstancesCount: number;
-    workflowInstances: WorkflowInstanceEntity[];
+    processInstances: ProcessInstanceEntity[];
   }) => {
-    this.state.workflowInstances = workflowInstances;
+    this.state.processInstances = processInstances;
     this.state.filteredInstancesCount = filteredInstancesCount;
 
     storeStateLocally({filteredInstancesCount});
   };
 
   get visibleIdsInListPanel() {
-    return this.state.workflowInstances.map(({id}) => id);
+    return this.state.processInstances.map(({id}) => id);
   }
 
-  get areWorkflowInstancesEmpty() {
-    return this.state.workflowInstances.length === 0;
+  get areProcessInstancesEmpty() {
+    return this.state.processInstances.length === 0;
   }
 
   markInstancesWithActiveOperations = ({
     ids,
     shouldPollAllVisibleIds = false,
   }: {
-    ids: WorkflowInstanceEntity['id'][];
+    ids: ProcessInstanceEntity['id'][];
     shouldPollAllVisibleIds?: boolean;
   }) => {
     if (shouldPollAllVisibleIds) {
-      this.state.workflowInstances
+      this.state.processInstances
         .filter((instance) => !ids.includes(instance.id))
         .forEach((instance) => {
           instance.hasActiveOperation = true;
         });
     } else {
-      this.state.workflowInstances
+      this.state.processInstances
         .filter((instance) => ids.includes(instance.id))
         .forEach((instance) => {
           instance.hasActiveOperation = true;
@@ -337,22 +337,20 @@ class Instances {
 
   handlePollingActiveInstances = async () => {
     try {
-      const response = await fetchWorkflowInstancesByIds(
+      const response = await fetchProcessInstancesByIds(
         this.instanceIdsWithActiveOperations
       );
 
       if (response.ok) {
         if (this.intervalId !== null) {
           const {
-            workflowInstances,
+            processInstances,
           }: {
-            workflowInstances: WorkflowInstanceEntity[];
+            processInstances: ProcessInstanceEntity[];
           } = await response.json();
 
           if (
-            workflowInstances.some(
-              ({hasActiveOperation}) => !hasActiveOperation
-            )
+            processInstances.some(({hasActiveOperation}) => !hasActiveOperation)
           ) {
             this.completedOperationsHandlers.forEach((handler: () => void) => {
               handler();
@@ -362,8 +360,8 @@ class Instances {
               query: getRequestFilters(),
               sorting: getSorting(),
               pageSize:
-                this.state.workflowInstances.length > 0
-                  ? this.state.workflowInstances.length
+                this.state.processInstances.length > 0
+                  ? this.state.processInstances.length
                   : MAX_INSTANCES_PER_REQUEST,
             });
           }
@@ -389,12 +387,12 @@ class Instances {
         query: getRequestFilters(),
         sorting: getSorting(),
         pageSize:
-          this.state.workflowInstances.length > 0
-            ? this.state.workflowInstances.length
+          this.state.processInstances.length > 0
+            ? this.state.processInstances.length
             : MAX_INSTANCES_PER_REQUEST,
       });
     } else {
-      this.state.workflowInstances
+      this.state.processInstances
         .filter((instance) => instanceIds.includes(instance.id))
         .forEach((instance) => {
           instance.hasActiveOperation = false;

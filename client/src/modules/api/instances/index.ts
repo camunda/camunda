@@ -7,7 +7,7 @@
 import {post, get} from 'modules/request';
 import {RequestFilters} from 'modules/utils/filter';
 
-const URL = '/api/workflow-instances';
+const URL = '/api/process-instances';
 
 type BatchOperationQuery = {
   active?: boolean;
@@ -20,7 +20,7 @@ type BatchOperationQuery = {
   running?: boolean;
 };
 
-type WorkflowInstancesQuery = {
+type ProcessInstancesQuery = {
   query: RequestFilters;
   sorting?: {
     sortBy: string;
@@ -39,38 +39,34 @@ type OperationPayload = {
   incidentId?: string;
 };
 
-async function fetchWorkflowInstance(id: WorkflowInstanceEntity['id']) {
+async function fetchProcessInstance(id: ProcessInstanceEntity['id']) {
   return get(`${URL}/${id}`);
 }
 
-async function fetchWorkflowInstanceIncidents(
-  id: WorkflowInstanceEntity['id']
-) {
+async function fetchProcessInstanceIncidents(id: ProcessInstanceEntity['id']) {
   return get(`${URL}/${id}/incidents`);
 }
 
-async function fetchWorkflowInstances(payload: WorkflowInstancesQuery) {
+async function fetchProcessInstances(payload: ProcessInstancesQuery) {
   return await post(`${URL}`, payload);
 }
 
 async function fetchSequenceFlows(
-  workflowInstanceId: WorkflowInstanceEntity['id']
+  processInstanceId: ProcessInstanceEntity['id']
 ) {
-  return get(`${URL}/${workflowInstanceId}/sequence-flows`);
+  return get(`${URL}/${processInstanceId}/sequence-flows`);
 }
 
-async function fetchGroupedWorkflows() {
-  return get('/api/workflows/grouped');
+async function fetchGroupedProcesses() {
+  return get('/api/processes/grouped');
 }
 
-async function fetchWorkflowCoreStatistics() {
+async function fetchProcessCoreStatistics() {
   return get(`${URL}/core-statistics`);
 }
 
-async function fetchWorkflowInstancesByIds(
-  ids: WorkflowInstanceEntity['id'][]
-) {
-  return fetchWorkflowInstances({
+async function fetchProcessInstancesByIds(ids: ProcessInstanceEntity['id'][]) {
+  return fetchProcessInstances({
     pageSize: ids.length,
     query: {
       running: true,
@@ -84,7 +80,7 @@ async function fetchWorkflowInstancesByIds(
   });
 }
 
-async function fetchWorkflowInstancesStatistics(payload: any) {
+async function fetchProcessInstancesStatistics(payload: any) {
   const response = await post(`${URL}/statistics`, payload);
   return {statistics: await response.json()};
 }
@@ -104,7 +100,7 @@ async function applyBatchOperation(
  * @param {*} queries object with query params.
  */
 async function applyOperation(
-  instanceId: WorkflowInstanceEntity['id'],
+  instanceId: ProcessInstanceEntity['id'],
   payload: OperationPayload
 ) {
   return post(`${URL}/${instanceId}/operation`, payload);
@@ -114,21 +110,21 @@ async function fetchVariables({
   instanceId,
   scopeId,
 }: {
-  instanceId: WorkflowInstanceEntity['id'];
+  instanceId: ProcessInstanceEntity['id'];
   scopeId: Required<VariableEntity>['scopeId'];
 }) {
   return get(`${URL}/${instanceId}/variables?scopeId=${scopeId}`);
 }
 
 export {
-  fetchWorkflowInstances,
-  fetchWorkflowInstance,
-  fetchWorkflowInstanceIncidents,
+  fetchProcessInstances,
+  fetchProcessInstance,
+  fetchProcessInstanceIncidents,
   fetchSequenceFlows,
-  fetchGroupedWorkflows,
-  fetchWorkflowCoreStatistics,
-  fetchWorkflowInstancesByIds,
-  fetchWorkflowInstancesStatistics,
+  fetchGroupedProcesses,
+  fetchProcessCoreStatistics,
+  fetchProcessInstancesByIds,
+  fetchProcessInstancesStatistics,
   applyBatchOperation,
   applyOperation,
   fetchVariables,

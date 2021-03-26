@@ -10,7 +10,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
   private String name;
   private String value;
   private Long scopeKey;
-  private Long workflowInstanceKey;
+  private Long processInstanceKey;
 
   public String getName() {
     return name;
@@ -36,12 +36,12 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     this.scopeKey = scopeKey;
   }
 
-  public Long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   @Override
@@ -61,7 +61,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
       return false;
     if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null)
       return false;
-    return workflowInstanceKey != null ? workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey == null;
+    return processInstanceKey != null ? processInstanceKey.equals(that.processInstanceKey) : that.processInstanceKey == null;
   }
 
   @Override
@@ -70,7 +70,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     result = 31 * result + (name != null ? name.hashCode() : 0);
     result = 31 * result + (value != null ? value.hashCode() : 0);
     result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
-    result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
+    result = 31 * result + (processInstanceKey != null ? processInstanceKey.hashCode() : 0);
     return result;
   }
 }

@@ -10,9 +10,9 @@ import BpmnModdle from 'bpmn-moddle';
 const moddle = new BpmnModdle();
 
 /**
- * Utility that makes a call with a workflow xml for workflow nodes
+ * Utility that makes a call with a process xml for process nodes
  * @param {String} xml
- * @return: a Promise that when resolves returns the list of the workflow nodes
+ * @return: a Promise that when resolves returns the list of the process nodes
  */
 async function parseDiagramXML(xml: any) {
   const {

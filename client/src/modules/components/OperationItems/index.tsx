@@ -30,7 +30,7 @@ const Item: React.FC<ItemProps> = function ({title, onClick, type, ...rest}) {
       {/* @ts-expect-error */}
       <Styled.Button {...rest} type={type} title={title}>
         {type === 'RESOLVE_INCIDENT' && <Styled.RetryIcon />}
-        {type === 'CANCEL_WORKFLOW_INSTANCE' && <Styled.CancelIcon />}
+        {type === 'CANCEL_PROCESS_INSTANCE' && <Styled.CancelIcon />}
       </Styled.Button>
     </Styled.Li>
   );

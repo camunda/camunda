@@ -207,7 +207,7 @@ test.skip('End Date filter', async (t) => {
     screen.getByRole('textbox', {
       name: 'Instance Id(s) separated by space or comma',
     }),
-    instanceToCancel.workflowInstanceKey,
+    instanceToCancel.processInstanceKey,
     {
       paste: true,
     }
@@ -362,7 +362,7 @@ test.skip('Operation ID filter', async (t) => {
     screen.getByRole('textbox', {
       name: 'Instance Id(s) separated by space or comma',
     }),
-    instanceToCancelForOperations.workflowInstanceKey,
+    instanceToCancelForOperations.processInstanceKey,
     {
       paste: true,
     }
@@ -622,27 +622,27 @@ test('Checkboxes', async (t) => {
   );
 });
 
-test('Workflow Filter', async (t) => {
-  const workflowCombobox = screen.getByRole('combobox', {
-    name: 'Workflow',
+test('Process Filter', async (t) => {
+  const processCombobox = screen.getByRole('combobox', {
+    name: 'Process',
   });
 
-  // select a workflow with multiple versions, see that latest version is selected by default, a diagram is displayed and selected instances are removed
+  // select a process with multiple versions, see that latest version is selected by default, a diagram is displayed and selected instances are removed
   await t
-    .click(workflowCombobox)
+    .click(processCombobox)
     .click(
-      within(workflowCombobox).getByRole('option', {
+      within(processCombobox).getByRole('option', {
         name: 'Process With Multiple Versions',
       })
     )
-    .expect(screen.getByRole('combobox', {name: 'Workflow Version'}).value)
+    .expect(screen.getByRole('combobox', {name: 'Process Version'}).value)
     .eql('2');
 
   await t.expect(await getPathname()).eql(
     `#/instances?${convertToQueryString({
       active: 'true',
       incidents: 'true',
-      workflow: 'processWithMultipleVersions',
+      process: 'processWithMultipleVersions',
       version: '2',
     })}`
   );
@@ -653,17 +653,17 @@ test('Workflow Filter', async (t) => {
   await t
     .click(
       screen.getByRole('combobox', {
-        name: 'Workflow Version',
+        name: 'Process Version',
       })
     )
     .click(screen.getByRole('option', {name: 'All versions'}))
-    .expect(screen.getByRole('combobox', {name: 'Workflow Version'}).value)
+    .expect(screen.getByRole('combobox', {name: 'Process Version'}).value)
     .eql('all')
     .expect(screen.queryByTestId('diagram').exists)
     .notOk()
     .expect(
       screen.getByText(
-        'There is more than one Version selected for Workflow "Process With Multiple Versions"'
+        'There is more than one Version selected for Process "Process With Multiple Versions"'
       ).exists
     )
     .ok()
@@ -676,7 +676,7 @@ test('Workflow Filter', async (t) => {
     `#/instances?${convertToQueryString({
       active: 'true',
       incidents: 'true',
-      workflow: 'processWithMultipleVersions',
+      process: 'processWithMultipleVersions',
       version: 'all',
     })}`
   );
@@ -684,11 +684,11 @@ test('Workflow Filter', async (t) => {
   // reset the filters to start over
   await t.click(screen.getByRole('button', {name: /reset filters/i}));
 
-  // select a workflow and a flow node
+  // select a process and a flow node
   await t
-    .click(workflowCombobox)
+    .click(processCombobox)
     .click(
-      within(workflowCombobox).getByRole('option', {
+      within(processCombobox).getByRole('option', {
         name: 'Process With Multiple Versions',
       })
     )
@@ -705,17 +705,17 @@ test('Workflow Filter', async (t) => {
     `#/instances?${convertToQueryString({
       active: 'true',
       incidents: 'true',
-      workflow: 'processWithMultipleVersions',
+      process: 'processWithMultipleVersions',
       version: '2',
       flowNodeId: 'StartEvent_1',
     })}`
   );
 
-  // change workflow and see flow node filter has been reset
+  // change process and see flow node filter has been reset
   await t
-    .click(workflowCombobox)
+    .click(processCombobox)
     .click(
-      within(workflowCombobox).getByRole('option', {
+      within(processCombobox).getByRole('option', {
         name: 'Order process',
       })
     )
@@ -726,23 +726,23 @@ test('Workflow Filter', async (t) => {
     `#/instances?${convertToQueryString({
       active: 'true',
       incidents: 'true',
-      workflow: 'orderProcess',
+      process: 'orderProcess',
       version: '1',
     })}`
   );
 });
 
-test('Workflow Filter - Interaction with diagram', async (t) => {
-  const workflowCombobox = screen.getByRole('combobox', {
-    name: 'Workflow',
+test('Process Filter - Interaction with diagram', async (t) => {
+  const processCombobox = screen.getByRole('combobox', {
+    name: 'Process',
   });
 
   await t
-    .expect(screen.getByText('There is no Workflow selected').exists)
+    .expect(screen.getByText('There is no Process selected').exists)
     .ok()
     .expect(
       screen.getByText(
-        'To see a Diagram, select a Workflow in the Filters panel'
+        'To see a Diagram, select a Process in the Filters panel'
       ).exists
     )
     .ok()
@@ -754,11 +754,11 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
     .ok()
     .expect(
       screen
-        .getByRole('combobox', {name: 'Workflow Version'})
+        .getByRole('combobox', {name: 'Process Version'})
         .hasAttribute('disabled')
     )
     .ok()
-    .expect(screen.getByRole('combobox', {name: 'Workflow Version'}).value)
+    .expect(screen.getByRole('combobox', {name: 'Process Version'}).value)
     .eql('')
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('')
@@ -770,9 +770,9 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
       })}`
     );
 
-  // select a workflow that has only one version
-  await t.click(workflowCombobox).click(
-    within(workflowCombobox).getByRole('option', {
+  // select a process that has only one version
+  await t.click(processCombobox).click(
+    within(processCombobox).getByRole('option', {
       name: 'Order process',
     })
   );
@@ -780,11 +780,11 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
   await t
     .expect(screen.getByTestId('diagram').exists)
     .ok()
-    .expect(screen.queryByText('There is no Workflow selected').exists)
+    .expect(screen.queryByText('There is no Process selected').exists)
     .notOk()
     .expect(
       screen.queryByText(
-        'To see a Diagram, select a Workflow in the Filters panel'
+        'To see a Diagram, select a Process in the Filters panel'
       ).exists
     )
     .notOk()
@@ -794,7 +794,7 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
         .hasAttribute('disabled')
     )
     .notOk()
-    .expect(screen.getByRole('combobox', {name: 'Workflow Version'}).value)
+    .expect(screen.getByRole('combobox', {name: 'Process Version'}).value)
     .eql('1')
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('')
@@ -803,7 +803,7 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
       `#/instances?${convertToQueryString({
         active: 'true',
         incidents: 'true',
-        workflow: 'orderProcess',
+        process: 'orderProcess',
         version: '1',
       })}`
     );
@@ -822,7 +822,7 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
     `#/instances?${convertToQueryString({
       active: 'true',
       incidents: 'true',
-      workflow: 'orderProcess',
+      process: 'orderProcess',
       version: '1',
       flowNodeId: 'shipArticles',
     })}`
@@ -843,7 +843,7 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
     `#/instances?${convertToQueryString({
       active: 'true',
       incidents: 'true',
-      workflow: 'orderProcess',
+      process: 'orderProcess',
       version: '1',
       flowNodeId: 'checkPayment',
     })}`
@@ -860,7 +860,7 @@ test('Workflow Filter - Interaction with diagram', async (t) => {
       `#/instances?${convertToQueryString({
         active: 'true',
         incidents: 'true',
-        workflow: 'orderProcess',
+        process: 'orderProcess',
         version: '1',
       })}`
     )
@@ -880,7 +880,7 @@ test('Should set filters from url', async (t) => {
       startDate: '2020-09-10 18:41:44',
       endDate: '2020-12-12 12:12:12',
       version: '2',
-      workflow: 'processWithMultipleVersions',
+      process: 'processWithMultipleVersions',
       variableName: 'test',
       variableValue: '123',
       operationId: '5be8a137-fbb4-4c54-964c-9c7be98b80e6',
@@ -891,11 +891,11 @@ test('Should set filters from url', async (t) => {
   await t
     .expect(
       screen.getByRole('combobox', {
-        name: 'Workflow',
+        name: 'Process',
       }).value
     )
     .eql('processWithMultipleVersions')
-    .expect(screen.getByRole('combobox', {name: 'Workflow Version'}).value)
+    .expect(screen.getByRole('combobox', {name: 'Process Version'}).value)
     .eql('2')
     .expect(
       screen.getByRole('textbox', {
@@ -938,11 +938,11 @@ test('Should set filters from url', async (t) => {
   await t
     .expect(
       screen.getByRole('combobox', {
-        name: 'Workflow',
+        name: 'Process',
       }).value
     )
     .eql('processWithMultipleVersions')
-    .expect(screen.getByRole('combobox', {name: 'Workflow Version'}).value)
+    .expect(screen.getByRole('combobox', {name: 'Process Version'}).value)
     .eql('2')
     .expect(
       screen.getByRole('textbox', {

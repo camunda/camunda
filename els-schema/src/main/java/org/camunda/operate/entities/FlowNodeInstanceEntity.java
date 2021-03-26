@@ -18,7 +18,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   private FlowNodeState state;
   private FlowNodeType type;
   private Long incidentKey;
-  private Long workflowInstanceKey;
+  private Long processInstanceKey;
   private String treePath;
   private int level;
   private Long position;
@@ -90,12 +90,12 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
     this.level = level;
   }
 
-  public Long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public Long getPosition() {
@@ -133,7 +133,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
         state == that.state &&
         type == that.type &&
         Objects.equals(incidentKey, that.incidentKey) &&
-        Objects.equals(workflowInstanceKey, that.workflowInstanceKey) &&
+        Objects.equals(processInstanceKey, that.processInstanceKey) &&
         Objects.equals(treePath, that.treePath) &&
         Objects.equals(position, that.position) &&
         Arrays.equals(sortValues, that.sortValues);
@@ -143,7 +143,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   public int hashCode() {
     int result = Objects
         .hash(super.hashCode(), flowNodeId, startDate, endDate, state, type, incidentKey,
-            workflowInstanceKey, treePath, level, position);
+            processInstanceKey, treePath, level, position);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }

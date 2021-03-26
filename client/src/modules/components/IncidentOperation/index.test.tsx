@@ -47,9 +47,8 @@ describe('IncidentOperation', () => {
 
   it('should render a spinner when instance operation is applied', async () => {
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances/:instanceId/operation',
-        (_, res, ctx) => res.once(ctx.json(mockOperationCreated))
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.once(ctx.json(mockOperationCreated))
       )
     );
 
@@ -71,10 +70,8 @@ describe('IncidentOperation', () => {
 
   it('should remove spinner when a server error occurs on an operation', async () => {
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances/:instanceId/operation',
-        (_, res, ctx) =>
-          res.once(ctx.status(500), ctx.json({error: 'An error occured'}))
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.once(ctx.status(500), ctx.json({error: 'An error occured'}))
       )
     );
 
@@ -94,9 +91,8 @@ describe('IncidentOperation', () => {
 
   it('should remove spinner when a network error occurs on an operation', async () => {
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances/:instanceId/operation',
-        (_, res, ctx) => res.networkError('A network error')
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.networkError('A network error')
       )
     );
 

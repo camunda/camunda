@@ -11,8 +11,8 @@ import java.util.List;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.schema.indices.WorkflowIndex;
+import org.camunda.operate.entities.ProcessEntity;
+import org.camunda.operate.schema.indices.ProcessIndex;
 import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -62,14 +62,14 @@ public class ElasticsearchManager {
   private ListViewTemplate listViewTemplate;
 
   @Autowired
-  private WorkflowIndex workflowType;
+  private ProcessIndex processType;
 
   @Autowired
   private OperationsManager operationsManager;
 
-  public void completeOperation(Long zeebeCommandKey, Long workflowInstanceKey, Long incidentKey, OperationType operationType, BulkRequest bulkRequest)
+  public void completeOperation(Long zeebeCommandKey, Long processInstanceKey, Long incidentKey, OperationType operationType, BulkRequest bulkRequest)
       throws PersistenceException {
-    OperationEntity operation = getOperation(zeebeCommandKey, workflowInstanceKey, incidentKey, operationType);
+    OperationEntity operation = getOperation(zeebeCommandKey, processInstanceKey, incidentKey, operationType);
     if (operation != null) {
       if (operation.getBatchOperationId() != null) {
         operationsManager.updateFinishedInBatchOperation(operation.getBatchOperationId(), bulkRequest);
@@ -78,19 +78,19 @@ public class ElasticsearchManager {
     }
   }
 
-  public OperationEntity getOperation(Long zeebeCommandKey, Long workflowInstanceKey, Long incidentKey, OperationType operationType){
-    if (workflowInstanceKey == null && zeebeCommandKey == null) {
+  public OperationEntity getOperation(Long zeebeCommandKey, Long processInstanceKey, Long incidentKey, OperationType operationType){
+    if (processInstanceKey == null && zeebeCommandKey == null) {
       throw new OperateRuntimeException("Wrong call to search for operation. Not enough parameters.");
     }
     TermQueryBuilder zeebeCommandKeyQ = zeebeCommandKey != null ? termQuery(OperationTemplate.ZEEBE_COMMAND_KEY, zeebeCommandKey) : null;
-    TermQueryBuilder workflowInstanceKeyQ = workflowInstanceKey != null ? termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey) : null;
+    TermQueryBuilder processInstanceKeyQ = processInstanceKey != null ? termQuery(OperationTemplate.PROCESS_INSTANCE_KEY, processInstanceKey) : null;
     TermQueryBuilder incidentKeyQ = incidentKey != null ? termQuery(OperationTemplate.INCIDENT_KEY, incidentKey) : null;
     TermQueryBuilder operationTypeQ = zeebeCommandKey != null ? termQuery(OperationTemplate.TYPE, operationType.name()) : null;
 
     QueryBuilder query =
         joinWithAnd(
             zeebeCommandKeyQ,
-            workflowInstanceKeyQ,
+            processInstanceKeyQ,
             incidentKeyQ,
             operationTypeQ,
             termsQuery(OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name())
@@ -105,8 +105,8 @@ public class ElasticsearchManager {
         return ElasticsearchUtil.fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, OperationEntity.class);
       } else if (response.getHits().totalHits > 1) {
         throw new OperateRuntimeException(String
-            .format("Could not find unique operation for parameters zeebeCommandKey [%d], workflowInstanceKey [%d], incidentKey [%d], operationType [%s].",
-                zeebeCommandKey, workflowInstanceKey, incidentKey, operationType.name()));
+            .format("Could not find unique operation for parameters zeebeCommandKey [%d], processInstanceKey [%d], incidentKey [%d], operationType [%s].",
+                zeebeCommandKey, processInstanceKey, incidentKey, operationType.name()));
       } else {
         return null;
       }
@@ -131,11 +131,11 @@ public class ElasticsearchManager {
     return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, Collections.emptyMap());
   }
 
-  public List<Long> queryWorkflowInstancesWithEmptyWorkflowVersion(Long workflowKey) {
+  public List<Long> queryProcessInstancesWithEmptyProcessVersion(Long processDefinitionKey) {
     QueryBuilder queryBuilder = constantScoreQuery(
         joinWithAnd(
-            termQuery(ListViewTemplate.WORKFLOW_KEY, workflowKey),
-            boolQuery().mustNot(existsQuery(ListViewTemplate.WORKFLOW_VERSION))
+            termQuery(ListViewTemplate.PROCESS_KEY, processDefinitionKey),
+            boolQuery().mustNot(existsQuery(ListViewTemplate.PROCESS_VERSION))
         )
     );
     SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
@@ -145,39 +145,39 @@ public class ElasticsearchManager {
     try {
       return ElasticsearchUtil.scrollKeysToList(searchRequest, esClient);
     } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining workflow instance that has empty versions: %s", e.getMessage());
+      final String message = String.format("Exception occurred, while obtaining process instance that has empty versions: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }
 
   /**
-   * Gets the workflow by id.
-   * @param workflowKey
+   * Gets the process by id.
+   * @param processDefinitionKey
    * @return
    */
-  public WorkflowEntity getWorkflow(Long workflowKey) {
-    final SearchRequest searchRequest = new SearchRequest(workflowType.getAlias())
+  public ProcessEntity getProcess(Long processDefinitionKey) {
+    final SearchRequest searchRequest = new SearchRequest(processType.getAlias())
         .source(new SearchSourceBuilder()
-            .query(QueryBuilders.termQuery(WorkflowIndex.KEY, workflowKey)));
+            .query(QueryBuilders.termQuery(ProcessIndex.KEY, processDefinitionKey)));
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       if (response.getHits().totalHits == 1) {
         return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
       } else if (response.getHits().totalHits > 1) {
-        throw new OperateRuntimeException(String.format("Could not find unique workflow with key '%s'.", workflowKey));
+        throw new OperateRuntimeException(String.format("Could not find unique process with key '%s'.", processDefinitionKey));
       } else {
-        throw new OperateRuntimeException(String.format("Could not find workflow with key '%s'.", workflowKey));
+        throw new OperateRuntimeException(String.format("Could not find process with key '%s'.", processDefinitionKey));
       }
     } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining the workflow: %s", e.getMessage());
+      final String message = String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
 
-  private WorkflowEntity fromSearchHit(String workflowString) {
-    return ElasticsearchUtil.fromSearchHit(workflowString, objectMapper, WorkflowEntity.class);
+  private ProcessEntity fromSearchHit(String processString) {
+    return ElasticsearchUtil.fromSearchHit(processString, objectMapper, ProcessEntity.class);
   }
 
 }

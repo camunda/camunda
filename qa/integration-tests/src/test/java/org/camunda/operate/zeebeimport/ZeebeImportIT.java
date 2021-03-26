@@ -7,7 +7,7 @@ package org.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
-import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -27,21 +27,21 @@ import org.camunda.operate.entities.FlowNodeInstanceEntity;
 import org.camunda.operate.entities.FlowNodeState;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
-import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.entities.listview.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.ProcessInstanceState;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
-import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
+import org.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
-import org.camunda.operate.webapp.rest.dto.listview.WorkflowInstanceStateDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
+import org.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import org.camunda.operate.zeebe.ImportValueType;
@@ -54,7 +54,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
   @Autowired
-  private WorkflowInstanceReader workflowInstanceReader;
+  private ProcessInstanceReader processInstanceReader;
 
   @Autowired
   private PartitionHolder partitionHolder;
@@ -69,22 +69,22 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   private FlowNodeInstanceReader flowNodeInstanceReader;
 
   @Test
-  public void testWorkflowNameAndVersionAreLoaded() {
+  public void testProcessNameAndVersionAreLoaded() {
     // having
     String processId = "demoProcess";
-    final Long workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final Long processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, "demoProcess_v_1.bpmn");
+    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //when
-    //1st load workflow instance index, then deployment
-    processImportTypeAndWait(ImportValueType.WORKFLOW_INSTANCE, workflowInstanceIsCreatedCheck, workflowInstanceKey);
-    processImportTypeAndWait(ImportValueType.DEPLOYMENT, workflowIsDeployedCheck, workflowKey);
+    //1st load process instance index, then deployment
+    processImportTypeAndWait(ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, processInstanceKey);
+    processImportTypeAndWait(ImportValueType.DEPLOYMENT, processIsDeployedCheck, processDefinitionKey);
 
     //then
-    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
-    assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowKey);
-    assertThat(workflowInstanceEntity.getWorkflowName()).isNotNull();
-    assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
+    final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    assertThat(processInstanceEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(processInstanceEntity.getProcessName()).isNotNull();
+    assertThat(processInstanceEntity.getProcessVersion()).isEqualTo(1);
   }
 
   protected void processImportTypeAndWait(ImportValueType importValueType,Predicate<Object[]> waitTill, Object... arguments) {
@@ -92,7 +92,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testCreateWorkflowInstanceWithEmptyWorkflowName() {
+  public void testCreateProcessInstanceWithEmptyProcessName() {
     // given a process with empty name
     String processId = "emptyNameProcess";
     BpmnModelInstance model = Bpmn.createExecutableProcess(processId)
@@ -101,52 +101,52 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
           .zeebeJobType("taskA")
         .endEvent().done();
 
-    final Long workflowKey = deployWorkflow(model,"emptyNameProcess.bpmn");
+    final Long processDefinitionKey = deployProcess(model,"emptyNameProcess.bpmn");
 
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "taskA");
+    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
     // then it should returns the processId instead of an empty name
-    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
-    assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowKey);
-    assertThat(workflowInstanceEntity.getBpmnProcessId()).isEqualTo(processId);
-    assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo(processId);
+    final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    assertThat(processInstanceEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(processInstanceEntity.getBpmnProcessId()).isEqualTo(processId);
+    assertThat(processInstanceEntity.getProcessName()).isEqualTo(processId);
   }
 
   @Test
-  public void testIncidentCreatesWorkflowInstance() {
+  public void testIncidentCreatesProcessInstance() {
     // having
     String activityId = "taskA";
     String processId = "demoProcess";
-    final Long workflowKey = deployWorkflow("demoProcess_v_1.bpmn");
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
+    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
     ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
 
     //when
     //1st load incident
-    processImportTypeAndWait(ImportValueType.INCIDENT,incidentIsActiveCheck, workflowInstanceKey);
+    processImportTypeAndWait(ImportValueType.INCIDENT,incidentIsActiveCheck, processInstanceKey);
 
-    //and then workflow instance events
-    processImportTypeAndWait(ImportValueType.WORKFLOW_INSTANCE, workflowInstanceIsCreatedCheck, workflowInstanceKey);
+    //and then process instance events
+    processImportTypeAndWait(ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, processInstanceKey);
 
     //then
-    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
-    assertWorkflowInstanceListViewEntityWithIncident(workflowInstanceEntity,"Demo process",workflowKey,workflowInstanceKey);
+    final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    assertProcessInstanceListViewEntityWithIncident(processInstanceEntity,"Demo process",processDefinitionKey,processInstanceKey);
     //and
-    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
+    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(1);
-    assertIncidentEntity(allIncidents.get(0),activityId, workflowKey,IncidentState.ACTIVE);
+    assertIncidentEntity(allIncidents.get(0),activityId, processDefinitionKey,IncidentState.ACTIVE);
 
     //and
-    final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
-    assertListViewWorkflowInstanceDto(wi, workflowKey, workflowInstanceKey);
+    final ListViewProcessInstanceDto wi = getSingleProcessInstanceForListView();
+    assertListViewProcessInstanceDto(wi, processDefinitionKey, processInstanceKey);
 
     //and
     final List<FlowNodeInstanceEntity> flowNodeInstances = getFlowNodeInstances(
-        workflowInstanceKey);
+        processInstanceKey);
     assertActivityInstanceTreeDto(flowNodeInstances, 2, activityId);
   }
 
@@ -155,8 +155,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     // having
     String activityId = "taskA";
     String processId = "demoProcess";
-    final Long workflowKey = deployWorkflow("demoProcess_v_1.bpmn");
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
+    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
     final String incidentError = "Some error";
@@ -164,21 +164,21 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //when
     //1st load incident
-    processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsActiveCheck, workflowInstanceKey);
+    processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsActiveCheck, processInstanceKey);
 
-    //and then workflow instance events
-    processImportTypeAndWait(ImportValueType.WORKFLOW_INSTANCE, workflowInstanceIsCreatedCheck, workflowInstanceKey);
-    processImportTypeAndWait(ImportValueType.JOB, workflowInstanceIsCreatedCheck, workflowInstanceKey);
+    //and then process instance events
+    processImportTypeAndWait(ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, processInstanceKey);
+    processImportTypeAndWait(ImportValueType.JOB, processInstanceIsCreatedCheck, processInstanceKey);
 
     //when
     //get flow node instance tree
-    final String workflowInstanceId = String.valueOf(workflowInstanceKey);
+    final String processInstanceId = String.valueOf(processInstanceKey);
     FlowNodeInstanceQueryDto request = new FlowNodeInstanceQueryDto(
-        workflowInstanceId, workflowInstanceId);
+        processInstanceId, processInstanceId);
     List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
 
     final FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
-        String.valueOf(workflowInstanceKey),
+        String.valueOf(processInstanceKey),
         null, null, instances.get(instances.size() - 1).getId());
     FlowNodeInstanceMetadataDto flowNodeInstanceMetadata = flowNodeMetadata.getInstanceMetadata();
     assertThat(flowNodeInstanceMetadata.getIncidentErrorMessage()).isEqualTo(incidentError);
@@ -191,50 +191,50 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertFlowNodeIsInIncidentState(tree.get(1), activityId);
   }
 
-  private void assertListViewWorkflowInstanceDto(final ListViewWorkflowInstanceDto wi, final Long workflowKey, final Long workflowInstanceKey) {
-    assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.INCIDENT);
-    assertThat(wi.getWorkflowId()).isEqualTo(workflowKey.toString());
-    assertThat(wi.getWorkflowName()).isEqualTo("Demo process");
-    assertThat(wi.getWorkflowVersion()).isEqualTo(1);
-    assertThat(wi.getId()).isEqualTo(workflowInstanceKey.toString());
+  private void assertListViewProcessInstanceDto(final ListViewProcessInstanceDto wi, final Long processDefinitionKey, final Long processInstanceKey) {
+    assertThat(wi.getState()).isEqualTo(ProcessInstanceStateDto.INCIDENT);
+    assertThat(wi.getProcessId()).isEqualTo(processDefinitionKey.toString());
+    assertThat(wi.getProcessName()).isEqualTo("Demo process");
+    assertThat(wi.getProcessVersion()).isEqualTo(1);
+    assertThat(wi.getId()).isEqualTo(processInstanceKey.toString());
     assertThat(wi.getEndDate()).isNull();
     assertThat(wi.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(wi.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
   }
 
-  private void assertIncidentEntity(final IncidentEntity incidentEntity,String activityId, final Long workflowKey,final IncidentState state) {
+  private void assertIncidentEntity(final IncidentEntity incidentEntity,String activityId, final Long processDefinitionKey,final IncidentState state) {
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
     assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
     assertThat(incidentEntity.getErrorType()).isNotNull();
     assertThat(incidentEntity.getState()).isEqualTo(state);
-    assertThat(incidentEntity.getWorkflowKey()).isEqualTo(workflowKey);
+    assertThat(incidentEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
   }
 
-  private void assertWorkflowInstanceListViewEntityWithIncident(WorkflowInstanceForListViewEntity workflowInstanceEntity,final String workflowName,final Long workflowKey, final Long workflowInstanceKey) {
-    assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowKey);
-    assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo(workflowName);
-    assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
-    assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceKey.toString());
-    assertThat(workflowInstanceEntity.getKey()).isEqualTo(workflowInstanceKey);
-    assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.INCIDENT);
-    assertThat(workflowInstanceEntity.getEndDate()).isNull();
-    assertThat(workflowInstanceEntity.getStartDate()).isAfterOrEqualTo(testStartTime);
-    assertThat(workflowInstanceEntity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+  private void assertProcessInstanceListViewEntityWithIncident(ProcessInstanceForListViewEntity processInstanceEntity,final String processName,final Long processDefinitionKey, final Long processInstanceKey) {
+    assertThat(processInstanceEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(processInstanceEntity.getProcessName()).isEqualTo(processName);
+    assertThat(processInstanceEntity.getProcessVersion()).isEqualTo(1);
+    assertThat(processInstanceEntity.getId()).isEqualTo(processInstanceKey.toString());
+    assertThat(processInstanceEntity.getKey()).isEqualTo(processInstanceKey);
+    assertThat(processInstanceEntity.getState()).isEqualTo(ProcessInstanceState.INCIDENT);
+    assertThat(processInstanceEntity.getEndDate()).isNull();
+    assertThat(processInstanceEntity.getStartDate()).isAfterOrEqualTo(testStartTime);
+    assertThat(processInstanceEntity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
   }
 
-  protected ListViewWorkflowInstanceDto getSingleWorkflowInstanceForListView() {
-    final ListViewRequestDto request = TestUtil.createGetAllWorkflowInstancesRequest();
+  protected ListViewProcessInstanceDto getSingleProcessInstanceForListView() {
+    final ListViewRequestDto request = TestUtil.createGetAllProcessInstancesRequest();
     request.setPageSize(100);
-    final ListViewResponseDto listViewResponse = listViewReader.queryWorkflowInstances(request);
+    final ListViewResponseDto listViewResponse = listViewReader.queryProcessInstances(request);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(1);
-    assertThat(listViewResponse.getWorkflowInstances()).hasSize(1);
-    return listViewResponse.getWorkflowInstances().get(0);
+    assertThat(listViewResponse.getProcessInstances()).hasSize(1);
+    return listViewResponse.getProcessInstances().get(0);
   }
 
 
-  protected List<FlowNodeInstanceEntity> getFlowNodeInstances(Long workflowInstanceKey) {
-    return tester.getAllFlowNodeInstances(workflowInstanceKey);
+  protected List<FlowNodeInstanceEntity> getFlowNodeInstances(Long processInstanceKey) {
+    return tester.getAllFlowNodeInstances(processInstanceKey);
   }
 
 
@@ -243,22 +243,22 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     // having
     String activityId = "taskA";
     String processId = "demoProcess";
-    deployWorkflow("demoProcess_v_1.bpmn");
-    Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    deployProcess("demoProcess_v_1.bpmn");
+    Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     //create an incident
     ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
 
     //when
     //load only incidents
-    processImportTypeAndWait(ImportValueType.INCIDENT,incidentIsActiveCheck, workflowInstanceKey);
+    processImportTypeAndWait(ImportValueType.INCIDENT,incidentIsActiveCheck, processInstanceKey);
 
     assertListViewResponse();
-    //if nothing is returned in list view - there is no way to access the workflow instance, no need to check other queries
+    //if nothing is returned in list view - there is no way to access the process instance, no need to check other queries
 
   }
 
   protected void assertListViewResponse() throws Exception {
-    ListViewRequestDto listViewRequest = TestUtil.createGetAllWorkflowInstancesRequest();
+    ListViewRequestDto listViewRequest = TestUtil.createGetAllProcessInstancesRequest();
     listViewRequest.setPageSize(100);
     MockHttpServletRequestBuilder request = post(query())
       .content(mockMvcTestRule.json(listViewRequest))
@@ -274,7 +274,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final ListViewResponseDto listViewResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {
     });
     assertThat(listViewResponse.getTotalCount()).isEqualTo(0);
-    assertThat(listViewResponse.getWorkflowInstances()).hasSize(0);
+    assertThat(listViewResponse.getProcessInstances()).hasSize(0);
   }
 
   @Test
@@ -290,8 +290,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
           .serviceTask(activityId).zeebeJobType(activityId)
         .endEvent()
       .done();
-    deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    deployProcess(modelInstance, "demoProcess_v_1.bpmn");
+    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
@@ -301,22 +301,22 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     ZeebeTestUtil.resolveIncident(zeebeClient, jobKey, incidentKey);
     ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), "{}");
 
-    processImportTypeAndWait(ImportValueType.WORKFLOW_INSTANCE,workflowInstancesAreFinishedCheck, List.of(workflowInstanceKey));
-    processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsResolvedCheck, workflowInstanceKey);
+    processImportTypeAndWait(ImportValueType.PROCESS_INSTANCE,processInstancesAreFinishedCheck, List.of(processInstanceKey));
+    processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsResolvedCheck, processInstanceKey);
 
     //then
-    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
+    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(0);
 
     //assert list view data
-    final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
-    assertThat(wi.getId()).isEqualTo(workflowInstanceKey.toString());
-    assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.COMPLETED);
+    final ListViewProcessInstanceDto wi = getSingleProcessInstanceForListView();
+    assertThat(wi.getId()).isEqualTo(processInstanceKey.toString());
+    assertThat(wi.getState()).isEqualTo(ProcessInstanceStateDto.COMPLETED);
     assertThat(wi.getEndDate()).isNotNull();
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> flowNodeInstances = getFlowNodeInstances(
-        workflowInstanceKey);
+        processInstanceKey);
     assertThat(flowNodeInstances.size()).isGreaterThanOrEqualTo(2);
     assertStartActivityCompleted(flowNodeInstances.get(0));
     assertFlowNodeIsCompleted(flowNodeInstances.get(1), "taskA");
@@ -342,8 +342,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
         .serviceTask(activityId).zeebeJobType(activityId)
         .endEvent()
         .done();
-    deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    deployProcess(modelInstance, "demoProcess_v_1.bpmn");
+    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
@@ -353,23 +353,23 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     //when update retries
     ZeebeTestUtil.resolveIncident(zeebeClient, jobKey, incidentKey);
 
-    ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceKey);
+    ZeebeTestUtil.cancelProcessInstance(getClient(), processInstanceKey);
 
-    processImportTypeAndWait(ImportValueType.WORKFLOW_INSTANCE, workflowInstanceIsCanceledCheck, workflowInstanceKey);
-    processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsResolvedCheck,workflowInstanceKey);
+    processImportTypeAndWait(ImportValueType.PROCESS_INSTANCE, processInstanceIsCanceledCheck, processInstanceKey);
+    processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsResolvedCheck,processInstanceKey);
     //then
-    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
+    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(0);
 
     //assert list view data
-    final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
-    assertThat(wi.getId()).isEqualTo(workflowInstanceKey.toString());
-    assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.CANCELED);
+    final ListViewProcessInstanceDto wi = getSingleProcessInstanceForListView();
+    assertThat(wi.getId()).isEqualTo(processInstanceKey.toString());
+    assertThat(wi.getState()).isEqualTo(ProcessInstanceStateDto.CANCELED);
     assertThat(wi.getEndDate()).isNotNull();
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> flowNodeInstances = getFlowNodeInstances(
-        workflowInstanceKey);
+        processInstanceKey);
     assertThat(flowNodeInstances.size()).isGreaterThanOrEqualTo(2);
     final FlowNodeInstanceEntity flowNodeInstance = flowNodeInstances.get(1);
     assertThat(flowNodeInstance.getFlowNodeId()).isEqualTo(activityId);
@@ -408,7 +408,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   private String query() {
-    return WORKFLOW_INSTANCE_URL;
+    return PROCESS_INSTANCE_URL;
   }
 
 }

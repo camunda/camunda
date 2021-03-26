@@ -26,7 +26,7 @@ test('Instance with an incident - header and instance header', async (t) => {
     initialData: {instanceWithIncident},
   } = t.fixtureCtx;
 
-  const instanceId = instanceWithIncident.workflowInstanceKey;
+  const instanceId = instanceWithIncident.processInstanceKey;
   await t.navigateTo(`${config.endpoint}/#/instances/${instanceId}`);
 
   await t
@@ -73,7 +73,7 @@ test('Instance with an incident - history panel', async (t) => {
   } = t.fixtureCtx;
 
   await t.navigateTo(
-    `${config.endpoint}/#/instances/${processWithMultipleTokens.workflowInstanceKey}`
+    `${config.endpoint}/#/instances/${processWithMultipleTokens.processInstanceKey}`
   );
   await t.expect(screen.getByText('Instance History').exists).ok();
 
@@ -123,7 +123,7 @@ test('Instance with an incident - diagram', async (t) => {
     initialData: {instanceWithIncident},
   } = t.fixtureCtx;
 
-  const instanceId = instanceWithIncident.workflowInstanceKey;
+  const instanceId = instanceWithIncident.processInstanceKey;
 
   await t.navigateTo(`${config.endpoint}/#/instances/${instanceId}`);
 
@@ -157,7 +157,7 @@ test('Instance with an incident - resolve an incident', async (t) => {
     initialData: {instanceWithIncidentToResolve},
   } = t.fixtureCtx;
 
-  const instanceId = instanceWithIncidentToResolve.workflowInstanceKey;
+  const instanceId = instanceWithIncidentToResolve.processInstanceKey;
 
   await t.navigateTo(`${config.endpoint}/#/instances/${instanceId}`);
 
@@ -231,7 +231,7 @@ test('Instance with an incident - incident bar', async (t) => {
     initialData: {instanceWithIncidentForIncidentsBar},
   } = t.fixtureCtx;
 
-  const instanceId = instanceWithIncidentForIncidentsBar.workflowInstanceKey;
+  const instanceId = instanceWithIncidentForIncidentsBar.processInstanceKey;
 
   await t.navigateTo(`${config.endpoint}/#/instances/${instanceId}`);
 
@@ -293,7 +293,7 @@ test('Instance with an incident - incident bar', async (t) => {
     )
     .ok();
 
-  // order by workflow name
+  // order by process name
   await t.click(screen.getByRole('button', {name: /sort by flownodename/i}));
   await t
     .expect(
@@ -315,7 +315,7 @@ test('Instance with an incident - incident bar', async (t) => {
     )
     .ok();
 
-  // change the order of workflow name
+  // change the order of process name
   await t.click(screen.getByRole('button', {name: /sort by flownodename/i}));
   await t
     .expect(
@@ -513,7 +513,7 @@ test.skip('Instance with an incident - cancel an instance', async (t) => {
     initialData: {instanceWithIncidentToCancel},
   } = t.fixtureCtx;
 
-  const instanceId = instanceWithIncidentToCancel.workflowInstanceKey;
+  const instanceId = instanceWithIncidentToCancel.processInstanceKey;
 
   await t.navigateTo(`${config.endpoint}/#/instances/${instanceId}`);
 
@@ -570,7 +570,7 @@ test('Instance without an incident', async (t) => {
   } = t.fixtureCtx;
 
   await t.navigateTo(
-    `${config.endpoint}/#/instances/${instanceWithoutAnIncident.workflowInstanceKey}`
+    `${config.endpoint}/#/instances/${instanceWithoutAnIncident.processInstanceKey}`
   );
 
   await t
@@ -584,7 +584,7 @@ test('Instance without an incident', async (t) => {
     .ok()
     .expect(
       within(screen.getByRole('banner')).getByText(
-        `Instance ${instanceWithoutAnIncident.workflowInstanceKey}`
+        `Instance ${instanceWithoutAnIncident.processInstanceKey}`
       ).exists
     )
     .ok()

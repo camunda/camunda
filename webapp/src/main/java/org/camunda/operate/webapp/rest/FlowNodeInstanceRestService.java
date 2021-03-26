@@ -48,8 +48,8 @@ public class FlowNodeInstanceRestService {
       throw new InvalidRequestException("At least one query must be provided when requesting for flow node instance tree.");
     }
     for (FlowNodeInstanceQueryDto query: request.getQueries()) {
-      if (query == null || query.getWorkflowInstanceId() == null || query.getTreePath() == null) {
-        throw new InvalidRequestException("Workflow instance id and tree path must be provided when requesting for flow node instance tree.");
+      if (query == null || query.getProcessInstanceId() == null || query.getTreePath() == null) {
+        throw new InvalidRequestException("Process instance id and tree path must be provided when requesting for flow node instance tree.");
       }
       if (countNonNullObjects(query.getSearchAfter(), query.getSearchAfterOrEqual(),
           query.getSearchBefore(), query.getSearchBeforeOrEqual()) > 1) {

@@ -6,8 +6,8 @@
 
 const CURRENT_INSTANCE = Object.freeze({
   id: '2251799813686118',
-  workflowId: '2251799813686038',
-  workflowName: 'Multi-Instance Process',
+  processId: '2251799813686038',
+  processName: 'Multi-Instance Process',
   version: 1,
   startDate: '2020-08-18T12:07:33.854+0000',
   endDate: null,

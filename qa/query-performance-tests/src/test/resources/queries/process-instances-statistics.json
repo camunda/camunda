@@ -1,0 +1,176 @@
+[
+  {
+    "title": "Stats: All instances",
+    "url": "/api/process-instances/statistics",
+    "method": "POST",
+    "body": {
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "finished": true,
+      "completed": true,
+      "canceled": true,
+      "bpmnProcessId": "process1",
+      "processVersion": 1
+    }
+  },
+  {
+    "title": "Stats: All finished instances",
+    "url": "/api/process-instances/statistics",
+    "method": "POST",
+    "body": {
+      "finished": true,
+      "completed": true,
+      "canceled": true,
+      "bpmnProcessId": "process2",
+      "processVersion": 1
+    }
+  },
+  {
+    "title": "Stats: All running instances",
+    "url": "/api/process-instances/statistics",
+    "method": "POST",
+    "body": {
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "bpmnProcessId": "process3",
+      "processVersion": 1
+    }
+  },
+  {
+    "title": "Stats: Running instances filtered by activityId sorted by process name",
+    "url": "/api/process-instances/statistics",
+    "method": "POST",
+    "body": {
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "activityId": "task2",
+      "bpmnProcessId": "process4",
+      "processVersion": 1,
+      "sorting": {
+        "sortBy": "processName",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
+    "title": "Stats: Running instances Nth page filtered by error message sorted by version",
+    "url": "/api/process-instances/statistics",
+    "method": "POST",
+    "body": {
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "processIds": [
+        "${processId}"
+      ],
+      "errorMessage": "Error 1",
+      "sorting": {
+        "sortBy": "processVersion",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
+    "title": "Stats: Running instances filtered by variable sorted by process version asc",
+    "url": "/api/process-instances/statistics",
+    "method": "POST",
+    "body": {
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "variable": {
+        "name": "var1",
+        "value": "\"value1\""
+      },
+      "bpmnProcessId": "process5",
+      "processVersion": 1,
+      "sorting": {
+        "sortBy": "processVersion",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
+    "title": "Stats: Running instances 1st page filtered by process instance ids sorted by id desc",
+    "url": "/api/process-instances/statistics",
+    "method": "POST",
+    "body": {
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "ids": [
+        "${processInstanceIds}"
+      ],
+      "bpmnProcessId": "process6",
+      "processVersion": 1,
+      "sorting": {
+        "sortBy": "id",
+        "sortOrder": "desc"
+      }
+    }
+  },
+  {
+    "title": "Stats: Running instances Nth page filtered by exclusion of process instance ids sorted by id asc",
+    "url": "/api/process-instances/statistics",
+    "method": "POST",
+    "body": {
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "excludeIds": [
+        "${processInstanceIds}"
+      ],
+      "bpmnProcessId": "process7",
+      "processVersion": 1,
+      "sorting": {
+        "sortBy": "id",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
+    "title": "Stats: Running instances Nth page filtered by exclusion of process instance ids sorted by id asc",
+    "url": "/api/process-instances/statistics",
+    "method": "POST",
+    "body": {
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "excludeIds": [
+        "${processInstanceIds}"
+      ],
+      "processIds": [
+        "${processId}"
+      ],
+      "sorting": {
+        "sortBy": "id",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
+    "title": "Stats: All instances 1st page filtered by start date sorted by process name asc",
+    "url": "/api/process-instances/statistics",
+    "method": "POST",
+    "body": {
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "finished": true,
+      "completed": true,
+      "canceled": true,
+      "startDateBefore": "${startDateBefore}",
+      "startDateAfter": "${startDateAfter}",
+      "processIds": [
+        "${processId}"
+      ],
+      "sorting": {
+        "sortBy": "processName",
+        "sortOrder": "asc"
+      }
+    }
+  }
+]

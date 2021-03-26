@@ -23,7 +23,7 @@ import {OperationSpinner} from 'modules/components/OperationSpinner';
 import * as Styled from './styled';
 
 type Props = {
-  instance: WorkflowInstanceEntity;
+  instance: ProcessInstanceEntity;
   selected?: boolean;
   onOperation?: () => void;
   onFailure?: () => void;
@@ -78,7 +78,7 @@ const Operations = observer(
 
     renderItem = (operationType: InstanceOperationEntity['type']) => {
       const ariaLabelMap = {
-        [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: 'Cancel',
+        [OPERATION_TYPE.CANCEL_PROCESS_INSTANCE]: 'Cancel',
         [OPERATION_TYPE.RESOLVE_INCIDENT]: 'Retry',
       };
 
@@ -111,7 +111,7 @@ const Operations = observer(
             {isWithIncident(instance) &&
               this.renderItem(OPERATION_TYPE.RESOLVE_INCIDENT)}
             {isRunning(instance) &&
-              this.renderItem(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE)}
+              this.renderItem(OPERATION_TYPE.CANCEL_PROCESS_INSTANCE)}
           </OperationItems>
         </Styled.Operations>
       );

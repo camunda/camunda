@@ -21,7 +21,7 @@ const Block = styled(BaseBlock)`
   height: 14px;
 `;
 
-const WorkflowContainer = styled.div`
+const ProcessContainer = styled.div`
   padding-left: 15px;
   display: flex;
 `;
@@ -42,7 +42,7 @@ const CircleBlock = styled(BaseCircle)`
   flex-shrink: 0;
 `;
 
-const WorkflowBlock = styled(Block)`
+const ProcessBlock = styled(Block)`
   margin-left: 5px;
   flex-shrink: 0;
   width: 13vw;
@@ -70,10 +70,10 @@ export {
   Row,
   Td,
   Block,
-  WorkflowContainer,
+  ProcessContainer,
   SkeletonCheckboxBlock,
   CircleBlock,
-  WorkflowBlock,
+  ProcessBlock,
   InstanceIdBlock,
   VersionBlock,
   TimeBlock,

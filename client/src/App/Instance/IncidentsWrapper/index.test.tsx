@@ -53,7 +53,7 @@ const Wrapper = ({children}: Props) => {
   return (
     <ThemeProvider>
       <Router history={history}>
-        <Route path="/instances/:workflowInstanceId">{children}</Route>
+        <Route path="/instances/:processInstanceId">{children}</Route>
       </Router>
     </ThemeProvider>
   );
@@ -62,7 +62,7 @@ const Wrapper = ({children}: Props) => {
 describe('IncidentsWrapper', () => {
   beforeEach(async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
         res.once(ctx.json(mockIncidents))
       )
     );
@@ -245,7 +245,7 @@ describe('IncidentsWrapper', () => {
       // incident is resolved
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/incidents',
+          '/api/process-instances/:instanceId/incidents',
           (_, res, ctx) => res.once(ctx.json(mockResolvedIncidents))
         )
       );

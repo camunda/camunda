@@ -23,8 +23,8 @@ fixture('Multi Instance Flow Node Selection')
       initialData: {multiInstanceProcessInstance},
     } = t.fixtureCtx;
 
-    const workflowInstanceId = multiInstanceProcessInstance.workflowInstanceKey;
-    await t.navigateTo(`${config.endpoint}/#/instances/${workflowInstanceId}`);
+    const processInstanceId = multiInstanceProcessInstance.processInstanceKey;
+    await t.navigateTo(`${config.endpoint}/#/instances/${processInstanceId}`);
   });
 
 test('Should select multi instance flow nodes', async (t) => {

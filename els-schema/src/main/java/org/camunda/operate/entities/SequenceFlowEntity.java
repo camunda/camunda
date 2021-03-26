@@ -7,15 +7,15 @@ package org.camunda.operate.entities;
 
 public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
 
-  private Long workflowInstanceKey;
+  private Long processInstanceKey;
   private String activityId;
 
-  public Long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public SequenceFlowEntity setWorkflowInstanceKey(Long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public SequenceFlowEntity setProcessInstanceKey(Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
@@ -39,7 +39,7 @@ public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
 
     SequenceFlowEntity that = (SequenceFlowEntity) o;
 
-    if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey != null)
+    if (processInstanceKey != null ? !processInstanceKey.equals(that.processInstanceKey) : that.processInstanceKey != null)
       return false;
     return activityId != null ? activityId.equals(that.activityId) : that.activityId == null;
   }
@@ -47,7 +47,7 @@ public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
+    result = 31 * result + (processInstanceKey != null ? processInstanceKey.hashCode() : 0);
     result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
     return result;
   }

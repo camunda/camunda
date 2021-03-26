@@ -82,7 +82,7 @@ public class IncidentZeebeRecordProcessor {
     if (intentStr.equals(Intent.RESOLVED.toString())) {
 
       //resolve corresponding operation
-      elasticsearchManager.completeOperation(null, recordValue.getWorkflowInstanceKey(), incidentKey, OperationType.RESOLVE_INCIDENT, bulkRequest);
+      elasticsearchManager.completeOperation(null, recordValue.getProcessInstanceKey(), incidentKey, OperationType.RESOLVE_INCIDENT, bulkRequest);
 
       bulkRequest.add(getIncidentDeleteQuery(incidentKey));
     } else if (intentStr.equals(Intent.CREATED.toString())) {
@@ -92,11 +92,11 @@ public class IncidentZeebeRecordProcessor {
       if (recordValue.getJobKey() > 0) {
         incident.setJobKey(recordValue.getJobKey());
       }
-      if (recordValue.getWorkflowInstanceKey() > 0) {
-        incident.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
+      if (recordValue.getProcessInstanceKey() > 0) {
+        incident.setProcessInstanceKey(recordValue.getProcessInstanceKey());
       }
-      if (recordValue.getWorkflowKey() > 0) {
-        incident.setWorkflowKey(recordValue.getWorkflowKey());
+      if (recordValue.getProcessDefinitionKey() > 0) {
+        incident.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
       }
       String errorMessage = StringUtils.trimWhitespace(recordValue.getErrorMessage());
       incident.setErrorMessage(errorMessage);

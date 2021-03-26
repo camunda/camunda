@@ -43,11 +43,11 @@ test('Instances Page Initial Load', async (t) => {
     .notOk();
 
   await t
-    .expect(screen.getByText('There is no Workflow selected').exists)
+    .expect(screen.getByText('There is no Process selected').exists)
     .ok()
     .expect(
       screen.getByText(
-        'To see a Diagram, select a Workflow in the Filters panel'
+        'To see a Diagram, select a Process in the Filters panel'
       ).exists
     )
     .ok();
@@ -56,7 +56,7 @@ test('Instances Page Initial Load', async (t) => {
     screen.getByRole('textbox', {
       name: /instance id\(s\) separated by space or comma/i,
     }),
-    `${initialData.instanceWithoutAnIncident.workflowInstanceKey}, ${initialData.instanceWithAnIncident.workflowInstanceKey}`
+    `${initialData.instanceWithoutAnIncident.processInstanceKey}, ${initialData.instanceWithAnIncident.processInstanceKey}`
   );
 
   const withinInstancesList = within(screen.getByTestId('instances-list'));
@@ -65,13 +65,13 @@ test('Instances Page Initial Load', async (t) => {
   await t
     .expect(
       withinInstancesList.getByTestId(
-        `INCIDENT-icon-${initialData.instanceWithAnIncident.workflowInstanceKey}`
+        `INCIDENT-icon-${initialData.instanceWithAnIncident.processInstanceKey}`
       ).exists
     )
     .ok()
     .expect(
       withinInstancesList.getByTestId(
-        `ACTIVE-icon-${initialData.instanceWithoutAnIncident.workflowInstanceKey}`
+        `ACTIVE-icon-${initialData.instanceWithoutAnIncident.processInstanceKey}`
       ).exists
     )
     .ok();
@@ -88,17 +88,17 @@ test('Select flow node in diagram', async (t) => {
     screen.getByRole('textbox', {
       name: 'Instance Id(s) separated by space or comma',
     }),
-    instance.workflowInstanceKey,
+    instance.processInstanceKey,
     {paste: true}
   );
 
-  const workflowCombobox = screen.getByRole('combobox', {
-    name: 'Workflow',
+  const processCombobox = screen.getByRole('combobox', {
+    name: 'Process',
   });
 
   // Select "Order Process"
-  await t.click(workflowCombobox).click(
-    within(workflowCombobox).getByRole('option', {
+  await t.click(processCombobox).click(
+    within(processCombobox).getByRole('option', {
       name: 'Order process',
     })
   );
@@ -119,8 +119,8 @@ test('Select flow node in diagram', async (t) => {
       `#/instances?${convertToQueryString({
         active: 'true',
         incidents: 'true',
-        ids: instance.workflowInstanceKey,
-        workflow: 'orderProcess',
+        ids: instance.processInstanceKey,
+        process: 'orderProcess',
         version: '1',
         flowNodeId: shipArticlesTaskId,
       })}`
@@ -141,8 +141,8 @@ test('Select flow node in diagram', async (t) => {
       `#/instances?${convertToQueryString({
         active: 'true',
         incidents: 'true',
-        ids: instance.workflowInstanceKey,
-        workflow: 'orderProcess',
+        ids: instance.processInstanceKey,
+        process: 'orderProcess',
         version: '1',
         flowNodeId: checkPaymentTaskId,
       })}`

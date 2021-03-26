@@ -11,7 +11,7 @@ import {
   autorun,
   IReactionDisposer,
 } from 'mobx';
-import {fetchWorkflowCoreStatistics} from 'modules/api/instances';
+import {fetchProcessCoreStatistics} from 'modules/api/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {instancesStore} from 'modules/stores/instances';
 
@@ -69,7 +69,7 @@ class Statistics {
     }
 
     try {
-      const response = await fetchWorkflowCoreStatistics();
+      const response = await fetchProcessCoreStatistics();
 
       if (response.ok) {
         this.setStatistics(await response.json());
@@ -98,7 +98,7 @@ class Statistics {
 
   handlePolling = async () => {
     try {
-      const response = await fetchWorkflowCoreStatistics();
+      const response = await fetchProcessCoreStatistics();
 
       if (this.intervalId !== null) {
         if (response.ok) {

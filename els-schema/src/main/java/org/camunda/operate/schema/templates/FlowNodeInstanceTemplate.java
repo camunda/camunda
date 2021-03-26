@@ -8,7 +8,7 @@ package org.camunda.operate.schema.templates;
 import org.springframework.stereotype.Component;
 
 @Component
-public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor implements WorkflowInstanceDependant {
+public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant {
 
   public static final String INDEX_NAME = "flownode-instance";
 

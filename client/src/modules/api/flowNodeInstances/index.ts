@@ -10,7 +10,7 @@ import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 const URL = '/api/flow-node-instances';
 
 type Query = {
-  workflowInstanceId: WorkflowInstanceEntity['id'];
+  processInstanceId: ProcessInstanceEntity['id'];
   treePath: FlowNodeInstance['treePath'];
   pageSize?: number;
   searchAfter?: FlowNodeInstance['sortValues'];

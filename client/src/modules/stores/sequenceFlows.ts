@@ -30,7 +30,7 @@ class SequenceFlows {
   state: State = {...DEFAULT_STATE};
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
-  workflowSeqenceFlowsDisposer: null | IReactionDisposer = null;
+  processSeqenceFlowsDisposer: null | IReactionDisposer = null;
 
   constructor() {
     makeObservable(this, {
@@ -41,12 +41,12 @@ class SequenceFlows {
   }
 
   init() {
-    this.workflowSeqenceFlowsDisposer = when(
+    this.processSeqenceFlowsDisposer = when(
       () => currentInstanceStore.state.instance?.id !== undefined,
       () => {
         const instanceId = currentInstanceStore.state.instance?.id;
         if (instanceId !== undefined) {
-          this.fetchWorkflowSequenceFlows(instanceId);
+          this.fetchProcessSequenceFlows(instanceId);
         }
       }
     );
@@ -64,8 +64,8 @@ class SequenceFlows {
     });
   }
 
-  fetchWorkflowSequenceFlows = async (
-    instanceId: WorkflowInstanceEntity['id']
+  fetchProcessSequenceFlows = async (
+    instanceId: ProcessInstanceEntity['id']
   ) => {
     try {
       const response = await fetchSequenceFlows(instanceId);
@@ -81,7 +81,7 @@ class SequenceFlows {
     }
   };
 
-  handlePolling = async (instanceId: WorkflowInstanceEntity['id']) => {
+  handlePolling = async (instanceId: ProcessInstanceEntity['id']) => {
     try {
       const response = await fetchSequenceFlows(instanceId);
 
@@ -98,7 +98,7 @@ class SequenceFlows {
     }
   };
 
-  startPolling = async (instanceId: WorkflowInstanceEntity['id']) => {
+  startPolling = async (instanceId: ProcessInstanceEntity['id']) => {
     this.intervalId = setInterval(() => {
       this.handlePolling(instanceId);
     }, 5000);
@@ -122,7 +122,7 @@ class SequenceFlows {
     this.state = {...DEFAULT_STATE};
 
     this.disposer?.();
-    this.workflowSeqenceFlowsDisposer?.();
+    this.processSeqenceFlowsDisposer?.();
   };
 }
 

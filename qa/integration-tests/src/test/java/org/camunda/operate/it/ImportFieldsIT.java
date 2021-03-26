@@ -40,10 +40,10 @@ public class ImportFieldsIT extends OperateZeebeIntegrationTest {
 
     // when
     tester
-        .deployWorkflow("demoProcess_v_1.bpmn")
+        .deployProcess("demoProcess_v_1.bpmn")
         .and()
-        .startWorkflowInstance("demoProcess", "{\"a\": \"b\"}")
-        .waitUntil().workflowInstanceIsStarted()
+        .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
+        .waitUntil().processInstanceIsStarted()
         .and()
         .failTask("taskA", errorMessageMoreThan32KB)
         .waitUntil().incidentIsActive();
@@ -64,10 +64,10 @@ public class ImportFieldsIT extends OperateZeebeIntegrationTest {
 
     // when
     tester
-      .deployWorkflow("single-task.bpmn")
+      .deployProcess("single-task.bpmn")
       .and()
-      .startWorkflowInstance("process", bigJSONVariablePayload)
-      .waitUntil().workflowInstanceIsStarted()
+      .startProcessInstance("process", bigJSONVariablePayload)
+      .waitUntil().processInstanceIsStarted()
       .and()
       .waitUntil().variableExists("small")
       .and().variableExists("large");
@@ -88,10 +88,10 @@ public class ImportFieldsIT extends OperateZeebeIntegrationTest {
 
     // when
     tester
-      .deployWorkflow("single-task.bpmn")
+      .deployProcess("single-task.bpmn")
       .and()
-      .startWorkflowInstance("process", "{\"" + varName + "\": \"smallValue\"}")
-      .waitUntil().workflowInstanceIsStarted()
+      .startProcessInstance("process", "{\"" + varName + "\": \"smallValue\"}")
+      .waitUntil().processInstanceIsStarted()
       .and()
       .waitUntil().variableExists(varName)
       .updateVariableOperation(varName, bigJSONVariablePayload)

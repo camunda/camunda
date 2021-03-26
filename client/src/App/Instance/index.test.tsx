@@ -16,7 +16,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {testData} from './index.setup';
 import {mockSequenceFlows} from './TopPanel/index.setup';
 import {PAGE_TITLE} from 'modules/constants';
-import {getWorkflowName} from 'modules/utils/instance';
+import {getProcessName} from 'modules/utils/instance';
 import {Instance} from './index';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
@@ -28,15 +28,13 @@ type Props = {
   children?: React.ReactNode;
 };
 
-const workFlowInstancesMock = createMultiInstanceFlowNodeInstances(
-  '4294980768'
-);
+const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 
 const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/4294980768']}>
-        <Route path="/instances/:workflowInstanceId">{children}</Route>
+        <Route path="/instances/:processInstanceId">{children}</Route>
       </MemoryRouter>
     </ThemeProvider>
   );
@@ -45,21 +43,21 @@ const Wrapper: React.FC<Props> = ({children}) => {
 describe('Instance', () => {
   beforeAll(() => {
     mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res(ctx.text(''))
       ),
       rest.get(
-        '/api/workflow-instances/:instanceId/sequence-flows',
+        '/api/process-instances/:instanceId/sequence-flows',
         (_, res, ctx) => res(ctx.json(mockSequenceFlows))
       ),
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
-        res(ctx.json(workFlowInstancesMock.level1))
+        res(ctx.json(processInstancesMock.level1))
       ),
       rest.get(
-        '/api/workflow-instances/:instanceId/flow-node-states',
+        '/api/process-instances/:instanceId/flow-node-states',
         (_, rest, ctx) => rest(ctx.json({}))
       ),
-      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res(
           ctx.json({
             running: 821,
@@ -68,7 +66,7 @@ describe('Instance', () => {
           })
         )
       ),
-      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res(
           ctx.json([
             {
@@ -76,7 +74,7 @@ describe('Instance', () => {
               name: 'newVariable',
               value: '1234',
               scopeId: '2251799813686037',
-              workflowInstanceId: '2251799813686037',
+              processInstanceId: '2251799813686037',
               hasActiveOperation: false,
             },
           ])
@@ -87,12 +85,12 @@ describe('Instance', () => {
 
   it('should render and set the page title', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(testData.fetch.onPageLoad.workflowInstance))
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
       )
     );
     mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       )
     );
@@ -109,8 +107,8 @@ describe('Instance', () => {
     expect(screen.getByText('newVariable')).toBeInTheDocument();
     expect(document.title).toBe(
       PAGE_TITLE.INSTANCE(
-        testData.fetch.onPageLoad.workflowInstance.id,
-        getWorkflowName(testData.fetch.onPageLoad.workflowInstance)
+        testData.fetch.onPageLoad.processInstance.id,
+        getProcessName(testData.fetch.onPageLoad.processInstance)
       )
     );
 

@@ -13,7 +13,7 @@ async function createOperation({
   operationType,
 }: {
   id: string;
-  operationType: 'RESOLVE_INCIDENT' | 'CANCEL_WORKFLOW_INSTANCE';
+  operationType: 'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE';
 }) {
   const credentials = await getCredentials();
 

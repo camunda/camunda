@@ -60,7 +60,7 @@ public class VariableZeebeRecordProcessor {
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setScopeKey(recordValue.getScopeKey());
-    entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
+    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setName(recordValue.getName());
     entity.setValue(recordValue.getValue());
     return getVariableQuery(entity);

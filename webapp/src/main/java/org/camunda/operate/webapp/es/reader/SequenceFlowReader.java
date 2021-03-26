@@ -31,10 +31,10 @@ public class SequenceFlowReader extends AbstractReader {
   @Autowired
   private SequenceFlowTemplate sequenceFlowTemplate;
 
-  public List<SequenceFlowEntity> getSequenceFlowsByWorkflowInstanceKey(Long workflowInstanceKey) {
-    final TermQueryBuilder workflowInstanceKeyQuery = termQuery(SequenceFlowTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+  public List<SequenceFlowEntity> getSequenceFlowsByProcessInstanceKey(Long processInstanceKey) {
+    final TermQueryBuilder processInstanceKeyQuery = termQuery(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
 
-    final ConstantScoreQueryBuilder query = constantScoreQuery(workflowInstanceKeyQuery);
+    final ConstantScoreQueryBuilder query = constantScoreQuery(processInstanceKeyQuery);
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(sequenceFlowTemplate, ElasticsearchUtil.QueryType.ALL)
       .source(new SearchSourceBuilder()
@@ -43,7 +43,7 @@ public class SequenceFlowReader extends AbstractReader {
     try {
       return scroll(searchRequest, SequenceFlowEntity.class);
     } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining sequence flows: %s for workflowInstanceKey %s", e.getMessage(),workflowInstanceKey);
+      final String message = String.format("Exception occurred, while obtaining sequence flows: %s for processInstanceKey %s", e.getMessage(),processInstanceKey);
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }

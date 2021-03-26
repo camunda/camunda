@@ -17,8 +17,8 @@ import javax.annotation.PostConstruct;
 import org.apache.http.HttpHost;
 import org.camunda.operate.schema.indices.IndexDescriptor;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.schema.indices.WorkflowIndex;
+import org.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import org.camunda.operate.schema.indices.ProcessIndex;
 import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -33,7 +33,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static org.camunda.operate.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -44,10 +44,10 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Component
 public class ParametersResolver {
 
-  private static final String WORKFLOW_INSTANCE_IDS_PLACEHOLDER = "${workflowInstanceIds}";
-  private static final String WORKFLOW_INSTANCE_ID_PLACEHOLDER = "${workflowInstanceId}";
-  private static final String WORKFLOW_IDS_PLACEHOLDER = "${workflowIds}";
-  private static final String WORKFLOW_ID_PLACEHOLDER = "${workflowId}";
+  private static final String PROCESS_INSTANCE_IDS_PLACEHOLDER = "${processInstanceIds}";
+  private static final String PROCESS_INSTANCE_ID_PLACEHOLDER = "${processInstanceId}";
+  private static final String PROCESS_IDS_PLACEHOLDER = "${processIds}";
+  private static final String PROCESS_ID_PLACEHOLDER = "${processId}";
   private static final String START_DATE_AFTER_PLACEHOLDER = "${startDateAfter}";
   private static final String START_DATE_BEFORE_PLACEHOLDER = "${startDateBefore}";
 
@@ -69,25 +69,25 @@ public class ParametersResolver {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private WorkflowIndex workflowIndex;
+  private ProcessIndex processIndex;
 
   @Autowired
   private ListViewTemplate listViewTemplate;
 
-  private List<String> workflowInstanceIds = new ArrayList<>();
-  private List<String> workflowIds = new ArrayList<>();
+  private List<String> processInstanceIds = new ArrayList<>();
+  private List<String> processIds = new ArrayList<>();
   private String startDateBefore;
   private String startDateAfter;
 
-  private final ConstantScoreQueryBuilder isWorkflowInstanceQuery = constantScoreQuery(termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION));
+  private final ConstantScoreQueryBuilder isProcessInstanceQuery = constantScoreQuery(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
 
   private Random random = new Random();
 
   @PostConstruct
   public void resolveParameters() {
     esClient = new RestHighLevelClient(RestClient.builder(new HttpHost(elasticsearchHost, elasticsearchPort, "http")));
-    initWorkflowInstanceIds();
-    initWorkflowIds();
+    initProcessInstanceIds();
+    initProcessIds();
     initStartDates();
   }
 
@@ -96,7 +96,7 @@ public class ParametersResolver {
       final String listViewAlias = getAlias(listViewTemplate);
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()
-              .query(isWorkflowInstanceQuery)
+              .query(isProcessInstanceQuery)
               .from(0).size(1)
           .sort(ListViewTemplate.START_DATE);
       SearchRequest searchRequest =
@@ -106,33 +106,33 @@ public class ParametersResolver {
       if (hits.getHits().length == 0) {
         throw new RuntimeException("Error occurred when reading startDate from Elasticsearch: no records found");
       }
-      final WorkflowInstanceForListViewEntity wi = ElasticsearchUtil
-          .fromSearchHit(hits.getHits()[0].getSourceAsString(), objectMapper, WorkflowInstanceForListViewEntity.class);
+      final ProcessInstanceForListViewEntity wi = ElasticsearchUtil
+          .fromSearchHit(hits.getHits()[0].getSourceAsString(), objectMapper, ProcessInstanceForListViewEntity.class);
       startDateAfter = wi.getStartDate().format(df);
       startDateBefore = wi.getStartDate().plus(1, ChronoUnit.MINUTES).format(df);
     } catch (IOException ex) {
-      throw new RuntimeException("Error occurred when reading workflowInstanceIds from Elasticsearch", ex);
+      throw new RuntimeException("Error occurred when reading processInstanceIds from Elasticsearch", ex);
     }
   }
 
-  private void initWorkflowInstanceIds() {
+  private void initProcessInstanceIds() {
     try {
       final String listViewAlias = getAlias(listViewTemplate);
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()
-              .query(isWorkflowInstanceQuery)
+              .query(isProcessInstanceQuery)
               .fetchSource(false)
               .from(0).size(50);
       SearchRequest searchRequest =
           new SearchRequest(listViewAlias).source(searchSourceBuilder);
-      workflowInstanceIds = requestIdsFor(searchRequest);
+      processInstanceIds = requestIdsFor(searchRequest);
     } catch (IOException ex) {
-      throw new RuntimeException("Error occurred when reading workflowInstanceIds from Elasticsearch", ex);
+      throw new RuntimeException("Error occurred when reading processInstanceIds from Elasticsearch", ex);
     }
   }
 
-  private void initWorkflowIds() {
-    workflowIds = org.camunda.operate.qa.util.ElasticsearchUtil.getWorkflowIds(esClient, getAlias(workflowIndex), 2);
+  private void initProcessIds() {
+    processIds = org.camunda.operate.qa.util.ElasticsearchUtil.getProcessIds(esClient, getAlias(processIndex), 2);
   }
 
   private List<String> requestIdsFor(SearchRequest searchRequest) throws IOException{
@@ -166,17 +166,17 @@ public class ParametersResolver {
   }
 
   private String replacePlaceholdersInString(String string) throws IOException {
-    if (contains(string,WORKFLOW_INSTANCE_IDS_PLACEHOLDER)) {
-      string = replacePlaceholderWithIds(string, WORKFLOW_INSTANCE_IDS_PLACEHOLDER, workflowInstanceIds);
+    if (contains(string,PROCESS_INSTANCE_IDS_PLACEHOLDER)) {
+      string = replacePlaceholderWithIds(string, PROCESS_INSTANCE_IDS_PLACEHOLDER, processInstanceIds);
     }
-    if (contains(string,WORKFLOW_INSTANCE_ID_PLACEHOLDER)) {
-      string = replacePlaceholderWithRandomId(string, WORKFLOW_INSTANCE_ID_PLACEHOLDER, workflowInstanceIds);
+    if (contains(string,PROCESS_INSTANCE_ID_PLACEHOLDER)) {
+      string = replacePlaceholderWithRandomId(string, PROCESS_INSTANCE_ID_PLACEHOLDER, processInstanceIds);
     }
-    if (contains(string,WORKFLOW_IDS_PLACEHOLDER)) {
-      string = replacePlaceholderWithIds(string, WORKFLOW_IDS_PLACEHOLDER, workflowIds);
+    if (contains(string,PROCESS_IDS_PLACEHOLDER)) {
+      string = replacePlaceholderWithIds(string, PROCESS_IDS_PLACEHOLDER, processIds);
     }
-    if (contains(string,WORKFLOW_ID_PLACEHOLDER)) {
-      string = replacePlaceholderWithRandomId(string, WORKFLOW_ID_PLACEHOLDER, workflowIds);
+    if (contains(string,PROCESS_ID_PLACEHOLDER)) {
+      string = replacePlaceholderWithRandomId(string, PROCESS_ID_PLACEHOLDER, processIds);
     }
     if (contains(string,START_DATE_AFTER_PLACEHOLDER)) {
       string = replacePlaceholderWithString(string, START_DATE_AFTER_PLACEHOLDER, startDateAfter);

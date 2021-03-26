@@ -9,11 +9,11 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import org.camunda.operate.Application;
-import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
+import org.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
-import org.camunda.operate.schema.indices.WorkflowIndex;
+import org.camunda.operate.schema.indices.ProcessIndex;
 import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.webapp.security.OperateURIs;
 import org.camunda.operate.zeebe.PartitionHolder;
@@ -78,7 +78,7 @@ public class ImportPerformanceStaticDataTest {
   @Test
   public void testBArchiver() throws ArchiverException {
     final PartitionHolder partitionHolder = applicationContext.getBean(PartitionHolder.class);
-    WorkflowInstancesArchiverJob archiverJob = applicationContext.getBean(WorkflowInstancesArchiverJob.class, partitionHolder.getPartitionIds());
+    ProcessInstancesArchiverJob archiverJob = applicationContext.getBean(ProcessInstancesArchiverJob.class, partitionHolder.getPartitionIds());
     final int archivedCount = archiverJob.archiveNextBatch();
     assertThat(archivedCount).isEqualTo(1);
   }
@@ -87,16 +87,16 @@ public class ImportPerformanceStaticDataTest {
     final RestHighLevelClient esClient = applicationContext.getBean("esClient", RestHighLevelClient.class);
     final RestHighLevelClient zeebeEsClient = applicationContext.getBean("zeebeEsClient", RestHighLevelClient.class);
 
-    //assert workflow count
-    int expectedCount = ElasticsearchUtil.getFieldCardinality(zeebeEsClient, getZeebeAliasName(ZeebeESConstants.DEPLOYMENT_INDEX_NAME), "value.deployedWorkflows.bpmnProcessId");
-    final WorkflowIndex workflowIndex = applicationContext.getBean(WorkflowIndex.class);
-    int count = ElasticsearchUtil.getDocCount(esClient, workflowIndex.getAlias());
+    //assert process count
+    int expectedCount = ElasticsearchUtil.getFieldCardinality(zeebeEsClient, getZeebeAliasName(ZeebeESConstants.DEPLOYMENT_INDEX_NAME), "value.deployedProcesses.bpmnProcessId");
+    final ProcessIndex processIndex = applicationContext.getBean(ProcessIndex.class);
+    int count = ElasticsearchUtil.getDocCount(esClient, processIndex.getAlias());
     assertThat(count).isEqualTo(expectedCount);
 
-    //assert workflow instances count
-    expectedCount = ElasticsearchUtil.getFieldCardinality(zeebeEsClient, getZeebeAliasName(ZeebeESConstants.WORKFLOW_INSTANCE_INDEX_NAME), "value.workflowInstanceKey");
+    //assert process instances count
+    expectedCount = ElasticsearchUtil.getFieldCardinality(zeebeEsClient, getZeebeAliasName(ZeebeESConstants.PROCESS_INSTANCE_INDEX_NAME), "value.processInstanceKey");
     final ListViewTemplate listViewTemplate = applicationContext.getBean(ListViewTemplate.class);
-    count = ElasticsearchUtil.getFieldCardinality(esClient, listViewTemplate.getAlias(), ListViewTemplate.WORKFLOW_INSTANCE_KEY);
+    count = ElasticsearchUtil.getFieldCardinality(esClient, listViewTemplate.getAlias(), ListViewTemplate.PROCESS_INSTANCE_KEY);
     assertThat(((double) abs(count - expectedCount)) / expectedCount).isLessThanOrEqualTo(PRECISION_RATE);
   }
 

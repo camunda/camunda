@@ -20,16 +20,16 @@ import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.VariableEntity;
-import org.camunda.operate.entities.WorkflowEntity;
+import org.camunda.operate.entities.ProcessEntity;
 import org.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
-import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import org.camunda.operate.es.ElasticsearchConnector;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.ElasticsearchSchemaManager;
-import org.camunda.operate.schema.indices.WorkflowIndex;
+import org.camunda.operate.schema.indices.ProcessIndex;
 import org.camunda.operate.schema.templates.BatchOperationTemplate;
 import org.camunda.operate.schema.templates.IncidentTemplate;
 import org.camunda.operate.schema.templates.ListViewTemplate;
@@ -84,7 +84,7 @@ public class ElasticsearchTestRule extends TestWatcher {
   private VariableTemplate variableTemplate;
 
   @Autowired
-  private WorkflowIndex workflowIndex;
+  private ProcessIndex processIndex;
 
   @Autowired
   private OperationTemplate operationTemplate;
@@ -309,10 +309,10 @@ public class ElasticsearchTestRule extends TestWatcher {
           new IndexRequest(alias, ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
             .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
         if (entity instanceof FlowNodeInstanceForListViewEntity) {
-          indexRequest.routing(((FlowNodeInstanceForListViewEntity)entity).getWorkflowInstanceKey().toString());
+          indexRequest.routing(((FlowNodeInstanceForListViewEntity)entity).getProcessInstanceKey().toString());
         }
         if (entity instanceof VariableForListViewEntity) {
-          indexRequest.routing(((VariableForListViewEntity)entity).getWorkflowInstanceKey().toString());
+          indexRequest.routing(((VariableForListViewEntity)entity).getProcessInstanceKey().toString());
         }
         bulkRequest.add(indexRequest);
       }
@@ -326,9 +326,9 @@ public class ElasticsearchTestRule extends TestWatcher {
   public Map<Class<? extends OperateEntity>, String> getEntityToESAliasMap(){
     if (entityToESAliasMap == null) {
       entityToESAliasMap = new HashMap<>();
-      entityToESAliasMap.put(WorkflowEntity.class, workflowIndex.getFullQualifiedName());
+      entityToESAliasMap.put(ProcessEntity.class, processIndex.getFullQualifiedName());
       entityToESAliasMap.put(IncidentEntity.class, incidentTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(WorkflowInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(ProcessInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
       entityToESAliasMap.put(FlowNodeInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
       entityToESAliasMap.put(VariableForListViewEntity.class, listViewTemplate.getFullQualifiedName());
       entityToESAliasMap.put(VariableEntity.class, variableTemplate.getFullQualifiedName());

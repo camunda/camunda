@@ -10,7 +10,7 @@ import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.indices.IndexDescriptor;
 import org.camunda.operate.schema.indices.UserIndex;
-import org.camunda.operate.schema.indices.WorkflowIndex;
+import org.camunda.operate.schema.indices.ProcessIndex;
 import org.camunda.operate.schema.templates.IncidentTemplate;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.junit.Before;
@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
     IndexSchemaValidator.class,
     IndexDescriptor.class,
     // Assume we have only 3 indices:
-    WorkflowIndex.class, UserIndex.class, IncidentTemplate.class
+    ProcessIndex.class, UserIndex.class, IncidentTemplate.class
 })
 public class IndexSchemaValidatorTest {
 
@@ -48,7 +48,7 @@ public class IndexSchemaValidatorTest {
   List<IndexDescriptor> indexDescriptors;
 
   @Autowired
-  WorkflowIndex workflowIndex;
+  ProcessIndex processIndex;
 
   @Autowired
   IndexSchemaValidator indexSchemaValidator;
@@ -99,27 +99,27 @@ public class IndexSchemaValidatorTest {
   public void testNewerVersionsForIndex() {
 
     // Only older versions
-    whenELSClientReturnsIndexNames(versionsOf(workflowIndex, olderVersions));
-    assertThat(indexSchemaValidator.newerVersionsForIndex(workflowIndex)).isEmpty();
+    whenELSClientReturnsIndexNames(versionsOf(processIndex, olderVersions));
+    assertThat(indexSchemaValidator.newerVersionsForIndex(processIndex)).isEmpty();
     // Only current version
-    whenELSClientReturnsIndexNames(versionsOf(workflowIndex, Set.of(workflowIndex.getVersion())));
-    assertThat(indexSchemaValidator.newerVersionsForIndex(workflowIndex)).isEmpty();
+    whenELSClientReturnsIndexNames(versionsOf(processIndex, Set.of(processIndex.getVersion())));
+    assertThat(indexSchemaValidator.newerVersionsForIndex(processIndex)).isEmpty();
     // Only newer versions
-    whenELSClientReturnsIndexNames(versionsOf(workflowIndex, newerVersions));
-    assertThat(indexSchemaValidator.newerVersionsForIndex(workflowIndex)).containsAll(newerVersions);
+    whenELSClientReturnsIndexNames(versionsOf(processIndex, newerVersions));
+    assertThat(indexSchemaValidator.newerVersionsForIndex(processIndex)).containsAll(newerVersions);
   }
 
   @Test
   public void testOlderVersionsForIndex() {
     // Only newer versions
-    whenELSClientReturnsIndexNames(versionsOf(workflowIndex, newerVersions));
-    assertThat(indexSchemaValidator.olderVersionsForIndex(workflowIndex)).isEmpty();
+    whenELSClientReturnsIndexNames(versionsOf(processIndex, newerVersions));
+    assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEmpty();
     // Only current version
-    whenELSClientReturnsIndexNames(versionsOf(workflowIndex, Set.of(workflowIndex.getVersion())));
-    assertThat(indexSchemaValidator.olderVersionsForIndex(workflowIndex)).isEmpty();
+    whenELSClientReturnsIndexNames(versionsOf(processIndex, Set.of(processIndex.getVersion())));
+    assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEmpty();
     // Only older versions
-    whenELSClientReturnsIndexNames(versionsOf(workflowIndex, olderVersions));
-    assertThat(indexSchemaValidator.olderVersionsForIndex(workflowIndex)).isEqualTo(olderVersions);
+    whenELSClientReturnsIndexNames(versionsOf(processIndex, olderVersions));
+    assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEqualTo(olderVersions);
   }
 
   @Test
@@ -133,7 +133,7 @@ public class IndexSchemaValidatorTest {
     indexSchemaValidator.validate();
 
     // 1 older version for index
-    whenELSClientReturnsIndexNames(List.of(getFullQualifiedIndexName(workflowIndex, "0.9.0")));
+    whenELSClientReturnsIndexNames(List.of(getFullQualifiedIndexName(processIndex, "0.9.0")));
     indexSchemaValidator.validate();
   }
 
@@ -141,18 +141,18 @@ public class IndexSchemaValidatorTest {
   public void testIsNotValidForMoreThanOneOlderVersion() {
     // 2 older version for index
     whenELSClientReturnsIndexNames(List.of(
-        getFullQualifiedIndexName(workflowIndex, "0.9.0"),
-        getFullQualifiedIndexName(workflowIndex, "0.8.0")));
+        getFullQualifiedIndexName(processIndex, "0.9.0"),
+        getFullQualifiedIndexName(processIndex, "0.8.0")));
     assertThatExceptionOfType(OperateRuntimeException.class).isThrownBy(() -> indexSchemaValidator.validate())
-        .withMessageContaining("More than one older version for workflow (1.0.0) found: [0.8.0, 0.9.0]");
+        .withMessageContaining("More than one older version for process (1.0.0) found: [0.8.0, 0.9.0]");
   }
 
   @Test
   public void testIsNotValidForANewerVersion() {
     // 1 newer version for index
-    whenELSClientReturnsIndexNames(List.of(getFullQualifiedIndexName(workflowIndex, "2.0.0")));
+    whenELSClientReturnsIndexNames(List.of(getFullQualifiedIndexName(processIndex, "2.0.0")));
     assertThatExceptionOfType(OperateRuntimeException.class).isThrownBy(() -> indexSchemaValidator.validate())
-        .withMessageContaining("Newer version(s) for workflow (1.0.0) already exists: [2.0.0]");
+        .withMessageContaining("Newer version(s) for process (1.0.0) already exists: [2.0.0]");
   }
 
   private void whenELSClientReturnsIndexNames(List<String> givenIndexNames) {

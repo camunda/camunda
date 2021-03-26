@@ -5,11 +5,11 @@
  */
 
 import {addDays, startOfDay, addMinutes, format, parse} from 'date-fns';
-import {workflowsStore} from 'modules/stores/workflows';
+import {processesStore} from 'modules/stores/processes';
 import {getSearchString} from 'modules/utils/getSearchString';
 
 type FilterFieldsType =
-  | 'workflow'
+  | 'process'
   | 'version'
   | 'ids'
   | 'errorMessage'
@@ -25,7 +25,7 @@ type FilterFieldsType =
   | 'canceled';
 
 type FiltersType = {
-  workflow?: string;
+  process?: string;
   version?: string;
   ids?: string;
   errorMessage?: string;
@@ -60,11 +60,11 @@ type RequestFilters = {
     name: string;
     value: string;
   };
-  workflowIds?: string[];
+  processIds?: string[];
 };
 
 const FILTER_FIELDS: FilterFieldsType[] = [
-  'workflow',
+  'process',
   'version',
   'ids',
   'errorMessage',
@@ -179,16 +179,14 @@ function parseFilterDate(value: string) {
   }
 }
 
-function getWorkflowIds(workflow: string, workflowVersion: string) {
-  if (workflowVersion === 'all') {
-    return (
-      workflowsStore.versionsByWorkflow?.[workflow]?.map(({id}) => id) ?? []
-    );
+function getProcessIds(process: string, processVersion: string) {
+  if (processVersion === 'all') {
+    return processesStore.versionsByProcess?.[process]?.map(({id}) => id) ?? [];
   }
 
   return (
-    workflowsStore.versionsByWorkflow?.[workflow]
-      ?.filter(({version}) => version === parseInt(workflowVersion))
+    processesStore.versionsByProcess?.[process]
+      ?.filter(({version}) => version === parseInt(processVersion))
       ?.map(({id}) => id) ?? []
   );
 }
@@ -249,15 +247,15 @@ function getRequestFilters(): RequestFilters {
 
         if (
           key === 'version' &&
-          filters.workflow !== undefined &&
+          filters.process !== undefined &&
           value !== undefined
         ) {
-          const workflowIds = getWorkflowIds(filters.workflow, value);
+          const processIds = getProcessIds(filters.process, value);
 
-          if (workflowIds.length > 0) {
+          if (processIds.length > 0) {
             return {
               ...accumulator,
-              workflowIds,
+              processIds,
             };
           }
         }
@@ -341,7 +339,7 @@ function getSorting(
   }
 
   return {
-    sortBy: page === 'instances' ? 'workflowName' : 'errorType',
+    sortBy: page === 'instances' ? 'processName' : 'errorType',
     sortOrder: 'desc',
   };
 }

@@ -43,14 +43,14 @@
 			"errorMessage": {
 				"type": "text"
 			},
-			"workflowName": {
+			"processName": {
 				"normalizer": "case_insensitive",
 				"type": "keyword"
 			},
 			"joinRelation": {
 				"type": "join",
 				"relations": {
-					"workflowInstance": [
+					"processInstance": [
 						"activity",
 						"variable"
 					]
@@ -73,19 +73,19 @@
 			"incidentKey": {
 				"type": "long"
 			},
-			"workflowKey": {
+			"processDefinitionKey": {
 				"type": "long"
 			},
 			"scopeKey": {
 				"type": "long"
 			},
-			"workflowInstanceKey": {
+			"processInstanceKey": {
 				"type": "long"
 			},
 			"id": {
 				"type": "keyword"
 			},
-			"workflowVersion": {
+			"processVersion": {
 				"type": "long"
 			},
 			"bpmnProcessId": {

@@ -47,7 +47,7 @@ public abstract class ElasticsearchUtil {
     return (int)esClient.search(searchRequest, RequestOptions.DEFAULT).getHits().getTotalHits();
   }
 
-  public static List<String> getWorkflowIds(RestHighLevelClient esClient, String indexAlias, int size) {
+  public static List<String> getProcessIds(RestHighLevelClient esClient, String indexAlias, int size) {
     try {
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()
@@ -58,7 +58,7 @@ public abstract class ElasticsearchUtil {
           new SearchRequest(indexAlias).source(searchSourceBuilder);
       return requestIdsFor(esClient, searchRequest);
     } catch (IOException ex) {
-      throw new RuntimeException("Error occurred when reading workflowIds from Elasticsearch", ex);
+      throw new RuntimeException("Error occurred when reading processIds from Elasticsearch", ex);
     }
   }
 

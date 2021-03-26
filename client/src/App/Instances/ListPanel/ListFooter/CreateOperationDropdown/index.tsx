@@ -18,7 +18,7 @@ import useOperationApply from './useOperationApply';
 
 const ACTION_NAMES = {
   [OPERATION_TYPE.RESOLVE_INCIDENT]: 'retry',
-  [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: 'cancel',
+  [OPERATION_TYPE.CANCEL_PROCESS_INSTANCE]: 'cancel',
 };
 
 type Props = {
@@ -74,7 +74,7 @@ const CreateOperationDropdown = ({label, selectedCount}: Props) => {
           label="Retry"
         />
         <Dropdown.Option
-          onClick={() => setModalMode(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE)}
+          onClick={() => setModalMode(OPERATION_TYPE.CANCEL_PROCESS_INSTANCE)}
           label="Cancel"
         />
       </Dropdown>

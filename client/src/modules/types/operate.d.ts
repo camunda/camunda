@@ -10,12 +10,12 @@ interface VariableEntity {
   name: string;
   scopeId?: string;
   value: string;
-  workflowInstanceId: WorkflowInstanceEntity['id'];
+  processInstanceId: ProcessInstanceEntity['id'];
 }
 
 type OperationEntityType =
   | 'RESOLVE_INCIDENT'
-  | 'CANCEL_WORKFLOW_INSTANCE'
+  | 'CANCEL_PROCESS_INSTANCE'
   | 'UPDATE_VARIABLE';
 
 type InstanceEntityState =
@@ -44,11 +44,11 @@ interface InstanceOperationEntity {
   errorMessage: null | string;
 }
 
-interface WorkflowInstanceEntity {
+interface ProcessInstanceEntity {
   id: string;
-  workflowId: string;
-  workflowName: string;
-  workflowVersion: number;
+  processId: string;
+  processName: string;
+  processVersion: number;
   startDate: string;
   endDate: null | string;
   state: InstanceEntityState;

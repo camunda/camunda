@@ -18,13 +18,13 @@ import {Locations} from 'modules/routes';
 const {
   UPDATE_VARIABLE,
   RESOLVE_INCIDENT,
-  CANCEL_WORKFLOW_INSTANCE,
+  CANCEL_PROCESS_INSTANCE,
 } = OPERATION_TYPE;
 
 const TYPE_LABELS = {
   [UPDATE_VARIABLE]: 'Edit',
   [RESOLVE_INCIDENT]: 'Retry',
-  [CANCEL_WORKFLOW_INSTANCE]: 'Cancel',
+  [CANCEL_PROCESS_INSTANCE]: 'Cancel',
 } as const;
 
 type Props = {
@@ -71,7 +71,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
           {UPDATE_VARIABLE === type && (
             <Styled.Edit data-testid="operation-edit-icon" />
           )}
-          {CANCEL_WORKFLOW_INSTANCE === type && (
+          {CANCEL_PROCESS_INSTANCE === type && (
             <Styled.Cancel data-testid="operation-cancel-icon" />
           )}
         </Styled.OperationIcon>

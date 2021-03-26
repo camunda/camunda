@@ -30,9 +30,9 @@ public class Metrics {
   public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY = OPERATE_NAMESPACE + "archiver.delete.query";
   // Counters:
   public static final String COUNTER_NAME_EVENTS_PROCESSED = "events.processed";
-  public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI = "events.processed.finished.workflow.instances";
+  public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI = "events.processed.finished.process.instances";
   public static final String COUNTER_NAME_COMMANDS = "commands";
-  public static final String COUNTER_NAME_ARCHIVED = "archived.workflow.instances";
+  public static final String COUNTER_NAME_ARCHIVED = "archived.process.instances";
   // Tags
   // -----
   //  Keys:
@@ -41,7 +41,7 @@ public class Metrics {
                              TAG_KEY_PARTITION = "partition",
                              TAG_KEY_STATUS = "status";
   //  Values:
-  public static final String TAG_VALUE_WORKFLOWINSTANCES = "workflowInstances",
+  public static final String TAG_VALUE_PROCESSINSTANCES = "processInstances",
                              TAG_VALUE_CORESTATISTICS = "corestatistics",
                              TAG_VALUE_SUCCEEDED = "succeeded",
                              TAG_VALUE_FAILED = "failed";

@@ -10,13 +10,13 @@ import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 import Diagram from 'modules/components/Diagram';
 import * as Styled from './styled';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
-import {workflowStatisticsStore} from 'modules/stores/workflowStatistics';
+import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {useHistory} from 'react-router-dom';
 import {Location} from 'history';
 import {getFilters} from 'modules/utils/filter';
-import {workflowsStore} from 'modules/stores/workflows';
+import {processesStore} from 'modules/stores/processes';
 
 const Message: React.FC = ({children}) => {
   return (
@@ -59,25 +59,24 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
   const history = useHistory();
   const {status, diagramModel} = instancesDiagramStore.state;
   const {selectableIds} = instancesDiagramStore;
-  const {statistics} = workflowStatisticsStore.state;
-  const {workflow, version, flowNodeId} = getFilters(history.location.search);
-  const isNoWorkflowSelected = workflow === undefined;
+  const {statistics} = processStatisticsStore.state;
+  const {process, version, flowNodeId} = getFilters(history.location.search);
+  const isNoProcessSelected = process === undefined;
   const isNoVersionSelected = version === 'all';
 
-  const selectedWorkflow = workflowsStore.state.workflows.find(
-    ({bpmnProcessId}) => bpmnProcessId === workflow
+  const selectedProcess = processesStore.state.processes.find(
+    ({bpmnProcessId}) => bpmnProcessId === process
   );
 
-  const workflowName =
-    selectedWorkflow?.name || selectedWorkflow?.bpmnProcessId;
+  const processName = selectedProcess?.name || selectedProcess?.bpmnProcessId;
 
   return (
     <SplitPane.Pane {...props}>
       <Styled.PaneHeader>
-        <span>{workflowName ?? 'Workflow'}</span>
+        <span>{processName ?? 'Process'}</span>
       </Styled.PaneHeader>
       <SplitPane.Pane.Body style={{position: 'relative'}}>
-        {(workflowStatisticsStore.state.isLoading || status === 'fetching') && (
+        {(processStatisticsStore.state.isLoading || status === 'fetching') && (
           <SpinnerSkeleton data-testid="spinner" />
         )}
         {status === 'error' && (
@@ -87,16 +86,16 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
             </StatusMessage>
           </Message>
         )}
-        {isNoWorkflowSelected && (
+        {isNoProcessSelected && (
           <Message>
             {
-              'There is no Workflow selected\n To see a Diagram, select a Workflow in the Filters panel'
+              'There is no Process selected\n To see a Diagram, select a Process in the Filters panel'
             }
           </Message>
         )}
-        {isNoVersionSelected && workflowName !== undefined ? (
+        {isNoVersionSelected && processName !== undefined ? (
           <Message>
-            {`There is more than one Version selected for Workflow "${workflowName}"
+            {`There is more than one Version selected for Process "${processName}"
                To see a Diagram, select a single Version`}
           </Message>
         ) : null}

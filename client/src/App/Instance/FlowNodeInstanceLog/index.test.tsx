@@ -22,20 +22,20 @@ import {createMultiInstanceFlowNodeInstances} from 'modules/testUtils';
 
 jest.mock('modules/utils/bpmn');
 
-const workFlowInstancesMock = createMultiInstanceFlowNodeInstances('1');
+const processInstancesMock = createMultiInstanceFlowNodeInstances('1');
 
 mockServer.use(
-  rest.get('/api/workflow-instances/:instanceId', (_, res, ctx) =>
-    res.once(ctx.json({id: '1', state: 'ACTIVE', workflowName: 'workflowName'}))
+  rest.get('/api/process-instances/:instanceId', (_, res, ctx) =>
+    res.once(ctx.json({id: '1', state: 'ACTIVE', processName: 'processName'}))
   )
 );
 
 describe('FlowNodeInstanceLog', () => {
   beforeAll(async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(
-          ctx.json({id: '1', state: 'ACTIVE', workflowName: 'workflowName'})
+          ctx.json({id: '1', state: 'ACTIVE', processName: 'processName'})
         )
       )
     );
@@ -55,16 +55,16 @@ describe('FlowNodeInstanceLog', () => {
   it('should render skeleton when instance tree is not loaded', async () => {
     mockServer.use(
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
-        res.once(ctx.json(workFlowInstancesMock.level1))
+        res.once(ctx.json(processInstancesMock.level1))
       ),
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       )
     );
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    await singleInstanceDiagramStore.fetchWorkflowXml('1');
+    await singleInstanceDiagramStore.fetchProcessXml('1');
     flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
 
     expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
@@ -77,9 +77,9 @@ describe('FlowNodeInstanceLog', () => {
   it('should render skeleton when instance diagram is not loaded', async () => {
     mockServer.use(
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
-        res.once(ctx.json(workFlowInstancesMock.level1))
+        res.once(ctx.json(processInstancesMock.level1))
       ),
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       )
     );
@@ -87,7 +87,7 @@ describe('FlowNodeInstanceLog', () => {
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
     flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
-    singleInstanceDiagramStore.fetchWorkflowXml('1');
+    singleInstanceDiagramStore.fetchProcessXml('1');
 
     expect(
       await screen.findByTestId('flownodeInstance-skeleton')
@@ -103,14 +103,14 @@ describe('FlowNodeInstanceLog', () => {
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
         res.once(ctx.json({}), ctx.status(500))
       ),
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       )
     );
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    singleInstanceDiagramStore.fetchWorkflowXml('1');
+    singleInstanceDiagramStore.fetchProcessXml('1');
     flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
     expect(
       await screen.findByText('Instance History could not be fetched')
@@ -120,16 +120,16 @@ describe('FlowNodeInstanceLog', () => {
   it('should display error when instance diagram could not be fetched', async () => {
     mockServer.use(
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
-        res.once(ctx.json(workFlowInstancesMock.level1))
+        res.once(ctx.json(processInstancesMock.level1))
       ),
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.status(500), ctx.text(''))
       )
     );
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    singleInstanceDiagramStore.fetchWorkflowXml('1');
+    singleInstanceDiagramStore.fetchProcessXml('1');
     flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
 
     expect(
@@ -140,19 +140,19 @@ describe('FlowNodeInstanceLog', () => {
   it('should render flow node instances tree', async () => {
     mockServer.use(
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
-        res.once(ctx.json(workFlowInstancesMock.level1))
+        res.once(ctx.json(processInstancesMock.level1))
       ),
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       )
     );
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    singleInstanceDiagramStore.fetchWorkflowXml('1');
+    singleInstanceDiagramStore.fetchProcessXml('1');
     flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
 
-    expect((await screen.findAllByText('workflowName')).length).toBeGreaterThan(
+    expect((await screen.findAllByText('processName')).length).toBeGreaterThan(
       0
     );
   });

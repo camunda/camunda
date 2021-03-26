@@ -25,7 +25,7 @@ describe('IncidentsFilter', () => {
   });
   it('should render pills by incident type', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
         res.once(ctx.json(mockIncidents))
       )
     );
@@ -45,7 +45,7 @@ describe('IncidentsFilter', () => {
 
   it('should render pills by flow node', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
         res.once(ctx.json(mockIncidents))
       )
     );
@@ -63,7 +63,7 @@ describe('IncidentsFilter', () => {
 
   it('should show a more button', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
         res.once(ctx.json(mockIncidentsWithManyErrors))
       )
     );
@@ -83,7 +83,7 @@ describe('IncidentsFilter', () => {
 
   it('should disable/enable clear all button depending on selected pills', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
         res.once(ctx.json(mockIncidents))
       )
     );

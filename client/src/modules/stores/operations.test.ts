@@ -56,7 +56,7 @@ describe('stores/operations', () => {
       const newOperation = {
         id: 'c6cde799-69bc-4dd5-9f98-3f931aa2c922',
         name: null,
-        type: 'CANCEL_WORKFLOW_INSTANCE',
+        type: 'CANCEL_PROCESS_INSTANCE',
         startDate: '2020-09-30T06:13:21.312+0000',
         endDate: null,
         username: 'demo',
@@ -71,7 +71,7 @@ describe('stores/operations', () => {
       );
       mockServer.use(
         rest.post(
-          '/api/workflow-instances/:instanceId/operation',
+          '/api/process-instances/:instanceId/operation',
           (_, res, ctx) => res.once(ctx.json(newOperation))
         )
       );
@@ -81,7 +81,7 @@ describe('stores/operations', () => {
 
       await operationsStore.applyOperation({
         instanceId: '1',
-        payload: {operationType: 'CANCEL_WORKFLOW_INSTANCE'},
+        payload: {operationType: 'CANCEL_PROCESS_INSTANCE'},
         onError: () => {},
       });
       expect(operationsStore.state.operations).toEqual([
@@ -98,7 +98,7 @@ describe('stores/operations', () => {
       );
       mockServer.use(
         rest.post(
-          '/api/workflow-instances/:instanceId/operation',
+          '/api/process-instances/:instanceId/operation',
           (_, res, ctx) =>
             res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
         )
@@ -111,7 +111,7 @@ describe('stores/operations', () => {
 
       await operationsStore.applyOperation({
         instanceId: '1',
-        payload: {operationType: 'CANCEL_WORKFLOW_INSTANCE'},
+        payload: {operationType: 'CANCEL_PROCESS_INSTANCE'},
         onError: mockOnError,
       });
       expect(operationsStore.state.operations).toEqual(operations);
@@ -125,7 +125,7 @@ describe('stores/operations', () => {
         )
       );
       mockServer.use(
-        rest.post('/api/workflow-instances/:instanceId/operation', (_, res) =>
+        rest.post('/api/process-instances/:instanceId/operation', (_, res) =>
           res.networkError('A network error')
         )
       );
@@ -137,7 +137,7 @@ describe('stores/operations', () => {
 
       await operationsStore.applyOperation({
         instanceId: '1',
-        payload: {operationType: 'CANCEL_WORKFLOW_INSTANCE'},
+        payload: {operationType: 'CANCEL_PROCESS_INSTANCE'},
         onError: mockOnError,
       });
       expect(operationsStore.state.operations).toEqual(operations);
@@ -164,7 +164,7 @@ describe('stores/operations', () => {
         )
       );
       mockServer.use(
-        rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
+        rest.post('/api/process-instances/batch-operation', (_, res, ctx) =>
           res.once(ctx.json(newOperation))
         )
       );
@@ -174,7 +174,7 @@ describe('stores/operations', () => {
 
       const mockOnSuccess = jest.fn();
       await operationsStore.applyBatchOperation({
-        operationType: 'CANCEL_WORKFLOW_INSTANCE',
+        operationType: 'CANCEL_PROCESS_INSTANCE',
         query: {ids: [], excludeIds: []},
         onSuccess: mockOnSuccess,
         onError: () => {},
@@ -193,7 +193,7 @@ describe('stores/operations', () => {
         )
       );
       mockServer.use(
-        rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
+        rest.post('/api/process-instances/batch-operation', (_, res, ctx) =>
           res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
         )
       );
@@ -204,7 +204,7 @@ describe('stores/operations', () => {
       const mockOnError = jest.fn();
 
       await operationsStore.applyBatchOperation({
-        operationType: 'CANCEL_WORKFLOW_INSTANCE',
+        operationType: 'CANCEL_PROCESS_INSTANCE',
         query: {ids: [], excludeIds: []},
         onSuccess: jest.fn(),
         onError: mockOnError,
@@ -221,7 +221,7 @@ describe('stores/operations', () => {
         )
       );
       mockServer.use(
-        rest.post('/api/workflow-instances/batch-operation', (_, res) =>
+        rest.post('/api/process-instances/batch-operation', (_, res) =>
           res.networkError('A network error')
         )
       );
@@ -232,7 +232,7 @@ describe('stores/operations', () => {
       const mockOnError = jest.fn();
 
       await operationsStore.applyBatchOperation({
-        operationType: 'CANCEL_WORKFLOW_INSTANCE',
+        operationType: 'CANCEL_PROCESS_INSTANCE',
         query: {ids: [], excludeIds: []},
         onSuccess: jest.fn(),
         onError: mockOnError,

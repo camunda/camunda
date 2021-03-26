@@ -7,7 +7,7 @@
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
 export function concatTitle(
-  workflowName: any,
+  processName: any,
   instancesCount: any,
   versionName: any,
   errorMessage: any
@@ -15,7 +15,7 @@ export function concatTitle(
   return `View ${pluralSuffix(
     instancesCount,
     'Instance'
-  )} with error ${errorMessage} in version ${versionName} of Workflow ${workflowName}`;
+  )} with error ${errorMessage} in version ${versionName} of Process ${processName}`;
 }
 
 export function concatLabel(name: any, version: any) {

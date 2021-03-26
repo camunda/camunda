@@ -8,7 +8,7 @@ package org.camunda.operate.zeebe;
 public interface ZeebeESConstants {
 
   String POSITION_FIELD_NAME = "position";
-  String WORKFLOW_INSTANCE_INDEX_NAME = "workflow-instance";
+  String PROCESS_INSTANCE_INDEX_NAME = "process-instance";
   String JOB_INDEX_NAME = "job";
   String INCIDENT_INDEX_NAME = "incident";
   String DEPLOYMENT_INDEX_NAME = "deployment";

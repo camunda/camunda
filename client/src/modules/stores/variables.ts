@@ -58,7 +58,7 @@ class Variables {
     });
   }
 
-  init = async (instanceId: WorkflowInstanceEntity['id']) => {
+  init = async (instanceId: ProcessInstanceEntity['id']) => {
     this.variablesWithActiveOperationsDisposer = when(
       () => currentInstanceStore.state.instance?.state === STATE.CANCELED,
       this.removeVariablesWithActiveOperations
@@ -117,11 +117,11 @@ class Variables {
     return flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
   }
 
-  handlePolling = async (workflowInstanceId: WorkflowInstanceEntity['id']) => {
+  handlePolling = async (processInstanceId: ProcessInstanceEntity['id']) => {
     try {
       const response = await fetchVariables({
-        instanceId: workflowInstanceId,
-        scopeId: this.scopeId !== undefined ? this.scopeId : workflowInstanceId,
+        instanceId: processInstanceId,
+        scopeId: this.scopeId !== undefined ? this.scopeId : processInstanceId,
       });
 
       if (this.shouldCancelOngoingRequests) {
@@ -160,7 +160,7 @@ class Variables {
     this.handleFetchSuccess();
   };
 
-  fetchVariables = async (instanceId: WorkflowInstanceEntity['id']) => {
+  fetchVariables = async (instanceId: ProcessInstanceEntity['id']) => {
     this.startFetch();
 
     try {
@@ -213,7 +213,7 @@ class Variables {
         name,
         value,
         hasActiveOperation: true,
-        workflowInstanceId: id,
+        processInstanceId: id,
       },
     ]);
 

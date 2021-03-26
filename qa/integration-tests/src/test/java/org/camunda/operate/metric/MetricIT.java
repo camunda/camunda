@@ -15,7 +15,7 @@ import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.util.MetricAssert;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
+import org.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import org.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.junit.Before;
@@ -25,7 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class MetricIT extends OperateZeebeIntegrationTest {
   
   @Autowired
-  private CancelWorkflowInstanceHandler cancelWorkflowInstanceHandler;
+  private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
   @Autowired
   private ResolveIncidentHandler updateRetriesHandler;
@@ -41,7 +41,7 @@ public class MetricIT extends OperateZeebeIntegrationTest {
   }
 
   private void injectZeebeClientIntoOperationHandler() {
-    cancelWorkflowInstanceHandler.setZeebeClient(zeebeClient);
+    cancelProcessInstanceHandler.setZeebeClient(zeebeClient);
     updateRetriesHandler.setZeebeClient(zeebeClient);
     updateVariableHandler.setZeebeClient(zeebeClient);
   }
@@ -51,8 +51,8 @@ public class MetricIT extends OperateZeebeIntegrationTest {
     // Given metrics are enabled
     // When
     tester
-      .deployWorkflow("demoProcess_v_1.bpmn").waitUntil().workflowIsDeployed()
-      .startWorkflowInstance("demoProcess","{\"a\": \"b\"}").waitUntil().workflowInstanceIsFinished();
+      .deployProcess("demoProcess_v_1.bpmn").waitUntil().processIsDeployed()
+      .startProcessInstance("demoProcess","{\"a\": \"b\"}").waitUntil().processInstanceIsFinished();
     // Then
     assertThatMetricsFrom(mockMvc,allOf(
         containsString("operate_events_processed_total"),
@@ -66,8 +66,8 @@ public class MetricIT extends OperateZeebeIntegrationTest {
     // Given metrics are enabled
     // When
     tester
-      .deployWorkflow("demoProcess_v_1.bpmn").waitUntil().workflowIsDeployed()
-      .startWorkflowInstance("demoProcess","{\"a\": \"b\"}")
+      .deployProcess("demoProcess_v_1.bpmn").waitUntil().processIsDeployed()
+      .startProcessInstance("demoProcess","{\"a\": \"b\"}")
       .and()
       .failTask("taskA","Some error").waitUntil().incidentIsActive();
     // Then
@@ -79,9 +79,9 @@ public class MetricIT extends OperateZeebeIntegrationTest {
     // Given metrics are enabled
     // When
     tester
-      .deployWorkflow("demoProcess_v_2.bpmn").waitUntil().workflowIsDeployed()
+      .deployProcess("demoProcess_v_2.bpmn").waitUntil().processIsDeployed()
       .and()
-      .startWorkflowInstance("demoProcess").waitUntil().workflowInstanceIsStarted()
+      .startProcessInstance("demoProcess").waitUntil().processInstanceIsStarted()
       .and()
       .updateVariableOperation("a","\"newValue\"").waitUntil().operationIsCompleted();
     // Then
@@ -101,14 +101,14 @@ public class MetricIT extends OperateZeebeIntegrationTest {
         .done();
     
     tester
-      .deployWorkflow(startEndProcess, "startEndProcess.bpmn").workflowIsDeployed()
+      .deployProcess(startEndProcess, "startEndProcess.bpmn").processIsDeployed()
       .and()
-      .startWorkflowInstance(bpmnProcessId).waitUntil().workflowInstanceIsCompleted()
+      .startProcessInstance(bpmnProcessId).waitUntil().processInstanceIsCompleted()
       .and()
-      .cancelWorkflowInstanceOperation().waitUntil().operationIsCompleted();
+      .cancelProcessInstanceOperation().waitUntil().operationIsCompleted();
     // Then
     assertThatMetricsFrom(mockMvc,
-        new MetricAssert.ValueMatcher("operate_commands_total{status=\""+OperationState.FAILED+"\",type=\""+OperationType.CANCEL_WORKFLOW_INSTANCE+"\",}",
+        new MetricAssert.ValueMatcher("operate_commands_total{status=\""+OperationState.FAILED+"\",type=\""+OperationType.CANCEL_PROCESS_INSTANCE+"\",}",
             d -> d.doubleValue() == 1));
   }
   

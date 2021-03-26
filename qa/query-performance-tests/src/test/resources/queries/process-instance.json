@@ -1,0 +1,23 @@
+[
+  {
+    "title": "Process instance by id",
+    "url": "/api/process-instances/${processInstanceId}",
+    "method": "GET"
+  },
+  {
+    "title": "Process instance incidents by id",
+    "url": "/api/process-instances/${processInstanceId}/incidents",
+    "method": "GET"
+  },
+  {
+    "title": "Process instance sequence flows by id",
+    "url": "/api/process-instances/${processInstanceId}/sequence-flows",
+    "method": "GET"
+  },
+  {
+    "title": "Process instance variables by id",
+    "url": "/api/process-instances/${processInstanceId}/variables",
+    "pathParams": "scopeId=${processInstanceId}",
+    "method": "GET"
+  }
+]

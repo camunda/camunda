@@ -17,8 +17,8 @@ import {getFilters} from 'modules/utils/filter';
 
 const ListPanel = observer((props: any) => {
   const {
-    areWorkflowInstancesEmpty,
-    state: {workflowInstances, status},
+    areProcessInstancesEmpty,
+    state: {processInstances, status},
   } = instancesStore;
   const location = useLocation();
   const filters = getFilters(location.search);
@@ -36,7 +36,7 @@ const ListPanel = observer((props: any) => {
   };
 
   const renderContent = () => {
-    if (!areWorkflowInstancesEmpty) {
+    if (!areProcessInstancesEmpty) {
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'Body' does not exist on type 'typeof Lis... Remove this comment to see the full error message
       return <List.Body />;
     } else if (['initial', 'first-fetch'].includes(status)) {
@@ -71,7 +71,7 @@ const ListPanel = observer((props: any) => {
 
       <PaneBody>
         <List
-          data={workflowInstances}
+          data={processInstances}
           expandState={props.expandState}
           isInitialDataLoaded={[
             'fetched',
@@ -89,7 +89,7 @@ const ListPanel = observer((props: any) => {
         <ListFooter
           hasContent={
             props.expandState !== EXPAND_STATE.COLLAPSED &&
-            !areWorkflowInstancesEmpty
+            !areProcessInstancesEmpty
           }
         />
       </SplitPane.Pane.Footer>

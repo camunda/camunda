@@ -20,7 +20,7 @@ public class IncidentsByErrorMsgStatisticsDto {
   private long instancesWithErrorCount;
 
   @JsonDeserialize(as = TreeSet.class)    //for tests
-  private Set<IncidentByWorkflowStatisticsDto> workflows = new TreeSet<>();
+  private Set<IncidentByProcessStatisticsDto> processes = new TreeSet<>();
 
   public IncidentsByErrorMsgStatisticsDto() {
   }
@@ -45,12 +45,12 @@ public class IncidentsByErrorMsgStatisticsDto {
     this.instancesWithErrorCount = instancesWithErrorCount;
   }
 
-  public Set<IncidentByWorkflowStatisticsDto> getWorkflows() {
-    return workflows;
+  public Set<IncidentByProcessStatisticsDto> getProcesses() {
+    return processes;
   }
 
-  public void setWorkflows(Set<IncidentByWorkflowStatisticsDto> workflows) {
-    this.workflows = workflows;
+  public void setProcesses(Set<IncidentByProcessStatisticsDto> processes) {
+    this.processes = processes;
   }
 
   public void recordInstancesCount(long count) {
@@ -70,14 +70,14 @@ public class IncidentsByErrorMsgStatisticsDto {
       return false;
     if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
       return false;
-    return workflows != null ? workflows.equals(that.workflows) : that.workflows == null;
+    return processes != null ? processes.equals(that.processes) : that.processes == null;
   }
 
   @Override
   public int hashCode() {
     int result = errorMessage != null ? errorMessage.hashCode() : 0;
     result = 31 * result + (int) (instancesWithErrorCount ^ (instancesWithErrorCount >>> 32));
-    result = 31 * result + (workflows != null ? workflows.hashCode() : 0);
+    result = 31 * result + (processes != null ? processes.hashCode() : 0);
     return result;
   }
   

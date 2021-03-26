@@ -10,10 +10,10 @@ import {instancesStore} from 'modules/stores/instances';
 import {Operations} from './index';
 import {mockServer} from 'modules/mock-server/node';
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
-import {groupedWorkflowsMock} from 'modules/testUtils';
+import {groupedProcessesMock} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
-const instanceMock: WorkflowInstanceEntity = {
+const instanceMock: ProcessInstanceEntity = {
   id: 'instance_1',
   state: 'ACTIVE',
   operations: [],
@@ -21,9 +21,9 @@ const instanceMock: WorkflowInstanceEntity = {
   startDate: '',
   endDate: null,
   hasActiveOperation: true,
-  workflowId: '',
-  workflowName: '',
-  workflowVersion: 1,
+  processId: '',
+  processName: '',
+  processVersion: 1,
   sortValues: ['', 'instance_1'],
 };
 
@@ -123,13 +123,13 @@ describe('Operations', () => {
       jest.useFakeTimers();
 
       mockServer.use(
-        rest.post('/api/workflow-instances', (_, res, ctx) =>
+        rest.post('/api/process-instances', (_, res, ctx) =>
           res.once(
-            ctx.json({workflowInstances: [ACTIVE_INSTANCE], totalCount: 1})
+            ctx.json({processInstances: [ACTIVE_INSTANCE], totalCount: 1})
           )
         ),
-        rest.get('/api/workflows/grouped', (_, res, ctx) =>
-          res.once(ctx.json(groupedWorkflowsMock))
+        rest.get('/api/processes/grouped', (_, res, ctx) =>
+          res.once(ctx.json(groupedProcessesMock))
         )
       );
 
@@ -154,11 +154,11 @@ describe('Operations', () => {
       ).toBeInTheDocument();
 
       mockServer.use(
-        rest.post('/api/workflow-instances', (_, res, ctx) =>
-          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(ctx.json({processInstances: [INSTANCE], totalCount: 1}))
         ),
-        rest.post('/api/workflow-instances', (_, res, ctx) =>
-          res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 2}))
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(ctx.json({processInstances: [INSTANCE], totalCount: 2}))
         )
       );
 

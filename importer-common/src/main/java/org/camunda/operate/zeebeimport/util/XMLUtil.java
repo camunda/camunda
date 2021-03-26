@@ -11,7 +11,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
-import org.camunda.operate.entities.WorkflowEntity;
+import org.camunda.operate.entities.ProcessEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -42,13 +42,13 @@ public class XMLUtil {
     }
   }
 
-  public Optional<WorkflowEntity> extractDiagramData(byte[] byteArray) {
+  public Optional<ProcessEntity> extractDiagramData(byte[] byteArray) {
     SAXParserFactory saxParserFactory = getSAXParserFactory();
     InputStream is = new ByteArrayInputStream(byteArray);
     BpmnXmlParserHandler handler = new BpmnXmlParserHandler();
     try {
       saxParserFactory.newSAXParser().parse(is, handler);
-      return Optional.of(handler.getWorkflowEntity());
+      return Optional.of(handler.getProcessEntity());
     } catch (ParserConfigurationException | SAXException | IOException e) {
       logger.warn("Unable to parse diagram: " + e.getMessage(), e);
       return Optional.empty();
@@ -57,19 +57,19 @@ public class XMLUtil {
 
   public static class BpmnXmlParserHandler extends DefaultHandler {
 
-    WorkflowEntity workflowEntity = new WorkflowEntity();
+    ProcessEntity processEntity = new ProcessEntity();
 
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
       if (localName.equalsIgnoreCase("process")) {
         if (attributes.getValue("name") != null) {
-          workflowEntity.setName(attributes.getValue("name"));
+          processEntity.setName(attributes.getValue("name"));
         }
       }
     }
 
-    public WorkflowEntity getWorkflowEntity() {
-      return workflowEntity;
+    public ProcessEntity getProcessEntity() {
+      return processEntity;
     }
   }
 

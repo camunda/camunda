@@ -12,15 +12,15 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {Filters} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {workflowsStore} from 'modules/stores/workflows';
+import {processesStore} from 'modules/stores/processes';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
-import {mockWorkflowXML} from 'modules/testUtils';
+import {mockProcessXML} from 'modules/testUtils';
 
-const GROUPED_WORKFLOWS = [
+const GROUPED_PROCESSES = [
   {
     bpmnProcessId: 'bigVarProcess',
     name: 'Big variable process',
-    workflows: [
+    processes: [
       {
         id: '2251799813685530',
         name: 'Big variable process',
@@ -32,7 +32,7 @@ const GROUPED_WORKFLOWS = [
   {
     bpmnProcessId: 'complexProcess',
     name: null,
-    workflows: [
+    processes: [
       {
         id: '2251799813687825',
         name: null,
@@ -72,43 +72,41 @@ function getWrapper(history: History = createMemoryHistory()) {
 describe('Filters', () => {
   beforeEach(async () => {
     mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockWorkflowXML))
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
       ),
-      rest.get('/api/workflows/grouped', (_, res, ctx) =>
-        res.once(ctx.json(GROUPED_WORKFLOWS))
+      rest.get('/api/processes/grouped', (_, res, ctx) =>
+        res.once(ctx.json(GROUPED_PROCESSES))
       )
     );
 
-    workflowsStore.fetchWorkflows();
-    instancesDiagramStore.fetchWorkflowXml('bigVarProcess');
+    processesStore.fetchProcesses();
+    instancesDiagramStore.fetchProcessXml('bigVarProcess');
   });
 
   afterEach(() => {
-    workflowsStore.reset();
+    processesStore.reset();
     instancesDiagramStore.reset();
   });
 
-  it('should load the workflow and version fields', async () => {
+  it('should load the process and version fields', async () => {
     render(<Filters />, {
       wrapper: getWrapper(),
     });
 
-    await waitFor(() =>
-      expect(screen.getByLabelText('Workflow')).toBeEnabled()
-    );
+    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
 
-    userEvent.selectOptions(screen.getByLabelText('Workflow'), [
+    userEvent.selectOptions(screen.getByLabelText('Process'), [
       'Big variable process',
     ]);
 
-    expect(screen.getByLabelText('Workflow Version')).toBeEnabled();
+    expect(screen.getByLabelText('Process Version')).toBeEnabled();
     expect(screen.getByDisplayValue('Version 1')).toBeInTheDocument();
   });
 
   it('should load values from the URL', async () => {
     const MOCK_PARAMS = {
-      workflow: 'bigVarProcess',
+      process: 'bigVarProcess',
       version: '1',
       ids: '2251799813685467',
       errorMessage: 'a random error',
@@ -167,7 +165,7 @@ describe('Filters', () => {
       initialEntries: ['/'],
     });
     const MOCK_VALUES = {
-      workflow: 'bigVarProcess',
+      process: 'bigVarProcess',
       version: '1',
       ids: '2251799813685462',
       errorMessage: 'an error',
@@ -186,15 +184,13 @@ describe('Filters', () => {
       wrapper: getWrapper(MOCK_HISTORY),
     });
 
-    await waitFor(() =>
-      expect(screen.getByLabelText('Workflow')).toBeEnabled()
-    );
+    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
     await waitFor(() =>
       expect(screen.getByLabelText('Flow Node')).toBeEnabled()
     );
 
-    expect(screen.getByLabelText('Workflow')).toHaveValue('');
-    expect(screen.getByLabelText('Workflow Version')).toHaveValue('');
+    expect(screen.getByLabelText('Process')).toHaveValue('');
+    expect(screen.getByLabelText('Process Version')).toHaveValue('');
     expect(
       screen.getByLabelText('Instance Id(s) separated by space or comma')
     ).toHaveValue('');
@@ -214,7 +210,7 @@ describe('Filters', () => {
     expect(screen.getByLabelText('Completed')).not.toBeChecked();
     expect(screen.getByLabelText('Canceled')).not.toBeChecked();
 
-    userEvent.selectOptions(screen.getByLabelText('Workflow'), [
+    userEvent.selectOptions(screen.getByLabelText('Process'), [
       'Big variable process',
     ]);
     userEvent.type(
@@ -392,9 +388,7 @@ describe('Filters', () => {
       wrapper: getWrapper(MOCK_HISTORY),
     });
 
-    await waitFor(() =>
-      expect(screen.getByLabelText('Workflow')).toBeEnabled()
-    );
+    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
     await waitFor(() =>
       expect(screen.getByLabelText('Flow Node')).toBeEnabled()
     );
@@ -415,25 +409,25 @@ describe('Filters', () => {
       '?active=true&incidents=true&completed=true&canceled=true'
     );
 
-    userEvent.selectOptions(screen.getByLabelText('Workflow'), [
+    userEvent.selectOptions(screen.getByLabelText('Process'), [
       'complexProcess',
     ]);
     expect(MOCK_HISTORY.location.search).toBe(
-      '?active=true&incidents=true&completed=true&canceled=true&workflow=complexProcess&version=3'
+      '?active=true&incidents=true&completed=true&canceled=true&process=complexProcess&version=3'
     );
 
-    userEvent.selectOptions(screen.getByLabelText('Workflow Version'), [
+    userEvent.selectOptions(screen.getByLabelText('Process Version'), [
       'Version 1',
     ]);
     expect(MOCK_HISTORY.location.search).toBe(
-      '?active=true&incidents=true&completed=true&canceled=true&workflow=complexProcess&version=1'
+      '?active=true&incidents=true&completed=true&canceled=true&process=complexProcess&version=1'
     );
 
     userEvent.selectOptions(screen.getByLabelText('Flow Node'), [
       'ServiceTask_0kt6c5i',
     ]);
     expect(MOCK_HISTORY.location.search).toBe(
-      '?active=true&incidents=true&completed=true&canceled=true&workflow=complexProcess&version=1&flowNodeId=ServiceTask_0kt6c5i'
+      '?active=true&incidents=true&completed=true&canceled=true&process=complexProcess&version=1&flowNodeId=ServiceTask_0kt6c5i'
     );
   });
 });

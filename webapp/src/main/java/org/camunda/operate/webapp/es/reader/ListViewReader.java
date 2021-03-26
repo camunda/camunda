@@ -15,15 +15,15 @@ import org.camunda.operate.entities.FlowNodeState;
 import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.entities.OperationEntity;
-import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.entities.listview.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.ProcessInstanceState;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import org.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.camunda.operate.util.CollectionUtil;
@@ -71,7 +71,7 @@ import static org.camunda.operate.schema.templates.ListViewTemplate.STATE;
 import static org.camunda.operate.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
 import static org.camunda.operate.schema.templates.ListViewTemplate.VAR_NAME;
 import static org.camunda.operate.schema.templates.ListViewTemplate.VAR_VALUE;
-import static org.camunda.operate.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -106,38 +106,38 @@ public class ListViewReader {
   private OperationReader operationReader;
 
   /**
-   * Queries workflow instances by different criteria (with pagination).
-   * @param workflowInstanceRequest
+   * Queries process instances by different criteria (with pagination).
+   * @param processInstanceRequest
    * @return
    */
-  public ListViewResponseDto queryWorkflowInstances(ListViewRequestDto workflowInstanceRequest) {
+  public ListViewResponseDto queryProcessInstances(ListViewRequestDto processInstanceRequest) {
     ListViewResponseDto result = new ListViewResponseDto();
 
-    List<WorkflowInstanceForListViewEntity> workflowInstanceEntities = queryListView(workflowInstanceRequest, result);
-    List<Long> workflowInstanceKeys = CollectionUtil
-        .map(workflowInstanceEntities, workflowInstanceEntity -> Long.valueOf(workflowInstanceEntity.getId()));
-    final Set<Long> instancesWithIncidentsIds = findInstancesWithIncidents(workflowInstanceKeys);
+    List<ProcessInstanceForListViewEntity> processInstanceEntities = queryListView(processInstanceRequest, result);
+    List<Long> processInstanceKeys = CollectionUtil
+        .map(processInstanceEntities, processInstanceEntity -> Long.valueOf(processInstanceEntity.getId()));
+    final Set<Long> instancesWithIncidentsIds = findInstancesWithIncidents(processInstanceKeys);
 
-    final Map<Long, List<OperationEntity>> operationsPerWorfklowInstance = operationReader.getOperationsPerWorkflowInstanceKey(workflowInstanceKeys);
+    final Map<Long, List<OperationEntity>> operationsPerWorfklowInstance = operationReader.getOperationsPerProcessInstanceKey(processInstanceKeys);
 
-    final List<ListViewWorkflowInstanceDto> workflowInstanceDtoList = ListViewWorkflowInstanceDto.createFrom(workflowInstanceEntities, instancesWithIncidentsIds, operationsPerWorfklowInstance);
-    result.setWorkflowInstances(workflowInstanceDtoList);
+    final List<ListViewProcessInstanceDto> processInstanceDtoList = ListViewProcessInstanceDto.createFrom(processInstanceEntities, instancesWithIncidentsIds, operationsPerWorfklowInstance);
+    result.setProcessInstances(processInstanceDtoList);
     return result;
   }
 
-  public List<WorkflowInstanceForListViewEntity> queryListView(
-      ListViewRequestDto workflowInstanceRequest, ListViewResponseDto result) {
+  public List<ProcessInstanceForListViewEntity> queryListView(
+      ListViewRequestDto processInstanceRequest, ListViewResponseDto result) {
 
-    final QueryBuilder query = createRequestQuery(workflowInstanceRequest.getQuery());
+    final QueryBuilder query = createRequestQuery(processInstanceRequest.getQuery());
 
-    logger.debug("Workflow instance search request: \n{}", query.toString());
+    logger.debug("Process instance search request: \n{}", query.toString());
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         .query(query);
 
-    applySorting(searchSourceBuilder, workflowInstanceRequest);
+    applySorting(searchSourceBuilder, processInstanceRequest);
 
-    SearchRequest searchRequest = createSearchRequest(workflowInstanceRequest.getQuery())
+    SearchRequest searchRequest = createSearchRequest(processInstanceRequest.getQuery())
         .source(searchSourceBuilder);
 
     logger.debug("Search request will search in: \n{}", searchRequest.indices());
@@ -146,16 +146,16 @@ public class ListViewReader {
       SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       result.setTotalCount(response.getHits().getTotalHits());
 
-      List<WorkflowInstanceForListViewEntity> workflowInstanceEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(),
+      List<ProcessInstanceForListViewEntity> processInstanceEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(),
           (sh) -> {
-            WorkflowInstanceForListViewEntity entity = ElasticsearchUtil.fromSearchHit(sh.getSourceAsString(), objectMapper, WorkflowInstanceForListViewEntity.class);
+            ProcessInstanceForListViewEntity entity = ElasticsearchUtil.fromSearchHit(sh.getSourceAsString(), objectMapper, ProcessInstanceForListViewEntity.class);
             entity.setSortValues(sh.getSortValues());
             return entity;
           });
-      if (workflowInstanceRequest.getSearchBefore() != null) {
-        Collections.reverse(workflowInstanceEntities);
+      if (processInstanceRequest.getSearchBefore() != null) {
+        Collections.reverse(processInstanceEntities);
       }
-      return workflowInstanceEntities;
+      return processInstanceEntities;
     } catch (IOException e) {
       final String message = String
           .format("Exception occurred, while obtaining instances list: %s", e.getMessage());
@@ -215,8 +215,8 @@ public class ListViewReader {
     }
   }
 
-  private SearchRequest createSearchRequest(ListViewQueryDto workflowInstanceRequest) {
-    if (workflowInstanceRequest.isFinished()) {
+  private SearchRequest createSearchRequest(ListViewQueryDto processInstanceRequest) {
+    if (processInstanceRequest.isFinished()) {
       return ElasticsearchUtil.createSearchRequest(listViewTemplate, ALL);
     }
     return ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME);
@@ -225,15 +225,15 @@ public class ListViewReader {
   private QueryBuilder createRequestQuery(ListViewQueryDto request) {
     final QueryBuilder query = createQueryFragment(request);
 
-    final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
-    final QueryBuilder queryBuilder = joinWithAnd(isWorkflowInstanceQuery, query);
+    final TermQueryBuilder isProcessInstanceQuery = termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
+    final QueryBuilder queryBuilder = joinWithAnd(isProcessInstanceQuery, query);
 
     return constantScoreQuery(queryBuilder);
   }
 
-  public ConstantScoreQueryBuilder createWorkflowInstancesQuery(ListViewQueryDto query) {
-    final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
-    final QueryBuilder queryBuilder = joinWithAnd(isWorkflowInstanceQuery, createQueryFragment(query));
+  public ConstantScoreQueryBuilder createProcessInstancesQuery(ListViewQueryDto query) {
+    final TermQueryBuilder isProcessInstanceQuery = termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
+    final QueryBuilder queryBuilder = joinWithAnd(isProcessInstanceQuery, createQueryFragment(query));
     return constantScoreQuery(queryBuilder);
   }
 
@@ -253,7 +253,7 @@ public class ListViewReader {
         createErrorMessageQuery(query),
         createStartDateQuery(query),
         createEndDateQuery(query),
-        createWorkflowKeysQuery(query),
+        createProcessDefinitionKeysQuery(query),
         createBpmnProcessIdQuery(query),
         createExcludeIdsQuery(query),
         createVariablesQuery(query),
@@ -268,9 +268,9 @@ public class ListViewReader {
     return null;
   }
 
-  private QueryBuilder createWorkflowKeysQuery(ListViewQueryDto query) {
-    if (CollectionUtil.isNotEmpty(query.getWorkflowIds())) {
-      return termsQuery(ListViewTemplate.WORKFLOW_KEY, query.getWorkflowIds());
+  private QueryBuilder createProcessDefinitionKeysQuery(ListViewQueryDto query) {
+    if (CollectionUtil.isNotEmpty(query.getProcessIds())) {
+      return termsQuery(ListViewTemplate.PROCESS_KEY, query.getProcessIds());
     }
     return null;
   }
@@ -279,8 +279,8 @@ public class ListViewReader {
     if (!StringUtils.isEmpty(query.getBpmnProcessId())) {
       final TermQueryBuilder bpmnProcessIdQ = termQuery(ListViewTemplate.BPMN_PROCESS_ID, query.getBpmnProcessId());
       TermQueryBuilder versionQ = null;
-      if (query.getWorkflowVersion() != null) {
-        versionQ = termQuery(ListViewTemplate.WORKFLOW_VERSION, query.getWorkflowVersion());
+      if (query.getProcessVersion() != null) {
+        versionQ = termQuery(ListViewTemplate.PROCESS_VERSION, query.getProcessVersion());
       }
       return joinWithAnd(bpmnProcessIdQ, versionQ);
     }
@@ -363,14 +363,14 @@ public class ListViewReader {
     return null;
   }
 
-  private Set<Long> findInstancesWithIncidents(List<Long> workflowInstanceKeys) {
-    final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
-    final TermsQueryBuilder workflowInstanceKeysQuery = termsQuery(ListViewTemplate.ID, workflowInstanceKeys);
+  private Set<Long> findInstancesWithIncidents(List<Long> processInstanceKeys) {
+    final TermQueryBuilder isProcessInstanceQuery = termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
+    final TermsQueryBuilder processInstanceKeysQuery = termsQuery(ListViewTemplate.ID, processInstanceKeys);
     final HasChildQueryBuilder hasIncidentQ = hasChildQuery(ACTIVITIES_JOIN_RELATION, existsQuery(ListViewTemplate.INCIDENT_KEY), None);
 
     SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder()
-          .query(constantScoreQuery(joinWithAnd(isWorkflowInstanceQuery, workflowInstanceKeysQuery, hasIncidentQ))));
+          .query(constantScoreQuery(joinWithAnd(isProcessInstanceQuery, processInstanceKeysQuery, hasIncidentQ))));
 
     try {
       return ElasticsearchUtil.scrollKeysToSet(searchRequest, esClient);
@@ -436,13 +436,13 @@ public class ListViewReader {
       }
     }
 
-    final QueryBuilder workflowInstanceQuery = joinWithOr(runningQuery, finishedQuery);
+    final QueryBuilder processInstanceQuery = joinWithOr(runningQuery, finishedQuery);
 
-    if (workflowInstanceQuery == null) {
+    if (processInstanceQuery == null) {
       return createMatchNoneQuery();
     }
 
-    return workflowInstanceQuery;
+    return processInstanceQuery;
 
   }
 
@@ -471,14 +471,14 @@ public class ListViewReader {
 
   private QueryBuilder createCanceledQuery(ListViewQueryDto query) {
     if (query.isCanceled()) {
-      return termQuery(STATE, WorkflowInstanceState.CANCELED.toString());
+      return termQuery(STATE, ProcessInstanceState.CANCELED.toString());
     }
     return null;
   }
 
   private QueryBuilder createCompletedQuery(ListViewQueryDto query) {
     if (query.isCompleted()) {
-      return termQuery(STATE, WorkflowInstanceState.COMPLETED.toString());
+      return termQuery(STATE, ProcessInstanceState.COMPLETED.toString());
     }
     return null;
   }

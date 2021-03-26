@@ -80,7 +80,7 @@ describe('IncidentsByError', () => {
     ).toBeInTheDocument();
   });
 
-  it('should display information message when there are no workflows', async () => {
+  it('should display information message when there are no processes', async () => {
     mockServer.use(
       rest.get('/api/incidents/byError', (_, res, ctx) =>
         res.once(ctx.json(mockEmptyResponse))
@@ -129,18 +129,18 @@ describe('IncidentsByError', () => {
     fireEvent.click(expandButton);
 
     const firstVersion = withinIncident.getByTitle(
-      "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Workflow mockWorkflow"
+      "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Process mockProcess"
     );
     expect(
       within(firstVersion).getByTestId('incident-instances-badge')
     ).toHaveTextContent('37');
     expect(
-      within(firstVersion).getByText('mockWorkflow – Version 1')
+      within(firstVersion).getByText('mockProcess – Version 1')
     ).toBeInTheDocument();
 
     fireEvent.click(firstVersion);
     expect(historyMock.location.search).toBe(
-      '?workflow=mockWorkflow&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
+      '?process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
     );
   });
 
@@ -179,12 +179,12 @@ describe('IncidentsByError', () => {
     fireEvent.click(expandButton);
 
     const firstVersion = withinIncident.getByTitle(
-      "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Workflow mockWorkflow"
+      "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Process mockProcess"
     );
 
     fireEvent.click(firstVersion);
     expect(historyMock.location.search).toBe(
-      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&workflow=mockWorkflow&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
+      '?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
     );
   });
 });

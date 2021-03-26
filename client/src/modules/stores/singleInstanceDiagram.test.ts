@@ -8,14 +8,14 @@ import {singleInstanceDiagramStore} from './singleInstanceDiagram';
 import {currentInstanceStore} from './currentInstance';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {mockWorkflowXML} from 'modules/testUtils';
+import {mockProcessXML} from 'modules/testUtils';
 import {waitFor} from '@testing-library/react';
 
 describe('stores/singleInstanceDiagram', () => {
   beforeEach(() => {
     mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockWorkflowXML))
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
       )
     );
   });
@@ -25,11 +25,11 @@ describe('stores/singleInstanceDiagram', () => {
     currentInstanceStore.reset();
   });
 
-  it('should fetch workflow xml when current instance is available', async () => {
+  it('should fetch process xml when current instance is available', async () => {
     currentInstanceStore.setCurrentInstance({
       id: 123,
       state: 'ACTIVE',
-      workflowId: '10',
+      processId: '10',
     });
 
     singleInstanceDiagramStore.init();
@@ -44,7 +44,7 @@ describe('stores/singleInstanceDiagram', () => {
 
   it('should handle diagram fetch', async () => {
     expect(singleInstanceDiagramStore.state.status).toBe('initial');
-    singleInstanceDiagramStore.fetchWorkflowXml('1');
+    singleInstanceDiagramStore.fetchProcessXml('1');
     expect(singleInstanceDiagramStore.state.status).toBe('first-fetch');
 
     await waitFor(() =>
@@ -52,12 +52,12 @@ describe('stores/singleInstanceDiagram', () => {
     );
 
     mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockWorkflowXML))
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
       )
     );
 
-    singleInstanceDiagramStore.fetchWorkflowXml('1');
+    singleInstanceDiagramStore.fetchProcessXml('1');
     expect(singleInstanceDiagramStore.state.status).toBe('fetching');
 
     await waitFor(() =>
@@ -66,7 +66,7 @@ describe('stores/singleInstanceDiagram', () => {
   });
 
   it('should get metaData', async () => {
-    await singleInstanceDiagramStore.fetchWorkflowXml('1');
+    await singleInstanceDiagramStore.fetchProcessXml('1');
 
     expect(
       singleInstanceDiagramStore.getMetaData('invalid_activity_id')
@@ -107,7 +107,7 @@ describe('stores/singleInstanceDiagram', () => {
       false
     );
 
-    await singleInstanceDiagramStore.fetchWorkflowXml('1');
+    await singleInstanceDiagramStore.fetchProcessXml('1');
 
     expect(singleInstanceDiagramStore.areDiagramDefinitionsAvailable).toBe(
       true
@@ -115,7 +115,7 @@ describe('stores/singleInstanceDiagram', () => {
   });
 
   it('should reset store', async () => {
-    await singleInstanceDiagramStore.fetchWorkflowXml('1');
+    await singleInstanceDiagramStore.fetchProcessXml('1');
 
     expect(singleInstanceDiagramStore.state.status).toBe('fetched');
     expect(singleInstanceDiagramStore.state.diagramModel).not.toEqual(null);

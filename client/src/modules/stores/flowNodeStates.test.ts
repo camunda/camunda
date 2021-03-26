@@ -9,7 +9,7 @@ import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
 import {flowNodeStatesStore} from './flowNodeStates';
 
-const WORKFLOW_INSTANCE_ID = '2251799813686320';
+const PROCESS_INSTANCE_ID = '2251799813686320';
 
 const mockFlowNodeStatesActive = {
   startEvent1: 'COMPLETED',
@@ -31,13 +31,13 @@ describe('stores/flowNodeStates', () => {
     // initial fetch
     mockServer.use(
       rest.get(
-        `/api/workflow-instances/${WORKFLOW_INSTANCE_ID}/flow-node-states`,
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-states`,
         (_, res, ctx) => res.once(ctx.json(mockFlowNodeStatesActive))
       )
     );
 
     jest.useFakeTimers();
-    flowNodeStatesStore.init(WORKFLOW_INSTANCE_ID);
+    flowNodeStatesStore.init(PROCESS_INSTANCE_ID);
   });
 
   afterEach(() => {
@@ -68,7 +68,7 @@ describe('stores/flowNodeStates', () => {
     mockServer.use(
       // first poll
       rest.get(
-        `/api/workflow-instances/${WORKFLOW_INSTANCE_ID}/flow-node-states`,
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-states`,
         (_, res, ctx) => res.once(ctx.json(mockFlowNodeStatesIncident))
       )
     );
@@ -86,7 +86,7 @@ describe('stores/flowNodeStates', () => {
     mockServer.use(
       // first poll
       rest.get(
-        `/api/workflow-instances/${WORKFLOW_INSTANCE_ID}/flow-node-states`,
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-states`,
         (_, res, ctx) => res.once(ctx.json(mockFlowNodeStatesCompleted))
       )
     );

@@ -10,10 +10,10 @@ import java.time.OffsetDateTime;
 public class EventEntity extends OperateZeebeEntity<EventEntity> {
 
   /**
-   * Workflow data.
+   * Process data.
    */
-  private Long workflowKey;
-  private Long workflowInstanceKey;
+  private Long processDefinitionKey;
+  private Long processInstanceKey;
   private String bpmnProcessId;
 
   /**
@@ -34,20 +34,20 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
    */
   private EventMetadataEntity metadata;
 
-  public Long getWorkflowKey() {
-    return workflowKey;
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
   }
 
-  public void setWorkflowKey(Long workflowKey) {
-    this.workflowKey = workflowKey;
+  public void setProcessDefinitionKey(Long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
   }
 
-  public Long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public String getFlowNodeId() {
@@ -117,9 +117,9 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
 
     EventEntity that = (EventEntity) o;
 
-    if (workflowKey != null ? !workflowKey.equals(that.workflowKey) : that.workflowKey != null)
+    if (processDefinitionKey != null ? !processDefinitionKey.equals(that.processDefinitionKey) : that.processDefinitionKey != null)
       return false;
-    if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey != null)
+    if (processInstanceKey != null ? !processInstanceKey.equals(that.processInstanceKey) : that.processInstanceKey != null)
       return false;
     if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
       return false;
@@ -139,8 +139,8 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (workflowKey != null ? workflowKey.hashCode() : 0);
-    result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
+    result = 31 * result + (processDefinitionKey != null ? processDefinitionKey.hashCode() : 0);
+    result = 31 * result + (processInstanceKey != null ? processInstanceKey.hashCode() : 0);
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (flowNodeId != null ? flowNodeId.hashCode() : 0);
     result = 31 * result + (flowNodeInstanceKey != null ? flowNodeInstanceKey.hashCode() : 0);

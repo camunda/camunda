@@ -16,15 +16,15 @@ import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 import * as Styled from './styled';
 
 const VariablePanel = observer(function VariablePanel() {
-  const {workflowInstanceId} = useInstancePageParams();
+  const {processInstanceId} = useInstancePageParams();
 
   useEffect(() => {
-    variablesStore.init(workflowInstanceId);
+    variablesStore.init(processInstanceId);
 
     return () => {
       variablesStore.reset();
     };
-  }, [workflowInstanceId]);
+  }, [processInstanceId]);
 
   const {
     scopeId,
@@ -42,7 +42,7 @@ const VariablePanel = observer(function VariablePanel() {
               {MULTI_SCOPE_PLACEHOLDER}
             </StatusMessage>
           ) : (
-            <Variables key={scopeId ?? workflowInstanceId} />
+            <Variables key={scopeId ?? processInstanceId} />
           )}
         </>
       )}

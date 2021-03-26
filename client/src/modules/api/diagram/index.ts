@@ -6,8 +6,8 @@
 
 import {get} from 'modules/request';
 
-export const fetchWorkflowXML = async (
-  workflowId: WorkflowInstanceEntity['workflowId']
+export const fetchProcessXML = async (
+  processId: ProcessInstanceEntity['processId']
 ) => {
-  return get(`/api/workflows/${workflowId}/xml`);
+  return get(`/api/processes/${processId}/xml`);
 };

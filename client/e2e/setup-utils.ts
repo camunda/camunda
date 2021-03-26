@@ -4,17 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {ZBClient, IWorkflowVariables, ZBWorkerTaskHandler} from 'zeebe-node';
+import {ZBClient, IProcessVariables, ZBWorkerTaskHandler} from 'zeebe-node';
 const zbc = new ZBClient({
   onReady: () => console.log('zeebe-node connected!'),
   onConnectionError: () => console.log('zeebe-node disconnected!'),
 }); // localhost:26500 || ZEEBE_GATEWAY_ADDRESS
 
 function deploy(processNames: string[]) {
-  return zbc.deployWorkflow(processNames);
+  return zbc.deployProcess(processNames);
 }
 
-function createInstances<Variables = IWorkflowVariables>(
+function createInstances<Variables = IProcessVariables>(
   bpmnProcessId: string,
   version: number,
   numberOfInstances: number,
@@ -22,7 +22,7 @@ function createInstances<Variables = IWorkflowVariables>(
 ) {
   return Promise.all(
     [...new Array(numberOfInstances)].map(() =>
-      zbc.createWorkflowInstance<typeof variables>({
+      zbc.createProcessInstance<typeof variables>({
         bpmnProcessId,
         version,
         variables,
@@ -31,12 +31,12 @@ function createInstances<Variables = IWorkflowVariables>(
   );
 }
 
-function createSingleInstance<Variables = IWorkflowVariables>(
+function createSingleInstance<Variables = IProcessVariables>(
   bpmnProcessId: string,
   version: number,
   variables?: Variables
 ) {
-  return zbc.createWorkflowInstance<typeof variables>({
+  return zbc.createProcessInstance<typeof variables>({
     bpmnProcessId,
     version,
     variables,
@@ -46,12 +46,12 @@ function createSingleInstance<Variables = IWorkflowVariables>(
 function completeTask(
   taskType: string,
   shouldFail: boolean,
-  variables?: IWorkflowVariables,
-  taskHandler: ZBWorkerTaskHandler = (_, complete) => {
+  variables?: IProcessVariables,
+  taskHandler: ZBWorkerTaskHandler = (job) => {
     if (shouldFail) {
-      complete.failure('task failed');
+      return job.fail('task failed');
     } else {
-      complete.success(variables);
+      return job.complete(variables);
     }
   }
 ) {

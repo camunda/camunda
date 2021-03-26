@@ -33,7 +33,7 @@ const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/1']}>
-        <Route path="/instances/:workflowInstanceId">{children} </Route>
+        <Route path="/instances/:processInstanceId">{children} </Route>
       </MemoryRouter>
     </ThemeProvider>
   );
@@ -43,10 +43,10 @@ describe('VariablePanel', () => {
   beforeEach(() => {
     mockServer.use(
       rest.get(
-        '/api/workflow-instances/invalid_instance/variables',
+        '/api/process-instances/invalid_instance/variables',
         (_, res, ctx) => res.once(ctx.json({}), ctx.status(500))
       ),
-      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(ctx.json([]))
       )
     );
@@ -73,10 +73,10 @@ describe('VariablePanel', () => {
   it('should show failed placeholder when variables could not be fetched', async () => {
     mockServer.use(
       rest.get(
-        '/api/workflow-instances/invalid_instance/variables',
+        '/api/process-instances/invalid_instance/variables',
         (_, res, ctx) => res.once(ctx.json({}), ctx.status(500))
       ),
-      rest.get('/api/workflow-instances/invalid_instance/variables', (_, res) =>
+      rest.get('/api/process-instances/invalid_instance/variables', (_, res) =>
         res.networkError('A network error')
       )
     );

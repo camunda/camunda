@@ -46,7 +46,7 @@ describe('Header', () => {
           })
         )
       ),
-      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res.once(
           ctx.json({
             running: 821,
@@ -55,7 +55,7 @@ describe('Header', () => {
           })
         )
       ),
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(
           ctx.json({
             id: 'first_instance_id',
@@ -95,7 +95,7 @@ describe('Header', () => {
   it('should render incident, filter and instances counts correctly', async () => {
     instancesStore.setInstances({
       filteredInstancesCount: 200,
-      workflowInstances: [],
+      processInstances: [],
     });
 
     render(<Header />, {
@@ -241,7 +241,7 @@ describe('Header', () => {
     ).toBeInTheDocument();
 
     mockServer.use(
-      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res.once(
           ctx.json({
             running: 821,
@@ -250,7 +250,7 @@ describe('Header', () => {
           })
         )
       ),
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(
           ctx.json({
             id: 'second_instance_id',

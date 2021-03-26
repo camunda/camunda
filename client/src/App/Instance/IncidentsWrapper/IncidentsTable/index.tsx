@@ -32,7 +32,7 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState<string | null>(null);
   const [modalTitle, setModalTitle] = useState<string | null>(null);
-  const {workflowInstanceId} = useInstancePageParams();
+  const {processInstanceId} = useInstancePageParams();
   const {sortBy, sortOrder} = getSorting('instance');
 
   const handleModalClose = () => {
@@ -157,7 +157,7 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                     </TD>
                     <TD>
                       <IncidentOperation
-                        instanceId={workflowInstanceId}
+                        instanceId={processInstanceId}
                         incident={incident}
                         showSpinner={incident.hasActiveOperation}
                       />

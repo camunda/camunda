@@ -19,7 +19,7 @@ jest.mock('modules/utils/bpmn');
 describe('TimeStampPill', () => {
   beforeEach(() => {
     mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       ),
       rest.post('/api/activity-instances', (_, res, ctx) =>
@@ -47,7 +47,7 @@ describe('TimeStampPill', () => {
 
     expect(screen.getByRole('button')).toBeDisabled();
     await flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
-    await singleInstanceDiagramStore.fetchWorkflowXml('1');
+    await singleInstanceDiagramStore.fetchProcessXml('1');
     expect(screen.getByRole('button')).toBeEnabled();
   });
 });

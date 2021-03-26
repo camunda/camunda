@@ -15,8 +15,8 @@ import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.entities.listview.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.ProcessInstanceState;
 import org.camunda.operate.webapp.es.reader.OperationReader;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
@@ -67,7 +67,7 @@ public class OperationExecutorIT extends OperateIntegrationTest {
   }
 
   /**
-   * Test creates workflow instances in quantity of 0.75*batchSize approx. Each workflow instance has 3 operations:
+   * Test creates process instances in quantity of 0.75*batchSize approx. Each process instance has 3 operations:
    * 1. scheduled
    * 2. locked with expired lock time ->
    * 3. locked with valid lock time
@@ -89,13 +89,13 @@ public class OperationExecutorIT extends OperateIntegrationTest {
     //when execute 1st batch
     operationExecutor.executeOneBatch();
     //then
-    assertOperationsLocked(operationReader.getOperationsByWorkflowInstanceKey(null), batchSize, "lockFirstBatch");
+    assertOperationsLocked(operationReader.getOperationsByProcessInstanceKey(null), batchSize, "lockFirstBatch");
 
     //when execute 2nd batch
     operationExecutor.executeOneBatch();
     //then
     final int expectedLockedOperations = instancesCount*2;
-    assertOperationsLocked(operationReader.getOperationsByWorkflowInstanceKey(null), expectedLockedOperations, "lockSecondBatch");
+    assertOperationsLocked(operationReader.getOperationsByProcessInstanceKey(null), expectedLockedOperations, "lockSecondBatch");
   }
 
   private void assertOperationsLocked(List<OperationEntity> allOperations, int operationCount, String assertionLabel) {
@@ -112,22 +112,22 @@ public class OperationExecutorIT extends OperateIntegrationTest {
   private void createData(int processInstanceCount) {
     List<OperateEntity> instances = new ArrayList<>();
     for (int i = 0; i<processInstanceCount; i++) {
-      instances.addAll(createWorkflowInstanceAndOperations());
+      instances.addAll(createProcessInstanceAndOperations());
     }
     //persist instances
     elasticsearchTestRule.persistNew(instances.toArray(new OperateEntity[instances.size()]));
   }
 
-  private List<OperateEntity> createWorkflowInstanceAndOperations() {
+  private List<OperateEntity> createProcessInstanceAndOperations() {
     List<OperateEntity> entities = new ArrayList<>();
-    WorkflowInstanceForListViewEntity workflowInstance = TestUtil.createWorkflowInstanceEntityWithIds();
-    workflowInstance.setBpmnProcessId("testProcess" + random.nextInt(10));
-    workflowInstance.setStartDate(DateUtil.getRandomStartDate());
-    workflowInstance.setState(WorkflowInstanceState.ACTIVE);
-    entities.add(workflowInstance);
-    entities.add(createOperationEntity(workflowInstance.getWorkflowInstanceKey(), OperationState.SCHEDULED));
-    entities.add(createOperationEntity(workflowInstance.getWorkflowInstanceKey(), OperationState.LOCKED, true));
-    entities.add(createOperationEntity(workflowInstance.getWorkflowInstanceKey(), OperationState.LOCKED, false));
+    ProcessInstanceForListViewEntity processInstance = TestUtil.createProcessInstanceEntityWithIds();
+    processInstance.setBpmnProcessId("testProcess" + random.nextInt(10));
+    processInstance.setStartDate(DateUtil.getRandomStartDate());
+    processInstance.setState(ProcessInstanceState.ACTIVE);
+    entities.add(processInstance);
+    entities.add(createOperationEntity(processInstance.getProcessInstanceKey(), OperationState.SCHEDULED));
+    entities.add(createOperationEntity(processInstance.getProcessInstanceKey(), OperationState.LOCKED, true));
+    entities.add(createOperationEntity(processInstance.getProcessInstanceKey(), OperationState.LOCKED, false));
     return entities;
   }
 

@@ -96,16 +96,16 @@ class FlowNodeMetaData {
     flowNodeInstanceId?: FlowNodeInstance['id'];
     flowNodeType?: string;
   }) => {
-    const workflowInstanceId = currentInstanceStore.state.instance?.id;
+    const processInstanceId = currentInstanceStore.state.instance?.id;
 
-    if (workflowInstanceId === undefined || flowNodeId === undefined) {
+    if (processInstanceId === undefined || flowNodeId === undefined) {
       return;
     }
 
     try {
       const response = await fetchFlowNodeMetaData({
         flowNodeId,
-        workflowInstanceId,
+        processInstanceId,
         flowNodeInstanceId,
         flowNodeType,
       });

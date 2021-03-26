@@ -10,7 +10,7 @@ import org.camunda.operate.entities.OperationType;
 public enum OperationTypeDto {
 
   RESOLVE_INCIDENT,
-  CANCEL_WORKFLOW_INSTANCE,
+  CANCEL_PROCESS_INSTANCE,
   UPDATE_VARIABLE,
   UNSPECIFIED,
   UNKNOWN;

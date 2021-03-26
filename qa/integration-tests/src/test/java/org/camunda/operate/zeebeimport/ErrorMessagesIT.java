@@ -14,8 +14,8 @@ import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
-import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
+import org.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import org.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.junit.Before;
@@ -25,7 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
 
   @Autowired
-  private CancelWorkflowInstanceHandler cancelWorkflowInstanceHandler;
+  private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
   @Autowired
   private ResolveIncidentHandler updateRetriesHandler;
@@ -46,7 +46,7 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
   }
 
   private void injectZeebeClientIntoOperationHandler() {
-    cancelWorkflowInstanceHandler.setZeebeClient(zeebeClient);
+    cancelProcessInstanceHandler.setZeebeClient(zeebeClient);
     updateRetriesHandler.setZeebeClient(zeebeClient);
     updateVariableHandler.setZeebeClient(zeebeClient);
   }
@@ -59,15 +59,15 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
     String errorMessageWithoutWhiteSpaces = "Error message with white spaces";
 
     // when
-    Long workflowInstanceKey = setupIncidentWith(errorMessageWithWhitespaces);
+    Long processInstanceKey = setupIncidentWith(errorMessageWithWhitespaces);
     tester.updateVariableOperation("a", "b").waitUntil().operationIsCompleted();
 
     // then
-    assertThat(incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey).get(0).getErrorMessage()).isEqualTo(errorMessageWithoutWhiteSpaces);
-    ListViewResponseDto response = listViewReader.queryWorkflowInstances(TestUtil.createGetAllWorkflowInstancesRequest());
-    ListViewWorkflowInstanceDto workflowInstances  = response.getWorkflowInstances().get(0);
-    assertThat(workflowInstances).isNotNull();
-    assertThat(workflowInstances.getOperations().get(0).getErrorMessage()).doesNotStartWith(" ").doesNotEndWith(" ");
+    assertThat(incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey).get(0).getErrorMessage()).isEqualTo(errorMessageWithoutWhiteSpaces);
+    ListViewResponseDto response = listViewReader.queryProcessInstances(TestUtil.createGetAllProcessInstancesRequest());
+    ListViewProcessInstanceDto processInstances  = response.getProcessInstances().get(0);
+    assertThat(processInstances).isNotNull();
+    assertThat(processInstances.getOperations().get(0).getErrorMessage()).doesNotStartWith(" ").doesNotEndWith(" ");
   }
 
   // OPE-619
@@ -78,48 +78,48 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
     String anotherErrorMessageToFind = "   Unexpected error while executing query 'all_users'";
 
     // when
-    String workflowInstanceKey = setupIncidentWith(errorMessageToFind).toString();
-    String anotherWorkflowInstanceKey = setupIncidentWith(anotherErrorMessageToFind).toString();
+    String processInstanceKey = setupIncidentWith(errorMessageToFind).toString();
+    String anotherProcessInstanceKey = setupIncidentWith(anotherErrorMessageToFind).toString();
 
     // then ensure that ...
 
     // 1. case should not find any results
     assertSearchResults(searchForErrorMessages("no"), 0);
     // 2. case should find only one (first) result
-    assertSearchResults(searchForErrorMessages("only"), 1, workflowInstanceKey);
-    assertSearchResults(searchForErrorMessages("by query only a"), 1, workflowInstanceKey);
+    assertSearchResults(searchForErrorMessages("only"), 1, processInstanceKey);
+    assertSearchResults(searchForErrorMessages("by query only a"), 1, processInstanceKey);
     // 3. case should find two one results , because 'query' is in both error messages
-    assertSearchResults(searchForErrorMessages("query"), 2, workflowInstanceKey, anotherWorkflowInstanceKey);
+    assertSearchResults(searchForErrorMessages("query"), 2, processInstanceKey, anotherProcessInstanceKey);
     // 4. case (ignore lower/upper characters) should find one result because 'Find' is in only one errorMessage
-    assertSearchResults(searchForErrorMessages("find"), 1, workflowInstanceKey);
-    assertSearchResults(searchForErrorMessages("Find"), 1, workflowInstanceKey);
-    assertSearchResults(searchForErrorMessages("*Find*"), 1, workflowInstanceKey);
-    assertSearchResults(searchForErrorMessages("*find*"), 1, workflowInstanceKey);
+    assertSearchResults(searchForErrorMessages("find"), 1, processInstanceKey);
+    assertSearchResults(searchForErrorMessages("Find"), 1, processInstanceKey);
+    assertSearchResults(searchForErrorMessages("*Find*"), 1, processInstanceKey);
+    assertSearchResults(searchForErrorMessages("*find*"), 1, processInstanceKey);
     // 5. case use wildcard query when searchstring contains the wildcard character
-    assertSearchResults(searchForErrorMessages("que"), 0, workflowInstanceKey);
-    assertSearchResults(searchForErrorMessages("que*"), 2, workflowInstanceKey);
-    assertSearchResults(searchForErrorMessages("*user*"), 1, workflowInstanceKey);
+    assertSearchResults(searchForErrorMessages("que"), 0, processInstanceKey);
+    assertSearchResults(searchForErrorMessages("que*"), 2, processInstanceKey);
+    assertSearchResults(searchForErrorMessages("*user*"), 1, processInstanceKey);
   }
 
-  protected void assertSearchResults(ListViewResponseDto results,int count,String ...workflowInstanceKeys) {
+  protected void assertSearchResults(ListViewResponseDto results,int count,String ...processInstanceKeys) {
     assertThat(results.getTotalCount()).isEqualTo(count);
-    results.getWorkflowInstances().stream().allMatch(
-       workflowInstance -> Arrays.asList(workflowInstanceKeys).contains(workflowInstance.getId())
+    results.getProcessInstances().stream().allMatch(
+       processInstance -> Arrays.asList(processInstanceKeys).contains(processInstance.getId())
     );
   }
 
   protected ListViewResponseDto searchForErrorMessages(String errorMessage) {
-    ListViewRequestDto queriesRequest = TestUtil.createGetAllWorkflowInstancesRequest();
+    ListViewRequestDto queriesRequest = TestUtil.createGetAllProcessInstancesRequest();
     queriesRequest.getQuery().setErrorMessage(errorMessage);
-    return listViewReader.queryWorkflowInstances(queriesRequest);
+    return listViewReader.queryProcessInstances(queriesRequest);
   }
 
   protected Long setupIncidentWith(String errorMessage) {
     return tester
-        .deployWorkflow("demoProcess_v_1.bpmn").waitUntil().workflowIsDeployed()
-        .startWorkflowInstance("demoProcess","{\"a\": \"b\"}").failTask("taskA", errorMessage)
-        .waitUntil().workflowInstanceIsFinished()
-        .getWorkflowInstanceKey();
+        .deployProcess("demoProcess_v_1.bpmn").waitUntil().processIsDeployed()
+        .startProcessInstance("demoProcess","{\"a\": \"b\"}").failTask("taskA", errorMessage)
+        .waitUntil().processInstanceIsFinished()
+        .getProcessInstanceKey();
   }
 
 }

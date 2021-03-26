@@ -60,9 +60,9 @@ public class DataGenerator {
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
     logger.info("Starting generating data...");
 
-    deployWorkflows();
+    deployProcesses();
 
-    startWorkflowInstances();
+    startProcessInstances();
     completeAllTasks("task1");
     createIncidents("task2");
 
@@ -81,20 +81,20 @@ public class DataGenerator {
   }
 
   private void completeAllTasks(String jobType) {
-    completeTasks(jobType, dataGeneratorProperties.getWorkflowInstanceCount());
-    logger.info("{} jobs task1 completed", dataGeneratorProperties.getWorkflowInstanceCount());
+    completeTasks(jobType, dataGeneratorProperties.getProcessInstanceCount());
+    logger.info("{} jobs task1 completed", dataGeneratorProperties.getProcessInstanceCount());
   }
 
   private void completeTasks(String jobType, int count) {
     ZeebeTestUtil.completeTask(zeebeClient, jobType, "data-generator", "{\"varOut\": \"value2\"}", count);
   }
 
-  private void startWorkflowInstances() {
+  private void startProcessInstances() {
 
     final BlockingQueue<Future> requestFutures = new ArrayBlockingQueue<>(dataGeneratorProperties.getQueueSize());
     ResponseChecker responseChecker = startWaitingForResponses(requestFutures);
 
-    List<InstancesStarter> instancesStarters = sendStartWorkflowInstanceCommands(requestFutures);
+    List<InstancesStarter> instancesStarters = sendStartProcessInstanceCommands(requestFutures);
 
     stopWaitingForResponses(responseChecker);
 
@@ -110,16 +110,16 @@ public class DataGenerator {
 
   private void stopWaitingForResponses(ResponseChecker responseChecker) {
     //wait till all instances started
-    while (responseChecker.getResponseCount() < dataGeneratorProperties.getWorkflowInstanceCount()) {
+    while (responseChecker.getResponseCount() < dataGeneratorProperties.getProcessInstanceCount()) {
       sleepFor(2000);
     }
     responseChecker.close();
-    logger.info("{} workflow instances started", responseChecker.getResponseCount());
+    logger.info("{} process instances started", responseChecker.getResponseCount());
   }
 
-  private List<InstancesStarter> sendStartWorkflowInstanceCommands(BlockingQueue<Future> requestFutures) {
+  private List<InstancesStarter> sendStartProcessInstanceCommands(BlockingQueue<Future> requestFutures) {
     //separately start one instance with multi-instance subprocess
-    startBigWorkflowInstance();
+    startBigProcessInstance();
 
     List<InstancesStarter> instancesStarters = new ArrayList<>();
     final int threadCount = dataGeneratorTaskExecutor.getMaxPoolSize();
@@ -132,12 +132,12 @@ public class DataGenerator {
     return instancesStarters;
   }
 
-  private void startBigWorkflowInstance() {
+  private void startBigProcessInstance() {
     String payload =
         "{\"items\": [" + IntStream.range(1, 3000).boxed().map(Object::toString).collect(
             Collectors.joining(",")) + "]}";
     ZeebeTestUtil
-        .startWorkflowInstance(zeebeClient, "sequential-noop", payload);
+        .startProcessInstance(zeebeClient, "sequential-noop", payload);
   }
 
   @PreDestroy
@@ -147,18 +147,18 @@ public class DataGenerator {
   }
 
   private String getRandomBpmnProcessId() {
-    return getBpmnProcessId(random.nextInt(dataGeneratorProperties.getWorkflowCount()));
+    return getBpmnProcessId(random.nextInt(dataGeneratorProperties.getProcessCount()));
   }
 
-  private void deployWorkflows() {
-    for (int i = 0; i< dataGeneratorProperties.getWorkflowCount(); i++) {
+  private void deployProcesses() {
+    for (int i = 0; i< dataGeneratorProperties.getProcessCount(); i++) {
       String bpmnProcessId = getBpmnProcessId(i);
-      ZeebeTestUtil.deployWorkflow(zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
+      ZeebeTestUtil.deployProcess(zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
       bpmnProcessIds.add(bpmnProcessId);
     }
-    //deploy workflow with multi-instance subprocess
-    ZeebeTestUtil.deployWorkflow(zeebeClient, "sequential-noop.bpmn");
-    logger.info("{} workflows deployed", dataGeneratorProperties.getWorkflowCount());
+    //deploy process with multi-instance subprocess
+    ZeebeTestUtil.deployProcess(zeebeClient, "sequential-noop.bpmn");
+    logger.info("{} processes deployed", dataGeneratorProperties.getProcessCount());
   }
 
   private String getBpmnProcessId(int i) {
@@ -197,7 +197,7 @@ public class DataGenerator {
           futures.take().get();
           responseCount++;
           if (responseCount % 1000 == 0) {
-            logger.info("{} workflow instances started", responseCount);
+            logger.info("{} process instances started", responseCount);
           }
         } catch (InterruptedException e) {
           // ignore and retry
@@ -234,15 +234,15 @@ public class DataGenerator {
     public void run() {
       zeebeClient = resolveZeebeClient();
       int localCount = 0;
-      while (count.getAndIncrement() <= dataGeneratorProperties.getWorkflowInstanceCount()  && ! shuttingDown) {
+      while (count.getAndIncrement() <= dataGeneratorProperties.getProcessInstanceCount()  && ! shuttingDown) {
         try {
-          futures.put(ZeebeTestUtil.startWorkflowInstanceAsync(zeebeClient, getRandomBpmnProcessId(), "{\"var1\": \"value1\"}"));
+          futures.put(ZeebeTestUtil.startProcessInstanceAsync(zeebeClient, getRandomBpmnProcessId(), "{\"var1\": \"value1\"}"));
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
         localCount++;
         if (localCount % 1000 == 0) {
-          logger.info("{} start workflow instance requests were sent", localCount);
+          logger.info("{} start process instance requests were sent", localCount);
         }
       }
     }

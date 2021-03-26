@@ -45,11 +45,11 @@ test('Sorting', async (t) => {
   const {initialData} = t.fixtureCtx;
   const {instances} = initialData;
 
-  // pick one instance from each workflow
+  // pick one instance from each process
   const instanceIds = [
-    instances.processA[0].workflowInstanceKey,
-    instances.processB_v_1[0].workflowInstanceKey,
-    instances.processB_v_2[0].workflowInstanceKey,
+    instances.processA[0].processInstanceKey,
+    instances.processB_v_1[0].processInstanceKey,
+    instances.processB_v_2[0].processInstanceKey,
   ].sort();
 
   await t
@@ -70,7 +70,7 @@ test('Sorting', async (t) => {
     screen.getByTestId('instances-list')
   ).getAllByRole('row');
 
-  // test default workflow sorting
+  // test default process sorting
   await t
     .expect(instanceRows.nth(0).innerText)
     .contains('instancesTableProcessB')
@@ -80,7 +80,7 @@ test('Sorting', async (t) => {
     .contains('instancesTableProcessA');
 
   await t
-    .click(screen.getByRole('button', {name: 'Sort by workflowName'}))
+    .click(screen.getByRole('button', {name: 'Sort by processName'}))
     .expect(instanceRows.nth(0).innerText)
     .contains('instancesTableProcessA')
     .expect(instanceRows.nth(1).innerText)
@@ -89,7 +89,7 @@ test('Sorting', async (t) => {
     .contains('instancesTableProcessB');
 
   await t
-    .click(screen.getByRole('button', {name: 'Sort by workflowName'}))
+    .click(screen.getByRole('button', {name: 'Sort by processName'}))
     .expect(instanceRows.nth(0).innerText)
     .contains('instancesTableProcessB')
     .expect(instanceRows.nth(1).innerText)
@@ -116,7 +116,7 @@ test('Sorting', async (t) => {
     .contains(instanceIds[2]);
 
   await t
-    .click(screen.getByRole('button', {name: 'Sort by workflowVersion'}))
+    .click(screen.getByRole('button', {name: 'Sort by processVersion'}))
     .expect(instanceRows.nth(0).innerText)
     .contains('Version 2')
     .expect(instanceRows.nth(1).innerText)
@@ -125,7 +125,7 @@ test('Sorting', async (t) => {
     .contains('Version 1');
 
   await t
-    .click(screen.getByRole('button', {name: 'Sort by workflowVersion'}))
+    .click(screen.getByRole('button', {name: 'Sort by processVersion'}))
     .expect(instanceRows.nth(0).innerText)
     .contains('Version 1')
     .expect(instanceRows.nth(1).innerText)
@@ -160,17 +160,17 @@ test('Scrolling', async (t) => {
   const {instancesForInfiniteScroll} = initialData.instances;
 
   const descendingInstanceIds = instancesForInfiniteScroll
-    .map((instance: any) => instance.workflowInstanceKey)
+    .map((instance: any) => instance.processInstanceKey)
     .sort((instanceId1: number, instanceId2: number) => {
       return instanceId2 - instanceId1;
     });
 
-  const workflowCombobox = screen.getByRole('combobox', {
-    name: 'Workflow',
+  const processCombobox = screen.getByRole('combobox', {
+    name: 'Process',
   });
 
-  await t.click(workflowCombobox).click(
-    within(workflowCombobox).getByRole('option', {
+  await t.click(processCombobox).click(
+    within(processCombobox).getByRole('option', {
       name: 'Process For Infinite Scroll',
     })
   );

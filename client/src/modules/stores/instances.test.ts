@@ -6,16 +6,16 @@
 
 import {instancesStore} from './instances';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
-import {groupedWorkflowsMock} from 'modules/testUtils';
+import {groupedProcessesMock} from 'modules/testUtils';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
 
-const instance: WorkflowInstanceEntity = {
+const instance: ProcessInstanceEntity = {
   id: '2251799813685625',
-  workflowId: '2251799813685623',
-  workflowName: 'Without Incidents Process',
-  workflowVersion: 1,
+  processId: '2251799813685623',
+  processName: 'Without Incidents Process',
+  processVersion: 1,
   startDate: '2020-11-19T08:14:05.406+0000',
   endDate: null,
   state: 'ACTIVE',
@@ -25,11 +25,11 @@ const instance: WorkflowInstanceEntity = {
   sortValues: ['', ''],
 };
 
-const instanceWithActiveOperation: WorkflowInstanceEntity = {
+const instanceWithActiveOperation: ProcessInstanceEntity = {
   id: '2251799813685627',
-  workflowId: '2251799813685623',
-  workflowName: 'Without Incidents Process',
-  workflowVersion: 1,
+  processId: '2251799813685623',
+  processName: 'Without Incidents Process',
+  processVersion: 1,
   startDate: '2020-11-19T08:14:05.490+0000',
   endDate: null,
   state: 'ACTIVE',
@@ -41,21 +41,21 @@ const instanceWithActiveOperation: WorkflowInstanceEntity = {
 
 const mockInstances = [instance, instanceWithActiveOperation];
 
-const mockWorkflowInstances = {
-  workflowInstances: mockInstances,
+const mockProcessInstances = {
+  processInstances: mockInstances,
   totalCount: 100,
 };
 
 describe('stores/instances', () => {
   beforeEach(async () => {
     mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       ),
-      rest.get('/api/workflows/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedWorkflowsMock))
+      rest.get('/api/processes/grouped', (_, res, ctx) =>
+        res.once(ctx.json(groupedProcessesMock))
       ),
-      rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
+      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
         res.once(ctx.json({}))
       )
     );
@@ -82,7 +82,7 @@ describe('stores/instances', () => {
     it('should return store state', () => {
       instancesStore.setInstances({
         filteredInstancesCount: 654,
-        workflowInstances: [],
+        processInstances: [],
       });
 
       expect(instancesStore.state.filteredInstancesCount).toBe(654);
@@ -92,7 +92,7 @@ describe('stores/instances', () => {
       storeStateLocally({filteredInstancesCount: 101});
       instancesStore.setInstances({
         filteredInstancesCount: 202,
-        workflowInstances: [],
+        processInstances: [],
       });
 
       expect(instancesStore.state.filteredInstancesCount).toBe(202);
@@ -101,8 +101,8 @@ describe('stores/instances', () => {
 
   it('should fetch initial instances', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       )
     );
 
@@ -115,8 +115,8 @@ describe('stores/instances', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     expect(instancesStore.state.filteredInstancesCount).toBe(100);
-    expect(instancesStore.state.workflowInstances).toEqual(
-      mockWorkflowInstances.workflowInstances
+    expect(instancesStore.state.processInstances).toEqual(
+      mockProcessInstances.processInstances
     );
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
       '2251799813685627',
@@ -125,8 +125,8 @@ describe('stores/instances', () => {
 
   it('should fetch next instances', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       )
     );
 
@@ -137,11 +137,11 @@ describe('stores/instances', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
-            ...mockWorkflowInstances,
-            workflowInstances: [
+            ...mockProcessInstances,
+            processInstances: [
               {...instance, id: '100'},
               {...instance, hasActiveOperation: true, id: '101'},
             ],
@@ -155,19 +155,19 @@ describe('stores/instances', () => {
     expect(instancesStore.state.status).toBe('fetching-next');
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
-    expect(instancesStore.state.workflowInstances.length).toBe(4);
-    expect(instancesStore.state.workflowInstances[2].id).toBe('100');
-    expect(instancesStore.state.workflowInstances[3].id).toBe('101');
+    expect(instancesStore.state.processInstances.length).toBe(4);
+    expect(instancesStore.state.processInstances[2].id).toBe('100');
+    expect(instancesStore.state.processInstances[3].id).toBe('101');
     expect(instancesStore.state.latestFetch).toEqual({
       fetchType: 'next',
-      workflowInstancesCount: 2,
+      processInstancesCount: 2,
     });
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
-            ...mockWorkflowInstances,
-            workflowInstances: [{...instance, id: '200'}],
+            ...mockProcessInstances,
+            processInstances: [{...instance, id: '200'}],
           })
         )
       )
@@ -178,11 +178,11 @@ describe('stores/instances', () => {
     expect(instancesStore.state.status).toBe('fetching-next');
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
-    expect(instancesStore.state.workflowInstances.length).toBe(5);
-    expect(instancesStore.state.workflowInstances[4].id).toBe('200');
+    expect(instancesStore.state.processInstances.length).toBe(5);
+    expect(instancesStore.state.processInstances[4].id).toBe('200');
     expect(instancesStore.state.latestFetch).toEqual({
       fetchType: 'next',
-      workflowInstancesCount: 1,
+      processInstancesCount: 1,
     });
 
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
@@ -193,8 +193,8 @@ describe('stores/instances', () => {
 
   it('should fetch previous instances', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       )
     );
 
@@ -205,11 +205,11 @@ describe('stores/instances', () => {
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
-            ...mockWorkflowInstances,
-            workflowInstances: [{...instance, id: '100'}],
+            ...mockProcessInstances,
+            processInstances: [{...instance, id: '100'}],
           })
         )
       )
@@ -220,18 +220,18 @@ describe('stores/instances', () => {
     expect(instancesStore.state.status).toBe('fetching-prev');
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
-    expect(instancesStore.state.workflowInstances.length).toBe(3);
-    expect(instancesStore.state.workflowInstances[0].id).toBe('100');
+    expect(instancesStore.state.processInstances.length).toBe(3);
+    expect(instancesStore.state.processInstances[0].id).toBe('100');
     expect(instancesStore.state.latestFetch).toEqual({
       fetchType: 'prev',
-      workflowInstancesCount: 1,
+      processInstancesCount: 1,
     });
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
-            ...mockWorkflowInstances,
-            workflowInstances: [{...instance, id: '200'}],
+            ...mockProcessInstances,
+            processInstances: [{...instance, id: '200'}],
           })
         )
       )
@@ -242,12 +242,12 @@ describe('stores/instances', () => {
     expect(instancesStore.state.status).toBe('fetching-prev');
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
-    expect(instancesStore.state.workflowInstances.length).toBe(4);
-    expect(instancesStore.state.workflowInstances[0].id).toBe('200');
-    expect(instancesStore.state.workflowInstances[1].id).toBe('100');
+    expect(instancesStore.state.processInstances.length).toBe(4);
+    expect(instancesStore.state.processInstances[0].id).toBe('200');
+    expect(instancesStore.state.processInstances[1].id).toBe('100');
     expect(instancesStore.state.latestFetch).toEqual({
       fetchType: 'prev',
-      workflowInstancesCount: 1,
+      processInstancesCount: 1,
     });
 
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
@@ -257,8 +257,8 @@ describe('stores/instances', () => {
 
   it('should refresh all instances', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       )
     );
 
@@ -270,10 +270,10 @@ describe('stores/instances', () => {
     ]);
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
-            workflowInstances: [
+            processInstances: [
               instance,
               {...instanceWithActiveOperation, hasActiveOperation: false},
             ],
@@ -289,10 +289,10 @@ describe('stores/instances', () => {
     );
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
-            workflowInstances: [
+            processInstances: [
               {...instance, hasActiveOperation: true},
               {...instanceWithActiveOperation},
             ],
@@ -313,8 +313,8 @@ describe('stores/instances', () => {
 
   it('should reset store (keep the filteredInstancesCount value)', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       )
     );
 
@@ -323,14 +323,14 @@ describe('stores/instances', () => {
       payload: {query: {}},
     });
 
-    expect(instancesStore.state.workflowInstances).toEqual(
-      mockWorkflowInstances.workflowInstances
+    expect(instancesStore.state.processInstances).toEqual(
+      mockProcessInstances.processInstances
     );
     const filteredInstancesCount = instancesStore.state.filteredInstancesCount;
     instancesStore.reset();
     expect(instancesStore.state).toEqual({
       filteredInstancesCount: filteredInstancesCount,
-      workflowInstances: [],
+      processInstances: [],
       status: 'initial',
       latestFetch: null,
     });
@@ -338,8 +338,8 @@ describe('stores/instances', () => {
 
   it('should get visible ids in list panel', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       )
     );
 
@@ -353,10 +353,10 @@ describe('stores/instances', () => {
     );
   });
 
-  it('should get areWorkflowInstancesEmpty', async () => {
+  it('should get areProcessInstancesEmpty', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       )
     );
 
@@ -365,11 +365,11 @@ describe('stores/instances', () => {
       payload: {query: {}},
     });
 
-    expect(instancesStore.areWorkflowInstancesEmpty).toBe(false);
+    expect(instancesStore.areProcessInstancesEmpty).toBe(false);
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json({workflowInstances: [], totalCount: 0}))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json({processInstances: [], totalCount: 0}))
       )
     );
 
@@ -378,16 +378,16 @@ describe('stores/instances', () => {
       payload: {query: {}},
     });
 
-    expect(instancesStore.areWorkflowInstancesEmpty).toBe(true);
+    expect(instancesStore.areProcessInstancesEmpty).toBe(true);
   });
 
   it('should mark instances with active operations', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
-            workflowInstances: [
+            processInstances: [
               {...instance, id: '1'},
               {...instance, id: '2'},
               {...instance, id: '3'},
@@ -404,7 +404,7 @@ describe('stores/instances', () => {
 
     instancesStore.markInstancesWithActiveOperations({ids: ['1', '2']});
 
-    expect(instancesStore.state.workflowInstances).toEqual([
+    expect(instancesStore.state.processInstances).toEqual([
       {...instance, id: '1', hasActiveOperation: true},
       {...instance, id: '2', hasActiveOperation: true},
       {...instance, id: '3'},
@@ -415,7 +415,7 @@ describe('stores/instances', () => {
       ids: ['non_existing_instance_id'],
     });
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['1', '2']);
-    expect(instancesStore.state.workflowInstances).toEqual([
+    expect(instancesStore.state.processInstances).toEqual([
       {...instance, id: '1', hasActiveOperation: true},
       {...instance, id: '2', hasActiveOperation: true},
       {...instance, id: '3'},
@@ -431,18 +431,18 @@ describe('stores/instances', () => {
       '3',
     ]);
 
-    expect(instancesStore.state.workflowInstances).toEqual([
+    expect(instancesStore.state.processInstances).toEqual([
       {...instance, id: '1', hasActiveOperation: true},
       {...instance, id: '2', hasActiveOperation: true},
       {...instance, id: '3', hasActiveOperation: true},
     ]);
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
-            workflowInstances: [
+            processInstances: [
               {...instance, id: '1'},
               {...instance, id: '2'},
               {...instance, id: '3'},
@@ -458,7 +458,7 @@ describe('stores/instances', () => {
     });
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual([]);
 
-    expect(instancesStore.state.workflowInstances).toEqual([
+    expect(instancesStore.state.processInstances).toEqual([
       {...instance, id: '1'},
       {...instance, id: '2'},
       {...instance, id: '3'},
@@ -468,7 +468,7 @@ describe('stores/instances', () => {
       ids: ['2'],
       shouldPollAllVisibleIds: true,
     });
-    expect(instancesStore.state.workflowInstances).toEqual([
+    expect(instancesStore.state.processInstances).toEqual([
       {...instance, id: '1', hasActiveOperation: true},
       {...instance, id: '2'},
       {...instance, id: '3', hasActiveOperation: true},
@@ -485,7 +485,7 @@ describe('stores/instances', () => {
       '3',
     ]);
 
-    expect(instancesStore.state.workflowInstances).toEqual([
+    expect(instancesStore.state.processInstances).toEqual([
       {...instance, id: '1', hasActiveOperation: true},
       {...instance, id: '2', hasActiveOperation: true},
       {...instance, id: '3', hasActiveOperation: true},
@@ -495,11 +495,11 @@ describe('stores/instances', () => {
   it('should unmark instances with active operations', async () => {
     // when polling all visible instances
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
-            workflowInstances: [
+            processInstances: [
               {...instanceWithActiveOperation, id: '1'},
               {...instanceWithActiveOperation, id: '2'},
               {...instanceWithActiveOperation, id: '3'},
@@ -519,11 +519,11 @@ describe('stores/instances', () => {
     ]);
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
-            workflowInstances: [
+            processInstances: [
               {...instance, id: '1'},
               {...instance, id: '2'},
               {...instance, id: '3'},
@@ -544,11 +544,11 @@ describe('stores/instances', () => {
 
     // when not polling all visible instances
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
-            workflowInstances: [
+            processInstances: [
               {...instanceWithActiveOperation, id: '1'},
               {...instanceWithActiveOperation, id: '2'},
               {...instanceWithActiveOperation, id: '3'},
@@ -579,8 +579,8 @@ describe('stores/instances', () => {
     instancesStore.addCompletedOperationsHandler(handlerMock);
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       )
     );
 
@@ -588,17 +588,17 @@ describe('stores/instances', () => {
     instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() =>
-      expect(instancesStore.state.workflowInstances).toHaveLength(2)
+      expect(instancesStore.state.processInstances).toHaveLength(2)
     );
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
       '2251799813685627',
     ]);
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
-            workflowInstances: [
+            processInstances: [
               instance,
               {...instanceWithActiveOperation, hasActiveOperation: false},
             ],
@@ -607,10 +607,10 @@ describe('stores/instances', () => {
         )
       ),
       //refresh
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
-            workflowInstances: [
+            processInstances: [
               instance,
               {...instanceWithActiveOperation, hasActiveOperation: false},
             ],
@@ -633,11 +633,11 @@ describe('stores/instances', () => {
 
   it('should poll instances by id when there are instances with active operations', async () => {
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
             totalCount: 100,
-            workflowInstances: [
+            processInstances: [
               {...instance, id: '1'},
               {...instanceWithActiveOperation, id: '2'},
             ],
@@ -652,15 +652,15 @@ describe('stores/instances', () => {
     instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() =>
-      expect(instancesStore.state.workflowInstances).toHaveLength(2)
+      expect(instancesStore.state.processInstances).toHaveLength(2)
     );
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['2']);
     mockServer.use(
       // mock for fetching instances when there is an active operation
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
-            workflowInstances: [
+            processInstances: [
               {
                 ...instanceWithActiveOperation,
                 hasActiveOperation: false,
@@ -672,10 +672,10 @@ describe('stores/instances', () => {
         )
       ),
       // mock for refreshing instances when an instance operation is completed
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
-            workflowInstances: [
+            processInstances: [
               {...instance, id: '1'},
               {
                 ...instanceWithActiveOperation,

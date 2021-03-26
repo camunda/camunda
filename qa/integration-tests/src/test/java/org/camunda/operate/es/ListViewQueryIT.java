@@ -10,8 +10,8 @@ import static org.camunda.operate.util.TestUtil.createFlowNodeInstance;
 import static org.camunda.operate.util.TestUtil.createFlowNodeInstanceWithIncident;
 import static org.camunda.operate.util.TestUtil.createIncident;
 import static org.camunda.operate.util.TestUtil.createVariableForListView;
-import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
-import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.camunda.operate.util.TestUtil.createProcessInstance;
+import static org.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.time.OffsetDateTime;
@@ -25,8 +25,8 @@ import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
-import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.entities.listview.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.ProcessInstanceState;
 import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchTestRule;
@@ -35,27 +35,27 @@ import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.webapp.rest.dto.SortingDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import org.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
-import org.camunda.operate.webapp.rest.dto.listview.WorkflowInstanceStateDto;
+import org.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.test.web.servlet.MvcResult;
 
 /**
- * Tests Elasticsearch queries for workflow instances.
+ * Tests Elasticsearch queries for process instances.
  */
 public class ListViewQueryIT extends OperateIntegrationTest {
 
-  private static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
+  private static final String QUERY_INSTANCES_URL = PROCESS_INSTANCE_URL;
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
-  private WorkflowInstanceForListViewEntity instanceWithoutIncident;
-  private WorkflowInstanceForListViewEntity runningInstance;
-  private WorkflowInstanceForListViewEntity completedInstance;
-  private WorkflowInstanceForListViewEntity canceledInstance;
+  private ProcessInstanceForListViewEntity instanceWithoutIncident;
+  private ProcessInstanceForListViewEntity runningInstance;
+  private ProcessInstanceForListViewEntity completedInstance;
+  private ProcessInstanceForListViewEntity canceledInstance;
 
   private String batchOperationId = "batchOperationId";
 
@@ -64,17 +64,17 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllRunningRequest();
+    ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllRunningRequest();
 
-    MvcResult mvcResult = postRequest(query(), workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(6);
+    assertThat(response.getProcessInstances().size()).isEqualTo(6);
     assertThat(response.getTotalCount()).isEqualTo(6);
-    for (ListViewWorkflowInstanceDto workflowInstanceDto : response.getWorkflowInstances()) {
-      assertThat(workflowInstanceDto.getEndDate()).isNull();
-      assertThat(workflowInstanceDto.getState()).isIn(WorkflowInstanceStateDto.ACTIVE, WorkflowInstanceStateDto.INCIDENT);
+    for (ListViewProcessInstanceDto processInstanceDto : response.getProcessInstances()) {
+      assertThat(processInstanceDto.getEndDate()).isNull();
+      assertThat(processInstanceDto.getState()).isIn(ProcessInstanceStateDto.ACTIVE, ProcessInstanceStateDto.INCIDENT);
     }
   }
 
@@ -86,63 +86,63 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final OffsetDateTime date3 = OffsetDateTime.of(2018, 3, 1, 17, 15, 14, 235, OffsetDateTime.now().getOffset());      //March 1, 2018
     final OffsetDateTime date4 = OffsetDateTime.of(2018, 4, 1, 2, 12, 0, 0, OffsetDateTime.now().getOffset());          //April 1, 2018
     final OffsetDateTime date5 = OffsetDateTime.of(2018, 5, 1, 23, 30, 15, 666, OffsetDateTime.now().getOffset());      //May 1, 2018
-    final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(date1, date5);
-    final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(date2, date4);
-    final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(date3, null);
-    elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3);
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(date1, date5);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(date2, date4);
+    final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(date3, null);
+    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
     //when
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q -> {
       q.setStartDateAfter(date1.minus(1, ChronoUnit.DAYS));
       q.setStartDateBefore(date3);
     });
     //then
-    requestAndAssertIds(query, "TEST CASE #1", workflowInstance1.getId(), workflowInstance2.getId());
+    requestAndAssertIds(query, "TEST CASE #1", processInstance1.getId(), processInstance2.getId());
 
     //test inclusion for startDateAfter and exclusion for startDateBefore
     //when
-    query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    query = TestUtil.createGetAllProcessInstancesRequest(q -> {
       q.setStartDateAfter(date1);
       q.setStartDateBefore(date3);
     });
     //then
-    requestAndAssertIds(query, "TEST CASE #2", workflowInstance1.getId(), workflowInstance2.getId());
+    requestAndAssertIds(query, "TEST CASE #2", processInstance1.getId(), processInstance2.getId());
 
     //when
-    query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    query = TestUtil.createGetAllProcessInstancesRequest(q -> {
       q.setStartDateAfter(date1.plus(1, ChronoUnit.MILLIS));
       q.setStartDateBefore(date3.plus(1, ChronoUnit.MILLIS));
     });
     //then
-    requestAndAssertIds(query, "TEST CASE #3", workflowInstance2.getId(), workflowInstance3.getId());
+    requestAndAssertIds(query, "TEST CASE #3", processInstance2.getId(), processInstance3.getId());
 
     //test combination of start date and end date
     //when
-    query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    query = TestUtil.createGetAllProcessInstancesRequest(q -> {
       q.setStartDateAfter(date2.minus(1, ChronoUnit.DAYS));
       q.setStartDateBefore(date3.plus(1, ChronoUnit.DAYS));
       q.setEndDateAfter(date4.minus(1, ChronoUnit.DAYS));
       q.setEndDateBefore(date4.plus(1, ChronoUnit.DAYS));
     });
     //then
-    requestAndAssertIds(query, "TEST CASE #4", workflowInstance2.getId());
+    requestAndAssertIds(query, "TEST CASE #4", processInstance2.getId());
 
     //test inclusion for endDateAfter and exclusion for endDateBefore
     //when
-    query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    query = TestUtil.createGetAllProcessInstancesRequest(q -> {
       q.setEndDateAfter(date4);
       q.setEndDateBefore(date5);
     });
     //then
-    requestAndAssertIds(query, "TEST CASE #5", workflowInstance2.getId());
+    requestAndAssertIds(query, "TEST CASE #5", processInstance2.getId());
 
     //when
-    query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    query = TestUtil.createGetAllProcessInstancesRequest(q -> {
       q.setEndDateAfter(date4);
       q.setEndDateBefore(date5.plus(1, ChronoUnit.MILLIS));
     });
     //then
-    requestAndAssertIds(query, "TEST CASE #6", workflowInstance1.getId(), workflowInstance2.getId());
+    requestAndAssertIds(query, "TEST CASE #6", processInstance1.getId(), processInstance2.getId());
 
   }
 
@@ -151,37 +151,37 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     MvcResult mvcResult = postRequest(query(), query);
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
-    assertThat(response.getWorkflowInstances()).as(testCaseName).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(ids);
+    assertThat(response.getProcessInstances()).as(testCaseName).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(ids);
   }
 
   @Test
   public void testQueryByErrorMessage() throws Exception {
     final String errorMessage = "No more retries left.";
 
-    //given we have 2 workflow instances: one with active activity with given error msg, another with active activity with another error message
-    final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-    final FlowNodeInstanceForListViewEntity activityInstance1 = createFlowNodeInstanceWithIncident(workflowInstance1.getWorkflowInstanceKey(), FlowNodeState.ACTIVE,
+    //given we have 2 process instances: one with active activity with given error msg, another with active activity with another error message
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE);
+    final FlowNodeInstanceForListViewEntity activityInstance1 = createFlowNodeInstanceWithIncident(processInstance1.getProcessInstanceKey(), FlowNodeState.ACTIVE,
       errorMessage, null);
 
-    final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-    final FlowNodeInstanceForListViewEntity activityInstance2 = createFlowNodeInstanceWithIncident(workflowInstance2.getWorkflowInstanceKey(), FlowNodeState.ACTIVE,
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE);
+    final FlowNodeInstanceForListViewEntity activityInstance2 = createFlowNodeInstanceWithIncident(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE,
       "other error message", null);
 
-    elasticsearchTestRule.persistNew(workflowInstance1, activityInstance1, workflowInstance2, activityInstance2);
+    elasticsearchTestRule.persistNew(processInstance1, activityInstance1, processInstance2, activityInstance2);
 
     //given
-    ListViewRequestDto query = new ListViewRequestDto(TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setErrorMessage(errorMessage)));
+    ListViewRequestDto query = new ListViewRequestDto(TestUtil.createGetAllProcessInstancesQuery(q -> q.setErrorMessage(errorMessage)));
     //when
     MvcResult mvcResult = postRequest(query(),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     //then
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
+    assertThat(response.getProcessInstances().size()).isEqualTo(1);
 
-    final ListViewWorkflowInstanceDto workflowInstance = response.getWorkflowInstances().get(0);
-    assertThat(workflowInstance.getState()).isEqualTo(WorkflowInstanceStateDto.INCIDENT);
-    assertThat(workflowInstance.getId()).isEqualTo(workflowInstance1.getId());
+    final ListViewProcessInstanceDto processInstance = response.getProcessInstances().get(0);
+    assertThat(processInstance.getState()).isEqualTo(ProcessInstanceStateDto.INCIDENT);
+    assertThat(processInstance.getId()).isEqualTo(processInstance1.getId());
 
   }
 
@@ -190,7 +190,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     createData();
 
     //given
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(
+    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(
         q -> q.setVariable(new VariablesQueryDto("var1", "X")));
 
     //when
@@ -199,8 +199,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     //then
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(3);
-    assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(runningInstance.getId(),
+    assertThat(response.getProcessInstances().size()).isEqualTo(3);
+    assertThat(response.getProcessInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(runningInstance.getId(),
       completedInstance.getId(), canceledInstance.getId());
 
   }
@@ -210,7 +210,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     createData();
 
     //given
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(
+    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(
         q -> q.setVariable(new VariablesQueryDto("var1", "A")));
 
     //when
@@ -219,7 +219,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     //then
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(0);
+    assertThat(response.getProcessInstances().size()).isEqualTo(0);
   }
 
   @Test
@@ -231,7 +231,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(data);
 
     //when
-    ListViewRequestDto query = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewRequestDto query = TestUtil.createProcessInstanceRequest(q -> {
       q.setRunning(true)
        .setActive(true)
        .setActivityId(activityId);
@@ -242,9 +242,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     //then
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
+    assertThat(response.getProcessInstances().size()).isEqualTo(1);
 
-    assertThat(response.getWorkflowInstances().get(0).getId())
+    assertThat(response.getProcessInstances().get(0).getId())
       .isEqualTo(data[0].getId());
 
   }
@@ -257,24 +257,24 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     List<OperateEntity> activityInstances = new ArrayList<>();
 
     //wi 1: active with active activity with given id
-    final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE);
 
-    final FlowNodeInstanceForListViewEntity activeWithIdActivityInstance = createFlowNodeInstance(workflowInstance1.getWorkflowInstanceKey(), FlowNodeState.ACTIVE, activityId);
+    final FlowNodeInstanceForListViewEntity activeWithIdActivityInstance = createFlowNodeInstance(processInstance1.getProcessInstanceKey(), FlowNodeState.ACTIVE, activityId);
 
-    final FlowNodeInstanceForListViewEntity completedWithoutIdActivityInstance = createFlowNodeInstance(workflowInstance1.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "otherActivityId");
+    final FlowNodeInstanceForListViewEntity completedWithoutIdActivityInstance = createFlowNodeInstance(processInstance1.getProcessInstanceKey(), FlowNodeState.COMPLETED, "otherActivityId");
 
-    entities.add(workflowInstance1);
+    entities.add(processInstance1);
     activityInstances.addAll(Arrays.asList(activeWithIdActivityInstance, completedWithoutIdActivityInstance));
 
     //wi 2: active with active activity with another id and incident activity with given id
-    final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE);
 
-    final FlowNodeInstanceForListViewEntity activeWithoutIdActivityInstance = createFlowNodeInstance(workflowInstance2.getWorkflowInstanceKey(), FlowNodeState.ACTIVE, "otherActivityId");
+    final FlowNodeInstanceForListViewEntity activeWithoutIdActivityInstance = createFlowNodeInstance(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE, "otherActivityId");
 
-    final FlowNodeInstanceForListViewEntity incidentWithIdActivityInstance = createFlowNodeInstanceWithIncident(workflowInstance2.getWorkflowInstanceKey(), FlowNodeState.ACTIVE, "error", null);
+    final FlowNodeInstanceForListViewEntity incidentWithIdActivityInstance = createFlowNodeInstanceWithIncident(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE, "error", null);
     incidentWithIdActivityInstance.setActivityId(activityId);
 
-    entities.add(workflowInstance2);
+    entities.add(processInstance2);
     activityInstances.addAll(Arrays.asList(activeWithoutIdActivityInstance, incidentWithIdActivityInstance));
 
     entities.addAll(activityInstances);
@@ -290,7 +290,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(data);
 
     //when
-    ListViewRequestDto query = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewRequestDto query = TestUtil.createProcessInstanceRequest(q -> {
       q.setRunning(true)
        .setIncidents(true)
        .setActivityId(activityId);
@@ -301,9 +301,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     //then
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
+    assertThat(response.getProcessInstances().size()).isEqualTo(1);
 
-    assertThat(response.getWorkflowInstances().get(0).getId())
+    assertThat(response.getProcessInstances().get(0).getId())
       .isEqualTo(data[0].getId());
 
   }
@@ -316,35 +316,35 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     List<OperateEntity> activityInstances = new ArrayList<>();
 
     //wi1: active with activity in INCIDENT state with given id
-    final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE);
 
-    final FlowNodeInstanceForListViewEntity incidentWithIdActivityInstance = createFlowNodeInstanceWithIncident(workflowInstance1.getWorkflowInstanceKey(), FlowNodeState.ACTIVE, "error", null);
+    final FlowNodeInstanceForListViewEntity incidentWithIdActivityInstance = createFlowNodeInstanceWithIncident(processInstance1.getProcessInstanceKey(), FlowNodeState.ACTIVE, "error", null);
     incidentWithIdActivityInstance.setActivityId(activityId);
 
-    final FlowNodeInstanceForListViewEntity completedWithoutIdActivityInstance = createFlowNodeInstance(workflowInstance1.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "otherActivityId");
+    final FlowNodeInstanceForListViewEntity completedWithoutIdActivityInstance = createFlowNodeInstance(processInstance1.getProcessInstanceKey(), FlowNodeState.COMPLETED, "otherActivityId");
 
-    entities.add(workflowInstance1);
+    entities.add(processInstance1);
     activityInstances.addAll(Arrays.asList(incidentWithIdActivityInstance, completedWithoutIdActivityInstance));
 
     //wi2: active with activity in INCIDENT state with another id
-    final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE);
 
-    final FlowNodeInstanceForListViewEntity incidentWithoutIdActivityInstance = createFlowNodeInstanceWithIncident(workflowInstance2.getWorkflowInstanceKey(), FlowNodeState.ACTIVE, "error", null);
+    final FlowNodeInstanceForListViewEntity incidentWithoutIdActivityInstance = createFlowNodeInstanceWithIncident(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE, "error", null);
     incidentWithoutIdActivityInstance.setActivityId("otherActivityId");
 
-    final FlowNodeInstanceForListViewEntity completedWithIdActivityInstance = createFlowNodeInstance(workflowInstance2.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, activityId);
+    final FlowNodeInstanceForListViewEntity completedWithIdActivityInstance = createFlowNodeInstance(processInstance2.getProcessInstanceKey(), FlowNodeState.COMPLETED, activityId);
 
-    entities.add(workflowInstance2);
+    entities.add(processInstance2);
     activityInstances.addAll(Arrays.asList(incidentWithoutIdActivityInstance, completedWithIdActivityInstance));
 
     //wi3: active with activity in ACTIVE state with given id
-    final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.ACTIVE);
 
-    final FlowNodeInstanceForListViewEntity activeWithIdActivityInstance = createFlowNodeInstance(workflowInstance3.getWorkflowInstanceKey(), FlowNodeState.ACTIVE, activityId);
+    final FlowNodeInstanceForListViewEntity activeWithIdActivityInstance = createFlowNodeInstance(processInstance3.getProcessInstanceKey(), FlowNodeState.ACTIVE, activityId);
 
-    final FlowNodeInstanceForListViewEntity completedWithoutIdActivityInstance2 = createFlowNodeInstance(workflowInstance3.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "otherActivityId");
+    final FlowNodeInstanceForListViewEntity completedWithoutIdActivityInstance2 = createFlowNodeInstance(processInstance3.getProcessInstanceKey(), FlowNodeState.COMPLETED, "otherActivityId");
 
-    entities.add(workflowInstance3);
+    entities.add(processInstance3);
     activityInstances.addAll(Arrays.asList(activeWithIdActivityInstance, completedWithoutIdActivityInstance2));
 
     entities.addAll(activityInstances);
@@ -360,7 +360,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(data);
 
     //when
-    ListViewRequestDto query = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewRequestDto query = TestUtil.createProcessInstanceRequest(q -> {
       q.setFinished(true)
        .setCanceled(true)
        .setActivityId(activityId);
@@ -371,9 +371,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     //then
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
+    assertThat(response.getProcessInstances().size()).isEqualTo(1);
 
-    assertThat(response.getWorkflowInstances().get(0).getId())
+    assertThat(response.getProcessInstances().get(0).getId())
       .isEqualTo(data[0].getId());
 
   }
@@ -385,31 +385,31 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     List<OperateEntity> entities = new ArrayList<>();
 
     //wi1: canceled with TERMINATED activity with given id
-    final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.CANCELED);
 
-    final FlowNodeInstanceForListViewEntity terminatedWithIdActivityInstance = createFlowNodeInstance(workflowInstance1.getWorkflowInstanceKey(), FlowNodeState.TERMINATED, activityId);
+    final FlowNodeInstanceForListViewEntity terminatedWithIdActivityInstance = createFlowNodeInstance(processInstance1.getProcessInstanceKey(), FlowNodeState.TERMINATED, activityId);
 
-    final FlowNodeInstanceForListViewEntity completedWithoutIdActivityInstance = createFlowNodeInstance(workflowInstance1.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "otherActivityId");
+    final FlowNodeInstanceForListViewEntity completedWithoutIdActivityInstance = createFlowNodeInstance(processInstance1.getProcessInstanceKey(), FlowNodeState.COMPLETED, "otherActivityId");
 
-    entities.addAll(Arrays.asList(workflowInstance1, terminatedWithIdActivityInstance, completedWithoutIdActivityInstance));
+    entities.addAll(Arrays.asList(processInstance1, terminatedWithIdActivityInstance, completedWithoutIdActivityInstance));
 
     //wi2: canceled with TERMINATED activity with another id
-    final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.CANCELED);
 
-    final FlowNodeInstanceForListViewEntity terminatedWithoutIdActivityInstance = createFlowNodeInstance(workflowInstance2.getWorkflowInstanceKey(), FlowNodeState.TERMINATED, "otherActivityId");
+    final FlowNodeInstanceForListViewEntity terminatedWithoutIdActivityInstance = createFlowNodeInstance(processInstance2.getProcessInstanceKey(), FlowNodeState.TERMINATED, "otherActivityId");
 
-    final FlowNodeInstanceForListViewEntity completedWithIdActivityInstance = createFlowNodeInstance(workflowInstance2.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, activityId);
+    final FlowNodeInstanceForListViewEntity completedWithIdActivityInstance = createFlowNodeInstance(processInstance2.getProcessInstanceKey(), FlowNodeState.COMPLETED, activityId);
 
-    entities.addAll(Arrays.asList(workflowInstance2, terminatedWithoutIdActivityInstance, completedWithIdActivityInstance));
+    entities.addAll(Arrays.asList(processInstance2, terminatedWithoutIdActivityInstance, completedWithIdActivityInstance));
 
     //wi3: active with TERMINATED activity with given id
-    final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.ACTIVE);
 
-    final FlowNodeInstanceForListViewEntity activeWithIdActivityInstance = createFlowNodeInstance(workflowInstance3.getWorkflowInstanceKey(), FlowNodeState.TERMINATED, activityId);
+    final FlowNodeInstanceForListViewEntity activeWithIdActivityInstance = createFlowNodeInstance(processInstance3.getProcessInstanceKey(), FlowNodeState.TERMINATED, activityId);
 
-    final FlowNodeInstanceForListViewEntity completedWithoutIdActivityInstance2 = createFlowNodeInstance(workflowInstance3.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "otherActivityId");
+    final FlowNodeInstanceForListViewEntity completedWithoutIdActivityInstance2 = createFlowNodeInstance(processInstance3.getProcessInstanceKey(), FlowNodeState.COMPLETED, "otherActivityId");
 
-    entities.addAll(Arrays.asList(workflowInstance3, activeWithIdActivityInstance, completedWithoutIdActivityInstance2));
+    entities.addAll(Arrays.asList(processInstance3, activeWithIdActivityInstance, completedWithoutIdActivityInstance2));
 
     return entities.toArray(new OperateEntity[entities.size()]);
   }
@@ -436,7 +436,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(data);
 
     //when
-    ListViewRequestDto query = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewRequestDto query = TestUtil.createProcessInstanceRequest(q -> {
       q.setRunning(true)
        .setIncidents(true)
        .setActive(true)
@@ -450,9 +450,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     //then
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(selectedIds.size());
+    assertThat(response.getProcessInstances().size()).isEqualTo(selectedIds.size());
 
-    assertThat(response.getWorkflowInstances()).extracting("id").containsExactlyInAnyOrder(selectedIds.toArray());
+    assertThat(response.getProcessInstances()).extracting("id").containsExactlyInAnyOrder(selectedIds.toArray());
 
   }
 
@@ -461,37 +461,37 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final String activityId = "endEvent";
 
     //wi 1: completed with completed end event
-    final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.COMPLETED);
 
     final FlowNodeInstanceForListViewEntity completedEndEventWithIdActivityInstance = TestUtil
-        .createFlowNodeInstance(workflowInstance1.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, activityId, FlowNodeType.END_EVENT);
+        .createFlowNodeInstance(processInstance1.getProcessInstanceKey(), FlowNodeState.COMPLETED, activityId, FlowNodeType.END_EVENT);
 
-    final FlowNodeInstanceForListViewEntity completedWithoutIdActivityInstance = createFlowNodeInstance(workflowInstance1.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, "otherActivityId");
+    final FlowNodeInstanceForListViewEntity completedWithoutIdActivityInstance = createFlowNodeInstance(processInstance1.getProcessInstanceKey(), FlowNodeState.COMPLETED, "otherActivityId");
 
     //wi 2: completed without completed end event
-    final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.COMPLETED);
 
     final FlowNodeInstanceForListViewEntity activeEndEventWithIdActivityInstance = TestUtil
-        .createFlowNodeInstance(workflowInstance2.getWorkflowInstanceKey(), FlowNodeState.ACTIVE, activityId, FlowNodeType.END_EVENT);
+        .createFlowNodeInstance(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE, activityId, FlowNodeType.END_EVENT);
 
     //wi 3: completed with completed end event (but not of type END_EVENT)
-    final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+    final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED);
 
-    final FlowNodeInstanceForListViewEntity completedWithIdActivityInstance = createFlowNodeInstance(workflowInstance3.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, activityId);
+    final FlowNodeInstanceForListViewEntity completedWithIdActivityInstance = createFlowNodeInstance(processInstance3.getProcessInstanceKey(), FlowNodeState.COMPLETED, activityId);
 
     //wi 4: active with completed end event
-    final WorkflowInstanceForListViewEntity workflowInstance4 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity processInstance4 = createProcessInstance(ProcessInstanceState.ACTIVE);
 
     final FlowNodeInstanceForListViewEntity completedEndEventWithIdActivityInstance2 = TestUtil
-        .createFlowNodeInstance(workflowInstance4.getWorkflowInstanceKey(), FlowNodeState.COMPLETED, activityId, FlowNodeType.END_EVENT);
+        .createFlowNodeInstance(processInstance4.getProcessInstanceKey(), FlowNodeState.COMPLETED, activityId, FlowNodeType.END_EVENT);
 
-    elasticsearchTestRule.persistNew(workflowInstance1, completedEndEventWithIdActivityInstance, completedWithoutIdActivityInstance,
-      workflowInstance2, activeEndEventWithIdActivityInstance,
-      workflowInstance3, completedWithIdActivityInstance,
-      workflowInstance4, completedEndEventWithIdActivityInstance2);
+    elasticsearchTestRule.persistNew(processInstance1, completedEndEventWithIdActivityInstance, completedWithoutIdActivityInstance,
+      processInstance2, activeEndEventWithIdActivityInstance,
+      processInstance3, completedWithIdActivityInstance,
+      processInstance4, completedEndEventWithIdActivityInstance2);
 
     //when
-    ListViewRequestDto query = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewRequestDto query = TestUtil.createProcessInstanceRequest(q -> {
       q.setFinished(true)
        .setCompleted(true)
        .setActivityId(activityId);
@@ -502,23 +502,23 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     //then
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
+    assertThat(response.getProcessInstances().size()).isEqualTo(1);
 
-    assertThat(response.getWorkflowInstances().get(0).getId())
-      .isEqualTo(workflowInstance1.getId());
+    assertThat(response.getProcessInstances().get(0).getId())
+      .isEqualTo(processInstance1.getId());
 
   }
 
   @Test
-  public void testQueryByWorkflowInstanceIds() throws Exception {
+  public void testQueryByProcessInstanceIds() throws Exception {
     //given
-    final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-    final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
-    final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
-    elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3);
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.CANCELED);
+    final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED);
+    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q ->
-      q.setIds(Arrays.asList(workflowInstance1.getId(), workflowInstance2.getId()))
+    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q ->
+      q.setIds(Arrays.asList(processInstance1.getId(), processInstance2.getId()))
     );
 
     //when
@@ -527,9 +527,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
-    assertThat(response.getWorkflowInstances()).hasSize(2);
+    assertThat(response.getProcessInstances()).hasSize(2);
 
-    assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
+    assertThat(response.getProcessInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(processInstance1.getId(), processInstance2.getId());
   }
 
   @Test
@@ -537,7 +537,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //given
     createData();
 
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q ->
+    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q ->
       q.setBatchOperationId(batchOperationId)
     );
 
@@ -547,22 +547,22 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
 
-    assertThat(response.getWorkflowInstances()).hasSize(2);
+    assertThat(response.getProcessInstances()).hasSize(2);
 
-    assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(runningInstance.getId(), completedInstance.getId());
+    assertThat(response.getProcessInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(runningInstance.getId(), completedInstance.getId());
   }
 
   @Test
   public void testQueryByExcludeIds() throws Exception {
     //given
-    final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-    final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
-    final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
-    final WorkflowInstanceForListViewEntity workflowInstance4 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
-    elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.CANCELED);
+    final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED);
+    final ProcessInstanceForListViewEntity processInstance4 = createProcessInstance(ProcessInstanceState.COMPLETED);
+    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3, processInstance4);
 
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q ->
-      q.setExcludeIds(Arrays.asList(workflowInstance1.getId(), workflowInstance3.getId()))
+    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q ->
+      q.setExcludeIds(Arrays.asList(processInstance1.getId(), processInstance3.getId()))
     );
 
     //when
@@ -571,27 +571,27 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
-    assertThat(response.getWorkflowInstances()).hasSize(2);
+    assertThat(response.getProcessInstances()).hasSize(2);
 
-    assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(workflowInstance2.getId(), workflowInstance4.getId());
+    assertThat(response.getProcessInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(processInstance2.getId(), processInstance4.getId());
   }
 
   @Test
-  public void testQueryByWorkflowKeys() throws Exception {
+  public void testQueryByProcessDefinitionKeys() throws Exception {
     //given
     Long wfKey1 = 1L, wfKey2 = 2L, wfKey3 = 3L;
-    final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-    workflowInstance1.setWorkflowKey(wfKey1);
-    final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
-    workflowInstance2.setWorkflowKey(wfKey2);
-    final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
-    final WorkflowInstanceForListViewEntity workflowInstance4 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
-    workflowInstance3.setWorkflowKey(wfKey3);
-    workflowInstance4.setWorkflowKey(wfKey3);
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE);
+    processInstance1.setProcessDefinitionKey(wfKey1);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.CANCELED);
+    processInstance2.setProcessDefinitionKey(wfKey2);
+    final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED);
+    final ProcessInstanceForListViewEntity processInstance4 = createProcessInstance(ProcessInstanceState.COMPLETED);
+    processInstance3.setProcessDefinitionKey(wfKey3);
+    processInstance4.setProcessDefinitionKey(wfKey3);
 
-    elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
+    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3, processInstance4);
 
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q -> q.setWorkflowIds(Arrays.asList(wfKey1.toString(), wfKey3.toString())));
+    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q -> q.setProcessIds(Arrays.asList(wfKey1.toString(), wfKey3.toString())));
 
     //when
     MvcResult mvcResult = postRequest(query(),query);
@@ -599,10 +599,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
-    assertThat(response.getWorkflowInstances()).hasSize(3);
+    assertThat(response.getProcessInstances()).hasSize(3);
 
-    assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID)
-      .containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance3.getId(), workflowInstance4.getId());
+    assertThat(response.getProcessInstances()).extracting(ListViewTemplate.ID)
+      .containsExactlyInAnyOrder(processInstance1.getId(), processInstance3.getId(), processInstance4.getId());
   }
 
   @Test
@@ -612,21 +612,21 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     int version1 = 1;
     String bpmnProcessId2 = "pr2";
     int version2 = 2;
-    final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-    workflowInstance1.setBpmnProcessId(bpmnProcessId1);
-    workflowInstance1.setWorkflowVersion(version1);
-    final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
-    workflowInstance2.setBpmnProcessId(bpmnProcessId1);
-    workflowInstance2.setWorkflowVersion(version2);
-    final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
-    workflowInstance3.setBpmnProcessId(bpmnProcessId2);
-    workflowInstance3.setWorkflowVersion(version1);
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE);
+    processInstance1.setBpmnProcessId(bpmnProcessId1);
+    processInstance1.setProcessVersion(version1);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.CANCELED);
+    processInstance2.setBpmnProcessId(bpmnProcessId1);
+    processInstance2.setProcessVersion(version2);
+    final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED);
+    processInstance3.setBpmnProcessId(bpmnProcessId2);
+    processInstance3.setProcessVersion(version1);
 
-    elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3);
+    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
+    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q -> {
       q.setBpmnProcessId(bpmnProcessId1);
-      q.setWorkflowVersion(version1);
+      q.setProcessVersion(version1);
     });
 
     //when
@@ -635,22 +635,22 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
-    assertThat(response.getWorkflowInstances()).hasSize(1);
+    assertThat(response.getProcessInstances()).hasSize(1);
 
-    assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID)
-      .containsExactly(workflowInstance1.getId());
+    assertThat(response.getProcessInstances()).extracting(ListViewTemplate.ID)
+      .containsExactly(processInstance1.getId());
   }
 
   @Test
-  public void testQueryByWorkflowVersionFail() throws Exception {
+  public void testQueryByProcessVersionFail() throws Exception {
     //when
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q -> {
-      q.setWorkflowVersion(1);
+    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q -> {
+      q.setProcessVersion(1);
     });
     //then
     MvcResult mvcResult = postRequestThatShouldFail(query(),query);
 
-    assertThat(mvcResult.getResolvedException().getMessage()).contains("BpmnProcessId must be provided in request, when workflow version is not null");
+    assertThat(mvcResult.getResolvedException().getMessage()).contains("BpmnProcessId must be provided in request, when process version is not null");
 
   }
 
@@ -661,19 +661,19 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     int version1 = 1;
     String bpmnProcessId2 = "pr2";
     int version2 = 2;
-    final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-    workflowInstance1.setBpmnProcessId(bpmnProcessId1);
-    workflowInstance1.setWorkflowVersion(version1);
-    final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
-    workflowInstance2.setBpmnProcessId(bpmnProcessId1);
-    workflowInstance2.setWorkflowVersion(version2);
-    final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
-    workflowInstance3.setBpmnProcessId(bpmnProcessId2);
-    workflowInstance3.setWorkflowVersion(version1);
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE);
+    processInstance1.setBpmnProcessId(bpmnProcessId1);
+    processInstance1.setProcessVersion(version1);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.CANCELED);
+    processInstance2.setBpmnProcessId(bpmnProcessId1);
+    processInstance2.setProcessVersion(version2);
+    final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED);
+    processInstance3.setBpmnProcessId(bpmnProcessId2);
+    processInstance3.setProcessVersion(version1);
 
-    elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3);
+    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesRequest(q -> q.setBpmnProcessId(bpmnProcessId1));
+    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q -> q.setBpmnProcessId(bpmnProcessId1));
 
     //when
     MvcResult mvcResult = postRequest(query(),query);
@@ -681,10 +681,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
-    assertThat(response.getWorkflowInstances()).hasSize(2);
+    assertThat(response.getProcessInstances()).hasSize(2);
 
-    assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID)
-      .containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
+    assertThat(response.getProcessInstances()).extracting(ListViewTemplate.ID)
+      .containsExactlyInAnyOrder(processInstance1.getId(), processInstance2.getId());
   }
 
   @Test
@@ -692,61 +692,61 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    ListViewRequestDto workflowInstanceRequest = TestUtil.createGetAllWorkflowInstancesRequest();
-    workflowInstanceRequest.setPageSize(5);
+    ListViewRequestDto processInstanceRequest = TestUtil.createGetAllProcessInstancesRequest();
+    processInstanceRequest.setPageSize(5);
 
     //page 1
-    MvcResult mvcResult = postRequest(query(), workflowInstanceRequest);
+    MvcResult mvcResult = postRequest(query(), processInstanceRequest);
     ListViewResponseDto page1Response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
     });
-    assertThat(page1Response.getWorkflowInstances().size()).isEqualTo(5);
+    assertThat(page1Response.getProcessInstances().size()).isEqualTo(5);
     assertThat(page1Response.getTotalCount()).isEqualTo(8);
 
     //page 2
-    workflowInstanceRequest.setSearchAfter(
-        page1Response.getWorkflowInstances().get(page1Response.getWorkflowInstances().size() - 1)
+    processInstanceRequest.setSearchAfter(
+        page1Response.getProcessInstances().get(page1Response.getProcessInstances().size() - 1)
             .getSortValues());
-    workflowInstanceRequest.setPageSize(3);
-    mvcResult = postRequest(query(), workflowInstanceRequest);
+    processInstanceRequest.setPageSize(3);
+    mvcResult = postRequest(query(), processInstanceRequest);
     ListViewResponseDto page2Response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
-    assertThat(page2Response.getWorkflowInstances().size()).isEqualTo(3);
+    assertThat(page2Response.getProcessInstances().size()).isEqualTo(3);
     assertThat(page2Response.getTotalCount()).isEqualTo(8);
-    assertThat(page2Response.getWorkflowInstances()).doesNotContainAnyElementsOf(page1Response.getWorkflowInstances());
+    assertThat(page2Response.getProcessInstances()).doesNotContainAnyElementsOf(page1Response.getProcessInstances());
 
     //page 1 via searchBefore
-    workflowInstanceRequest.setSearchAfter(null);
-    workflowInstanceRequest.setSearchBefore(
-        page2Response.getWorkflowInstances().get(0)
+    processInstanceRequest.setSearchAfter(null);
+    processInstanceRequest.setSearchBefore(
+        page2Response.getProcessInstances().get(0)
             .getSortValues());
-    workflowInstanceRequest.setPageSize(5);
-    mvcResult = postRequest(query(), workflowInstanceRequest);
+    processInstanceRequest.setPageSize(5);
+    mvcResult = postRequest(query(), processInstanceRequest);
     ListViewResponseDto page1Response2 = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
-    assertThat(page1Response2.getWorkflowInstances().size()).isEqualTo(5);
+    assertThat(page1Response2.getProcessInstances().size()).isEqualTo(5);
     assertThat(page1Response2.getTotalCount()).isEqualTo(8);
-    assertThat(page1Response.getWorkflowInstances()).containsExactlyInAnyOrderElementsOf(page1Response2.getWorkflowInstances());
+    assertThat(page1Response.getProcessInstances()).containsExactlyInAnyOrderElementsOf(page1Response2.getProcessInstances());
   }
 
-  private void testSorting(SortingDto sorting, Comparator<ListViewWorkflowInstanceDto> comparator) throws Exception {
+  private void testSorting(SortingDto sorting, Comparator<ListViewProcessInstanceDto> comparator) throws Exception {
     createData();
 
     //query running instances
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllWorkflowInstancesRequest();
+    ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllProcessInstancesRequest();
     if(sorting!=null) {
-      workflowInstanceQueryDto.setSorting(sorting);
+      processInstanceQueryDto.setSorting(sorting);
     }
 
-    MvcResult mvcResult = postRequest(query(), workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(8);
+    assertThat(response.getProcessInstances().size()).isEqualTo(8);
 
-    assertThat(response.getWorkflowInstances()).isSortedAccordingTo(comparator);
+    assertThat(response.getProcessInstances()).isSortedAccordingTo(comparator);
   }
 
   @Test
   public void testSortingByStartDateAsc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = Comparator.comparing(ListViewWorkflowInstanceDto::getStartDate);
+    final Comparator<ListViewProcessInstanceDto> comparator = Comparator.comparing(ListViewProcessInstanceDto::getStartDate);
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.START_DATE);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
@@ -756,7 +756,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testSortingByStartDateDesc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> o2.getStartDate().compareTo(o1.getStartDate());
+    final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> o2.getStartDate().compareTo(o1.getStartDate());
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.START_DATE);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
@@ -766,13 +766,13 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testDefaultSorting() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = Comparator.comparing(o -> Long.valueOf(o.getId()));
+    final Comparator<ListViewProcessInstanceDto> comparator = Comparator.comparing(o -> Long.valueOf(o.getId()));
     testSorting(null, comparator);
   }
 
   @Test
   public void testSortingByIdAsc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = Comparator.comparing(o -> Long.valueOf(o.getId()));
+    final Comparator<ListViewProcessInstanceDto> comparator = Comparator.comparing(o -> Long.valueOf(o.getId()));
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
@@ -782,7 +782,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testSortingByIdDesc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> Long.valueOf(o2.getId()).compareTo(Long.valueOf(o1.getId()));
+    final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> Long.valueOf(o2.getId()).compareTo(Long.valueOf(o1.getId()));
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
@@ -791,47 +791,47 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testSortingByWorkflowNameAsc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator =
-        Comparator.comparing((ListViewWorkflowInstanceDto o) -> o.getWorkflowName().toLowerCase())
+  public void testSortingByProcessNameAsc() throws Exception {
+    final Comparator<ListViewProcessInstanceDto> comparator =
+        Comparator.comparing((ListViewProcessInstanceDto o) -> o.getProcessName().toLowerCase())
           .thenComparingLong(o -> Long.valueOf(o.getId()));
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.WORKFLOW_NAME);
+    sorting.setSortBy(ListViewTemplate.PROCESS_NAME);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
     testSorting(sorting, comparator);
   }
 
   @Test
-  public void testSortingByWorkflowNameDesc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> {
-      int x = o2.getWorkflowName().toLowerCase().compareTo(o1.getWorkflowName().toLowerCase());
+  public void testSortingByProcessNameDesc() throws Exception {
+    final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> {
+      int x = o2.getProcessName().toLowerCase().compareTo(o1.getProcessName().toLowerCase());
       if (x == 0) {
         x = Long.valueOf(o1.getId()).compareTo(Long.valueOf(o2.getId()));
       }
       return x;
     };
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.WORKFLOW_NAME);
+    sorting.setSortBy(ListViewTemplate.PROCESS_NAME);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator);
   }
   @Test
-  public void testSortingByWorkflowVersionAsc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = Comparator.comparing(ListViewWorkflowInstanceDto::getWorkflowVersion);
+  public void testSortingByProcessVersionAsc() throws Exception {
+    final Comparator<ListViewProcessInstanceDto> comparator = Comparator.comparing(ListViewProcessInstanceDto::getProcessVersion);
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.WORKFLOW_VERSION);
+    sorting.setSortBy(ListViewTemplate.PROCESS_VERSION);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
     testSorting(sorting, comparator);
   }
 
   @Test
-  public void testSortingByWorkflowVersionDesc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> o2.getWorkflowVersion().compareTo(o1.getWorkflowVersion());
+  public void testSortingByProcessVersionDesc() throws Exception {
+    final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> o2.getProcessVersion().compareTo(o1.getProcessVersion());
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy(ListViewTemplate.WORKFLOW_VERSION);
+    sorting.setSortBy(ListViewTemplate.PROCESS_VERSION);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator);
@@ -839,7 +839,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testSortingByEndDateAsc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> {
+    final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> {
       //nulls are always at the end
       if (o1.getEndDate() == null && o2.getEndDate() == null) {
         return 0;
@@ -860,7 +860,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testSortingByEndDateDesc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> {
+    final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> {
       //nulls are always at the end
       if (o1.getEndDate() == null && o2.getEndDate() == null) {
         return 0;
@@ -883,17 +883,17 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testQueryAllFinished() throws Exception {
     createData();
 
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllFinishedRequest();
+    ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllFinishedRequest();
 
-    MvcResult mvcResult =  postRequest(query(),workflowInstanceQueryDto);
+    MvcResult mvcResult =  postRequest(query(),processInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     assertThat(response.getTotalCount()).isEqualTo(2);
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(2);
-    for (ListViewWorkflowInstanceDto workflowInstanceDto : response.getWorkflowInstances()) {
-      assertThat(workflowInstanceDto.getEndDate()).isNotNull();
-      assertThat(workflowInstanceDto.getState()).isIn(WorkflowInstanceStateDto.COMPLETED, WorkflowInstanceStateDto.CANCELED);
+    assertThat(response.getProcessInstances().size()).isEqualTo(2);
+    for (ListViewProcessInstanceDto processInstanceDto : response.getProcessInstances()) {
+      assertThat(processInstanceDto.getEndDate()).isNotNull();
+      assertThat(processInstanceDto.getState()).isIn(ProcessInstanceStateDto.COMPLETED, ProcessInstanceStateDto.CANCELED);
     }
   }
 
@@ -901,70 +901,70 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testQueryFinishedAndRunning() throws Exception {
     createData();
 
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllWorkflowInstancesRequest();
+    ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllProcessInstancesRequest();
 
-    MvcResult mvcResult = postRequest(query(),workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(),processInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     assertThat(response.getTotalCount()).isEqualTo(8);
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(8);
+    assertThat(response.getProcessInstances().size()).isEqualTo(8);
   }
 
   @Test
   public void testQueryFinishedCompleted() throws Exception {
     createData();
 
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewRequestDto processInstanceQueryDto = TestUtil.createProcessInstanceRequest(q -> {
       q.setFinished(true)
        .setCompleted(true);
     });
 
-    MvcResult mvcResult = postRequest(query(),workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(),processInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     assertThat(response.getTotalCount()).isEqualTo(1);
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
-    assertThat(response.getWorkflowInstances().get(0).getEndDate()).isNotNull();
-    assertThat(response.getWorkflowInstances().get(0).getState()).isEqualTo(WorkflowInstanceStateDto.COMPLETED);
+    assertThat(response.getProcessInstances().size()).isEqualTo(1);
+    assertThat(response.getProcessInstances().get(0).getEndDate()).isNotNull();
+    assertThat(response.getProcessInstances().get(0).getState()).isEqualTo(ProcessInstanceStateDto.COMPLETED);
   }
 
   @Test
   public void testQueryFinishedCanceled() throws Exception {
     createData();
 
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewRequestDto processInstanceQueryDto = TestUtil.createProcessInstanceRequest(q -> {
       q.setFinished(true)
        .setCanceled(true);
     });
 
-    MvcResult mvcResult = postRequest(query(),workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(),processInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     assertThat(response.getTotalCount()).isEqualTo(1);
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
-    assertThat(response.getWorkflowInstances().get(0).getEndDate()).isNotNull();
-    assertThat(response.getWorkflowInstances().get(0).getState()).isEqualTo(WorkflowInstanceStateDto.CANCELED);
+    assertThat(response.getProcessInstances().size()).isEqualTo(1);
+    assertThat(response.getProcessInstances().get(0).getEndDate()).isNotNull();
+    assertThat(response.getProcessInstances().get(0).getState()).isEqualTo(ProcessInstanceStateDto.CANCELED);
   }
 
   @Test
   public void testQueryRunningWithIncidents() throws Exception {
     createData();
 
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewRequestDto processInstanceQueryDto = TestUtil.createProcessInstanceRequest(q -> {
       q.setRunning(true)
        .setIncidents(true);
     });
 
-    MvcResult mvcResult = postRequest(query(),workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(),processInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     assertThat(response.getTotalCount()).isEqualTo(1);
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
-    assertThat(response.getWorkflowInstances().get(0).getState()).isEqualTo(WorkflowInstanceStateDto.INCIDENT);
+    assertThat(response.getProcessInstances().size()).isEqualTo(1);
+    assertThat(response.getProcessInstances().get(0).getState()).isEqualTo(ProcessInstanceStateDto.INCIDENT);
 
   }
 
@@ -972,23 +972,23 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testQueryRunningWithoutIncidents() throws Exception {
     createData();
 
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceRequest(q -> {
+    ListViewRequestDto processInstanceQueryDto = TestUtil.createProcessInstanceRequest(q -> {
       q.setRunning(true)
        .setActive(true);
     });
 
-    MvcResult mvcResult = postRequest(query(),workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(),processInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     assertThat(response.getTotalCount()).isEqualTo(5);
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
-    assertThat(response.getWorkflowInstances()).allMatch((wi) -> !wi.getState().equals(WorkflowInstanceStateDto.INCIDENT));
+    assertThat(response.getProcessInstances().size()).isEqualTo(5);
+    assertThat(response.getProcessInstances()).allMatch((wi) -> !wi.getState().equals(ProcessInstanceStateDto.INCIDENT));
 
   }
 //
 //  @Test
-//  public void testGetWorkflowInstanceById() throws Exception {
+//  public void testGetProcessInstanceById() throws Exception {
 //    createData();
 //
 //    MockHttpServletRequestBuilder request = get(String.format(GET_INSTANCE_URL, instanceWithoutIncident.getId()));
@@ -999,20 +999,20 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 //      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
 //      .andReturn();
 //
-//    final WorkflowInstanceDto workflowInstanceDto = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceDto>() {});
+//    final ProcessInstanceDto processInstanceDto = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ProcessInstanceDto>() {});
 //
-//    assertThat(workflowInstanceDto.getId()).isEqualTo(instanceWithoutIncident.getId());
-//    assertThat(workflowInstanceDto.getWorkflowId()).isEqualTo(instanceWithoutIncident.getWorkflowId());
-//    assertThat(workflowInstanceDto.getState()).isEqualTo(instanceWithoutIncident.getState());
-//    assertThat(workflowInstanceDto.getStartDate()).isEqualTo(instanceWithoutIncident.getStartDate());
-//    assertThat(workflowInstanceDto.getEndDate()).isEqualTo(instanceWithoutIncident.getEndDate());
-//    assertThat(workflowInstanceDto.getBpmnProcessId()).isEqualTo(instanceWithoutIncident.getBpmnProcessId());
+//    assertThat(processInstanceDto.getId()).isEqualTo(instanceWithoutIncident.getId());
+//    assertThat(processInstanceDto.getProcessId()).isEqualTo(instanceWithoutIncident.getProcessId());
+//    assertThat(processInstanceDto.getState()).isEqualTo(instanceWithoutIncident.getState());
+//    assertThat(processInstanceDto.getStartDate()).isEqualTo(instanceWithoutIncident.getStartDate());
+//    assertThat(processInstanceDto.getEndDate()).isEqualTo(instanceWithoutIncident.getEndDate());
+//    assertThat(processInstanceDto.getBpmnProcessId()).isEqualTo(instanceWithoutIncident.getBpmnProcessId());
 //
-//    assertThat(workflowInstanceDto.getActivities().size()).isGreaterThan(0);
-//    assertThat(workflowInstanceDto.getActivities().size()).isEqualTo(instanceWithoutIncident.getActivities().size());
+//    assertThat(processInstanceDto.getActivities().size()).isGreaterThan(0);
+//    assertThat(processInstanceDto.getActivities().size()).isEqualTo(instanceWithoutIncident.getActivities().size());
 //
-//    assertThat(workflowInstanceDto.getIncidents().size()).isGreaterThan(0);
-//    assertThat(workflowInstanceDto.getIncidents().size()).isEqualTo(instanceWithoutIncident.getIncidents().size());
+//    assertThat(processInstanceDto.getIncidents().size()).isGreaterThan(0);
+//    assertThat(processInstanceDto.getIncidents().size()).isEqualTo(instanceWithoutIncident.getIncidents().size());
 //
 //  }
 
@@ -1025,9 +1025,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testParamsAreEmptyStringsInsteadOfNull() throws Exception {
     createData();
 
-    List<String> workflowInstanceIds = CollectionUtil.toSafeListOfStrings(
-        runningInstance.getWorkflowInstanceKey().toString(),
-        instanceWithoutIncident.getWorkflowInstanceKey().toString()
+    List<String> processInstanceIds = CollectionUtil.toSafeListOfStrings(
+        runningInstance.getProcessInstanceKey().toString(),
+        instanceWithoutIncident.getProcessInstanceKey().toString()
     );
     ListViewRequestDto queryRequest = TestUtil.createGetAllRunningRequest();
     queryRequest.getQuery()
@@ -1036,77 +1036,77 @@ public class ListViewQueryIT extends OperateIntegrationTest {
         .setErrorMessage("")
         .setActivityId("")
         .setVariable(new VariablesQueryDto("", ""))
-        .setIds(workflowInstanceIds);
+        .setIds(processInstanceIds);
 
     MvcResult mvcResult = postRequest(query(), queryRequest);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     assertThat(response.getTotalCount()).isEqualTo(2);
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(2);
+    assertThat(response.getProcessInstances().size()).isEqualTo(2);
   }
 
-  private void createWorkflowInstanceWithUpperLowerCaseWorkflowname() {
-    WorkflowInstanceForListViewEntity upperWorkflow = createWorkflowInstance(WorkflowInstanceState.ACTIVE, 42L);
-    upperWorkflow.setWorkflowName("UPPER_LOWER_WORKFLOW_NAME");
+  private void createProcessInstanceWithUpperLowerCaseProcessname() {
+    ProcessInstanceForListViewEntity upperProcess = createProcessInstance(ProcessInstanceState.ACTIVE, 42L);
+    upperProcess.setProcessName("UPPER_LOWER_PROCESS_NAME");
 
-    WorkflowInstanceForListViewEntity lowerWorkflow = createWorkflowInstance(WorkflowInstanceState.ACTIVE, 23L);
-    lowerWorkflow.setWorkflowName("upper_lower_workflow_name");
+    ProcessInstanceForListViewEntity lowerProcess = createProcessInstance(ProcessInstanceState.ACTIVE, 23L);
+    lowerProcess.setProcessName("upper_lower_process_name");
 
-    elasticsearchTestRule.persistNew(upperWorkflow,lowerWorkflow);
+    elasticsearchTestRule.persistNew(upperProcess,lowerProcess);
   }
 
-  private void createWorkflowInstanceWithoutWorkflowname() {
-    WorkflowInstanceForListViewEntity workflowWithoutName = createWorkflowInstance(WorkflowInstanceState.ACTIVE, 27L);
-    workflowWithoutName.setBpmnProcessId("lower_workflow_id");
-    workflowWithoutName.setWorkflowName(workflowWithoutName.getBpmnProcessId());
+  private void createProcessInstanceWithoutProcessname() {
+    ProcessInstanceForListViewEntity processWithoutName = createProcessInstance(ProcessInstanceState.ACTIVE, 27L);
+    processWithoutName.setBpmnProcessId("lower_process_id");
+    processWithoutName.setProcessName(processWithoutName.getBpmnProcessId());
 
-    elasticsearchTestRule.persistNew(workflowWithoutName);
+    elasticsearchTestRule.persistNew(processWithoutName);
   }
 
   protected void createData() {
     List<VariableForListViewEntity> vars = new ArrayList<>();
 
-    createWorkflowInstanceWithUpperLowerCaseWorkflowname();
-    createWorkflowInstanceWithoutWorkflowname();
+    createProcessInstanceWithUpperLowerCaseProcessname();
+    createProcessInstanceWithoutProcessname();
     //running instance with one activity and without incidents
-    final Long workflowKey = 27L;
-    runningInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowKey);
+    final Long processDefinitionKey = 27L;
+    runningInstance = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey);
     runningInstance.setBatchOperationIds(Arrays.asList("a", batchOperationId));
     final FlowNodeInstanceForListViewEntity activityInstance1 = TestUtil
-        .createFlowNodeInstance(runningInstance.getWorkflowInstanceKey(), FlowNodeState.ACTIVE);
-    vars.add(createVariableForListView(runningInstance.getWorkflowInstanceKey(), runningInstance.getWorkflowInstanceKey(), "var1", "X"));
-    vars.add(createVariableForListView(runningInstance.getWorkflowInstanceKey(), runningInstance.getWorkflowInstanceKey(), "var2", "Y"));
+        .createFlowNodeInstance(runningInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE);
+    vars.add(createVariableForListView(runningInstance.getProcessInstanceKey(), runningInstance.getProcessInstanceKey(), "var1", "X"));
+    vars.add(createVariableForListView(runningInstance.getProcessInstanceKey(), runningInstance.getProcessInstanceKey(), "var2", "Y"));
 
     //completed instance with one activity and without incidents
-    completedInstance = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowKey);
+    completedInstance = createProcessInstance(ProcessInstanceState.COMPLETED, processDefinitionKey);
     completedInstance.setBatchOperationIds(Arrays.asList("b", batchOperationId));
     final FlowNodeInstanceForListViewEntity activityInstance2 = TestUtil
-        .createFlowNodeInstance(completedInstance.getWorkflowInstanceKey(), FlowNodeState.COMPLETED);
-    vars.add(createVariableForListView(completedInstance.getWorkflowInstanceKey(), completedInstance.getWorkflowInstanceKey(), "var1", "X"));
-    vars.add(createVariableForListView(completedInstance.getWorkflowInstanceKey(), completedInstance.getWorkflowInstanceKey(), "var2", "Z"));
+        .createFlowNodeInstance(completedInstance.getProcessInstanceKey(), FlowNodeState.COMPLETED);
+    vars.add(createVariableForListView(completedInstance.getProcessInstanceKey(), completedInstance.getProcessInstanceKey(), "var1", "X"));
+    vars.add(createVariableForListView(completedInstance.getProcessInstanceKey(), completedInstance.getProcessInstanceKey(), "var2", "Z"));
 
     //canceled instance with two activities and without incidents
-    canceledInstance = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+    canceledInstance = createProcessInstance(ProcessInstanceState.CANCELED);
     canceledInstance.setBatchOperationIds(Arrays.asList("c", "d"));
     final FlowNodeInstanceForListViewEntity activityInstance3 = TestUtil
-        .createFlowNodeInstance(canceledInstance.getWorkflowInstanceKey(), FlowNodeState.COMPLETED);
+        .createFlowNodeInstance(canceledInstance.getProcessInstanceKey(), FlowNodeState.COMPLETED);
     final FlowNodeInstanceForListViewEntity activityInstance4 = TestUtil
-        .createFlowNodeInstance(canceledInstance.getWorkflowInstanceKey(), FlowNodeState.TERMINATED);
-    vars.add(createVariableForListView(canceledInstance.getWorkflowInstanceKey(), Long.valueOf(activityInstance3.getId()), "var1", "X"));
-    vars.add(createVariableForListView(canceledInstance.getWorkflowInstanceKey(), canceledInstance.getWorkflowInstanceKey(), "var2", "W"));
+        .createFlowNodeInstance(canceledInstance.getProcessInstanceKey(), FlowNodeState.TERMINATED);
+    vars.add(createVariableForListView(canceledInstance.getProcessInstanceKey(), Long.valueOf(activityInstance3.getId()), "var1", "X"));
+    vars.add(createVariableForListView(canceledInstance.getProcessInstanceKey(), canceledInstance.getProcessInstanceKey(), "var2", "W"));
 
     //instance with incidents (one resolved and one active) and one active activity
-    final WorkflowInstanceForListViewEntity instanceWithIncident = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity instanceWithIncident = createProcessInstance(ProcessInstanceState.ACTIVE);
     final FlowNodeInstanceForListViewEntity activityInstance5 = TestUtil
-        .createFlowNodeInstance(instanceWithIncident.getWorkflowInstanceKey(), FlowNodeState.ACTIVE);
-    vars.add(createVariableForListView(instanceWithIncident.getWorkflowInstanceKey(), instanceWithIncident.getWorkflowInstanceKey(), "var1", "Y"));
+        .createFlowNodeInstance(instanceWithIncident.getProcessInstanceKey(), FlowNodeState.ACTIVE);
+    vars.add(createVariableForListView(instanceWithIncident.getProcessInstanceKey(), instanceWithIncident.getProcessInstanceKey(), "var1", "Y"));
     createIncident(activityInstance5, null, null);
 
     //instance with one resolved incident and one completed activity
-    instanceWithoutIncident = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    instanceWithoutIncident = createProcessInstance(ProcessInstanceState.ACTIVE);
     final FlowNodeInstanceForListViewEntity activityInstance6 = TestUtil
-        .createFlowNodeInstance(instanceWithoutIncident.getWorkflowInstanceKey(), FlowNodeState.COMPLETED);
+        .createFlowNodeInstance(instanceWithoutIncident.getProcessInstanceKey(), FlowNodeState.COMPLETED);
 
     //persist instances
     elasticsearchTestRule.persistNew(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, canceledInstance,

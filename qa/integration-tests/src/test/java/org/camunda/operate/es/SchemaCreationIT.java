@@ -35,7 +35,7 @@ public class SchemaCreationIT extends OperateIntegrationTest {
   private ElasticsearchSchemaManager schemaManager;
 
   @Autowired
-  private IncidentTemplate workflowInstanceTemplate;
+  private IncidentTemplate processInstanceTemplate;
 
   @Autowired
   private EventTemplate eventTemplate;
@@ -55,7 +55,7 @@ public class SchemaCreationIT extends OperateIntegrationTest {
       assertIndexAndAlias(indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias());
     }
 
-    assertTemplateOrder(workflowInstanceTemplate.getTemplateName(), 30);
+    assertTemplateOrder(processInstanceTemplate.getTemplateName(), 30);
     assertTemplateOrder(eventTemplate.getTemplateName(), 30);
 
     //assert schema creation won't be performed for the second time

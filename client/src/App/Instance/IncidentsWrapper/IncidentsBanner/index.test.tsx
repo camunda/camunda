@@ -29,7 +29,7 @@ const Wrapper = ({children}: Props) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/1']}>
-        <Route path="/instances/:workflowInstanceId">{children}</Route>
+        <Route path="/instances/:processInstanceId">{children}</Route>
       </MemoryRouter>
     </ThemeProvider>
   );
@@ -38,7 +38,7 @@ const Wrapper = ({children}: Props) => {
 describe('IncidentsBanner', () => {
   it('should display incidents banner if banner is not collapsed', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
         res.once(
           ctx.json({
             count: 1,
@@ -58,7 +58,7 @@ describe('IncidentsBanner', () => {
 
   it('should not display incidents banner if panel is collapsed', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
         res.once(
           ctx.json({
             count: 1,
@@ -81,7 +81,7 @@ describe('IncidentsBanner', () => {
 
   it('should show the right text for more than 1 incident', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
         res.once(
           ctx.json({
             count: 2,

@@ -14,7 +14,7 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockIncidentsByError} from './IncidentsByError/index.setup';
-import {mockWithSingleVersion} from './InstancesByWorkflow/index.setup';
+import {mockWithSingleVersion} from './InstancesByProcess/index.setup';
 
 type Props = {
   children?: React.ReactNode;
@@ -35,7 +35,7 @@ describe('Dashboard', () => {
 
   it('should render', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res.once(
           ctx.json({
             running: 821,
@@ -47,7 +47,7 @@ describe('Dashboard', () => {
       rest.get('/api/incidents/byError', (_, res, ctx) =>
         res.once(ctx.json(mockIncidentsByError))
       ),
-      rest.get('/api/incidents/byWorkflow', (_, res, ctx) =>
+      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
         res.once(ctx.json(mockWithSingleVersion))
       )
     );
@@ -61,7 +61,7 @@ describe('Dashboard', () => {
     expect(
       screen.getByText('821 Running Instances in total')
     ).toBeInTheDocument();
-    expect(screen.getByText('Instances by Workflow')).toBeInTheDocument();
+    expect(screen.getByText('Instances by Process')).toBeInTheDocument();
     expect(screen.getByText('Incidents by Error Message')).toBeInTheDocument();
   });
 });

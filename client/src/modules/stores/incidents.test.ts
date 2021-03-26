@@ -45,7 +45,7 @@ describe('stores/incidents', () => {
   });
   beforeEach(() => {
     mockServer.use(
-      rest.get('/api/workflow-instances/123/incidents', (_, res, ctx) =>
+      rest.get('/api/process-instances/123/incidents', (_, res, ctx) =>
         res.once(ctx.json(mockIncidents))
       )
     );
@@ -62,7 +62,7 @@ describe('stores/incidents', () => {
     );
 
     mockServer.use(
-      rest.get('/api/workflow-instances/123/incidents', (_, res, ctx) =>
+      rest.get('/api/process-instances/123/incidents', (_, res, ctx) =>
         res.once(ctx.json({...mockIncidents, count: 2}))
       )
     );
@@ -77,7 +77,7 @@ describe('stores/incidents', () => {
     );
 
     mockServer.use(
-      rest.get('/api/workflow-instances/123/incidents', (_, res, ctx) =>
+      rest.get('/api/process-instances/123/incidents', (_, res, ctx) =>
         res.once(ctx.json({...mockIncidents, count: 3}))
       )
     );

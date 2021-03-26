@@ -24,8 +24,8 @@ const Routes = {
   instances() {
     return '/instances';
   },
-  instance(workflowInstanceId: string = ':workflowInstanceId') {
-    return `/instances/${workflowInstanceId}`;
+  instance(processInstanceId: string = ':processInstanceId') {
+    return `/instances/${processInstanceId}`;
   },
 } as const;
 

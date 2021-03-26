@@ -10,23 +10,23 @@ import org.camunda.operate.schema.templates.ListViewTemplate;
 
 public class VariableForListViewEntity extends OperateZeebeEntity {
 
-  private Long workflowInstanceKey;
+  private Long processInstanceKey;
   private Long scopeKey;
   private String varName;
   private String varValue;
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.VARIABLES_JOIN_RELATION);
 
-  public Long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
   }
   
   public static String getIdBy(long scopeKey, String name) {
     return String.format("%d-%s", scopeKey, name);
   }
 
-  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public Long getScopeKey() {
@@ -72,7 +72,7 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
 
     VariableForListViewEntity that = (VariableForListViewEntity) o;
 
-    if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey != null)
+    if (processInstanceKey != null ? !processInstanceKey.equals(that.processInstanceKey) : that.processInstanceKey != null)
       return false;
     if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null)
       return false;
@@ -86,7 +86,7 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
+    result = 31 * result + (processInstanceKey != null ? processInstanceKey.hashCode() : 0);
     result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
     result = 31 * result + (varName != null ? varName.hashCode() : 0);
     result = 31 * result + (varValue != null ? varValue.hashCode() : 0);

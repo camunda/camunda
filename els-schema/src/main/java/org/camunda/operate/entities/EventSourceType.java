@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 public enum EventSourceType {
 
   JOB,
-  WORKFLOW_INSTANCE,
+  PROCESS_INSTANCE,
   INCIDENT,
   UNKNOWN,
   UNSPECIFIED;

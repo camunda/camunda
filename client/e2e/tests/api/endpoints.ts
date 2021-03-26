@@ -9,7 +9,7 @@ import {config} from '../../config';
 const ENDPOINTS = Object.freeze({
   createOperation(id: string) {
     return new URL(
-      `/api/workflow-instances/${id}/operation`,
+      `/api/process-instances/${id}/operation`,
       config.endpoint
     ).toString();
   },

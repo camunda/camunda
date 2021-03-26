@@ -37,7 +37,7 @@ const Wrapper = ({children}: Props) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/1']}>
-        <Route path="/instances/:workflowInstanceId">
+        <Route path="/instances/:processInstanceId">
           <SplitPane>
             {children}
             <SplitPane.Pane />
@@ -51,10 +51,10 @@ const Wrapper = ({children}: Props) => {
 describe('TopPanel', () => {
   beforeEach(() => {
     mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       ),
-      rest.get('/api/workflow-instances/active_instance', (_, res, ctx) =>
+      rest.get('/api/process-instances/active_instance', (_, res, ctx) =>
         res.once(
           ctx.json({
             id: 'instance_id',
@@ -62,25 +62,23 @@ describe('TopPanel', () => {
           })
         )
       ),
-      rest.get(
-        '/api/workflow-instances/instance_with_incident',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              id: 'instance_id',
-              state: 'INCIDENT',
-            })
-          )
+      rest.get('/api/process-instances/instance_with_incident', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            id: 'instance_id',
+            state: 'INCIDENT',
+          })
+        )
       ),
-      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
         res.once(ctx.json(mockIncidents))
       ),
       rest.get(
-        '/api/workflow-instances/:instanceId/sequence-flows',
+        '/api/process-instances/:instanceId/sequence-flows',
         (_, res, ctx) => res.once(ctx.json(mockSequenceFlows))
       ),
       rest.get(
-        '/api/workflow-instances/:instanceId/flow-node-states',
+        '/api/process-instances/:instanceId/flow-node-states',
         (_, res, ctx) => res.once(ctx.json({}))
       )
     );
@@ -97,7 +95,7 @@ describe('TopPanel', () => {
     });
 
     currentInstanceStore.init('active_instance');
-    singleInstanceDiagramStore.fetchWorkflowXml('1');
+    singleInstanceDiagramStore.fetchProcessXml('1');
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('spinner'));
   });
@@ -108,7 +106,7 @@ describe('TopPanel', () => {
     });
 
     currentInstanceStore.init('instance_with_incident');
-    await singleInstanceDiagramStore.fetchWorkflowXml('1');
+    await singleInstanceDiagramStore.fetchProcessXml('1');
     expect(
       await screen.findByText('There is 1 Incident in Instance 1')
     ).toBeInTheDocument();
@@ -116,7 +114,7 @@ describe('TopPanel', () => {
 
   it('should show an error when a server error occurs', async () => {
     mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''), ctx.status(500))
       )
     );
@@ -125,7 +123,7 @@ describe('TopPanel', () => {
     });
 
     currentInstanceStore.init('instance_with_incident');
-    singleInstanceDiagramStore.fetchWorkflowXml('1');
+    singleInstanceDiagramStore.fetchProcessXml('1');
 
     expect(
       await screen.findByText('Diagram could not be fetched')
@@ -134,7 +132,7 @@ describe('TopPanel', () => {
 
   it('should show an error when a network error occurs', async () => {
     mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.networkError('A network error')
       )
     );
@@ -143,7 +141,7 @@ describe('TopPanel', () => {
     });
 
     currentInstanceStore.init('instance_with_incident');
-    singleInstanceDiagramStore.fetchWorkflowXml('1');
+    singleInstanceDiagramStore.fetchProcessXml('1');
 
     expect(
       await screen.findByText('Diagram could not be fetched')

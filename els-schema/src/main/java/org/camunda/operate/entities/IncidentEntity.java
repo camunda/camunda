@@ -24,11 +24,11 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   private Long jobKey;
 
-  private Long workflowInstanceKey;
+  private Long processInstanceKey;
 
   private OffsetDateTime creationTime;
 
-  private Long workflowKey;
+  private Long processDefinitionKey;
 
   public ErrorType getErrorType() {
     return errorType;
@@ -93,12 +93,12 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
     return this;
   }
 
-  public Long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public IncidentEntity setWorkflowInstanceKey(Long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public IncidentEntity setProcessInstanceKey(Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
@@ -111,13 +111,13 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
     return this;
   }
 
-  public IncidentEntity setWorkflowKey(Long workflowKey) {
-    this.workflowKey = workflowKey;
+  public IncidentEntity setProcessDefinitionKey(Long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
-  public Long getWorkflowKey() {
-    return workflowKey;
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
   }
 
   @Override
@@ -145,9 +145,9 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
       return false;
     if (jobKey != null ? !jobKey.equals(that.jobKey) : that.jobKey != null)
       return false;
-    if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey != null)
+    if (processInstanceKey != null ? !processInstanceKey.equals(that.processInstanceKey) : that.processInstanceKey != null)
       return false;
-    if (workflowKey != null ? !workflowKey.equals(that.workflowKey) : that.workflowKey != null)
+    if (processDefinitionKey != null ? !processDefinitionKey.equals(that.processDefinitionKey) : that.processDefinitionKey != null)
       return false;
     return creationTime != null ? creationTime.equals(that.creationTime) : that.creationTime == null;
   }
@@ -162,9 +162,9 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
     result = 31 * result + (flowNodeId != null ? flowNodeId.hashCode() : 0);
     result = 31 * result + (flowNodeInstanceKey != null ? flowNodeInstanceKey.hashCode() : 0);
     result = 31 * result + (jobKey != null ? jobKey.hashCode() : 0);
-    result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
+    result = 31 * result + (processInstanceKey != null ? processInstanceKey.hashCode() : 0);
     result = 31 * result + (creationTime != null ? creationTime.hashCode() : 0);
-    result = 31 * result + (workflowKey != null ? workflowKey.hashCode() : 0);
+    result = 31 * result + (processDefinitionKey != null ? processDefinitionKey.hashCode() : 0);
     return result;
   }
 

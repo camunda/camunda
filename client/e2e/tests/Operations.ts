@@ -43,7 +43,7 @@ test.skip('Retry and Cancel single instance ', async (t) => {
     screen.getByRole('textbox', {
       name: 'Instance Id(s) separated by space or comma',
     }),
-    instance.workflowInstanceKey,
+    instance.processInstanceKey,
     {paste: true}
   );
 
@@ -57,7 +57,7 @@ test.skip('Retry and Cancel single instance ', async (t) => {
   // retry single instance using operation button
   await t.click(
     screen.getByRole('button', {
-      name: `Retry Instance ${instance.workflowInstanceKey}`,
+      name: `Retry Instance ${instance.processInstanceKey}`,
     })
   );
 
@@ -68,7 +68,7 @@ test.skip('Retry and Cancel single instance ', async (t) => {
   // cancel single instance using operation button
   await t.click(
     screen.getByRole('button', {
-      name: `Cancel Instance ${instance.workflowInstanceKey}`,
+      name: `Cancel Instance ${instance.processInstanceKey}`,
     })
   );
 
@@ -120,18 +120,18 @@ test.skip('Retry and Cancel single instance ', async (t) => {
   );
   await t
     .expect(
-      instanceRow.getByTestId(`CANCELED-icon-${instance.workflowInstanceKey}`)
+      instanceRow.getByTestId(`CANCELED-icon-${instance.processInstanceKey}`)
         .exists
     )
     .ok()
     .expect(
-      instanceRow.queryByTestId(`ACTIVE-icon-${instance.workflowInstanceKey}`)
+      instanceRow.queryByTestId(`ACTIVE-icon-${instance.processInstanceKey}`)
         .exists
     )
     .notOk()
     .expect(instanceRow.getByText(instance.bpmnProcessId).exists)
     .ok()
-    .expect(instanceRow.getByText(instance.workflowInstanceKey).exists)
+    .expect(instanceRow.getByText(instance.processInstanceKey).exists)
     .ok();
 });
 
@@ -149,7 +149,7 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
       name: 'Instance Id(s) separated by space or comma',
     }),
     // @ts-ignore I had to use ignore instead of expect-error here because Testcafe would not run the tests with it
-    instances.map((instance) => instance.workflowInstanceKey).join(','),
+    instances.map((instance) => instance.processInstanceKey).join(','),
     {paste: true}
   );
 
@@ -232,7 +232,7 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
       async (instance) =>
         await t
           .expect(
-            within(instancesList).getByText(instance.workflowInstanceKey).exists
+            within(instancesList).getByText(instance.processInstanceKey).exists
           )
           .ok()
     )
@@ -273,7 +273,7 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
     instances.map(async (instance) =>
       t
         .expect(
-          screen.queryByTestId(`CANCELED-icon-${instance.workflowInstanceKey}`)
+          screen.queryByTestId(`CANCELED-icon-${instance.processInstanceKey}`)
             .exists
         )
         .ok({timeout: 30000})

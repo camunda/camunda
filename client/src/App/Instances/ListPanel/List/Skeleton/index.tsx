@@ -12,11 +12,11 @@ function InstanceRow() {
   return (
     <tr>
       <Styled.Td>
-        <Styled.WorkflowContainer>
+        <Styled.ProcessContainer>
           <Styled.SkeletonCheckboxBlock />
           <Styled.CircleBlock />
-          <Styled.WorkflowBlock />
-        </Styled.WorkflowContainer>
+          <Styled.ProcessBlock />
+        </Styled.ProcessContainer>
       </Styled.Td>
       <Styled.Td>
         <Styled.InstanceIdBlock />

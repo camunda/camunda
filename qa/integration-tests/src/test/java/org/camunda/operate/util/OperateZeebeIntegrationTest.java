@@ -7,7 +7,7 @@ package org.camunda.operate.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -30,7 +30,7 @@ import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebe.PartitionHolder;
 import org.camunda.operate.zeebeimport.ImportPositionHolder;
-import org.camunda.operate.zeebeimport.cache.WorkflowCache;
+import org.camunda.operate.zeebeimport.cache.ProcessCache;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,8 +43,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest {
 
-  protected static final String POST_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/%s/operation";
-  private static final String POST_BATCH_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/batch-operation";
+  protected static final String POST_OPERATION_URL = PROCESS_INSTANCE_URL + "/%s/operation";
+  private static final String POST_BATCH_OPERATION_URL = PROCESS_INSTANCE_URL + "/batch-operation";
 
   @MockBean
   protected ZeebeClient mockedZeebeClient;    //we don't want to create ZeebeClient, we will rather use the one from test rule
@@ -71,7 +71,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected ImportPositionHolder importPositionHolder;
 
   @Autowired
-  protected WorkflowCache workflowCache;
+  protected ProcessCache processCache;
 
   /// Predicate checks
   @Autowired
@@ -87,8 +87,8 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected Predicate<Object[]> variableEqualsCheck;
 
   @Autowired
-  @Qualifier("workflowIsDeployedCheck")
-  protected Predicate<Object[]> workflowIsDeployedCheck;
+  @Qualifier("processIsDeployedCheck")
+  protected Predicate<Object[]> processIsDeployedCheck;
 
   @Autowired
   @Qualifier("incidentsAreActiveCheck")
@@ -99,24 +99,24 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected Predicate<Object[]> incidentIsActiveCheck;
 
   @Autowired
-  @Qualifier("workflowInstanceIsCreatedCheck")
-  protected Predicate<Object[]> workflowInstanceIsCreatedCheck;
+  @Qualifier("processInstanceIsCreatedCheck")
+  protected Predicate<Object[]> processInstanceIsCreatedCheck;
 
   @Autowired
-  @Qualifier("workflowInstancesAreStartedCheck")
-  protected Predicate<Object[]> workflowInstancesAreStartedCheck;
+  @Qualifier("processInstancesAreStartedCheck")
+  protected Predicate<Object[]> processInstancesAreStartedCheck;
 
   @Autowired
-  @Qualifier("workflowInstanceIsCompletedCheck")
-  protected Predicate<Object[]> workflowInstanceIsCompletedCheck;
+  @Qualifier("processInstanceIsCompletedCheck")
+  protected Predicate<Object[]> processInstanceIsCompletedCheck;
 
   @Autowired
-  @Qualifier("workflowInstancesAreFinishedCheck")
-  protected Predicate<Object[]> workflowInstancesAreFinishedCheck;
+  @Qualifier("processInstancesAreFinishedCheck")
+  protected Predicate<Object[]> processInstancesAreFinishedCheck;
 
   @Autowired
-  @Qualifier("workflowInstanceIsCanceledCheck")
-  protected Predicate<Object[]> workflowInstanceIsCanceledCheck;
+  @Qualifier("processInstanceIsCanceledCheck")
+  protected Predicate<Object[]> processInstanceIsCanceledCheck;
 
   @Autowired
   @Qualifier("flowNodeIsTerminatedCheck")
@@ -135,8 +135,8 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected Predicate<Object[]> flowNodeIsActiveCheck;
 
   @Autowired
-  @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
-  protected Predicate<Object[]> operationsByWorkflowInstanceAreCompleted;
+  @Qualifier("operationsByProcessInstanceAreCompletedCheck")
+  protected Predicate<Object[]> operationsByProcessInstanceAreCompleted;
 
   @Autowired
   protected OperateProperties operateProperties;
@@ -164,7 +164,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
     tester = beanFactory.getBean(OperateTester.class, zeebeClient, mockMvcTestRule, elasticsearchTestRule);
 
-    workflowCache.clearCache();
+    processCache.clearCache();
     importPositionHolder.clearCache();
     partitionHolder.setZeebeClient(getClient());
 
@@ -172,7 +172,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   @After
   public void after() {
-    workflowCache.clearCache();
+    processCache.clearCache();
     importPositionHolder.clearCache();
   }
 
@@ -192,60 +192,60 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return workerName;
   }
 
-  public Long failTaskWithNoRetriesLeft(String taskName, long workflowInstanceKey, String errorMessage) {
+  public Long failTaskWithNoRetriesLeft(String taskName, long processInstanceKey, String errorMessage) {
     Long jobKey = ZeebeTestUtil.failTask(getClient(), taskName, getWorkerName(), 3, errorMessage);
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
     return jobKey;
   }
 
-  protected Long deployWorkflow(String... classpathResources) {
-    final Long workflowKey = ZeebeTestUtil.deployWorkflow(getClient(), classpathResources);
-    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey);
-    return workflowKey;
+  protected Long deployProcess(String... classpathResources) {
+    final Long processDefinitionKey = ZeebeTestUtil.deployProcess(getClient(), classpathResources);
+    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
+    return processDefinitionKey;
   }
 
-  protected Long deployWorkflow(BpmnModelInstance workflow, String resourceName) {
-    final Long workflowId = ZeebeTestUtil.deployWorkflow(getClient(), workflow, resourceName);
-    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowId);
-    return workflowId;
+  protected Long deployProcess(BpmnModelInstance process, String resourceName) {
+    final Long processId = ZeebeTestUtil.deployProcess(getClient(), process, resourceName);
+    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId);
+    return processId;
   }
 
-  protected void cancelWorkflowInstance(long workflowInstanceKey) {
-    cancelWorkflowInstance(workflowInstanceKey, true);
+  protected void cancelProcessInstance(long processInstanceKey) {
+    cancelProcessInstance(processInstanceKey, true);
   }
 
-  protected void cancelWorkflowInstance(long workflowInstanceKey, boolean waitForData) {
-    ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceKey);
+  protected void cancelProcessInstance(long processInstanceKey, boolean waitForData) {
+    ZeebeTestUtil.cancelProcessInstance(getClient(), processInstanceKey);
     if (waitForData) {
-      elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
+      elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
     }
   }
 
-  protected void completeTask(long workflowInstanceKey, String activityId, String payload) {
-    completeTask(workflowInstanceKey, activityId, payload, true);
+  protected void completeTask(long processInstanceKey, String activityId, String payload) {
+    completeTask(processInstanceKey, activityId, payload, true);
   }
 
-  protected void completeTask(long workflowInstanceKey, String activityId, String payload, boolean waitForData) {
+  protected void completeTask(long processInstanceKey, String activityId, String payload, boolean waitForData) {
     ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
     if (waitForData) {
-      elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsCompletedCheck, workflowInstanceKey, activityId);
+      elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsCompletedCheck, processInstanceKey, activityId);
     }
   }
 
-  protected void postUpdateVariableOperation(Long workflowInstanceKey, String newVarName, String newVarValue) throws Exception {
+  protected void postUpdateVariableOperation(Long processInstanceKey, String newVarName, String newVarValue) throws Exception {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue(newVarValue);
-    op.setVariableScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
-    postOperationWithOKResponse(workflowInstanceKey, op);
+    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
+    postOperationWithOKResponse(processInstanceKey, op);
   }
 
-  protected void postUpdateVariableOperation(Long workflowInstanceKey, Long scopeKey, String newVarName, String newVarValue) throws Exception {
+  protected void postUpdateVariableOperation(Long processInstanceKey, Long scopeKey, String newVarName, String newVarValue) throws Exception {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue(newVarValue);
     op.setVariableScopeId(ConversionUtils.toStringOrNull(scopeKey));
-    postOperationWithOKResponse(workflowInstanceKey, op);
+    postOperationWithOKResponse(processInstanceKey, op);
   }
 
   protected void executeOneBatch() {
@@ -258,13 +258,13 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     }
   }
 
-  protected MvcResult postOperationWithOKResponse(Long workflowInstanceKey, CreateOperationRequestDto operationRequest) throws Exception {
-    return postOperation(workflowInstanceKey, operationRequest, HttpStatus.SC_OK);
+  protected MvcResult postOperationWithOKResponse(Long processInstanceKey, CreateOperationRequestDto operationRequest) throws Exception {
+    return postOperation(processInstanceKey, operationRequest, HttpStatus.SC_OK);
   }
 
-  protected MvcResult postOperation(Long workflowInstanceKey, CreateOperationRequestDto operationRequest, int expectedStatus) throws Exception {
+  protected MvcResult postOperation(Long processInstanceKey, CreateOperationRequestDto operationRequest, int expectedStatus) throws Exception {
     MockHttpServletRequestBuilder postOperationRequest =
-      post(String.format(POST_OPERATION_URL, workflowInstanceKey))
+      post(String.format(POST_OPERATION_URL, processInstanceKey))
         .content(mockMvcTestRule.json(operationRequest))
         .contentType(mockMvcTestRule.getContentType());
 
@@ -276,12 +276,12 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return mvcResult;
   }
 
-  protected long startDemoWorkflowInstance() {
+  protected long startDemoProcessInstance() {
     String processId = "demoProcess";
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(getClient(), processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "taskA");
+    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(getClient(), processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
     //elasticsearchTestRule.refreshIndexesInElasticsearch();
-    return workflowInstanceKey;
+    return processInstanceKey;
   }
 
   protected MvcResult postBatchOperationWithOKResponse(ListViewQueryDto query, OperationType operationType) throws Exception {

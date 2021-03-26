@@ -50,20 +50,20 @@ describe('instance utils', () => {
     });
   });
 
-  describe('getWorkflowName', () => {
-    it('should return workflowName when it exists', () => {
+  describe('getProcessName', () => {
+    it('should return processName when it exists', () => {
       // given
       const instance = createInstance();
-      const instanceName = instanceUtils.getWorkflowName(instance);
+      const instanceName = instanceUtils.getProcessName(instance);
 
       // then
-      expect(instanceName).toBe(instance.workflowName);
+      expect(instanceName).toBe(instance.processName);
     });
 
     it('should fallback to bpmnProcessId', () => {
       // given
-      const instance = createInstance({workflowName: null});
-      const instanceName = instanceUtils.getWorkflowName(instance);
+      const instance = createInstance({processName: null});
+      const instanceName = instanceUtils.getProcessName(instance);
 
       // then
       expect(instanceName).toBe(instance.bpmnProcessId);

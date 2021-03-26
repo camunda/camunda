@@ -7,7 +7,7 @@
 import React from 'react';
 
 import {formatDate} from 'modules/utils/date';
-import {getWorkflowName} from 'modules/utils/instance';
+import {getProcessName} from 'modules/utils/instance';
 import {Operations} from 'modules/components/Operations';
 import Skeleton from './Skeleton';
 import {observer} from 'mobx-react';
@@ -31,10 +31,10 @@ const InstanceHeader = observer(() => {
             <Styled.Tr>
               <Styled.Td>
                 <Styled.StateIcon state={instance.state} />
-                {getWorkflowName(instance)}
+                {getProcessName(instance)}
               </Styled.Td>
               <Styled.Td>{instance.id}</Styled.Td>
-              <Styled.Td>{`Version ${instance.workflowVersion}`}</Styled.Td>
+              <Styled.Td>{`Version ${instance.processVersion}`}</Styled.Td>
               <Styled.Td data-testid="start-date">
                 {formatDate(instance.startDate)}
               </Styled.Td>

@@ -24,7 +24,7 @@ async function setup() {
   await Promise.all(
     [...new Array(40)].map(() =>
       createOperation({
-        id: singleOperationInstance.workflowInstanceKey,
+        id: singleOperationInstance.processInstanceKey,
         operationType: 'RESOLVE_INCIDENT',
       })
     )

@@ -32,15 +32,15 @@ class FlowNodeStates {
     });
   }
 
-  init = (workflowInstanceId: string) => {
-    this.fetchFlowNodeStates(workflowInstanceId);
-    this.startPolling(workflowInstanceId);
+  init = (processInstanceId: string) => {
+    this.fetchFlowNodeStates(processInstanceId);
+    this.startPolling(processInstanceId);
     when(() => this.areAllFlowNodesCompleted, this.stopPolling);
   };
 
-  fetchFlowNodeStates = async (workflowInstanceId: string) => {
+  fetchFlowNodeStates = async (processInstanceId: string) => {
     try {
-      const response = await fetchFlowNodeStates(workflowInstanceId);
+      const response = await fetchFlowNodeStates(processInstanceId);
       if (response.ok) {
         this.handleFetchSuccess(await response.json());
       } else {
@@ -70,9 +70,9 @@ class FlowNodeStates {
     }
   };
 
-  startPolling = (workflowInstanceId: string) => {
+  startPolling = (processInstanceId: string) => {
     this.intervalId = setInterval(() => {
-      this.fetchFlowNodeStates(workflowInstanceId);
+      this.fetchFlowNodeStates(processInstanceId);
     }, 5000);
   };
 

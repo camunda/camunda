@@ -21,7 +21,7 @@ public class VariableDto {
   private String name;
   private String value;
   private String scopeId;
-  private String workflowInstanceId;
+  private String processInstanceId;
   private boolean hasActiveOperation = false;
 
   public String getId() {
@@ -56,12 +56,12 @@ public class VariableDto {
     this.scopeId = scopeId;
   }
 
-  public String getWorkflowInstanceId() {
-    return workflowInstanceId;
+  public String getProcessInstanceId() {
+    return processInstanceId;
   }
 
-  public void setWorkflowInstanceId(String workflowInstanceId) {
-    this.workflowInstanceId = workflowInstanceId;
+  public void setProcessInstanceId(String processInstanceId) {
+    this.processInstanceId = processInstanceId;
   }
 
   public boolean isHasActiveOperation() {
@@ -81,7 +81,7 @@ public class VariableDto {
     variable.setName(variableEntity.getName());
     variable.setValue(variableEntity.getValue());
     variable.setScopeId(ConversionUtils.toStringOrNull(variableEntity.getScopeKey()));
-    variable.setWorkflowInstanceId(ConversionUtils.toStringOrNull(variableEntity.getWorkflowInstanceKey()));
+    variable.setProcessInstanceId(ConversionUtils.toStringOrNull(variableEntity.getProcessInstanceKey()));
 
     if (operations != null && operations.size() > 0) {
       List <OperationEntity> activeOperations = CollectionUtil.filter(operations,(o ->
@@ -128,7 +128,7 @@ public class VariableDto {
         variable.setName(operation.getVariableName());
         variable.setValue(operation.getVariableValue());
         variable.setScopeId(ConversionUtils.toStringOrNull(operation.getScopeKey()));
-        variable.setWorkflowInstanceId(ConversionUtils.toStringOrNull(operation.getWorkflowInstanceKey()));
+        variable.setProcessInstanceId(ConversionUtils.toStringOrNull(operation.getProcessInstanceKey()));
         variable.setHasActiveOperation(true);
         return variable;
       }

@@ -113,25 +113,25 @@ test('Navigation to Instances View', async (t) => {
     .eql(instancesWithIncidentCount);
 });
 
-test('Select instances by workflow', async (t) => {
-  await t.expect(screen.queryByTestId('instances-by-workflow').exists).ok();
+test('Select instances by process', async (t) => {
+  await t.expect(screen.queryByTestId('instances-by-process').exists).ok();
 
-  const withinInstanceByWorkflow = within(
-    screen.getByTestId('incident-byWorkflow-0')
+  const withinInstanceByProcess = within(
+    screen.getByTestId('incident-byProcess-0')
   );
 
   const incidentCount = Number(
-    await withinInstanceByWorkflow.getByTestId('incident-instances-badge')
+    await withinInstanceByProcess.getByTestId('incident-instances-badge')
       .textContent
   );
   const runningInstanceCount = Number(
-    await withinInstanceByWorkflow.getByTestId('active-instances-badge')
+    await withinInstanceByProcess.getByTestId('active-instances-badge')
       .textContent
   );
 
   const totalInstanceCount = incidentCount + runningInstanceCount;
 
-  await t.click(screen.getByTestId('incident-byWorkflow-0'));
+  await t.click(screen.getByTestId('incident-byProcess-0'));
 
   await t
     .expect(screen.getByRole('checkbox', {name: 'Active'}).checked)

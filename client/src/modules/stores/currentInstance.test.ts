@@ -19,7 +19,7 @@ describe('stores/currentInstance', () => {
 
   beforeEach(() => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(currentInstanceMock))
       )
     );
@@ -40,7 +40,7 @@ describe('stores/currentInstance', () => {
     const secondCurrentInstanceMock = createInstance();
 
     mockServer.use(
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(secondCurrentInstanceMock))
       )
     );
@@ -56,7 +56,7 @@ describe('stores/currentInstance', () => {
     const thirdCurrentInstanceMock = createInstance();
 
     mockServer.use(
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(thirdCurrentInstanceMock))
       )
     );
@@ -72,7 +72,7 @@ describe('stores/currentInstance', () => {
     const finishedCurrentInstanceMock = createInstance({state: 'CANCELED'});
 
     mockServer.use(
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(finishedCurrentInstanceMock))
       )
     );
@@ -106,32 +106,32 @@ describe('stores/currentInstance', () => {
     });
   });
 
-  it('should get workflow title', async () => {
-    expect(currentInstanceStore.workflowTitle).toBe(null);
+  it('should get process title', async () => {
+    expect(currentInstanceStore.processTitle).toBe(null);
     currentInstanceStore.setCurrentInstance({
       id: '123',
       state: 'ACTIVE',
-      workflowName: 'workflowName',
+      processName: 'processName',
     });
-    expect(currentInstanceStore.workflowTitle).toBe(
-      'Camunda Operate: Instance 123 of Workflow workflowName'
+    expect(currentInstanceStore.processTitle).toBe(
+      'Camunda Operate: Instance 123 of Process processName'
     );
   });
 
   it('should reset store', async () => {
-    expect(currentInstanceStore.workflowTitle).toBe(null);
+    expect(currentInstanceStore.processTitle).toBe(null);
     currentInstanceStore.setCurrentInstance({
       id: '123',
       state: 'ACTIVE',
-      workflowName: 'workflowName',
+      processName: 'processName',
     });
     expect(currentInstanceStore.state.instance).toEqual({
       id: '123',
       state: 'ACTIVE',
-      workflowName: 'workflowName',
+      processName: 'processName',
     });
     currentInstanceStore.reset();
-    expect(currentInstanceStore.workflowTitle).toBe(null);
+    expect(currentInstanceStore.processTitle).toBe(null);
   });
 
   it('should set active operation state', async () => {

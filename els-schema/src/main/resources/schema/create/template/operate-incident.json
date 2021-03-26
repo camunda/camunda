@@ -40,13 +40,13 @@
 			"errorMessageHash": {
 				"type":"integer"
 			},
-			"workflowKey": {
+			"processDefinitionKey": {
 				"type": "long"
 			},
 			"jobKey": {
 				"type": "long"
 			},
-			"workflowInstanceKey": {
+			"processInstanceKey": {
 				"type": "long"
 			},
 			"id": {

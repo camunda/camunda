@@ -40,7 +40,7 @@ export const TYPE = {
 
   EVENT_SUBPROCESS: 'EVENT_SUBPROCESS',
 
-  WORKFLOW: 'WORKFLOW',
+  PROCESS: 'PROCESS',
   MULTI_INSTANCE_BODY: 'MULTI_INSTANCE_BODY',
 } as const;
 
@@ -118,7 +118,7 @@ export const DROPDOWN_PLACEMENT = {
 
 export const OPERATION_TYPE = {
   RESOLVE_INCIDENT: 'RESOLVE_INCIDENT',
-  CANCEL_WORKFLOW_INSTANCE: 'CANCEL_WORKFLOW_INSTANCE',
+  CANCEL_PROCESS_INSTANCE: 'CANCEL_PROCESS_INSTANCE',
   UPDATE_VARIABLE: 'UPDATE_VARIABLE',
 } as const;
 
@@ -146,8 +146,8 @@ export const PAGE_TITLE = {
   LOGIN: 'Camunda Operate: Log In',
   DASHBOARD: 'Camunda Operate: Dashboard',
   INSTANCES: 'Camunda Operate: Instances',
-  INSTANCE: (instanceId: string, workflowName: string) =>
-    `Camunda Operate: Instance ${instanceId} of Workflow ${workflowName}`,
+  INSTANCE: (instanceId: string, processName: string) =>
+    `Camunda Operate: Instance ${instanceId} of Process ${processName}`,
 };
 
 export const PILL_TYPE = {

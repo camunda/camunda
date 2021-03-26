@@ -34,7 +34,7 @@ function createWrapper(history = createMemoryHistory()) {
 describe('<MetricPanel />', () => {
   beforeEach(() => {
     mockServer.use(
-      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res.once(
           ctx.json({
             running: 821,
@@ -154,7 +154,7 @@ describe('<MetricPanel />', () => {
 
   it('should handle server errors', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res.once(ctx.status(500), ctx.json({}))
       )
     );
@@ -165,13 +165,13 @@ describe('<MetricPanel />', () => {
     statisticsStore.fetchStatistics();
 
     expect(
-      await screen.findByText('Workflow statistics could not be fetched')
+      await screen.findByText('Process statistics could not be fetched')
     ).toBeInTheDocument();
   });
 
   it('should handle networks errors', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/core-statistics', (_, res) =>
+      rest.get('/api/process-instances/core-statistics', (_, res) =>
         res.networkError('A network error')
       )
     );
@@ -182,7 +182,7 @@ describe('<MetricPanel />', () => {
     statisticsStore.fetchStatistics();
 
     expect(
-      await screen.findByText('Workflow statistics could not be fetched')
+      await screen.findByText('Process statistics could not be fetched')
     ).toBeInTheDocument();
   });
 });

@@ -16,7 +16,7 @@ public class TestFixture extends AbstractTestFixture {
   public static final String VERSION = "0.23.0";
 
   @Autowired
-  private Workflow0230DataGenerator basicWorkflowDataGenerator;
+  private Process0230DataGenerator basicProcessDataGenerator;
 
   @Override
   public void setup(TestContext testContext) {
@@ -33,7 +33,7 @@ public class TestFixture extends AbstractTestFixture {
 
   private void generateData() {
     try {
-      basicWorkflowDataGenerator.createData(testContext);
+      basicProcessDataGenerator.createData(testContext);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

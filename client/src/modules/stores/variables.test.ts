@@ -18,7 +18,7 @@ describe('stores/variables', () => {
       name: 'mwst',
       value: '63.27',
       scopeId: '2251799813686374',
-      workflowInstanceId: '2251799813686374',
+      processInstanceId: '2251799813686374',
       hasActiveOperation: false,
     },
     {
@@ -26,7 +26,7 @@ describe('stores/variables', () => {
       name: 'orderStatus',
       value: '"NEW"',
       scopeId: '2251799813686374',
-      workflowInstanceId: '2251799813686374',
+      processInstanceId: '2251799813686374',
       hasActiveOperation: false,
     },
     {
@@ -34,7 +34,7 @@ describe('stores/variables', () => {
       name: 'paid',
       value: 'true',
       scopeId: '2251799813686374',
-      workflowInstanceId: '2251799813686374',
+      processInstanceId: '2251799813686374',
       hasActiveOperation: false,
     },
   ];
@@ -53,12 +53,11 @@ describe('stores/variables', () => {
 
   beforeEach(() => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(ctx.json(mockVariables))
       ),
-      rest.post(
-        '/api/workflow-instances/:instanceId/operation',
-        (_, res, ctx) => res.once(ctx.json(mockVariableOperation))
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.once(ctx.json(mockVariableOperation))
       )
     );
   });
@@ -87,7 +86,7 @@ describe('stores/variables', () => {
         hasActiveOperation: true,
         name: 'test',
         value: '1',
-        workflowInstanceId: '1',
+        processInstanceId: '1',
       },
     ]);
     currentInstanceStore.setCurrentInstance({id: '123', state: 'CANCELED'});
@@ -105,7 +104,7 @@ describe('stores/variables', () => {
     );
 
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(
           ctx.json([
             ...mockVariables,
@@ -114,7 +113,7 @@ describe('stores/variables', () => {
               name: 'clientNo',
               value: '"CNT-1211132-02"',
               scopeId: '2251799813686374',
-              workflowInstanceId: '2251799813686374',
+              processInstanceId: '2251799813686374',
               hasActiveOperation: false,
             },
           ])
@@ -130,14 +129,14 @@ describe('stores/variables', () => {
           name: 'clientNo',
           value: '"CNT-1211132-02"',
           scopeId: '2251799813686374',
-          workflowInstanceId: '2251799813686374',
+          processInstanceId: '2251799813686374',
           hasActiveOperation: false,
         },
       ])
     );
 
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(
           ctx.json([
             ...mockVariables,
@@ -146,7 +145,7 @@ describe('stores/variables', () => {
               name: 'clientNo',
               value: '"CNT-1211132-02"',
               scopeId: '2251799813686374',
-              workflowInstanceId: '2251799813686374',
+              processInstanceId: '2251799813686374',
               hasActiveOperation: false,
             },
             {
@@ -154,7 +153,7 @@ describe('stores/variables', () => {
               name: 'orderNo',
               value: '"CMD0001-01"',
               scopeId: '2251799813686374',
-              workflowInstanceId: '2251799813686374',
+              processInstanceId: '2251799813686374',
               hasActiveOperation: false,
             },
           ])
@@ -170,7 +169,7 @@ describe('stores/variables', () => {
           name: 'clientNo',
           value: '"CNT-1211132-02"',
           scopeId: '2251799813686374',
-          workflowInstanceId: '2251799813686374',
+          processInstanceId: '2251799813686374',
           hasActiveOperation: false,
         },
         {
@@ -178,7 +177,7 @@ describe('stores/variables', () => {
           name: 'orderNo',
           value: '"CMD0001-01"',
           scopeId: '2251799813686374',
-          workflowInstanceId: '2251799813686374',
+          processInstanceId: '2251799813686374',
           hasActiveOperation: false,
         },
       ])
@@ -196,7 +195,7 @@ describe('stores/variables', () => {
           name: 'clientNo',
           value: '"CNT-1211132-02"',
           scopeId: '2251799813686374',
-          workflowInstanceId: '2251799813686374',
+          processInstanceId: '2251799813686374',
           hasActiveOperation: false,
         },
         {
@@ -204,7 +203,7 @@ describe('stores/variables', () => {
           name: 'orderNo',
           value: '"CMD0001-01"',
           scopeId: '2251799813686374',
-          workflowInstanceId: '2251799813686374',
+          processInstanceId: '2251799813686374',
           hasActiveOperation: false,
         },
       ])
@@ -244,13 +243,13 @@ describe('stores/variables', () => {
           name: 'test',
           value: '1',
           hasActiveOperation: true,
-          workflowInstanceId: '1',
+          processInstanceId: '1',
         },
       ]);
 
       mockServer.use(
         rest.post(
-          '/api/workflow-instances/:instanceId/operation',
+          '/api/process-instances/:instanceId/operation',
           (_, res, ctx) => res.once(ctx.json(mockVariableOperation))
         )
       );
@@ -266,13 +265,13 @@ describe('stores/variables', () => {
           name: 'test',
           value: '1',
           hasActiveOperation: true,
-          workflowInstanceId: '1',
+          processInstanceId: '1',
         },
         {
           name: 'test2',
           value: '"value"',
           hasActiveOperation: true,
-          workflowInstanceId: '1',
+          processInstanceId: '1',
         },
       ]);
     });
@@ -282,7 +281,7 @@ describe('stores/variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/workflow-instances/:instanceId/operation',
+          '/api/process-instances/:instanceId/operation',
           (_, res, ctx) =>
             res.once(ctx.status(500), ctx.json({error: 'An error occured'}))
         )
@@ -303,7 +302,7 @@ describe('stores/variables', () => {
       expect(variablesStore.state.items).toEqual([]);
 
       mockServer.use(
-        rest.post('/api/workflow-instances/:instanceId/operation', (_, res) =>
+        rest.post('/api/process-instances/:instanceId/operation', (_, res) =>
           res.networkError('A network error')
         )
       );
@@ -336,7 +335,7 @@ describe('stores/variables', () => {
           name: 'mwst',
           value: '65',
           scopeId: '2251799813686374',
-          workflowInstanceId: '2251799813686374',
+          processInstanceId: '2251799813686374',
           hasActiveOperation: true,
         },
         {
@@ -344,7 +343,7 @@ describe('stores/variables', () => {
           name: 'orderStatus',
           value: '"NEW"',
           scopeId: '2251799813686374',
-          workflowInstanceId: '2251799813686374',
+          processInstanceId: '2251799813686374',
           hasActiveOperation: false,
         },
         {
@@ -352,14 +351,14 @@ describe('stores/variables', () => {
           name: 'paid',
           value: 'true',
           scopeId: '2251799813686374',
-          workflowInstanceId: '2251799813686374',
+          processInstanceId: '2251799813686374',
           hasActiveOperation: false,
         },
       ]);
 
       mockServer.use(
         rest.post(
-          '/api/workflow-instances/:instanceId/operation',
+          '/api/process-instances/:instanceId/operation',
           (_, res, ctx) => res.once(ctx.json(mockVariableOperation))
         )
       );
@@ -376,7 +375,7 @@ describe('stores/variables', () => {
           name: 'mwst',
           value: '65',
           scopeId: '2251799813686374',
-          workflowInstanceId: '2251799813686374',
+          processInstanceId: '2251799813686374',
           hasActiveOperation: true,
         },
         {
@@ -384,7 +383,7 @@ describe('stores/variables', () => {
           name: 'orderStatus',
           value: '"NEW"',
           scopeId: '2251799813686374',
-          workflowInstanceId: '2251799813686374',
+          processInstanceId: '2251799813686374',
           hasActiveOperation: false,
         },
         {
@@ -392,7 +391,7 @@ describe('stores/variables', () => {
           name: 'paid',
           value: 'false',
           scopeId: '2251799813686374',
-          workflowInstanceId: '2251799813686374',
+          processInstanceId: '2251799813686374',
           hasActiveOperation: true,
         },
       ]);
@@ -404,7 +403,7 @@ describe('stores/variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/workflow-instances/:instanceId/operation',
+          '/api/process-instances/:instanceId/operation',
           (_, res, ctx) =>
             res.once(ctx.status(500), ctx.json({error: 'An error occured'}))
         )
@@ -426,7 +425,7 @@ describe('stores/variables', () => {
       expect(variablesStore.state.items).toEqual(mockVariables);
 
       mockServer.use(
-        rest.post('/api/workflow-instances/:instanceId/operation', (_, res) =>
+        rest.post('/api/process-instances/:instanceId/operation', (_, res) =>
           res.networkError('A network error')
         )
       );
@@ -466,7 +465,7 @@ describe('stores/variables', () => {
 
   it('should get hasNoVariables', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(ctx.json([]))
       )
     );
@@ -481,7 +480,7 @@ describe('stores/variables', () => {
     expect(variablesStore.hasNoVariables).toBe(true);
 
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(ctx.json([]))
       )
     );
@@ -496,7 +495,7 @@ describe('stores/variables', () => {
     variablesStore.fetchVariables('1');
 
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(ctx.json(mockVariables))
       )
     );
@@ -516,7 +515,7 @@ describe('stores/variables', () => {
 
   it('should not update state if store is reset when there are ongoing requests', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(ctx.status(500), ctx.json(mockVariables))
       )
     );
@@ -542,9 +541,8 @@ describe('stores/variables', () => {
     });
 
     mockServer.use(
-      rest.post(
-        '/api/workflow-instances/:instanceId/operation',
-        (_, res, ctx) => res.once(ctx.json(mockVariableOperation))
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.once(ctx.json(mockVariableOperation))
       )
     );
 
@@ -556,7 +554,7 @@ describe('stores/variables', () => {
     });
 
     mockServer.use(
-      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(
           ctx.json([
             {
@@ -564,7 +562,7 @@ describe('stores/variables', () => {
               name: 'mwst',
               value: '63.27',
               scopeId: '2251799813686374',
-              workflowInstanceId: '2251799813686374',
+              processInstanceId: '2251799813686374',
               hasActiveOperation: false,
             },
             {
@@ -572,7 +570,7 @@ describe('stores/variables', () => {
               name: 'orderStatus',
               value: '"NEW"',
               scopeId: '2251799813686374',
-              workflowInstanceId: '2251799813686374',
+              processInstanceId: '2251799813686374',
               hasActiveOperation: false,
             },
             {
@@ -580,7 +578,7 @@ describe('stores/variables', () => {
               name: 'paid',
               value: 'true',
               scopeId: '2251799813686374',
-              workflowInstanceId: '2251799813686374',
+              processInstanceId: '2251799813686374',
               hasActiveOperation: false,
             },
             {
@@ -588,7 +586,7 @@ describe('stores/variables', () => {
               name: 'someNewVariableFromServer',
               value: '"CMD0001-01"',
               scopeId: '2251799813686374',
-              workflowInstanceId: '2251799813686374',
+              processInstanceId: '2251799813686374',
               hasActiveOperation: false,
             },
           ])
@@ -605,7 +603,7 @@ describe('stores/variables', () => {
         name: 'mwst',
         scopeId: '2251799813686374',
         value: '63.27',
-        workflowInstanceId: '2251799813686374',
+        processInstanceId: '2251799813686374',
       },
       {
         hasActiveOperation: false,
@@ -613,7 +611,7 @@ describe('stores/variables', () => {
         name: 'orderStatus',
         scopeId: '2251799813686374',
         value: '"NEW"',
-        workflowInstanceId: '2251799813686374',
+        processInstanceId: '2251799813686374',
       },
       {
         hasActiveOperation: false,
@@ -621,21 +619,21 @@ describe('stores/variables', () => {
         name: 'someNewVariableFromServer',
         scopeId: '2251799813686374',
         value: '"CMD0001-01"',
-        workflowInstanceId: '2251799813686374',
+        processInstanceId: '2251799813686374',
       },
       {
         id: '2251799813686374-paid',
         name: 'paid',
         value: 'false',
         scopeId: '2251799813686374',
-        workflowInstanceId: '2251799813686374',
+        processInstanceId: '2251799813686374',
         hasActiveOperation: true,
       },
       {
         hasActiveOperation: true,
         name: 'test1',
         value: '123',
-        workflowInstanceId: '1',
+        processInstanceId: '1',
       },
     ]);
   });

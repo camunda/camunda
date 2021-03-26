@@ -7,17 +7,17 @@
 import {post} from 'modules/request';
 
 async function fetchFlowNodeMetaData({
-  workflowInstanceId,
+  processInstanceId,
   flowNodeId,
   flowNodeInstanceId,
   flowNodeType,
 }: {
-  workflowInstanceId: WorkflowInstanceEntity['id'];
+  processInstanceId: ProcessInstanceEntity['id'];
   flowNodeId: string;
   flowNodeInstanceId?: string;
   flowNodeType?: string;
 }) {
-  const URL = `/api/workflow-instances/${workflowInstanceId}/flow-node-metadata`;
+  const URL = `/api/process-instances/${processInstanceId}/flow-node-metadata`;
 
   if (flowNodeInstanceId === undefined) {
     return post(URL, {flowNodeId, flowNodeInstanceId, flowNodeType});

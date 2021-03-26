@@ -24,7 +24,7 @@
 			"partitionId": {
 				"type": "integer"
 			},
-			"workflowInstanceKey": {
+			"processInstanceKey": {
 				"type": "long"
 			},
 			"id": {

@@ -7,7 +7,7 @@
 import {useParams} from 'react-router-dom';
 
 const useInstancePageParams = () => {
-  return useParams<{workflowInstanceId: WorkflowInstanceEntity['id']}>();
+  return useParams<{processInstanceId: ProcessInstanceEntity['id']}>();
 };
 
 export {useInstancePageParams};

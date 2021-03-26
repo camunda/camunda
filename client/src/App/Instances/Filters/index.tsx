@@ -15,8 +15,8 @@ import {
   ResetButtonContainer,
   Fields,
 } from './styled';
-import {WorkflowField} from './WorkflowField';
-import {WorkflowVersionField} from './WorkflowVersionField';
+import {ProcessField} from './ProcessField';
+import {ProcessVersionField} from './ProcessVersionField';
 import {FlowNodeField} from './FlowNodeField';
 import Textarea from 'modules/components/Textarea';
 import {Input} from 'modules/components/Input';
@@ -80,7 +80,7 @@ const Filters: React.FC = () => {
             <Fields>
               <AutoSubmit
                 fieldsToSkipTimeout={[
-                  'workflow',
+                  'process',
                   'version',
                   'flowNodeId',
                   'active',
@@ -90,10 +90,10 @@ const Filters: React.FC = () => {
                 ]}
               />
               <Row>
-                <WorkflowField />
+                <ProcessField />
               </Row>
               <Row>
-                <WorkflowVersionField />
+                <ProcessVersionField />
               </Row>
               <Row>
                 <Field name="ids" validate={handleIdsFieldValidation}>

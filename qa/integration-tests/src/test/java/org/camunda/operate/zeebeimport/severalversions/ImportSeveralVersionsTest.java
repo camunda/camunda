@@ -8,7 +8,7 @@ package org.camunda.operate.zeebeimport.severalversions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static org.camunda.operate.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.mockito.ArgumentMatchers.any;
@@ -18,7 +18,7 @@ import static org.mockito.Mockito.verify;
 import java.io.IOException;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
-import org.camunda.operate.schema.indices.WorkflowIndex;
+import org.camunda.operate.schema.indices.ProcessIndex;
 import org.camunda.operate.schema.templates.IncidentTemplate;
 import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.util.ElasticsearchTestRule;
@@ -51,7 +51,7 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
   private ZeebeImporter zeebeImporter;
 
   @Autowired
-  private WorkflowIndex workflowIndex;
+  private ProcessIndex processIndex;
 
   @Autowired
   private ListViewTemplate listViewTemplate;
@@ -71,8 +71,9 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
   @Value("${test.incidentCount}")
   private int incidentCount;
 
+  // TODO: change this back to the previous version after 1.0
   @SpyBean
-  private org.camunda.operate.zeebeimport.v26.processors.ElasticsearchBulkProcessor importerv1;
+  private org.camunda.operate.zeebeimport.v1_0.processors.ElasticsearchBulkProcessor importerv1;
 
   @SpyBean
   private org.camunda.operate.zeebeimport.v1_0.processors.ElasticsearchBulkProcessor importerv2;
@@ -113,17 +114,17 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
 
   private void assertOperateData() {
     try {
-      //assert workflow count
-      int count = ElasticsearchUtil.getDocCount(esClient, workflowIndex.getAlias());
+      //assert process count
+      int count = ElasticsearchUtil.getDocCount(esClient, processIndex.getAlias());
       assertThat(count).isEqualTo(1);
 
-      //assert workflow instances count
-      count = ElasticsearchUtil.getFieldCardinality(esClient, listViewTemplate.getAlias(), ListViewTemplate.WORKFLOW_INSTANCE_KEY);
+      //assert process instances count
+      count = ElasticsearchUtil.getFieldCardinality(esClient, listViewTemplate.getAlias(), ListViewTemplate.PROCESS_INSTANCE_KEY);
       assertThat(count).isEqualTo(wiCount);
 
       //assert finished count
-      final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
-      count = ElasticsearchUtil.getFieldCardinalityWithRequest(esClient, listViewTemplate.getAlias(), ListViewTemplate.END_DATE, isWorkflowInstanceQuery);
+      final TermQueryBuilder isProcessInstanceQuery = termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
+      count = ElasticsearchUtil.getFieldCardinalityWithRequest(esClient, listViewTemplate.getAlias(), ListViewTemplate.END_DATE, isProcessInstanceQuery);
       assertThat(count).isEqualTo(finishedCount);
 
       //assert incidents count

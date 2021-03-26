@@ -7,7 +7,7 @@
 import React, {useEffect} from 'react';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {MetricPanel} from './MetricPanel';
-import {InstancesByWorkflow} from './InstancesByWorkflow';
+import {InstancesByProcess} from './InstancesByProcess';
 import {IncidentsByError} from './IncidentsByError';
 import {PAGE_TITLE} from 'modules/constants';
 import Copyright from 'modules/components/Copyright';
@@ -34,9 +34,9 @@ function Dashboard() {
       </MetricPanelWrapper>
       <TileWrapper>
         <Tile>
-          <TileTitle>Instances by Workflow</TileTitle>
+          <TileTitle>Instances by Process</TileTitle>
           <TileContent>
-            <InstancesByWorkflow />
+            <InstancesByProcess />
           </TileContent>
         </Tile>
         <Tile>

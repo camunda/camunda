@@ -22,7 +22,7 @@ const mockExistingOperationFinished = {
 
 const mockOperationFinished = {
   id: '5678',
-  type: 'CANCEL_WORKFLOW_INSTANCE',
+  type: 'CANCEL_PROCESS_INSTANCE',
   endDate: '2020-02-06T15:37:29.699+0100',
   instancesCount: 2,
   operationsTotalCount: 2,

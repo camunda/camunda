@@ -14,11 +14,11 @@ public class ListViewTemplate extends AbstractTemplateDescriptor {
 
   public static final String ID = "id";
   public static final String KEY = "key";
-  public static final String WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
+  public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
-  public static final String WORKFLOW_VERSION = "workflowVersion";
-  public static final String WORKFLOW_KEY = "workflowKey";
-  public static final String WORKFLOW_NAME = "workflowName";
+  public static final String PROCESS_VERSION = "processVersion";
+  public static final String PROCESS_KEY = "processDefinitionKey";
+  public static final String PROCESS_NAME = "processName";
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
   public static final String STATE = "state";
@@ -38,7 +38,7 @@ public class ListViewTemplate extends AbstractTemplateDescriptor {
   public static final String BATCH_OPERATION_IDS = "batchOperationIds";
 
   public static final String JOIN_RELATION = "joinRelation";
-  public static final String WORKFLOW_INSTANCE_JOIN_RELATION = "workflowInstance";
+  public static final String PROCESS_INSTANCE_JOIN_RELATION = "processInstance";
   public static final String ACTIVITIES_JOIN_RELATION = "activity";
   public static final String VARIABLES_JOIN_RELATION = "variable";
 

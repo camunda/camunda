@@ -11,9 +11,9 @@ import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {createMultiInstanceFlowNodeInstances} from 'modules/testUtils';
 import {flowNodeInstanceStore} from './flowNodeInstance';
 
-const WORKFLOW_INSTANCE_ID = 'workflowInstance';
+const PROCESS_INSTANCE_ID = 'processInstance';
 const mockFlowNodeInstances = createMultiInstanceFlowNodeInstances(
-  WORKFLOW_INSTANCE_ID
+  PROCESS_INSTANCE_ID
 );
 
 describe('stores/flowNodeInstance', () => {
@@ -30,7 +30,7 @@ describe('stores/flowNodeInstance', () => {
       )
     );
     currentInstanceStore.setCurrentInstance({
-      id: WORKFLOW_INSTANCE_ID,
+      id: PROCESS_INSTANCE_ID,
       state: 'ACTIVE',
     });
   });
@@ -47,7 +47,7 @@ describe('stores/flowNodeInstance', () => {
     );
 
     await flowNodeInstanceStore.fetchSubTree({
-      treePath: `${WORKFLOW_INSTANCE_ID}/2251799813686156`,
+      treePath: `${PROCESS_INSTANCE_ID}/2251799813686156`,
     });
 
     expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual({
@@ -56,7 +56,7 @@ describe('stores/flowNodeInstance', () => {
     });
 
     await flowNodeInstanceStore.fetchSubTree({
-      treePath: `${WORKFLOW_INSTANCE_ID}/2251799813686156/2251799813686166`,
+      treePath: `${PROCESS_INSTANCE_ID}/2251799813686156/2251799813686166`,
     });
 
     expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual({
@@ -66,7 +66,7 @@ describe('stores/flowNodeInstance', () => {
     });
 
     await flowNodeInstanceStore.removeSubTree({
-      treePath: `${WORKFLOW_INSTANCE_ID}/2251799813686156`,
+      treePath: `${PROCESS_INSTANCE_ID}/2251799813686156`,
     });
 
     expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual(

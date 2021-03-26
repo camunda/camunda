@@ -8,15 +8,15 @@ package org.camunda.operate.schema.templates;
 import org.springframework.stereotype.Component;
 
 @Component
-public class IncidentTemplate extends AbstractTemplateDescriptor implements WorkflowInstanceDependant {
+public class IncidentTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant {
 
   public static final String INDEX_NAME = "incident";
 
   public static final String ID = "id";
   public static final String KEY = "key";
-  public static final String WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
+  public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
 
-  public static final String WORKFLOW_KEY = "workflowKey";
+  public static final String PROCESS_KEY = "processDefinitionKey";
   public static final String FLOW_NODE_ID = "flowNodeId";
   public static final String FLOW_NODE_INSTANCE_KEY = "flowNodeInstanceKey";
   public static final String JOB_KEY = "jobKey";

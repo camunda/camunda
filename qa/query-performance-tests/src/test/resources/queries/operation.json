@@ -1,7 +1,7 @@
 [
   {
     "title": "Resolve incidents on some complex query",
-    "url": "/api/workflow-instances/batch-operation",
+    "url": "/api/process-instances/batch-operation",
     "method": "POST",
     "body": {
       "query": {
@@ -12,10 +12,10 @@
           "name": "var1",
           "value": "\"value1\""
         },
-        "workflowIds": [
-          "${workflowIds}"
+        "processIds": [
+          "${processIds}"
         ],
-        "ids": ["${workflowInstanceIds}"],
+        "ids": ["${processInstanceIds}"],
         "activityId": "task2"
       },
       "operationType": "RESOLVE_INCIDENT"
@@ -23,7 +23,7 @@
   },
   {
     "title": "Cancel all instances",
-    "url": "/api/workflow-instances/batch-operation",
+    "url": "/api/process-instances/batch-operation",
     "method": "POST",
     "body": {
       "query": {
@@ -33,13 +33,13 @@
         "finished": true,
         "completed": true,
         "canceled": true,
-        "workflowIds": [
-          "${workflowIds}"
+        "processIds": [
+          "${processIds}"
         ],
-        "ids": ["${workflowInstanceIds}"],
+        "ids": ["${processInstanceIds}"],
         "activityId": "task2"
       },
-      "operationType": "CANCEL_WORKFLOW_INSTANCE"
+      "operationType": "CANCEL_PROCESS_INSTANCE"
     }
   }
 ]

@@ -64,7 +64,7 @@ describe('OperationItems', () => {
     beforeEach(() => {
       node = shallow(
         <OperationItems.Item
-          type={OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE}
+          type={OPERATION_TYPE.CANCEL_PROCESS_INSTANCE}
           onClick={() => mockOnClick()}
           title={'Cancel Instance 1'}
         />
@@ -73,7 +73,7 @@ describe('OperationItems', () => {
 
     it('should show the correct icon based on the type', () => {
       expect(node.find(Styled.Button).props().type).toBe(
-        OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
+        OPERATION_TYPE.CANCEL_PROCESS_INSTANCE
       );
       expect(node.find(Styled.CancelIcon)).toExist();
     });

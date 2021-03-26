@@ -40,7 +40,7 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 @Scope(SCOPE_PROTOTYPE)
 public class BatchOperationArchiverJob extends AbstractArchiverJob {
 
-  private static final Logger logger = LoggerFactory.getLogger(WorkflowInstancesArchiverJob.class);
+  private static final Logger logger = LoggerFactory.getLogger(ProcessInstancesArchiverJob.class);
 
   @Autowired
   private BatchOperationTemplate batchOperationTemplate;
@@ -118,7 +118,7 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
             bucketSort("datesSortedAgg", Arrays.asList(new FieldSortBuilder("_key")))
                 .size(1)
         )
-        //we need workflow instance ids, also taking into account batch size
+        //we need process instance ids, also taking into account batch size
         .subAggregation(
             topHits(instancesAggName)
                 .size(operateProperties.getArchiver().getRolloverBatchSize())

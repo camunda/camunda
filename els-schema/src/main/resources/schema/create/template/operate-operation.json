@@ -44,7 +44,7 @@
 			"lockOwner": {
 				"type": "keyword"
 			},
-			"workflowInstanceKey": {
+			"processInstanceKey": {
 				"type": "long"
 			},
 			"id": {

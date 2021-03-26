@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 
-@ApiModel("Workflow instance query")
+@ApiModel("Process instance query")
 public class ListViewQueryDto {
 
   private boolean running;
@@ -22,7 +22,7 @@ public class ListViewQueryDto {
   private boolean completed;
   private boolean canceled;
 
-  @ApiModelProperty(value = "Array of workflow instance ids", allowEmptyValue = true)
+  @ApiModelProperty(value = "Array of process instance ids", allowEmptyValue = true)
   private List<String> ids;
 
   private String errorMessage;
@@ -41,12 +41,12 @@ public class ListViewQueryDto {
   @ApiModelProperty(value = "End date before (exclusive)", allowEmptyValue = true)
   private OffsetDateTime endDateBefore;
 
-  private List<String> workflowIds;
+  private List<String> processIds;
 
   private String bpmnProcessId;
 
-  @ApiModelProperty(value = "Workflow version, goes together with bpmnProcessId. Can be null, then all version of the workflow are selected.", allowEmptyValue = true)
-  private Integer workflowVersion;
+  @ApiModelProperty(value = "Process version, goes together with bpmnProcessId. Can be null, then all version of the process are selected.", allowEmptyValue = true)
+  private Integer processVersion;
 
   private List<String> excludeIds;
 
@@ -174,12 +174,12 @@ public class ListViewQueryDto {
     return this;
   }
 
-  public List<String> getWorkflowIds() {
-    return workflowIds;
+  public List<String> getProcessIds() {
+    return processIds;
   }
 
-  public ListViewQueryDto setWorkflowIds(List<String> workflowIds) {
-    this.workflowIds = workflowIds;
+  public ListViewQueryDto setProcessIds(List<String> processIds) {
+    this.processIds = processIds;
     return this;
   }
 
@@ -192,12 +192,12 @@ public class ListViewQueryDto {
     return this;
   }
 
-  public Integer getWorkflowVersion() {
-    return workflowVersion;
+  public Integer getProcessVersion() {
+    return processVersion;
   }
 
-  public ListViewQueryDto setWorkflowVersion(Integer workflowVersion) {
-    this.workflowVersion = workflowVersion;
+  public ListViewQueryDto setProcessVersion(Integer processVersion) {
+    this.processVersion = processVersion;
     return this;
   }
 
@@ -250,9 +250,9 @@ public class ListViewQueryDto {
         Objects.equals(startDateBefore, that.startDateBefore) &&
         Objects.equals(endDateAfter, that.endDateAfter) &&
         Objects.equals(endDateBefore, that.endDateBefore) &&
-        Objects.equals(workflowIds, that.workflowIds) &&
+        Objects.equals(processIds, that.processIds) &&
         Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
-        Objects.equals(workflowVersion, that.workflowVersion) &&
+        Objects.equals(processVersion, that.processVersion) &&
         Objects.equals(excludeIds, that.excludeIds) &&
         Objects.equals(variable, that.variable) &&
         Objects.equals(batchOperationId, that.batchOperationId);
@@ -262,7 +262,7 @@ public class ListViewQueryDto {
   public int hashCode() {
     return Objects
         .hash(running, active, incidents, finished, completed, canceled, ids, errorMessage,
-            activityId, startDateAfter, startDateBefore, endDateAfter, endDateBefore, workflowIds,
-            bpmnProcessId, workflowVersion, excludeIds, variable, batchOperationId);
+            activityId, startDateAfter, startDateBefore, endDateAfter, endDateBefore, processIds,
+            bpmnProcessId, processVersion, excludeIds, variable, batchOperationId);
   }
 }

@@ -32,17 +32,17 @@ export const getLatestOperation = (
   return operations.length > 0 ? operations[0] : null;
 };
 
-export function getWorkflowName(instance: WorkflowInstanceEntity | null) {
+export function getProcessName(instance: ProcessInstanceEntity | null) {
   if (instance === null) {
     return '';
   }
 
-  const {workflowName, bpmnProcessId} = instance;
-  return workflowName || bpmnProcessId || '';
+  const {processName, bpmnProcessId} = instance;
+  return processName || bpmnProcessId || '';
 }
 
-export function formatGroupedWorkflows(workflows = []) {
-  return workflows.reduce((obj, value) => {
+export function formatGroupedProcesses(processes = []) {
+  return processes.reduce((obj, value) => {
     // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     obj[value.bpmnProcessId] = {
       // @ts-expect-error ts-migrate(2698) FIXME: Spread types may only be created from object types... Remove this comment to see the full error message

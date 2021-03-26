@@ -6,11 +6,10 @@
 package org.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.List;
@@ -24,7 +23,7 @@ import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
-import org.camunda.operate.zeebeimport.v26.processors.IncidentZeebeRecordProcessor;
+import org.camunda.operate.zeebeimport.v1_0.processors.IncidentZeebeRecordProcessor;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -54,10 +53,10 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
   @InjectMocks
   private IncidentZeebeRecordProcessor incidentZeebeRecordProcessor100;
 
-  @Autowired
-  @InjectMocks
-  private org.camunda.operate.zeebeimport.v26.processors.IncidentZeebeRecordProcessor
-      incidentZeebeRecordProcessor26;
+  // TODO: readd this after 1.0
+  // @Autowired
+  // @InjectMocks
+  // private org.camunda.operate.zeebeimport.v26.processors.IncidentZeebeRecordProcessor incidentZeebeRecordProcessor26;
 
   @Before
   public void before() {
@@ -69,9 +68,9 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
   public void testUnhandledErrorEventAsEndEvent() {
     // Given
     tester
-    .deployWorkflow("error-end-event.bpmn").waitUntil().workflowIsDeployed()
+    .deployProcess("error-end-event.bpmn").waitUntil().processIsDeployed()
     // when
-    .startWorkflowInstance("error-end-process")
+    .startProcessInstance("error-end-process")
     .waitUntil()
     .incidentIsActive();
     // then
@@ -87,11 +86,11 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     int variableCount = 4;
     String largeValue = "\"" + "x".repeat((int) (DataSize.ofMegabytes(4).toBytes() / variableCount)) + "\"";
 
-    tester.deployWorkflow("single-task.bpmn")
-        .waitUntil().workflowIsDeployed()
+    tester.deployProcess("single-task.bpmn")
+        .waitUntil().processIsDeployed()
         .then()
-        .startWorkflowInstance("process", "{}")
-        .waitUntil().workflowInstanceIsStarted();
+        .startProcessInstance("process", "{}")
+        .waitUntil().processInstanceIsStarted();
 
     for(int i=0; i<variableCount; i++) {
       tester.updateVariableOperation(Integer.toString(i), largeValue).waitUntil().operationIsCompleted();
@@ -113,10 +112,10 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
   public void testUnhandledErrorEvent() {
     // Given
     tester
-      .deployWorkflow("errorProcess.bpmn").waitUntil().workflowIsDeployed()
-      .startWorkflowInstance("errorProcess")
+      .deployProcess("errorProcess.bpmn").waitUntil().processIsDeployed()
+      .startProcessInstance("errorProcess")
     // when
-    .throwError("errorTask", "this-errorcode-does-not-exists", "Workflow error")
+    .throwError("errorTask", "this-errorcode-does-not-exists", "Process error")
     .then().waitUntil()
     .incidentIsActive();
 
@@ -130,16 +129,16 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
   public void testIncidentsAreReturned() throws Exception {
     // having
     String processId = "complexProcess";
-    deployWorkflow("complexProcess_v_3.bpmn");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"count\":3}");
+    deployProcess("complexProcess_v_3.bpmn");
+    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"count\":3}");
     final String errorMsg = "some error";
     final String activityId = "alwaysFailingTask";
     ZeebeTestUtil.failTask(zeebeClient, activityId, getWorkerName(), 3, errorMsg);
-    elasticsearchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, workflowInstanceKey, 4);
+    elasticsearchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 4);
     //elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
-    MvcResult mvcResult = getRequest(getIncidentsURL(workflowInstanceKey));
+    MvcResult mvcResult = getRequest(getIncidentsURL(processInstanceKey));
     final IncidentResponseDto incidentResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
     });
 
@@ -172,7 +171,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
   protected void assertIncidentEntity(IncidentEntity anIncident,ErrorType anErrorType,String anErrorTypeTitle) {
     assertThat(anIncident.getErrorType()).isEqualTo(anErrorType);
     assertThat(anIncident.getErrorType().getTitle()).isEqualTo(anErrorTypeTitle);
-    assertThat(anIncident.getWorkflowInstanceKey()).isEqualTo(tester.getWorkflowInstanceKey());
+    assertThat(anIncident.getProcessInstanceKey()).isEqualTo(tester.getProcessInstanceKey());
   }
 
   protected void assertErrorType(IncidentResponseDto incidentResponse, ErrorType errorType, int count) {
@@ -200,8 +199,8 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     }
   }
 
-  protected String getIncidentsURL(long workflowInstanceKey) {
-    return String.format(WORKFLOW_INSTANCE_URL + "/%s/incidents", workflowInstanceKey);
+  protected String getIncidentsURL(long processInstanceKey) {
+    return String.format(PROCESS_INSTANCE_URL + "/%s/incidents", processInstanceKey);
   }
 
 }

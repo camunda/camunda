@@ -50,7 +50,7 @@ const Wrapper = ({children}: Props) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/instances/1']}>
-        <Route path="/instances/:workflowInstanceId">{children} </Route>
+        <Route path="/instances/:processInstanceId">{children} </Route>
       </MemoryRouter>
     </ThemeProvider>
   );

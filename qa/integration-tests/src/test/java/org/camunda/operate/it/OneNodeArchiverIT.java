@@ -16,16 +16,16 @@ import java.util.List;
 import java.util.Random;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.archiver.Archiver;
-import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
+import org.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.templates.IncidentTemplate;
 import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.schema.templates.SequenceFlowTemplate;
-import org.camunda.operate.schema.templates.WorkflowInstanceDependant;
+import org.camunda.operate.schema.templates.ProcessInstanceDependant;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
@@ -50,7 +50,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static org.camunda.operate.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -60,7 +60,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
     OperateProperties.PREFIX + ".clusterNode.currentNodeId = 0" })
 public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
 
-  private WorkflowInstancesArchiverJob archiverJob;
+  private ProcessInstancesArchiverJob archiverJob;
 
   @Autowired
   private BeanFactory beanFactory;
@@ -84,7 +84,7 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
   private PartitionHolder partitionHolder;
 
   @Autowired
-  private List<WorkflowInstanceDependant> workflowInstanceDependantTemplates;
+  private List<ProcessInstanceDependant> processInstanceDependantTemplates;
 
   private Random random = new Random();
 
@@ -94,7 +94,7 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
   public void before() {
     super.before();
     dateTimeFormatter = DateTimeFormatter.ofPattern(operateProperties.getArchiver().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
-    archiverJob = beanFactory.getBean(WorkflowInstancesArchiverJob.class, partitionHolder.getPartitionIds());
+    archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, partitionHolder.getPartitionIds());
   }
 
   @Test
@@ -116,7 +116,7 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
     //finish instances 2 days ago
     final Instant endDate = currentTime.minus(2, ChronoUnit.DAYS);
     finishInstances(count, endDate, activityId);
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreFinishedCheck, ids1);
+    elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids1);
 
     brokerRule.getClock().setCurrentTime(currentTime);
 
@@ -132,53 +132,53 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   protected void createOperations(List<Long> ids1) {
-    final ListViewQueryDto query = TestUtil.createGetAllWorkflowInstancesQuery();
+    final ListViewQueryDto query = TestUtil.createGetAllProcessInstancesQuery();
     query.setIds(CollectionUtil.toSafeListOfStrings(ids1));
-    CreateBatchOperationRequestDto batchOperationRequest = new CreateBatchOperationRequestDto(query, OperationType.CANCEL_WORKFLOW_INSTANCE);  //the type does not matter
+    CreateBatchOperationRequestDto batchOperationRequest = new CreateBatchOperationRequestDto(query, OperationType.CANCEL_PROCESS_INSTANCE);  //the type does not matter
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
   private void deployProcessWithOneActivity(String processId, String activityId) {
-    BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
+    BpmnModelInstance process = Bpmn.createExecutableProcess(processId)
         .startEvent("start")
         .serviceTask(activityId).zeebeJobType(activityId)
         .endEvent()
         .done();
-    deployWorkflow(workflow, processId + ".bpmn");
+    deployProcess(process, processId + ".bpmn");
   }
 
   private void assertInstancesInCorrectIndex(int instancesCount, Instant endDate) throws IOException {
-    List<Long> ids = assertWorkflowInstanceIndex(instancesCount, endDate);
-    for (WorkflowInstanceDependant template : workflowInstanceDependantTemplates) {
+    List<Long> ids = assertProcessInstanceIndex(instancesCount, endDate);
+    for (ProcessInstanceDependant template : processInstanceDependantTemplates) {
       if (! (template instanceof IncidentTemplate || template instanceof SequenceFlowTemplate)) {
-        assertDependentIndex(template.getFullQualifiedName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_KEY, ids, endDate);
+        assertDependentIndex(template.getFullQualifiedName(), ProcessInstanceDependant.PROCESS_INSTANCE_KEY, ids, endDate);
       }
     }
   }
 
-  private List<Long> assertWorkflowInstanceIndex(int instancesCount, Instant endDate) throws IOException {
+  private List<Long> assertProcessInstanceIndex(int instancesCount, Instant endDate) throws IOException {
     final String destinationIndexName = archiver.getDestinationIndexName(listViewTemplate.getFullQualifiedName(), dateTimeFormatter.format(endDate));
-    final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
+    final TermQueryBuilder isProcessInstanceQuery = termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
 
     final SearchRequest searchRequest = new SearchRequest(destinationIndexName)
         .source(new SearchSourceBuilder()
-            .query(constantScoreQuery(isWorkflowInstanceQuery))
+            .query(constantScoreQuery(isProcessInstanceQuery))
             .size(100));
 
     final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
-    final List<WorkflowInstanceForListViewEntity> workflowInstances = ElasticsearchUtil
-        .mapSearchHits(response.getHits().getHits(), objectMapper, WorkflowInstanceForListViewEntity.class);
-    assertThat(workflowInstances.size()).isGreaterThanOrEqualTo(instancesCount);
-    assertThat(workflowInstances.size()).isLessThanOrEqualTo(instancesCount + 1);
+    final List<ProcessInstanceForListViewEntity> processInstances = ElasticsearchUtil
+        .mapSearchHits(response.getHits().getHits(), objectMapper, ProcessInstanceForListViewEntity.class);
+    assertThat(processInstances.size()).isGreaterThanOrEqualTo(instancesCount);
+    assertThat(processInstances.size()).isLessThanOrEqualTo(instancesCount + 1);
     if (endDate != null) {
-      assertThat(workflowInstances).extracting(ListViewTemplate.END_DATE).allMatch(ed -> ((OffsetDateTime) ed).toInstant().equals(endDate));
+      assertThat(processInstances).extracting(ListViewTemplate.END_DATE).allMatch(ed -> ((OffsetDateTime) ed).toInstant().equals(endDate));
     }
     //assert partitions
     List<Integer> partitionIds = partitionHolder.getPartitionIds();
-    assertThat(workflowInstances).extracting(ListViewTemplate.PARTITION_ID).containsOnly(partitionIds.toArray());
+    assertThat(processInstances).extracting(ListViewTemplate.PARTITION_ID).containsOnly(partitionIds.toArray());
     //return ids
-    return workflowInstances.stream().collect(ArrayList::new, (list, hit) -> list.add(Long.valueOf(hit.getId())), (list1, list2) -> list1.addAll(list2));
+    return processInstances.stream().collect(ArrayList::new, (list, hit) -> list.add(Long.valueOf(hit.getId())), (list1, list2) -> list1.addAll(list2));
   }
 
   private void assertDependentIndex(String mainIndexName, String idFieldName, List<Long> ids, Instant endDate) throws IOException {
@@ -207,9 +207,9 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
     brokerRule.getClock().setCurrentTime(currentTime);
     List<Long> ids = new ArrayList<>();
     for (int i = 0; i < count; i++) {
-      ids.add(ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"var\": 123}"));
+      ids.add(ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"var\": 123}"));
     }
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreStartedCheck, ids);
+    elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreStartedCheck, ids);
     return ids;
   }
 

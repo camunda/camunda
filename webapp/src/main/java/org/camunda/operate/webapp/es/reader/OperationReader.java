@@ -66,7 +66,7 @@ public class OperationReader extends AbstractReader {
   private UserService userService;
 
   /**
-   * Request workflow instances, that have scheduled operations or locked but with expired locks.
+   * Request process instances, that have scheduled operations or locked but with expired locks.
    * @param batchSize
    * @return
    */
@@ -96,29 +96,29 @@ public class OperationReader extends AbstractReader {
     }
   }
 
-  public Map<Long, List<OperationEntity>> getOperationsPerWorkflowInstanceKey(List<Long> workflowInstanceKeys) {
+  public Map<Long, List<OperationEntity>> getOperationsPerProcessInstanceKey(List<Long> processInstanceKeys) {
     Map<Long, List<OperationEntity>> result = new HashMap<>();
 
-    TermsQueryBuilder workflowInstanceKeysQ = termsQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKeys);
-    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceKeysQ, createUsernameQuery()));
+    TermsQueryBuilder processInstanceKeysQ = termsQuery(OperationTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys);
+    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(processInstanceKeysQ, createUsernameQuery()));
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ElasticsearchUtil.QueryType.ALL)
       .source(new SearchSourceBuilder()
         .query(query)
-        .sort(OperationTemplate.WORKFLOW_INSTANCE_KEY, SortOrder.ASC)
+        .sort(OperationTemplate.PROCESS_INSTANCE_KEY, SortOrder.ASC)
         .sort(OperationTemplate.ID, SortOrder.ASC));
 
     try {
       ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient, hits -> {
         final List<OperationEntity> operationEntities = ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper, OperationEntity.class);
         for (OperationEntity operationEntity: operationEntities) {
-          CollectionUtil.addToMap(result, operationEntity.getWorkflowInstanceKey(), operationEntity);
+          CollectionUtil.addToMap(result, operationEntity.getProcessInstanceKey(), operationEntity);
         }
       }, null);
 
       return result;
     } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining operations per workflow instance id: %s", e.getMessage());
+      final String message = String.format("Exception occurred, while obtaining operations per process instance id: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
@@ -128,11 +128,11 @@ public class OperationReader extends AbstractReader {
     return termQuery(OperationTemplate.USERNAME, userService.getCurrentUsername());
   }
 
-  public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(Long workflowInstanceKey) {
+  public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(Long processInstanceKey) {
     Map<Long, List<OperationEntity>> result = new HashMap<>();
 
-    TermQueryBuilder workflowInstanceKeysQ = termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
-    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceKeysQ, createUsernameQuery()));
+    TermQueryBuilder processInstanceKeysQ = termQuery(OperationTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
+    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(processInstanceKeysQ, createUsernameQuery()));
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ONLY_RUNTIME)
       .source(new SearchSourceBuilder()
@@ -155,13 +155,13 @@ public class OperationReader extends AbstractReader {
 
   }
 
-  public Map<String, List<OperationEntity>> getOperationsPerVariableName(Long workflowInstanceKey, Long scopeKey) {
+  public Map<String, List<OperationEntity>> getOperationsPerVariableName(Long processInstanceKey, Long scopeKey) {
     Map<String, List<OperationEntity>> result = new HashMap<>();
 
-    final TermQueryBuilder workflowInstanceKeyQuery = termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+    final TermQueryBuilder processInstanceKeyQuery = termQuery(OperationTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final TermQueryBuilder scopeKeyQuery = termQuery(OperationTemplate.SCOPE_KEY, scopeKey);
     final TermQueryBuilder operationTypeQ = termQuery(OperationTemplate.TYPE, OperationType.UPDATE_VARIABLE.name());
-    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceKeyQuery, scopeKeyQuery, operationTypeQ, createUsernameQuery()));
+    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(processInstanceKeyQuery, scopeKeyQuery, operationTypeQ, createUsernameQuery()));
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
       .source(new SearchSourceBuilder()
@@ -183,10 +183,10 @@ public class OperationReader extends AbstractReader {
 
   }
 
-  public List<OperationEntity> getOperationsByWorkflowInstanceKey(Long workflowInstanceKey) {
+  public List<OperationEntity> getOperationsByProcessInstanceKey(Long processInstanceKey) {
 
-    TermQueryBuilder workflowInstanceQ = workflowInstanceKey == null ? null : termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
-    QueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceQ, createUsernameQuery()));
+    TermQueryBuilder processInstanceQ = processInstanceKey == null ? null : termQuery(OperationTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
+    QueryBuilder query = constantScoreQuery(joinWithAnd(processInstanceQ, createUsernameQuery()));
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
       .source(new SearchSourceBuilder()
         .query(query)

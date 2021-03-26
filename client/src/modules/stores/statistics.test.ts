@@ -10,13 +10,13 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
 import {instancesStore} from './instances';
-import {mockWorkflowXML, groupedWorkflowsMock} from 'modules/testUtils';
+import {mockProcessXML, groupedProcessesMock} from 'modules/testUtils';
 
 const mockInstance = {
   id: '2251799813685625',
-  workflowId: '2251799813685623',
-  workflowName: 'Without Incidents Process',
-  workflowVersion: 1,
+  processId: '2251799813685623',
+  processName: 'Without Incidents Process',
+  processVersion: 1,
   startDate: '2020-11-19T08:14:05.406+0000',
   endDate: null,
   state: 'ACTIVE',
@@ -30,7 +30,7 @@ describe('stores/statistics', () => {
   beforeEach(() => {
     // mock for initial fetch when statistics store is initialized
     mockServer.use(
-      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res.once(
           ctx.json({
             running: 936,
@@ -62,7 +62,7 @@ describe('stores/statistics', () => {
 
   it('should fetch statistics with error', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res.once(
           ctx.status(500),
           ctx.json({
@@ -111,7 +111,7 @@ describe('stores/statistics', () => {
 
     mockServer.use(
       // mock for when current instance is set
-      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res.once(
           ctx.json({
             running: 100,
@@ -153,16 +153,16 @@ describe('stores/statistics', () => {
     expect(statisticsStore.state.withIncidents).toBe(211);
 
     mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockWorkflowXML))
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
       ),
-      rest.get('/api/workflows/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedWorkflowsMock))
+      rest.get('/api/processes/grouped', (_, res, ctx) =>
+        res.once(ctx.json(groupedProcessesMock))
       ),
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
-            workflowInstances: [{...mockInstance, hasActiveOperation: true}],
+            processInstances: [{...mockInstance, hasActiveOperation: true}],
             totalCount: 1,
           })
         )
@@ -178,16 +178,16 @@ describe('stores/statistics', () => {
     expect(statisticsStore.state.withIncidents).toBe(211);
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
-            workflowInstances: [{...mockInstance}],
+            processInstances: [{...mockInstance}],
             totalCount: 1,
           })
         )
       ),
       // mock for when there are completed operations
-      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res.once(
           ctx.json({
             running: 100,
@@ -196,10 +196,10 @@ describe('stores/statistics', () => {
           })
         )
       ),
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
+      rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
           ctx.json({
-            workflowInstances: [{...mockInstance}],
+            processInstances: [{...mockInstance}],
             totalCount: 2,
           })
         )

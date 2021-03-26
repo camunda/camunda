@@ -11,7 +11,7 @@ import {
   computed,
   IReactionDisposer,
 } from 'mobx';
-import {fetchWorkflowXML} from 'modules/api/diagram';
+import {fetchProcessXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
 import {logger} from 'modules/logger';
@@ -49,12 +49,10 @@ class InstancesDiagram {
     });
   }
 
-  fetchWorkflowXml = async (
-    workflowId: WorkflowInstanceEntity['workflowId']
-  ) => {
+  fetchProcessXml = async (processId: ProcessInstanceEntity['processId']) => {
     this.startFetching();
     try {
-      const response = await fetchWorkflowXML(workflowId);
+      const response = await fetchProcessXML(processId);
 
       if (response.ok) {
         this.handleFetchSuccess(await parseDiagramXML(await response.text()));

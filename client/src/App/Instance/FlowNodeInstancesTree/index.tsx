@@ -7,7 +7,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import {TYPE} from 'modules/constants';
-import {getWorkflowName} from 'modules/utils/instance';
+import {getProcessName} from 'modules/utils/instance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -41,9 +41,9 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
     ) || {
       name:
         currentInstanceStore.state.instance !== null
-          ? getWorkflowName(currentInstanceStore.state.instance)
+          ? getProcessName(currentInstanceStore.state.instance)
           : '',
-      type: {elementType: 'WORKFLOW'},
+      type: {elementType: 'PROCESS'},
     };
 
     const isMultiInstance = flowNodeInstance.type === TYPE.MULTI_INSTANCE_BODY;
@@ -89,11 +89,11 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
             <Foldable.Summary
               data-testid={flowNodeInstance.id}
               onSelection={() => {
-                const isWorkflowInstance =
+                const isProcessInstance =
                   flowNodeInstance.id ===
                   currentInstanceStore.state.instance?.id;
                 flowNodeSelectionStore.selectFlowNode({
-                  flowNodeId: isWorkflowInstance
+                  flowNodeId: isProcessInstance
                     ? undefined
                     : flowNodeInstance.flowNodeId,
                   flowNodeInstanceId: flowNodeInstance.id,
@@ -112,7 +112,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
                 flowNodeInstance={flowNodeInstance}
                 metaData={metaData}
                 isSelected={isSelected}
-                isBold={isFoldable || metaData.type.elementType === 'WORKFLOW'}
+                isBold={isFoldable || metaData.type.elementType === 'PROCESS'}
               />
             </Foldable.Summary>
           )}

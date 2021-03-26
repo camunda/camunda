@@ -15,9 +15,9 @@ public class DataGeneratorProperties {
 
   public static final String PROPERTIES_PREFIX = "camunda.operate.qa.data";
 
-  private int workflowCount = 100;
+  private int processCount = 100;
 
-  private int workflowInstanceCount = 10000;
+  private int processInstanceCount = 10000;
 
   private int incidentCount = 100;
 
@@ -33,20 +33,20 @@ public class DataGeneratorProperties {
 
   private int threadCount = 2;
 
-  public int getWorkflowCount() {
-    return workflowCount;
+  public int getProcessCount() {
+    return processCount;
   }
 
-  public void setWorkflowCount(int workflowCount) {
-    this.workflowCount = workflowCount;
+  public void setProcessCount(int processCount) {
+    this.processCount = processCount;
   }
 
-  public int getWorkflowInstanceCount() {
-    return workflowInstanceCount;
+  public int getProcessInstanceCount() {
+    return processInstanceCount;
   }
 
-  public void setWorkflowInstanceCount(int workflowInstanceCount) {
-    this.workflowInstanceCount = workflowInstanceCount;
+  public void setProcessInstanceCount(int processInstanceCount) {
+    this.processInstanceCount = processInstanceCount;
   }
 
   public int getIncidentCount() {

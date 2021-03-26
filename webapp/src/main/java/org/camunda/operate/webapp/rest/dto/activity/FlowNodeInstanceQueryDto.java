@@ -14,7 +14,7 @@ import java.util.Objects;
  */
 public class FlowNodeInstanceQueryDto {
 
-  private String workflowInstanceId;
+  private String processInstanceId;
 
   private String treePath;
 
@@ -43,17 +43,17 @@ public class FlowNodeInstanceQueryDto {
   public FlowNodeInstanceQueryDto() {
   }
 
-  public FlowNodeInstanceQueryDto(final String workflowInstanceId, final String treePath) {
-    this.workflowInstanceId = workflowInstanceId;
+  public FlowNodeInstanceQueryDto(final String processInstanceId, final String treePath) {
+    this.processInstanceId = processInstanceId;
     this.treePath = treePath;
   }
 
-  public String getWorkflowInstanceId() {
-    return workflowInstanceId;
+  public String getProcessInstanceId() {
+    return processInstanceId;
   }
 
-  public FlowNodeInstanceQueryDto setWorkflowInstanceId(final String workflowInstanceId) {
-    this.workflowInstanceId = workflowInstanceId;
+  public FlowNodeInstanceQueryDto setProcessInstanceId(final String processInstanceId) {
+    this.processInstanceId = processInstanceId;
     return this;
   }
 
@@ -123,7 +123,7 @@ public class FlowNodeInstanceQueryDto {
         .setSearchAfterOrEqual(this.searchAfterOrEqual)
         .setSearchBeforeOrEqual(this.searchBeforeOrEqual)
         .setTreePath(this.treePath)
-        .setWorkflowInstanceId(this.workflowInstanceId);
+        .setProcessInstanceId(this.processInstanceId);
   }
 
 
@@ -136,7 +136,7 @@ public class FlowNodeInstanceQueryDto {
       return false;
     }
     final FlowNodeInstanceQueryDto queryDto = (FlowNodeInstanceQueryDto) o;
-    return Objects.equals(workflowInstanceId, queryDto.workflowInstanceId) &&
+    return Objects.equals(processInstanceId, queryDto.processInstanceId) &&
         Objects.equals(treePath, queryDto.treePath) &&
         Arrays.equals(searchBefore, queryDto.searchBefore) &&
         Arrays.equals(searchBeforeOrEqual, queryDto.searchBeforeOrEqual) &&
@@ -147,7 +147,7 @@ public class FlowNodeInstanceQueryDto {
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(workflowInstanceId, treePath, pageSize);
+    int result = Objects.hash(processInstanceId, treePath, pageSize);
     result = 31 * result + Arrays.hashCode(searchBefore);
     result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
     result = 31 * result + Arrays.hashCode(searchAfter);

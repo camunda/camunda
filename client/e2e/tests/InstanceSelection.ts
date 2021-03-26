@@ -135,7 +135,7 @@ test('Selection of instances are not removed on sort', async (t) => {
     .ok();
 
   await t
-    .click(screen.getByRole('button', {name: 'Sort by workflowName'}))
+    .click(screen.getByRole('button', {name: 'Sort by processName'}))
     .expect(
       screen.getByRole('checkbox', {name: 'Select all instances'}).checked
     )

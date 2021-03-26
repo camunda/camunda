@@ -33,20 +33,20 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
     state: {flowNodes},
   } = flowNodeStatesStore;
 
-  const {workflowInstanceId} = useInstancePageParams();
+  const {processInstanceId} = useInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
 
   useEffect(() => {
     sequenceFlowsStore.init();
     flowNodeMetaDataStore.init();
-    flowNodeStatesStore.init(workflowInstanceId);
+    flowNodeStatesStore.init(processInstanceId);
 
     return () => {
       sequenceFlowsStore.reset();
       flowNodeStatesStore.reset();
       flowNodeMetaDataStore.reset();
     };
-  }, [workflowInstanceId]);
+  }, [processInstanceId]);
 
   const flowNodeStateOverlays = computed(() =>
     Object.entries(flowNodes).reduce<

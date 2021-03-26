@@ -16,7 +16,7 @@ describe('stores/sequenceFlows', () => {
 
   beforeEach(() => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:id/sequence-flows', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id/sequence-flows', (_, res, ctx) =>
         res.once(ctx.json(mockSequenceFlows))
       )
     );
@@ -58,12 +58,12 @@ describe('stores/sequenceFlows', () => {
     );
 
     mockServer.use(
-      rest.get('/api/workflow-instances/:id/sequence-flows', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id/sequence-flows', (_, res, ctx) =>
         res.once(
           ctx.json([
             ...mockSequenceFlows,
             {
-              workflowInstanceId: '2251799813693731',
+              processInstanceId: '2251799813693731',
               activityId: 'SequenceFlow_1sz6737',
             },
           ])
@@ -84,12 +84,12 @@ describe('stores/sequenceFlows', () => {
     );
 
     mockServer.use(
-      rest.get('/api/workflow-instances/:id/sequence-flows', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id/sequence-flows', (_, res, ctx) =>
         res.once(
           ctx.json([
             ...mockSequenceFlows,
             {
-              workflowInstanceId: '2251799813685691',
+              processInstanceId: '2251799813685691',
               activityId: 'SequenceFlow_1sz6737',
             },
           ])
@@ -130,7 +130,7 @@ describe('stores/sequenceFlows', () => {
   });
 
   it('should reset store', async () => {
-    await sequenceFlowsStore.fetchWorkflowSequenceFlows('1');
+    await sequenceFlowsStore.fetchProcessSequenceFlows('1');
 
     await waitFor(() =>
       expect(sequenceFlowsStore.state.items).toEqual([

@@ -5,9 +5,9 @@
  */
 package org.camunda.operate.zeebeimport.v1_0.processors;
 
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 import static org.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
 import static org.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
 
@@ -34,7 +34,7 @@ import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.v1_0.record.RecordImpl;
 import org.camunda.operate.zeebeimport.v1_0.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.v1_0.record.value.JobRecordValueImpl;
-import org.camunda.operate.zeebeimport.v1_0.record.value.WorkflowInstanceRecordValueImpl;
+import org.camunda.operate.zeebeimport.v1_0.record.value.ProcessInstanceRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -55,25 +55,24 @@ public class EventZeebeRecordProcessor {
 
   private static final Set<String> INCIDENT_EVENTS = new HashSet<>();
   private final static Set<String> JOB_EVENTS = new HashSet<>();
-  private static final Set<String> WORKFLOW_INSTANCE_STATES = new HashSet<>();
+  private static final Set<String> PROCESS_INSTANCE_STATES = new HashSet<>();
 
   static {
     INCIDENT_EVENTS.add(IncidentIntent.CREATED.name());
     INCIDENT_EVENTS.add(IncidentIntent.RESOLVED.name());
 
     JOB_EVENTS.add(JobIntent.CREATED.name());
-    JOB_EVENTS.add(JobIntent.ACTIVATED.name());
     JOB_EVENTS.add(JobIntent.COMPLETED.name());
     JOB_EVENTS.add(JobIntent.TIMED_OUT.name());
     JOB_EVENTS.add(JobIntent.FAILED.name());
     JOB_EVENTS.add(JobIntent.RETRIES_UPDATED.name());
     JOB_EVENTS.add(JobIntent.CANCELED.name());
 
-    WORKFLOW_INSTANCE_STATES.add(ELEMENT_ACTIVATING.name());
-    WORKFLOW_INSTANCE_STATES.add(ELEMENT_ACTIVATED.name());
-    WORKFLOW_INSTANCE_STATES.add(ELEMENT_COMPLETING.name());
-    WORKFLOW_INSTANCE_STATES.add(ELEMENT_COMPLETED.name());
-    WORKFLOW_INSTANCE_STATES.add(ELEMENT_TERMINATED.name());
+    PROCESS_INSTANCE_STATES.add(ELEMENT_ACTIVATING.name());
+    PROCESS_INSTANCE_STATES.add(ELEMENT_ACTIVATED.name());
+    PROCESS_INSTANCE_STATES.add(ELEMENT_COMPLETING.name());
+    PROCESS_INSTANCE_STATES.add(ELEMENT_COMPLETED.name());
+    PROCESS_INSTANCE_STATES.add(ELEMENT_TERMINATED.name());
   }
 
   @Autowired
@@ -116,16 +115,16 @@ public class EventZeebeRecordProcessor {
     }
   }
 
-  public void processWorkflowInstanceRecords(Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
-    for (Map.Entry<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
+  public void processProcessInstanceRecords(Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
+    for (Map.Entry<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
       //we need only last event of the processed type
-      List<RecordImpl<WorkflowInstanceRecordValueImpl>> wiRecords = wiRecordsEntry.getValue();
+      List<RecordImpl<ProcessInstanceRecordValueImpl>> wiRecords = wiRecordsEntry.getValue();
       if (wiRecords.size() >= 1) {
         for (int i = wiRecords.size() - 1; i>=0; i-- ) {
           final String intentStr = wiRecords.get(i).getIntent().name();
-          if (WORKFLOW_INSTANCE_STATES.contains(intentStr)) {
-            WorkflowInstanceRecordValueImpl recordValue = wiRecords.get(i).getValue();
-            processWorkflowInstance(wiRecords.get(i), recordValue, bulkRequest);
+          if (PROCESS_INSTANCE_STATES.contains(intentStr)) {
+            ProcessInstanceRecordValueImpl recordValue = wiRecords.get(i).getValue();
+            processProcessInstance(wiRecords.get(i), recordValue, bulkRequest);
             break;
           }
         }
@@ -133,24 +132,24 @@ public class EventZeebeRecordProcessor {
     }
   }
 
-  private void processWorkflowInstance(Record record, WorkflowInstanceRecordValueImpl recordValue, BulkRequest bulkRequest)
+  private void processProcessInstance(Record record, ProcessInstanceRecordValueImpl recordValue, BulkRequest bulkRequest)
     throws PersistenceException {
     if (!isProcessEvent(recordValue)) {   //we do not need to store process level events
       EventEntity eventEntity = new EventEntity();
 
-      eventEntity.setId(String.format(ID_PATTERN, recordValue.getWorkflowInstanceKey(), record.getKey()));
+      eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), record.getKey()));
 
       loadEventGeneralData(record, eventEntity);
 
-      eventEntity.setWorkflowKey(recordValue.getWorkflowKey());
-      eventEntity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
+      eventEntity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
+      eventEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
       eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
 
       if (recordValue.getElementId() != null) {
         eventEntity.setFlowNodeId(recordValue.getElementId());
       }
 
-      if (record.getKey() != recordValue.getWorkflowInstanceKey()) {
+      if (record.getKey() != recordValue.getProcessInstanceKey()) {
         eventEntity.setFlowNodeInstanceKey(record.getKey());
       }
 
@@ -161,18 +160,18 @@ public class EventZeebeRecordProcessor {
   private void processJob(Record record, JobRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
     EventEntity eventEntity = new EventEntity();
 
-    eventEntity.setId(String.format(ID_PATTERN, recordValue.getWorkflowInstanceKey(), recordValue.getElementInstanceKey()));
+    eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
 
     loadEventGeneralData(record, eventEntity);
 
-    final long workflowKey = recordValue.getWorkflowKey();
-    if (workflowKey > 0) {
-      eventEntity.setWorkflowKey(workflowKey);
+    final long processDefinitionKey = recordValue.getProcessDefinitionKey();
+    if (processDefinitionKey > 0) {
+      eventEntity.setProcessDefinitionKey(processDefinitionKey);
     }
 
-    final long workflowInstanceKey = recordValue.getWorkflowInstanceKey();
-    if (workflowInstanceKey > 0) {
-      eventEntity.setWorkflowInstanceKey(workflowInstanceKey);
+    final long processInstanceKey = recordValue.getProcessInstanceKey();
+    if (processInstanceKey > 0) {
+      eventEntity.setProcessInstanceKey(processInstanceKey);
     }
 
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
@@ -208,12 +207,12 @@ public class EventZeebeRecordProcessor {
   private void processIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
     EventEntity eventEntity = new EventEntity();
 
-    eventEntity.setId(String.format(ID_PATTERN, recordValue.getWorkflowInstanceKey(), recordValue.getElementInstanceKey()));
+    eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
 
     loadEventGeneralData(record, eventEntity);
 
-    if (recordValue.getWorkflowInstanceKey() > 0) {
-      eventEntity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
+    if (recordValue.getProcessInstanceKey() > 0) {
+      eventEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     }
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
     eventEntity.setFlowNodeId(recordValue.getElementId());
@@ -232,11 +231,11 @@ public class EventZeebeRecordProcessor {
     persistEvent(eventEntity, bulkRequest);
   }
 
-  private boolean isProcessEvent(WorkflowInstanceRecordValueImpl recordValue) {
+  private boolean isProcessEvent(ProcessInstanceRecordValueImpl recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }
 
-  private boolean isOfType(WorkflowInstanceRecordValueImpl recordValue, BpmnElementType type) {
+  private boolean isOfType(ProcessInstanceRecordValueImpl recordValue, BpmnElementType type) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;
@@ -255,8 +254,8 @@ public class EventZeebeRecordProcessor {
 
   private void persistEvent(EventEntity entity, BulkRequest bulkRequest) throws PersistenceException {
     try {
-      logger.debug("Event: id {}, eventSourceType {}, eventType {}, workflowInstanceKey {}", entity.getId(), entity.getEventSourceType(), entity.getEventType(),
-        entity.getWorkflowInstanceKey());
+      logger.debug("Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}", entity.getId(), entity.getEventSourceType(), entity.getEventType(),
+        entity.getProcessInstanceKey());
 
       //write event
       bulkRequest.add(new IndexRequest(eventTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())

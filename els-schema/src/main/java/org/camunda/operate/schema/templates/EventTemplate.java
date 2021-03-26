@@ -8,7 +8,7 @@ package org.camunda.operate.schema.templates;
 import org.springframework.stereotype.Component;
 
 @Component
-public class EventTemplate extends AbstractTemplateDescriptor implements WorkflowInstanceDependant {
+public class EventTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant {
 
   public static final String INDEX_NAME = "event";
 
@@ -16,7 +16,7 @@ public class EventTemplate extends AbstractTemplateDescriptor implements Workflo
 
   public static final String KEY = "key";
 
-  public static final String WORKFLOW_KEY = "workflowKey";
+  public static final String PROCESS_KEY = "processDefinitionKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
 
   public static final String FLOW_NODE_ID = "flowNodeId";

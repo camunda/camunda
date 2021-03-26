@@ -66,10 +66,10 @@
 			"flowNodeInstanceKey": {
 				"type": "long"
 			},
-			"workflowKey": {
+			"processDefinitionKey": {
 				"type": "long"
 			},
-			"workflowInstanceKey": {
+			"processInstanceKey": {
 				"type": "long"
 			},
 			"id": {

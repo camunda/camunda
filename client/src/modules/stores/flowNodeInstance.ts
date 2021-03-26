@@ -78,18 +78,18 @@ class FlowNodeInstance {
   }
 
   pollInstances = async () => {
-    const workflowInstanceId = currentInstanceStore.state.instance?.id;
+    const processInstanceId = currentInstanceStore.state.instance?.id;
 
-    if (workflowInstanceId === undefined) {
+    if (processInstanceId === undefined) {
       return;
     }
 
     const queries = Object.entries(this.state.flowNodeInstances)
       .filter(([treePath, flowNodeInstance]) => {
-        return flowNodeInstance.running || treePath === workflowInstanceId;
+        return flowNodeInstance.running || treePath === processInstanceId;
       })
       .map(([treePath, flowNodeInstance]) => {
-        return {treePath, workflowInstanceId};
+        return {treePath, processInstanceId};
       });
 
     try {
@@ -114,15 +114,15 @@ class FlowNodeInstance {
     treePath: string;
     pageSize?: number;
   }) => {
-    const workflowInstanceId = currentInstanceStore.state.instance?.id;
-    if (workflowInstanceId === undefined) {
+    const processInstanceId = currentInstanceStore.state.instance?.id;
+    if (processInstanceId === undefined) {
       return;
     }
 
     try {
       const response = await fetchFlowNodeInstances([
         {
-          workflowInstanceId: workflowInstanceId,
+          processInstanceId: processInstanceId,
           treePath,
           pageSize,
         },
@@ -152,11 +152,11 @@ class FlowNodeInstance {
   };
 
   fetchInstanceExecutionHistory = async (
-    workflowInstanceId: WorkflowInstanceEntity['id']
+    processInstanceId: ProcessInstanceEntity['id']
   ) => {
     this.startFetch();
     this.fetchSubTree({
-      treePath: workflowInstanceId,
+      treePath: processInstanceId,
     });
   };
 
@@ -230,25 +230,25 @@ class FlowNodeInstance {
   }
 
   get instanceExecutionHistory(): FlowNodeInstanceType | null {
-    const {instance: workflowInstance} = currentInstanceStore.state;
+    const {instance: processInstance} = currentInstanceStore.state;
     const {status} = this.state;
 
     if (
-      workflowInstance === null ||
+      processInstance === null ||
       ['initial', 'first-fetch'].includes(status)
     ) {
       return null;
     }
 
     return {
-      id: workflowInstance.id,
-      type: 'WORKFLOW',
-      state: workflowInstance.state,
-      treePath: workflowInstance.id,
+      id: processInstance.id,
+      type: 'PROCESS',
+      state: processInstance.state,
+      treePath: processInstance.id,
       endDate: null,
       startDate: '',
       sortValues: [],
-      flowNodeId: workflowInstance.workflowId,
+      flowNodeId: processInstance.processId,
     };
   }
 }

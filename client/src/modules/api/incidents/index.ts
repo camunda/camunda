@@ -6,12 +6,12 @@
 
 import {get} from 'modules/request';
 
-async function fetchInstancesByWorkflow() {
-  return get('/api/incidents/byWorkflow');
+async function fetchInstancesByProcess() {
+  return get('/api/incidents/byProcess');
 }
 
 async function fetchIncidentsByError() {
   return get('/api/incidents/byError');
 }
 
-export {fetchInstancesByWorkflow, fetchIncidentsByError};
+export {fetchInstancesByProcess, fetchIncidentsByError};

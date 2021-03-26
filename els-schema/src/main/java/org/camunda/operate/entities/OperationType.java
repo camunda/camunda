@@ -8,7 +8,7 @@ package org.camunda.operate.entities;
 public enum OperationType {
 
   RESOLVE_INCIDENT,
-  CANCEL_WORKFLOW_INSTANCE,
+  CANCEL_PROCESS_INSTANCE,
   UPDATE_VARIABLE
 
 }

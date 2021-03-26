@@ -34,7 +34,7 @@ const Wrapper = ({children}: Props) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={[`/instances/1`]}>
-        <Route path="/instances/:workflowInstanceId">{children} </Route>
+        <Route path="/instances/:processInstanceId">{children} </Route>
       </MemoryRouter>
     </ThemeProvider>
   );
@@ -54,7 +54,7 @@ describe('Variables', () => {
     it('should display empty content if there are no variables', async () => {
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json([]))
         )
       );
@@ -68,7 +68,7 @@ describe('Variables', () => {
     it('should display skeleton on initial load', async () => {
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -81,7 +81,7 @@ describe('Variables', () => {
     it('should display spinner on second variable fetch', async () => {
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -91,7 +91,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -107,7 +107,7 @@ describe('Variables', () => {
     it('should render variables table', async () => {
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -131,7 +131,7 @@ describe('Variables', () => {
       currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -167,7 +167,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -186,7 +186,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -264,7 +264,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -285,7 +285,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/workflow-instances/:instanceId/operation',
+          '/api/process-instances/:instanceId/operation',
           (_, res, ctx) => res.once(ctx.json(null))
         )
       );
@@ -300,7 +300,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) =>
             res.once(
               ctx.json([
@@ -310,7 +310,7 @@ describe('Variables', () => {
                   name: 'newVariable',
                   value: '1234',
                   scopeId: '2251799813686037',
-                  workflowInstanceId: '2251799813686037',
+                  processInstanceId: '2251799813686037',
                   hasActiveOperation: false,
                 },
               ])
@@ -334,7 +334,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -368,7 +368,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -400,7 +400,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -438,7 +438,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -463,7 +463,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -506,7 +506,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -522,7 +522,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -538,7 +538,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -563,7 +563,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -578,7 +578,7 @@ describe('Variables', () => {
     it('should disable add variable button when selected flow node is not running', async () => {
       mockServer.use(
         rest.get(
-          '/api/workflow-instances/:instanceId/variables',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json([]))
         )
       );
@@ -593,7 +593,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/workflow-instances/1/flow-node-metadata',
+          '/api/process-instances/1/flow-node-metadata',
           (_, res, ctx) =>
             res.once(
               ctx.json({
@@ -623,7 +623,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/workflow-instances/1/flow-node-metadata',
+          '/api/process-instances/1/flow-node-metadata',
           (_, res, ctx) =>
             res.once(
               ctx.json({

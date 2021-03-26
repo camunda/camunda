@@ -17,10 +17,10 @@ import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_FLOW_N
 import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_JOB_KEY;
 import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_MESSAGE;
 import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_STATE;
-import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_WORKFLOW_INSTANCE_ID;
-import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_WORKFLOW_KEY;
-import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_WORKFLOW_NAME;
-import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_WORKFLOW_VERSION;
+import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_PROCESS_INSTANCE_ID;
+import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_PROCESS_KEY;
+import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_PROCESS_NAME;
+import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_PROCESS_VERSION;
 import static org.camunda.operate.zeebeimport.IncidentNotifier.MESSAGE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -43,9 +43,9 @@ import org.camunda.operate.JacksonConfig;
 import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
-import org.camunda.operate.entities.WorkflowEntity;
+import org.camunda.operate.entities.ProcessEntity;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.zeebeimport.cache.WorkflowCache;
+import org.camunda.operate.zeebeimport.cache.ProcessCache;
 import org.camunda.operate.zeebeimport.util.TestApplicationWithNoBeans;
 import org.junit.Before;
 import org.junit.Test;
@@ -78,7 +78,7 @@ public class IncidentNotifierTest {
   private M2mTokenManager m2mTokenManager;
 
   @MockBean
-  private WorkflowCache workflowCache;
+  private ProcessCache processCache;
 
   @MockBean
   @Qualifier("incidentNotificationRestTemplate")
@@ -91,26 +91,26 @@ public class IncidentNotifierTest {
   private final String m2mToken = "mockM2mToken";
   private final String incident1Id = "incident1";
   private final String incident2Id = "incident2";
-  private final Long workflowInstanceKey = 123L;
+  private final Long processInstanceKey = 123L;
   private final String errorMessage = "errorMessage";
   private final ErrorType errorType = JOB_NO_RETRIES;
   private final String flowNodeId = "flowNodeId1";
   private final Long flowNodeInstanceId = 234L;
-  private final Long workflowKey = 345L;
+  private final Long processDefinitionKey = 345L;
   private final Long jobKey = 456L;
   private final IncidentState incidentState = IncidentState.ACTIVE;
-  private final String workflowName = "workflowName";
-  private final int workflowVersion = 234;
+  private final String processName = "processName";
+  private final int processVersion = 234;
 
   @Before
   public void setup() {
-    when(workflowCache.findOrWaitWorkflow(any(), anyInt(), anyLong()))
+    when(processCache.findOrWaitProcess(any(), anyInt(), anyLong()))
         .thenReturn(
             Optional.of(
-                new WorkflowEntity()
+                new ProcessEntity()
                     .setId("123")
-                    .setName(workflowName)
-                    .setVersion(workflowVersion)));
+                    .setName(processName)
+                    .setVersion(processVersion)));
   }
 
   @Test
@@ -230,9 +230,9 @@ public class IncidentNotifierTest {
   private void assertIncidentFields(final HashMap incidentFields) {
     assertThat(incidentFields.get(FIELD_NAME_MESSAGE)).isEqualTo(MESSAGE);
     assertThat(incidentFields.get(FIELD_NAME_JOB_KEY)).isEqualTo(jobKey.intValue());
-    assertThat(incidentFields.get(FIELD_NAME_WORKFLOW_KEY)).isEqualTo(workflowKey.intValue());
-    assertThat(incidentFields.get(FIELD_NAME_WORKFLOW_NAME)).isEqualTo(workflowName);
-    assertThat(incidentFields.get(FIELD_NAME_WORKFLOW_VERSION)).isEqualTo(workflowVersion);
+    assertThat(incidentFields.get(FIELD_NAME_PROCESS_KEY)).isEqualTo(processDefinitionKey.intValue());
+    assertThat(incidentFields.get(FIELD_NAME_PROCESS_NAME)).isEqualTo(processName);
+    assertThat(incidentFields.get(FIELD_NAME_PROCESS_VERSION)).isEqualTo(processVersion);
     assertThat(incidentFields.get(FIELD_NAME_FLOW_NODE_INSTANCE_KEY))
         .isEqualTo(flowNodeInstanceId.intValue());
     assertThat(incidentFields.get(FIELD_NAME_CREATION_TIME)).isNotNull();
@@ -240,20 +240,20 @@ public class IncidentNotifierTest {
     assertThat(incidentFields.get(FIELD_NAME_ERROR_TYPE)).isEqualTo(errorType.name());
     assertThat(incidentFields.get(FIELD_NAME_FLOW_NODE_ID)).isEqualTo(flowNodeId);
     assertThat(incidentFields.get(FIELD_NAME_STATE)).isEqualTo(incidentState.name());
-    assertThat(incidentFields.get(FIELD_NAME_WORKFLOW_INSTANCE_ID))
-        .isEqualTo(String.valueOf(workflowInstanceKey));
+    assertThat(incidentFields.get(FIELD_NAME_PROCESS_INSTANCE_ID))
+        .isEqualTo(String.valueOf(processInstanceKey));
   }
 
   private IncidentEntity createIncident(String id) {
     return new IncidentEntity()
         .setId(id)
         .setCreationTime(OffsetDateTime.now())
-        .setWorkflowInstanceKey(workflowInstanceKey)
+        .setProcessInstanceKey(processInstanceKey)
         .setErrorMessage(errorMessage)
         .setErrorType(errorType)
         .setFlowNodeId(flowNodeId)
         .setFlowNodeInstanceKey(flowNodeInstanceId)
-        .setWorkflowKey(workflowKey)
+        .setProcessDefinitionKey(processDefinitionKey)
         .setJobKey(jobKey)
         .setState(incidentState);
   }

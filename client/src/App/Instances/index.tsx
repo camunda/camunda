@@ -11,10 +11,10 @@ import {DiagramPanel} from './DiagramPanel';
 import {ListPanel} from './ListPanel';
 import OperationsPanel from './OperationsPanel';
 import {instancesStore} from 'modules/stores/instances';
-import {workflowStatisticsStore} from 'modules/stores/workflowStatistics';
+import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
-import {workflowsStore} from 'modules/stores/workflows';
+import {processesStore} from 'modules/stores/processes';
 import {Filters} from './Filters';
 import {getFilters} from 'modules/utils/filter';
 import {observer} from 'mobx-react';
@@ -24,29 +24,28 @@ import {useLocation} from 'react-router-dom';
 const Instances: React.FC = observer(() => {
   const location = useLocation();
   const filters = getFilters(location.search);
-  const {workflow, version} = filters;
-  const workflowId =
-    workflow !== undefined && version !== undefined
-      ? workflowsStore.versionsByWorkflow?.[workflow]?.[parseInt(version) - 1]
-          ?.id
+  const {process, version} = filters;
+  const processId =
+    process !== undefined && version !== undefined
+      ? processesStore.versionsByProcess?.[process]?.[parseInt(version) - 1]?.id
       : undefined;
-  const {status: workflowsStatus} = workflowsStore.state;
-  const isSingleWorkflowSelected = workflowId !== undefined;
+  const {status: processesStatus} = processesStore.state;
+  const isSingleProcessSelected = processId !== undefined;
   const filtersJSON = JSON.stringify(filters);
 
   useEffect(() => {
     instanceSelectionStore.init();
     instancesStore.init();
-    workflowStatisticsStore.init();
-    workflowsStore.fetchWorkflows();
+    processStatisticsStore.init();
+    processesStore.fetchProcesses();
     document.title = PAGE_TITLE.INSTANCES;
 
     return () => {
       instanceSelectionStore.reset();
       instancesDiagramStore.reset();
-      workflowStatisticsStore.reset();
+      processStatisticsStore.reset();
       instancesStore.reset();
-      workflowsStore.reset();
+      processesStore.reset();
     };
   }, []);
 
@@ -55,25 +54,25 @@ const Instances: React.FC = observer(() => {
   }, [filtersJSON]);
 
   useEffect(() => {
-    if (workflowsStatus === 'fetched') {
+    if (processesStatus === 'fetched') {
       instancesStore.fetchInstancesFromFilters();
     }
-  }, [location.search, workflowsStatus]);
+  }, [location.search, processesStatus]);
 
   useEffect(() => {
-    if (workflowId === undefined) {
+    if (processId === undefined) {
       instancesDiagramStore.resetDiagramModel();
-      workflowStatisticsStore.reset();
+      processStatisticsStore.reset();
     } else {
-      instancesDiagramStore.fetchWorkflowXml(workflowId);
+      instancesDiagramStore.fetchProcessXml(processId);
     }
-  }, [workflowId]);
+  }, [processId]);
 
   useEffect(() => {
-    if (isSingleWorkflowSelected) {
-      workflowStatisticsStore.fetchWorkflowStatistics();
+    if (isSingleProcessSelected) {
+      processStatisticsStore.fetchProcessStatistics();
     }
-  }, [location.search, isSingleWorkflowSelected]);
+  }, [location.search, isSingleProcessSelected]);
 
   return (
     <Styled.Instances>
@@ -83,7 +82,7 @@ const Instances: React.FC = observer(() => {
           <Filters />
         </Styled.FilterSection>
         <Styled.SplitPane
-          titles={{top: 'Workflow', bottom: 'Instances'}}
+          titles={{top: 'Process', bottom: 'Instances'}}
           expandedPaneId="instancesExpandedPaneId"
         >
           <DiagramPanel />

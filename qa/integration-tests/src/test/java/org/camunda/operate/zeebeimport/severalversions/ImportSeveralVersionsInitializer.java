@@ -45,7 +45,7 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
   private int wiCount;
   private int finishedCount;
   private int incidentCount;
-  private String workflowId;
+  private String processId;
 
   @Override
   public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
@@ -98,7 +98,7 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
   }
 
   private void generateDataForCurrentVersion() {
-    deployWorkflowWhenNeeded();
+    deployProcessWhenNeeded();
     startInstances();
     finishInstances();
     failInstances();
@@ -111,7 +111,7 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
     while (exported < wiCount && attempts < 10) {
       sleepFor(1000);
       try {
-        exported = ElasticsearchUtil.getFieldCardinality(testContainerUtil.getEsClient(), getZeebeAliasName("workflow-instance"), "value.workflowInstanceKey");
+        exported = ElasticsearchUtil.getFieldCardinality(testContainerUtil.getEsClient(), getZeebeAliasName("process-instance"), "value.processInstanceKey");
       } catch (IOException e) {
         fail("Unable to check for exported data", e);
       } catch (ElasticsearchStatusException ex) {
@@ -144,14 +144,14 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
 
   private void startInstances() {
     for (int i = 0; i < random.nextInt(10) + 10; i++) {
-      ZeebeTestUtil.startWorkflowInstance(client, BPMN_PROCESS_ID, "{\"var\":111}");
+      ZeebeTestUtil.startProcessInstance(client, BPMN_PROCESS_ID, "{\"var\":111}");
       wiCount++;
     }
   }
 
-  private void deployWorkflowWhenNeeded() {
-    if (workflowId == null) {
-      workflowId = ZeebeTestUtil.deployWorkflow(client, createModel(), BPMN_PROCESS_ID + ".bpmn");
+  private void deployProcessWhenNeeded() {
+    if (processId == null) {
+      processId = ZeebeTestUtil.deployProcess(client, createModel(), BPMN_PROCESS_ID + ".bpmn");
     }
   }
 

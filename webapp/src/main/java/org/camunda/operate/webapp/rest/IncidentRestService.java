@@ -8,7 +8,7 @@ package org.camunda.operate.webapp.rest;
 import java.util.Collection;
 import org.camunda.operate.webapp.es.reader.IncidentStatisticsReader;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
-import org.camunda.operate.webapp.rest.dto.incidents.IncidentsByWorkflowGroupStatisticsDto;
+import org.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,10 +32,10 @@ public class IncidentRestService {
   @Autowired
   private IncidentStatisticsReader incidentStatisticsReader;
 
-  @ApiOperation("Get incident statistics for workflows")
-  @GetMapping("/byWorkflow")
-  public Collection<IncidentsByWorkflowGroupStatisticsDto> getWorkflowAndIncidentsStatistics() {
-    return incidentStatisticsReader.getWorkflowAndIncidentsStatistics();
+  @ApiOperation("Get incident statistics for processes")
+  @GetMapping("/byProcess")
+  public Collection<IncidentsByProcessGroupStatisticsDto> getProcessAndIncidentsStatistics() {
+    return incidentStatisticsReader.getProcessAndIncidentsStatistics();
   }
 
   @ApiOperation("Get incident statistics by error message")

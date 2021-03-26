@@ -9,22 +9,22 @@ import {mockServer} from 'modules/mock-server/node';
 import {currentInstanceStore} from './currentInstance';
 import {flowNodeSelectionStore} from './flowNodeSelection';
 
-const WORKFLOW_INSTANCE_ID = '2251799813689404';
+const PROCESS_INSTANCE_ID = '2251799813689404';
 
 describe('stores/flowNodeSelection', () => {
   beforeAll(async () => {
     mockServer.use(
-      rest.get(`/api/workflow-instances/:id`, (_, res, ctx) =>
+      rest.get(`/api/process-instances/:id`, (_, res, ctx) =>
         res.once(
           ctx.json({
-            id: WORKFLOW_INSTANCE_ID,
+            id: PROCESS_INSTANCE_ID,
             state: 'ACTIVE',
           })
         )
       )
     );
 
-    await currentInstanceStore.init(WORKFLOW_INSTANCE_ID);
+    await currentInstanceStore.init(PROCESS_INSTANCE_ID);
   });
 
   afterAll(() => {
@@ -39,10 +39,10 @@ describe('stores/flowNodeSelection', () => {
     flowNodeSelectionStore.reset();
   });
 
-  it('should initially select workflow instance', () => {
+  it('should initially select process instance', () => {
     expect(flowNodeSelectionStore.state.selection).toEqual({
       flowNodeId: undefined,
-      flowNodeInstanceId: WORKFLOW_INSTANCE_ID,
+      flowNodeInstanceId: PROCESS_INSTANCE_ID,
       isMultiInstance: false,
     });
   });
@@ -79,7 +79,7 @@ describe('stores/flowNodeSelection', () => {
     expect(flowNodeSelectionStore.isSelected(unselectedInstance)).toBe(false);
   });
 
-  it('should unselect and fallback to workflow instance', () => {
+  it('should unselect and fallback to process instance', () => {
     const selection = {flowNodeId: undefined};
     const unselectedInstance = {
       flowNodeId: 'startEvent',
@@ -91,7 +91,7 @@ describe('stores/flowNodeSelection', () => {
     expect(flowNodeSelectionStore.areMultipleInstancesSelected).toBe(false);
     expect(flowNodeSelectionStore.isSelected(unselectedInstance)).toBe(false);
     expect(flowNodeSelectionStore.state.selection).toEqual({
-      flowNodeInstanceId: WORKFLOW_INSTANCE_ID,
+      flowNodeInstanceId: PROCESS_INSTANCE_ID,
       isMultiInstance: false,
     });
   });
@@ -132,7 +132,7 @@ describe('stores/flowNodeSelection', () => {
     expect(flowNodeSelectionStore.isSelected(unselectedInstance)).toBe(false);
   });
 
-  it('should fallback to workflow instance when selecting twice', () => {
+  it('should fallback to process instance when selecting twice', () => {
     const selection = {
       flowNodeId: 'startEvent',
       flowNodeInstanceId: '2251799813689409',
@@ -148,7 +148,7 @@ describe('stores/flowNodeSelection', () => {
     expect(flowNodeSelectionStore.areMultipleInstancesSelected).toBe(false);
     expect(flowNodeSelectionStore.isSelected(unselectedInstance)).toBe(false);
     expect(flowNodeSelectionStore.state.selection).toEqual({
-      flowNodeInstanceId: WORKFLOW_INSTANCE_ID,
+      flowNodeInstanceId: PROCESS_INSTANCE_ID,
       isMultiInstance: false,
     });
   });

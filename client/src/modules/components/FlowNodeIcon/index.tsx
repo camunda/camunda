@@ -26,7 +26,7 @@ const getEventFlowNode = (
 };
 
 const flowNodes = {
-  [TYPE.WORKFLOW]: Styled[TYPE.WORKFLOW],
+  [TYPE.PROCESS]: Styled[TYPE.PROCESS],
   [TYPE.EVENT_START]: Styled[TYPE.EVENT_START],
   [TYPE.EVENT_END]: Styled[TYPE.EVENT_END],
   //Tasks

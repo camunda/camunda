@@ -17,10 +17,10 @@ import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Instances} from './index';
 import {
-  groupedWorkflowsMock,
-  mockWorkflowStatistics,
-  mockWorkflowXML,
-  mockWorkflowInstances,
+  groupedProcessesMock,
+  mockProcessStatistics,
+  mockProcessXML,
+  mockProcessInstances,
   operations,
 } from 'modules/testUtils';
 import {rest} from 'msw';
@@ -29,9 +29,9 @@ import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import userEvent from '@testing-library/user-event';
 import {instancesStore} from 'modules/stores/instances';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
-import {workflowStatisticsStore} from 'modules/stores/workflowStatistics';
+import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {operationsStore} from 'modules/stores/operations';
-import {workflowsStore} from 'modules/stores/workflows';
+import {processesStore} from 'modules/stores/processes';
 
 jest.mock('modules/utils/bpmn');
 
@@ -58,19 +58,19 @@ function getWrapper(
 describe('Instances', () => {
   beforeEach(() => {
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       ),
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockWorkflowXML))
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
       ),
-      rest.get('/api/workflows/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedWorkflowsMock))
+      rest.get('/api/processes/grouped', (_, res, ctx) =>
+        res.once(ctx.json(groupedProcessesMock))
       ),
-      rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowStatistics))
+      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessStatistics))
       ),
-      rest.post('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+      rest.post('/api/process-instances/core-statistics', (_, res, ctx) =>
         res.once(
           ctx.json({
             coreStatistics: {
@@ -91,9 +91,9 @@ describe('Instances', () => {
     instanceSelectionStore.reset();
     instancesStore.reset();
     instancesDiagramStore.reset();
-    workflowStatisticsStore.reset();
+    processStatisticsStore.reset();
     operationsStore.reset();
-    workflowsStore.reset();
+    processesStore.reset();
   });
 
   it('should render title and document title', () => {
@@ -119,13 +119,13 @@ describe('Instances', () => {
     });
 
     // diagram panel
-    expect(screen.getByRole('heading', {name: 'Workflow'})).toBeInTheDocument();
+    expect(screen.getByRole('heading', {name: 'Process'})).toBeInTheDocument();
     expect(
-      screen.getByText('There is no Workflow selected')
+      screen.getByText('There is no Process selected')
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'To see a Diagram, select a Workflow in the Filters panel'
+        'To see a Diagram, select a Process in the Filters panel'
       )
     ).toBeInTheDocument();
 
@@ -148,11 +148,11 @@ describe('Instances', () => {
       initialEntries: ['/instances?active=true&incidents=true'],
     });
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       ),
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       )
     );
 
@@ -193,9 +193,9 @@ describe('Instances', () => {
 
   it('should fetch diagram and diagram statistics', async () => {
     const mockHistory = createMemoryHistory({
-      initialEntries: ['/instances?workflow=bigVarProcess&version=1'],
+      initialEntries: ['/instances?process=bigVarProcess&version=1'],
     });
-    const firstWorkflowStatisticsResponse = [
+    const firstProcessStatisticsResponse = [
       {
         activityId: 'ServiceTask_0kt6c5i',
         active: 1,
@@ -205,14 +205,14 @@ describe('Instances', () => {
       },
     ];
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       ),
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockWorkflowXML))
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
       ),
-      rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json(firstWorkflowStatisticsResponse))
+      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json(firstProcessStatisticsResponse))
       )
     );
 
@@ -224,40 +224,40 @@ describe('Instances', () => {
       expect(instancesDiagramStore.state.status).toBe('fetched')
     );
     await waitFor(() =>
-      expect(workflowStatisticsStore.state.isLoading).toBe(false)
+      expect(processStatisticsStore.state.isLoading).toBe(false)
     );
     expect(instancesDiagramStore.state.diagramModel).not.toBe(null);
-    expect(workflowStatisticsStore.state.statistics).toEqual(
-      firstWorkflowStatisticsResponse
+    expect(processStatisticsStore.state.statistics).toEqual(
+      firstProcessStatisticsResponse
     );
 
-    mockHistory.push('/instances?workflow=eventBasedGatewayProcess&version=1');
+    mockHistory.push('/instances?process=eventBasedGatewayProcess&version=1');
 
     await waitFor(() =>
       expect(instancesDiagramStore.state.status).toBe('fetching')
     );
     await waitFor(() =>
-      expect(workflowStatisticsStore.state.isLoading).toBe(true)
+      expect(processStatisticsStore.state.isLoading).toBe(true)
     );
 
     await waitFor(() =>
       expect(instancesDiagramStore.state.status).toBe('fetched')
     );
     expect(instancesDiagramStore.state.diagramModel).not.toBe(null);
-    expect(workflowStatisticsStore.state.statistics).toEqual(
-      mockWorkflowStatistics
+    expect(processStatisticsStore.state.statistics).toEqual(
+      mockProcessStatistics
     );
 
     mockHistory.push('/instances');
 
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json({workflowInstances: []}))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json({processInstances: []}))
       )
     );
 
     await waitFor(() =>
-      expect(workflowStatisticsStore.state.statistics).toEqual([])
+      expect(processStatisticsStore.state.statistics).toEqual([])
     );
   });
 });

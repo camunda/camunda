@@ -1,0 +1,265 @@
+[
+  {
+    "title": "All instances 1st page",
+    "url": "/api/process-instances",
+    "method": "POST",
+    "pathParams": "firstResult=0&maxResults=100",
+    "body": {
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true,
+        "finished": true,
+        "completed": true,
+        "canceled": true
+      }
+    }
+  },
+  {
+    "title": "All instances Nth page",
+    "url": "/api/process-instances",
+    "method": "POST",
+    "pathParams": "firstResult=9000&maxResults=100",
+    "body": {
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true,
+        "finished": true,
+        "completed": true,
+        "canceled": true
+      }
+    }
+  },
+  {
+    "title": "All instances Nth page sorted by start date asc",
+    "url": "/api/process-instances",
+    "method": "POST",
+    "pathParams": "firstResult=9000&maxResults=100",
+    "body": {
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true,
+        "finished": true,
+        "completed": true,
+        "canceled": true
+      },
+      "sorting": {
+        "sortBy": "startDate",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
+    "title": "All instances Nth page sorted by start date desc",
+    "url": "/api/process-instances",
+    "method": "POST",
+    "pathParams": "firstResult=9000&maxResults=100",
+    "body": {
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true,
+        "finished": true,
+        "completed": true,
+        "canceled": true
+      },
+      "sorting": {
+        "sortBy": "startDate",
+        "sortOrder": "desc"
+      }
+    }
+  },
+  {
+    "title": "All finished instances 1st page",
+    "url": "/api/process-instances",
+    "method": "POST",
+    "pathParams": "firstResult=0&maxResults=100",
+    "body": {
+      "query": {
+        "finished": true,
+        "completed": true,
+        "canceled": true
+      }
+    }
+  },
+  {
+    "title": "All running instances 1st page",
+    "url": "/api/process-instances",
+    "method": "POST",
+    "pathParams": "firstResult=0&maxResults=100",
+    "body": {
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true
+      }
+    }
+  },
+  {
+    "title": "Running instances Nth page filtered by activityId sorted by process name",
+    "url": "/api/process-instances",
+    "method": "POST",
+    "pathParams": "firstResult=1000&maxResults=100",
+    "body": {
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true,
+        "activityId": "task2"
+      },
+      "sorting": {
+        "sortBy": "processName",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
+    "title": "Running instances Nth page filtered by process and error message sorted by version",
+    "url": "/api/process-instances",
+    "method": "POST",
+    "pathParams": "firstResult=1000&maxResults=100",
+    "body": {
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true,
+        "processIds": [
+          "${processIds}"
+        ],
+        "errorMessage": "Error 1"
+      },
+      "sorting": {
+        "sortBy": "processVersion",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
+    "title": "Running instances Nth page filtered by process sorted by process name desc",
+    "url": "/api/process-instances",
+    "method": "POST",
+    "pathParams": "firstResult=1000&maxResults=100",
+    "body": {
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true,
+        "bpmnProcessId": "process1",
+        "processVersion": 1
+      },
+      "sorting": {
+        "sortBy": "processName",
+        "sortOrder": "desc"
+      }
+    }
+  },
+  {
+    "title": "Running instances Nth page filtered by variable sorted by process version asc",
+    "url": "/api/process-instances",
+    "method": "POST",
+    "pathParams": "firstResult=1000&maxResults=100",
+    "body": {
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true,
+        "variable": {
+          "name": "var1",
+          "value": "\"value1\""
+        }
+      },
+      "sorting": {
+        "sortBy": "processVersion",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
+    "title": "Running instances 1st page filtered by process instance ids sorted by id desc",
+    "url": "/api/process-instances",
+    "method": "POST",
+    "pathParams": "firstResult=0&maxResults=100",
+    "body": {
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true,
+        "ids": [
+          "${processInstanceIds}"
+        ]
+      },
+      "sorting": {
+        "sortBy": "id",
+        "sortOrder": "desc"
+      }
+    }
+  },
+  {
+    "title": "Running instances Nth page filtered by exclusion of process instance ids sorted by id asc",
+    "url": "/api/process-instances",
+    "method": "POST",
+    "pathParams": "firstResult=1000&maxResults=100",
+    "body": {
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true,
+        "excludeIds": [
+          "${processInstanceIds}"
+        ]
+      },
+      "sorting": {
+        "sortBy": "id",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
+    "title": "All instances Nth page filtered by process ids sorted by end date asc",
+    "url": "/api/process-instances",
+    "method": "POST",
+    "pathParams": "firstResult=1000&maxResults=100",
+    "body": {
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true,
+        "finished": true,
+        "completed": true,
+        "canceled": true,
+        "processIds": [
+          "${processIds}"
+        ]
+      },
+      "sorting": {
+        "sortBy": "endDate",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
+    "title": "All instances 1st page filtered by start date sorted by process name asc",
+    "url": "/api/process-instances",
+    "method": "POST",
+    "pathParams": "firstResult=0&maxResults=100",
+    "body": {
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true,
+        "finished": true,
+        "completed": true,
+        "canceled": true,
+        "startDateBefore": "${startDateBefore}",
+        "startDateAfter": "${startDateAfter}"
+      },
+      "sorting": {
+        "sortBy": "processName",
+        "sortOrder": "asc"
+      }
+    }
+  }
+
+]

@@ -16,12 +16,12 @@ import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext
 import {createMemoryHistory} from 'history';
 import {mockProps} from './index.setup';
 import {
-  groupedWorkflowsMock,
-  mockWorkflowStatistics,
-  mockWorkflowInstances,
+  groupedProcessesMock,
+  mockProcessStatistics,
+  mockProcessInstances,
 } from 'modules/testUtils';
 import {DiagramPanel} from './index';
-import {workflowsStore} from 'modules/stores/workflows';
+import {processesStore} from 'modules/stores/processes';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
@@ -45,33 +45,33 @@ function getWrapper(history = createMemoryHistory()) {
 describe('DiagramPanel', () => {
   beforeEach(() => {
     mockServer.use(
-      rest.post('/api/workflow-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowInstances))
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessInstances))
       ),
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       ),
-      rest.get('/api/workflows/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedWorkflowsMock))
+      rest.get('/api/processes/grouped', (_, res, ctx) =>
+        res.once(ctx.json(groupedProcessesMock))
       ),
-      rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json(mockWorkflowStatistics))
+      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessStatistics))
       )
     );
 
-    workflowsStore.fetchWorkflows();
+    processesStore.fetchProcesses();
   });
 
   afterEach(() => {
     instancesDiagramStore.reset();
-    workflowsStore.reset();
+    processesStore.reset();
   });
 
   it('should render header', async () => {
     render(<DiagramPanel {...mockProps} />, {
       wrapper: getWrapper(
         createMemoryHistory({
-          initialEntries: ['/instances?workflow=bigVarProcess&version=1'],
+          initialEntries: ['/instances?process=bigVarProcess&version=1'],
         })
       ),
     });
@@ -83,7 +83,7 @@ describe('DiagramPanel', () => {
     render(<DiagramPanel {...mockProps} />, {
       wrapper: getWrapper(),
     });
-    instancesDiagramStore.fetchWorkflowXml('1');
+    instancesDiagramStore.fetchProcessXml('1');
 
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
@@ -93,34 +93,34 @@ describe('DiagramPanel', () => {
     expect(screen.getByTestId('diagram')).toBeInTheDocument();
   });
 
-  it('should show an empty state message when no workflow is selected', async () => {
+  it('should show an empty state message when no process is selected', async () => {
     render(<DiagramPanel {...mockProps} />, {
       wrapper: getWrapper(),
     });
 
     expect(
-      screen.getByText('There is no Workflow selected')
+      screen.getByText('There is no Process selected')
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'To see a Diagram, select a Workflow in the Filters panel'
+        'To see a Diagram, select a Process in the Filters panel'
       )
     ).toBeInTheDocument();
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
   });
 
-  it('should show a message when no workflow version is selected', async () => {
+  it('should show a message when no process version is selected', async () => {
     render(<DiagramPanel {...mockProps} />, {
       wrapper: getWrapper(
         createMemoryHistory({
-          initialEntries: ['/instances?workflow=bigVarProcess&version=all'],
+          initialEntries: ['/instances?process=bigVarProcess&version=all'],
         })
       ),
     });
 
     expect(
       await screen.findByText(
-        'There is more than one Version selected for Workflow "Big variable process"'
+        'There is more than one Version selected for Process "Big variable process"'
       )
     ).toBeInTheDocument();
     expect(
@@ -130,12 +130,12 @@ describe('DiagramPanel', () => {
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
   });
 
-  it('should display bpmnProcessId as workflow name in the message when no workflow version is selected', async () => {
+  it('should display bpmnProcessId as process name in the message when no process version is selected', async () => {
     render(<DiagramPanel {...mockProps} />, {
       wrapper: getWrapper(
         createMemoryHistory({
           initialEntries: [
-            '/instances?workflow=eventBasedGatewayProcess&version=all',
+            '/instances?process=eventBasedGatewayProcess&version=all',
           ],
         })
       ),
@@ -143,14 +143,14 @@ describe('DiagramPanel', () => {
 
     expect(
       await screen.findByText(
-        'There is more than one Version selected for Workflow "eventBasedGatewayProcess"'
+        'There is more than one Version selected for Process "eventBasedGatewayProcess"'
       )
     ).toBeInTheDocument();
   });
 
   it('should show an error message', async () => {
     mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res) =>
+      rest.get('/api/processes/:processId/xml', (_, res) =>
         res.networkError('A network error')
       )
     );
@@ -159,19 +159,19 @@ describe('DiagramPanel', () => {
       wrapper: getWrapper(),
     });
 
-    instancesDiagramStore.fetchWorkflowXml('1');
+    instancesDiagramStore.fetchProcessXml('1');
 
     expect(
       await screen.findByText('Diagram could not be fetched')
     ).toBeInTheDocument();
 
     mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       )
     );
 
-    instancesDiagramStore.fetchWorkflowXml('1');
+    instancesDiagramStore.fetchProcessXml('1');
 
     await waitForElementToBeRemoved(screen.getByTestId('spinner'));
 
@@ -180,12 +180,12 @@ describe('DiagramPanel', () => {
     ).not.toBeInTheDocument();
 
     mockServer.use(
-      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''), ctx.status(500))
       )
     );
 
-    instancesDiagramStore.fetchWorkflowXml('1');
+    instancesDiagramStore.fetchProcessXml('1');
 
     expect(
       await screen.findByText('Diagram could not be fetched')

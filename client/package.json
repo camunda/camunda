@@ -83,7 +83,7 @@
     "react-test-renderer": "^17.0.2",
     "testcafe": "^1.13.0",
     "testcafe-browser-provider-browserstack": "^1.13.1",
-    "zeebe-node": "^0.26.0"
+    "zeebe-node": "1.0.0-alpha.3"
   },
   "lint-staged": {
     "*": [

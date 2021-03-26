@@ -29,7 +29,7 @@ const IncidentsByError = observer(() => {
     };
   }, []);
 
-  const renderIncidentsPerWorkflow = (errorMessage: any, items: any) => {
+  const renderIncidentsPerProcess = (errorMessage: any, items: any) => {
     return (
       <Styled.VersionUl>
         {items.map((item: any) => {
@@ -42,11 +42,11 @@ const IncidentsByError = observer(() => {
           );
           const label = concatLabel(name, item.version);
           return (
-            <Styled.VersionLi key={item.workflowId}>
+            <Styled.VersionLi key={item.processId}>
               <PanelListItem
                 to={(location) =>
                   Locations.filters(location, {
-                    workflow: item.bpmnProcessId,
+                    process: item.bpmnProcessId,
                     version: item.version,
                     errorMessage,
                     incidents: true,
@@ -131,9 +131,9 @@ const IncidentsByError = observer(() => {
             data-testid={`incident-byError-${index}`}
           >
             <Collapse
-              content={renderIncidentsPerWorkflow(
+              content={renderIncidentsPerProcess(
                 item.errorMessage,
-                item.workflows
+                item.processes
               )}
               header={renderIncidentByError(
                 item.errorMessage,

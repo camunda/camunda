@@ -6,7 +6,7 @@
 package org.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,19 +30,19 @@ public class VariableIT extends OperateZeebeIntegrationTest {
   @Autowired
   private FlowNodeInstanceReader flowNodeInstanceReader;
 
-  protected String getVariablesURL(Long workflowInstanceKey) {
-    return String.format(WORKFLOW_INSTANCE_URL + "/%s/variables", workflowInstanceKey);
+  protected String getVariablesURL(Long processInstanceKey) {
+    return String.format(PROCESS_INSTANCE_URL + "/%s/variables", processInstanceKey);
   }
 
-  protected String getVariablesURL(Long workflowInstanceKey, Long scopeKey) {
-    return String.format(WORKFLOW_INSTANCE_URL + "/%s/variables?scopeId=%s", workflowInstanceKey, scopeKey);
+  protected String getVariablesURL(Long processInstanceKey, Long scopeKey) {
+    return String.format(PROCESS_INSTANCE_URL + "/%s/variables?scopeId=%s", processInstanceKey, scopeKey);
   }
 
   @Test
   public void testVariablesLoaded() throws Exception {
     // having
     String processId = "demoProcess";
-    BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
+    BpmnModelInstance process = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
         .serviceTask("task1").zeebeJobType("task1")
         .subProcess("subProcess")
@@ -57,73 +57,73 @@ public class VariableIT extends OperateZeebeIntegrationTest {
         .serviceTask("task3").zeebeJobType("task3")
       .endEvent()
       .done();
-    deployWorkflow(workflow, processId + ".bpmn");
+    deployProcess(process, processId + ".bpmn");
 
-    //TC 1 - when workflow instance is started
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "task1");
-    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, "otherVar");
+    //TC 1 - when process instance is started
+    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
+    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, processInstanceKey, "otherVar");
 
     //then
-    List<VariableDto> variables = getVariables(workflowInstanceKey);
+    List<VariableDto> variables = getVariables(processInstanceKey);
     assertThat(variables).hasSize(2);
     assertVariable(variables, "var1","\"initialValue\"");
     assertVariable(variables, "otherVar","123");
 
     //TC2 - when subprocess and task with input mapping are activated
-    completeTask(workflowInstanceKey, "task1", null);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "task2");
-    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, "taskVarIn");
+    completeTask(processInstanceKey, "task1", null);
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
+    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, processInstanceKey, "taskVarIn");
 
 
     //then
-    variables = getVariables(workflowInstanceKey,"subProcess");
+    variables = getVariables(processInstanceKey,"subProcess");
     assertThat(variables).hasSize(1);
     assertVariable(variables, "subprocessVarIn","\"initialValue\"");
 
-    variables = getVariables(workflowInstanceKey,"task2");
+    variables = getVariables(processInstanceKey,"task2");
     assertThat(variables).hasSize(1);
     assertVariable(variables, "taskVarIn","\"initialValue\"");
 
     //TC3 - when activity with output mapping is completed
-    completeTask(workflowInstanceKey, "task2", "{\"taskVarOut\": \"someResult\", \"otherTaskVar\": 456}");
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, workflowInstanceKey, "task3");
-    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, "otherTaskVar");
+    completeTask(processInstanceKey, "task2", "{\"taskVarOut\": \"someResult\", \"otherTaskVar\": 456}");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task3");
+    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, processInstanceKey, "otherTaskVar");
 
     //then
-    variables = getVariables(workflowInstanceKey,"task2");
+    variables = getVariables(processInstanceKey,"task2");
     assertThat(variables).hasSize(3);
     assertVariable(variables, "taskVarIn","\"initialValue\"");
     assertVariable(variables, "taskVarOut","\"someResult\"");
     assertVariable(variables, "otherTaskVar","456");
-    variables = getVariables(workflowInstanceKey,"subProcess");
+    variables = getVariables(processInstanceKey,"subProcess");
     assertThat(variables).hasSize(1);
     assertVariable(variables, "subprocessVarIn","\"initialValue\"");
-    variables = getVariables(workflowInstanceKey);
+    variables = getVariables(processInstanceKey);
     assertThat(variables).hasSize(3);
     assertVariable(variables, "var1","\"initialValue\"");
     assertVariable(variables, "varOut","\"someResult\"");
     assertVariable(variables, "otherVar","123");
 
     //TC4 - when variables are updated
-    ZeebeTestUtil.updateVariables(zeebeClient, workflowInstanceKey, "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
+    ZeebeTestUtil.updateVariables(zeebeClient, processInstanceKey, "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
     //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
-    elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, workflowInstanceKey,workflowInstanceKey,"var1","\"updatedValue\"");
-    elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, workflowInstanceKey,workflowInstanceKey,"newVar","555");
+    elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, processInstanceKey,processInstanceKey,"var1","\"updatedValue\"");
+    elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, processInstanceKey,processInstanceKey,"newVar","555");
     
-    variables = getVariables(workflowInstanceKey);
+    variables = getVariables(processInstanceKey);
     assertThat(variables).hasSize(4);
     assertVariable(variables, "var1","\"updatedValue\"");
     assertVariable(variables, "otherVar","123");
     assertVariable(variables, "varOut","\"someResult\"");
     assertVariable(variables, "newVar","555");
 
-    //TC5 - when task is completed with new payload and workflow instance is finished
-    completeTask(workflowInstanceKey, "task3", "{\"task3Completed\": true}");
-    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, "task3Completed");
+    //TC5 - when task is completed with new payload and process instance is finished
+    completeTask(processInstanceKey, "task3", "{\"task3Completed\": true}");
+    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, processInstanceKey, "task3Completed");
 
     //then
-    variables = getVariables(workflowInstanceKey);
+    variables = getVariables(processInstanceKey);
     assertThat(variables).hasSize(5);
     assertVariable(variables, "var1","\"updatedValue\"");
     assertVariable(variables, "otherVar","123");
@@ -147,20 +147,20 @@ public class VariableIT extends OperateZeebeIntegrationTest {
       .allMatch(v -> v.getValue().equals(value));
   }
 
-  protected List<VariableDto> getVariables(Long workflowInstanceKey) throws Exception {
+  protected List<VariableDto> getVariables(Long processInstanceKey) throws Exception {
     MvcResult mvcResult = mockMvc
-      .perform(get(getVariablesURL(workflowInstanceKey, workflowInstanceKey)))
+      .perform(get(getVariablesURL(processInstanceKey, processInstanceKey)))
       .andExpect(status().isOk())
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
     return mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
   }
 
-  protected List<VariableDto> getVariables(Long workflowInstanceKey, String activityId) throws Exception {
-    final List<FlowNodeInstanceEntity> allActivityInstances = tester.getAllFlowNodeInstances(workflowInstanceKey);
+  protected List<VariableDto> getVariables(Long processInstanceKey, String activityId) throws Exception {
+    final List<FlowNodeInstanceEntity> allActivityInstances = tester.getAllFlowNodeInstances(processInstanceKey);
     final Long task1Id = findActivityInstanceId(allActivityInstances, activityId);
     MvcResult mvcResult = mockMvc
-      .perform(get(getVariablesURL(workflowInstanceKey, task1Id)))
+      .perform(get(getVariablesURL(processInstanceKey, task1Id)))
       .andExpect(status().isOk())
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();

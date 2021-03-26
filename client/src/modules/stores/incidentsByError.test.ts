@@ -14,9 +14,9 @@ describe('stores/incidentsByError', () => {
       errorMessage:
         "failed to evaluate expression 'clientId': no variable found for name 'clientId'",
       instancesWithErrorCount: 121,
-      workflows: [
+      processes: [
         {
-          workflowId: '2251799813698839',
+          processId: '2251799813698839',
           version: 3,
           name: null,
           bpmnProcessId: 'complexProcess',
@@ -26,7 +26,7 @@ describe('stores/incidentsByError', () => {
           activeInstancesCount: 0,
         },
         {
-          workflowId: '2251799813695224',
+          processId: '2251799813695224',
           version: 2,
           name: 'Event based gateway with timer start',
           bpmnProcessId: 'eventBasedGatewayProcess',
@@ -41,9 +41,9 @@ describe('stores/incidentsByError', () => {
       errorMessage:
         'Expected at least one condition to evaluate to true, or to have a default flow',
       instancesWithErrorCount: 101,
-      workflows: [
+      processes: [
         {
-          workflowId: '2251799813698839',
+          processId: '2251799813698839',
           version: 3,
           name: null,
           bpmnProcessId: 'complexProcess',

@@ -21,7 +21,7 @@ describe('<FiltersPanel />', () => {
   it('should show filteredInstancesCount', async () => {
     instancesStore.setInstances({
       filteredInstancesCount: 909,
-      workflowInstances: [],
+      processInstances: [],
     });
 
     render(<FiltersPanel {...props} />, {wrapper: ThemeProvider});

@@ -20,7 +20,7 @@ type Props = {
 
 const IncidentsBanner: React.FC<Props> = observer(
   ({onClick, isOpen, expandState}) => {
-    const {workflowInstanceId} = useInstancePageParams();
+    const {processInstanceId} = useInstancePageParams();
     const {incidentsCount} = incidentsStore;
 
     const errorMessage = `There ${
@@ -28,11 +28,11 @@ const IncidentsBanner: React.FC<Props> = observer(
     } ${pluralSuffix(
       incidentsCount,
       'Incident'
-    )} in Instance ${workflowInstanceId}`;
+    )} in Instance ${processInstanceId}`;
     const title = `View ${pluralSuffix(
       incidentsCount,
       'Incident'
-    )} in Instance ${workflowInstanceId}`;
+    )} in Instance ${processInstanceId}`;
 
     if (expandState === EXPAND_STATE.COLLAPSED) {
       return null;

@@ -39,7 +39,7 @@ yarn test
 
 Our E2E tests are run every night automatically in Jenkins.
 
-The job `e2e browserstack ALL` triggers child jobs (`e2e browserstack`) for each browser defined in the pipeline [test_e2e_browserstack_all.groovy](/.ci/pipelines/test_e2e_browserstack_all.groovy). Each child job is isolated and runs a fresh set of Zeebe, Elasticsearch docker containers and the latest Operate snapshot with no deployed workflows. The tests are executed with TestCafé remotely in the specified environments and browsers in Browserstack. Child jobs are retried up to two times in case of flaky tests or browsers hangs on browserstack side. You can also trigger test runs for `e2e browserstack ALL` and `e2e browserstack` manually in Jenkins or rebuild the nightly job if necessary.
+The job `e2e browserstack ALL` triggers child jobs (`e2e browserstack`) for each browser defined in the pipeline [test_e2e_browserstack_all.groovy](/.ci/pipelines/test_e2e_browserstack_all.groovy). Each child job is isolated and runs a fresh set of Zeebe, Elasticsearch docker containers and the latest Operate snapshot with no deployed processes. The tests are executed with TestCafé remotely in the specified environments and browsers in Browserstack. Child jobs are retried up to two times in case of flaky tests or browsers hangs on browserstack side. You can also trigger test runs for `e2e browserstack ALL` and `e2e browserstack` manually in Jenkins or rebuild the nightly job if necessary.
 
 ![Browserstack Jenkins](docs/browserstack-jenkins.png)
 

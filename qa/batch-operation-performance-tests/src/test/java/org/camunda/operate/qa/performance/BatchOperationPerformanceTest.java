@@ -12,7 +12,7 @@ import org.camunda.operate.entities.BatchOperationEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
-import org.camunda.operate.schema.indices.WorkflowIndex;
+import org.camunda.operate.schema.indices.ProcessIndex;
 import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
@@ -89,7 +89,7 @@ public class BatchOperationPerformanceTest {
     ListViewQueryDto queryForResolveIncident = new ListViewQueryDto();
     queryForResolveIncident.setRunning(true);
     queryForResolveIncident.setIncidents(true);
-    queryForResolveIncident.setWorkflowIds(ElasticsearchUtil.getWorkflowIds(esClient, getOperateAlias(WorkflowIndex.INDEX_NAME), 5));
+    queryForResolveIncident.setProcessIds(ElasticsearchUtil.getProcessIds(esClient, getOperateAlias(ProcessIndex.INDEX_NAME), 5));
     resolveIncidentRequest.setQuery(queryForResolveIncident);
     final BatchOperationEntity batchOperationEntity = batchOperationWriter.scheduleBatchOperation(resolveIncidentRequest);
     logger.info("RESOLVE_INCIDENT operations scheduled: {}", batchOperationEntity.getOperationsTotalCount());
@@ -97,14 +97,14 @@ public class BatchOperationPerformanceTest {
 
   private void createCancelOperations() {
     CreateBatchOperationRequestDto cancelRequest = new CreateBatchOperationRequestDto();
-    cancelRequest.setOperationType(OperationType.CANCEL_WORKFLOW_INSTANCE);
+    cancelRequest.setOperationType(OperationType.CANCEL_PROCESS_INSTANCE);
     ListViewQueryDto queryForCancel = new ListViewQueryDto();
     queryForCancel.setRunning(true);
     queryForCancel.setActive(true);
-    queryForCancel.setWorkflowIds(ElasticsearchUtil.getWorkflowIds(esClient, getOperateAlias(WorkflowIndex.INDEX_NAME), 1));
+    queryForCancel.setProcessIds(ElasticsearchUtil.getProcessIds(esClient, getOperateAlias(ProcessIndex.INDEX_NAME), 1));
     cancelRequest.setQuery(queryForCancel);
     final BatchOperationEntity batchOperationEntity = batchOperationWriter.scheduleBatchOperation(cancelRequest);
-    logger.info("CANCEL_WORKFLOW_INSTANCE operations scheduled: {}", batchOperationEntity.getOperationsTotalCount());
+    logger.info("CANCEL_PROCESS_INSTANCE operations scheduled: {}", batchOperationEntity.getOperationsTotalCount());
   }
 
   @Test

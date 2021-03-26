@@ -13,8 +13,8 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
   private String name;
   private String value;
   private long scopeKey;
-  private long workflowInstanceKey;
-  private long workflowKey;
+  private long processInstanceKey;
+  private long processDefinitionKey;
 
   @Override
   public String getName() {
@@ -32,13 +32,13 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
   }
 
   @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
   @Override
-  public long getWorkflowKey() {
-    return workflowKey;
+  public long getProcessDefinitionKey() {
+    return processDefinitionKey;
   }
 
   public void setName(String name) {
@@ -53,12 +53,12 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
     this.scopeKey = scopeKey;
   }
 
-  public void setWorkflowInstanceKey(long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
-  public void setWorkflowKey(long workflowKey) {
-    this.workflowKey = workflowKey;
+  public void setProcessDefinitionKey(long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
   }
 
   @Override
@@ -72,9 +72,9 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
 
     if (scopeKey != that.scopeKey)
       return false;
-    if (workflowInstanceKey != that.workflowInstanceKey)
+    if (processInstanceKey != that.processInstanceKey)
       return false;
-    if (workflowKey != that.workflowKey)
+    if (processDefinitionKey != that.processDefinitionKey)
       return false;
     if (name != null ? !name.equals(that.name) : that.name != null)
       return false;
@@ -86,14 +86,14 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
     int result = name != null ? name.hashCode() : 0;
     result = 31 * result + (value != null ? value.hashCode() : 0);
     result = 31 * result + (int) (scopeKey ^ (scopeKey >>> 32));
-    result = 31 * result + (int) (workflowInstanceKey ^ (workflowInstanceKey >>> 32));
-    result = 31 * result + (int) (workflowKey ^ (workflowKey >>> 32));
+    result = 31 * result + (int) (processInstanceKey ^ (processInstanceKey >>> 32));
+    result = 31 * result + (int) (processDefinitionKey ^ (processDefinitionKey >>> 32));
     return result;
   }
 
   @Override
   public String toString() {
-    return "VariableRecordValueImpl{" + "name='" + name + '\'' + ", value='" + value + '\'' + ", scopeKey=" + scopeKey + ", workflowInstanceKey="
-      + workflowInstanceKey + ", workflowKey=" + workflowKey + "} " + super.toString();
+    return "VariableRecordValueImpl{" + "name='" + name + '\'' + ", value='" + value + '\'' + ", scopeKey=" + scopeKey + ", processInstanceKey="
+      + processInstanceKey + ", processDefinitionKey=" + processDefinitionKey + "} " + super.toString();
   }
 }

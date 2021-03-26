@@ -5,7 +5,7 @@
  */
 
 import {makeAutoObservable, when, IReactionDisposer} from 'mobx';
-import {fetchWorkflowXML} from 'modules/api/diagram';
+import {fetchProcessXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {createNodeMetaDataMap, getSelectableFlowNodes} from './mappers';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
@@ -36,31 +36,29 @@ class SingleInstanceDiagram {
   state: State = {
     ...DEFAULT_STATE,
   };
-  workflowXmlDisposer: null | IReactionDisposer = null;
+  processXmlDisposer: null | IReactionDisposer = null;
 
   constructor() {
     makeAutoObservable(this);
   }
 
   init() {
-    this.workflowXmlDisposer = when(
+    this.processXmlDisposer = when(
       () => currentInstanceStore.state.instance !== null,
       () => {
-        const workflowId = currentInstanceStore.state.instance?.workflowId;
+        const processId = currentInstanceStore.state.instance?.processId;
 
-        if (workflowId !== undefined) {
-          this.fetchWorkflowXml(workflowId);
+        if (processId !== undefined) {
+          this.fetchProcessXml(processId);
         }
       }
     );
   }
 
-  fetchWorkflowXml = async (
-    workflowId: WorkflowInstanceEntity['workflowId']
-  ) => {
+  fetchProcessXml = async (processId: ProcessInstanceEntity['processId']) => {
     this.startFetch();
     try {
-      const response = await fetchWorkflowXML(workflowId);
+      const response = await fetchProcessXML(processId);
 
       if (response.ok) {
         this.handleFetchSuccess(await parseDiagramXML(await response.text()));
@@ -116,7 +114,7 @@ class SingleInstanceDiagram {
 
   reset = () => {
     this.state = {...DEFAULT_STATE};
-    this.workflowXmlDisposer?.();
+    this.processXmlDisposer?.();
   };
 }
 

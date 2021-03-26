@@ -18,21 +18,21 @@ import org.camunda.operate.entities.FlowNodeInstanceEntity;
 import org.camunda.operate.entities.FlowNodeState;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationState;
-import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.entities.listview.WorkflowInstanceState;
+import org.camunda.operate.entities.ProcessEntity;
+import org.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.ProcessInstanceState;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import org.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
-import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.webapp.es.reader.WorkflowReader;
+import org.camunda.operate.webapp.es.reader.ProcessInstanceReader;
+import org.camunda.operate.webapp.es.reader.ProcessReader;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -55,10 +55,10 @@ public class ElasticsearchChecks {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private WorkflowReader workflowReader;
+  private ProcessReader processReader;
 
   @Autowired
-  private WorkflowInstanceReader workflowInstanceReader;
+  private ProcessInstanceReader processInstanceReader;
 
   @Autowired
   private FlowNodeInstanceReader flowNodeInstanceReader;
@@ -76,18 +76,18 @@ public class ElasticsearchChecks {
   private VariableReader variableReader;
 
   /**
-   * Checks whether the workflow of given args[0] workflowKey (Long) is deployed.
+   * Checks whether the process of given args[0] processDefinitionKey (Long) is deployed.
    * @return
    */
-  @Bean(name = "workflowIsDeployedCheck")
-  public Predicate<Object[]> getWorkflowIsDeployedCheck() {
+  @Bean(name = "processIsDeployedCheck")
+  public Predicate<Object[]> getProcessIsDeployedCheck() {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long workflowKey = (Long)objects[0];
+      Long processDefinitionKey = (Long)objects[0];
       try {
-        final WorkflowEntity workflow = workflowReader.getWorkflow(workflowKey);
-        return workflow != null;
+        final ProcessEntity process = processReader.getProcess(processDefinitionKey);
+        return process != null;
       } catch (NotFoundException ex) {
         return false;
       }
@@ -95,7 +95,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the flow node of given args[0] workflowInstanceKey (Long) and args[1] flowNodeId (String) is in state ACTIVE
+   * Checks whether the flow node of given args[0] processInstanceKey (Long) and args[1] flowNodeId (String) is in state ACTIVE
    * @return
    */
   @Bean(name = "flowNodeIsActiveCheck")
@@ -104,10 +104,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      Long workflowInstanceKey = (Long)objects[0];
+      Long processInstanceKey = (Long)objects[0];
       String flowNodeId = (String)objects[1];
       try {
-        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances(workflowInstanceKey);
+        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances(processInstanceKey);
         final List<FlowNodeInstanceEntity> flowNodes = flowNodeInstances.stream().filter(a -> a.getFlowNodeId().equals(flowNodeId))
           .collect(Collectors.toList());
         if (flowNodes.size() == 0) {
@@ -122,7 +122,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the flow node of given args[0] workflowInstanceKey (Long) and args[1] flowNodeId (String) is in state TERMINATED
+   * Checks whether the flow node of given args[0] processInstanceKey (Long) and args[1] flowNodeId (String) is in state TERMINATED
    * @return
    */
   @Bean(name = "flowNodeIsTerminatedCheck")
@@ -131,10 +131,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      Long workflowInstanceKey = (Long)objects[0];
+      Long processInstanceKey = (Long)objects[0];
       String flowNodeId = (String)objects[1];
       try {
-        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances(workflowInstanceKey);
+        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances(processInstanceKey);
         final List<FlowNodeInstanceEntity> flowNodes = flowNodeInstances.stream().filter(a -> a.getFlowNodeId().equals(flowNodeId))
           .collect(Collectors.toList());
         if (flowNodes.size() == 0) {
@@ -149,7 +149,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the flow node of given args[0] workflowInstanceKey (Long) and args[1] flowNodeId (String) is in state COMPLETED
+   * Checks whether the flow node of given args[0] processInstanceKey (Long) and args[1] flowNodeId (String) is in state COMPLETED
    * @return
    */
   @Bean(name = "flowNodeIsCompletedCheck")
@@ -158,10 +158,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      Long workflowInstanceKey = (Long)objects[0];
+      Long processInstanceKey = (Long)objects[0];
       String flowNodeId = (String)objects[1];
       try {
-        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances(workflowInstanceKey);
+        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances(processInstanceKey);
         final List<FlowNodeInstanceEntity> flowNodes = flowNodeInstances.stream().filter(a -> a.getFlowNodeId().equals(flowNodeId))
           .collect(Collectors.toList());
         if (flowNodes.size() == 0) {
@@ -176,7 +176,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the flow nodes of given args[0] workflowInstanceKey (Long) and args[1] flowNodeId (String) is in state COMPLETED
+   * Checks whether the flow nodes of given args[0] processInstanceKey (Long) and args[1] flowNodeId (String) is in state COMPLETED
    * and the amount of such flow node instances is args[2]
    * @return
    */
@@ -187,12 +187,12 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
       assertThat(objects[2]).isInstanceOf(Integer.class);
-      Long workflowInstanceKey = (Long) objects[0];
+      Long processInstanceKey = (Long) objects[0];
       String flowNodeId = (String) objects[1];
       Integer instancesCount = (Integer) objects[2];
       try {
         List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances(
-            workflowInstanceKey);
+            processInstanceKey);
         final List<FlowNodeInstanceEntity> flowNodes = flowNodeInstances.stream()
             .filter(a -> a.getFlowNodeId().equals(flowNodeId))
             .collect(Collectors.toList());
@@ -209,11 +209,11 @@ public class ElasticsearchChecks {
     };
   }
 
-  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long workflowInstanceKey) {
-    final TermQueryBuilder workflowInstanceKeyQuery = termQuery(FlowNodeInstanceTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {
+    final TermQueryBuilder processInstanceKeyQuery = termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
         .source(new SearchSourceBuilder()
-            .query(constantScoreQuery(workflowInstanceKeyQuery))
+            .query(constantScoreQuery(processInstanceKeyQuery))
             .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
     try {
       return ElasticsearchUtil.scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
@@ -223,7 +223,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether variable of given args[0] workflowInstanceKey  (Long) and args[1] scopeKey(Long) and args[2] varName (String) exists
+   * Checks whether variable of given args[0] processInstanceKey  (Long) and args[1] scopeKey(Long) and args[2] varName (String) exists
    * @return
    */
   @Bean(name = "variableExistsCheck")
@@ -233,11 +233,11 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(Long.class);
       assertThat(objects[2]).isInstanceOf(String.class);
-      Long workflowInstanceKey = (Long)objects[0];
+      Long processInstanceKey = (Long)objects[0];
       Long scopeKey = (Long)objects[1];
       String varName = (String)objects[2];
       try {
-        List<VariableDto> variables = variableReader.getVariables(workflowInstanceKey, scopeKey);
+        List<VariableDto> variables = variableReader.getVariables(processInstanceKey, scopeKey);
         return variables.stream().anyMatch(v -> v.getName().equals(varName));
       } catch (NotFoundException ex) {
         return false;
@@ -246,7 +246,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether variable of given args[0] workflowInstanceKey  (Long) and args[1] scopeKey (Long) and args[2] varName (String) with args[3] (String) value exists
+   * Checks whether variable of given args[0] processInstanceKey  (Long) and args[1] scopeKey (Long) and args[2] varName (String) with args[3] (String) value exists
    * @return
    */
   @Bean(name = "variableEqualsCheck")
@@ -257,12 +257,12 @@ public class ElasticsearchChecks {
       assertThat(objects[1]).isInstanceOf(Long.class);
       assertThat(objects[2]).isInstanceOf(String.class);
       assertThat(objects[3]).isInstanceOf(String.class);
-      Long workflowInstanceKey = (Long)objects[0];
+      Long processInstanceKey = (Long)objects[0];
       Long scopeKey = (Long)objects[1];
       String varName = (String)objects[2];
       String varValue = (String)objects[3];
       try {
-        List<VariableDto> variables = variableReader.getVariables(workflowInstanceKey, scopeKey);
+        List<VariableDto> variables = variableReader.getVariables(processInstanceKey, scopeKey);
         return variables.stream().anyMatch( v -> v.getName().equals(varName) && v.getValue().equals(varValue));
       } catch (NotFoundException ex) {
         return false;
@@ -271,7 +271,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether any incidents is active in workflowInstance of given workflowInstanceKey (Long)
+   * Checks whether any incidents is active in processInstance of given processInstanceKey (Long)
    * @return
    */
   @Bean(name = "incidentIsActiveCheck")
@@ -279,12 +279,12 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long workflowInstanceKey = (Long)objects[0];
+      Long processInstanceKey = (Long)objects[0];
       try {
-        final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(workflowInstanceKey);
+        final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(processInstanceKey);
         boolean found = allActivityInstances.stream().anyMatch(ai -> ai.getIncidentKey() != null);
         if (found) {
-          List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
+          List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
           found = allIncidents.size() > 0;
         }
         return found;
@@ -295,7 +295,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the incidents of given args[0] workflowInstanceKey (Long) equals given args[1] incidentsCount (Integer)
+   * Checks whether the incidents of given args[0] processInstanceKey (Long) equals given args[1] incidentsCount (Integer)
    * @return
    */
   @Bean(name = "incidentsAreActiveCheck")
@@ -304,10 +304,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(Integer.class);
-      Long workflowInstanceKey = (Long)objects[0];
+      Long processInstanceKey = (Long)objects[0];
       int incidentsCount = (int)objects[1];
       try {
-        final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(workflowInstanceKey);
+        final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(processInstanceKey);
         return allActivityInstances.stream().filter(ai -> ai.getIncidentKey() != null).count() == incidentsCount;
       } catch (NotFoundException ex) {
         return false;
@@ -316,7 +316,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether there are no incidents in activities exists in given workflowInstanceKey (Long)
+   * Checks whether there are no incidents in activities exists in given processInstanceKey (Long)
    * @return
    */
   @Bean(name = "incidentIsResolvedCheck")
@@ -324,9 +324,9 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long workflowInstanceKey = (Long)objects[0];
+      Long processInstanceKey = (Long)objects[0];
       try {
-        final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(workflowInstanceKey);
+        final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(processInstanceKey);
         return allActivityInstances.stream().noneMatch(ai -> ai.getIncidentKey() != null);
       } catch (NotFoundException ex) {
         return false;
@@ -335,18 +335,18 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the workflowInstance of given workflowInstanceKey (Long) is CANCELED.
+   * Checks whether the processInstance of given processInstanceKey (Long) is CANCELED.
    * @return
    */
-  @Bean(name = "workflowInstanceIsCanceledCheck")
-  public Predicate<Object[]> getWorkflowInstanceIsCanceledCheck() {
+  @Bean(name = "processInstanceIsCanceledCheck")
+  public Predicate<Object[]> getProcessInstanceIsCanceledCheck() {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long workflowInstanceKey = (Long)objects[0];
+      Long processInstanceKey = (Long)objects[0];
       try {
-        final WorkflowInstanceForListViewEntity instance = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
-        return instance.getState().equals(WorkflowInstanceState.CANCELED);
+        final ProcessInstanceForListViewEntity instance = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+        return instance.getState().equals(ProcessInstanceState.CANCELED);
       } catch (NotFoundException ex) {
         return false;
       }
@@ -354,17 +354,17 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the workflowInstance of given workflowInstanceKey (Long) is CREATED.
+   * Checks whether the processInstance of given processInstanceKey (Long) is CREATED.
    * @return
    */
-  @Bean(name = "workflowInstanceIsCreatedCheck")
-  public Predicate<Object[]> getWorkflowInstanceIsCreatedCheck() {
+  @Bean(name = "processInstanceIsCreatedCheck")
+  public Predicate<Object[]> getProcessInstanceIsCreatedCheck() {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long workflowInstanceKey = (Long)objects[0];
+      Long processInstanceKey = (Long)objects[0];
       try {
-        workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
+        processInstanceReader.getProcessInstanceByKey(processInstanceKey);
         return true;
       } catch (NotFoundException ex) {
         return false;
@@ -373,18 +373,18 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the workflowInstance of given workflowInstanceKey (Long) is COMPLETED.
+   * Checks whether the processInstance of given processInstanceKey (Long) is COMPLETED.
    * @return
    */
-  @Bean(name = "workflowInstanceIsCompletedCheck")
-  public Predicate<Object[]> getWorkflowInstanceIsCompletedCheck() {
+  @Bean(name = "processInstanceIsCompletedCheck")
+  public Predicate<Object[]> getProcessInstanceIsCompletedCheck() {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long workflowInstanceKey = (Long)objects[0];
+      Long processInstanceKey = (Long)objects[0];
       try {
-        final WorkflowInstanceForListViewEntity instance = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
-        return instance.getState().equals(WorkflowInstanceState.COMPLETED);
+        final ProcessInstanceForListViewEntity instance = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+        return instance.getState().equals(ProcessInstanceState.COMPLETED);
       } catch (NotFoundException ex) {
         return false;
       }
@@ -392,11 +392,11 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether all workflowInstances from given workflowInstanceKeys (List<Long>) are finished
+   * Checks whether all processInstances from given processInstanceKeys (List<Long>) are finished
    * @return
    */
-  @Bean(name = "workflowInstancesAreFinishedCheck")
-  public Predicate<Object[]> getWorkflowInstancesAreFinishedCheck() {
+  @Bean(name = "processInstancesAreFinishedCheck")
+  public Predicate<Object[]> getProcessInstancesAreFinishedCheck() {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(List.class);
@@ -405,46 +405,46 @@ public class ElasticsearchChecks {
       final ListViewRequestDto getFinishedRequest =
         TestUtil.createGetAllFinishedRequest(q -> q.setIds(CollectionUtil.toSafeListOfStrings(ids)));
       getFinishedRequest.setPageSize(ids.size());
-      final ListViewResponseDto responseDto = listViewReader.queryWorkflowInstances(getFinishedRequest);
+      final ListViewResponseDto responseDto = listViewReader.queryProcessInstances(getFinishedRequest);
       return responseDto.getTotalCount() == ids.size();
     };
   }
 
   /**
-   * Checks whether all workflowInstances from given workflowInstanceKeys (List<Long>) are started
+   * Checks whether all processInstances from given processInstanceKeys (List<Long>) are started
    * @return
    */
-  @Bean(name = "workflowInstancesAreStartedCheck")
-  public Predicate<Object[]> getWorkflowInstancesAreStartedCheck() {
+  @Bean(name = "processInstancesAreStartedCheck")
+  public Predicate<Object[]> getProcessInstancesAreStartedCheck() {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(List.class);
       @SuppressWarnings("unchecked")
       List<Long> ids = (List<Long>)objects[0];
       final ListViewRequestDto getActiveRequest =
-        TestUtil.createWorkflowInstanceRequest(q -> {
+        TestUtil.createProcessInstanceRequest(q -> {
           q.setIds(CollectionUtil.toSafeListOfStrings(ids));
           q.setRunning(true);
           q.setActive(true);
         });
       getActiveRequest.setPageSize(ids.size());
-      final ListViewResponseDto responseDto = listViewReader.queryWorkflowInstances(getActiveRequest);
+      final ListViewResponseDto responseDto = listViewReader.queryProcessInstances(getActiveRequest);
       return responseDto.getTotalCount() == ids.size();
     };
   }
 
   /**
-   * Checks whether all operations for given workflowInstanceKey (Long) are completed
+   * Checks whether all operations for given processInstanceKey (Long) are completed
    * @return
    */
-  @Bean(name = "operationsByWorkflowInstanceAreCompletedCheck")
-  public Predicate<Object[]> getOperationsByWorkflowInstanceAreCompleted() {
+  @Bean(name = "operationsByProcessInstanceAreCompletedCheck")
+  public Predicate<Object[]> getOperationsByProcessInstanceAreCompleted() {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long workflowInstanceKey = (Long)objects[0];
-      ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(workflowInstanceKey);
-      return workflowInstance.getOperations().stream().allMatch( operation -> {
+      Long processInstanceKey = (Long)objects[0];
+      ListViewProcessInstanceDto processInstance = processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
+      return processInstance.getOperations().stream().allMatch( operation -> {
           return operation.getState().equals(OperationState.COMPLETED);
       });
     };

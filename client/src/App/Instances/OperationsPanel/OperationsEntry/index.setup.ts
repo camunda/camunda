@@ -26,7 +26,7 @@ const OPERATIONS: OperationsMock = {
   },
   CANCEL: {
     id: '393ad666-d7f0-45c9-a679-ffa0ef82f88a',
-    type: OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE,
+    type: OPERATION_TYPE.CANCEL_PROCESS_INSTANCE,
     endDate: '2020-02-06T14:56:17.932+0100',
     operationsTotalCount: 2,
     operationsFinishedCount: 2,

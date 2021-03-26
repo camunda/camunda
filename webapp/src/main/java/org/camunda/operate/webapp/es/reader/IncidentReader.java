@@ -61,10 +61,10 @@ public class IncidentReader extends AbstractReader {
   @Autowired
   private OperateProperties operateProperties;
 
-  public List<IncidentEntity> getAllIncidentsByWorkflowInstanceKey(Long workflowInstanceKey) {
-    final TermQueryBuilder workflowInstanceKeyQuery = termQuery(IncidentTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+  public List<IncidentEntity> getAllIncidentsByProcessInstanceKey(Long processInstanceKey) {
+    final TermQueryBuilder processInstanceKeyQuery = termQuery(IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
 
-    final ConstantScoreQueryBuilder query = constantScoreQuery(workflowInstanceKeyQuery);
+    final ConstantScoreQueryBuilder query = constantScoreQuery(processInstanceKeyQuery);
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder().query(query).sort(IncidentTemplate.CREATION_TIME, SortOrder.ASC));
@@ -79,25 +79,25 @@ public class IncidentReader extends AbstractReader {
   }
 
   /**
-   * Returns map of incident ids per workflow instance id.
-   * @param workflowInstanceKeys
+   * Returns map of incident ids per process instance id.
+   * @param processInstanceKeys
    * @return
    */
-  public Map<Long, List<Long>> getIncidentKeysPerWorkflowInstance(List<Long> workflowInstanceKeys) {
-    final QueryBuilder workflowInstanceKeysQuery = constantScoreQuery(termsQuery(IncidentTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKeys));
+  public Map<Long, List<Long>> getIncidentKeysPerProcessInstance(List<Long> processInstanceKeys) {
+    final QueryBuilder processInstanceKeysQuery = constantScoreQuery(termsQuery(IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys));
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder()
-            .query(workflowInstanceKeysQuery)
-            .fetchSource(IncidentTemplate.WORKFLOW_INSTANCE_KEY, null)
+            .query(processInstanceKeysQuery)
+            .fetchSource(IncidentTemplate.PROCESS_INSTANCE_KEY, null)
             .size(batchSize));
 
     Map<Long, List<Long>> result = new HashMap<>();
     try {
       ElasticsearchUtil.scrollWith(searchRequest, esClient, searchHits -> {
         for (SearchHit hit : searchHits.getHits()) {
-          CollectionUtil.addToMap(result, Long.valueOf(hit.getSourceAsMap().get(IncidentTemplate.WORKFLOW_INSTANCE_KEY).toString()), Long.valueOf(hit.getId()));
+          CollectionUtil.addToMap(result, Long.valueOf(hit.getSourceAsMap().get(IncidentTemplate.PROCESS_INSTANCE_KEY).toString()), Long.valueOf(hit.getId()));
         }
       }, null, null);
       return result;
@@ -132,8 +132,8 @@ public class IncidentReader extends AbstractReader {
 
   }
 
-  public IncidentResponseDto getIncidentsByWorkflowInstanceKey(Long workflowInstanceKey) {
-    final TermQueryBuilder workflowInstanceQuery = termQuery(IncidentTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+  public IncidentResponseDto getIncidentsByProcessInstanceKey(Long processInstanceKey) {
+    final TermQueryBuilder processInstanceQuery = termQuery(IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
 
     final String errorTypesAggName = "errorTypesAgg";
     final String flowNodesAggName = "flowNodesAgg";
@@ -145,7 +145,7 @@ public class IncidentReader extends AbstractReader {
         .order(BucketOrder.key(true));
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
-        .source(new SearchSourceBuilder().query(constantScoreQuery(workflowInstanceQuery)).aggregation(errorTypesAgg).aggregation(flowNodesAgg));
+        .source(new SearchSourceBuilder().query(constantScoreQuery(processInstanceQuery)).aggregation(errorTypesAgg).aggregation(flowNodesAgg));
 
     IncidentResponseDto incidentResponse = new IncidentResponseDto();
     try {
@@ -158,7 +158,7 @@ public class IncidentReader extends AbstractReader {
             .forEach(b -> incidentResponse.getFlowNodes().add(new IncidentFlowNodeDto(b.getKeyAsString(), (int) b.getDocCount())));
       });
 
-      final Map<Long, List<OperationEntity>> operations = operationReader.getOperationsPerIncidentKey(workflowInstanceKey);
+      final Map<Long, List<OperationEntity>> operations = operationReader.getOperationsPerIncidentKey(processInstanceKey);
 
       incidentResponse.setIncidents(IncidentDto.sortDefault(IncidentDto.createFrom(incidents, operations)));
       incidentResponse.setCount(incidents.size());

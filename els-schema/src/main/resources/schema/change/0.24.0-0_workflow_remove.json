@@ -1,7 +1,0 @@
-{
-	"@type": "processorStep",
-	"indexName": "workflow",
-	"version": "0.24.0",
-	"order": 0,
-	"content": "{\"remove\": {\"field\": \"activities\", \"ignore_missing\": true}}"
-}

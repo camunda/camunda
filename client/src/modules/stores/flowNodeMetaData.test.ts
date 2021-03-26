@@ -11,7 +11,7 @@ import {flowNodeSelectionStore} from './flowNodeSelection';
 import {flowNodeMetaDataStore, MetaDataEntity} from './flowNodeMetaData';
 import {waitFor} from '@testing-library/react';
 
-const WORKFLOW_INSTANCE_ID = '2251799813689404';
+const PROCESS_INSTANCE_ID = '2251799813689404';
 
 const metaData: MetaDataEntity = {
   breadcrumb: [{flowNodeId: 'startEvent', flowNodeType: 'START_EVENT'}],
@@ -25,19 +25,17 @@ const metaData: MetaDataEntity = {
 describe('stores/flowNodeMetaData', () => {
   beforeAll(async () => {
     mockServer.use(
-      rest.get(
-        `/api/workflow-instances/${WORKFLOW_INSTANCE_ID}`,
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              id: WORKFLOW_INSTANCE_ID,
-              state: 'ACTIVE',
-            })
-          )
+      rest.get(`/api/process-instances/${PROCESS_INSTANCE_ID}`, (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            id: PROCESS_INSTANCE_ID,
+            state: 'ACTIVE',
+          })
+        )
       )
     );
 
-    await currentInstanceStore.init(WORKFLOW_INSTANCE_ID);
+    await currentInstanceStore.init(PROCESS_INSTANCE_ID);
   });
 
   afterAll(() => {
@@ -47,7 +45,7 @@ describe('stores/flowNodeMetaData', () => {
   beforeEach(() => {
     mockServer.use(
       rest.post(
-        `/api/workflow-instances/${WORKFLOW_INSTANCE_ID}/flow-node-metadata`,
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
         (_, res, ctx) => res.once(ctx.json(metaData))
       )
     );

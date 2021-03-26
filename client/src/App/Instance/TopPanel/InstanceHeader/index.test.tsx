@@ -12,7 +12,7 @@ import {
   fireEvent,
 } from '@testing-library/react';
 import {formatDate} from 'modules/utils/date';
-import {getWorkflowName} from 'modules/utils/instance';
+import {getProcessName} from 'modules/utils/instance';
 import {InstanceHeader} from './index';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {variablesStore} from 'modules/stores/variables';
@@ -44,7 +44,7 @@ describe('InstanceHeader', () => {
 
   it('should show skeleton before instance data is available', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithActiveOperation))
       )
     );
@@ -62,7 +62,7 @@ describe('InstanceHeader', () => {
 
   it('should render instance data', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithActiveOperation))
       )
     );
@@ -74,7 +74,7 @@ describe('InstanceHeader', () => {
     );
     const {instance} = currentInstanceStore.state;
 
-    const workflowName = getWorkflowName(instance);
+    const processName = getProcessName(instance);
     const instanceState = mockInstanceWithActiveOperation.state;
     const formattedStartDate = formatDate(
       mockInstanceWithActiveOperation.startDate
@@ -83,13 +83,13 @@ describe('InstanceHeader', () => {
       mockInstanceWithActiveOperation.endDate
     );
 
-    expect(screen.getByText(workflowName)).toBeInTheDocument();
+    expect(screen.getByText(processName)).toBeInTheDocument();
     expect(
       screen.getByText(mockInstanceWithActiveOperation.id)
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        `Version ${mockInstanceWithActiveOperation.workflowVersion}`
+        `Version ${mockInstanceWithActiveOperation.processVersion}`
       )
     ).toBeInTheDocument();
     expect(screen.getByText(formattedStartDate)).toBeInTheDocument();
@@ -101,10 +101,10 @@ describe('InstanceHeader', () => {
     render(<InstanceHeader />, {wrapper: Wrapper});
 
     mockServer.use(
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithoutOperations))
       ),
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithActiveOperation))
       )
     );
@@ -126,12 +126,11 @@ describe('InstanceHeader', () => {
 
   it('should show spinner when operation is applied', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithoutOperations))
       ),
-      rest.post(
-        '/api/workflow-instances/:instanceId/operation',
-        (_, res, ctx) => res.once(ctx.json(mockOperationCreated))
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.once(ctx.json(mockOperationCreated))
       )
     );
 
@@ -157,15 +156,14 @@ describe('InstanceHeader', () => {
     };
 
     mockServer.use(
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithoutOperations))
       ),
-      rest.get('/api/workflow-instances/:instanceId/variables', (_, res, ctx) =>
+      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(ctx.json([mockVariable]))
       ),
-      rest.post(
-        '/api/workflow-instances/:instanceId/operation',
-        (_, res, ctx) => res.once(ctx.json(null))
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.once(ctx.json(null))
       )
     );
 
@@ -193,13 +191,11 @@ describe('InstanceHeader', () => {
 
   it('should remove spinner when operation fails', async () => {
     mockServer.use(
-      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithoutOperations))
       ),
-      rest.post(
-        '/api/workflow-instances/:instanceId/operation',
-        (_, res, ctx) =>
-          res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
       )
     );
     render(<InstanceHeader />, {wrapper: Wrapper});

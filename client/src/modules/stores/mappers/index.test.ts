@@ -13,27 +13,27 @@ describe('mappers', () => {
       const processedSequenceFlows = [
         {
           id: '2251799813695632',
-          workflowInstanceId: '2251799813693731',
+          processInstanceId: '2251799813693731',
           activityId: 'SequenceFlow_0drux68',
         },
         {
           id: '2251799813693749',
-          workflowInstanceId: '2251799813693731',
+          processInstanceId: '2251799813693731',
           activityId: 'SequenceFlow_0j6tsnn',
         },
         {
           id: '2251799813695543',
-          workflowInstanceId: '2251799813693731',
+          processInstanceId: '2251799813693731',
           activityId: 'SequenceFlow_1dwqvrt',
         },
         {
           id: '2251799813695629',
-          workflowInstanceId: '2251799813693731',
+          processInstanceId: '2251799813693731',
           activityId: 'SequenceFlow_1fgekwd',
         },
         {
           id: '2251799813693750',
-          workflowInstanceId: '2251799813693731',
+          processInstanceId: '2251799813693731',
           activityId: 'SequenceFlow_0j6tsnn',
         },
       ];

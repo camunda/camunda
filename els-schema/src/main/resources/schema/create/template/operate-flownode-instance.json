@@ -34,7 +34,7 @@
 			"scopeKey": {
 				"type": "long"
 			},
-			"workflowInstanceKey": {
+			"processInstanceKey": {
 				"type": "long"
 			},
 			"id": {

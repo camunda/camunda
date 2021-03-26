@@ -49,7 +49,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   private static final String OPERATE_USER = "demo";
   private static final String OPERATE_PASSWORD = "demo";
 
-  private List<Long> workflowInstanceKeys = new ArrayList<>();
+  private List<Long> processInstanceKeys = new ArrayList<>();
 
   @Autowired
   private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
@@ -78,43 +78,43 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   public void createSpecialDataV1() {
     int orderId = random.nextInt(10);
     long instanceKey = ZeebeTestUtil
-      .startWorkflowInstance(client, "interruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey);
+      .startProcessInstance(client, "interruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+    doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("interruptTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
 
     orderId = random.nextInt(10);
     instanceKey = ZeebeTestUtil
-      .startWorkflowInstance(client, "interruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey);
+      .startProcessInstance(client, "interruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+    doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("interruptTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
     completeTask(instanceKey, "task2", null);
 
     orderId = random.nextInt(10);
     instanceKey = ZeebeTestUtil
-      .startWorkflowInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey);
+      .startProcessInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+    doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("messageTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
 
     orderId = random.nextInt(10);
     instanceKey = ZeebeTestUtil
-      .startWorkflowInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey);
+      .startProcessInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+    doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("messageTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
     failTask(instanceKey, "task1", "error");
 
     orderId = random.nextInt(10);
     instanceKey = ZeebeTestUtil
-      .startWorkflowInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
-    doNotTouchWorkflowInstanceKeys.add(instanceKey);
+      .startProcessInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+    doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("messageTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
     completeTask(instanceKey, "task1", null);
 
   }
 
   @Override
-  protected void progressWorkflowInstances() {
+  protected void progressProcessInstances() {
 
-    super.progressWorkflowInstances();
+    super.progressProcessInstances();
 
     //demo process
     jobWorkers.add(progressTaskA());
@@ -172,10 +172,10 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     final int operationsCount = random.nextInt(20) + 90;
     for (int i=0; i<operationsCount; i++) {
       final int no = random.nextInt(operationsCount);
-      final Long workflowInstanceKey = workflowInstanceKeys.get(no);
+      final Long processInstanceKey = processInstanceKeys.get(no);
       final OperationType type = getType(i);
-      Map<String, Object> request = getCreateBatchOperationRequestBody(workflowInstanceKey, type);
-      RequestEntity<Map<String, Object>> requestEntity = RequestEntity.method(HttpMethod.POST, restTemplate.getURL("/api/workflow-instances/batch-operation"))
+      Map<String, Object> request = getCreateBatchOperationRequestBody(processInstanceKey, type);
+      RequestEntity<Map<String, Object>> requestEntity = RequestEntity.method(HttpMethod.POST, restTemplate.getURL("/api/process-instances/batch-operation"))
           .headers(restTemplate.getCsrfHeader())
           .contentType(MediaType.APPLICATION_JSON).body(request);
       final ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
@@ -185,19 +185,19 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     }
   }
 
-  private Map<String, Object> getCreateBatchOperationRequestBody(Long workflowInstanceKey, OperationType type) {
+  private Map<String, Object> getCreateBatchOperationRequestBody(Long processInstanceKey, OperationType type) {
     Map<String, Object> request = new HashMap<>();
     Map<String, Object> listViewRequest = new HashMap<>();
     listViewRequest.put("running", true);
     listViewRequest.put("active", true);
-    listViewRequest.put("ids", new Long[]{workflowInstanceKey});
+    listViewRequest.put("ids", new Long[]{processInstanceKey});
     request.put("query", listViewRequest);
     request.put("operationType" , type.toString());
     return request;
   }
 
   private OperationType getType(int i) {
-    return i % 2 == 0 ? OperationType.CANCEL_WORKFLOW_INSTANCE : OperationType.RESOLVE_INCIDENT;
+    return i % 2 == 0 ? OperationType.CANCEL_PROCESS_INSTANCE : OperationType.RESOLVE_INCIDENT;
   }
 
   private void sendMessages(String messageName, String payload, int count, String correlationKey) {
@@ -346,33 +346,33 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   protected void deployVersion1() {
     super.deployVersion1();
 
-    //deploy workflows v.1
-    ZeebeTestUtil.deployWorkflow(client, "develop/complexProcess_v_1.bpmn");
+    //deploy processes v.1
+    ZeebeTestUtil.deployProcess(client, "develop/complexProcess_v_1.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "develop/eventBasedGatewayProcess_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/eventBasedGatewayProcess_v_1.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "develop/subProcess.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/subProcess.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "develop/interruptingBoundaryEvent_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/interruptingBoundaryEvent_v_1.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "develop/nonInterruptingBoundaryEvent_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/nonInterruptingBoundaryEvent_v_1.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "develop/timerProcess_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/timerProcess_v_1.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "develop/callActivityProcess.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/callActivityProcess.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "develop/eventSubProcess_v_1.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/eventSubProcess_v_1.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "develop/bigProcess.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/bigProcess.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "develop/errorProcess.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/errorProcess.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "develop/error-end-event.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/error-end-event.bpmn");
   }
 
   @Override
-  protected void startWorkflowInstances(int version) {
-    super.startWorkflowInstances(version);
+  protected void startProcessInstances(int version) {
+    super.startProcessInstances(version);
     if (version == 1) {
       createBigProcess(20, 50);
     }
@@ -385,38 +385,38 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
         //call activity process
         //these instances will have incident on call activity
-        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "call-activity-process", "{\"var\": " + random.nextInt(10) + "}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "call-activity-process", "{\"var\": " + random.nextInt(10) + "}"));
 
         //eventSubprocess
-        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "eventSubprocessWorkflow", "{\"clientId\": \"" + random.nextInt(10) + "\"}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "eventSubprocessProcess", "{\"clientId\": \"" + random.nextInt(10) + "\"}"));
 
         // errorProcess
-        workflowInstanceKeys.add(ZeebeTestUtil
-            .startWorkflowInstance(client, "errorProcess", "{\"errorCode\": \"boundary\"}"));
-        workflowInstanceKeys.add(ZeebeTestUtil
-            .startWorkflowInstance(client, "errorProcess", "{\"errorCode\": \"subProcess\"}"));
-        workflowInstanceKeys.add(ZeebeTestUtil
-            .startWorkflowInstance(client, "errorProcess", "{\"errorCode\": \"unknown\"}"));
-        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "error-end-process", null));
+        processInstanceKeys.add(ZeebeTestUtil
+            .startProcessInstance(client, "errorProcess", "{\"errorCode\": \"boundary\"}"));
+        processInstanceKeys.add(ZeebeTestUtil
+            .startProcessInstance(client, "errorProcess", "{\"errorCode\": \"subProcess\"}"));
+        processInstanceKeys.add(ZeebeTestUtil
+            .startProcessInstance(client, "errorProcess", "{\"errorCode\": \"unknown\"}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "error-end-process", null));
       }
 
       if (version == 2) {
-        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "interruptingBoundaryEvent", null));
-        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "nonInterruptingBoundaryEvent", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "interruptingBoundaryEvent", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "nonInterruptingBoundaryEvent", null));
         //call activity process
         //these instances must be fine
-        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "call-activity-process", "{\"var\": " + random.nextInt(10) + "}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "call-activity-process", "{\"var\": " + random.nextInt(10) + "}"));
       }
       if (version < 2) {
-        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "prWithSubprocess", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "prWithSubprocess", null));
       }
 
       if (version < 3) {
-        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "complexProcess", "{\"clientId\": \"" + random.nextInt(10) + "\"}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "complexProcess", "{\"clientId\": \"" + random.nextInt(10) + "\"}"));
       }
 
       if (version == 3) {
-        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "complexProcess", "{\"goUp\": " + random.nextInt(5) + "}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "complexProcess", "{\"goUp\": " + random.nextInt(5) + "}"));
       }
 
     }
@@ -437,7 +437,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       builder
           .endArray()
         .endObject();
-      ZeebeTestUtil.startWorkflowInstance(client, "bigProcess", Strings.toString(builder));
+      ZeebeTestUtil.startProcessInstance(client, "bigProcess", Strings.toString(builder));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -446,24 +446,24 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   @Override
   protected void deployVersion2() {
     super.deployVersion2();
-//    deploy workflows v.2
-    ZeebeTestUtil.deployWorkflow(client, "develop/complexProcess_v_2.bpmn");
+//    deploy processes v.2
+    ZeebeTestUtil.deployProcess(client, "develop/complexProcess_v_2.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "develop/eventBasedGatewayProcess_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/eventBasedGatewayProcess_v_2.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "develop/interruptingBoundaryEvent_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/interruptingBoundaryEvent_v_2.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "develop/nonInterruptingBoundaryEvent_v_2.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/nonInterruptingBoundaryEvent_v_2.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "develop/calledProcess.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/calledProcess.bpmn");
 
   }
 
   @Override
   protected void deployVersion3() {
     super.deployVersion3();
-    //deploy workflows v.3
-    ZeebeTestUtil.deployWorkflow(client, "develop/complexProcess_v_3.bpmn");
+    //deploy processes v.3
+    ZeebeTestUtil.deployProcess(client, "develop/complexProcess_v_3.bpmn");
 
   }
 

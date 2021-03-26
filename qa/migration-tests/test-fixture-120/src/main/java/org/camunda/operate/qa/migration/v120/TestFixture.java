@@ -20,7 +20,7 @@ public class TestFixture extends AbstractTestFixture {
   private static final String ZEEBE_CFG_YAML_FILE = "/zeebe-config/zeebe.cfg.toml";
 
   @Autowired
-  private BasicWorkflowDataGenerator basicWorkflowDataGenerator;
+  private BasicProcessDataGenerator basicProcessDataGenerator;
 
   @Override
   public void setup(TestContext testContext) {
@@ -52,7 +52,7 @@ public class TestFixture extends AbstractTestFixture {
 
   private void generateData() {
     try {
-      basicWorkflowDataGenerator.createData(testContext);
+      basicProcessDataGenerator.createData(testContext);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

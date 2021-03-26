@@ -8,8 +8,8 @@ import {makeAutoObservable} from 'mobx';
 
 import {fetchIncidentsByError} from 'modules/api/incidents';
 
-type Workflow = {
-  workflowId: string;
+type Process = {
+  processId: string;
   version: number;
   name: null | string;
   bpmnProcessId: string;
@@ -20,7 +20,7 @@ type Workflow = {
 type IncidentByError = {
   errorMessage: string;
   instancesWithErrorCount: number;
-  workflows: Workflow[];
+  processes: Process[];
 };
 
 type State = {

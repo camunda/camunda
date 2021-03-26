@@ -17,7 +17,7 @@ import static org.camunda.operate.schema.templates.FlowNodeInstanceTemplate.STAR
 import static org.camunda.operate.schema.templates.FlowNodeInstanceTemplate.STATE;
 import static org.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
 import static org.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TYPE;
-import static org.camunda.operate.schema.templates.FlowNodeInstanceTemplate.WORKFLOW_INSTANCE_KEY;
+import static org.camunda.operate.schema.templates.FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY;
 import static org.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
 import static org.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
@@ -181,7 +181,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
     final QueryBuilder query =
         constantScoreQuery(
-              termQuery(WORKFLOW_INSTANCE_KEY, flowNodeInstanceRequest.getWorkflowInstanceId()));
+              termQuery(PROCESS_INSTANCE_KEY, flowNodeInstanceRequest.getProcessInstanceId()));
 
     final AggregationBuilder incidentAgg = getIncidentsAgg();
 
@@ -217,7 +217,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
       } else {
         response = scrollAllSearchHits(searchRequest);
       }
-      //for workflow instance level, we don't return running flag
+      //for process instance level, we don't return running flag
       if (level == 1) {
         response.setRunning(null);
       }
@@ -348,10 +348,10 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
   }
 
-  public FlowNodeMetadataDto getFlowNodeMetadata(String workflowInstanceId,
+  public FlowNodeMetadataDto getFlowNodeMetadata(String processInstanceId,
       final FlowNodeMetadataRequestDto request) {
     if (request.getFlowNodeId() != null) {
-      return getMetadataByFlowNodeId(workflowInstanceId, request.getFlowNodeId(), request.getFlowNodeType());
+      return getMetadataByFlowNodeId(processInstanceId, request.getFlowNodeId(), request.getFlowNodeType());
     } else if (request.getFlowNodeInstanceId() != null) {
       return getMetadataByFlowNodeInstanceId(request.getFlowNodeInstanceId());
     }
@@ -420,14 +420,14 @@ public class FlowNodeInstanceReader extends AbstractReader {
     }
   }
 
-  private FlowNodeMetadataDto getMetadataByFlowNodeId(final String workflowInstanceId,
+  private FlowNodeMetadataDto getMetadataByFlowNodeId(final String processInstanceId,
       final String flowNodeId, final FlowNodeType flowNodeType) {
 
-    final TermQueryBuilder workflowInstanceIdQ = termQuery(WORKFLOW_INSTANCE_KEY, workflowInstanceId);
+    final TermQueryBuilder processInstanceIdQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
     final TermQueryBuilder flowNodeIdQ = termQuery(FLOW_NODE_ID, flowNodeId);
 
     final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
-        .query(constantScoreQuery(joinWithAnd(workflowInstanceIdQ, flowNodeIdQ)))
+        .query(constantScoreQuery(joinWithAnd(processInstanceIdQ, flowNodeIdQ)))
         .sort(LEVEL, SortOrder.ASC)
         .aggregation(getLevelsAggs())
         .size(1);
@@ -554,14 +554,14 @@ public class FlowNodeInstanceReader extends AbstractReader {
     }
   }
 
-  public Map<String, FlowNodeState> getFlowNodeStates(String workflowInstanceId) {
+  public Map<String, FlowNodeState> getFlowNodeStates(String processInstanceId) {
     final String latestFlowNodeAggName = "latestFlowNode";
     final String activeFlowNodesAggName = "activeFlowNodes";
     final String activeFlowNodesBucketsAggName = "activeFlowNodesBuckets";
     final String finishedFlowNodesAggName = "finishedFlowNodes";
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(
-        termQuery(WORKFLOW_INSTANCE_KEY, workflowInstanceId));
+        termQuery(PROCESS_INSTANCE_KEY, processInstanceId));
 
     final AggregationBuilder activeFlowNodesAggs =
         filter(activeFlowNodesAggName, termsQuery(STATE, ACTIVE, INCIDENT))

@@ -21,7 +21,7 @@ const mockData = {
     mockOperationCreated: {
       id: '1',
       name: null,
-      type: 'CANCEL_WORKFLOW_INSTANCE',
+      type: 'CANCEL_PROCESS_INSTANCE',
       startDate: '2020-09-29T12:32:54.874+0000',
       endDate: null,
       username: 'demo',
@@ -40,7 +40,7 @@ const mockData = {
     mockOperationCreated: {
       id: '2',
       name: null,
-      type: 'CANCEL_WORKFLOW_INSTANCE',
+      type: 'CANCEL_PROCESS_INSTANCE',
       startDate: '2020-09-29T12:32:54.874+0000',
       endDate: null,
       username: 'demo',
@@ -59,7 +59,7 @@ const mockData = {
     mockOperationCreated: {
       id: '3',
       name: null,
-      type: 'CANCEL_WORKFLOW_INSTANCE',
+      type: 'CANCEL_PROCESS_INSTANCE',
       startDate: '2020-09-29T12:32:54.874+0000',
       endDate: null,
       username: 'demo',
@@ -78,7 +78,7 @@ const mockData = {
     mockOperationCreated: {
       id: '4',
       name: null,
-      type: 'CANCEL_WORKFLOW_INSTANCE',
+      type: 'CANCEL_PROCESS_INSTANCE',
       startDate: '2020-09-29T12:32:54.874+0000',
       endDate: null,
       username: 'demo',
@@ -87,18 +87,18 @@ const mockData = {
       operationsFinishedCount: 0,
     },
   },
-  // in this case all instances are selected and a workflow filter is set
-  setWorkflowFilterSelectOne: {
+  // in this case all instances are selected and a process filter is set
+  setProcessFilterSelectOne: {
     expectedQuery: {
       ...baseQuery,
       ids: ['1'],
       excludeIds: [],
-      workflowIds: ['demoProcess1'],
+      processIds: ['demoProcess1'],
     },
     mockOperationCreated: {
       id: '5',
       name: null,
-      type: 'CANCEL_WORKFLOW_INSTANCE',
+      type: 'CANCEL_PROCESS_INSTANCE',
       startDate: '2020-09-29T12:32:54.874+0000',
       endDate: null,
       username: 'demo',

@@ -25,14 +25,14 @@ import {useInstancePageParams} from './useInstancePageParams';
 import * as Styled from './styled';
 
 const Instance = observer(() => {
-  const {workflowInstanceId} = useInstancePageParams();
+  const {processInstanceId} = useInstancePageParams();
   useEffect(() => {
-    currentInstanceStore.init(workflowInstanceId);
+    currentInstanceStore.init(processInstanceId);
     flowNodeInstanceStore.init();
 
     let disposer = autorun(() => {
-      if (currentInstanceStore.workflowTitle !== null)
-        document.title = currentInstanceStore.workflowTitle;
+      if (currentInstanceStore.processTitle !== null)
+        document.title = currentInstanceStore.processTitle;
     });
 
     singleInstanceDiagramStore.init();
@@ -49,7 +49,7 @@ const Instance = observer(() => {
         disposer();
       }
     };
-  }, [workflowInstanceId]);
+  }, [processInstanceId]);
 
   const {instance} = currentInstanceStore.state;
   return (
@@ -58,7 +58,7 @@ const Instance = observer(() => {
         {instance && `Camunda Operate Instance ${instance.id}`}
       </VisuallyHiddenH1>
       <SplitPane
-        titles={{top: 'Workflow', bottom: 'Instance Details'}}
+        titles={{top: 'Process', bottom: 'Instance Details'}}
         expandedPaneId="instanceExpandedPaneId"
       >
         <TopPanel />

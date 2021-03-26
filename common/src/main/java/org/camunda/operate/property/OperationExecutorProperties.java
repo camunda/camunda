@@ -20,8 +20,8 @@ public class OperationExecutorProperties {
   private static final int DEFAULT_IMPORT_QUEUE_SIZE = 10;
 
   /**
-   * Amount of workflow instances, that will be processed by one run of operation executor. This counts workflow instances, but can end up in more operations,
-   * as one workflow instance can have more than one scheduled operations.
+   * Amount of process instances, that will be processed by one run of operation executor. This counts process instances, but can end up in more operations,
+   * as one process instance can have more than one scheduled operations.
    */
   private int batchSize = BATCH_SIZE_DEFAULT;
 

@@ -1,7 +1,7 @@
 spring.main.web-application-type: NONE
 camunda.operate.qa.data:
-  workflowCount: 50
-  workflowInstanceCount: 500000
+  processCount: 50
+  processInstanceCount: 500000
   incidentCount: 20000
   zeebeBrokerContactPoint: localhost:26500
   elasticsearchHost: localhost

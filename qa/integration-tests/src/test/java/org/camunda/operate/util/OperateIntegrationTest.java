@@ -15,7 +15,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
+import org.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
@@ -114,7 +114,7 @@ public abstract class OperateIntegrationTest {
     assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo(message);  
   }
 
-  protected void runArchiving(WorkflowInstancesArchiverJob archiverJob) {
+  protected void runArchiving(ProcessInstancesArchiverJob archiverJob) {
     try {
       int archived;
       int archivedTotal = 0;
