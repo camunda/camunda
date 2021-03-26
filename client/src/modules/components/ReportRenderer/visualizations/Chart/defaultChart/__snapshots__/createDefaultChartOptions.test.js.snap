@@ -146,6 +146,7 @@ Object {
 exports[`should create default chart options 1`] = `
 Object {
   "animation": false,
+  "emptyBackgroundColor": "#efefef",
   "legend": Object {
     "display": true,
     "labels": Object {

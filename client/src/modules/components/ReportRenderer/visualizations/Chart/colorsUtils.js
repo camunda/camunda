@@ -14,6 +14,7 @@ const darkColors = {
   grid: 'rgba(255,255,255,0.1)',
   label: '#ddd',
   border: '#333',
+  emptyPie: '#4c4c4c',
 };
 
 const lightColors = {
@@ -22,6 +23,7 @@ const lightColors = {
   grid: 'rgba(0,0,0,0.1)',
   label: '#666',
   border: '#fff',
+  emptyPie: '#efefef',
 };
 
 const numberOfStripes = 100;

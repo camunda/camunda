@@ -246,6 +246,7 @@ export function createBarOptions({
 
 function createPieOptions(isDark) {
   return {
+    emptyBackgroundColor: getColorFor('emptyPie', isDark),
     legend: {
       display: true,
       labels: {fontColor: getColorFor('label', isDark)},
