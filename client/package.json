@@ -46,7 +46,7 @@
     "eject": "react-scripts eject",
     "test:e2e": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --ts-config-path e2e/tsconfig.json",
     "test:e2e:ci": "PORT=8080 testcafe chrome:headless e2e/tests/*.ts --ts-config-path e2e/tsconfig.json",
-    "lint": "tsc && eslint src/** --ext .ts,.tsx,.js,.jsx",
+    "lint": "tsc && eslint src/ e2e/",
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/master --watchAll=false --passWithNoTests",
     "coverage:ci": "CI=true yarn coverage --maxWorkers=$LIMITS_CPU --ci",
     "storybook": "start-storybook -p 9009 -s public",
