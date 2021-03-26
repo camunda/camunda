@@ -17,45 +17,43 @@
 package io.zeebe.journal;
 
 /** Defines exceptions thrown by the Journal */
-public class StorageException extends RuntimeException {
+public class JournalException extends RuntimeException {
 
-  public StorageException() {}
-
-  public StorageException(final String message) {
+  public JournalException(final String message) {
     super(message);
   }
 
-  public StorageException(final String message, final Throwable cause) {
+  public JournalException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
-  public StorageException(final Throwable cause) {
+  public JournalException(final Throwable cause) {
     super(cause);
   }
 
   /** Exception thrown when an entry being stored is too large. */
-  public static class TooLarge extends StorageException {
+  public static class TooLarge extends JournalException {
     public TooLarge(final String message) {
       super(message);
     }
   }
 
   /** Exception thrown when storage runs out of disk space. */
-  public static class OutOfDiskSpace extends StorageException {
+  public static class OutOfDiskSpace extends JournalException {
     public OutOfDiskSpace(final String message) {
       super(message);
     }
   }
 
   /** Exception thrown when an entry has an invalid checksum. */
-  public static class InvalidChecksum extends StorageException {
+  public static class InvalidChecksum extends JournalException {
     public InvalidChecksum(final String message) {
       super(message);
     }
   }
 
   /** Exception thrown when an entry's index is not the expected one. */
-  public static class InvalidIndex extends StorageException {
+  public static class InvalidIndex extends JournalException {
     public InvalidIndex(final String message) {
       super(message);
     }
