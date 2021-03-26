@@ -5,7 +5,10 @@
  */
 package org.camunda.optimize.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
@@ -53,6 +56,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -310,7 +315,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
   }
 
   @Test
-  public void unsavedReportEvaluationDoesNotFailWithZOffsetLastModifiedDateFormat() {
+  public void unsavedReportEvaluationDoesNotFailWithZOffsetLastModifiedDateFormat() throws JsonProcessingException {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
@@ -328,9 +333,19 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     reportDef.setLastModified(OffsetDateTime.parse("2021-01-05T10:25:16.161Z"));
 
     // when
+    final String requestBodyAsString = embeddedOptimizeExtension.getObjectMapper().copy()
+      // allow to overwrite previous registration of the JavaTimeModule with custom de-/serialization for OffsetDateTime
+      .disable(MapperFeature.IGNORE_DUPLICATE_MODULE_REGISTRATIONS)
+      .registerModule(new JavaTimeModule())
+      .writeValueAsString(reportDef);
+    // ensure the body is serialized as intended
+    assertThat(requestBodyAsString).contains("161Z");
+
     final Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportDef)
+      .buildGenericRequest(
+        "POST", "report/evaluate", Entity.entity(requestBodyAsString, MediaType.APPLICATION_JSON_TYPE)
+      )
       .execute();
 
     // then

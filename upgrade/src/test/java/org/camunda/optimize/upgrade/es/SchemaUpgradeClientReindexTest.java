@@ -86,8 +86,6 @@ public class SchemaUpgradeClientReindexTest {
     when(elasticsearchClient.getHighLevelClient()).thenReturn(highLevelRestClient);
     when(elasticsearchClient.getIndexNameService()).thenReturn(indexNameService);
     when(highLevelRestClient.getLowLevelClient()).thenReturn(lowLevelRestClient);
-    // just using the optimize data format here to satisfy the ObjectMapperFactory ctor
-    when(configurationService.getEngineDateFormat()).thenReturn(ElasticsearchConstants.OPTIMIZE_DATE_FORMAT);
     this.underTest = createSchemaUpgradeClient(
       schemaManager, metadataService, configurationService, elasticsearchClient
     );
