@@ -13,7 +13,7 @@ const tasks: ReadonlyArray<Task> = [
     __typename: 'Task',
     id: '0',
     name: 'name',
-    workflowName: 'workflowName',
+    processName: 'processName',
     creationTime: '2020-05-28 10:11:12',
     completionTime: new Date().toISOString(),
     assignee: currentUser,
@@ -26,7 +26,7 @@ const tasks: ReadonlyArray<Task> = [
     __typename: 'Task',
     id: '1',
     name: 'name',
-    workflowName: 'workflowName',
+    processName: 'processName',
     creationTime: '2020-05-29 13:14:15',
     completionTime: new Date().toISOString(),
     assignee: {
@@ -46,7 +46,7 @@ const tasks: ReadonlyArray<Task> = [
     __typename: 'Task',
     id: '2',
     name: 'name',
-    workflowName: 'workflowName',
+    processName: 'processName',
     creationTime: '2020-05-30 16:17:18',
     completionTime: new Date().toISOString(),
     assignee: null,
@@ -77,7 +77,7 @@ const generateTask = (id: string, name?: string) => {
   return {
     id,
     name: name ?? `TASK ${id}`,
-    workflowName: 'Flight registration',
+    processName: 'Flight registration',
     assignee: {
       username: 'demo',
       firstname: 'Demo',

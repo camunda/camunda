@@ -15,7 +15,7 @@ public class FormIndex extends AbstractIndexDescriptor {
   public static final String ID = "id";
   public static final String KEY = "key";
   public static final String FORM_KEY = "formKey";
-  public static final String WORKFLOW_ID = "workflowId";
+  public static final String PROCESS_ID = "processId";
   public static final String SCHEMA = "schema";
 
   @Override

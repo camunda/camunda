@@ -5,8 +5,8 @@
  */
 package io.zeebe.tasklist.zeebeimport.util;
 
-import io.zeebe.tasklist.entities.WorkflowEntity;
-import io.zeebe.tasklist.entities.WorkflowFlowNodeEntity;
+import io.zeebe.tasklist.entities.ProcessEntity;
+import io.zeebe.tasklist.entities.ProcessFlowNodeEntity;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,13 +43,13 @@ public class XMLUtil {
     }
   }
 
-  public Optional<WorkflowEntity> extractDiagramData(byte[] byteArray) {
+  public Optional<ProcessEntity> extractDiagramData(byte[] byteArray) {
     final SAXParserFactory saxParserFactory = getSAXParserFactory();
     final InputStream is = new ByteArrayInputStream(byteArray);
     final BpmnXmlParserHandler handler = new BpmnXmlParserHandler();
     try {
       saxParserFactory.newSAXParser().parse(is, handler);
-      return Optional.of(handler.getWorkflowEntity());
+      return Optional.of(handler.getProcessEntity());
     } catch (ParserConfigurationException | SAXException | IOException e) {
       LOGGER.warn("Unable to parse diagram: " + e.getMessage(), e);
       return Optional.empty();
@@ -58,26 +58,26 @@ public class XMLUtil {
 
   public static class BpmnXmlParserHandler extends DefaultHandler {
 
-    WorkflowEntity workflowEntity = new WorkflowEntity();
+    ProcessEntity processEntity = new ProcessEntity();
 
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes)
         throws SAXException {
       if ("process".equalsIgnoreCase(localName)) {
         if (attributes.getValue("name") != null) {
-          workflowEntity.setName(attributes.getValue("name"));
+          processEntity.setName(attributes.getValue("name"));
         }
       } else if ("serviceTask".equalsIgnoreCase(localName)) {
         if (attributes.getValue("name") != null) {
-          final WorkflowFlowNodeEntity flowNodeEntity =
-              new WorkflowFlowNodeEntity(attributes.getValue("id"), attributes.getValue("name"));
-          workflowEntity.getFlowNodes().add(flowNodeEntity);
+          final ProcessFlowNodeEntity flowNodeEntity =
+              new ProcessFlowNodeEntity(attributes.getValue("id"), attributes.getValue("name"));
+          processEntity.getFlowNodes().add(flowNodeEntity);
         }
       }
     }
 
-    public WorkflowEntity getWorkflowEntity() {
-      return workflowEntity;
+    public ProcessEntity getProcessEntity() {
+      return processEntity;
     }
   }
 }

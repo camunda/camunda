@@ -44,7 +44,7 @@ test('load task details when a task is selected', async (t) => {
 
   await t
     .expect(
-      withinDetailsTable.getByRole('columnheader', {name: 'Workflow'}).exists,
+      withinDetailsTable.getByRole('columnheader', {name: 'Process'}).exists,
     )
     .ok()
     .expect(

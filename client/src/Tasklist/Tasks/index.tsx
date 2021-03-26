@@ -68,7 +68,7 @@ const Tasks: React.FC = () => {
               key={task.id}
               taskId={task.id}
               name={task.name}
-              workflowName={task.workflowName}
+              processName={task.processName}
               assignee={task.assignee}
               creationTime={task.creationTime}
             />

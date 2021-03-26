@@ -141,7 +141,7 @@ public class VariableReaderWriter {
       return new HashMap<>();
     }
 
-    // build flow node trees (for each workflow instance)
+    // build flow node trees (for each process instance)
     final Map<String, FlowNodeTree> flowNodeTrees = buildFlowNodeTrees(requests);
 
     // build local variable map  (for each flow node instance)
@@ -170,7 +170,7 @@ public class VariableReaderWriter {
     final Map<String, List<VariableDTO>> response = new HashMap<>();
 
     for (GetVariablesRequest req : requests) {
-      final FlowNodeTree flowNodeTree = flowNodeTrees.get(req.getWorkflowInstanceId());
+      final FlowNodeTree flowNodeTree = flowNodeTrees.get(req.getProcessInstanceId());
 
       final VariableMap resultingVariableMap = new VariableMap();
 
@@ -230,15 +230,14 @@ public class VariableReaderWriter {
     }
   }
 
-  private List<FlowNodeInstanceEntity> getFlowNodeInstances(
-      final List<String> workflowInstanceIds) {
-    final TermsQueryBuilder workflowInstanceKeyQuery =
-        termsQuery(FlowNodeInstanceIndex.WORKFLOW_INSTANCE_ID, workflowInstanceIds);
+  private List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds) {
+    final TermsQueryBuilder processInstanceKeyQuery =
+        termsQuery(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds);
     final SearchRequest searchRequest =
         new SearchRequest(flowNodeInstanceIndex.getAlias())
             .source(
                 new SearchSourceBuilder()
-                    .query(constantScoreQuery(workflowInstanceKeyQuery))
+                    .query(constantScoreQuery(processInstanceKeyQuery))
                     .sort(FlowNodeInstanceIndex.POSITION, SortOrder.ASC));
     try {
       return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
@@ -276,32 +275,31 @@ public class VariableReaderWriter {
   }
 
   /**
-   * Builds flow node tree for each requested workflow instance id.
+   * Builds flow node tree for each requested process instance id.
    *
    * @param requests
-   * @return map of flow node trees per workflow instance id
+   * @return map of flow node trees per process instance id
    */
   private Map<String, FlowNodeTree> buildFlowNodeTrees(List<GetVariablesRequest> requests) {
-    final List<String> workflowInstanceIds =
-        CollectionUtil.map(requests, GetVariablesRequest::getWorkflowInstanceId);
-    // get all flow node instances for all workflow instance ids
-    final List<FlowNodeInstanceEntity> flowNodeInstances =
-        getFlowNodeInstances(workflowInstanceIds);
+    final List<String> processInstanceIds =
+        CollectionUtil.map(requests, GetVariablesRequest::getProcessInstanceId);
+    // get all flow node instances for all process instance ids
+    final List<FlowNodeInstanceEntity> flowNodeInstances = getFlowNodeInstances(processInstanceIds);
 
     final Map<String, FlowNodeTree> flowNodeTrees = new HashMap<>();
     for (FlowNodeInstanceEntity flowNodeInstance : flowNodeInstances) {
-      getFlowNodeTree(flowNodeTrees, flowNodeInstance.getWorkflowInstanceId())
+      getFlowNodeTree(flowNodeTrees, flowNodeInstance.getProcessInstanceId())
           .setParent(flowNodeInstance.getId(), flowNodeInstance.getParentFlowNodeId());
     }
     return flowNodeTrees;
   }
 
   private FlowNodeTree getFlowNodeTree(
-      Map<String, FlowNodeTree> flowNodeTrees, String workflowInstanceId) {
-    if (flowNodeTrees.get(workflowInstanceId) == null) {
-      flowNodeTrees.put(workflowInstanceId, new FlowNodeTree());
+      Map<String, FlowNodeTree> flowNodeTrees, String processInstanceId) {
+    if (flowNodeTrees.get(processInstanceId) == null) {
+      flowNodeTrees.put(processInstanceId, new FlowNodeTree());
     }
-    return flowNodeTrees.get(workflowInstanceId);
+    return flowNodeTrees.get(processInstanceId);
   }
 
   public List<List<VariableDTO>> getVariables(List<GetVariablesRequest> requests) {
@@ -396,14 +394,14 @@ public class VariableReaderWriter {
     private String taskId;
     private TaskState state;
     private String flowNodeInstanceId;
-    private String workflowInstanceId;
+    private String processInstanceId;
 
     public static GetVariablesRequest createFrom(TaskDTO taskDTO) {
       return new GetVariablesRequest()
           .setTaskId(taskDTO.getId())
           .setFlowNodeInstanceId(taskDTO.getFlowNodeInstanceId())
           .setState(taskDTO.getTaskState())
-          .setWorkflowInstanceId(taskDTO.getWorkflowInstanceId());
+          .setProcessInstanceId(taskDTO.getProcessInstanceId());
     }
 
     public static GetVariablesRequest createFrom(TaskEntity taskEntity) {
@@ -411,7 +409,7 @@ public class VariableReaderWriter {
           .setTaskId(taskEntity.getId())
           .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
           .setState(taskEntity.getState())
-          .setWorkflowInstanceId(taskEntity.getWorkflowInstanceId());
+          .setProcessInstanceId(taskEntity.getProcessInstanceId());
     }
 
     public String getTaskId() {
@@ -441,12 +439,12 @@ public class VariableReaderWriter {
       return this;
     }
 
-    public String getWorkflowInstanceId() {
-      return workflowInstanceId;
+    public String getProcessInstanceId() {
+      return processInstanceId;
     }
 
-    public GetVariablesRequest setWorkflowInstanceId(final String workflowInstanceId) {
-      this.workflowInstanceId = workflowInstanceId;
+    public GetVariablesRequest setProcessInstanceId(final String processInstanceId) {
+      this.processInstanceId = processInstanceId;
       return this;
     }
   }

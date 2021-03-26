@@ -6,9 +6,9 @@
 package io.zeebe.tasklist.webapp.es.cache;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.tasklist.entities.WorkflowEntity;
+import io.zeebe.tasklist.entities.ProcessEntity;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
-import io.zeebe.tasklist.schema.indices.WorkflowIndex;
+import io.zeebe.tasklist.schema.indices.ProcessIndex;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -23,23 +23,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class WorkflowReader {
+public class ProcessReader {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessReader.class);
 
-  @Autowired private WorkflowIndex workflowIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired private ObjectMapper objectMapper;
 
-  /** Gets the workflow by id. */
-  public WorkflowEntity getWorkflow(String workflowId) {
+  /** Gets the process by id. */
+  public ProcessEntity getProcess(String processId) {
     final SearchRequest searchRequest =
-        new SearchRequest(workflowIndex.getAlias())
+        new SearchRequest(processIndex.getAlias())
             .source(
                 new SearchSourceBuilder()
-                    .query(QueryBuilders.termQuery(WorkflowIndex.KEY, workflowId)));
+                    .query(QueryBuilders.termQuery(ProcessIndex.KEY, processId)));
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -47,19 +47,19 @@ public class WorkflowReader {
         return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
       } else if (response.getHits().totalHits > 1) {
         throw new TasklistRuntimeException(
-            String.format("Could not find unique workflow with id '%s'.", workflowId));
+            String.format("Could not find unique process with id '%s'.", processId));
       } else {
         throw new TasklistRuntimeException(
-            String.format("Could not find workflow with id '%s'.", workflowId));
+            String.format("Could not find process with id '%s'.", processId));
       }
     } catch (IOException e) {
       final String message =
-          String.format("Exception occurred, while obtaining the workflow: %s", e.getMessage());
+          String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  private WorkflowEntity fromSearchHit(String workflowString) {
-    return ElasticsearchUtil.fromSearchHit(workflowString, objectMapper, WorkflowEntity.class);
+  private ProcessEntity fromSearchHit(String processString) {
+    return ElasticsearchUtil.fromSearchHit(processString, objectMapper, ProcessEntity.class);
   }
 }

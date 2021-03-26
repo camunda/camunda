@@ -31,7 +31,7 @@ const TaskName = styled.div`
   font-size: 15px;
   margin-bottom: 5px;
 `;
-const WorkflowName = styled.div`
+const ProcessName = styled.div`
   color: ${({theme}) => theme.colors.ui06};
   font-size: 11px;
 `;
@@ -52,7 +52,7 @@ export {
   Entry,
   TaskInfo,
   TaskName,
-  WorkflowName,
+  ProcessName,
   TaskStatus,
   Assignee,
   CreationTime,

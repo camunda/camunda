@@ -45,7 +45,7 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
     final String bpmnProcessId = "testProcess";
     final String flowNodeBpmnId = "taskA";
 
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(bpmnProcessId)
             .startEvent("start")
             .serviceTask(flowNodeBpmnId)
@@ -57,15 +57,15 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
 
     final GraphQLResponse response =
         tester
-            .deployWorkflow(workflow, bpmnProcessId + ".bpmn")
+            .deployProcess(process, bpmnProcessId + ".bpmn")
             .waitUntil()
-            .workflowIsDeployed()
+            .processIsDeployed()
             .and()
-            .startWorkflowInstance(
+            .startProcessInstance(
                 bpmnProcessId, "{\"upperLevelVar\": 1, \"overwrittenVar\": \"10\"}")
             .waitUntil()
             .taskIsCreated(flowNodeBpmnId)
-            .startWorkflowInstance(bpmnProcessId, "{\"upperLevelVar\": 2}")
+            .startProcessInstance(bpmnProcessId, "{\"upperLevelVar\": 2}")
             .waitUntil()
             .taskIsCreated(flowNodeBpmnId)
             .when()
@@ -99,7 +99,7 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
     final String bpmnProcessId = "testProcess";
     final String flowNodeBpmnId = "taskA";
 
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(bpmnProcessId)
             .startEvent("start")
             .subProcess()
@@ -116,11 +116,11 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
 
     final GraphQLResponse response =
         tester
-            .deployWorkflow(workflow, bpmnProcessId + ".bpmn")
+            .deployProcess(process, bpmnProcessId + ".bpmn")
             .waitUntil()
-            .workflowIsDeployed()
+            .processIsDeployed()
             .and()
-            .startWorkflowInstance(bpmnProcessId, "{\"processVar\": 111}")
+            .startProcessInstance(bpmnProcessId, "{\"processVar\": 111}")
             .waitUntil()
             .taskIsCreated(flowNodeBpmnId)
             .when()
@@ -145,7 +145,7 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
     final String bpmnProcessId = "testProcess";
     final String flowNodeBpmnId = "taskA";
 
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(bpmnProcessId)
             .startEvent("start")
             .serviceTask(flowNodeBpmnId)
@@ -163,11 +163,11 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
 
     final GraphQLResponse response =
         tester
-            .deployWorkflow(workflow, bpmnProcessId + ".bpmn")
+            .deployProcess(process, bpmnProcessId + ".bpmn")
             .waitUntil()
-            .workflowIsDeployed()
+            .processIsDeployed()
             .and()
-            .startWorkflowInstance(bpmnProcessId, "{\"processVar\": 111, \"clients\": [1, 2]}")
+            .startProcessInstance(bpmnProcessId, "{\"processVar\": 111, \"clients\": [1, 2]}")
             .waitUntil()
             .taskIsCreated(flowNodeBpmnId)
             .and()
@@ -199,11 +199,11 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
     // having
     final GraphQLResponse response =
         tester
-            .createAndDeploySimpleWorkflow(BPMN_PROCESS_ID, ELEMENT_ID)
+            .createAndDeploySimpleProcess(BPMN_PROCESS_ID, ELEMENT_ID)
             .waitUntil()
-            .workflowIsDeployed()
+            .processIsDeployed()
             .and()
-            .startWorkflowInstance(BPMN_PROCESS_ID, "{\"var\": 111}")
+            .startProcessInstance(BPMN_PROCESS_ID, "{\"var\": 111}")
             .waitUntil()
             .taskIsCreated(ELEMENT_ID)
             .and()

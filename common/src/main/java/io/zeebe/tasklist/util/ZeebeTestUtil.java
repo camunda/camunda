@@ -10,12 +10,12 @@ import static io.zeebe.tasklist.util.ThreadUtil.sleepFor;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.zeebe.client.api.command.CreateWorkflowInstanceCommandStep1;
-import io.zeebe.client.api.command.DeployWorkflowCommandStep1;
+import io.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.zeebe.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.response.DeploymentEvent;
-import io.zeebe.client.api.response.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.ProcessInstanceEvent;
 import io.zeebe.client.api.worker.JobClient;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
@@ -36,75 +36,78 @@ public abstract class ZeebeTestUtil {
    *
    * @param client client
    * @param classpathResources classpath resources
-   * @return workflow id
+   * @return process id
    */
-  public static String deployWorkflow(ZeebeClient client, String... classpathResources) {
+  public static String deployProcess(ZeebeClient client, String... classpathResources) {
     if (classpathResources.length == 0) {
       return null;
     }
-    DeployWorkflowCommandStep1 deployWorkflowCommandStep1 = client.newDeployCommand();
+    DeployProcessCommandStep1 deployProcessCommandStep1 = client.newDeployCommand();
     for (String classpathResource : classpathResources) {
-      deployWorkflowCommandStep1 =
-          deployWorkflowCommandStep1.addResourceFromClasspath(classpathResource);
+      deployProcessCommandStep1 =
+          deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
     }
     final DeploymentEvent deploymentEvent =
-        ((DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2) deployWorkflowCommandStep1)
+        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
             .send()
             .join();
     LOGGER.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
     return String.valueOf(
-        deploymentEvent.getWorkflows().get(classpathResources.length - 1).getWorkflowKey());
+        deploymentEvent
+            .getProcesses()
+            .get(classpathResources.length - 1)
+            .getProcessDefinitionKey());
   }
 
   /**
    * Deploys the process synchronously.
    *
    * @param client client
-   * @param workflowModel workflowModel
+   * @param processModel processModel
    * @param resourceName resourceName
-   * @return workflow id
+   * @return process id
    */
-  public static String deployWorkflow(
-      ZeebeClient client, BpmnModelInstance workflowModel, String resourceName) {
-    final DeployWorkflowCommandStep1 deployWorkflowCommandStep1 =
-        client.newDeployCommand().addWorkflowModel(workflowModel, resourceName);
+  public static String deployProcess(
+      ZeebeClient client, BpmnModelInstance processModel, String resourceName) {
+    final DeployProcessCommandStep1 deployProcessCommandStep1 =
+        client.newDeployCommand().addProcessModel(processModel, resourceName);
     final DeploymentEvent deploymentEvent =
-        ((DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2) deployWorkflowCommandStep1)
+        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
             .send()
             .join();
     LOGGER.debug("Deployment of resource [{}] was performed", resourceName);
-    return String.valueOf(deploymentEvent.getWorkflows().get(0).getWorkflowKey());
+    return String.valueOf(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey());
   }
 
   /**
    * @param client client
    * @param bpmnProcessId bpmnProcessId
    * @param payload payload
-   * @return workflow instance id
+   * @return process instance id
    */
-  public static String startWorkflowInstance(
+  public static String startProcessInstance(
       ZeebeClient client, String bpmnProcessId, String payload) {
-    final CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep3
-        createWorkflowInstanceCommandStep3 =
+    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
+        createProcessInstanceCommandStep3 =
             client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
     if (payload != null) {
-      createWorkflowInstanceCommandStep3.variables(payload);
+      createProcessInstanceCommandStep3.variables(payload);
     }
-    WorkflowInstanceEvent workflowInstanceEvent = null;
+    ProcessInstanceEvent processInstanceEvent = null;
     try {
-      workflowInstanceEvent = createWorkflowInstanceCommandStep3.send().join();
-      LOGGER.debug("Workflow instance created for workflow [{}]", bpmnProcessId);
+      processInstanceEvent = createProcessInstanceCommandStep3.send().join();
+      LOGGER.debug("Process instance created for process [{}]", bpmnProcessId);
     } catch (ClientException ex) {
       // retry once
       sleepFor(300L);
-      workflowInstanceEvent = createWorkflowInstanceCommandStep3.send().join();
-      LOGGER.debug("Workflow instance created for workflow [{}]", bpmnProcessId);
+      processInstanceEvent = createProcessInstanceCommandStep3.send().join();
+      LOGGER.debug("Process instance created for process [{}]", bpmnProcessId);
     }
-    return String.valueOf(workflowInstanceEvent.getWorkflowInstanceKey());
+    return String.valueOf(processInstanceEvent.getProcessInstanceKey());
   }
 
-  public static void cancelWorkflowInstance(ZeebeClient client, long workflowInstanceKey) {
-    client.newCancelInstanceCommand(workflowInstanceKey).send().join();
+  public static void cancelProcessInstance(ZeebeClient client, long processInstanceKey) {
+    client.newCancelInstanceCommand(processInstanceKey).send().join();
   }
 
   public static void completeTask(

@@ -16,14 +16,14 @@ import java.util.Objects;
 public final class TaskDTO {
 
   private String id;
-  private String workflowInstanceId;
+  private String processInstanceId;
   /** Field is used to resolve task name. */
   private String flowNodeBpmnId;
 
   private String flowNodeInstanceId;
-  /** Field is used to resolve workflow name. */
-  private String workflowId;
-  /** Fallback value for workflow name. */
+  /** Field is used to resolve process name. */
+  private String processId;
+  /** Fallback value for process name. */
   private String bpmnProcessId;
 
   private String creationTime;
@@ -48,12 +48,12 @@ public final class TaskDTO {
     return this;
   }
 
-  public String getWorkflowInstanceId() {
-    return workflowInstanceId;
+  public String getProcessInstanceId() {
+    return processInstanceId;
   }
 
-  public TaskDTO setWorkflowInstanceId(final String workflowInstanceId) {
-    this.workflowInstanceId = workflowInstanceId;
+  public TaskDTO setProcessInstanceId(final String processInstanceId) {
+    this.processInstanceId = processInstanceId;
     return this;
   }
 
@@ -75,12 +75,12 @@ public final class TaskDTO {
     return this;
   }
 
-  public String getWorkflowId() {
-    return workflowId;
+  public String getProcessId() {
+    return processId;
   }
 
-  public TaskDTO setWorkflowId(String workflowId) {
-    this.workflowId = workflowId;
+  public TaskDTO setProcessId(String processId) {
+    this.processId = processId;
     return this;
   }
 
@@ -168,11 +168,11 @@ public final class TaskDTO {
             .setCompletionTime(
                 objectMapper.convertValue(taskEntity.getCompletionTime(), String.class))
             .setId(taskEntity.getId())
-            .setWorkflowInstanceId(taskEntity.getWorkflowInstanceId())
+            .setProcessInstanceId(taskEntity.getProcessInstanceId())
             .setTaskState(taskEntity.getState())
             .setAssigneeUsername(taskEntity.getAssignee())
             .setBpmnProcessId(taskEntity.getBpmnProcessId())
-            .setWorkflowId(taskEntity.getWorkflowId())
+            .setProcessId(taskEntity.getProcessId())
             .setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId())
             .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
             .setFormId(taskEntity.getFormId());
@@ -193,10 +193,10 @@ public final class TaskDTO {
     final TaskDTO taskDTO = (TaskDTO) o;
     return isFirst == taskDTO.isFirst
         && Objects.equals(id, taskDTO.id)
-        && Objects.equals(workflowInstanceId, taskDTO.workflowInstanceId)
+        && Objects.equals(processInstanceId, taskDTO.processInstanceId)
         && Objects.equals(flowNodeBpmnId, taskDTO.flowNodeBpmnId)
         && Objects.equals(flowNodeInstanceId, taskDTO.flowNodeInstanceId)
-        && Objects.equals(workflowId, taskDTO.workflowId)
+        && Objects.equals(processId, taskDTO.processId)
         && Objects.equals(bpmnProcessId, taskDTO.bpmnProcessId)
         && Objects.equals(creationTime, taskDTO.creationTime)
         && Objects.equals(completionTime, taskDTO.completionTime)
@@ -211,10 +211,10 @@ public final class TaskDTO {
     int result =
         Objects.hash(
             id,
-            workflowInstanceId,
+            processInstanceId,
             flowNodeBpmnId,
             flowNodeInstanceId,
-            workflowId,
+            processId,
             bpmnProcessId,
             creationTime,
             completionTime,
@@ -232,8 +232,8 @@ public final class TaskDTO {
         + "id='"
         + id
         + '\''
-        + ", workflowInstanceId='"
-        + workflowInstanceId
+        + ", processInstanceId='"
+        + processInstanceId
         + '\''
         + ", flowNodeBpmnId='"
         + flowNodeBpmnId
@@ -241,8 +241,8 @@ public final class TaskDTO {
         + ", flowNodeInstanceId='"
         + flowNodeInstanceId
         + '\''
-        + ", workflowId='"
-        + workflowId
+        + ", processId='"
+        + processId
         + '\''
         + ", bpmnProcessId='"
         + bpmnProcessId

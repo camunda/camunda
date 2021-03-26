@@ -5,13 +5,13 @@
  */
 package io.zeebe.tasklist.webapp.es.cache;
 
-import io.zeebe.tasklist.entities.WorkflowEntity;
-import io.zeebe.tasklist.entities.WorkflowFlowNodeEntity;
+import io.zeebe.tasklist.entities.ProcessEntity;
+import io.zeebe.tasklist.entities.ProcessFlowNodeEntity;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class WorkflowCacheEntity {
+public class ProcessCacheEntity {
 
   private String name;
 
@@ -21,7 +21,7 @@ public class WorkflowCacheEntity {
     return name;
   }
 
-  public WorkflowCacheEntity setName(String name) {
+  public ProcessCacheEntity setName(String name) {
     this.name = name;
     return this;
   }
@@ -30,19 +30,19 @@ public class WorkflowCacheEntity {
     return flowNodeNames;
   }
 
-  public WorkflowCacheEntity setFlowNodeNames(Map<String, String> flowNodeNames) {
+  public ProcessCacheEntity setFlowNodeNames(Map<String, String> flowNodeNames) {
     this.flowNodeNames = flowNodeNames;
     return this;
   }
 
-  public static WorkflowCacheEntity createFrom(WorkflowEntity workflowEntity) {
-    return new WorkflowCacheEntity()
-        .setName(workflowEntity.getName())
+  public static ProcessCacheEntity createFrom(ProcessEntity processEntity) {
+    return new ProcessCacheEntity()
+        .setName(processEntity.getName())
         .setFlowNodeNames(
-            workflowEntity.getFlowNodes().stream()
+            processEntity.getFlowNodes().stream()
                 .collect(
                     Collectors.toMap(
-                        WorkflowFlowNodeEntity::getId, WorkflowFlowNodeEntity::getName)));
+                        ProcessFlowNodeEntity::getId, ProcessFlowNodeEntity::getName)));
   }
 
   @Override
@@ -61,7 +61,7 @@ public class WorkflowCacheEntity {
       return false;
     }
 
-    final WorkflowCacheEntity that = (WorkflowCacheEntity) o;
+    final ProcessCacheEntity that = (ProcessCacheEntity) o;
 
     if (name != null ? !name.equals(that.name) : that.name != null) {
       return false;

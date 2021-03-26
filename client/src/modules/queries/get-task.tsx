@@ -25,7 +25,7 @@ interface GetTask {
     | 'assignee'
     | 'name'
     | 'taskState'
-    | 'workflowName'
+    | 'processName'
     | 'creationTime'
     | 'completionTime'
     | 'variables'
@@ -43,7 +43,7 @@ const GET_TASK = gql`
       }
       name
       taskState
-      workflowName
+      processName
       creationTime
       completionTime
       variables {

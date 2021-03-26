@@ -113,14 +113,14 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
   }
 
   private void deployProcessWithOneFlowNode(String processId, String flowNodeBpmnId) {
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .serviceTask(flowNodeBpmnId)
             .zeebeJobType(tasklistProperties.getImporter().getJobType())
             .endEvent()
             .done();
-    tester.deployWorkflow(workflow, processId + ".bpmn").waitUntil().workflowIsDeployed();
+    tester.deployProcess(process, processId + ".bpmn").waitUntil().processIsDeployed();
   }
 
   private void assertTasksInCorrectIndex(int tasksCount, Instant endDate) throws IOException {
@@ -167,7 +167,7 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
     brokerRule.getClock().setCurrentTime(currentTime);
     for (int i = 0; i < count; i++) {
       tester
-          .startWorkflowInstance(processId, "{\"var\": 123}")
+          .startProcessInstance(processId, "{\"var\": 123}")
           .completeServiceTask(tasklistProperties.getImporter().getJobType());
     }
     tester.waitUntil().taskIsCompleted(flowNodeBpmnId);

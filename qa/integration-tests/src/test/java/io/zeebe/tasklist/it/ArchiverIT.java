@@ -6,8 +6,8 @@
 package io.zeebe.tasklist.it;
 
 import static io.zeebe.tasklist.graphql.TaskIT.GET_TASK_QUERY_PATTERN;
-import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_INSTANCE_IS_CANCELED_CHECK;
-import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_INSTANCE_IS_COMPLETED_CHECK;
+import static io.zeebe.tasklist.util.ElasticsearchChecks.PROCESS_INSTANCE_IS_CANCELED_CHECK;
+import static io.zeebe.tasklist.util.ElasticsearchChecks.PROCESS_INSTANCE_IS_COMPLETED_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
@@ -17,8 +17,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.tasklist.archiver.Archiver;
+import io.zeebe.tasklist.archiver.ProcessInstanceArchiverJob;
 import io.zeebe.tasklist.archiver.TaskArchiverJob;
-import io.zeebe.tasklist.archiver.WorkflowInstanceArchiverJob;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.exceptions.ArchiverException;
 import io.zeebe.tasklist.schema.templates.TaskTemplate;
@@ -70,15 +70,15 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   @Autowired private ElasticsearchHelper elasticsearchHelper;
 
   @Autowired
-  @Qualifier(WORKFLOW_INSTANCE_IS_COMPLETED_CHECK)
-  private TestCheck workflowInstanceIsCompletedCheck;
+  @Qualifier(PROCESS_INSTANCE_IS_COMPLETED_CHECK)
+  private TestCheck processInstanceIsCompletedCheck;
 
   @Autowired
-  @Qualifier(WORKFLOW_INSTANCE_IS_CANCELED_CHECK)
-  private TestCheck workflowInstanceIsCanceledCheck;
+  @Qualifier(PROCESS_INSTANCE_IS_CANCELED_CHECK)
+  private TestCheck processInstanceIsCanceledCheck;
 
   private TaskArchiverJob archiverJob;
-  private WorkflowInstanceArchiverJob workflowInstanceArchiverJob;
+  private ProcessInstanceArchiverJob processInstanceArchiverJob;
 
   private Random random = new Random();
 
@@ -91,8 +91,8 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
         DateTimeFormatter.ofPattern(tasklistProperties.getArchiver().getRolloverDateFormat())
             .withZone(ZoneId.systemDefault());
     archiverJob = beanFactory.getBean(TaskArchiverJob.class, partitionHolder.getPartitionIds());
-    workflowInstanceArchiverJob =
-        beanFactory.getBean(WorkflowInstanceArchiverJob.class, partitionHolder.getPartitionIds());
+    processInstanceArchiverJob =
+        beanFactory.getBean(ProcessInstanceArchiverJob.class, partitionHolder.getPartitionIds());
     taskMutationResolver.setZeebeClient(super.getClient());
     clearMetrics();
   }
@@ -194,7 +194,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldDeleteWorkflowInstanceRelatedData() throws ArchiverException, IOException {
+  public void shouldDeleteProcessInstanceRelatedData() throws ArchiverException, IOException {
     brokerRule.getClock().pinCurrentTime();
     final Instant currentTime = brokerRule.getClock().getCurrentTime();
 
@@ -225,36 +225,36 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     // when
-    assertThat(workflowInstanceArchiverJob.archiveNextBatch()).isEqualTo(count1 + count2);
+    assertThat(processInstanceArchiverJob.archiveNextBatch()).isEqualTo(count1 + count2);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     // 2rd run should not move anything, as the rest of the tasks are completed less then 1 hour ago
-    assertThat(workflowInstanceArchiverJob.archiveNextBatch()).isEqualTo(0);
+    assertThat(processInstanceArchiverJob.archiveNextBatch()).isEqualTo(0);
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     // then
-    assertWorkflowInstancesAreDeleted(ids1);
-    assertWorkflowInstancesAreDeleted(ids2);
-    assertWorkflowInstancesExist(ids3);
+    assertProcessInstancesAreDeleted(ids1);
+    assertProcessInstancesAreDeleted(ids2);
+    assertProcessInstancesExist(ids3);
   }
 
-  private void assertWorkflowInstancesExist(final List<String> ids) {
-    assertThat(elasticsearchHelper.getWorkflowInstances(ids)).hasSize(ids.size());
+  private void assertProcessInstancesExist(final List<String> ids) {
+    assertThat(elasticsearchHelper.getProcessInstances(ids)).hasSize(ids.size());
   }
 
-  private void assertWorkflowInstancesAreDeleted(final List<String> ids) {
-    assertThat(elasticsearchHelper.getWorkflowInstances(ids)).isEmpty();
+  private void assertProcessInstancesAreDeleted(final List<String> ids) {
+    assertThat(elasticsearchHelper.getProcessInstances(ids)).isEmpty();
   }
 
   private void deployProcessWithOneFlowNode(String processId, String flowNodeBpmnId) {
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .serviceTask(flowNodeBpmnId)
             .zeebeJobType(tasklistProperties.getImporter().getJobType())
             .endEvent()
             .done();
-    tester.deployWorkflow(workflow, processId + ".bpmn").waitUntil().workflowIsDeployed();
+    tester.deployProcess(process, processId + ".bpmn").waitUntil().processIsDeployed();
   }
 
   private void assertTasksInCorrectIndex(int tasksCount, List<String> ids, Instant endDate)
@@ -322,7 +322,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     for (int i = 0; i < count; i++) {
       ids.add(
           tester
-              .startWorkflowInstance(processId, "{\"var\": 123}")
+              .startProcessInstance(processId, "{\"var\": 123}")
               .waitUntil()
               .taskIsCreated(flowNodeBpmnId)
               .claimAndCompleteHumanTask(flowNodeBpmnId)
@@ -341,14 +341,14 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     for (int i = 0; i < count; i++) {
       ids.add(
           tester
-              .startWorkflowInstance(processId, "{\"var\": 123}")
+              .startProcessInstance(processId, "{\"var\": 123}")
               .waitUntil()
               .taskIsCreated(flowNodeBpmnId)
               .and()
-              .cancelWorkflowInstance()
+              .cancelProcessInstance()
               .waitUntil()
-              .workflowInstanceIsCanceled()
-              .getWorkflowInstanceId());
+              .processInstanceIsCanceled()
+              .getProcessInstanceId());
     }
     return ids;
   }
@@ -361,13 +361,13 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     for (int i = 0; i < count; i++) {
       ids.add(
           tester
-              .startWorkflowInstance(processId, "{\"var\": 123}")
+              .startProcessInstance(processId, "{\"var\": 123}")
               .waitUntil()
               .taskIsCreated(flowNodeBpmnId)
               .claimAndCompleteHumanTask(flowNodeBpmnId)
               .waitUntil()
-              .workflowInstanceIsCompleted()
-              .getWorkflowInstanceId());
+              .processInstanceIsCompleted()
+              .getProcessInstanceId());
     }
     return ids;
   }
@@ -380,7 +380,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     for (int i = 0; i < count; i++) {
       ids.add(
           tester
-              .startWorkflowInstance(processId, "{\"var\": 123}")
+              .startProcessInstance(processId, "{\"var\": 123}")
               .waitUntil()
               .taskIsCreated(flowNodeBpmnId)
               .getTaskId());

@@ -15,9 +15,9 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private String bpmnProcessId;
   private String elementId;
   private long elementInstanceKey;
-  private long workflowInstanceKey;
-  private long workflowKey;
-  private int workflowDefinitionVersion;
+  private long processInstanceKey;
+  private long processDefinitionKey;
+  private int processDefinitionVersion;
 
   private String type;
   private String worker;
@@ -30,12 +30,12 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   public JobRecordValueImpl() {}
 
   @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+  public void setProcessInstanceKey(long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   @Override
@@ -89,21 +89,21 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   }
 
   @Override
-  public int getWorkflowDefinitionVersion() {
-    return workflowDefinitionVersion;
+  public int getProcessDefinitionVersion() {
+    return processDefinitionVersion;
   }
 
   @Override
-  public long getWorkflowKey() {
-    return workflowKey;
+  public long getProcessDefinitionKey() {
+    return processDefinitionKey;
   }
 
-  public void setWorkflowKey(long workflowKey) {
-    this.workflowKey = workflowKey;
+  public void setProcessDefinitionKey(long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
   }
 
-  public void setWorkflowDefinitionVersion(int workflowDefinitionVersion) {
-    this.workflowDefinitionVersion = workflowDefinitionVersion;
+  public void setProcessDefinitionVersion(int processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
   }
 
   public void setBpmnProcessId(String bpmnProcessId) {
@@ -153,9 +153,9 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         bpmnProcessId,
         elementId,
         elementInstanceKey,
-        workflowInstanceKey,
-        workflowKey,
-        workflowDefinitionVersion,
+        processInstanceKey,
+        processDefinitionKey,
+        processDefinitionVersion,
         type,
         worker,
         deadline,
@@ -176,9 +176,9 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     }
     final JobRecordValueImpl that = (JobRecordValueImpl) o;
     return elementInstanceKey == that.elementInstanceKey
-        && workflowInstanceKey == that.workflowInstanceKey
-        && workflowKey == that.workflowKey
-        && workflowDefinitionVersion == that.workflowDefinitionVersion
+        && processInstanceKey == that.processInstanceKey
+        && processDefinitionKey == that.processDefinitionKey
+        && processDefinitionVersion == that.processDefinitionVersion
         && retries == that.retries
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(elementId, that.elementId)
@@ -199,12 +199,12 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + '\''
         + ", elementInstanceKey="
         + elementInstanceKey
-        + ", workflowInstanceKey="
-        + workflowInstanceKey
-        + ", workflowKey="
-        + workflowKey
-        + ", workflowDefinitionVersion="
-        + workflowDefinitionVersion
+        + ", processInstanceKey="
+        + processInstanceKey
+        + ", processDefinitionKey="
+        + processDefinitionKey
+        + ", processDefinitionVersion="
+        + processDefinitionVersion
         + ", type='"
         + type
         + '\''

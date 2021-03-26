@@ -65,7 +65,7 @@ public class ImportListenerTest extends NoBeansTest {
   @Test
   public void testFinished() {
     final ImportBatch importBatch =
-        new ImportBatch(1, ImportValueType.WORKFLOW_INSTANCE, new ArrayList<>(), "some_name");
+        new ImportBatch(1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), "some_name");
     final ImportPositionEntity previousPosition = new ImportPositionEntity("alias", 1, 0);
     final ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, previousPosition);
 
@@ -90,7 +90,7 @@ public class ImportListenerTest extends NoBeansTest {
   @Test
   public void testFailed() {
     final ImportBatch importBatch =
-        new ImportBatch(1, ImportValueType.WORKFLOW_INSTANCE, new ArrayList<>(), null);
+        new ImportBatch(1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), null);
     final ImportPositionEntity previousPosition = new ImportPositionEntity("alias", 1, 0);
     final ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, previousPosition);
     // mock import methods

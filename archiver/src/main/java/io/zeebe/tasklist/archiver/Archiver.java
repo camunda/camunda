@@ -82,9 +82,9 @@ public class Archiver {
               beanFactory.getBean(TaskArchiverJob.class, partitionIdsSubset);
           archiverExecutor.execute(batchOperationArchiverJob);
 
-          final WorkflowInstanceArchiverJob workflowInstanceArchiverJob =
-              beanFactory.getBean(WorkflowInstanceArchiverJob.class, partitionIdsSubset);
-          archiverExecutor.execute(workflowInstanceArchiverJob);
+          final ProcessInstanceArchiverJob processInstanceArchiverJob =
+              beanFactory.getBean(ProcessInstanceArchiverJob.class, partitionIdsSubset);
+          archiverExecutor.execute(processInstanceArchiverJob);
         }
       }
     }
@@ -125,12 +125,12 @@ public class Archiver {
   }
 
   public long deleteDocuments(
-      String sourceIndexName, String idFieldName, List<String> workflowInstanceKeys)
+      String sourceIndexName, String idFieldName, List<String> processInstanceKeys)
       throws ArchiverException {
     DeleteByQueryRequest request =
         new DeleteByQueryRequest(sourceIndexName)
-            .setBatchSize(workflowInstanceKeys.size())
-            .setQuery(termsQuery(idFieldName, workflowInstanceKeys))
+            .setBatchSize(processInstanceKeys.size())
+            .setQuery(termsQuery(idFieldName, processInstanceKeys))
             .setMaxRetries(UPDATE_RETRY_COUNT);
     request = applyDefaultSettings(request);
     try {
@@ -158,15 +158,15 @@ public class Archiver {
       String sourceIndexName,
       String destinationIndexName,
       String idFieldName,
-      List<String> workflowInstanceKeys)
+      List<String> processInstanceKeys)
       throws ArchiverException {
 
     ReindexRequest reindexRequest =
         new ReindexRequest()
             .setSourceIndices(sourceIndexName)
-            .setSourceBatchSize(workflowInstanceKeys.size())
+            .setSourceBatchSize(processInstanceKeys.size())
             .setDestIndex(destinationIndexName)
-            .setSourceQuery(termsQuery(idFieldName, workflowInstanceKeys));
+            .setSourceQuery(termsQuery(idFieldName, processInstanceKeys));
 
     reindexRequest = applyDefaultSettings(reindexRequest);
 

@@ -29,7 +29,7 @@ describe('<Task />', () => {
       <Task
         taskId="1"
         name="name"
-        workflowName="workflowName"
+        processName="processName"
         creationTime="2020-05-29 14:00:00"
         assignee={currentUser}
       />,
@@ -39,7 +39,7 @@ describe('<Task />', () => {
     );
 
     expect(screen.getByText('name')).toBeInTheDocument();
-    expect(screen.getByText('workflowName')).toBeInTheDocument();
+    expect(screen.getByText('processName')).toBeInTheDocument();
     expect(screen.getByText('2020-05-29 14:00:00')).toBeInTheDocument();
     expect(screen.getByText('Demo User')).toBeInTheDocument();
   });
@@ -49,7 +49,7 @@ describe('<Task />', () => {
       <Task
         taskId="1"
         name="name"
-        workflowName="workflowName"
+        processName="processName"
         creationTime="2020-05-29 14:00:00"
         assignee={null}
       />,
@@ -68,7 +68,7 @@ describe('<Task />', () => {
       <Task
         taskId="1"
         name="name"
-        workflowName="workflowName"
+        processName="processName"
         creationTime="invalid date"
         assignee={currentUser}
       />,
@@ -87,7 +87,7 @@ describe('<Task />', () => {
       <Task
         taskId="1"
         name="name"
-        workflowName="workflowName"
+        processName="processName"
         creationTime="2020-05-29 14:00:00"
         assignee={currentUser}
       />,
@@ -96,7 +96,7 @@ describe('<Task />', () => {
       },
     );
 
-    fireEvent.click(screen.getByText('workflowName'));
+    fireEvent.click(screen.getByText('processName'));
     expect(historyMock.location.pathname).toBe('/1');
   });
 
@@ -109,7 +109,7 @@ describe('<Task />', () => {
       <Task
         taskId="1"
         name="name"
-        workflowName="workflowName"
+        processName="processName"
         creationTime="2020-05-29 14:00:00"
         assignee={currentUser}
       />,
@@ -118,7 +118,7 @@ describe('<Task />', () => {
       },
     );
 
-    fireEvent.click(screen.getByText('workflowName'));
+    fireEvent.click(screen.getByText('processName'));
 
     expect(historyMock.location.pathname).toBe('/1');
     expect(historyMock.location.search).toBe(mockSearchParams);

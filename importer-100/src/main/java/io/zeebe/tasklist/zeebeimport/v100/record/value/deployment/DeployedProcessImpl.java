@@ -5,20 +5,20 @@
  */
 package io.zeebe.tasklist.zeebeimport.v100.record.value.deployment;
 
-import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class DeployedWorkflowImpl implements DeployedWorkflow {
+public class DeployedProcessImpl implements DeployedProcess {
 
   private String bpmnProcessId;
   private String resourceName;
-  private long workflowKey;
+  private long processDefinitionKey;
   private int version;
   private byte[] checksum;
   private byte[] resource;
 
-  public DeployedWorkflowImpl() {}
+  public DeployedProcessImpl() {}
 
   @Override
   public String getBpmnProcessId() {
@@ -31,8 +31,8 @@ public class DeployedWorkflowImpl implements DeployedWorkflow {
   }
 
   @Override
-  public long getWorkflowKey() {
-    return workflowKey;
+  public long getProcessDefinitionKey() {
+    return processDefinitionKey;
   }
 
   @Override
@@ -54,8 +54,8 @@ public class DeployedWorkflowImpl implements DeployedWorkflow {
     this.resourceName = resourceName;
   }
 
-  public void setWorkflowKey(long workflowKey) {
-    this.workflowKey = workflowKey;
+  public void setProcessDefinitionKey(long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
   }
 
   public void setVersion(int version) {
@@ -66,12 +66,12 @@ public class DeployedWorkflowImpl implements DeployedWorkflow {
     this.bpmnProcessId = bpmnProcessId;
   }
 
-  public DeployedWorkflowImpl setChecksum(final byte[] checksum) {
+  public DeployedProcessImpl setChecksum(final byte[] checksum) {
     this.checksum = checksum;
     return this;
   }
 
-  public DeployedWorkflowImpl setResource(final byte[] resource) {
+  public DeployedProcessImpl setResource(final byte[] resource) {
     this.resource = resource;
     return this;
   }
@@ -89,8 +89,8 @@ public class DeployedWorkflowImpl implements DeployedWorkflow {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final DeployedWorkflowImpl that = (DeployedWorkflowImpl) o;
-    return workflowKey == that.workflowKey
+    final DeployedProcessImpl that = (DeployedProcessImpl) o;
+    return processDefinitionKey == that.processDefinitionKey
         && version == that.version
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(resourceName, that.resourceName)
@@ -100,7 +100,7 @@ public class DeployedWorkflowImpl implements DeployedWorkflow {
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(bpmnProcessId, resourceName, workflowKey, version);
+    int result = Objects.hash(bpmnProcessId, resourceName, processDefinitionKey, version);
     result = 31 * result + Arrays.hashCode(checksum);
     result = 31 * result + Arrays.hashCode(resource);
     return result;
@@ -108,15 +108,15 @@ public class DeployedWorkflowImpl implements DeployedWorkflow {
 
   @Override
   public String toString() {
-    return "DeployedWorkflowImpl{"
+    return "DeployedProcessImpl{"
         + "bpmnProcessId='"
         + bpmnProcessId
         + '\''
         + ", resourceName='"
         + resourceName
         + '\''
-        + ", workflowKey="
-        + workflowKey
+        + ", processDefinitionKey="
+        + processDefinitionKey
         + ", version="
         + version
         + ", checksum="

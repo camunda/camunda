@@ -60,9 +60,9 @@ public class JobZeebeRecordProcessor {
             .setPartitionId(record.getPartitionId())
             .setFlowNodeBpmnId(recordValue.getElementId())
             .setFlowNodeInstanceId(String.valueOf(recordValue.getElementInstanceKey()))
-            .setWorkflowInstanceId(String.valueOf(recordValue.getWorkflowInstanceKey()))
+            .setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()))
             .setBpmnProcessId(recordValue.getBpmnProcessId())
-            .setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
+            .setProcessId(String.valueOf(recordValue.getProcessDefinitionKey()));
     final String taskState = record.getIntent().name();
     LOGGER.debug("JobState {}", taskState);
     if (taskState.equals(CANCELED.name())) {

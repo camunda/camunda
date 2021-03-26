@@ -15,7 +15,7 @@ public class FlowNodeInstanceIndex extends AbstractIndexDescriptor {
   public static final String ID = "id";
   public static final String KEY = "key";
   public static final String POSITION = "position";
-  public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
+  public static final String PROCESS_INSTANCE_ID = "processInstanceId";
   public static final String PARENT_FLOW_NODE_ID = "parentFlowNodeId";
 
   @Override

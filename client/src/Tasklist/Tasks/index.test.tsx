@@ -68,7 +68,7 @@ describe('<Tasks />', () => {
 
     expect(withinFirstTask.getByText(firstTask.name)).toBeInTheDocument();
     expect(
-      withinFirstTask.getByText(firstTask.workflowName),
+      withinFirstTask.getByText(firstTask.processName),
     ).toBeInTheDocument();
     expect(
       withinFirstTask.getByText(firstTask.creationTime),
@@ -81,7 +81,7 @@ describe('<Tasks />', () => {
 
     expect(withinSecondTask.getByText(secondTask.name)).toBeInTheDocument();
     expect(
-      withinSecondTask.getByText(secondTask.workflowName),
+      withinSecondTask.getByText(secondTask.processName),
     ).toBeInTheDocument();
     expect(
       withinSecondTask.getByText(secondTask.creationTime),

@@ -5,7 +5,7 @@
       "id": {
         "type": "keyword"
       },
-      "workflowId": {
+      "processId": {
         "type": "keyword"
       },
       "formKey": {

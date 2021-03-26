@@ -13,10 +13,10 @@ import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.tasklist.entities.ProcessInstanceEntity;
 import io.zeebe.tasklist.entities.TaskEntity;
-import io.zeebe.tasklist.entities.WorkflowInstanceEntity;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
-import io.zeebe.tasklist.schema.indices.WorkflowInstanceIndex;
+import io.zeebe.tasklist.schema.indices.ProcessInstanceIndex;
 import io.zeebe.tasklist.schema.templates.TaskTemplate;
 import io.zeebe.tasklist.webapp.rest.exception.NotFoundException;
 import java.io.IOException;
@@ -41,7 +41,7 @@ public class ElasticsearchHelper {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private WorkflowInstanceIndex workflowInstanceIndex;
+  @Autowired private ProcessInstanceIndex processInstanceIndex;
 
   @Autowired private RestHighLevelClient esClient;
 
@@ -63,50 +63,50 @@ public class ElasticsearchHelper {
     }
   }
 
-  public WorkflowInstanceEntity getWorkflowInstance(String workflowInstanceId) {
+  public ProcessInstanceEntity getProcessInstance(String processInstanceId) {
     try {
       final GetRequest getRequest =
-          new GetRequest(workflowInstanceIndex.getAlias()).id(workflowInstanceId);
+          new GetRequest(processInstanceIndex.getAlias()).id(processInstanceId);
       final GetResponse response = esClient.get(getRequest, RequestOptions.DEFAULT);
       if (response.isExists()) {
         return fromSearchHit(
-            response.getSourceAsString(), objectMapper, WorkflowInstanceEntity.class);
+            response.getSourceAsString(), objectMapper, ProcessInstanceEntity.class);
       } else {
         throw new NotFoundException(
-            String.format("Could not find task for workflowInstanceId [%s].", workflowInstanceId));
+            String.format("Could not find task for processInstanceId [%s].", processInstanceId));
       }
     } catch (IOException e) {
       final String message =
-          String.format("Exception occurred, while obtaining the workflow: %s", e.getMessage());
+          String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  public List<WorkflowInstanceEntity> getWorkflowInstances(List<String> workflowInstanceIds) {
+  public List<ProcessInstanceEntity> getProcessInstances(List<String> processInstanceIds) {
     try {
       final SearchRequest request =
-          new SearchRequest(workflowInstanceIndex.getAlias())
+          new SearchRequest(processInstanceIndex.getAlias())
               .source(
                   new SearchSourceBuilder()
-                      .query(idsQuery().addIds(workflowInstanceIds.toArray(String[]::new))));
+                      .query(idsQuery().addIds(processInstanceIds.toArray(String[]::new))));
       final SearchResponse searchResponse = esClient.search(request, RequestOptions.DEFAULT);
-      return scroll(request, WorkflowInstanceEntity.class, objectMapper, esClient);
+      return scroll(request, ProcessInstanceEntity.class, objectMapper, esClient);
     } catch (IOException e) {
       final String message =
           String.format(
-              "Exception occurred, while obtaining list of workflows: %s", e.getMessage());
+              "Exception occurred, while obtaining list of processes: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  public List<TaskEntity> getTask(String workflowInstanceId, String flowNodeBpmnId) {
+  public List<TaskEntity> getTask(String processInstanceId, String flowNodeBpmnId) {
     final SearchRequest searchRequest =
         new SearchRequest(taskTemplate.getAlias())
             .source(
                 new SearchSourceBuilder()
                     .query(
                         joinWithAnd(
-                            termQuery(TaskTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId),
+                            termQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId),
                             termQuery(TaskTemplate.FLOW_NODE_BPMN_ID, flowNodeBpmnId)))
                     .sort(TaskTemplate.CREATION_TIME, SortOrder.DESC));
 
@@ -117,12 +117,12 @@ public class ElasticsearchHelper {
       } else {
         throw new NotFoundException(
             String.format(
-                "Could not find task for workflowInstanceId [%s] with flowNodeBpmnId [%s].",
-                workflowInstanceId, flowNodeBpmnId));
+                "Could not find task for processInstanceId [%s] with flowNodeBpmnId [%s].",
+                processInstanceId, flowNodeBpmnId));
       }
     } catch (IOException e) {
       final String message =
-          String.format("Exception occurred, while obtaining the workflow: %s", e.getMessage());
+          String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }

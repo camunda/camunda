@@ -11,10 +11,10 @@ import java.util.Objects;
 public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
 
   private String bpmnProcessId;
-  private String workflowId;
+  private String processId;
   private String flowNodeBpmnId;
   private String flowNodeInstanceId;
-  private String workflowInstanceId;
+  private String processInstanceId;
   private OffsetDateTime creationTime;
   private OffsetDateTime completionTime;
   private TaskState state;
@@ -30,12 +30,12 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
-  public String getWorkflowId() {
-    return workflowId;
+  public String getProcessId() {
+    return processId;
   }
 
-  public TaskEntity setWorkflowId(String workflowId) {
-    this.workflowId = workflowId;
+  public TaskEntity setProcessId(String processId) {
+    this.processId = processId;
     return this;
   }
 
@@ -57,12 +57,12 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
-  public String getWorkflowInstanceId() {
-    return workflowInstanceId;
+  public String getProcessInstanceId() {
+    return processInstanceId;
   }
 
-  public TaskEntity setWorkflowInstanceId(String workflowInstanceId) {
-    this.workflowInstanceId = workflowInstanceId;
+  public TaskEntity setProcessInstanceId(String processInstanceId) {
+    this.processInstanceId = processInstanceId;
     return this;
   }
 
@@ -124,10 +124,10 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     }
     final TaskEntity that = (TaskEntity) o;
     return Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(workflowId, that.workflowId)
+        && Objects.equals(processId, that.processId)
         && Objects.equals(flowNodeBpmnId, that.flowNodeBpmnId)
         && Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId)
-        && Objects.equals(workflowInstanceId, that.workflowInstanceId)
+        && Objects.equals(processInstanceId, that.processInstanceId)
         && Objects.equals(creationTime, that.creationTime)
         && Objects.equals(completionTime, that.completionTime)
         && state == that.state
@@ -140,10 +140,10 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return Objects.hash(
         super.hashCode(),
         bpmnProcessId,
-        workflowId,
+        processId,
         flowNodeBpmnId,
         flowNodeInstanceId,
-        workflowInstanceId,
+        processInstanceId,
         creationTime,
         completionTime,
         state,

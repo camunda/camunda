@@ -5,14 +5,14 @@
  */
 package io.zeebe.tasklist.entities;
 
-public class WorkflowFlowNodeEntity {
+public class ProcessFlowNodeEntity {
 
   private String id;
   private String name;
 
-  public WorkflowFlowNodeEntity() {}
+  public ProcessFlowNodeEntity() {}
 
-  public WorkflowFlowNodeEntity(String id, String name) {
+  public ProcessFlowNodeEntity(String id, String name) {
     this.id = id;
     this.name = name;
   }
@@ -21,7 +21,7 @@ public class WorkflowFlowNodeEntity {
     return id;
   }
 
-  public WorkflowFlowNodeEntity setId(String id) {
+  public ProcessFlowNodeEntity setId(String id) {
     this.id = id;
     return this;
   }
@@ -30,7 +30,7 @@ public class WorkflowFlowNodeEntity {
     return name;
   }
 
-  public WorkflowFlowNodeEntity setName(String name) {
+  public ProcessFlowNodeEntity setName(String name) {
     this.name = name;
     return this;
   }
@@ -51,7 +51,7 @@ public class WorkflowFlowNodeEntity {
       return false;
     }
 
-    final WorkflowFlowNodeEntity that = (WorkflowFlowNodeEntity) o;
+    final ProcessFlowNodeEntity that = (ProcessFlowNodeEntity) o;
 
     if (id != null ? !id.equals(that.id) : that.id != null) {
       return false;

@@ -9,7 +9,7 @@ import {
   Entry,
   TaskInfo,
   TaskName,
-  WorkflowName,
+  ProcessName,
   TaskStatus,
   Assignee,
   CreationTime,
@@ -24,13 +24,13 @@ import {Task as TaskType} from 'modules/types';
 interface Props {
   taskId: TaskType['id'];
   name: TaskType['name'];
-  workflowName: TaskType['workflowName'];
+  processName: TaskType['processName'];
   assignee: TaskType['assignee'];
   creationTime: TaskType['creationTime'];
 }
 
 const Task = React.forwardRef<HTMLLIElement, Props>(
-  ({taskId, name, workflowName, assignee, creationTime}, ref) => {
+  ({taskId, name, processName, assignee, creationTime}, ref) => {
     const {id} = useParams<{id: string}>();
 
     return (
@@ -47,7 +47,7 @@ const Task = React.forwardRef<HTMLLIElement, Props>(
         >
           <TaskInfo>
             <TaskName>{name}</TaskName>
-            <WorkflowName>{workflowName}</WorkflowName>
+            <ProcessName>{processName}</ProcessName>
           </TaskInfo>
           <TaskStatus>
             <Assignee data-testid="assignee">

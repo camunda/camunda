@@ -8,7 +8,7 @@
 			"parentFlowNodeId": {
 				"type": "keyword"
 			},
-			"workflowInstanceId": {
+			"processInstanceId": {
 				"type": "keyword"
 			},
 			"id": {

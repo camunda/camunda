@@ -13,7 +13,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.tasklist.property.TasklistProperties;
-import io.zeebe.tasklist.webapp.es.cache.WorkflowCache;
+import io.zeebe.tasklist.webapp.es.cache.ProcessCache;
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
 import io.zeebe.tasklist.webapp.security.UserReader;
 import io.zeebe.tasklist.zeebe.PartitionHolder;
@@ -47,7 +47,7 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
   @Autowired protected TasklistProperties tasklistProperties;
   protected TasklistTester tester;
   @MockBean protected UserReader userReader;
-  @Autowired private WorkflowCache workflowCache;
+  @Autowired private ProcessCache processCache;
   private String workerName;
   @Autowired private MeterRegistry meterRegistry;
 
@@ -69,7 +69,7 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
 
     tester = beanFactory.getBean(TasklistTester.class, zeebeClient, elasticsearchTestRule);
 
-    workflowCache.clearCache();
+    processCache.clearCache();
     importPositionHolder.clearCache();
     partitionHolder.setZeebeClient(getClient());
 
@@ -92,7 +92,7 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
   @After
   public void after() {
     setDefaultCurrentUser();
-    workflowCache.clearCache();
+    processCache.clearCache();
     importPositionHolder.clearCache();
   }
 

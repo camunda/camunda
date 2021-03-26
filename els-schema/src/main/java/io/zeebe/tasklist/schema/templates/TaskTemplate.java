@@ -14,7 +14,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor {
 
   public static final String ID = "id";
   public static final String KEY = "key";
-  public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
+  public static final String PROCESS_INSTANCE_ID = "processInstanceId";
   public static final String POSITION = "position";
   public static final String CREATION_TIME = "creationTime";
   public static final String COMPLETION_TIME = "completionTime";
@@ -23,7 +23,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor {
   public static final String ASSIGNEE = "assignee";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
 
-  //  public static final List<String> ALL_FIELDS = asList(ID, KEY, WORKFLOW_INSTANCE_KEY, POSITION,
+  //  public static final List<String> ALL_FIELDS = asList(ID, KEY, PROCESS_INSTANCE_KEY, POSITION,
   // PARTITION_ID, CREATION_TIME, COMPLETION_TIME, ELEMENT_ID,
   //      STATE, ASSIGNEE, BPMN_PROCESS_ID);
 

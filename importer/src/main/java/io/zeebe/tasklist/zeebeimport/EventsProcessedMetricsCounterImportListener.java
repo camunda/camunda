@@ -26,7 +26,7 @@ public class EventsProcessedMetricsCounterImportListener implements ImportListen
         String.valueOf(importBatch.getPartitionId()),
         Metrics.TAG_KEY_STATUS,
         Metrics.TAG_VALUE_SUCCEEDED);
-    if (importBatch.getImportValueType() == ImportValueType.WORKFLOW_INSTANCE) {
+    if (importBatch.getImportValueType() == ImportValueType.PROCESS_INSTANCE) {
       metrics.recordCounts(
           Metrics.COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI, importBatch.getFinishedWiCount());
     }

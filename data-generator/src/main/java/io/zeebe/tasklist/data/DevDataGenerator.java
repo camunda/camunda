@@ -132,11 +132,11 @@ public class DevDataGenerator implements DataGenerator {
   }
 
   private void createZeebeData() {
-    deployWorkflows();
-    startWorkflowInstances();
+    deployProcesses();
+    startProcessInstances();
   }
 
-  private void startWorkflowInstances() {
+  private void startProcessInstances() {
     final int instancesCount = random.nextInt(20) + 20;
     for (int i = 0; i < instancesCount; i++) {
       startOrderProcess();
@@ -192,7 +192,7 @@ public class DevDataGenerator implements DataGenerator {
               + "  ],\n"
               + "  \"type\": \"default\"\n"
               + "}";
-      final FormEntity formEntity = new FormEntity("workflowId", "formKey", formJSON);
+      final FormEntity formEntity = new FormEntity("processId", "formKey", formJSON);
       final IndexRequest indexRequest =
           new IndexRequest(
                   formIndex.getFullQualifiedName(),
@@ -213,7 +213,7 @@ public class DevDataGenerator implements DataGenerator {
                   new Script(
                       ScriptType.INLINE,
                       "painless",
-                      "ctx._source.formId = \"workflowId_formKey\";",
+                      "ctx._source.formId = \"processId_formKey\";",
                       Collections.emptyMap()));
       esClient.updateByQueryAsync(
           updateRequest,
@@ -235,13 +235,13 @@ public class DevDataGenerator implements DataGenerator {
   }
 
   private void startSimpleProcess() {
-    ZeebeTestUtil.startWorkflowInstance(zeebeClient, "simpleProcess", null);
+    ZeebeTestUtil.startProcessInstance(zeebeClient, "simpleProcess", null);
   }
 
   private void startOrderProcess() {
     final float price1 = Math.round(random.nextFloat() * 100000) / 100;
     final float price2 = Math.round(random.nextFloat() * 10000) / 100;
-    ZeebeTestUtil.startWorkflowInstance(
+    ZeebeTestUtil.startProcessInstance(
         zeebeClient,
         "orderProcess",
         "{\n"
@@ -276,7 +276,7 @@ public class DevDataGenerator implements DataGenerator {
   }
 
   private void startFlightRegistrationProcess() {
-    ZeebeTestUtil.startWorkflowInstance(
+    ZeebeTestUtil.startProcessInstance(
         zeebeClient,
         "flightRegistration",
         "{\n"
@@ -295,10 +295,10 @@ public class DevDataGenerator implements DataGenerator {
             + "}");
   }
 
-  private void deployWorkflows() {
-    ZeebeTestUtil.deployWorkflow(zeebeClient, "orderProcess.bpmn");
-    ZeebeTestUtil.deployWorkflow(zeebeClient, "registerPassenger.bpmn");
-    ZeebeTestUtil.deployWorkflow(zeebeClient, "simpleProcess.bpmn");
+  private void deployProcesses() {
+    ZeebeTestUtil.deployProcess(zeebeClient, "orderProcess.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "registerPassenger.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "simpleProcess.bpmn");
   }
 
   public boolean shouldCreateData() {

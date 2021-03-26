@@ -21,7 +21,7 @@ type Task = Readonly<{
   __typename: string;
   id: string;
   name: string;
-  workflowName: string;
+  processName: string;
   creationTime: string;
   completionTime: string | null;
   assignee: User | null;

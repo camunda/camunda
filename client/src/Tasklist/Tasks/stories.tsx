@@ -28,7 +28,7 @@ const TaskCard: React.FC = () => {
           <Task
             taskId="2251799813685883"
             name="Register the passenger"
-            workflowName="Flight registration"
+            processName="Flight registration"
             assignee={{
               username: 'demo',
               firstname: 'Demo',
@@ -39,14 +39,14 @@ const TaskCard: React.FC = () => {
           <Task
             taskId="2251799813685884"
             name="Register the passenger"
-            workflowName="Flight registration"
+            processName="Flight registration"
             assignee={null}
             creationTime="2020-03-21T15:39:31.139+0000"
           />
           <Task
             taskId="2251799813685885"
             name="Register the passenger"
-            workflowName="Flight registration"
+            processName="Flight registration"
             assignee={null}
             creationTime="2020-09-22T15:39:31.139+0000"
           />

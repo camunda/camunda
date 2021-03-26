@@ -5,7 +5,7 @@
  */
 package io.zeebe.tasklist.entities;
 
-public enum WorkflowInstanceState {
+public enum ProcessInstanceState {
   ACTIVE,
   COMPLETED,
   CANCELED

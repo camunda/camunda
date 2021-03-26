@@ -9,14 +9,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.tasklist.entities.FormEntity;
-import io.zeebe.tasklist.entities.WorkflowEntity;
+import io.zeebe.tasklist.entities.ProcessEntity;
 import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.schema.indices.FormIndex;
-import io.zeebe.tasklist.schema.indices.WorkflowIndex;
+import io.zeebe.tasklist.schema.indices.ProcessIndex;
 import io.zeebe.tasklist.util.ConversionUtils;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.zeebeimport.util.XMLUtil;
@@ -37,9 +37,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class WorkflowZeebeRecordProcessor {
+public class ProcessZeebeRecordProcessor {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowZeebeRecordProcessor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessZeebeRecordProcessor.class);
 
   private static final Set<String> STATES = new HashSet<>();
 
@@ -49,7 +49,7 @@ public class WorkflowZeebeRecordProcessor {
 
   @Autowired private ObjectMapper objectMapper;
 
-  @Autowired private WorkflowIndex workflowIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Autowired private FormIndex formIndex;
 
@@ -62,54 +62,53 @@ public class WorkflowZeebeRecordProcessor {
     if (STATES.contains(intentStr)) {
       final DeploymentRecordValueImpl recordValue = (DeploymentRecordValueImpl) record.getValue();
       final Map<String, DeploymentResource> resources = resourceToMap(recordValue.getResources());
-      for (DeployedWorkflow workflow : recordValue.getDeployedWorkflows()) {
-        persistWorkflow(workflow, resources, bulkRequest);
+      for (DeployedProcess process : recordValue.getDeployedProcesses()) {
+        persistProcess(process, resources, bulkRequest);
       }
     }
   }
 
-  private void persistWorkflow(
-      DeployedWorkflow workflow, Map<String, DeploymentResource> resources, BulkRequest bulkRequest)
+  private void persistProcess(
+      DeployedProcess process, Map<String, DeploymentResource> resources, BulkRequest bulkRequest)
       throws PersistenceException {
-    final String resourceName = workflow.getResourceName();
+    final String resourceName = process.getResourceName();
     final DeploymentResource resource = resources.get(resourceName);
 
-    final WorkflowEntity workflowEntity = createEntity(workflow, resource);
-    LOGGER.debug("Workflow: key {}", workflowEntity.getKey());
+    final ProcessEntity processEntity = createEntity(process, resource);
+    LOGGER.debug("Process: key {}", processEntity.getKey());
 
     try {
       bulkRequest.add(
           new IndexRequest(
-                  workflowIndex.getFullQualifiedName(),
+                  processIndex.getFullQualifiedName(),
                   ElasticsearchUtil.ES_INDEX_TYPE,
-                  ConversionUtils.toStringOrNull(workflowEntity.getKey()))
-              .source(objectMapper.writeValueAsString(workflowEntity), XContentType.JSON));
+                  ConversionUtils.toStringOrNull(processEntity.getKey()))
+              .source(objectMapper.writeValueAsString(processEntity), XContentType.JSON));
     } catch (JsonProcessingException e) {
       throw new PersistenceException(
-          String.format(
-              "Error preparing the query to insert workflow [%s]", workflowEntity.getKey()),
+          String.format("Error preparing the query to insert process [%s]", processEntity.getKey()),
           e);
     }
   }
 
-  private WorkflowEntity createEntity(DeployedWorkflow workflow, DeploymentResource resource) {
-    final WorkflowEntity workflowEntity = new WorkflowEntity();
+  private ProcessEntity createEntity(DeployedProcess process, DeploymentResource resource) {
+    final ProcessEntity processEntity = new ProcessEntity();
 
-    workflowEntity.setId(String.valueOf(workflow.getWorkflowKey()));
-    workflowEntity.setKey(workflow.getWorkflowKey());
+    processEntity.setId(String.valueOf(process.getProcessDefinitionKey()));
+    processEntity.setKey(process.getProcessDefinitionKey());
 
     final ResourceType resourceType = resource.getResourceType();
     if (ResourceType.BPMN_XML.equals(resourceType)) {
       final byte[] byteArray = resource.getResource();
 
-      final Optional<WorkflowEntity> diagramData = xmlUtil.extractDiagramData(byteArray);
+      final Optional<ProcessEntity> diagramData = xmlUtil.extractDiagramData(byteArray);
       if (diagramData.isPresent()) {
-        workflowEntity.setName(diagramData.get().getName());
-        workflowEntity.setFlowNodes(diagramData.get().getFlowNodes());
+        processEntity.setName(diagramData.get().getName());
+        processEntity.setFlowNodes(diagramData.get().getFlowNodes());
       }
     }
 
-    return workflowEntity;
+    return processEntity;
   }
 
   private Map<String, DeploymentResource> resourceToMap(List<DeploymentResource> resources) {
@@ -118,9 +117,11 @@ public class WorkflowZeebeRecordProcessor {
   }
 
   // TODO for future use
-  private void persistForm(long workflowKey, String formKey, String schema, BulkRequest bulkRequest)
+  private void persistForm(
+      long processDefinitionKey, String formKey, String schema, BulkRequest bulkRequest)
       throws PersistenceException {
-    final FormEntity formEntity = new FormEntity(String.valueOf(workflowKey), formKey, schema);
+    final FormEntity formEntity =
+        new FormEntity(String.valueOf(processDefinitionKey), formKey, schema);
     LOGGER.debug("Form: key {}", formKey);
     try {
       bulkRequest.add(

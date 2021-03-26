@@ -12,7 +12,7 @@ import graphql.kickstart.execution.context.GraphQLContext;
 import graphql.kickstart.tools.GraphQLResolver;
 import graphql.schema.DataFetchingEnvironment;
 import io.zeebe.tasklist.webapp.es.VariableReaderWriter.GetVariablesRequest;
-import io.zeebe.tasklist.webapp.es.cache.WorkflowCache;
+import io.zeebe.tasklist.webapp.es.cache.ProcessCache;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
 import io.zeebe.tasklist.webapp.graphql.entity.VariableDTO;
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TaskResolver implements GraphQLResolver<TaskDTO> {
 
-  @Autowired private WorkflowCache workflowCache;
+  @Autowired private ProcessCache processCache;
 
   public CompletableFuture<UserDTO> getAssignee(TaskDTO task, DataFetchingEnvironment dfe) {
     if (task.getAssigneeUsername() == null) {
@@ -50,17 +50,16 @@ public class TaskResolver implements GraphQLResolver<TaskDTO> {
     return dataloader.load(GetVariablesRequest.createFrom(task));
   }
 
-  public String getWorkflowName(TaskDTO task) {
-    final String workflowName = workflowCache.getWorkflowName(task.getWorkflowId());
-    if (workflowName == null) {
+  public String getProcessName(TaskDTO task) {
+    final String processName = processCache.getProcessName(task.getProcessId());
+    if (processName == null) {
       return task.getBpmnProcessId();
     }
-    return workflowName;
+    return processName;
   }
 
   public String getName(TaskDTO task) {
-    final String taskName =
-        workflowCache.getTaskName(task.getWorkflowId(), task.getFlowNodeBpmnId());
+    final String taskName = processCache.getTaskName(task.getProcessId(), task.getFlowNodeBpmnId());
     if (taskName == null) {
       return task.getFlowNodeBpmnId();
     }

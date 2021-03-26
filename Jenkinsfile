@@ -48,6 +48,13 @@ pipeline {
   }
 
   stages {
+    stage('Prepare') {
+      steps {
+        container('maven') {
+          sh '.ci/scripts/ensure-naming-for-process.sh'
+        }
+      }
+    }
     stage('Frontend - Build') {
       steps {
         container('node') {

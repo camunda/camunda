@@ -12,7 +12,7 @@ type Tasks = ReadonlyArray<
     | 'id'
     | 'name'
     | 'assignee'
-    | 'workflowName'
+    | 'processName'
     | 'creationTime'
     | 'taskState'
     | 'sortValues'

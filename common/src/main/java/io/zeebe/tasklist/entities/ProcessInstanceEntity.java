@@ -8,16 +8,16 @@ package io.zeebe.tasklist.entities;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class WorkflowInstanceEntity extends TasklistZeebeEntity<WorkflowInstanceEntity> {
+public class ProcessInstanceEntity extends TasklistZeebeEntity<ProcessInstanceEntity> {
 
-  private WorkflowInstanceState state;
+  private ProcessInstanceState state;
   private OffsetDateTime endDate;
 
-  public WorkflowInstanceState getState() {
+  public ProcessInstanceState getState() {
     return state;
   }
 
-  public WorkflowInstanceEntity setState(final WorkflowInstanceState state) {
+  public ProcessInstanceEntity setState(final ProcessInstanceState state) {
     this.state = state;
     return this;
   }
@@ -26,7 +26,7 @@ public class WorkflowInstanceEntity extends TasklistZeebeEntity<WorkflowInstance
     return endDate;
   }
 
-  public WorkflowInstanceEntity setEndDate(final OffsetDateTime endDate) {
+  public ProcessInstanceEntity setEndDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
     return this;
   }
@@ -42,7 +42,7 @@ public class WorkflowInstanceEntity extends TasklistZeebeEntity<WorkflowInstance
     if (!super.equals(o)) {
       return false;
     }
-    final WorkflowInstanceEntity that = (WorkflowInstanceEntity) o;
+    final ProcessInstanceEntity that = (ProcessInstanceEntity) o;
     return state == that.state && Objects.equals(endDate, that.endDate);
   }
 

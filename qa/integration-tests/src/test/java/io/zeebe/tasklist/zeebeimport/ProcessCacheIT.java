@@ -13,54 +13,54 @@ import static org.mockito.Mockito.verify;
 import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
 import io.zeebe.tasklist.util.ZeebeTestUtil;
-import io.zeebe.tasklist.webapp.es.cache.WorkflowCache;
+import io.zeebe.tasklist.webapp.es.cache.ProcessCache;
 import org.junit.After;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 
-public class WorkflowCacheIT extends TasklistZeebeIntegrationTest {
+public class ProcessCacheIT extends TasklistZeebeIntegrationTest {
 
-  @SpyBean private WorkflowCache workflowCache;
+  @SpyBean private ProcessCache processCache;
 
   @Autowired
-  @Qualifier("workflowIsDeployedCheck")
-  private TestCheck workflowIsDeployedCheck;
+  @Qualifier("processIsDeployedCheck")
+  private TestCheck processIsDeployedCheck;
 
   @After
   public void after() {
     super.after();
     // clean the cache
-    workflowCache.clearCache();
+    processCache.clearCache();
   }
 
   @Test
-  public void testWorkflowDoesNotExist() {
-    final String processName = workflowCache.getWorkflowName("2");
+  public void testProcessDoesNotExist() {
+    final String processName = processCache.getProcessName("2");
     assertThat(processName).isNull();
   }
 
   @Test
-  public void testWorkflowNameAndTaskNameReturnedAndReused() {
-    final String workflowId1 = ZeebeTestUtil.deployWorkflow(zeebeClient, "simple_workflow.bpmn");
-    final String workflowId2 = ZeebeTestUtil.deployWorkflow(zeebeClient, "simple_workflow_2.bpmn");
+  public void testProcessNameAndTaskNameReturnedAndReused() {
+    final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process.bpmn");
+    final String processId2 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process_2.bpmn");
 
-    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowId1);
-    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowId2);
+    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
 
-    String demoProcessName = workflowCache.getWorkflowName(workflowId1);
+    String demoProcessName = processCache.getProcessName(processId1);
     assertThat(demoProcessName).isNotNull();
 
     // request task name, must be already in cache
-    String taskName = workflowCache.getTaskName(workflowId1, "taskA");
+    String taskName = processCache.getTaskName(processId1, "taskA");
     assertThat(taskName).isNotNull();
     // request once again, the cache should be used
-    demoProcessName = workflowCache.getWorkflowName(workflowId1);
+    demoProcessName = processCache.getProcessName(processId1);
     assertThat(demoProcessName).isNotNull();
-    taskName = workflowCache.getTaskName(workflowId1, "taskA");
+    taskName = processCache.getTaskName(processId1, "taskA");
     assertThat(taskName).isNotNull();
 
-    verify(workflowCache, times(1)).putToCache(any(), any());
+    verify(processCache, times(1)).putToCache(any(), any());
   }
 }

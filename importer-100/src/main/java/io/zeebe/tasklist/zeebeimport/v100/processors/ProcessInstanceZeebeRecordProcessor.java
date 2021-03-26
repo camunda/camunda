@@ -5,24 +5,24 @@
  */
 package io.zeebe.tasklist.zeebeimport.v100.processors;
 
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.tasklist.entities.FlowNodeInstanceEntity;
 import io.zeebe.tasklist.entities.FlowNodeType;
-import io.zeebe.tasklist.entities.WorkflowInstanceEntity;
-import io.zeebe.tasklist.entities.WorkflowInstanceState;
+import io.zeebe.tasklist.entities.ProcessInstanceEntity;
+import io.zeebe.tasklist.entities.ProcessInstanceState;
 import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.schema.indices.FlowNodeInstanceIndex;
-import io.zeebe.tasklist.schema.indices.WorkflowInstanceIndex;
+import io.zeebe.tasklist.schema.indices.ProcessInstanceIndex;
 import io.zeebe.tasklist.util.ConversionUtils;
 import io.zeebe.tasklist.util.DateUtil;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
-import io.zeebe.tasklist.zeebeimport.v100.record.value.WorkflowInstanceRecordValueImpl;
+import io.zeebe.tasklist.zeebeimport.v100.record.value.ProcessInstanceRecordValueImpl;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
@@ -38,13 +38,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class WorkflowInstanceZeebeRecordProcessor {
+public class ProcessInstanceZeebeRecordProcessor {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(WorkflowInstanceZeebeRecordProcessor.class);
+      LoggerFactory.getLogger(ProcessInstanceZeebeRecordProcessor.class);
 
   private static final Set<String> FLOW_NODE_STATES = new HashSet<>();
-  private static final Set<String> WORKFLOW_INSTANCE_STATES = new HashSet<>();
+  private static final Set<String> PROCESS_INSTANCE_STATES = new HashSet<>();
 
   private static final List<BpmnElementType> VARIABLE_SCOPE_TYPES =
       Arrays.asList(
@@ -55,55 +55,55 @@ public class WorkflowInstanceZeebeRecordProcessor {
 
   static {
     FLOW_NODE_STATES.add(ELEMENT_ACTIVATING.name());
-    WORKFLOW_INSTANCE_STATES.add(ELEMENT_COMPLETED.name());
-    WORKFLOW_INSTANCE_STATES.add(ELEMENT_TERMINATED.name());
+    PROCESS_INSTANCE_STATES.add(ELEMENT_COMPLETED.name());
+    PROCESS_INSTANCE_STATES.add(ELEMENT_TERMINATED.name());
   }
 
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
 
-  @Autowired private WorkflowInstanceIndex workflowInstanceIndex;
+  @Autowired private ProcessInstanceIndex processInstanceIndex;
 
-  public void processWorkflowInstanceRecord(Record record, BulkRequest bulkRequest)
+  public void processProcessInstanceRecord(Record record, BulkRequest bulkRequest)
       throws PersistenceException {
 
-    final WorkflowInstanceRecordValueImpl recordValue =
-        (WorkflowInstanceRecordValueImpl) record.getValue();
+    final ProcessInstanceRecordValueImpl recordValue =
+        (ProcessInstanceRecordValueImpl) record.getValue();
     if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
       bulkRequest.add(getFlowNodeInstanceQuery(flowNodeInstance));
     }
 
     if (isProcessEvent(recordValue)
-        && WORKFLOW_INSTANCE_STATES.contains(record.getIntent().name())) {
-      final WorkflowInstanceEntity workflowInstanceEntity = createWorkflowInstance(record);
-      bulkRequest.add(getWorkflowInstanceQuery(workflowInstanceEntity));
+        && PROCESS_INSTANCE_STATES.contains(record.getIntent().name())) {
+      final ProcessInstanceEntity processInstanceEntity = createProcessInstance(record);
+      bulkRequest.add(getProcessInstanceQuery(processInstanceEntity));
     }
   }
 
-  private WorkflowInstanceEntity createWorkflowInstance(final Record record) {
-    final WorkflowInstanceEntity entity = new WorkflowInstanceEntity();
+  private ProcessInstanceEntity createProcessInstance(final Record record) {
+    final ProcessInstanceEntity entity = new ProcessInstanceEntity();
     entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
     if (ELEMENT_COMPLETED.name().equals(record.getIntent().name())) {
-      entity.setState(WorkflowInstanceState.COMPLETED);
+      entity.setState(ProcessInstanceState.COMPLETED);
     } else if (ELEMENT_TERMINATED.name().equals(record.getIntent().name())) {
-      entity.setState(WorkflowInstanceState.CANCELED);
+      entity.setState(ProcessInstanceState.CANCELED);
     }
     entity.setEndDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     return entity;
   }
 
   private FlowNodeInstanceEntity createFlowNodeInstance(Record record) {
-    final WorkflowInstanceRecordValueImpl recordValue =
-        (WorkflowInstanceRecordValueImpl) record.getValue();
+    final ProcessInstanceRecordValueImpl recordValue =
+        (ProcessInstanceRecordValueImpl) record.getValue();
     final FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity();
     entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
-    entity.setWorkflowInstanceId(String.valueOf(recordValue.getWorkflowInstanceKey()));
+    entity.setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()));
     entity.setParentFlowNodeId(String.valueOf(recordValue.getFlowScopeKey()));
     entity.setType(
         FlowNodeType.fromZeebeBpmnElementType(
@@ -132,25 +132,25 @@ public class WorkflowInstanceZeebeRecordProcessor {
     }
   }
 
-  private IndexRequest getWorkflowInstanceQuery(final WorkflowInstanceEntity entity)
+  private IndexRequest getProcessInstanceQuery(final ProcessInstanceEntity entity)
       throws PersistenceException {
     try {
-      LOGGER.debug("Workflow instance: id {}", entity.getId());
+      LOGGER.debug("Process instance: id {}", entity.getId());
 
       return new IndexRequest(
-              workflowInstanceIndex.getFullQualifiedName(),
+              processInstanceIndex.getFullQualifiedName(),
               ElasticsearchUtil.ES_INDEX_TYPE,
               entity.getId())
           .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
     } catch (IOException e) {
       throw new PersistenceException(
           String.format(
-              "Error preparing the query to index workflow instance [%s]w", entity.getId()),
+              "Error preparing the query to index process instance [%s]w", entity.getId()),
           e);
     }
   }
 
-  private boolean isVariableScopeType(WorkflowInstanceRecordValueImpl recordValue) {
+  private boolean isVariableScopeType(ProcessInstanceRecordValueImpl recordValue) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;
@@ -158,11 +158,11 @@ public class WorkflowInstanceZeebeRecordProcessor {
     return VARIABLE_SCOPE_TYPES.contains(bpmnElementType);
   }
 
-  private boolean isProcessEvent(WorkflowInstanceRecordValueImpl recordValue) {
+  private boolean isProcessEvent(ProcessInstanceRecordValueImpl recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }
 
-  private boolean isOfType(WorkflowInstanceRecordValueImpl recordValue, BpmnElementType type) {
+  private boolean isOfType(ProcessInstanceRecordValueImpl recordValue, BpmnElementType type) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;

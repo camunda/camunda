@@ -114,7 +114,7 @@ const Details: React.FC = () => {
   const {
     task: {
       name,
-      workflowName,
+      processName,
       creationTime,
       completionTime,
       assignee,
@@ -155,8 +155,8 @@ const Details: React.FC = () => {
             <TD>{name}</TD>
           </TR>
           <TR>
-            <RowTH>Workflow</RowTH>
-            <TD>{workflowName}</TD>
+            <RowTH>Process</RowTH>
+            <TD>{processName}</TD>
           </TR>
           <TR>
             <RowTH>Creation Time</RowTH>

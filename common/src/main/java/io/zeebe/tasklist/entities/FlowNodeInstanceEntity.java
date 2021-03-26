@@ -10,16 +10,16 @@ import java.util.Objects;
 public class FlowNodeInstanceEntity extends TasklistZeebeEntity<FlowNodeInstanceEntity> {
 
   private String parentFlowNodeId;
-  private String workflowInstanceId;
+  private String processInstanceId;
   private Long position;
   private FlowNodeType type;
 
-  public String getWorkflowInstanceId() {
-    return workflowInstanceId;
+  public String getProcessInstanceId() {
+    return processInstanceId;
   }
 
-  public FlowNodeInstanceEntity setWorkflowInstanceId(final String workflowInstanceId) {
-    this.workflowInstanceId = workflowInstanceId;
+  public FlowNodeInstanceEntity setProcessInstanceId(final String processInstanceId) {
+    this.processInstanceId = processInstanceId;
     return this;
   }
 
@@ -63,13 +63,13 @@ public class FlowNodeInstanceEntity extends TasklistZeebeEntity<FlowNodeInstance
     }
     final FlowNodeInstanceEntity that = (FlowNodeInstanceEntity) o;
     return Objects.equals(parentFlowNodeId, that.parentFlowNodeId)
-        && Objects.equals(workflowInstanceId, that.workflowInstanceId)
+        && Objects.equals(processInstanceId, that.processInstanceId)
         && Objects.equals(position, that.position)
         && type == that.type;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), parentFlowNodeId, workflowInstanceId, position, type);
+    return Objects.hash(super.hashCode(), parentFlowNodeId, processInstanceId, position, type);
   }
 }

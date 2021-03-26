@@ -16,7 +16,7 @@ public class VariableEntity extends TasklistZeebeEntity<VariableEntity> {
   private String name;
   private String value;
   private String scopeFlowNodeId;
-  private String workflowInstanceId;
+  private String processInstanceId;
 
   public static String getIdBy(String scopeFlowNodeId, String name) {
     return String.format("%s-%s", scopeFlowNodeId, name);
@@ -49,12 +49,12 @@ public class VariableEntity extends TasklistZeebeEntity<VariableEntity> {
     return this;
   }
 
-  public String getWorkflowInstanceId() {
-    return workflowInstanceId;
+  public String getProcessInstanceId() {
+    return processInstanceId;
   }
 
-  public VariableEntity setWorkflowInstanceId(final String workflowInstanceId) {
-    this.workflowInstanceId = workflowInstanceId;
+  public VariableEntity setProcessInstanceId(final String processInstanceId) {
+    this.processInstanceId = processInstanceId;
     return this;
   }
 
@@ -73,11 +73,11 @@ public class VariableEntity extends TasklistZeebeEntity<VariableEntity> {
     return Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
         && Objects.equals(scopeFlowNodeId, that.scopeFlowNodeId)
-        && Objects.equals(workflowInstanceId, that.workflowInstanceId);
+        && Objects.equals(processInstanceId, that.processInstanceId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), name, value, scopeFlowNodeId, workflowInstanceId);
+    return Objects.hash(super.hashCode(), name, value, scopeFlowNodeId, processInstanceId);
   }
 }

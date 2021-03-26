@@ -6,14 +6,14 @@
 package io.zeebe.tasklist.zeebe;
 
 public enum ImportValueType {
-  WORKFLOW_INSTANCE(ZeebeESConstants.WORKFLOW_INSTANCE_INDEX_NAME),
+  PROCESS_INSTANCE(ZeebeESConstants.PROCESS_INSTANCE_INDEX_NAME),
   JOB(ZeebeESConstants.JOB_INDEX_NAME),
   DEPLOYMENT(ZeebeESConstants.DEPLOYMENT_INDEX_NAME),
   VARIABLE(ZeebeESConstants.VARIABLE_INDEX_NAME),
   VARIABLE_DOCUMENT(ZeebeESConstants.VARIABLE_DOCUMENT_INDEX_NAME);
 
   public static final ImportValueType[] IMPORT_VALUE_TYPES =
-      new ImportValueType[] {WORKFLOW_INSTANCE, DEPLOYMENT, JOB, VARIABLE};
+      new ImportValueType[] {PROCESS_INSTANCE, DEPLOYMENT, JOB, VARIABLE};
   private final String aliasTemplate;
 
   ImportValueType(String aliasTemplate) {

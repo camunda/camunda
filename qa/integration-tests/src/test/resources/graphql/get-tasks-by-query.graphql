@@ -2,7 +2,7 @@ query getTasks($query: TaskQuery!){
     tasks(query: $query) {
         id
         name
-        workflowName
+        processName
         creationTime
         completionTime
         assignee {

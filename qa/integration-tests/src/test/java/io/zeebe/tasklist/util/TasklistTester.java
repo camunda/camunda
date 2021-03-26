@@ -5,14 +5,14 @@
  */
 package io.zeebe.tasklist.util;
 
+import static io.zeebe.tasklist.util.ElasticsearchChecks.PROCESS_INSTANCE_IS_CANCELED_CHECK;
+import static io.zeebe.tasklist.util.ElasticsearchChecks.PROCESS_INSTANCE_IS_COMPLETED_CHECK;
+import static io.zeebe.tasklist.util.ElasticsearchChecks.PROCESS_IS_DEPLOYED_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASKS_ARE_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_ASSIGNED_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
-import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_INSTANCE_IS_CANCELED_CHECK;
-import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_INSTANCE_IS_COMPLETED_CHECK;
-import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_IS_DEPLOYED_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -48,21 +48,21 @@ public class TasklistTester {
   private ZeebeClient zeebeClient;
   private ElasticsearchTestRule elasticsearchTestRule;
   //
-  private String workflowId;
-  private String workflowInstanceId;
+  private String processDefinitionKey;
+  private String processInstanceId;
   private String taskId;
 
   @Autowired
-  @Qualifier(WORKFLOW_IS_DEPLOYED_CHECK)
-  private TestCheck workflowIsDeployedCheck;
+  @Qualifier(PROCESS_IS_DEPLOYED_CHECK)
+  private TestCheck processIsDeployedCheck;
 
   @Autowired
-  @Qualifier(WORKFLOW_INSTANCE_IS_CANCELED_CHECK)
-  private TestCheck workflowInstanceIsCanceledCheck;
+  @Qualifier(PROCESS_INSTANCE_IS_CANCELED_CHECK)
+  private TestCheck processInstanceIsCanceledCheck;
 
   @Autowired
-  @Qualifier(WORKFLOW_INSTANCE_IS_COMPLETED_CHECK)
-  private TestCheck workflowInstanceIsCompletedCheck;
+  @Qualifier(PROCESS_INSTANCE_IS_COMPLETED_CHECK)
+  private TestCheck processInstanceIsCompletedCheck;
 
   @Autowired
   @Qualifier(TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
@@ -107,36 +107,36 @@ public class TasklistTester {
   }
 
   //
-  //  public Long getWorkflowInstanceKey() {
-  //    return workflowInstanceKey;
+  //  public Long getProcessInstanceKey() {
+  //    return processInstanceKey;
   //  }
   //
-  public TasklistTester createAndDeploySimpleWorkflow(String processId, String flowNodeBpmnId) {
-    final BpmnModelInstance workflow =
+  public TasklistTester createAndDeploySimpleProcess(String processId, String flowNodeBpmnId) {
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .serviceTask(flowNodeBpmnId)
             .zeebeJobType(tasklistProperties.getImporter().getJobType())
             .endEvent()
             .done();
-    workflowId = ZeebeTestUtil.deployWorkflow(zeebeClient, workflow, processId + ".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
     return this;
   }
 
   public TasklistTester createCreatedAndCompletedTasks(
       String processId, String flowNodeBpmnId, int created, int completed) {
-    createAndDeploySimpleWorkflow(processId, flowNodeBpmnId).waitUntil().workflowIsDeployed();
+    createAndDeploySimpleProcess(processId, flowNodeBpmnId).waitUntil().processIsDeployed();
     // complete tasks
     for (int i = 0; i < completed; i++) {
-      startWorkflowInstance(processId)
+      startProcessInstance(processId)
           .waitUntil()
           .taskIsCreated(flowNodeBpmnId)
           .and()
           .claimAndCompleteHumanTask(flowNodeBpmnId);
     }
-    // start more workflow instances
+    // start more process instances
     for (int i = 0; i < created; i++) {
-      startWorkflowInstance(processId).waitUntil().taskIsCreated(flowNodeBpmnId);
+      startProcessInstance(processId).waitUntil().taskIsCreated(flowNodeBpmnId);
     }
     return this;
   }
@@ -207,32 +207,32 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester deployWorkflow(String... classpathResources) {
-    workflowId = ZeebeTestUtil.deployWorkflow(zeebeClient, classpathResources);
+  public TasklistTester deployProcess(String... classpathResources) {
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, classpathResources);
     return this;
   }
 
-  public TasklistTester deployWorkflow(BpmnModelInstance workflowModel, String resourceName) {
-    workflowId = ZeebeTestUtil.deployWorkflow(zeebeClient, workflowModel, resourceName);
+  public TasklistTester deployProcess(BpmnModelInstance processModel, String resourceName) {
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, processModel, resourceName);
     return this;
   }
 
-  public TasklistTester workflowIsDeployed() {
-    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowId);
+  public TasklistTester processIsDeployed() {
+    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
     return this;
   }
 
-  public TasklistTester startWorkflowInstance(String bpmnProcessId) {
-    return startWorkflowInstance(bpmnProcessId, null);
+  public TasklistTester startProcessInstance(String bpmnProcessId) {
+    return startProcessInstance(bpmnProcessId, null);
   }
 
-  public TasklistTester startWorkflowInstances(String bpmnProcessId, Integer numberOfInstances) {
-    IntStream.range(0, numberOfInstances).forEach(i -> startWorkflowInstance(bpmnProcessId));
+  public TasklistTester startProcessInstances(String bpmnProcessId, Integer numberOfInstances) {
+    IntStream.range(0, numberOfInstances).forEach(i -> startProcessInstance(bpmnProcessId));
     return this;
   }
 
-  public TasklistTester startWorkflowInstance(String bpmnProcessId, String payload) {
-    workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, bpmnProcessId, payload);
+  public TasklistTester startProcessInstance(String bpmnProcessId, String payload) {
+    processInstanceId = ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
     return this;
   }
 
@@ -249,14 +249,14 @@ public class TasklistTester {
   //  }
   //
   //  public TasklistTester incidentIsActive() {
-  //    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
+  //    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
   //    return this;
   //  }
   //
 
   public TasklistTester taskIsCreated(String flowNodeBpmnId) {
     elasticsearchTestRule.processAllRecordsAndWait(
-        taskIsCreatedCheck, workflowInstanceId, flowNodeBpmnId);
+        taskIsCreatedCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
     return this;
@@ -264,7 +264,7 @@ public class TasklistTester {
 
   public TasklistTester tasksAreCreated(String flowNodeBpmnId, int taskCount) {
     elasticsearchTestRule.processAllRecordsAndWait(
-        tasksAreCreatedCheck, workflowInstanceId, flowNodeBpmnId, taskCount);
+        tasksAreCreatedCheck, processInstanceId, flowNodeBpmnId, taskCount);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
     return this;
@@ -272,28 +272,27 @@ public class TasklistTester {
 
   public TasklistTester taskIsCanceled(String flowNodeBpmnId) {
     elasticsearchTestRule.processAllRecordsAndWait(
-        taskIsCanceledCheck, workflowInstanceId, flowNodeBpmnId);
+        taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CANCELED);
     return this;
   }
 
-  public TasklistTester workflowInstanceIsCanceled() {
+  public TasklistTester processInstanceIsCanceled() {
     elasticsearchTestRule.processAllRecordsAndWait(
-        workflowInstanceIsCanceledCheck, workflowInstanceId);
+        processInstanceIsCanceledCheck, processInstanceId);
     return this;
   }
 
-  public TasklistTester workflowInstanceIsCompleted() {
+  public TasklistTester processInstanceIsCompleted() {
     elasticsearchTestRule.processAllRecordsAndWait(
-        workflowInstanceIsCompletedCheck, workflowInstanceId);
+        processInstanceIsCompletedCheck, processInstanceId);
     return this;
   }
 
   private void resolveTaskId(final String flowNodeBpmnId, final TaskState state) {
     try {
-      final List<TaskEntity> tasks =
-          elasticsearchHelper.getTask(workflowInstanceId, flowNodeBpmnId);
+      final List<TaskEntity> tasks = elasticsearchHelper.getTask(processInstanceId, flowNodeBpmnId);
       final Optional<TaskEntity> teOptional =
           tasks.stream().filter(te -> state.equals(te.getState())).findFirst();
       if (teOptional.isPresent()) {
@@ -308,7 +307,7 @@ public class TasklistTester {
 
   public TasklistTester taskIsCompleted(String flowNodeBpmnId) {
     elasticsearchTestRule.processAllRecordsAndWait(
-        taskIsCompletedCheck, workflowInstanceId, flowNodeBpmnId);
+        taskIsCompletedCheck, processInstanceId, flowNodeBpmnId);
     return this;
   }
 
@@ -360,8 +359,8 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester cancelWorkflowInstance() {
-    ZeebeTestUtil.cancelWorkflowInstance(zeebeClient, Long.parseLong(workflowInstanceId));
+  public TasklistTester cancelProcessInstance() {
+    ZeebeTestUtil.cancelProcessInstance(zeebeClient, Long.parseLong(processInstanceId));
     return this;
   }
 
@@ -390,12 +389,12 @@ public class TasklistTester {
     return this;
   }
 
-  public String getWorkflowId() {
-    return workflowId;
+  public String getProcessDefinitionKey() {
+    return processDefinitionKey;
   }
 
-  public String getWorkflowInstanceId() {
-    return workflowInstanceId;
+  public String getProcessInstanceId() {
+    return processInstanceId;
   }
 
   public String getTaskId() {

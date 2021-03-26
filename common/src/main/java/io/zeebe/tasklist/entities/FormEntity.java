@@ -10,15 +10,15 @@ import java.util.Objects;
 public class FormEntity extends TasklistEntity<FormEntity> {
 
   private String formKey;
-  private String workflowId;
+  private String processId;
   private String schema;
 
   public FormEntity() {}
 
-  public FormEntity(String workflowId, String formKey, String schema) {
-    setId(createId(workflowId, formKey));
+  public FormEntity(String processId, String formKey, String schema) {
+    setId(createId(processId, formKey));
     this.formKey = formKey;
-    this.workflowId = workflowId;
+    this.processId = processId;
     this.schema = schema;
   }
 
@@ -31,13 +31,13 @@ public class FormEntity extends TasklistEntity<FormEntity> {
     return this;
   }
 
-  public static String createId(String workflowId, String formKey) {
-    return String.format("%s_%s", workflowId, formKey);
+  public static String createId(String processId, String formKey) {
+    return String.format("%s_%s", processId, formKey);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), formKey, workflowId, schema);
+    return Objects.hash(super.hashCode(), formKey, processId, schema);
   }
 
   @Override
@@ -53,7 +53,7 @@ public class FormEntity extends TasklistEntity<FormEntity> {
     }
     final FormEntity that = (FormEntity) o;
     return Objects.equals(formKey, that.formKey)
-        && Objects.equals(workflowId, that.workflowId)
+        && Objects.equals(processId, that.processId)
         && Objects.equals(schema, that.schema);
   }
 
@@ -63,8 +63,8 @@ public class FormEntity extends TasklistEntity<FormEntity> {
         + "formKey='"
         + formKey
         + '\''
-        + ", workflowId='"
-        + workflowId
+        + ", processId='"
+        + processId
         + '\''
         + ", schema='"
         + schema

@@ -4,8 +4,8 @@ type Task {
     id: ID!
     # Name of the task
     name: String!
-    # Name of the workflow
-    workflowName: String!
+    # Name of the process
+    processName: String!
     # When was the task created
     creationTime: String!
     # When was the task completed

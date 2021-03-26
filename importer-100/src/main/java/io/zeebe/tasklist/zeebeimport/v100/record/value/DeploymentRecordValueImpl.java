@@ -7,9 +7,9 @@ package io.zeebe.tasklist.zeebeimport.v100.record.value;
 
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
-import io.zeebe.tasklist.zeebeimport.v100.record.value.deployment.DeployedWorkflowImpl;
+import io.zeebe.tasklist.zeebeimport.v100.record.value.deployment.DeployedProcessImpl;
 import io.zeebe.tasklist.zeebeimport.v100.record.value.deployment.DeploymentResourceImpl;
 import java.util.Arrays;
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.Objects;
 
 public class DeploymentRecordValueImpl implements DeploymentRecordValue, RecordValue {
 
-  private List<DeployedWorkflowImpl> deployedWorkflows;
+  private List<DeployedProcessImpl> deployedProcesses;
   private List<DeploymentResourceImpl> resources;
 
   public DeploymentRecordValueImpl() {}
@@ -28,12 +28,12 @@ public class DeploymentRecordValueImpl implements DeploymentRecordValue, RecordV
   }
 
   @Override
-  public List<DeployedWorkflow> getDeployedWorkflows() {
-    return Arrays.asList(deployedWorkflows.toArray(new DeployedWorkflow[deployedWorkflows.size()]));
+  public List<DeployedProcess> getDeployedProcesses() {
+    return Arrays.asList(deployedProcesses.toArray(new DeployedProcess[deployedProcesses.size()]));
   }
 
-  public void setDeployedWorkflows(List<DeployedWorkflowImpl> deployedWorkflows) {
-    this.deployedWorkflows = deployedWorkflows;
+  public void setDeployedProcesses(List<DeployedProcessImpl> deployedProcesses) {
+    this.deployedProcesses = deployedProcesses;
   }
 
   public void setResources(List<DeploymentResourceImpl> resources) {
@@ -47,7 +47,7 @@ public class DeploymentRecordValueImpl implements DeploymentRecordValue, RecordV
 
   @Override
   public int hashCode() {
-    return Objects.hash(deployedWorkflows, resources);
+    return Objects.hash(deployedProcesses, resources);
   }
 
   @Override
@@ -59,15 +59,15 @@ public class DeploymentRecordValueImpl implements DeploymentRecordValue, RecordV
       return false;
     }
     final DeploymentRecordValueImpl that = (DeploymentRecordValueImpl) o;
-    return Objects.equals(deployedWorkflows, that.deployedWorkflows)
+    return Objects.equals(deployedProcesses, that.deployedProcesses)
         && Objects.equals(resources, that.resources);
   }
 
   @Override
   public String toString() {
     return "DeploymentRecordValueImpl{"
-        + "deployedWorkflows="
-        + deployedWorkflows
+        + "deployedProcesses="
+        + deployedProcesses
         + ", resources="
         + resources
         + '}';

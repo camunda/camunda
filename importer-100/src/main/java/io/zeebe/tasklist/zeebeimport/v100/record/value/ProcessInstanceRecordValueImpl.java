@@ -6,23 +6,23 @@
 package io.zeebe.tasklist.zeebeimport.v100.record.value;
 
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.tasklist.zeebeimport.v100.record.RecordValueWithPayloadImpl;
 
-public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
-    implements WorkflowInstanceRecordValue {
+public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
+    implements ProcessInstanceRecordValue {
 
   private String bpmnProcessId;
   private String elementId;
   private int version;
-  private long workflowKey;
-  private long workflowInstanceKey;
+  private long processDefinitionKey;
+  private long processInstanceKey;
   private long flowScopeKey;
   private BpmnElementType bpmnElementType;
-  private long parentWorkflowInstanceKey;
+  private long parentProcessInstanceKey;
   private long parentElementInstanceKey;
 
-  public WorkflowInstanceRecordValueImpl() {}
+  public ProcessInstanceRecordValueImpl() {}
 
   @Override
   public String getBpmnProcessId() {
@@ -35,13 +35,13 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
-  public long getWorkflowKey() {
-    return workflowKey;
+  public long getProcessDefinitionKey() {
+    return processDefinitionKey;
   }
 
   @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
   @Override
@@ -60,8 +60,8 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
-  public long getParentWorkflowInstanceKey() {
-    return parentWorkflowInstanceKey;
+  public long getParentProcessInstanceKey() {
+    return parentProcessInstanceKey;
   }
 
   @Override
@@ -75,11 +75,11 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (elementId != null ? elementId.hashCode() : 0);
     result = 31 * result + version;
-    result = 31 * result + (int) (workflowKey ^ (workflowKey >>> 32));
-    result = 31 * result + (int) (workflowInstanceKey ^ (workflowInstanceKey >>> 32));
+    result = 31 * result + (int) (processDefinitionKey ^ (processDefinitionKey >>> 32));
+    result = 31 * result + (int) (processInstanceKey ^ (processInstanceKey >>> 32));
     result = 31 * result + (int) (flowScopeKey ^ (flowScopeKey >>> 32));
     result = 31 * result + (bpmnElementType != null ? bpmnElementType.hashCode() : 0);
-    result = 31 * result + (int) (parentWorkflowInstanceKey ^ (parentWorkflowInstanceKey >>> 32));
+    result = 31 * result + (int) (parentProcessInstanceKey ^ (parentProcessInstanceKey >>> 32));
     result = 31 * result + (int) (parentElementInstanceKey ^ (parentElementInstanceKey >>> 32));
     return result;
   }
@@ -96,15 +96,15 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
       return false;
     }
 
-    final WorkflowInstanceRecordValueImpl that = (WorkflowInstanceRecordValueImpl) o;
+    final ProcessInstanceRecordValueImpl that = (ProcessInstanceRecordValueImpl) o;
 
     if (version != that.version) {
       return false;
     }
-    if (workflowKey != that.workflowKey) {
+    if (processDefinitionKey != that.processDefinitionKey) {
       return false;
     }
-    if (workflowInstanceKey != that.workflowInstanceKey) {
+    if (processInstanceKey != that.processInstanceKey) {
       return false;
     }
     if (flowScopeKey != that.flowScopeKey) {
@@ -121,7 +121,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     if (bpmnElementType != that.bpmnElementType) {
       return false;
     }
-    if (parentWorkflowInstanceKey != that.parentWorkflowInstanceKey) {
+    if (parentProcessInstanceKey != that.parentProcessInstanceKey) {
       return false;
     }
     return parentElementInstanceKey != that.parentElementInstanceKey;
@@ -129,7 +129,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
 
   @Override
   public String toString() {
-    return "WorkflowInstanceRecordValueImpl{"
+    return "ProcessInstanceRecordValueImpl{"
         + "bpmnProcessId='"
         + bpmnProcessId
         + '\''
@@ -138,16 +138,16 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         + '\''
         + ", version="
         + version
-        + ", workflowKey="
-        + workflowKey
-        + ", workflowInstanceKey="
-        + workflowInstanceKey
+        + ", processDefinitionKey="
+        + processDefinitionKey
+        + ", processInstanceKey="
+        + processInstanceKey
         + ", flowScopeKey="
         + flowScopeKey
         + ", bpmnElementType="
         + bpmnElementType
-        + ", parentWorkflowInstanceKey="
-        + parentWorkflowInstanceKey
+        + ", parentProcessInstanceKey="
+        + parentProcessInstanceKey
         + ", parentElementInstanceKey="
         + parentElementInstanceKey
         + "} "

@@ -147,7 +147,7 @@ public class TaskArchiverJob extends AbstractArchiverJob {
         // we want to get only one bucket at a time
         .subAggregation(
             bucketSort("datesSortedAgg", Arrays.asList(new FieldSortBuilder("_key"))).size(1))
-        // we need workflow instance ids, also taking into account batch size
+        // we need process instance ids, also taking into account batch size
         .subAggregation(
             topHits(instancesAggName)
                 .size(tasklistProperties.getArchiver().getRolloverBatchSize())

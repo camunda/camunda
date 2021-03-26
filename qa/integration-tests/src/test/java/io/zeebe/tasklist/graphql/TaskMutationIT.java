@@ -196,7 +196,7 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
   private void createTwoTasksInstance(String flowNodeBpmnIdA, String flowNodeBpmnIdB) {
     final String payload = "{\"var\": \"value\"}";
     final String bpmnProcessId = "testProcess";
-    final BpmnModelInstance workflow =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(bpmnProcessId)
             .startEvent()
             .serviceTask(flowNodeBpmnIdA)
@@ -206,11 +206,11 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
             .endEvent()
             .done();
     tester
-        .deployWorkflow(workflow, bpmnProcessId + ".bpmn")
+        .deployProcess(process, bpmnProcessId + ".bpmn")
         .waitUntil()
-        .workflowIsDeployed()
+        .processIsDeployed()
         .and()
-        .startWorkflowInstance(BPMN_PROCESS_ID, payload)
+        .startProcessInstance(BPMN_PROCESS_ID, payload)
         .waitUntil()
         .taskIsCreated(flowNodeBpmnIdA);
   }
@@ -410,23 +410,23 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
   private void createCreatedAndCompletedTasks(int created, int completed) {
     final String payload = "{\"var\": \"value\"}";
     tester
-        .createAndDeploySimpleWorkflow(BPMN_PROCESS_ID, ELEMENT_ID)
+        .createAndDeploySimpleProcess(BPMN_PROCESS_ID, ELEMENT_ID)
         .waitUntil()
-        .workflowIsDeployed()
+        .processIsDeployed()
         .and();
     sleepFor(5000);
     // complete tasks
     for (int i = 0; i < completed; i++) {
       tester
-          .startWorkflowInstance(BPMN_PROCESS_ID, payload)
+          .startProcessInstance(BPMN_PROCESS_ID, payload)
           .waitUntil()
           .taskIsCreated(ELEMENT_ID)
           .and()
           .claimAndCompleteHumanTask(ELEMENT_ID);
     }
-    // start more workflow instances
+    // start more process instances
     for (int i = 0; i < created; i++) {
-      tester.startWorkflowInstance(BPMN_PROCESS_ID, payload).waitUntil().taskIsCreated(ELEMENT_ID);
+      tester.startProcessInstance(BPMN_PROCESS_ID, payload).waitUntil().taskIsCreated(ELEMENT_ID);
     }
   }
 }

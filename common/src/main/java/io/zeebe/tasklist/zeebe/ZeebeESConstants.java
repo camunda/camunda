@@ -9,7 +9,7 @@ package io.zeebe.tasklist.zeebe;
 public interface ZeebeESConstants {
 
   String POSITION_FIELD_NAME = "position";
-  String WORKFLOW_INSTANCE_INDEX_NAME = "workflow-instance";
+  String PROCESS_INSTANCE_INDEX_NAME = "process-instance";
   String JOB_INDEX_NAME = "job";
   String DEPLOYMENT_INDEX_NAME = "deployment";
   String VARIABLE_INDEX_NAME = "variable";

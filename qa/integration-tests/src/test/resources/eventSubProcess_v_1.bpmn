@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0uef7zo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.10.0">
-  <bpmn:process id="eventSubprocessWorkflow" name="Event Subprocess Workflow" isExecutable="true">
+  <bpmn:process id="eventSubprocessProcess" name="Event Subprocess Process" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1vnazga">
       <bpmn:outgoing>SequenceFlow_0b1strv</bpmn:outgoing>
     </bpmn:startEvent>
@@ -67,18 +67,18 @@
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1h1lp70" sourceRef="cancelTimerEvent" targetRef="Canceled" />
   </bpmn:process>
-  <bpmn:message id="Message_03ggk3d" name="interruptWorkflow">
+  <bpmn:message id="Message_03ggk3d" name="interruptProcess">
     <bpmn:extensionElements>
       <zeebe:subscription correlationKey="=clientId" />
     </bpmn:extensionElements>
   </bpmn:message>
-  <bpmn:message id="Message_1nvz8ri" name="continueWorkflow">
+  <bpmn:message id="Message_1nvz8ri" name="continueProcess">
     <bpmn:extensionElements>
       <zeebe:subscription correlationKey="=clientId" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="eventSubprocessWorkflow">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="eventSubprocessProcess">
       <bpmndi:BPMNEdge id="SequenceFlow_0ogmd2w_di" bpmnElement="SequenceFlow_0ogmd2w">
         <di:waypoint x="1060" y="260" />
         <di:waypoint x="1142" y="260" />

@@ -5,8 +5,8 @@
  */
 package io.zeebe.tasklist.zeebeimport;
 
+import static io.zeebe.tasklist.util.ElasticsearchChecks.PROCESS_IS_DEPLOYED_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
-import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_IS_DEPLOYED_CHECK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -28,8 +28,8 @@ public class ZeebeImportIT extends TasklistZeebeIntegrationTest {
   private TestCheck taskIsCreatedCheck;
 
   @Autowired
-  @Qualifier(WORKFLOW_IS_DEPLOYED_CHECK)
-  private TestCheck workflowIsDeployedCheck;
+  @Qualifier(PROCESS_IS_DEPLOYED_CHECK)
+  private TestCheck processIsDeployedCheck;
 
   @Autowired private RecordsReaderHolder recordsReaderHolder;
 
@@ -38,13 +38,13 @@ public class ZeebeImportIT extends TasklistZeebeIntegrationTest {
     final String bpmnProcessId = "testProcess";
     final String flowNodeBpmnId = "taskA";
 
-    tester.createAndDeploySimpleWorkflow(bpmnProcessId, flowNodeBpmnId);
-    processAllRecordsAndWait(workflowIsDeployedCheck, tester.getWorkflowId());
+    tester.createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId);
+    processAllRecordsAndWait(processIsDeployedCheck, tester.getProcessDefinitionKey());
     tester
-        .startWorkflowInstance(bpmnProcessId)
-        .startWorkflowInstance(bpmnProcessId)
-        .startWorkflowInstance(bpmnProcessId);
-    processAllRecordsAndWait(taskIsCreatedCheck, tester.getWorkflowInstanceId(), flowNodeBpmnId);
+        .startProcessInstance(bpmnProcessId)
+        .startProcessInstance(bpmnProcessId)
+        .startProcessInstance(bpmnProcessId);
+    processAllRecordsAndWait(taskIsCreatedCheck, tester.getProcessInstanceId(), flowNodeBpmnId);
     final GraphQLResponse response = tester.getAllTasks();
 
     // then
@@ -54,9 +54,9 @@ public class ZeebeImportIT extends TasklistZeebeIntegrationTest {
       final String taskJsonPath = String.format("$.data.tasks[%d]", i);
       assertNotNull(response.get(taskJsonPath + ".id"));
 
-      // workflow does not contain task name and workflow name
+      // process does not contain task name and process name
       assertEquals(flowNodeBpmnId, response.get(taskJsonPath + ".name"));
-      assertEquals(bpmnProcessId, response.get(taskJsonPath + ".workflowName"));
+      assertEquals(bpmnProcessId, response.get(taskJsonPath + ".processName"));
 
       assertNotNull(response.get(taskJsonPath + ".creationTime"));
       assertNull(response.get(taskJsonPath + ".completionTime"));

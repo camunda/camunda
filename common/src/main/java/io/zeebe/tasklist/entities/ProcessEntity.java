@@ -8,26 +8,26 @@ package io.zeebe.tasklist.entities;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WorkflowEntity extends TasklistZeebeEntity<WorkflowEntity> {
+public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
 
   private String name;
 
-  private List<WorkflowFlowNodeEntity> flowNodes = new ArrayList<>();
+  private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
 
   public String getName() {
     return name;
   }
 
-  public WorkflowEntity setName(String name) {
+  public ProcessEntity setName(String name) {
     this.name = name;
     return this;
   }
 
-  public List<WorkflowFlowNodeEntity> getFlowNodes() {
+  public List<ProcessFlowNodeEntity> getFlowNodes() {
     return flowNodes;
   }
 
-  public WorkflowEntity setFlowNodes(List<WorkflowFlowNodeEntity> flowNodes) {
+  public ProcessEntity setFlowNodes(List<ProcessFlowNodeEntity> flowNodes) {
     this.flowNodes = flowNodes;
     return this;
   }
@@ -52,7 +52,7 @@ public class WorkflowEntity extends TasklistZeebeEntity<WorkflowEntity> {
       return false;
     }
 
-    final WorkflowEntity that = (WorkflowEntity) o;
+    final ProcessEntity that = (ProcessEntity) o;
 
     if (name != null ? !name.equals(that.name) : that.name != null) {
       return false;

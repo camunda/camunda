@@ -8,9 +8,9 @@ package io.zeebe.tasklist.schema.indices;
 import org.springframework.stereotype.Component;
 
 @Component
-public class WorkflowIndex extends AbstractIndexDescriptor {
+public class ProcessIndex extends AbstractIndexDescriptor {
 
-  public static final String INDEX_NAME = "workflow";
+  public static final String INDEX_NAME = "process";
   public static final String ID = "id";
   public static final String KEY = "key";
   public static final String NAME = "name";

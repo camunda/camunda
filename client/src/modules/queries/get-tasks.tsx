@@ -24,7 +24,7 @@ interface GetTasks {
       | 'id'
       | 'name'
       | 'assignee'
-      | 'workflowName'
+      | 'processName'
       | 'creationTime'
       | 'taskState'
       | 'sortValues'
@@ -99,7 +99,7 @@ const GET_TASKS = gql`
     ) {
       id
       name
-      workflowName
+      processName
       assignee {
         username
         firstname
