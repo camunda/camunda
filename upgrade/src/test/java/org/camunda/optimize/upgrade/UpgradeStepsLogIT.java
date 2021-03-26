@@ -270,7 +270,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
   }
 
   private UpdateIndexStep buildUpdateIndexStep(final IndexMappingCreator index) {
-    return new UpdateIndexStep(index, null);
+    return new UpdateIndexStep(index);
   }
 
 }

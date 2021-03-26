@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
 
@@ -81,12 +82,18 @@ public class SchemaUpgradeClient {
 
   public void reindex(final IndexMappingCreator sourceIndex,
                       final IndexMappingCreator targetIndex,
-                      final QueryBuilder sourceDocumentFilterQuery) {
+                      final QueryBuilder sourceDocumentFilterQuery,
+                      final String mappingScript) {
     final ReindexRequest reindexRequest = new ReindexRequest()
       .setSourceIndices(getIndexNameService().getOptimizeIndexNameWithVersion(sourceIndex))
       .setDestIndex(getIndexNameService().getOptimizeIndexNameWithVersion(targetIndex))
       .setSourceQuery(sourceDocumentFilterQuery)
       .setRefresh(true);
+
+    if (mappingScript != null) {
+      reindexRequest.setScript(createDefaultScript(mappingScript));
+    }
+
     String reindexTaskId;
 
     try {

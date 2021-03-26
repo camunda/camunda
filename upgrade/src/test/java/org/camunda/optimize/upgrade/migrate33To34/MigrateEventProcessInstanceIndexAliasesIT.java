@@ -19,7 +19,7 @@ public class MigrateEventProcessInstanceIndexAliasesIT extends AbstractMigrateIn
 
   @SneakyThrows
   @Test
-  public void eventProcessInstancesAreMigratedToDedicatedIndices() {
+  public void eventProcessInstancesAreMigratedToDedicatedIndexAliases() {
     // given
     final String definitionKey1 = "firstKey";
     final String definitionKey2 = "secondKey";

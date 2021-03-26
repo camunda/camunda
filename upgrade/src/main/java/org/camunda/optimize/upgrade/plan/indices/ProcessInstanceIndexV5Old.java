@@ -62,7 +62,6 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANCELED;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUP_OPERATIONS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CLAIM_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_DELETE_REASON;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_DUE_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_END_DATE;
@@ -269,7 +268,7 @@ public class ProcessInstanceIndexV5Old extends DefaultIndexMappingCreator implem
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
-      .startObject(USER_TASK_CLAIM_DATE)
+      .startObject("claimDate")
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()

@@ -70,7 +70,6 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String USER_TASK_START_DATE = UserTaskInstanceDto.Fields.startDate;
   public static final String USER_TASK_END_DATE = UserTaskInstanceDto.Fields.endDate;
   public static final String USER_TASK_DUE_DATE = UserTaskInstanceDto.Fields.dueDate;
-  public static final String USER_TASK_CLAIM_DATE = UserTaskInstanceDto.Fields.claimDate;
 
   public static final String USER_TASK_ASSIGNEE = UserTaskInstanceDto.Fields.assignee;
   public static final String USER_TASK_CANDIDATE_GROUPS = UserTaskInstanceDto.Fields.candidateGroups;
@@ -288,10 +287,6 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
         .field("type", "long")
       .endObject()
       .startObject(USER_TASK_START_DATE)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(USER_TASK_CLAIM_DATE)
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()

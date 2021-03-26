@@ -28,9 +28,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
-import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
-import static org.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
 import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
@@ -174,7 +171,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
   }
 
   private UpdateIndexStep buildUpdateIndexStep(final IndexMappingCreator index) {
-    return new UpdateIndexStep(index, null);
+    return new UpdateIndexStep(index);
   }
 
 

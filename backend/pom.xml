@@ -527,7 +527,7 @@
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
                       <socket server="localhost" port="${tomcat.connector.http.port}" />
                     </waitfor>
-                    <echo message="Camund Platform Tomcat socket is open. Checking for manager app to become available..." />
+                    <echo message="Camunda Platform Tomcat socket is open. Checking for manager app to become available..." />
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
                       <http url="http://admin:admin@localhost:${tomcat.connector.http.port}/manager/text/list" />
                     </waitfor>
