@@ -454,6 +454,13 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${version.zeebe-test-container}</version>
+        <!-- This version (1.1.1) conflict with junit's dependency (1.1.0) -->
+        <exclusions>
+          <exclusion>
+            <groupId>org.apiguardian</groupId>
+            <artifactId>apiguardian-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
