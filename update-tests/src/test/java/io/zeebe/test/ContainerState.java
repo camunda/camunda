@@ -10,7 +10,8 @@ package io.zeebe.test;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebeGatewayContainer;
-import io.zeebe.test.util.testcontainers.ManagedVolume;
+import io.zeebe.containers.ZeebeVolume;
+import io.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -46,12 +47,13 @@ final class ContainerState implements CloseableResource {
             });
   }
 
+  private final ZeebeVolume volume = ZeebeVolume.newVolume();
+
   private Network network = Network.SHARED;
   private ZeebeContainer broker;
   private ZeebeGatewayContainer gateway;
   private ZeebeClient client;
   private PartitionsActuatorClient partitionsActuatorClient;
-  private ManagedVolume volume;
 
   private String brokerVersion;
   private String gatewayVersion;
@@ -73,11 +75,6 @@ final class ContainerState implements CloseableResource {
     return this;
   }
 
-  public ContainerState withVolume(final ManagedVolume volume) {
-    this.volume = volume;
-    return this;
-  }
-
   public ContainerState withNetwork(final Network network) {
     this.network = network;
     return this;
@@ -91,13 +88,13 @@ final class ContainerState implements CloseableResource {
   public void start(final boolean enableDebug) {
     final String contactPoint;
     broker =
-        new ZeebeContainer("camunda/zeebe:" + brokerVersion)
+        new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage().withTag(brokerVersion))
             .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
             .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "128KB")
             .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "64MB")
             .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
             .withEnv("ZEEBE_BROKER_DATA_LOGINDEXDENSITY", "1")
-            .withCreateContainerCmdModifier(volume::attachVolumeToContainer)
+            .withZeebeData(volume)
             .withNetwork(network);
 
     if (enableDebug) {
@@ -110,7 +107,8 @@ final class ContainerState implements CloseableResource {
       contactPoint = broker.getExternalGatewayAddress();
     } else {
       gateway =
-          new ZeebeGatewayContainer("camunda/zeebe:" + gatewayVersion)
+          new ZeebeGatewayContainer(
+                  ZeebeTestContainerDefaults.defaultTestImage().withTag(gatewayVersion))
               .withEnv("ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", broker.getInternalClusterAddress())
               .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
               .withNetwork(network);
