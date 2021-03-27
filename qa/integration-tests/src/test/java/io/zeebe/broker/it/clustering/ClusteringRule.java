@@ -55,7 +55,9 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -741,13 +743,16 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   private Optional<FileBasedSnapshotMetadata> findSnapshot(final File snapshotsDir) {
-    final var files = snapshotsDir.listFiles();
-    if (files == null || files.length != 1) {
-      return Optional.empty();
+    try {
+      return Files.list(snapshotsDir.toPath())
+          .sorted()
+          .map(FileBasedSnapshotMetadata::ofPath)
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .findFirst();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
-
-    final var snapshotPath = files[0].toPath();
-    return FileBasedSnapshotMetadata.ofPath(snapshotPath);
   }
 
   LogStream getLogStream(final int partitionId) {

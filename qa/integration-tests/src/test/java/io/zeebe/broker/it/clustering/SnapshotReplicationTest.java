@@ -15,18 +15,14 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.snapshots.broker.impl.FileBasedSnapshotMetadata;
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.zip.CRC32C;
+import java.util.stream.Stream;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -44,7 +40,7 @@ public final class SnapshotReplicationTest {
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
 
   @Test
-  public void shouldReplicateSnapshots() {
+  public void shouldReplicateSnapshots() throws IOException {
     // given
     final int leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final Broker leader = clusteringRule.getBroker(leaderNodeId);
@@ -58,14 +54,11 @@ public final class SnapshotReplicationTest {
     }
 
     // then
-    final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = getBrokerSnapshotChecksums();
-    final Map<String, Long> checksumFirstNode = brokerSnapshotChecksums.get(0);
-    assertThat(checksumFirstNode).isEqualTo(brokerSnapshotChecksums.get(1));
-    assertThat(checksumFirstNode).isEqualTo(brokerSnapshotChecksums.get(2));
+    assertFollowersHaveSameSnapshotsAsLeader(0, 1, 2);
   }
 
   @Test
-  public void shouldReceiveNewSnapshotsOnRejoin() {
+  public void shouldReceiveNewSnapshotsOnRejoin() throws IOException {
     // given
     final var leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final var followers =
@@ -90,10 +83,7 @@ public final class SnapshotReplicationTest {
         clusteringRule.getBroker(secondFollowerId), snapshotAtSecondFollower);
 
     // then - replicated
-    final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = getBrokerSnapshotChecksums();
-    final var leaderChecksums = Objects.requireNonNull(brokerSnapshotChecksums.get(leaderNodeId));
-    assertThat(brokerSnapshotChecksums.get(firstFollowerId)).containsAllEntriesOf(leaderChecksums);
-    assertThat(brokerSnapshotChecksums.get(secondFollowerId)).containsAllEntriesOf(leaderChecksums);
+    assertFollowersHaveSameSnapshotsAsLeader(leaderNodeId, firstFollowerId, secondFollowerId);
   }
 
   private void triggerSnapshotCreation() {
@@ -102,7 +92,7 @@ public final class SnapshotReplicationTest {
   }
 
   @Test
-  public void shouldReplicateSnapshotsOnLeaderChange() {
+  public void shouldReplicateSnapshotsOnLeaderChange() throws IOException {
     // given
     final var oldLeaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final var otherBrokers = clusteringRule.getOtherBrokerObjects(oldLeaderId);
@@ -128,21 +118,58 @@ public final class SnapshotReplicationTest {
         clusteringRule.getBroker(oldLeaderId), snapshotAtLeader);
 
     // then
-    // the old leader will have an extra snapshot it created on shut down, so we swap the condition
-    // to check that the other nodes contain a subset of the old leader's snapshots
-    final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = getBrokerSnapshotChecksums();
-    final var oldLeaderChecks = Objects.requireNonNull(brokerSnapshotChecksums.get(oldLeaderId));
-    assertThat(oldLeaderChecks).containsAllEntriesOf(brokerSnapshotChecksums.get(firstFollowerId));
-    assertThat(oldLeaderChecks).containsAllEntriesOf(brokerSnapshotChecksums.get(secondFollowerId));
+    assertFollowersHaveSameSnapshotsAsLeader(oldLeaderId, firstFollowerId, secondFollowerId);
   }
 
-  private Map<Integer, Map<String, Long>> getBrokerSnapshotChecksums() {
-    final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = new HashMap<>();
-    for (final var broker : clusteringRule.getBrokers()) {
-      final var checksums = createSnapshotDirectoryChecksums(broker);
-      brokerSnapshotChecksums.put(broker.getConfig().getCluster().getNodeId(), checksums);
+  private void assertFollowersHaveSameSnapshotsAsLeader(
+      final int leaderNodeId, final int... followerIds) throws IOException {
+    final List<Path> leaderSnapshots = getSnapshotsForBroker(leaderNodeId);
+    for (final int followerId : followerIds) {
+      final List<Path> followerSnapshots = getSnapshotsForBroker(followerId);
+      assertThat(followerSnapshots)
+          .as("broker %d has the same snapshots as broker %d", followerId, leaderNodeId)
+          .zipSatisfy(leaderSnapshots, this::assertThatSnapshotIsEqualTo);
     }
-    return brokerSnapshotChecksums;
+  }
+
+  private List<Path> getSnapshotsForBroker(final int brokerId) throws IOException {
+    final Broker broker = clusteringRule.getBroker(brokerId);
+    final Path snapshotsDirectory = clusteringRule.getSnapshotsDirectory(broker).toPath();
+    try (final Stream<Path> files = Files.list(snapshotsDirectory)) {
+      return files
+          .filter(p -> FileBasedSnapshotMetadata.ofPath(p).isPresent())
+          .collect(Collectors.toList());
+    }
+  }
+
+  private void assertThatSnapshotIsEqualTo(final Path actualPath, final Path expectedPath) {
+    final Path actualChecksumPath =
+        actualPath.resolveSibling(actualPath.getFileName() + ".checksum");
+    final Path expectedChecksumPath =
+        expectedPath.resolveSibling(expectedPath.getFileName() + ".checksum");
+
+    assertThat(actualPath)
+        .isDirectory()
+        .exists()
+        .hasFileName(expectedPath.getFileName().toString());
+    assertThat(actualChecksumPath)
+        .exists()
+        .hasFileName(expectedChecksumPath.getFileName().toString())
+        .hasSameBinaryContentAs(expectedChecksumPath);
+
+    final List<Path> expectedFiles;
+    try {
+      expectedFiles = Files.list(expectedPath).map(Path::getFileName).collect(Collectors.toList());
+      assertThat(Files.list(actualPath).map(Path::getFileName))
+          .containsExactlyInAnyOrderElementsOf(expectedFiles);
+
+      for (final Path expectedFile : expectedFiles) {
+        assertThat(actualPath.resolve(expectedFile))
+            .hasSameBinaryContentAs(expectedPath.resolve(expectedFile));
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private void triggerLeaderChange(final int oldLeaderId) {
@@ -151,67 +178,6 @@ public final class SnapshotReplicationTest {
       clusteringRule.restartBroker(oldLeaderId);
       newLeaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
     } while (newLeaderId == oldLeaderId);
-  }
-
-  private Map<String, Long> createSnapshotDirectoryChecksums(final Broker broker) {
-    final File snapshotsDir = clusteringRule.getSnapshotsDirectory(broker);
-    final Map<String, Long> checksums = createChecksumsForSnapshotDirectory(snapshotsDir);
-
-    assertThat(checksums.size()).isGreaterThan(0);
-    return checksums;
-  }
-
-  private Map<String, Long> createChecksumsForSnapshotDirectory(final File snapshotDirectory) {
-    final Map<String, Long> checksums = new HashMap<>();
-    final var snapshotPath = snapshotDirectory.toPath();
-    try (final var snapshots = Files.newDirectoryStream(snapshotPath)) {
-      for (final var validSnapshotDir : snapshots) {
-        final Map<String, Long> snapshotChecksum = createChecksumsForSnapshot(validSnapshotDir);
-        checksums.putAll(snapshotChecksum);
-      }
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-
-    return checksums;
-  }
-
-  /**
-   * Builds a map where each entry is a file of the snapshot, with the key being its filename
-   * prefixed with the snapshot index/term/timestamp, and the value the checksum of the file. We
-   * ignore the position in the prefix because it can differ, as snapshots taking by the async
-   * director will have a lower bound estimate of the last processed position, but snapshots
-   * replicated through Atomix actually read the snapshot for the real last processed position which
-   * may be slightly different.
-   */
-  private Map<String, Long> createChecksumsForSnapshot(final Path validSnapshotDir)
-      throws IOException {
-    final var snapshotMetadata =
-        FileBasedSnapshotMetadata.ofPath(validSnapshotDir.getFileName()).orElseThrow();
-    final String prefix =
-        String.format(
-            "%d-%d-%d",
-            snapshotMetadata.getIndex(),
-            snapshotMetadata.getTerm(),
-            snapshotMetadata.getTimestamp().unixTimestamp());
-    try (final var files = Files.list(validSnapshotDir)) {
-      return files.collect(
-          Collectors.toMap(
-              p -> prefix + "/" + p.getFileName().toString(), this::createCheckSumForFile));
-    }
-  }
-
-  private long createCheckSumForFile(final Path snapshotFile) {
-    final var checksum = new CRC32C();
-    final byte[] bytes;
-    try {
-      bytes = Files.readAllBytes(snapshotFile);
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-
-    checksum.update(bytes, 0, bytes.length);
-    return checksum.getValue();
   }
 
   private static void configureBroker(final BrokerCfg brokerCfg) {
