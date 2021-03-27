@@ -17,6 +17,7 @@ import io.restassured.specification.RequestSpecification;
 import io.zeebe.containers.ZeebeBrokerContainer;
 import io.zeebe.containers.ZeebeGatewayContainer;
 import io.zeebe.containers.ZeebePort;
+import io.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import java.time.Duration;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
@@ -33,9 +34,10 @@ public class GatewayLivenessProbeIntegrationTest {
     // --- given ---------------------------------------
 
     // create a broker and a standalone gateway
-    final ZeebeBrokerContainer broker = new ZeebeBrokerContainer("camunda/zeebe:current-test");
+    final ZeebeBrokerContainer broker =
+        new ZeebeBrokerContainer(ZeebeTestContainerDefaults.defaultTestImage());
     final ZeebeGatewayContainer gateway =
-        new ZeebeGatewayContainer("camunda/zeebe:current-test")
+        new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
             .withNetwork(broker.getNetwork())
             .withEnv("ZEEBE_GATEWAY_MONITORING_ENABLED", "true")
             .withEnv("ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", broker.getInternalClusterAddress());
@@ -86,12 +88,9 @@ public class GatewayLivenessProbeIntegrationTest {
   public void shouldReportLivenessDownIfNotConnectedToBroker() {
     // --- given ---------------------------------------
     final ZeebeGatewayContainer gateway =
-        new ZeebeGatewayContainer("camunda/zeebe:current-test")
+        new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
             .withEnv("ZEEBE_GATEWAY_MONITORING_ENABLED", "true")
-            .withTopologyCheck(
-                ZeebeGatewayContainer.newDefaultTopologyCheck()
-                    .forPartitionsCount(0)
-                    .forBrokersCount(0));
+            .withoutTopologyCheck();
     gateway.addExposedPorts(ZeebePort.MONITORING.getPort());
     gateway.start();
 

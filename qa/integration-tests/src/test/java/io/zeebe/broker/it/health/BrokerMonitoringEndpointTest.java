@@ -17,6 +17,7 @@ import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
+import io.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,7 +30,7 @@ public final class BrokerMonitoringEndpointTest {
 
   @BeforeClass
   public static void setUpClass() {
-    sutBroker = new ZeebeContainer("camunda/zeebe:current-test");
+    sutBroker = new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage());
 
     sutBroker.start();
 
