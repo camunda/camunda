@@ -45,7 +45,7 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
     <version.docker-java-api>3.2.7</version.docker-java-api>
-    <version.elasticsearch>6.8.14</version.elasticsearch>
+    <version.elasticsearch>6.8.15</version.elasticsearch>
     <version.error-prone>2.5.1</version.error-prone>
     <version.grpc>1.36.1</version.grpc>
     <version.gson>2.8.6</version.gson>
@@ -87,7 +87,8 @@
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>1.0.1</version.zeebe-test-container>
     <version.feel-scala>1.13.1</version.feel-scala>
-    <version.restassert>4.3.3</version.restassert>
+    <version.rest-assured>4.3.3</version.rest-assured>
+    <version.spring>5.3.5</version.spring>
     <version.spring-boot>2.4.4</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
@@ -136,13 +137,60 @@
 
   <dependencyManagement>
     <dependencies>
-      <!-- Spring and Spring Boot -->
       <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-dependencies</artifactId>
-        <version>${version.spring-boot}</version>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${version.jackson}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-framework-bom</artifactId>
+        <version>${version.spring}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-actuator</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-autoconfigure</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+        <version>${version.spring-boot}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
@@ -181,14 +229,6 @@
         <groupId>org.agrona</groupId>
         <artifactId>agrona</artifactId>
         <version>${version.agrona}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.fasterxml.jackson</groupId>
-        <artifactId>jackson-bom</artifactId>
-        <version>${version.jackson}</version>
-        <scope>import</scope>
-        <type>pom</type>
       </dependency>
 
       <dependency>
@@ -250,8 +290,8 @@
 
       <dependency>
         <groupId>io.rest-assured</groupId>
-        <artifactId>rest-assured-all</artifactId>
-        <version>${version.restassert}</version>
+        <artifactId>rest-assured</artifactId>
+        <version>${version.rest-assured}</version>
       </dependency>
 
       <dependency>
@@ -414,12 +454,6 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${version.zeebe-test-container}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <dependency>
@@ -458,10 +492,18 @@
         <version>${version.commons-math}</version>
       </dependency>
 
+      <!-- for dependency convergence -->
       <dependency>
         <groupId>commons-logging</groupId>
         <artifactId>commons-logging</artifactId>
         <version>${version.commons-logging}</version>
+      </dependency>
+
+      <!-- for dependency convergence between elasticsearch-rest-client and rest-assured -->
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>${version.commons-codec}</version>
       </dependency>
 
       <dependency>
@@ -486,12 +528,6 @@
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
         <version>${version.httpclient}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>commons-codec</groupId>
-        <artifactId>commons-codec</artifactId>
-        <version>${version.commons-codec}</version>
       </dependency>
 
       <dependency>
@@ -640,33 +676,14 @@
       </dependency>
 
       <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
-        <version>${version.spring-boot}</version>
-
-        <exclusions>
-          <exclusion>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-to-slf4j</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
         <artifactId>guava-testlib</artifactId>
         <groupId>com.google.guava</groupId>
-        <scope>test</scope>
         <version>${version.guava}</version>
       </dependency>
 
       <dependency>
         <artifactId>concurrentunit</artifactId>
         <groupId>net.jodah</groupId>
-        <scope>test</scope>
         <version>${version.concurrentunit}</version>
       </dependency>
 
