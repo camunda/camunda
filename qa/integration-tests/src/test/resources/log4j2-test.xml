@@ -11,6 +11,7 @@
   <Loggers>
     <Logger name="io.zeebe" level="debug"/>
     <Logger name="io.atomix" level="debug"/>
+    <Logger name="io.zeebe.containers.ZeebeTopologyWaitStrategy" level="trace"/>
 
     <Logger name="io.atomix.cluster.messaging" level="info"/>
     <Logger name="io.atomix.cluster.protocol" level="debug"/>

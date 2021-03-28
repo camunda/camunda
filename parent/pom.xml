@@ -85,7 +85,7 @@
     <version.asm>9.1</version.asm>
     <version.testcontainers>1.15.2</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
-    <version.zeebe-test-container>1.0.1</version.zeebe-test-container>
+    <version.zeebe-test-container>2.0.0</version.zeebe-test-container>
     <version.feel-scala>1.13.1</version.feel-scala>
     <version.rest-assured>4.3.3</version.rest-assured>
     <version.spring>5.3.5</version.spring>
@@ -454,6 +454,13 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${version.zeebe-test-container}</version>
+        <!-- This version (1.1.1) conflict with junit's dependency (1.1.0) -->
+        <exclusions>
+          <exclusion>
+            <groupId>org.apiguardian</groupId>
+            <artifactId>apiguardian-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>

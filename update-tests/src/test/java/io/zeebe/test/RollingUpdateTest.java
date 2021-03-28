@@ -12,19 +12,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ProcessInstanceEvent;
 import io.zeebe.client.api.worker.JobHandler;
-import io.zeebe.containers.ZeebeContainer;
+import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.ZeebeGatewayNode;
-import io.zeebe.containers.ZeebePort;
+import io.zeebe.containers.ZeebeVolume;
+import io.zeebe.containers.cluster.ZeebeCluster;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.PartitionsActuatorClient.PartitionStatus;
 import io.zeebe.test.util.asserts.EitherAssert;
 import io.zeebe.test.util.asserts.TopologyAssert;
-import io.zeebe.test.util.testcontainers.ManagedVolume;
+import io.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.util.Either;
 import io.zeebe.util.VersionUtil;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,23 +32,18 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Network;
-import org.testcontainers.lifecycle.Startables;
 
 @Ignore("https://github.com/zeebe-io/zeebe/issues/6007")
 public class RollingUpdateTest {
   private static final String OLD_VERSION = VersionUtil.getPreviousVersion();
   private static final String NEW_VERSION = VersionUtil.getVersion();
-  private static final String CURRENT_IMAGE_NAME = "camunda/zeebe:current-test";
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess("process")
           .startEvent()
@@ -57,60 +52,46 @@ public class RollingUpdateTest {
           .endEvent()
           .done();
 
-  private List<ZeebeContainer> containers;
-  private List<ManagedVolume> volumes;
-  private String initialContactPoints;
-  private Network network;
+  private final Network network = Network.newNetwork();
+  private final ZeebeCluster cluster =
+      ZeebeCluster.builder()
+          .withEmbeddedGateway(true)
+          .withBrokersCount(3)
+          .withPartitionsCount(1)
+          .withReplicationFactor(3)
+          .withNetwork(network)
+          .build();
 
   @Before
   public void setup() {
-    initialContactPoints =
-        IntStream.range(0, 3)
-            .mapToObj(id -> "broker-" + id + ":" + ZeebePort.INTERNAL.getPort())
-            .collect(Collectors.joining(","));
-
-    network = Network.newNetwork();
-    volumes =
-        List.of(ManagedVolume.newVolume(), ManagedVolume.newVolume(), ManagedVolume.newVolume());
-    containers =
-        Arrays.asList(
-            new ZeebeContainer("camunda/zeebe:" + OLD_VERSION),
-            new ZeebeContainer("camunda/zeebe:" + OLD_VERSION),
-            new ZeebeContainer("camunda/zeebe:" + OLD_VERSION));
-
-    configureBrokerContainer(0, containers);
-    configureBrokerContainer(1, containers);
-    configureBrokerContainer(2, containers);
+    cluster.getBrokers().values().forEach(this::configureBroker);
   }
 
   @After
   public void tearDown() {
-    if (containers != null) {
-      containers.parallelStream().forEach(CloseHelper::quietClose);
-    }
-
+    cluster.stop();
     CloseHelper.quietClose(network);
-    CloseHelper.quietCloseAll(volumes);
   }
 
   @Test
   public void shouldBeAbleToRestartContainerWithNewVersion() {
     // given
     final var index = 0;
-    Startables.deepStart(containers).join();
-    containers.get(index).shutdownGracefully(Duration.ofSeconds(30));
+    final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(index);
+    cluster.start();
 
     // when
-    final var zeebeBrokerContainer = updateBroker(index);
+    broker.stop();
+    updateBroker(broker);
 
     // then
-    try (final var client = newZeebeClient(containers.get(1))) {
+    try (final var client = cluster.newClientBuilder().build()) {
       Awaitility.await()
-          .atMost(Duration.ofSeconds(10))
+          .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
           .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, index));
 
-      zeebeBrokerContainer.start();
+      broker.start();
 
       Awaitility.await()
           .atMost(Duration.ofSeconds(5))
@@ -122,11 +103,10 @@ public class RollingUpdateTest {
   @Test
   public void shouldReplicateSnapshotAcrossVersions() {
     // given
-    Startables.deepStart(containers).join();
+    cluster.start();
 
     // when
-    final var availableBroker = containers.get(0);
-    try (final var client = newZeebeClient(availableBroker)) {
+    try (final ZeebeClient client = cluster.newClientBuilder().build()) {
       deployProcess(client);
 
       // potentially retry in case we're faster than the deployment distribution
@@ -138,12 +118,11 @@ public class RollingUpdateTest {
           .getProcessInstanceKey();
     }
 
-    try (final var client = newZeebeClient(availableBroker)) {
-      final var brokerId = 1;
-      var container = containers.get(brokerId);
+    final var brokerId = 1;
+    final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(brokerId);
+    broker.stop();
 
-      container.shutdownGracefully(Duration.ofSeconds(30));
-
+    try (final var client = cluster.newClientBuilder().build()) {
       // until previous version points to 0.24, we cannot yet tune failure detection to be fast,
       // so wait long enough for the broker to be removed even in slower systems
       Awaitility.await("broker is removed from topology")
@@ -167,8 +146,8 @@ public class RollingUpdateTest {
           .pollInterval(Duration.ofMillis(500))
           .untilAsserted(() -> assertBrokerHasAtLeastOneSnapshot(0));
 
-      container = updateBroker(brokerId);
-      container.start();
+      updateBroker(broker);
+      broker.start();
       Awaitility.await("updated broker is added to topology")
           .atMost(Duration.ofSeconds(10))
           .pollInterval(Duration.ofMillis(100))
@@ -181,12 +160,12 @@ public class RollingUpdateTest {
   @Test
   public void shouldPerformRollingUpdate() {
     // given
-    Startables.deepStart(containers).join();
+    cluster.start();
 
     // when
     final long firstProcessInstanceKey;
-    var availableBroker = containers.get(0);
-    try (final var client = newZeebeClient(availableBroker)) {
+    ZeebeGatewayNode<?> availableGateway = cluster.getGateways().get("0");
+    try (final var client = newZeebeClient(availableGateway)) {
       deployProcess(client);
 
       // potentially retry in case we're faster than the deployment distribution
@@ -199,28 +178,25 @@ public class RollingUpdateTest {
               .getProcessInstanceKey();
     }
 
-    for (int i = containers.size() - 1; i >= 0; i--) {
-      try (final var client = newZeebeClient(availableBroker)) {
+    for (int i = cluster.getBrokers().size() - 1; i >= 0; i--) {
+      try (final ZeebeClient client = newZeebeClient(availableGateway)) {
         final var brokerId = i;
-        var container = containers.get(i);
+        final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(i);
+        broker.stop();
 
-        container.shutdownGracefully(Duration.ofSeconds(30));
-
-        // until previous version points to 0.24, we cannot yet tune failure detection to be fast,
-        // so wait long enough for the broker to be removed even in slower systems
         Awaitility.await("broker is removed from topology")
-            .atMost(Duration.ofSeconds(20))
+            .atMost(Duration.ofSeconds(10))
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, brokerId));
 
-        container = updateBroker(i);
-        container.start();
+        updateBroker(broker);
+        broker.start();
         Awaitility.await("updated broker is added to topology")
             .atMost(Duration.ofSeconds(10))
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(() -> assertTopologyContainsUpdatedBroker(client, brokerId));
 
-        availableBroker = container;
+        availableGateway = cluster.getGateways().get(String.valueOf(i));
       }
     }
 
@@ -240,7 +216,7 @@ public class RollingUpdateTest {
               });
         };
 
-    try (final var client = newZeebeClient(availableBroker)) {
+    try (final var client = newZeebeClient(availableGateway)) {
       final var secondProcessInstanceKey = createProcessInstance(client).getProcessInstanceKey();
       final var expectedActivatedJobs =
           Map.of(
@@ -255,6 +231,11 @@ public class RollingUpdateTest {
           .atMost(Duration.ofSeconds(5))
           .untilAsserted(() -> assertThat(activatedJobs).isEqualTo(expectedActivatedJobs));
     }
+  }
+
+  private void updateBroker(final ZeebeBrokerNode<?> broker) {
+    broker.setDockerImageName(
+        ZeebeTestContainerDefaults.defaultTestImage().withTag(NEW_VERSION).asCanonicalNameString());
   }
 
   private ProcessInstanceEvent createProcessInstance(final ZeebeClient client) {
@@ -279,7 +260,7 @@ public class RollingUpdateTest {
       final ZeebeClient zeebeClient, final int brokerId) {
     final var topology = zeebeClient.newTopologyRequest().send().join();
     TopologyAssert.assertThat(topology)
-        .isComplete(containers.size(), 1)
+        .isComplete(cluster.getBrokers().size(), 1)
         .hasBrokerSatisfying(
             brokerInfo -> {
               assertThat(brokerInfo.getNodeId()).isEqualTo(brokerId);
@@ -291,7 +272,7 @@ public class RollingUpdateTest {
     final var topology = client.newTopologyRequest().send().join();
     TopologyAssert.assertThat(topology)
         .doesNotContainBroker(brokerId)
-        .isComplete(containers.size() - 1, 1);
+        .isComplete(cluster.getBrokers().size() - 1, 1);
   }
 
   private ZeebeClient newZeebeClient(final ZeebeGatewayNode<?> gateway) {
@@ -301,41 +282,8 @@ public class RollingUpdateTest {
         .build();
   }
 
-  private ZeebeContainer updateBroker(final int index) {
-    final var broker =
-        new ZeebeContainer(CURRENT_IMAGE_NAME)
-            .withVolumesFrom(containers.get(index), BindMode.READ_WRITE);
-    containers.set(index, broker);
-    return configureBrokerContainer(index, containers);
-  }
-
-  private ZeebeContainer configureBrokerContainer(
-      final int index, final List<ZeebeContainer> brokers) {
-    final int clusterSize = brokers.size();
-    final var broker = brokers.get(index);
-    final var hostName = "broker-" + index;
-    final var volume = volumes.get(index);
-
-    return broker
-        .withNetwork(network)
-        .withNetworkAliases(hostName)
-        .withCreateContainerCmdModifier(volume::attachVolumeToContainer)
-        .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", hostName)
-        .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "128KB")
-        .withEnv("ZEEBE_BROKER_CLUSTER_NODEID", String.valueOf(index))
-        .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTERSIZE", String.valueOf(clusterSize))
-        .withEnv("ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR", String.valueOf(clusterSize))
-        .withEnv("ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS", initialContactPoints)
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTUPDATES", "true")
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL", "250ms")
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBEINTERVAL", "250ms")
-        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT", "1s")
-        .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
-        .withEnv("ZEEBE_LOG_LEVEL", "DEBUG");
-  }
-
   private void assertBrokerHasAtLeastOneSnapshot(final int index) {
-    final ZeebeContainer broker = containers.get(index);
+    final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(index);
     final PartitionsActuatorClient partitionsActuatorClient =
         new PartitionsActuatorClient(broker.getExternalMonitoringAddress());
 
@@ -346,5 +294,19 @@ public class RollingUpdateTest {
     final PartitionStatus partitionStatus = response.get().get("1");
     assertThat(partitionStatus).isNotNull();
     assertThat(partitionStatus.snapshotId).isNotBlank();
+  }
+
+  private void configureBroker(final ZeebeBrokerNode<?> broker) {
+    broker
+        .withZeebeData(ZeebeVolume.newVolume())
+        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTUPDATES", "true")
+        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL", "250ms")
+        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBEINTERVAL", "100ms")
+        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT", "1s")
+        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_FAILURETIMEOUT", "2s")
+        .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SUSPECTPROBES", "2")
+        .withEnv("ZEEBE_LOG_LEVEL", "DEBUG");
+    broker.setDockerImageName(
+        ZeebeTestContainerDefaults.defaultTestImage().withTag(OLD_VERSION).asCanonicalNameString());
   }
 }

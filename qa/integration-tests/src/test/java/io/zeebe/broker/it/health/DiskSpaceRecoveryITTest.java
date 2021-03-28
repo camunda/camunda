@@ -13,7 +13,8 @@ import static org.awaitility.Awaitility.await;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeContainer;
-import io.zeebe.test.util.testcontainers.ManagedVolume;
+import io.zeebe.containers.ZeebeVolume;
+import io.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +34,7 @@ public class DiskSpaceRecoveryITTest {
   private static final String ELASTIC_HOST = "http://" + ELASTIC_HOSTNAME + ":9200";
 
   private Network network;
-  private ManagedVolume volume;
+  private ZeebeVolume volume;
   private ZeebeContainer zeebeBroker;
   private ElasticsearchContainer elastic;
   private ZeebeClient client;
@@ -42,13 +43,10 @@ public class DiskSpaceRecoveryITTest {
   public void setUp() {
     final Map<String, String> volumeOptions =
         Map.of("type", "tmpfs", "device", "tmpfs", "o", "size=16m");
-    volume = ManagedVolume.newVolume(cmd -> cmd.withDriver("local").withDriverOpts(volumeOptions));
+    volume = ZeebeVolume.newVolume(cmd -> cmd.withDriver("local").withDriverOpts(volumeOptions));
 
     network = Network.newNetwork();
-    zeebeBroker =
-        createZeebe()
-            .withCreateContainerCmdModifier(volume::attachVolumeToContainer)
-            .withNetwork(network);
+    zeebeBroker = createZeebe().withZeebeData(volume).withNetwork(network);
     elastic = createElastic().withNetwork(network);
   }
 
@@ -130,7 +128,7 @@ public class DiskSpaceRecoveryITTest {
   }
 
   private ZeebeContainer createZeebe() {
-    return new ZeebeContainer("camunda/zeebe:current-test")
+    return new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
             "io.zeebe.exporter.ElasticsearchExporter")
