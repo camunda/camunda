@@ -25,6 +25,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.variable.VariableBehavior;
 import io.zeebe.engine.state.immutable.ProcessState;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -45,6 +46,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final BpmnElementProcessors processors;
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
+  private final MutableElementInstanceState elementInstanceState;
 
   public BpmnStreamProcessor(
       final ExpressionProcessor expressionProcessor,
@@ -53,6 +55,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final MutableZeebeState zeebeState,
       final Writers writers) {
     processState = zeebeState.getProcessState();
+    elementInstanceState = zeebeState.getElementInstanceState();
 
     final var bpmnBehaviors =
         new BpmnBehaviorsImpl(
@@ -98,6 +101,31 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     final var bpmnElementType = recordValue.getBpmnElementType();
     final var processor = processors.getProcessor(bpmnElementType);
     final ExecutableFlowElement element = getElement(recordValue, processor);
+
+    // On migrating processors we saw issues on replay, where element instances are not existing on
+    // replay/reprocessing. You need to know that migrated processors are only replayed, which means
+    // the events are applied to the state and non migrated are reprocessed, so the processor is
+    // called.
+    //
+    // If we have a non migrated type and reprocess that, we expect an existing element instance.
+    // On normal processing this element instance was created by using the state writer of the
+    // previous command/event most likely by an already migrated type. On replay this state writer
+    // is not called which causes issues, like non existing element instance.
+    //
+    // To cover the gap between migrated and non migrated processors we need to re-create an element
+    // instance here, such that we can continue in migrate the processors individually and still
+    // are able to run the replay tests.
+    final var instance = elementInstanceState.getInstance(context.getElementInstanceKey());
+    if (instance == null
+        && context.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING
+        && !MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
+      elementInstanceState.newInstance(
+          flowScopeInstance,
+          context.getElementInstanceKey(),
+          context.getRecordValue(),
+          ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    }
 
     // process the event
     if (stateTransitionGuard.isValidStateTransition(context)) {
