@@ -45,8 +45,10 @@ def seedJob = job('seed-job-tasklist') {
     }
   }
 
-  triggers {
-    githubPush()
+  if (ENVIRONMENT == 'prod') {
+    triggers {
+      githubPush()
+    }
   }
 
   label 'master'
@@ -100,23 +102,58 @@ multibranchPipelineJob('zeebe-tasklist') {
   description 'MultiBranchJob for Zeebe Tasklist'
 
   branchSources {
-    github {
-      id 'zeebe-tasklist'
-      repoOwner githubOrga
-      repository gitRepository
-      scanCredentialsId 'github-cloud-zeebe-tasklist-app'
+    branchSource {
+      source {
+        github {
+          id 'zeebe-tasklist'
+          repoOwner githubOrga
+          repository gitRepository
+          credentialsId 'github-cloud-zeebe-tasklist-app'
+          repositoryUrl "https://github.com/${githubOrga}/${gitRepository}"
+          configuredByUrl false
+          traits {
+            // Discover branches.
+            // Strategy ID 3 => Discover all branches.
+            gitHubBranchDiscovery {
+              strategyId 3
+            }
+
+            // Disable sending Github status notifications in non-prod envs.
+            if (ENVIRONMENT != 'prod') {
+              notificationsSkip()
+            }
+          }
+        }
+      }
+      buildStrategies {
+        // Don't auto build discovered branches for non prod envs.
+        if (ENVIRONMENT == 'prod') {
+          // Builds regular branches whenever a change is detected.
+          buildRegularBranches()
+        }
+      }
+      strategy {
+        allBranchesSame {
+          props {
+            if (ENVIRONMENT != 'prod') {
+              // Suppresses the normal SCM commit trigger coming from branch indexing.
+              suppressAutomaticTriggering()
+            }
+          }
+        }
+      }
     }
   }
 
   orphanedItemStrategy {
     discardOldItems {
-      daysToKeep(1)
+      daysToKeep 1
     }
   }
 
   triggers {
     periodicFolderTrigger {
-      interval('1d')
+      interval '1d'
     }
   }
 }
