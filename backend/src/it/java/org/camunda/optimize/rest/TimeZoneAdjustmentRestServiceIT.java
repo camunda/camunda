@@ -49,6 +49,7 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -247,6 +248,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .satisfies(date -> assertThat(date).isEqualTo(expectedDate));
   }
 
+  @Disabled
   @ParameterizedTest
   @MethodSource("allProcessDateReports")
   public void adjustReportEvaluationResultToTimezone_processDateReports_automaticInterval(final ProcessReportDataType reportType) {
@@ -437,6 +439,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
   }
 
+  @Disabled
   @Test
   public void adjustReportEvaluationResultToTimezone_combinedDateReport() {
     // given
@@ -539,6 +542,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     }
   }
 
+  @Disabled
   @Test
   public void adjustReportEvaluationResultToTimezone_evaluationById() {
     // given
@@ -577,6 +581,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
   }
 
+  @Disabled
   @Test
   public void adjustReportEvaluationResultToTimezone_sharedReportEvaluation() {
     // given
@@ -616,6 +621,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
   }
 
+  @Disabled
   @Test
   public void adjustReportEvaluationResultToTimezone_reportEvaluationOfSharedDashboard() {
     // given
