@@ -150,14 +150,6 @@ public abstract class AbstractBuffer implements Buffer {
   }
 
   @Override
-  public Buffer asReadOnlyBuffer() {
-    return new ReadOnlyBuffer(this, referenceManager)
-        .reset(offset, capacity, maxCapacity)
-        .position(position)
-        .limit(limit);
-  }
-
-  @Override
   public int offset() {
     return offset;
   }
