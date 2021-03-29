@@ -29,10 +29,13 @@ import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import java.util.Arrays;
 import java.util.function.Function;
 
 public final class BpmnStateTransitionBehavior {
 
+  private static final String ALREADY_MIGRATED_ERROR_MSG =
+      "The Processor for the element type %s is already migrated no need to call %s again this is already done in the BpmnStreamProcessor for you. Happy to help :) ";
   private static final String NO_PROCESS_FOUND_MESSAGE =
       "Expected to find a deployed process for process id '%s', but none found.";
   private final TypedStreamWriter streamWriter;
@@ -75,6 +78,7 @@ public final class BpmnStateTransitionBehavior {
     if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
       final var elementInstance = stateBehavior.getElementInstance(context);
       if (elementInstance != null) {
+        verifyIncidentResolving(context, "#transitionToActivating");
         // if the element already exists, then the Activate_Element command is processed as a result
         // of resolving an incident. We don't have to transition again. Just update the context
         return context.copy(
@@ -103,6 +107,7 @@ public final class BpmnStateTransitionBehavior {
     if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
       final var elementInstance = stateBehavior.getElementInstance(context);
       if (elementInstance.getState() == ProcessInstanceIntent.ELEMENT_COMPLETING) {
+        verifyIncidentResolving(context, "#transitionToCompleting");
         // if the element is already completing, then the Complete_Element command is processed as a
         // result of resolving an incident. We don't have to transition again. Just update the
         // context
@@ -120,6 +125,29 @@ public final class BpmnStateTransitionBehavior {
     return transitionedContext;
   }
 
+  /**
+   * Verifies wether we have been called during incident resolving, which will call again the bpmn
+   * processor#process method. This can cause that the transition activating, completing and
+   * terminating are called multiple times. In other cases this should not happen, which is the
+   * reason why we throw an exception.
+   *
+   * <p>Should be removed as soon as possible, e.g. as part of
+   * https://github.com/camunda-cloud/zeebe/issues/6202
+   *
+   * @param context the element instance context
+   * @param methodName the method which is called
+   * @throws IllegalStateException thrown if called not during incident resolving
+   */
+  private void verifyIncidentResolving(final BpmnElementContext context, final String methodName) {
+    final var illegalStateException =
+        new IllegalStateException(
+            String.format(ALREADY_MIGRATED_ERROR_MSG, context.getBpmnElementType(), methodName));
+    if (Arrays.stream(illegalStateException.getStackTrace())
+        .noneMatch(ele -> ele.getMethodName().equals("attemptToContinueProcessProcessing"))) {
+      throw illegalStateException;
+    }
+  }
+
   /** @return context with updated intent */
   public BpmnElementContext transitionToCompleted(final BpmnElementContext context) {
     final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETED);
@@ -133,9 +161,17 @@ public final class BpmnStateTransitionBehavior {
 
   /** @return context with updated intent */
   public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
+    final var isMigrated = MigratedStreamProcessors.isMigrated(context.getBpmnElementType());
+    if (isMigrated && context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
+      throw new IllegalStateException(
+          String.format(
+              ALREADY_MIGRATED_ERROR_MSG,
+              context.getBpmnElementType(),
+              "#transitionToTerminating"));
+    }
     final var transitionedContext =
         transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+    if (!isMigrated) {
       stateTransitionGuard.registerStateTransition(
           context, ProcessInstanceIntent.ELEMENT_TERMINATING);
     }
@@ -250,19 +286,6 @@ public final class BpmnStateTransitionBehavior {
 
       stateBehavior.createElementInstanceInFlowScope(
           context, elementInstanceKey, elementInstanceRecord);
-    }
-  }
-
-  public void completeElement(final BpmnElementContext context) {
-
-    if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      commandWriter.appendFollowUpCommand(
-          context.getElementInstanceKey(),
-          ProcessInstanceIntent.COMPLETE_ELEMENT,
-          context.getRecordValue());
-
-    } else {
-      transitionToCompleting(context);
     }
   }
 
