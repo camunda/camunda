@@ -4,29 +4,29 @@ exports[`should exclude variable columns using the variable prefix 1`] = `
 Object {
   "body": Array [
     Array [
-      "foo",
       "bar",
-      "",
+      "foo",
+      "12",
     ],
     Array [
-      "xyz",
       "abc",
-      "true",
+      "xyz",
+      "",
     ],
   ],
   "head": Array [
-    Object {
-      "id": "processInstanceId",
-      "label": "Process Instance Id",
-      "title": "Process Instance Id",
-    },
     Object {
       "id": "processDefinitionId",
       "label": "Process Definition Id",
       "title": "Process Definition Id",
     },
     Object {
-      "id": "variable:var2",
+      "id": "processInstanceId",
+      "label": "Process Instance Id",
+      "title": "Process Instance Id",
+    },
+    Object {
+      "id": "variable:var1",
       "label": <React.Fragment>
         <span
           className="variableExtension"
@@ -34,10 +34,28 @@ Object {
           Var
           : 
         </span>
-        var2
+        var1
       </React.Fragment>,
-      "title": "var2",
+      "title": "var1",
       "type": "variables",
+    },
+  ],
+}
+`;
+
+exports[`should show default instances column headers for empty results 1`] = `
+Object {
+  "body": Array [],
+  "head": Array [
+    Object {
+      "id": "processDefinitionId",
+      "label": "Process Definition Id",
+      "title": "Process Definition Id",
+    },
+    Object {
+      "id": "processInstanceId",
+      "label": "Process Instance Id",
+      "title": "Process Instance Id",
     },
   ],
 }
@@ -47,28 +65,28 @@ exports[`should transform data to table compatible format 1`] = `
 Object {
   "body": Array [
     Array [
-      "foo",
       "bar",
+      "foo",
       "12",
       "",
     ],
     Array [
-      "xyz",
       "abc",
+      "xyz",
       "",
       "true",
     ],
   ],
   "head": Array [
     Object {
-      "id": "processInstanceId",
-      "label": "Process Instance Id",
-      "title": "Process Instance Id",
-    },
-    Object {
       "id": "processDefinitionId",
       "label": "Process Definition Id",
       "title": "Process Definition Id",
+    },
+    Object {
+      "id": "processInstanceId",
+      "label": "Process Instance Id",
+      "title": "Process Instance Id",
     },
     Object {
       "id": "variable:var1",

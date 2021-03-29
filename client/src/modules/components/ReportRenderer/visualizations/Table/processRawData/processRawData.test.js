@@ -15,8 +15,13 @@ import processRawData from './processRawData';
 const data = {
   configuration: {
     tableColumns: {
-      includeNewVariables: true,
-      includedColumns: [],
+      includeNewVariables: false,
+      includedColumns: [
+        'processInstanceId',
+        'processDefinitionId',
+        'variable:var1',
+        'variable:var2',
+      ],
       excludedColumns: [],
       columnOrder: [],
     },
@@ -69,8 +74,8 @@ it('should exclude variable columns using the variable prefix', () => {
   const data = {
     configuration: {
       tableColumns: {
-        includeNewVariables: true,
-        includedColumns: [],
+        includeNewVariables: false,
+        includedColumns: ['processInstanceId', 'processDefinitionId', 'variable:var1'],
         excludedColumns: ['variable:var1'],
         columnOrder: [],
       },
@@ -83,8 +88,12 @@ it('should make the processInstanceId a link', () => {
   const cell = processRawData(
     {
       report: {
-        result: {data: [{processInstanceId: '123', engineName: '1', variables: {}}]},
-        data,
+        result: {data: [{processInstanceId: '123', engineName: '1'}]},
+        data: {
+          configuration: {
+            tableColumns: {includedColumns: ['processInstanceId', 'engineName'], columnOrder: []},
+          },
+        },
       },
     },
     {1: {endpoint: 'http://camunda.com', engineName: 'a'}}
@@ -102,15 +111,11 @@ it('should format start and end dates', () => {
   const cells = processRawData({
     report: {
       result: {
-        data: [
-          {
-            startDate,
-            endDate,
-            variables: {},
-          },
-        ],
+        data: [{startDate, endDate}],
       },
-      data,
+      data: {
+        configuration: {tableColumns: {includedColumns: ['startDate', 'endDate'], columnOrder: []}},
+      },
     },
   }).body[0];
 
@@ -123,14 +128,11 @@ it('should format duration', () => {
   const cells = processRawData({
     report: {
       result: {
-        data: [
-          {
-            duration: 123023423,
-            variables: {},
-          },
-        ],
+        data: [{duration: 123023423}],
       },
-      data,
+      data: {
+        configuration: {tableColumns: {includedColumns: ['duration'], columnOrder: []}},
+      },
     },
   }).body[0];
 
@@ -140,8 +142,12 @@ it('should format duration', () => {
 it('should not make the processInstanceId a link if no endpoint is specified', () => {
   const cell = processRawData({
     report: {
-      result: {data: [{processInstanceId: '123', engineName: '1', variables: {}}]},
-      data,
+      result: {data: [{processInstanceId: '123', engineName: '1'}]},
+      data: {
+        configuration: {
+          tableColumns: {includedColumns: ['processInstanceId', 'engineName'], columnOrder: []},
+        },
+      },
     },
   }).body[0][0];
 
@@ -155,11 +161,19 @@ it('should show no data message when all column are excluded', () => {
         includeNewVariables: true,
         includedColumns: [],
         excludedColumns: [
-          'processInstanceId',
+          'processDefinitionKey',
           'processDefinitionId',
+          'processInstanceId',
+          'businessKey',
+          'startDate',
+          'endDate',
+          'duration',
+          'engineName',
+          'tenantId',
           'variable:var1',
           'variable:var2',
         ],
+        columnOrder: [],
       },
     },
   };
@@ -170,9 +184,6 @@ it('should show no data message when all column are excluded', () => {
   });
 });
 
-it('should not crash for empty results', () => {
-  expect(processRawData({report: {data, result: {data: []}}})).toEqual({
-    body: [],
-    head: [],
-  });
+it('should show default instances column headers for empty results', () => {
+  expect(processRawData({report: {data, result: {data: []}}})).toMatchSnapshot();
 });
