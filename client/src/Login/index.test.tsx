@@ -172,7 +172,7 @@ describe('<Login />', () => {
 
     expect(
       screen.getByText(
-        `© Camunda Services GmbH ${mockYear}. All rights reserved.`,
+        `© Camunda Services GmbH ${mockYear}. All rights reserved. | 1.2.3`,
       ),
     ).toBeInTheDocument();
   });

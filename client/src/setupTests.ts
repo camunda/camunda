@@ -25,6 +25,9 @@ beforeAll(() =>
 afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());
 
+// mock app version
+process.env.REACT_APP_VERSION = '1.2.3';
+
 jest.mock('@camunda-cloud/common-ui-react', () => ({
   CmNotificationContainer: () => {
     return null;

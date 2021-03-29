@@ -9,3 +9,5 @@ coverage/
 src/fonts/
 yarn.lock
 .eslintcache
+.env
+.prettierignore
