@@ -45,11 +45,11 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
     <version.docker-java-api>3.2.7</version.docker-java-api>
-    <version.elasticsearch>6.8.14</version.elasticsearch>
+    <version.elasticsearch>6.8.15</version.elasticsearch>
     <version.error-prone>2.5.1</version.error-prone>
-    <version.grpc>1.36.0</version.grpc>
+    <version.grpc>1.36.1</version.grpc>
     <version.gson>2.8.6</version.gson>
-    <version.guava>30.1-jre</version.guava>
+    <version.guava>30.1.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
     <version.hppc>0.8.1</version.hppc>
     <version.httpasyncclient>4.1.4</version.httpasyncclient>
@@ -57,23 +57,23 @@
     <version.httpcomponents>4.4.14</version.httpcomponents>
     <version.jackson>2.12.2</version.jackson>
     <version.java-grpc-prometheus>0.3.0</version.java-grpc-prometheus>
-    <version.jna>5.7.0</version.jna>
+    <version.jna>5.8.0</version.jna>
     <version.junit>5.7.1</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.opentest4j>1.2.0</version.opentest4j>
-    <version.log4j>2.14.0</version.log4j>
+    <version.log4j>2.14.1</version.log4j>
     <version.minlog>1.3.1</version.minlog>
     <version.mockito>3.8.0</version.mockito>
     <version.mockito-jupiter>3.8.0</version.mockito-jupiter>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.22</version.msgpack>
     <version.netty-tcnative>2.0.36.Final</version.netty-tcnative>
-    <version.objenesis>3.1</version.objenesis>
+    <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.10.0</version.prometheus>
-    <version.protobuf>3.15.5</version.protobuf>
+    <version.protobuf>3.15.6</version.protobuf>
     <version.protobuf-common>2.1.0</version.protobuf-common>
-    <version.micrometer>1.6.4</version.micrometer>
-    <version.rocksdbjni>6.15.2</version.rocksdbjni>
+    <version.micrometer>1.6.5</version.micrometer>
+    <version.rocksdbjni>6.15.5</version.rocksdbjni>
     <version.sbe>1.21.0</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
     <version.scala>2.13.5</version.scala>
@@ -85,13 +85,14 @@
     <version.asm>9.1</version.asm>
     <version.testcontainers>1.15.2</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
-    <version.zeebe-test-container>1.0.1</version.zeebe-test-container>
+    <version.zeebe-test-container>2.0.0</version.zeebe-test-container>
     <version.feel-scala>1.13.1</version.feel-scala>
-    <version.restassert>4.3.3</version.restassert>
-    <version.spring-boot>2.4.3</version.spring-boot>
+    <version.rest-assured>4.3.3</version.rest-assured>
+    <version.spring>5.3.5</version.spring>
+    <version.spring-boot>2.4.4</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
-    <version.kryo>5.0.3</version.kryo>
+    <version.kryo>5.0.4</version.kryo>
     <version.awaitility>4.0.3</version.awaitility>
     <version.failsafe>2.4.0</version.failsafe>
     <version.jqwik>1.5.0</version.jqwik>
@@ -119,7 +120,7 @@
     <plugin.version.versions>2.8.1</plugin.version.versions>
     <plugin.version.enforcer>3.0.0-M3</plugin.version.enforcer>
     <plugin.version.dependency>3.1.2</plugin.version.dependency>
-    <plugin.version.spotbugs>4.2.0</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.2.2</plugin.version.spotbugs>
     <plugin.version.sonar>3.8.0.2131</plugin.version.sonar>
     <plugin.version.clirr>2.8</plugin.version.clirr>
     <plugin.version.maven-jar>3.2.0</plugin.version.maven-jar>
@@ -136,13 +137,60 @@
 
   <dependencyManagement>
     <dependencies>
-      <!-- Spring and Spring Boot -->
       <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-dependencies</artifactId>
-        <version>${version.spring-boot}</version>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${version.jackson}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-framework-bom</artifactId>
+        <version>${version.spring}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-actuator</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-autoconfigure</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+        <version>${version.spring-boot}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
@@ -181,14 +229,6 @@
         <groupId>org.agrona</groupId>
         <artifactId>agrona</artifactId>
         <version>${version.agrona}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.fasterxml.jackson</groupId>
-        <artifactId>jackson-bom</artifactId>
-        <version>${version.jackson}</version>
-        <scope>import</scope>
-        <type>pom</type>
       </dependency>
 
       <dependency>
@@ -250,8 +290,8 @@
 
       <dependency>
         <groupId>io.rest-assured</groupId>
-        <artifactId>rest-assured-all</artifactId>
-        <version>${version.restassert}</version>
+        <artifactId>rest-assured</artifactId>
+        <version>${version.rest-assured}</version>
       </dependency>
 
       <dependency>
@@ -414,10 +454,11 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${version.zeebe-test-container}</version>
+        <!-- This version (1.1.1) conflict with junit's dependency (1.1.0) -->
         <exclusions>
           <exclusion>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
+            <groupId>org.apiguardian</groupId>
+            <artifactId>apiguardian-api</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -458,10 +499,18 @@
         <version>${version.commons-math}</version>
       </dependency>
 
+      <!-- for dependency convergence -->
       <dependency>
         <groupId>commons-logging</groupId>
         <artifactId>commons-logging</artifactId>
         <version>${version.commons-logging}</version>
+      </dependency>
+
+      <!-- for dependency convergence between elasticsearch-rest-client and rest-assured -->
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>${version.commons-codec}</version>
       </dependency>
 
       <dependency>
@@ -486,12 +535,6 @@
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
         <version>${version.httpclient}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>commons-codec</groupId>
-        <artifactId>commons-codec</artifactId>
-        <version>${version.commons-codec}</version>
       </dependency>
 
       <dependency>
@@ -640,33 +683,14 @@
       </dependency>
 
       <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
-        <version>${version.spring-boot}</version>
-
-        <exclusions>
-          <exclusion>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-to-slf4j</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
         <artifactId>guava-testlib</artifactId>
         <groupId>com.google.guava</groupId>
-        <scope>test</scope>
         <version>${version.guava}</version>
       </dependency>
 
       <dependency>
         <artifactId>concurrentunit</artifactId>
         <groupId>net.jodah</groupId>
-        <scope>test</scope>
         <version>${version.concurrentunit}</version>
       </dependency>
 

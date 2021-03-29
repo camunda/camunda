@@ -19,10 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.journal.Journal;
+import io.zeebe.journal.JournalException.InvalidChecksum;
+import io.zeebe.journal.JournalException.InvalidIndex;
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
-import io.zeebe.journal.StorageException.InvalidChecksum;
-import io.zeebe.journal.StorageException.InvalidIndex;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;

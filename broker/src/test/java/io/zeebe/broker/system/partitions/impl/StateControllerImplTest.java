@@ -30,6 +30,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
 import java.util.Optional;
 import org.agrona.collections.MutableLong;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -62,7 +63,10 @@ public final class StateControllerImplTest {
             factory.getReceivableSnapshotStore(1),
             rootDirectory.resolve("runtime"),
             new NoneSnapshotReplication(),
-            l -> Optional.of(new TestIndexedRaftLogEntry(l, 1, new ApplicationEntry(1, 10, null))),
+            l ->
+                Optional.of(
+                    new TestIndexedRaftLogEntry(
+                        l, 1, new ApplicationEntry(1, 10, new UnsafeBuffer()))),
             db -> exporterPosition.get());
 
     autoCloseableRule.manage(snapshotController);

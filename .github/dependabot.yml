@@ -1,8 +1,7 @@
 version: 2
 updates:
-  # Enable version updates for master
+  # Enable version updates for Java
   - package-ecosystem: "maven"
-    # Look for the root pom
     directory: "/"
     schedule:
       interval: "daily"
@@ -10,5 +9,15 @@ updates:
       prefix: "fix(deps): "
     labels:
       - "dependencies"
-    target-branch: "master"
     open-pull-requests-limit: 5
+  # Enable version updates for the go client
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "fix(deps): "
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 5
+    

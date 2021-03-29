@@ -15,8 +15,8 @@
  */
 package io.zeebe.journal;
 
-import io.zeebe.journal.StorageException.InvalidChecksum;
-import io.zeebe.journal.StorageException.InvalidIndex;
+import io.zeebe.journal.JournalException.InvalidChecksum;
+import io.zeebe.journal.JournalException.InvalidIndex;
 import org.agrona.DirectBuffer;
 
 public interface Journal extends AutoCloseable {

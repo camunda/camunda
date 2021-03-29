@@ -9,12 +9,12 @@ package io.zeebe.test.util.bpmn.random.blocks;
 
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.zeebe.model.bpmn.builder.ParallelGatewayBuilder;
-import io.zeebe.test.util.bpmn.random.AbstractExecutionStep;
 import io.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.zeebe.test.util.bpmn.random.IDGenerator;
+import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;

@@ -9,7 +9,8 @@ package io.zeebe.engine.processing.bpmn.behavior;
 
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.common.Failure;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.state.immutable.IncidentState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -20,12 +21,16 @@ public final class BpmnIncidentBehavior {
   private final IncidentRecord incidentCommand = new IncidentRecord();
 
   private final IncidentState incidentState;
-  private final TypedStreamWriter streamWriter;
+  private final StateWriter stateWriter;
+  private final TypedCommandWriter typedCommandWriter;
 
   public BpmnIncidentBehavior(
-      final MutableZeebeState zeebeState, final TypedStreamWriter streamWriter) {
+      final MutableZeebeState zeebeState,
+      final TypedCommandWriter typedCommandWriter,
+      final StateWriter stateWriter) {
     incidentState = zeebeState.getIncidentState();
-    this.streamWriter = streamWriter;
+    this.stateWriter = stateWriter;
+    this.typedCommandWriter = typedCommandWriter;
   }
 
   public void resolveJobIncident(final long jobKey) {
@@ -34,7 +39,7 @@ public final class BpmnIncidentBehavior {
 
     if (hasIncident) {
       final IncidentRecord incidentRecord = incidentState.getIncidentRecord(incidentKey);
-      streamWriter.appendFollowUpEvent(incidentKey, IncidentIntent.RESOLVED, incidentRecord);
+      stateWriter.appendFollowUpEvent(incidentKey, IncidentIntent.RESOLVED, incidentRecord);
     }
   }
 
@@ -55,12 +60,12 @@ public final class BpmnIncidentBehavior {
         .setErrorType(failure.getErrorType())
         .setErrorMessage(failure.getMessage());
 
-    streamWriter.appendNewCommand(IncidentIntent.CREATE, incidentCommand);
+    typedCommandWriter.appendNewCommand(IncidentIntent.CREATE, incidentCommand);
   }
 
   public void resolveIncidents(final BpmnElementContext context) {
     incidentState.forExistingProcessIncident(
         context.getElementInstanceKey(),
-        (record, key) -> streamWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, record));
+        (record, key) -> stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, record));
   }
 }

@@ -78,7 +78,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             commandWriter,
             sideEffects,
             zeebeState);
-    incidentBehavior = new BpmnIncidentBehavior(zeebeState, streamWriter);
+    incidentBehavior = new BpmnIncidentBehavior(zeebeState, commandWriter, stateWriter);
     deferredRecordsBehavior = new BpmnDeferredRecordsBehavior(zeebeState);
     eventPublicationBehavior = new BpmnEventPublicationBehavior(zeebeState, streamWriter, writers);
     processResultSenderBehavior = new BpmnProcessResultSenderBehavior(zeebeState, responseWriter);

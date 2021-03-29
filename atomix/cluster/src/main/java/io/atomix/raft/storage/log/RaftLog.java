@@ -16,34 +16,35 @@
  */
 package io.atomix.raft.storage.log;
 
-import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
+import io.atomix.raft.storage.log.entry.ConfigurationEntry;
+import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.utils.serializer.Namespace;
 import io.zeebe.journal.Journal;
 import io.zeebe.journal.JournalRecord;
 import io.zeebe.journal.file.SegmentedJournal;
 import io.zeebe.journal.file.SegmentedJournalBuilder;
 import java.io.Closeable;
 import java.io.File;
-import java.util.Objects;
 import org.agrona.CloseHelper;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** Raft log. */
 public class RaftLog implements Closeable {
   private final Journal journal;
-  private final Namespace serializer;
+  private final RaftEntrySerializer serializer = new RaftEntrySBESerializer();
   private final boolean flushExplicitly;
 
   private IndexedRaftLogEntry lastAppendedEntry;
   private volatile long commitIndex;
 
-  protected RaftLog(
-      final Journal journal, final Namespace serializer, final boolean flushExplicitly) {
+  private final MutableDirectBuffer writeBuffer = new ExpandableArrayBuffer(4 * 1024);
+
+  protected RaftLog(final Journal journal, final boolean flushExplicitly) {
     this.journal = journal;
-    this.serializer = serializer;
     this.flushExplicitly = flushExplicitly;
   }
 
@@ -132,16 +133,28 @@ public class RaftLog implements Closeable {
     return journal.isEmpty();
   }
 
-  @SuppressWarnings("unchecked")
   public IndexedRaftLogEntry append(final RaftLogEntry entry) {
-    final byte[] serializedEntry = serializer.serialize(entry);
     final JournalRecord journalRecord;
 
     if (entry.isApplicationEntry()) {
       final ApplicationEntry asqnEntry = entry.getApplicationEntry();
-      journalRecord = journal.append(asqnEntry.lowestPosition(), new UnsafeBuffer(serializedEntry));
+      final int serializedLength =
+          serializer.writeApplicationEntry(entry.term(), asqnEntry, writeBuffer, 0);
+      journalRecord =
+          journal.append(
+              asqnEntry.lowestPosition(), new UnsafeBuffer(writeBuffer, 0, serializedLength));
+    } else if (entry.isInitialEntry()) {
+      final InitialEntry initialEntry = entry.getInitialEntry();
+      final int serializedLength =
+          serializer.writeInitialEntry(entry.term(), initialEntry, writeBuffer, 0);
+      journalRecord = journal.append(new UnsafeBuffer(writeBuffer, 0, serializedLength));
+    } else if (entry.isConfigurationEntry()) {
+      final ConfigurationEntry configurationEntry = entry.getConfigurationEntry();
+      final int serializedLength =
+          serializer.writeConfigurationEntry(entry.term(), configurationEntry, writeBuffer, 0);
+      journalRecord = journal.append(new UnsafeBuffer(writeBuffer, 0, serializedLength));
     } else {
-      journalRecord = journal.append(new UnsafeBuffer(serializedEntry));
+      throw new IllegalArgumentException("Unexpected entry type " + entry);
     }
 
     lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), entry.entry(), journalRecord);
@@ -151,7 +164,7 @@ public class RaftLog implements Closeable {
   public IndexedRaftLogEntry append(final PersistedRaftRecord entry) {
     journal.append(entry);
 
-    final RaftLogEntry raftEntry = serializer.deserialize(entry.data().byteArray());
+    final RaftLogEntry raftEntry = serializer.readRaftLogEntry(entry.data());
     lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), raftEntry.entry(), entry);
     return lastAppendedEntry;
   }
@@ -170,10 +183,6 @@ public class RaftLog implements Closeable {
     if (flushExplicitly) {
       journal.flush();
     }
-  }
-
-  public Namespace getSerializer() {
-    return serializer;
   }
 
   @Override
@@ -201,7 +210,6 @@ public class RaftLog implements Closeable {
 
     private final SegmentedJournalBuilder journalBuilder = SegmentedJournal.builder();
     private boolean flushExplicitly = true;
-    private Namespace namespace = RaftNamespaces.RAFT_STORAGE;
 
     protected Builder() {}
 
@@ -241,17 +249,6 @@ public class RaftLog implements Closeable {
      */
     public Builder withDirectory(final File directory) {
       journalBuilder.withDirectory(directory);
-      return this;
-    }
-
-    /**
-     * Sets the log serialization namespace, returning the builder for method chaining.
-     *
-     * @param namespace The journal namespace.
-     * @return The journal builder.
-     */
-    public Builder withNamespace(final Namespace namespace) {
-      this.namespace = Objects.requireNonNull(namespace);
       return this;
     }
 
@@ -322,7 +319,7 @@ public class RaftLog implements Closeable {
     @Override
     public RaftLog build() {
       final Journal journal = journalBuilder.build();
-      return new RaftLog(journal, namespace, flushExplicitly);
+      return new RaftLog(journal, flushExplicitly);
     }
   }
 }

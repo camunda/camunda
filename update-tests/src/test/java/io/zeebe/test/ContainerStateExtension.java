@@ -7,7 +7,6 @@
  */
 package io.zeebe.test;
 
-import io.zeebe.test.util.testcontainers.ManagedVolume;
 import java.util.Optional;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -51,7 +50,7 @@ final class ContainerStateExtension implements AfterTestExecutionCallback, Param
       final ParameterContext parameterContext, final ExtensionContext extensionContext)
       throws ParameterResolutionException {
     final Store store = extensionContext.getStore(NAMESPACE);
-    final ContainerState state = new ContainerState().withVolume(ManagedVolume.newVolume());
+    final ContainerState state = new ContainerState();
     store.put(extensionContext.getUniqueId(), state);
 
     return state;

@@ -39,8 +39,8 @@ import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.raft.zeebe.util.TestAppender;
-import io.atomix.storage.StorageException;
 import io.atomix.utils.concurrent.SingleThreadContext;
+import io.zeebe.journal.JournalException;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -121,8 +121,8 @@ public class LeaderRoleTest {
   public void shouldRetryAppendEntryOnIOException() throws InterruptedException {
     // given
     when(log.append(any(RaftLogEntry.class)))
-        .thenThrow(new StorageException(new IOException()))
-        .thenThrow(new StorageException(new IOException()))
+        .thenThrow(new JournalException(new IOException()))
+        .thenThrow(new JournalException(new IOException()))
         .then(
             i -> {
               final RaftLogEntry raftLogEntry = i.getArgument(0);
@@ -150,7 +150,7 @@ public class LeaderRoleTest {
   @Test
   public void shouldStopRetryAppendEntryAfterMaxRetries() throws InterruptedException {
     // given
-    when(log.append(any(RaftLogEntry.class))).thenThrow(new StorageException(new IOException()));
+    when(log.append(any(RaftLogEntry.class))).thenThrow(new JournalException(new IOException()));
 
     final AtomicReference<Throwable> caughtError = new AtomicReference<>();
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -178,7 +178,7 @@ public class LeaderRoleTest {
   public void shouldStopAppendEntryOnOutOfDisk() throws InterruptedException {
     // given
     when(log.append(any(RaftLogEntry.class)))
-        .thenThrow(new StorageException.OutOfDiskSpace("Boom file out"));
+        .thenThrow(new JournalException.OutOfDiskSpace("Boom file out"));
 
     final AtomicReference<Throwable> caughtError = new AtomicReference<>();
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -200,14 +200,14 @@ public class LeaderRoleTest {
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
     verify(log, timeout(1000)).append(any(RaftLogEntry.class));
 
-    assertThat(caughtError.get()).isInstanceOf(StorageException.OutOfDiskSpace.class);
+    assertThat(caughtError.get()).isInstanceOf(JournalException.OutOfDiskSpace.class);
   }
 
   @Test
   public void shouldStopAppendEntryOnToLargeEntry() throws InterruptedException {
     // given
     when(log.append(any(RaftLogEntry.class)))
-        .thenThrow(new StorageException.TooLarge("Too large entry"));
+        .thenThrow(new JournalException.TooLarge("Too large entry"));
 
     final AtomicReference<Throwable> caughtError = new AtomicReference<>();
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -228,7 +228,7 @@ public class LeaderRoleTest {
     assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(log, timeout(1000)).append(any(RaftLogEntry.class));
 
-    assertThat(caughtError.get()).isInstanceOf(StorageException.TooLarge.class);
+    assertThat(caughtError.get()).isInstanceOf(JournalException.TooLarge.class);
   }
 
   @Test
@@ -296,8 +296,8 @@ public class LeaderRoleTest {
   public void shouldRetryAppendEntriesInOrder() throws InterruptedException {
     // given
     when(log.append(any(RaftLogEntry.class)))
-        .thenThrow(new StorageException(new IOException()))
-        .thenThrow(new StorageException(new IOException()))
+        .thenThrow(new JournalException(new IOException()))
+        .thenThrow(new JournalException(new IOException()))
         .then(
             i -> {
               final RaftLogEntry raftEntry = i.getArgument(0);
@@ -348,9 +348,6 @@ public class LeaderRoleTest {
                 assertThat(lastEntry.highestPosition()).isEqualTo(7);
                 assertThat(entry.lowestPosition()).isEqualTo(9);
                 assertThat(entry.highestPosition()).isEqualTo(9);
-                entry.data().rewind();
-                data.rewind();
-                assertThat(entry.data()).isEqualTo(data);
                 latch.countDown();
                 return ValidationResult.failure("expected");
               }
@@ -403,6 +400,11 @@ public class LeaderRoleTest {
     }
 
     @Override
+    public boolean isApplicationEntry() {
+      return true;
+    }
+
+    @Override
     public ApplicationEntry getApplicationEntry() {
       return (ApplicationEntry) entry;
     }
@@ -410,11 +412,6 @@ public class LeaderRoleTest {
     @Override
     public PersistedRaftRecord getPersistedRaftRecord() {
       return null;
-    }
-
-    @Override
-    public boolean isApplicationEntry() {
-      return true;
     }
   }
 }

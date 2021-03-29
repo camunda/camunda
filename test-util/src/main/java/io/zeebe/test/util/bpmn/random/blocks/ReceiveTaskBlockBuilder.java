@@ -8,7 +8,6 @@
 package io.zeebe.test.util.bpmn.random.blocks;
 
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.zeebe.model.bpmn.builder.IntermediateCatchEventBuilder;
 import io.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.zeebe.test.util.bpmn.random.ConstructionContext;
@@ -18,18 +17,18 @@ import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import java.util.Random;
 
 /**
- * Generates an intermediate message catch event. It waits for a message with name {@code
- * message_[id]} and a correlation key of {@code CORRELATION_KEY_VALUE}
+ * Generates a receive task. It waits for a message with name {@code message_[id]} and a correlation
+ * key of {@code CORRELATION_KEY_VALUE}
  */
-public class IntermediateMessageCatchEventBlockBuilder implements BlockBuilder {
+public class ReceiveTaskBlockBuilder implements BlockBuilder {
 
-  public static final String CORRELATION_KEY_FIELD = "correlationKey";
-  public static final String CORRELATION_KEY_VALUE = "default_correlation_key";
+  private static final String CORRELATION_KEY_FIELD = "correlationKey";
+  private static final String CORRELATION_KEY_VALUE = "default_correlation_key";
 
   private final String id;
   private final String messageName;
 
-  public IntermediateMessageCatchEventBlockBuilder(final IDGenerator idGenerator) {
+  public ReceiveTaskBlockBuilder(final IDGenerator idGenerator) {
     id = idGenerator.nextId();
     messageName = "message_" + id;
   }
@@ -38,15 +37,14 @@ public class IntermediateMessageCatchEventBlockBuilder implements BlockBuilder {
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
 
-    final IntermediateCatchEventBuilder result = nodeBuilder.intermediateCatchEvent(id);
-
-    result.message(
+    final var receiveTask = nodeBuilder.receiveTask(id);
+    receiveTask.message(
         messageBuilder -> {
           messageBuilder.zeebeCorrelationKeyExpression(CORRELATION_KEY_FIELD);
           messageBuilder.name(messageName);
         });
 
-    return result;
+    return receiveTask;
   }
 
   @Override
@@ -63,7 +61,7 @@ public class IntermediateMessageCatchEventBlockBuilder implements BlockBuilder {
 
     @Override
     public BlockBuilder createBlockBuilder(final ConstructionContext context) {
-      return new IntermediateMessageCatchEventBlockBuilder(context.getIdGenerator());
+      return new ReceiveTaskBlockBuilder(context.getIdGenerator());
     }
 
     @Override

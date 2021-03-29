@@ -8,7 +8,7 @@
 package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.test.util.bpmn.random.AbstractExecutionStep;
+import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import java.util.stream.Collectors;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;

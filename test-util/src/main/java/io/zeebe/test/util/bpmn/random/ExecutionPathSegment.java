@@ -7,6 +7,8 @@
  */
 package io.zeebe.test.util.bpmn.random;
 
+import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
+import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,6 +33,15 @@ public final class ExecutionPathSegment {
 
   public void append(final ExecutionPathSegment pathToAdd) {
     steps.addAll(pathToAdd.getSteps());
+  }
+
+  public void replace(final int index, final AbstractExecutionStep executionStep) {
+    steps.subList(index, steps.size()).clear();
+    steps.add(executionStep);
+  }
+
+  public void insert(final int index, final StepPublishMessage stepPublishMessage) {
+    steps.add(index, stepPublishMessage);
   }
 
   public List<AbstractExecutionStep> getSteps() {
