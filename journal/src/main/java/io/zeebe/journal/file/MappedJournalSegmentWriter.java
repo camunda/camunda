@@ -16,7 +16,6 @@
  */
 package io.zeebe.journal.file;
 
-import io.zeebe.journal.JournalException;
 import io.zeebe.journal.JournalException.InvalidChecksum;
 import io.zeebe.journal.JournalException.InvalidIndex;
 import io.zeebe.journal.JournalRecord;
@@ -90,7 +89,6 @@ class MappedJournalSegmentWriter {
     final int metadataLength = serializer.getMetadataLength();
 
     final RecordData indexedRecord = new RecordData(recordIndex, asqn, data);
-    checkCanWrite(indexedRecord);
 
     final int recordLength;
     try {
@@ -128,7 +126,6 @@ class MappedJournalSegmentWriter {
     final int metadataLength = serializer.getMetadataLength();
 
     final RecordData indexedRecord = new RecordData(record.index(), record.asqn(), record.data());
-    checkCanWrite(indexedRecord);
 
     final int recordLength;
     try {
@@ -180,27 +177,6 @@ class MappedJournalSegmentWriter {
     final int nextEntryOffset = offset + recordLength;
     invalidateNextEntry(nextEntryOffset);
     return recordLength;
-  }
-
-  private void checkCanWrite(final RecordData indexedRecord) {
-    final var recordOffset = serializer.getMetadataLength();
-
-    final int estimatedRecordLength =
-        indexedRecord
-            .data()
-            .capacity(); // approximate as Kryo cannot pre-calculate the size without serializing
-    // the entry.
-    if (estimatedRecordLength > maxEntrySize) {
-      throw new JournalException.TooLarge(
-          "Entry size "
-              + estimatedRecordLength
-              + " exceeds maximum allowed bytes ("
-              + maxEntrySize
-              + ")");
-    }
-    if (buffer.position() + recordOffset + estimatedRecordLength > buffer.limit()) {
-      throw new BufferOverflowException();
-    }
   }
 
   private void invalidateNextEntry(final int position) {

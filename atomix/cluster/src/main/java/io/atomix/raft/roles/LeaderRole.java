@@ -521,12 +521,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       raft.getReplicationMetrics().setAppendIndex(indexedEntry.index());
       log.trace("Appended {}", indexedEntry);
       resultingFuture = CompletableFuture.completedFuture(indexedEntry);
-    } catch (final JournalException.TooLarge e) {
-
-      // the entry was to large, we can't handle this case
-      log.error("Failed to append entry {}, because it was to large.", entry, e);
-      resultingFuture = Futures.exceptionalFuture(e);
-
     } catch (final JournalException.OutOfDiskSpace e) {
 
       // if this happens then compact will also not help, since we need to create a snapshot
