@@ -242,8 +242,8 @@ class Diagram extends React.PureComponent<Props, State> {
     var elementRegistry = this.Viewer.get('elementRegistry');
     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
     var graphicsFactory = this.Viewer.get('graphicsFactory');
-    var element: BpmnJSElement = elementRegistry.get(id);
-    if (element.businessObject && element.businessObject.di) {
+    var element: BpmnJSElement | undefined = elementRegistry.get(id);
+    if (element?.businessObject?.di !== undefined) {
       element.businessObject.di.set('stroke', color);
 
       var gfx = elementRegistry.getGraphics(element);
