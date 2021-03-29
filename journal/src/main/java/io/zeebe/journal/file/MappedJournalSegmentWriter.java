@@ -16,10 +16,10 @@
  */
 package io.zeebe.journal.file;
 
+import io.zeebe.journal.JournalException;
+import io.zeebe.journal.JournalException.InvalidChecksum;
+import io.zeebe.journal.JournalException.InvalidIndex;
 import io.zeebe.journal.JournalRecord;
-import io.zeebe.journal.StorageException;
-import io.zeebe.journal.StorageException.InvalidChecksum;
-import io.zeebe.journal.StorageException.InvalidIndex;
 import io.zeebe.journal.file.record.JournalRecordReaderUtil;
 import io.zeebe.journal.file.record.JournalRecordSerializer;
 import io.zeebe.journal.file.record.PersistedJournalRecord;
@@ -191,7 +191,7 @@ class MappedJournalSegmentWriter {
             .capacity(); // approximate as Kryo cannot pre-calculate the size without serializing
     // the entry.
     if (estimatedRecordLength > maxEntrySize) {
-      throw new StorageException.TooLarge(
+      throw new JournalException.TooLarge(
           "Entry size "
               + estimatedRecordLength
               + " exceeds maximum allowed bytes ("

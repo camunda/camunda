@@ -20,7 +20,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.Sets;
-import io.zeebe.journal.StorageException;
+import io.zeebe.journal.JournalException;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel.MapMode;
@@ -190,7 +190,7 @@ class JournalSegment implements AutoCloseable {
     try {
       Files.deleteIfExists(file.file().toPath());
     } catch (final IOException e) {
-      throw new StorageException(e);
+      throw new JournalException(e);
     }
   }
 

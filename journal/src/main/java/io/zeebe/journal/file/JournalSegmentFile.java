@@ -18,7 +18,7 @@ package io.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import io.zeebe.journal.StorageException;
+import io.zeebe.journal.JournalException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -100,7 +100,7 @@ final class JournalSegmentFile {
     try {
       return FileChannel.open(file.toPath(), options);
     } catch (final IOException e) {
-      throw new StorageException(e);
+      throw new JournalException(e);
     }
   }
 

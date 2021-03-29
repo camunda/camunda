@@ -21,9 +21,9 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.Sets;
 import io.zeebe.journal.Journal;
+import io.zeebe.journal.JournalException;
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
-import io.zeebe.journal.StorageException;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -241,7 +241,7 @@ public class SegmentedJournal implements Journal {
   private void assertDiskSpace() {
     if (directory().getUsableSpace()
         < Math.max(maxSegmentSize() * SEGMENT_BUFFER_FACTOR, minFreeDiskSpace)) {
-      throw new StorageException.OutOfDiskSpace(
+      throw new JournalException.OutOfDiskSpace(
           "Not enough space to allocate a new journal segment");
     }
   }
@@ -406,7 +406,7 @@ public class SegmentedJournal implements Journal {
       raf.setLength(descriptor.maxSegmentSize());
       channel = raf.getChannel();
     } catch (final IOException e) {
-      throw new StorageException(e);
+      throw new JournalException(e);
     }
 
     final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.BYTES);
@@ -415,7 +415,7 @@ public class SegmentedJournal implements Journal {
     try {
       channel.write(buffer);
     } catch (final IOException e) {
-      throw new StorageException(e);
+      throw new JournalException(e);
     } finally {
       try {
         channel.close();
@@ -453,7 +453,7 @@ public class SegmentedJournal implements Journal {
       log.debug("Loaded disk segment: {} ({})", descriptor.id(), segmentFile.getName());
       return segment;
     } catch (final IOException e) {
-      throw new StorageException(e);
+      throw new JournalException(e);
     }
   }
 
@@ -465,7 +465,7 @@ public class SegmentedJournal implements Journal {
           StandardOpenOption.READ,
           StandardOpenOption.WRITE);
     } catch (final IOException e) {
-      throw new StorageException(e);
+      throw new JournalException(e);
     }
   }
 
@@ -491,7 +491,7 @@ public class SegmentedJournal implements Journal {
           channel.read(buffer);
           buffer.flip();
         } catch (final IOException e) {
-          throw new StorageException(e);
+          throw new JournalException(e);
         }
 
         final JournalSegmentDescriptor descriptor = new JournalSegmentDescriptor(buffer);

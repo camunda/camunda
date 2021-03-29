@@ -15,8 +15,8 @@
  */
 package io.zeebe.journal.file.record;
 
+import io.zeebe.journal.JournalException.InvalidIndex;
 import io.zeebe.journal.JournalRecord;
-import io.zeebe.journal.StorageException.InvalidIndex;
 import io.zeebe.journal.file.ChecksumGenerator;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;

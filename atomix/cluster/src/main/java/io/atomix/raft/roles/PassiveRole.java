@@ -36,10 +36,10 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.PersistedRaftRecord;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.storage.StorageException;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.zeebe.journal.StorageException.InvalidChecksum;
-import io.zeebe.journal.StorageException.InvalidIndex;
+import io.zeebe.journal.JournalException;
+import io.zeebe.journal.JournalException.InvalidChecksum;
+import io.zeebe.journal.JournalException.InvalidIndex;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.PersistedSnapshotListener;
 import io.zeebe.snapshots.raft.ReceivedSnapshot;
@@ -639,7 +639,7 @@ public class PassiveRole extends InactiveRole {
 
   /**
    * Attempts to append an entry, returning {@code false} if the append fails due to an {@link
-   * StorageException.OutOfDiskSpace} exception.
+   * JournalException.OutOfDiskSpace} exception.
    */
   private boolean appendEntry(
       final long index,
@@ -651,11 +651,11 @@ public class PassiveRole extends InactiveRole {
 
       log.trace("Appended {}", indexed);
       raft.getReplicationMetrics().setAppendIndex(indexed.index());
-    } catch (final StorageException.TooLarge e) {
+    } catch (final JournalException.TooLarge e) {
       log.warn(
           "Entry size exceeds maximum allowed bytes. Ensure Raft storage configuration is consistent on all nodes!");
       return false;
-    } catch (final StorageException.OutOfDiskSpace e) {
+    } catch (final JournalException.OutOfDiskSpace e) {
       log.trace("Append failed: ", e);
       raft.getLogCompactor().compact();
       failAppend(index - 1, future);
