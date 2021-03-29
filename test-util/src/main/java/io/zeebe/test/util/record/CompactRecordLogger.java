@@ -93,14 +93,14 @@ public class CompactRecordLogger {
     this.records = new ArrayList<>(records);
 
     singlePartition =
-        records.stream()
+        this.records.stream()
                 .mapToLong(Record::getKey)
                 .filter(key -> key != -1)
                 .map(Protocol::decodePartitionId)
                 .distinct()
                 .count()
             < 2;
-    final var highestPosition = this.records.get(records.size() - 1).getPosition();
+    final var highestPosition = this.records.get(this.records.size() - 1).getPosition();
 
     int digits = 0;
     long num = highestPosition;
@@ -113,7 +113,7 @@ public class CompactRecordLogger {
     keyDigits = digits;
 
     valueTypeChars =
-        records.stream()
+        this.records.stream()
             .map(Record::getValueType)
             .map(ValueType::name)
             .map(this::abbreviate)
@@ -122,7 +122,7 @@ public class CompactRecordLogger {
             .orElse(0);
 
     intentChars =
-        records.stream()
+        this.records.stream()
             .map(Record::getIntent)
             .map(Intent::name)
             .map(this::abbreviate)
