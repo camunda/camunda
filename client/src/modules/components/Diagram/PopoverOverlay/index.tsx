@@ -38,11 +38,15 @@ const InstanceMetaData: React.FC<{
     jobId,
     startDate,
     endDate,
+    incidentErrorType,
+    incidentErrorMessage,
   }) => ({
     flowNodeInstanceId,
     jobId,
     startDate,
     endDate,
+    incidentErrorType,
+    incidentErrorMessage,
   }))(metaData);
 
   return (

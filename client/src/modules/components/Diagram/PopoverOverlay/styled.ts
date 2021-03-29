@@ -195,6 +195,9 @@ const SummaryDataValue = styled.dd`
   white-space: nowrap;
   line-height: 18px;
   margin: 0;
+  width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const SummaryData = styled.dl`
