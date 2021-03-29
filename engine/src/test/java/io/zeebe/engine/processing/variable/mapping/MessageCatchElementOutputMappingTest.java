@@ -187,7 +187,7 @@ public final class MessageCatchElementOutputMappingTest {
     // then
     final Record<VariableRecordValue> variableEvent =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
+            .withScopeKey(processInstanceKey)
             .withName("foo")
             .getFirst();
 
@@ -212,7 +212,7 @@ public final class MessageCatchElementOutputMappingTest {
     // then
     final Record<VariableRecordValue> variableEvent =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
+            .withScopeKey(processInstanceKey)
             .withName("foo")
             .getFirst();
 

@@ -240,6 +240,12 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context process instance-related data of the element that is executed
+   * @deprecated handle the event on the caller side and continue with the element by write a
+   *     activate/complete/terminate command
    */
-  void onEventOccurred(final T element, final BpmnElementContext context);
+  @Deprecated // todo (#6202): remove method
+  default void onEventOccurred(final T element, final BpmnElementContext context) {
+    throw new UnsupportedOperationException(
+        "event-occurred is deprecated. Instead, handle the event on the caller side. Continue with the element by writing a activate/complete/terminate command.");
+  }
 }

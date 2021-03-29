@@ -74,6 +74,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             stateTransitionBehavior,
             catchEventBehavior,
+            variableBehavior,
             stateWriter,
             commandWriter,
             sideEffects,

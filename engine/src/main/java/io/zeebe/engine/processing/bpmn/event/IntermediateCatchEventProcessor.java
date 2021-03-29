@@ -77,11 +77,4 @@ public class IntermediateCatchEventProcessor
     final var terminated = stateTransitionBehavior.transitionToTerminated(context);
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }
-
-  @Override
-  public void onEventOccurred(
-      final ExecutableCatchEventElement element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException(
-        "supported commands: activate, complete, and terminate.");
-  }
 }
