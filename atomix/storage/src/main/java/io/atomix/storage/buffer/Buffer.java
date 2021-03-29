@@ -134,17 +134,6 @@ public interface Buffer
   boolean isFile();
 
   /**
-   * Returns a read-only view of the buffer.
-   *
-   * <p>The returned buffer will share the underlying {@link Bytes} with which buffer, but the
-   * buffer's {@code limit}, {@code capacity}, and {@code position} will be independent of this
-   * buffer.
-   *
-   * @return A read-only buffer.
-   */
-  Buffer asReadOnlyBuffer();
-
-  /**
    * Returns the buffer's starting offset within the underlying {@link Bytes}.
    *
    * <p>The offset is used to calculate the absolute position of the buffer's relative {@link

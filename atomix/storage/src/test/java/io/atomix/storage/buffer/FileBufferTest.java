@@ -46,19 +46,6 @@ public class FileBufferTest extends BufferTest {
     return FileBuffer.allocate(FileTesting.createFile(), capacity, maxCapacity);
   }
 
-  @Test
-  public void testFileToHeapBuffer() {
-    final File file = FileTesting.createFile();
-    try (final FileBuffer buffer = FileBuffer.allocate(file, 16)) {
-      buffer.writeLong(10).writeLong(11).flip();
-      final byte[] bytes = new byte[16];
-      buffer.read(bytes).rewind();
-      final HeapBuffer heapBuffer = HeapBuffer.wrap(bytes);
-      assertEquals(buffer.readLong(), heapBuffer.readLong());
-      assertEquals(buffer.readLong(), heapBuffer.readLong());
-    }
-  }
-
   /** Rests reopening a file that has been closed. */
   @Test
   public void testPersist() {
