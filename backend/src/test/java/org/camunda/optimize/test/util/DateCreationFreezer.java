@@ -21,7 +21,7 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
  * if you want to test that a collection has the right creation date you can set
  * you this class to freeze the time for Optimize. The production code will then use
  * this frozen date to create a new date/OffsetDateTime.
- *
+ * <p>
  * For that you can also use {@link LocalDateUtil} but with Java > 11 the OffsetDateTime
  * uses nanoseconds and the handling becomes a bit trickier. This class abstracts all this
  * away so you don't have to think the correct date handling.
