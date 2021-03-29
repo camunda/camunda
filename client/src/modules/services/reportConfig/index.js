@@ -105,7 +105,7 @@ function shouldResetDistributedBy(type, data, report) {
       }
 
       // flow node reports: reset when changing from count to duration view when grouped by duration
-      if (data.properties[0] === 'duration' && report.groupBy.type === 'duration') {
+      if (data.properties.includes('duration') && report.groupBy.type === 'duration') {
         return true;
       }
     }
@@ -137,7 +137,7 @@ function shouldResetDistributedBy(type, data, report) {
       }
 
       // user task report: reset when changing from count to duration view when grouped by duration
-      if (data.properties[0] === 'duration' && report.groupBy.type === 'duration') {
+      if (data.properties.includes('duration') && report.groupBy.type === 'duration') {
         return true;
       }
     }
