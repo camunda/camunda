@@ -15,86 +15,103 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-broker</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-logstreams</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-workflow-engine</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-client-java</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-gateway</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-util</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-exporter-api</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-protocol-impl</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-protocol</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-snapshots</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test-container</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>atomix-cluster</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>atomix-utils</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>atomix</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-api</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -132,6 +149,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>toxiproxy</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
