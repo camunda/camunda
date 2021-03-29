@@ -32,7 +32,8 @@ public class BlockSequenceBuilder implements BlockBuilder {
           new SubProcessBlockBuilder.Factory(),
           new ExclusiveGatewayBlockBuilder.Factory(),
           new ParallelGatewayBlockBuilder.Factory(),
-          new ReceiveTaskBlockBuilder.Factory());
+          new ReceiveTaskBlockBuilder.Factory(),
+          new CallActivityBlockBuilder.Factory());
 
   private final List<BlockBuilder> blockBuilders = new ArrayList<>();
 

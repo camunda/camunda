@@ -69,6 +69,10 @@ public final class ConstructionContext {
     this(random, idGenerator, factory, maxBlocks, maxDepth, maxBranches, currentDepth, NOOP);
   }
 
+  public void addCalledChildProcess(final BpmnModelInstance childModelInstance) {
+    onAddCalledChildProcessCallback.accept(childModelInstance);
+  }
+
   public Random getRandom() {
     return random;
   }
