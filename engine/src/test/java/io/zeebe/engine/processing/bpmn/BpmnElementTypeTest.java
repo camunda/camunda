@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -199,6 +200,25 @@ public final class BpmnElementTypeTest {
             void test() {
               final long processInstanceKey = super.executeInstance();
               ENGINE.job().ofInstance(processInstanceKey).withType(taskType()).complete();
+            }
+          },
+          new BpmnElementTypeScenario("User Task", BpmnElementType.USER_TASK) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .startEvent()
+                  .userTask(elementId())
+                  .done();
+            }
+
+            @Override
+            void test() {
+              final long processInstanceKey = super.executeInstance();
+              ENGINE
+                  .job()
+                  .ofInstance(processInstanceKey)
+                  .withType(Protocol.USER_TASK_JOB_TYPE)
+                  .complete();
             }
           },
           new BpmnElementTypeScenario("Receive Task", BpmnElementType.RECEIVE_TASK) {

@@ -212,6 +212,7 @@ import io.zeebe.model.bpmn.impl.instance.di.ShapeImpl;
 import io.zeebe.model.bpmn.impl.instance.di.StyleImpl;
 import io.zeebe.model.bpmn.impl.instance.di.WaypointImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeCalledElementImpl;
+import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeFormDefinitionImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeHeaderImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeInputImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeIoMappingImpl;
@@ -220,6 +221,7 @@ import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeOutputImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeSubscriptionImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeTaskDefinitionImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeTaskHeadersImpl;
+import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeUserTaskFormImpl;
 import io.zeebe.model.bpmn.instance.Definitions;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.model.bpmn.instance.bpmndi.BpmnDiagram;
@@ -635,6 +637,8 @@ public class Bpmn {
     ZeebeTaskHeadersImpl.registerType(bpmnModelBuilder);
     ZeebeLoopCharacteristicsImpl.registerType(bpmnModelBuilder);
     ZeebeCalledElementImpl.registerType(bpmnModelBuilder);
+    ZeebeFormDefinitionImpl.registerType(bpmnModelBuilder);
+    ZeebeUserTaskFormImpl.registerType(bpmnModelBuilder);
   }
 
   /** @return the {@link Model} instance to use */

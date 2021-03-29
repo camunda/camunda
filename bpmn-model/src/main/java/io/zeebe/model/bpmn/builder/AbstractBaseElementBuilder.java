@@ -36,6 +36,7 @@ import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.Gateway;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.model.bpmn.instance.Signal;
 import io.zeebe.model.bpmn.instance.SignalEventDefinition;
@@ -45,6 +46,7 @@ import io.zeebe.model.bpmn.instance.bpmndi.BpmnPlane;
 import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.zeebe.model.bpmn.instance.dc.Bounds;
 import io.zeebe.model.bpmn.instance.di.Waypoint;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Consumer;
@@ -274,6 +276,26 @@ public abstract class AbstractBaseElementBuilder<
     final CompensateEventDefinition compensateEventDefinition =
         createInstance(CompensateEventDefinition.class);
     return compensateEventDefinition;
+  }
+
+  protected Process findProcess() {
+    ModelElementInstance parentElement;
+    do {
+      parentElement = element.getParentElement();
+    } while (!(parentElement == null || parentElement instanceof Process));
+
+    if (parentElement == null) {
+      throw new RuntimeException("Unable to find process parent for element " + element);
+    }
+
+    return (Process) parentElement;
+  }
+
+  protected ZeebeUserTaskForm createZeebeUserTaskForm() {
+    final Process process = findProcess();
+    final ExtensionElements extensionElements =
+        getCreateSingleChild(process, ExtensionElements.class);
+    return createChild(extensionElements, ZeebeUserTaskForm.class);
   }
 
   /**

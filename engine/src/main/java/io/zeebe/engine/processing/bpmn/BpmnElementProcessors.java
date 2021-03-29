@@ -36,6 +36,7 @@ public final class BpmnElementProcessors {
     // tasks
     processors.put(BpmnElementType.SERVICE_TASK, new ServiceTaskProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.RECEIVE_TASK, new ReceiveTaskProcessor(bpmnBehaviors));
+    processors.put(BpmnElementType.USER_TASK, new ServiceTaskProcessor(bpmnBehaviors));
 
     // gateways
     processors.put(BpmnElementType.EXCLUSIVE_GATEWAY, new ExclusiveGatewayProcessor(bpmnBehaviors));
