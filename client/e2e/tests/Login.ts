@@ -6,9 +6,9 @@
 
 import {config} from '../config';
 import {screen} from '@testing-library/testcafe';
-import {ClientFunction} from 'testcafe';
 import {convertToQueryString} from './utils/convertToQueryString';
-const getPathname = ClientFunction(() => window.location.hash);
+import {getPathname} from './utils/getPathname';
+import {getSearch} from './utils/getSearch';
 
 fixture('Login')
   .page(config.endpoint)
@@ -28,7 +28,7 @@ test('Log in with invalid user account', async (t) => {
   await t
     .expect(screen.getByText('Username and Password do not match').exists)
     .ok();
-  await t.expect(await getPathname()).eql('#/login');
+  await t.expect(await getPathname()).eql('/login');
 });
 
 test('Log in with valid user account', async (t) => {
@@ -37,7 +37,7 @@ test('Log in with valid user account', async (t) => {
     .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Log in'}));
 
-  await t.expect(await getPathname()).eql('#/');
+  await t.expect(await getPathname()).eql('/');
 });
 
 test('Log out', async (t) => {
@@ -50,15 +50,13 @@ test('Log out', async (t) => {
     .click(screen.getByRole('button', {name: /demo/i}))
     .click(screen.getByRole('button', {name: 'Logout'}));
 
-  await t.expect(await getPathname()).eql('#/login');
+  await t.expect(await getPathname()).eql('/login');
 });
 
 test('Redirect to initial page after login', async (t) => {
-  await t.expect(await getPathname()).eql('#/login');
-  await t.navigateTo(
-    `${config.endpoint}/#/instances?active=true&incidents=true`
-  );
-  await t.expect(await getPathname()).eql('#/login');
+  await t.expect(await getPathname()).eql('/login');
+  await t.navigateTo('/instances?active=true&incidents=true');
+  await t.expect(await getPathname()).eql('/login');
 
   await t
     .typeText(
@@ -70,10 +68,14 @@ test('Redirect to initial page after login', async (t) => {
     .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Log in'}));
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+      })
+    );
 });

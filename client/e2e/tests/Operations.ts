@@ -18,9 +18,11 @@ fixture('Operations')
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
     await t.maximizeWindow();
-
-    await t.navigateTo('/');
-    await t.click(screen.getByTestId('header-link-instances'));
+    await t.click(
+      screen.getByRole('listitem', {
+        name: /running instances/i,
+      })
+    );
   });
 
 test('infinite scrolling', async (t) => {

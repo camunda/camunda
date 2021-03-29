@@ -19,8 +19,10 @@ fixture('Select Instances')
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
     await t.maximizeWindow();
-    await t.navigateTo(
-      `${config.endpoint}/#/instances?active=true&incidents=true`
+    await t.click(
+      screen.getByRole('listitem', {
+        name: /running instances/i,
+      })
     );
   });
 

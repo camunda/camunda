@@ -9,6 +9,7 @@ import {setup} from './Instances.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {getPathname} from './utils/getPathname';
+import {getSearch} from './utils/getSearch';
 import {convertToQueryString} from './utils/convertToQueryString';
 import {screen, within} from '@testing-library/testcafe';
 
@@ -20,13 +21,15 @@ fixture('Instances')
   })
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
-    await t.navigateTo('/');
+    await t.click(
+      screen.getByRole('listitem', {
+        name: /running instances/i,
+      })
+    );
   });
 
 test('Instances Page Initial Load', async (t) => {
   const {initialData} = t.fixtureCtx;
-
-  await t.click(screen.getByRole('listitem', {name: 'Running Instances'}));
 
   await t
     .expect(screen.getByRole('checkbox', {name: 'Running Instances'}).checked)
@@ -81,8 +84,6 @@ test('Select flow node in diagram', async (t) => {
   const {initialData} = t.fixtureCtx;
   const instance = initialData.instanceWithoutAnIncident;
 
-  await t.click(screen.getByRole('listitem', {name: 'Running Instances'}));
-
   // Filter by Instance ID
   await t.typeText(
     screen.getByRole('textbox', {
@@ -114,16 +115,18 @@ test('Select flow node in diagram', async (t) => {
         .exists
     )
     .ok()
-    .expect(getPathname())
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
     .eql(
-      `#/instances?${convertToQueryString({
+      convertToQueryString({
         active: 'true',
         incidents: 'true',
         ids: instance.processInstanceKey,
         process: 'orderProcess',
         version: '1',
         flowNodeId: shipArticlesTaskId,
-      })}`
+      })
     );
 
   // Select "Check Payment" flow node
@@ -136,15 +139,17 @@ test('Select flow node in diagram', async (t) => {
       within(screen.getByTestId('instances-list')).getAllByRole('row').count
     )
     .eql(1)
-    .expect(getPathname())
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
     .eql(
-      `#/instances?${convertToQueryString({
+      convertToQueryString({
         active: 'true',
         incidents: 'true',
         ids: instance.processInstanceKey,
         process: 'orderProcess',
         version: '1',
         flowNodeId: checkPaymentTaskId,
-      })}`
+      })
     );
 });

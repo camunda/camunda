@@ -4,8 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-function getSearchString() {
-  return window.location.search;
-}
+import {ClientFunction} from 'testcafe';
 
-export {getSearchString};
+const getSearch = ClientFunction(() => window.location.search.replace('?', ''));
+
+export {getSearch};

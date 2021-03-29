@@ -10,7 +10,8 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {convertToQueryString} from './utils/convertToQueryString';
 import {screen, within} from '@testing-library/testcafe';
-import {ClientFunction} from 'testcafe';
+import {getPathname} from './utils/getPathname';
+import {getSearch} from './utils/getSearch';
 
 fixture('Filters')
   .page(config.endpoint)
@@ -21,23 +22,28 @@ fixture('Filters')
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
     await t.maximizeWindow();
-    await t.navigateTo(
-      `${config.endpoint}/#/instances?${convertToQueryString({
-        active: 'true',
-        incidents: 'true',
-      })}`
+    await t.click(
+      screen.getByRole('listitem', {
+        name: /running instances/i,
+      })
     );
   });
 
-const getPathname = ClientFunction(() => window.location.hash);
-
 test('Navigating in header should affect filters and url correctly', async (t) => {
-  await t.click(screen.getByRole('listitem', {name: 'Incidents'}));
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      incidents: 'true',
-    })}`
+  await t.click(
+    screen.getByRole('listitem', {
+      name: 'Incidents',
+    })
   );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        incidents: 'true',
+      })
+    );
 
   await t
     .expect(screen.getByRole('checkbox', {name: 'Running Instances'}).checked)
@@ -54,12 +60,16 @@ test('Navigating in header should affect filters and url correctly', async (t) =
     .notOk();
 
   await t.click(screen.getByRole('listitem', {name: 'Running Instances'}));
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+      })
+    );
 
   await t
     .expect(screen.getByRole('checkbox', {name: 'Running Instances'}).checked)
@@ -99,13 +109,17 @@ test('Instance IDs filter', async (t) => {
     .eql(1);
 
   // changes reflected in the url
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      ids: instanceId,
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        ids: instanceId,
+      })
+    );
 
   // result is the one we filtered
   await t
@@ -135,12 +149,16 @@ test('Instance IDs filter', async (t) => {
     .eql('');
 
   // changes reflected in the url
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+      })
+    );
 });
 
 test('Error Message filter', async (t) => {
@@ -166,13 +184,17 @@ test('Error Message filter', async (t) => {
     .lt(instanceCount);
 
   // changes reflected in the url
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      errorMessage,
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        errorMessage,
+      })
+    );
 
   await t.click(screen.getByRole('button', {name: /reset filters/i}));
 
@@ -189,12 +211,16 @@ test('Error Message filter', async (t) => {
     .eql('');
 
   // changes reflected in the url
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+      })
+    );
 });
 
 //https://jira.camunda.com/browse/OPE-1098
@@ -262,15 +288,19 @@ test.skip('End Date filter', async (t) => {
     )
     .lt(instanceCount);
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      completed: 'true',
-      canceled: 'true',
-      endDate,
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        completed: 'true',
+        canceled: 'true',
+        endDate,
+      })
+    );
 
   await t.click(screen.getByRole('button', {name: /reset filters/i}));
 
@@ -287,12 +317,16 @@ test.skip('End Date filter', async (t) => {
     .eql('');
 
   // changes reflected in the url
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+      })
+    );
 });
 
 test('Variable filter', async (t) => {
@@ -319,14 +353,18 @@ test('Variable filter', async (t) => {
     )
     .lt(instanceCount);
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      variableName: 'filtersTest',
-      variableValue: '123',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        variableName: 'filtersTest',
+        variableValue: '123',
+      })
+    );
 
   await t.click(screen.getByRole('button', {name: /reset filters/i}));
 
@@ -344,12 +382,16 @@ test('Variable filter', async (t) => {
 
   await t.expect(screen.getByRole('textbox', {name: /value/i}).value).eql('');
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+      })
+    );
 });
 
 //https://jira.camunda.com/browse/OPE-1098
@@ -413,15 +455,19 @@ test.skip('Operation ID filter', async (t) => {
     )
     .eql(1);
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      completed: 'true',
-      canceled: 'true',
-      batchOperationId: operationId,
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        completed: 'true',
+        canceled: 'true',
+        batchOperationId: operationId,
+      })
+    );
 
   await t.click(screen.getByRole('button', {name: /reset filters/i}));
 
@@ -437,12 +483,16 @@ test.skip('Operation ID filter', async (t) => {
     .expect(screen.getByRole('textbox', {name: /operation id/i}).value)
     .eql('');
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+      })
+    );
 });
 
 test('Checkboxes', async (t) => {
@@ -461,7 +511,7 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .notOk();
 
-  await t.expect(await getPathname()).eql('#/instances');
+  await t.expect(await getPathname()).eql('/instances');
 
   await t
     .click(screen.getByRole('checkbox', {name: 'Active'}))
@@ -478,11 +528,15 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .notOk();
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+      })
+    );
 
   await t
     .click(screen.getByRole('checkbox', {name: 'Incidents'}))
@@ -499,12 +553,16 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .notOk();
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+      })
+    );
 
   await t
     .click(screen.getByRole('checkbox', {name: 'Finished Instances'}))
@@ -521,14 +579,18 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .ok();
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      completed: 'true',
-      canceled: 'true',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        completed: 'true',
+        canceled: 'true',
+      })
+    );
 
   await t
     .click(screen.getByRole('checkbox', {name: 'Completed'}))
@@ -545,13 +607,17 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .ok();
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      canceled: 'true',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        canceled: 'true',
+      })
+    );
 
   await t
     .click(screen.getByRole('checkbox', {name: 'Canceled'}))
@@ -568,12 +634,16 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .notOk();
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+      })
+    );
 
   await t
     .click(screen.getByRole('checkbox', {name: 'Finished Instances'}))
@@ -590,14 +660,18 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .ok();
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      completed: 'true',
-      canceled: 'true',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        completed: 'true',
+        canceled: 'true',
+      })
+    );
 
   await t
     .click(screen.getByRole('button', {name: /reset filters/i}))
@@ -614,12 +688,16 @@ test('Checkboxes', async (t) => {
     .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
     .notOk();
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+      })
+    );
 });
 
 test('Process Filter', async (t) => {
@@ -638,14 +716,18 @@ test('Process Filter', async (t) => {
     .expect(screen.getByRole('combobox', {name: 'Process Version'}).value)
     .eql('2');
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      process: 'processWithMultipleVersions',
-      version: '2',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        process: 'processWithMultipleVersions',
+        version: '2',
+      })
+    );
 
   await t.expect(screen.getByTestId('diagram').exists).ok();
 
@@ -672,14 +754,18 @@ test('Process Filter', async (t) => {
     )
     .ok();
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      process: 'processWithMultipleVersions',
-      version: 'all',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        process: 'processWithMultipleVersions',
+        version: 'all',
+      })
+    );
 
   // reset the filters to start over
   await t.click(screen.getByRole('button', {name: /reset filters/i}));
@@ -701,15 +787,19 @@ test('Process Filter', async (t) => {
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('StartEvent_1');
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      process: 'processWithMultipleVersions',
-      version: '2',
-      flowNodeId: 'StartEvent_1',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        process: 'processWithMultipleVersions',
+        version: '2',
+        flowNodeId: 'StartEvent_1',
+      })
+    );
 
   // change process and see flow node filter has been reset
   await t
@@ -722,14 +812,18 @@ test('Process Filter', async (t) => {
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('');
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      process: 'orderProcess',
-      version: '1',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        process: 'orderProcess',
+        version: '1',
+      })
+    );
 });
 
 test('Process Filter - Interaction with diagram', async (t) => {
@@ -763,11 +857,13 @@ test('Process Filter - Interaction with diagram', async (t) => {
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('')
     .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
     .eql(
-      `#/instances?${convertToQueryString({
+      convertToQueryString({
         active: 'true',
         incidents: 'true',
-      })}`
+      })
     );
 
   // select a process that has only one version
@@ -799,13 +895,15 @@ test('Process Filter - Interaction with diagram', async (t) => {
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('')
     .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
     .eql(
-      `#/instances?${convertToQueryString({
+      convertToQueryString({
         active: 'true',
         incidents: 'true',
         process: 'orderProcess',
         version: '1',
-      })}`
+      })
     );
 
   // select a flow node without an instance from the diagram
@@ -818,15 +916,19 @@ test('Process Filter - Interaction with diagram', async (t) => {
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('shipArticles');
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      process: 'orderProcess',
-      version: '1',
-      flowNodeId: 'shipArticles',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        process: 'orderProcess',
+        version: '1',
+        flowNodeId: 'shipArticles',
+      })
+    );
 
   // select a flow node with an instance from the diagram
   await t
@@ -839,15 +941,19 @@ test('Process Filter - Interaction with diagram', async (t) => {
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('checkPayment');
 
-  await t.expect(await getPathname()).eql(
-    `#/instances?${convertToQueryString({
-      active: 'true',
-      incidents: 'true',
-      process: 'orderProcess',
-      version: '1',
-      flowNodeId: 'checkPayment',
-    })}`
-  );
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        process: 'orderProcess',
+        version: '1',
+        flowNodeId: 'checkPayment',
+      })
+    );
 
   // select same flow node again and see filter is removed
   await t.click(
@@ -856,13 +962,15 @@ test('Process Filter - Interaction with diagram', async (t) => {
 
   await t
     .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
     .eql(
-      `#/instances?${convertToQueryString({
+      convertToQueryString({
         active: 'true',
         incidents: 'true',
         process: 'orderProcess',
         version: '1',
-      })}`
+      })
     )
     .expect(screen.getByRole('combobox', {name: /flow node/i}).value)
     .eql('');
@@ -870,7 +978,7 @@ test('Process Filter - Interaction with diagram', async (t) => {
 
 test('Should set filters from url', async (t) => {
   await t.navigateTo(
-    `${config.endpoint}/#/instances?${convertToQueryString({
+    `${config.endpoint}/instances?${convertToQueryString({
       active: 'true',
       incidents: 'true',
       completed: 'true',

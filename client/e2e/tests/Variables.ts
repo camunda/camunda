@@ -24,9 +24,7 @@ fixture('Add/Edit Variables')
 
     await t.useRole(demoUser);
     await t.maximizeWindow();
-    await t.navigateTo(
-      `${config.endpoint}/#/instances/${instance.processInstanceKey}`
-    );
+    await t.navigateTo(`/instances/${instance.processInstanceKey}`);
   });
 
 test('Validations for add/edit variable works correctly', async (t) => {
@@ -189,7 +187,7 @@ test('Edit variables', async (t) => {
 
   // refresh the page and see the variable is still there.
   await t
-    .navigateTo(`${config.endpoint}/#/instances/${instance.processInstanceKey}`)
+    .navigateTo(`/instances/${instance.processInstanceKey}`)
     .expect(Selector('[data-testid="testData"]').exists)
     .ok();
 });
@@ -256,7 +254,7 @@ test('Add variables', async (t) => {
 
   // refresh the page and see the variable is still there.
   await t
-    .navigateTo(`${config.endpoint}/#/instances/${instance.processInstanceKey}`)
+    .navigateTo(`/instances/${instance.processInstanceKey}`)
     .expect(screen.getByRole('cell', {name: 'secondTestKey'}).exists)
     .ok()
     .expect(screen.getByRole('cell', {name: '"secondTestValue"'}).exists)
@@ -264,7 +262,11 @@ test('Add variables', async (t) => {
 
   // go to instance page, filter and find the instance by added variable
   await t
-    .navigateTo(`${config.endpoint}/#/instances?active=true&incidents=true`)
+    .click(
+      screen.getByRole('listitem', {
+        name: /running instances/i,
+      })
+    )
     .typeText(screen.getByRole('textbox', {name: 'Variable'}), 'secondTestKey')
     .typeText(screen.getByRole('textbox', {name: 'Value'}), '"secondTestValue"')
     .typeText(

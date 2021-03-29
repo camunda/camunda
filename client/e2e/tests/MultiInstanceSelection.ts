@@ -8,7 +8,6 @@ import {screen, within} from '@testing-library/testcafe';
 import {wait} from './utils/wait';
 import {demoUser} from './utils/Roles';
 import {setup} from './MultiInstanceSelection.setup';
-import {config} from '../config';
 
 fixture('Multi Instance Flow Node Selection')
   .before(async (ctx) => {
@@ -24,7 +23,7 @@ fixture('Multi Instance Flow Node Selection')
     } = t.fixtureCtx;
 
     const processInstanceId = multiInstanceProcessInstance.processInstanceKey;
-    await t.navigateTo(`${config.endpoint}/#/instances/${processInstanceId}`);
+    await t.navigateTo(`/instances/${processInstanceId}`);
   });
 
 test('Should select multi instance flow nodes', async (t) => {

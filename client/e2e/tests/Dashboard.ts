@@ -19,7 +19,11 @@ fixture('Dashboard')
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
     await t.maximizeWindow();
-    await t.navigateTo('/');
+    await t.click(
+      screen.getByRole('listitem', {
+        name: /dashboard/i,
+      })
+    );
   });
 
 test('Statistics', async (t) => {

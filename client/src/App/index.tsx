@@ -4,8 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {HashRouter as Router, Route, Switch} from 'react-router-dom';
+import {BrowserRouter, Route, Switch} from 'react-router-dom';
 
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
@@ -31,7 +30,7 @@ function App() {
           <GlobalStyles />
           <NetworkStatusWatcher />
           <CommonUiContext />
-          <Router>
+          <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
             <GettingStartedExperience />
             <Switch>
               <Route path={Routes.login()} component={Login} />
@@ -42,7 +41,7 @@ function App() {
                 <Route exact path={Routes.instance()} component={Instance} />
               </Authentication>
             </Switch>
-          </Router>
+          </BrowserRouter>
         </CollapsablePanelProvider>
       </NotificationProvider>
     </ThemeProvider>
