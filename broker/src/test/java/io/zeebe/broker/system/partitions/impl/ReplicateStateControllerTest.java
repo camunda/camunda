@@ -28,7 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-import java.util.zip.CRC32;
+import java.util.zip.CRC32C;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -143,7 +143,7 @@ public final class ReplicateStateControllerTest {
 
     replicatedChunks.forEach(
         chunk -> {
-          final CRC32 crc32 = new CRC32();
+          final CRC32C crc32 = new CRC32C();
           crc32.update(chunk.getContent());
           assertThat(chunk.getChecksum()).isEqualTo(crc32.getValue());
         });
