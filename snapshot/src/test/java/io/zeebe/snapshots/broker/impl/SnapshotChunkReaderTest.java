@@ -26,7 +26,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.zip.CRC32;
+import java.util.zip.CRC32C;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -182,9 +182,9 @@ public class SnapshotChunkReaderTest {
     assertThat(snapshotChunk.getChunkName()).isEqualTo(fileName);
     assertThat(snapshotChunk.getContent()).isEqualTo(chunkContent.getBytes());
     assertThat(snapshotChunk.getTotalCount()).isEqualTo(4);
-    final var crc32 = new CRC32();
-    crc32.update(asByteBuffer(chunkContent));
-    assertThat(snapshotChunk.getChecksum()).isEqualTo(crc32.getValue());
+    final var crc32c = new CRC32C();
+    crc32c.update(asByteBuffer(chunkContent));
+    assertThat(snapshotChunk.getChecksum()).isEqualTo(crc32c.getValue());
 
     assertThat(snapshotChunk.getSnapshotChecksum()).isEqualTo(expectedSnapshotChecksum);
   }

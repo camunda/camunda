@@ -16,11 +16,11 @@
 package io.zeebe.journal.file;
 
 import java.nio.ByteBuffer;
-import java.util.zip.CRC32;
+import java.util.zip.CRC32C;
 
 public final class ChecksumGenerator {
 
-  private final CRC32 crc32 = new CRC32();
+  private final CRC32C crc32 = new CRC32C();
 
   /** Compute checksum of given ByteBuffer */
   public long compute(final ByteBuffer buffer, final int offset, final int length) {

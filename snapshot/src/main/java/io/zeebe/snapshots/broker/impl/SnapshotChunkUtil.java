@@ -11,14 +11,14 @@ import io.zeebe.snapshots.raft.SnapshotChunk;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.zip.CRC32;
+import java.util.zip.CRC32C;
 
 final class SnapshotChunkUtil {
 
   private SnapshotChunkUtil() {}
 
   static long createChecksum(final byte[] content) {
-    final CRC32 crc32 = new CRC32();
+    final CRC32C crc32 = new CRC32C();
     crc32.update(content);
     return crc32.getValue();
   }
