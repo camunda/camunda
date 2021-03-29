@@ -17,6 +17,7 @@ import io.zeebe.test.util.bpmn.random.TestDataGenerator;
 import io.zeebe.test.util.bpmn.random.TestDataGenerator.TestDataRecord;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Collection;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -63,8 +64,8 @@ public class ProcessExecutionRandomizedPropertyTest implements PropertyBasedTest
    */
   @Test
   public void shouldExecuteProcessToEnd() {
-    final BpmnModelInstance model = record.getBpmnModel();
-    engineRule.deployment().withXmlResource(model).deploy();
+    final List<BpmnModelInstance> models = record.getBpmnModels();
+    models.forEach(model -> engineRule.deployment().withXmlResource(model).deploy());
 
     final ExecutionPath path = record.getExecutionPath();
 

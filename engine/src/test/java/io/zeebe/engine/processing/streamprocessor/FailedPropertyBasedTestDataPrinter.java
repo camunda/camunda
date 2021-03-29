@@ -30,9 +30,11 @@ final class FailedPropertyBasedTestDataPrinter extends TestWatcher {
   protected void failed(final Throwable e, final Description description) {
     LOGGER.info("Data of failed test case: {}", propertyBasedTest.getDataRecord());
     LOGGER.info(
-        "Process of failed test case:{}{}",
+        "Process(es) of failed test case:{}{}",
         System.lineSeparator(),
-        Bpmn.convertToString(propertyBasedTest.getDataRecord().getBpmnModel()));
+        propertyBasedTest.getDataRecord().getBpmnModels().stream()
+            .map(Bpmn::convertToString)
+            .collect(Collectors.joining(System.lineSeparator())));
     LOGGER.info(
         "Execution path of failed test case:{}{}",
         System.lineSeparator(),
