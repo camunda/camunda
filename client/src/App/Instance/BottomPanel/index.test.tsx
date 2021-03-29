@@ -53,13 +53,13 @@ describe('BottomPanel', () => {
     expect(screen.getByText('expanded content')).toBeInTheDocument();
   });
 
-  it('should render collapsed component', () => {
+  it('should not render collapsed component', () => {
     render(
       <BottomPanel expandState={EXPAND_STATE.COLLAPSED}>
         <ChildNode />
       </BottomPanel>,
       {wrapper: ThemeProvider}
     );
-    expect(screen.getByText('collapsed content')).toBeInTheDocument();
+    expect(screen.queryByText('collapsed content')).not.toBeInTheDocument();
   });
 });

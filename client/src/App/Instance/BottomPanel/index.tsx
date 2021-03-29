@@ -38,7 +38,9 @@ export default class BottomPanel extends React.PureComponent<Props> {
             <TimeStampPill />
           </Styled.Pills>
         </Styled.PaneHeader>
-        <Styled.PaneBody>{this.renderChildren()}</Styled.PaneBody>
+        <Styled.PaneBody>
+          {this.props.expandState !== 'COLLAPSED' && this.renderChildren()}
+        </Styled.PaneBody>
         <Styled.PaneFooter>
           <Copyright />
         </Styled.PaneFooter>
