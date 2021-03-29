@@ -403,7 +403,13 @@ public class RetryElasticsearchClient {
               .handle(IOException.class, ElasticsearchException.class)
               .withDelay(Duration.ofSeconds(delayIntervalInSeconds))
               .withMaxAttempts(retries)
-              .onRetry(e -> LOGGER.info("Retrying #{} {}", e.getAttemptCount(), operationName))
+              .onRetry(
+                  e ->
+                      LOGGER.info(
+                          "Retrying #{} {} due to {}",
+                          e.getAttemptCount(),
+                          operationName,
+                          e.getLastFailure()))
               .onAbort(e -> LOGGER.error("Abort {} by {}", operationName, e.getFailure()))
               .onRetriesExceeded(
                   e ->
