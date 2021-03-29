@@ -32,8 +32,8 @@ public final class ProcessBuilder {
 
   private final String processId;
   private final String endEventId;
-  private final boolean hasEventSubProcess;
-  private String eventSubProcessId = null;
+  private boolean hasEventSubProcess;
+  private String eventSubProcessId;
   private boolean isEventSubProcessInterrupting;
   private String eventSubProcessMessageName;
 
@@ -42,7 +42,9 @@ public final class ProcessBuilder {
 
     final var idGenerator = context.getIdGenerator();
     processId = "process_" + idGenerator.nextId();
-    hasEventSubProcess = initEventSubProcess(context, idGenerator);
+    // todo enable when sub processes are migrated
+    // https://github.com/camunda-cloud/zeebe/issues/6195
+    // hasEventSubProcess = initEventSubProcess(context, idGenerator);
     final var random = context.getRandom();
     final var startEventBuilderFactory =
         START_EVENT_BUILDER_FACTORIES.get(random.nextInt(START_EVENT_BUILDER_FACTORIES.size()));
@@ -68,9 +70,11 @@ public final class ProcessBuilder {
     final io.zeebe.model.bpmn.builder.ProcessBuilder processBuilder =
         Bpmn.createExecutableProcess(processId);
 
-    if (hasEventSubProcess) {
-      buildEventSubProcess(processBuilder);
-    }
+    // todo enable when sub processes are migrated
+    // https://github.com/camunda-cloud/zeebe/issues/6195
+    //    if (hasEventSubProcess) {
+    //      buildEventSubProcess(processBuilder);
+    //    }
 
     AbstractFlowNodeBuilder<?, ?> processWorkInProgress =
         startEventBuilder.buildStartEvent(processBuilder);
@@ -102,12 +106,14 @@ public final class ProcessBuilder {
   public ExecutionPath findRandomExecutionPath(final Random random) {
     final var followingPath = blockBuilder.findRandomExecutionPath(random);
 
-    if (hasEventSubProcess) {
-      final var shouldTriggerEventSubProcess = random.nextBoolean();
-      if (shouldTriggerEventSubProcess) {
-        executionPathForEventSubProcess(random, followingPath);
-      }
-    }
+    // todo enable when sub processes are migrated
+    // https://github.com/camunda-cloud/zeebe/issues/6195
+    //    if (hasEventSubProcess) {
+    //      final var shouldTriggerEventSubProcess = random.nextBoolean();
+    //      if (shouldTriggerEventSubProcess) {
+    //        executionPathForEventSubProcess(random, followingPath);
+    //      }
+    //    }
 
     final var startPath =
         startEventBuilder.findRandomExecutionPath(processId, followingPath.collectVariables());
