@@ -41,7 +41,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile("!" + SSO_AUTH_PROFILE)
-@DependsOn("schemaManager")
+@DependsOn("schemaStartup")
 public class UserStorage extends AbstractReader {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UserStorage.class);

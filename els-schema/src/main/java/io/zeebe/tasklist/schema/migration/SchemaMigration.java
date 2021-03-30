@@ -6,7 +6,7 @@
 package io.zeebe.tasklist.schema.migration;
 
 import io.zeebe.tasklist.JacksonConfig;
-import io.zeebe.tasklist.schema.ElasticsearchSchemaManager;
+import io.zeebe.tasklist.schema.SchemaStartup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +18,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Profile;
 
 @SpringBootApplication
 @ComponentScan(
@@ -28,10 +29,11 @@ import org.springframework.context.annotation.Import;
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Import(JacksonConfig.class)
+@Profile("!test")
 public class SchemaMigration implements CommandLineRunner {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SchemaMigration.class);
-  @Autowired private ElasticsearchSchemaManager schemaManager;
+  @Autowired private SchemaStartup schemaStartup;
 
   @Override
   public void run(String... args) {

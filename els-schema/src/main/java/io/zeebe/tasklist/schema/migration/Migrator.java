@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
 import org.elasticsearch.common.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +31,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +42,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Configuration
-@Profile("!test")
 public class Migrator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Migrator.class);
@@ -68,14 +65,6 @@ public class Migrator {
 
   @Autowired private IndexSchemaValidator indexSchemaValidator;
 
-  @PostConstruct
-  private void init() {
-    LOGGER.debug(
-        "Created Migrator for elasticsearch at {}:{} ",
-        tasklistProperties.getElasticsearch().getHost(),
-        tasklistProperties.getElasticsearch().getPort());
-  }
-
   @Bean("migrationThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {
     final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -87,6 +76,12 @@ public class Migrator {
   }
 
   public void migrate() throws MigrationException {
+    try {
+      stepsRepository.updateSteps();
+    } catch (IOException e) {
+      throw new MigrationException(
+          String.format("Migration failed in updating steps: %s ", e.getMessage()));
+    }
     boolean failed = false;
     final List<Future<Boolean>> results =
         indexDescriptors.stream().map(this::migrateIndexInThread).collect(Collectors.toList());

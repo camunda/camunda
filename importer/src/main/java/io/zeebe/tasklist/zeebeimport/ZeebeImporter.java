@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-@DependsOn("schemaManager")
+@DependsOn("schemaStartup")
 public class ZeebeImporter extends Thread {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeImporter.class);

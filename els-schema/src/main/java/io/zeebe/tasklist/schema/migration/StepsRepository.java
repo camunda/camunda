@@ -11,6 +11,8 @@ import java.util.List;
 
 public interface StepsRepository {
 
+  void updateSteps() throws MigrationException, IOException;
+
   void save(final Step step) throws MigrationException, IOException;
 
   List<Step> findAll() throws IOException;

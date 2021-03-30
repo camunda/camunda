@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("schemaManager")
+@DependsOn("schemaStartup")
 @Profile("!test")
 public class StartupBean {
 

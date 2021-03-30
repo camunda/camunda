@@ -38,7 +38,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("schemaManager")
+@DependsOn("schemaStartup")
 public class Archiver {
 
   private static final String INDEX_NAME_PATTERN = "%s%s";

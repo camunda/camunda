@@ -6,22 +6,17 @@
 package io.zeebe.tasklist.schema;
 
 import io.zeebe.tasklist.es.RetryElasticsearchClient;
-import io.zeebe.tasklist.exceptions.MigrationException;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
-import io.zeebe.tasklist.management.ElsIndicesCheck;
-import io.zeebe.tasklist.property.MigrationProperties;
 import io.zeebe.tasklist.property.TasklistElasticsearchProperties;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.schema.indices.AbstractIndexDescriptor;
 import io.zeebe.tasklist.schema.indices.IndexDescriptor;
-import io.zeebe.tasklist.schema.migration.Migrator;
 import io.zeebe.tasklist.schema.templates.TemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.PostConstruct;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
 import org.elasticsearch.common.settings.Settings;
@@ -29,7 +24,6 @@ import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -54,31 +48,6 @@ public class ElasticsearchSchemaManager {
   @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
 
   @Autowired private List<TemplateDescriptor> templateDescriptors;
-
-  @Autowired private ElsIndicesCheck elsIndicesCheck;
-
-  @Autowired private MigrationProperties migrationProperties;
-
-  @Autowired private BeanFactory beanFactory;
-
-  @Autowired private IndexSchemaValidator indexSchemaValidator;
-
-  @PostConstruct
-  public void initializeSchema() throws MigrationException {
-    indexSchemaValidator.validate();
-    if (tasklistProperties.getElasticsearch().isCreateSchema()
-        && !indexSchemaValidator.schemaExists()) {
-      LOGGER.info("Elasticsearch schema is empty or not complete. Indices will be created.");
-      createSchema();
-    } else {
-      LOGGER.info(
-          "Elasticsearch schema won't be created, it either already exist, or schema creation is disabled in configuration.");
-    }
-    if (migrationProperties.isMigrationEnabled()) {
-      final Migrator migrator = beanFactory.getBean(Migrator.class);
-      migrator.migrate();
-    }
-  }
 
   public void createSchema() {
     createDefaults();
