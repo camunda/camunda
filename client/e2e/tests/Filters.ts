@@ -998,7 +998,7 @@ test('Should set filters from url', async (t) => {
 
   await t
     .expect(
-      screen.getByRole('combobox', {
+      screen.queryByRole('combobox', {
         name: 'Process',
       }).value
     )

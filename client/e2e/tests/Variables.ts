@@ -30,7 +30,7 @@ fixture('Add/Edit Variables')
 test('Validations for add/edit variable works correctly', async (t) => {
   // open single instance page, after clicking add new variable button see that save variable button is disabled and no spinner is displayed.
   await t
-    .click(screen.getByRole('button', {name: 'Add variable'}))
+    .click(screen.queryByRole('button', {name: 'Add variable'}))
     .expect(
       screen
         .getByRole('button', {name: 'Save variable'})
@@ -146,7 +146,7 @@ test('Edit variables', async (t) => {
 
   // open single instance page, after clicking the edit variable button see that save variable button is disabled.
   await t
-    .click(screen.getByTestId('edit-variable-button'))
+    .click(screen.queryByTestId('edit-variable-button'))
     .expect(
       screen
         .getByRole('button', {name: 'Save variable'})
@@ -198,7 +198,7 @@ test('Add variables', async (t) => {
   } = t.fixtureCtx;
   // open single instance page, click add new variable button and see that save variable button is disabled.
   await t
-    .click(screen.getByRole('button', {name: 'Add variable'}))
+    .click(screen.queryByRole('button', {name: 'Add variable'}))
     .expect(
       screen
         .getByRole('button', {name: 'Save variable'})
@@ -287,7 +287,7 @@ test('Add variables', async (t) => {
 
 test('Remove fields when instance is canceled', async (t) => {
   await t
-    .click(screen.getByRole('button', {name: 'Add variable'}))
+    .click(screen.queryByRole('button', {name: 'Add variable'}))
     .expect(screen.getByRole('textbox', {name: /variable/i}).exists)
     .ok()
     .expect(screen.getByRole('textbox', {name: /value/i}).exists)

@@ -31,7 +31,7 @@ test('Instance with an incident - header and instance header', async (t) => {
 
   await t
     .expect(
-      within(screen.getByRole('banner')).getByTestId('state-icon-INCIDENT')
+      within(screen.queryByRole('banner')).queryByTestId('state-icon-INCIDENT')
         .exists
     )
     .ok()
@@ -75,7 +75,7 @@ test('Instance with an incident - history panel', async (t) => {
   await t.navigateTo(
     `/instances/${processWithMultipleTokens.processInstanceKey}`
   );
-  await t.expect(screen.getByText('Instance History').exists).ok();
+  await t.expect(screen.queryByText('Instance History').exists).ok();
 
   await t
     .click(within(screen.getByTestId('diagram')).getByText(/Task A/))
@@ -162,7 +162,7 @@ test('Instance with an incident - resolve an incident', async (t) => {
   await t.navigateTo(`/instances/${instanceId}`);
 
   await t
-    .click(screen.getByRole('button', {name: 'Add variable'}))
+    .click(screen.queryByRole('button', {name: 'Add variable'}))
     .typeText(screen.getByRole('textbox', {name: /variable/i}), 'goUp', {
       paste: true,
     })
@@ -519,7 +519,7 @@ test.skip('Instance with an incident - cancel an instance', async (t) => {
 
   await t
     .expect(
-      screen.getByRole('button', {
+      screen.queryByRole('button', {
         name: `View 3 Incidents in Instance ${instanceId}.`,
       }).exists
     )
