@@ -4,13 +4,13 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Snapshots</name>
   <artifactId>zeebe-snapshots</artifactId>
-  <version>0.26.1-SNAPSHOT</version>
+  <version>0.26.3-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.26.1-SNAPSHOT</version>
+    <version>0.26.3-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 

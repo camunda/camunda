@@ -87,6 +87,6 @@
   <parent>
     <artifactId>atomix-parent</artifactId>
     <groupId>io.zeebe</groupId>
-    <version>0.26.1-SNAPSHOT</version>
+    <version>0.26.3-SNAPSHOT</version>
   </parent>
 </project>
