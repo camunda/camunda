@@ -86,6 +86,22 @@ public final class BpmnStateTransitionBehavior {
             context.getRecordValue(),
             ProcessInstanceIntent.ELEMENT_ACTIVATING);
       }
+
+      // When the element instance key is not set (-1), then we process the ACTIVATE_ELEMENT
+      // command. We need to generate a new key in order to transition to ELEMENT_ACTIVATING, such
+      // that we can assign the new create element instance a correct key. It is expected that on
+      // the command the key is not set. But some elements (such as multi instance), need to
+      // generate the key before they write ACTIVATE command, to prepare the state (e.g. set
+      // variables) for the upcoming element instance.
+      if (context.getElementInstanceKey() == -1) {
+        final var newElementInstanceKey = keyGenerator.nextKey();
+        final var newContext =
+            context.copy(
+                newElementInstanceKey,
+                context.getRecordValue(),
+                ProcessInstanceIntent.ELEMENT_ACTIVATING);
+        return transitionTo(newContext, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+      }
     }
     return transitionTo(context, ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
