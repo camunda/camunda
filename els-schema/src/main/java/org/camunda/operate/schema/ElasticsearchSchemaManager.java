@@ -6,21 +6,16 @@
 
 package org.camunda.operate.schema;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
 import org.camunda.operate.es.RetryElasticsearchClient;
-import org.camunda.operate.exceptions.MigrationException;
 import org.camunda.operate.exceptions.OperateRuntimeException;
-import org.camunda.operate.management.ElsIndicesCheck;
-import org.camunda.operate.property.MigrationProperties;
 import org.camunda.operate.property.OperateElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import org.camunda.operate.schema.indices.IndexDescriptor;
-import org.camunda.operate.schema.migration.Migrator;
 import org.camunda.operate.schema.templates.TemplateDescriptor;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
@@ -29,7 +24,6 @@ import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -53,37 +47,10 @@ public class ElasticsearchSchemaManager {
   private List<TemplateDescriptor> templateDescriptors;
 
   @Autowired
-  private ElsIndicesCheck elsIndicesCheck;
-
-  @Autowired
   protected RetryElasticsearchClient retryElasticsearchClient;
 
   @Autowired
   protected OperateProperties operateProperties;
-
-  @Autowired
-  private MigrationProperties migrationProperties;
-
-  @Autowired
-  private BeanFactory beanFactory;
-
-  @Autowired
-  private IndexSchemaValidator indexSchemaValidator;
-
-  @PostConstruct
-  public void initializeSchema() throws MigrationException {
-    indexSchemaValidator.validate();
-    if (operateProperties.getElasticsearch().isCreateSchema() && !indexSchemaValidator.schemaExists()) {
-      logger.info("Elasticsearch schema is empty or not complete. Indices will be created.");
-      createSchema();
-    } else {
-      logger.info("Elasticsearch schema won't be created, it either already exist, or schema creation is disabled in configuration.");
-    }
-    if (migrationProperties.isMigrationEnabled()) {
-      final Migrator migrator = beanFactory.getBean(Migrator.class);
-      migrator.migrate();
-    }
-  }
 
   public void createSchema() {
      createDefaults();

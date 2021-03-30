@@ -19,13 +19,6 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager{
 
   private static final Logger logger = LoggerFactory.getLogger(TestElasticsearchSchemaManager.class);
 
-  @PostConstruct
-  @Override
-  public void initializeSchema() {
-    //do nothing
-    logger.info("TestSchemaManager: no schema will be created");
-  }
-
   public void deleteSchema() {
     String prefix = this.operateProperties.getElasticsearch().getIndexPrefix();
     logger.info("Removing indices {}*", prefix);

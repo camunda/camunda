@@ -32,7 +32,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 @Component
 @Profile("!" + OperateURIs.LDAP_AUTH_PROFILE + " & ! " + OperateURIs.SSO_AUTH_PROFILE)
-@DependsOn("schemaManager")
+@DependsOn("schemaStartup")
 public class UserStorage extends AbstractReader {
 
   private static final Logger logger = LoggerFactory.getLogger(UserStorage.class);

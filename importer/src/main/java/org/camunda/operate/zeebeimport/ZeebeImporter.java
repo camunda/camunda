@@ -25,7 +25,7 @@ import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 @Component
 @Configuration
-@DependsOn("schemaManager")
+@DependsOn("schemaStartup")
 public class ZeebeImporter extends Thread {
 
   private static final Logger logger = LoggerFactory.getLogger(ZeebeImporter.class);
@@ -39,7 +39,7 @@ public class ZeebeImporter extends Thread {
 
   @Autowired
   private OperateProperties operateProperties;
-  
+
   @Autowired
   @Qualifier("importThreadPoolExecutor")
   private ThreadPoolTaskExecutor importExecutor;
@@ -73,7 +73,7 @@ public class ZeebeImporter extends Thread {
       }
     }
   }
-  
+
   public int performOneRoundOfImportFor(Collection<RecordsReader> readers) throws IOException {
     int countRecords = 0;
     for (RecordsReader recordsReader: readers) {

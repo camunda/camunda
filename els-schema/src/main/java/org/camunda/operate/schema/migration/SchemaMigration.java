@@ -6,7 +6,7 @@
 package org.camunda.operate.schema.migration;
 
 import org.camunda.operate.JacksonConfig;
-import org.camunda.operate.schema.ElasticsearchSchemaManager;
+import org.camunda.operate.schema.SchemaStartup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +27,7 @@ public class SchemaMigration implements CommandLineRunner {
 
   private static final Logger logger = LoggerFactory.getLogger(SchemaMigration.class);
   @Autowired
-  private ElasticsearchSchemaManager schemaManager;
+  private SchemaStartup schemaStartup;
 
   @Override
   public void run(String... args) {

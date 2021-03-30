@@ -74,11 +74,6 @@ public class Migrator{
   @Autowired
   private IndexSchemaValidator indexSchemaValidator;
 
-  @PostConstruct
-  private void init() {
-    logger.debug("Created Migrator for elasticsearch at {}:{} ", operateProperties.getElasticsearch().getHost(), operateProperties.getElasticsearch().getPort());
-  }
-
   @Bean("migrationThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -90,6 +85,11 @@ public class Migrator{
   }
 
   public void migrate() throws MigrationException {
+    try {
+      stepsRepository.updateSteps();
+    } catch (IOException e) {
+      throw new MigrationException(String.format("Migration failed due to %s", e.getMessage()));
+    }
     boolean failed = false;
     List<Future<Boolean>> results = indexDescriptors.stream().map(this::migrateIndexInThread).collect(Collectors.toList());
     for (Future<Boolean> result : results) {

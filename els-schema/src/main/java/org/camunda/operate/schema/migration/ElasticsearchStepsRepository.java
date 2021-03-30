@@ -13,7 +13,6 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import javax.annotation.PostConstruct;
 
 import org.camunda.operate.exceptions.MigrationException;
 import org.camunda.operate.property.OperateProperties;
@@ -29,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
@@ -40,7 +38,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  */
 @Component
-@DependsOn("schemaManager")
 public class ElasticsearchStepsRepository implements StepsRepository {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchStepsRepository.class);
@@ -66,8 +63,8 @@ public class ElasticsearchStepsRepository implements StepsRepository {
    * Updates Steps in index by comparing steps in json format with documents from index.
    * If there are any new steps then they will be saved in index.
    */
-  @PostConstruct
-  public void updateStepsInRepository() throws IOException, MigrationException {
+  @Override
+  public void updateSteps() throws IOException, MigrationException {
     final List<Step> stepsFromFiles = readStepsFromClasspath();
     final List<Step> stepsFromRepository = findAll();
     for (final Step step : stepsFromFiles) {
