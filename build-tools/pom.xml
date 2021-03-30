@@ -9,7 +9,7 @@
     <!-- We can't reference zeebe parent as parent otherwise we will have a circle dependency -->
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>0.26.2</version>
+    <version>0.26.3-SNAPSHOT</version>
     <relativePath>../bom</relativePath>
   </parent>
 
