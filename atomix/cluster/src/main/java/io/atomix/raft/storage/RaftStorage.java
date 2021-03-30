@@ -186,7 +186,11 @@ public final class RaftStorage {
    * @return The metastore.
    */
   public MetaStore openMetaStore() {
-    return new MetaStore(this, Serializer.using(namespace));
+    try {
+      return new MetaStore(this, Serializer.using(namespace));
+    } catch (final IOException e) {
+      throw new StorageException("Failed to open metastore", e);
+    }
   }
 
   /**
