@@ -172,6 +172,43 @@ class JournalReaderTest {
   }
 
   @Test
+  void shouldSeekToHighestAsqnWithinBoundIndex() {
+    // given
+    final var firstIndex = journal.append(1, data).index();
+    final var secondIndex = journal.append(4, data).index();
+    final var thirdIndex = journal.append(data).index();
+    final var fourthIndex = journal.append(5, data).index();
+    journal.append(data).index();
+
+    // when - then
+    assertThat(reader.seekToAsqn(5, firstIndex)).isEqualTo(firstIndex);
+    assertThat(reader.next().asqn()).isEqualTo(1);
+
+    assertThat(reader.seekToAsqn(5, secondIndex)).isEqualTo(secondIndex);
+    assertThat(reader.next().asqn()).isEqualTo(4);
+
+    assertThat(reader.seekToAsqn(5, thirdIndex)).isEqualTo(secondIndex);
+    assertThat(reader.next().asqn()).isEqualTo(4);
+
+    assertThat(reader.seekToAsqn(5, fourthIndex)).isEqualTo(fourthIndex);
+    assertThat(reader.next().asqn()).isEqualTo(5);
+
+    assertThat(reader.seekToAsqn(Long.MAX_VALUE)).isEqualTo(fourthIndex);
+    assertThat(reader.next().asqn()).isEqualTo(5);
+  }
+
+  @Test
+  void shouldSeekToLastAsqn() {
+    // given
+    final var expectedRecord = journal.append(5, data);
+    journal.append(data);
+
+    // when - then
+    assertThat(reader.seekToAsqn(Long.MAX_VALUE)).isEqualTo(expectedRecord.index());
+    assertThat(reader.next()).isEqualTo(expectedRecord);
+  }
+
+  @Test
   void shouldSeekToHighestLowerAsqnSkippingRecordsWithNoAsqn() {
     // given
     final var expectedRecord = journal.append(1, data);
