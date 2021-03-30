@@ -2222,10 +2222,10 @@
   dependencies:
     "@testing-library/dom" "^7.27.1"
 
-"@testing-library/user-event@^13.0.16":
-  version "13.0.16"
-  resolved "https://registry.yarnpkg.com/@testing-library/user-event/-/user-event-13.0.16.tgz#c027a9656f1984cf05f9c94c8f7168c06e85792c"
-  integrity sha512-plXL8lGR2H0xm0fHE0Dfz37ke2UtBI1wAmaWIo6BP7+pGt+BxdBQrITHAMGcac0a3PtBi5CXNPth8S53ISO1Ew==
+"@testing-library/user-event@^13.1.0":
+  version "13.1.0"
+  resolved "https://registry.yarnpkg.com/@testing-library/user-event/-/user-event-13.1.0.tgz#b5603012d9bc7ae83e5cb127e7d38050a5ecb9cd"
+  integrity sha512-/e9TQxkcs7kCSa/p6xmVxd56G7gQ6l+rPO70b898wXcc2nOu0rkjCcCOiO1hsILYTxhuSXWijDT07+igld2yTg==
   dependencies:
     "@babel/runtime" "^7.12.5"
 
