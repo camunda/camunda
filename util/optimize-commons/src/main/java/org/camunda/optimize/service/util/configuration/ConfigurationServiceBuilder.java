@@ -6,9 +6,14 @@
 package org.camunda.optimize.service.util.configuration;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
+@Configuration
 public class ConfigurationServiceBuilder {
 
   public static final List<String> DEFAULT_CONFIG_LOCATIONS = ImmutableList.of(
@@ -18,6 +23,8 @@ public class ConfigurationServiceBuilder {
   private String[] configLocations = DEFAULT_CONFIG_LOCATIONS.toArray(new String[]{});
   private ConfigurationValidator configurationValidator = new ConfigurationValidator();
 
+  @Bean
+  @Qualifier("configurationService")
   public static ConfigurationService createDefaultConfiguration() {
     return createConfiguration().build();
   }
@@ -26,8 +33,17 @@ public class ConfigurationServiceBuilder {
     return createConfiguration().loadConfigurationFrom(configLocations).build();
   }
 
+  public static ConfigurationService createConfigurationWithDefaultAndAdditionalLocations(String... additionalLocations) {
+    return createConfiguration().addConfigurationLocations(additionalLocations).build();
+  }
+
   public static ConfigurationServiceBuilder createConfiguration() {
     return new ConfigurationServiceBuilder();
+  }
+
+  public ConfigurationServiceBuilder addConfigurationLocations(String... configLocations) {
+    this.configLocations = ArrayUtils.addAll(this.configLocations, configLocations);
+    return this;
   }
 
   public ConfigurationServiceBuilder loadConfigurationFrom(String... configLocations) {

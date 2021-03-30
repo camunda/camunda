@@ -23,11 +23,9 @@ import static org.camunda.optimize.upgrade.util.UpgradeUtil.createUpgradeDepende
 public abstract class AbstractConnectToElasticsearchIT {
 
   @RegisterExtension
-  public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension(getContextFile());
+  public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension(getClass().getCanonicalName());
 
   protected abstract String getCustomConfigFile();
-
-  protected abstract String getContextFile();
 
   @BeforeEach
   public void before() throws Exception {

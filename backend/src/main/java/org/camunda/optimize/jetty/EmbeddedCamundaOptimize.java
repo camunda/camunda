@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.springframework.context.ApplicationContext;
+import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -208,6 +209,19 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
   public void startOptimize() throws Exception {
     this.jettyServer.start();
+    scanPluginPackages();
+  }
+
+  private void scanPluginPackages() {
+    final List<String> variableImportPluginBasePackages =
+      constructConfigurationService().getVariableImportPluginBasePackages();
+    if (!variableImportPluginBasePackages.isEmpty()) {
+      ((AnnotationConfigWebApplicationContext) getOptimizeApplicationContext())
+        .scan(
+          variableImportPluginBasePackages
+            .toArray(new String[0])
+        );
+    }
   }
 
   public boolean isOptimizeStarted() {

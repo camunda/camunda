@@ -6,7 +6,17 @@
 package org.camunda.optimize;
 
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 
+@ComponentScan(
+  basePackages = {
+    "org.camunda.optimize.service",
+    "org.camunda.optimize.rest",
+    "org.camunda.optimize.plugin"
+  },
+  excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
+@Configuration
 public class Main {
 
   private static EmbeddedCamundaOptimize jettyCamundaOptimize;

@@ -42,10 +42,13 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
 
   private static final String CONTEXT_CONFIG_LOCATION = "contextConfigLocation";
   private static final String OPTIMIZE_REST_PACKAGE = "org.camunda.optimize.rest";
+  public static final String CONTEXT_CLASS_PARAMETER_NAME = "contextClass";
+  public static final String CONTEXT_CLASS_PARAMETER_VALUE =
+    "org.springframework.web.context.support.AnnotationConfigWebApplicationContext";
 
   private final ContextLoaderListener contextLoaderListener = new ContextLoaderListener();
 
-  private String springContextLocation = "classpath:applicationContext.xml";
+  private String springContextLocation = "org.camunda.optimize.Main";
   private ApplicationContext applicationContext;
 
   public SpringAwareServletConfiguration(String contextLocation) {
@@ -88,6 +91,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
 
     //add spring
     context.addEventListener(contextLoaderListener);
+    context.setInitParameter(CONTEXT_CLASS_PARAMETER_NAME, CONTEXT_CLASS_PARAMETER_VALUE);
     context.setInitParameter(CONTEXT_CONFIG_LOCATION, springContextLocation);
     context.addLifeCycleListener(new SpringContextInterceptingListener(this));
 

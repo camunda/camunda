@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_CONTEXT_LOCATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -21,7 +22,7 @@ public class EngineVersionCheckerIT extends AbstractIT {
   @RegisterExtension
   @Order(5)
   public EmbeddedOptimizeExtension embeddedOptimizeExtension2 =
-    new EmbeddedOptimizeExtension("classpath:versionCheckContext.xml");
+    new EmbeddedOptimizeExtension("org.camunda.optimize.service.util.VersionCheckerSpringITConfig");
 
   @Test
   public void engineVersionCantBeDetermined() {
@@ -48,7 +49,7 @@ public class EngineVersionCheckerIT extends AbstractIT {
   public void setContextBack() throws Exception {
     embeddedOptimizeExtension2.stopOptimize();
     EmbeddedOptimizeExtension embeddedOptimizeExtension =
-      new EmbeddedOptimizeExtension("classpath:embeddedOptimizeContext.xml");
+      new EmbeddedOptimizeExtension(DEFAULT_CONTEXT_LOCATION);
     embeddedOptimizeExtension.startOptimize();
   }
 }
