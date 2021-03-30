@@ -56,12 +56,10 @@ public class CallActivityBlockBuilder implements BlockBuilder {
 
     buildChildProcess();
 
-    final var callActivityBuilder = nodeBuilder.callActivity(callActivityId);
-
-    callActivityBuilder.zeebeProcessId(calledProcessId);
-    callActivityBuilder.zeebePropagateAllChildVariables(shouldPropagateAllChildVariables);
-
-    return callActivityBuilder;
+    return nodeBuilder
+        .callActivity(callActivityId)
+        .zeebeProcessId(calledProcessId)
+        .zeebePropagateAllChildVariables(shouldPropagateAllChildVariables);
   }
 
   @Override

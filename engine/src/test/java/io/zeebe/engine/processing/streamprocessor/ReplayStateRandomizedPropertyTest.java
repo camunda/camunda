@@ -13,7 +13,6 @@ import io.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.engine.util.ProcessExecutor;
-import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.bpmn.random.ExecutionPath;
@@ -22,7 +21,6 @@ import io.zeebe.test.util.bpmn.random.TestDataGenerator.TestDataRecord;
 import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Collection;
-import java.util.List;
 import org.assertj.core.api.SoftAssertions;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -79,8 +77,9 @@ public class ReplayStateRandomizedPropertyTest implements PropertyBasedTest {
    */
   @Test
   public void shouldRestoreStateAtEachStepInExecution() {
-    final List<BpmnModelInstance> models = record.getBpmnModels();
-    models.forEach(model -> engineRule.deployment().withXmlResource(model).deploy());
+    final var deployment = engineRule.deployment();
+    record.getBpmnModels().forEach(deployment::withXmlResource);
+    deployment.deploy();
 
     final ExecutionPath path = record.getExecutionPath();
 

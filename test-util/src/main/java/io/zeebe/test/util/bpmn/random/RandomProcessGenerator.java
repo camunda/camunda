@@ -55,7 +55,7 @@ public final class RandomProcessGenerator {
   }
 
   /** @return the build process and any potentially called child processes */
-  public List<BpmnModelInstance> buildProcess() {
+  public List<BpmnModelInstance> buildProcesses() {
     return processBuilder.buildProcess();
   }
 
@@ -73,7 +73,7 @@ public final class RandomProcessGenerator {
 
       final RandomProcessGenerator builder = new RandomProcessGenerator(random.nextLong(), 5, 3, 3);
 
-      final var bpmnModelInstances = builder.buildProcess();
+      final var bpmnModelInstances = builder.buildProcesses();
 
       bpmnModelInstances.stream()
           .map(modelInstance -> new Tuple<>(createFile(modelInstance, index), modelInstance))

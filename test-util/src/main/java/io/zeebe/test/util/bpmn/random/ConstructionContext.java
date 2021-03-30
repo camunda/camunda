@@ -39,7 +39,7 @@ public final class ConstructionContext {
    * @param onAddCalledChildProcessCallback consumer that is called for every child process that is
    *     called from the main process
    */
-  ConstructionContext(
+  private ConstructionContext(
       final Random random,
       final IDGenerator idGenerator,
       final BlockSequenceBuilderFactory blockSequenceBuilderFactory,
@@ -58,7 +58,7 @@ public final class ConstructionContext {
     this.onAddCalledChildProcessCallback = onAddCalledChildProcessCallback;
   }
 
-  public ConstructionContext(
+  ConstructionContext(
       final Random random,
       final IDGenerator idGenerator,
       final BlockSequenceBuilderFactory factory,

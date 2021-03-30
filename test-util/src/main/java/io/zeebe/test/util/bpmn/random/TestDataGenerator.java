@@ -29,7 +29,7 @@ public class TestDataGenerator {
       final RandomProcessGenerator generator =
           new RandomProcessGenerator(processSeed, null, null, null);
 
-      final List<BpmnModelInstance> bpmnModelInstances = generator.buildProcess();
+      final List<BpmnModelInstance> bpmnModelInstances = generator.buildProcesses();
 
       final Set<ExecutionPath> paths = new HashSet<>();
       for (int pathIndex = 0; pathIndex < pathsPerProcess; pathIndex++) {
@@ -53,7 +53,7 @@ public class TestDataGenerator {
     final RandomProcessGenerator generator =
         new RandomProcessGenerator(processSeed, null, null, null);
 
-    final List<BpmnModelInstance> bpmnModelInstances = generator.buildProcess();
+    final List<BpmnModelInstance> bpmnModelInstances = generator.buildProcesses();
 
     final ExecutionPath path = generator.findRandomExecutionPath(executionPathSeed);
 
