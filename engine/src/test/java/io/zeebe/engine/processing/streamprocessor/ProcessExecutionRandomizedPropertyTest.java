@@ -9,7 +9,6 @@ package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.engine.util.ProcessExecutor;
-import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.bpmn.random.ExecutionPath;
@@ -63,8 +62,9 @@ public class ProcessExecutionRandomizedPropertyTest implements PropertyBasedTest
    */
   @Test
   public void shouldExecuteProcessToEnd() {
-    final BpmnModelInstance model = record.getBpmnModel();
-    engineRule.deployment().withXmlResource(model).deploy();
+    final var deployment = engineRule.deployment();
+    record.getBpmnModels().forEach(deployment::withXmlResource);
+    deployment.deploy();
 
     final ExecutionPath path = record.getExecutionPath();
 

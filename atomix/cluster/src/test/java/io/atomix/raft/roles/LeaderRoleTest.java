@@ -204,34 +204,6 @@ public class LeaderRoleTest {
   }
 
   @Test
-  public void shouldStopAppendEntryOnToLargeEntry() throws InterruptedException {
-    // given
-    when(log.append(any(RaftLogEntry.class)))
-        .thenThrow(new JournalException.TooLarge("Too large entry"));
-
-    final AtomicReference<Throwable> caughtError = new AtomicReference<>();
-    final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
-    final CountDownLatch latch = new CountDownLatch(1);
-    final AppendListener listener =
-        new AppendListener() {
-          @Override
-          public void onWriteError(final Throwable error) {
-            caughtError.set(error);
-            latch.countDown();
-          }
-        };
-
-    // when
-    leaderRole.appendEntry(0, 1, data, listener);
-
-    // then
-    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
-    verify(log, timeout(1000)).append(any(RaftLogEntry.class));
-
-    assertThat(caughtError.get()).isInstanceOf(JournalException.TooLarge.class);
-  }
-
-  @Test
   public void shouldTransitionToFollowerWhenAppendEntryException() throws InterruptedException {
     // given
     when(log.append(any(RaftLogEntry.class))).thenThrow(new RuntimeException("expected"));

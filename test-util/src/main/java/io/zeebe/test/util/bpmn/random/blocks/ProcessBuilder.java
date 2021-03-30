@@ -15,6 +15,7 @@ import io.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.zeebe.test.util.bpmn.random.ExecutionPath;
 import io.zeebe.test.util.bpmn.random.StartEventBlockBuilder;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
@@ -29,6 +30,7 @@ public final class ProcessBuilder {
 
   private final BlockBuilder blockBuilder;
   private final StartEventBlockBuilder startEventBuilder;
+  private final List<BpmnModelInstance> calledChildModelInstances = new ArrayList<>();
 
   private final String processId;
   private final String endEventId;
@@ -38,19 +40,27 @@ public final class ProcessBuilder {
   private String eventSubProcessMessageName;
 
   public ProcessBuilder(final ConstructionContext context) {
-    blockBuilder = context.getBlockSequenceBuilderFactory().createBlockSequenceBuilder(context);
+    final ConstructionContext processContext =
+        context.withAddCalledChildProcessCallback(this::onAddCalledChildProcess);
 
-    final var idGenerator = context.getIdGenerator();
+    blockBuilder =
+        processContext.getBlockSequenceBuilderFactory().createBlockSequenceBuilder(processContext);
+
+    final var idGenerator = processContext.getIdGenerator();
     processId = "process_" + idGenerator.nextId();
     // todo enable when sub processes are migrated
     // https://github.com/camunda-cloud/zeebe/issues/6195
-    // hasEventSubProcess = initEventSubProcess(context, idGenerator);
-    final var random = context.getRandom();
+    // hasEventSubProcess = initEventSubProcess(processContext, idGenerator);
+    final var random = processContext.getRandom();
     final var startEventBuilderFactory =
         START_EVENT_BUILDER_FACTORIES.get(random.nextInt(START_EVENT_BUILDER_FACTORIES.size()));
-    startEventBuilder = startEventBuilderFactory.apply(context);
+    startEventBuilder = startEventBuilderFactory.apply(processContext);
 
     endEventId = idGenerator.nextId();
+  }
+
+  public void onAddCalledChildProcess(final BpmnModelInstance childModelInstance) {
+    calledChildModelInstances.add(childModelInstance);
   }
 
   private boolean initEventSubProcess(
@@ -65,7 +75,9 @@ public final class ProcessBuilder {
     return hasEventSubProcess;
   }
 
-  public BpmnModelInstance buildProcess() {
+  /** @return the build process and any potentially called child processes */
+  public List<BpmnModelInstance> buildProcess() {
+    final var result = new ArrayList<BpmnModelInstance>();
 
     final io.zeebe.model.bpmn.builder.ProcessBuilder processBuilder =
         Bpmn.createExecutableProcess(processId);
@@ -81,7 +93,10 @@ public final class ProcessBuilder {
 
     processWorkInProgress = blockBuilder.buildFlowNodes(processWorkInProgress);
 
-    return processWorkInProgress.endEvent(endEventId).done();
+    final var rootModelInstance = processWorkInProgress.endEvent(endEventId).done();
+    result.add(rootModelInstance);
+    result.addAll(calledChildModelInstances);
+    return result;
   }
 
   private void buildEventSubProcess(

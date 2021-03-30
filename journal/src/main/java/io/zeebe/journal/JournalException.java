@@ -31,13 +31,6 @@ public class JournalException extends RuntimeException {
     super(cause);
   }
 
-  /** Exception thrown when an entry being stored is too large. */
-  public static class TooLarge extends JournalException {
-    public TooLarge(final String message) {
-      super(message);
-    }
-  }
-
   /** Exception thrown when storage runs out of disk space. */
   public static class OutOfDiskSpace extends JournalException {
     public OutOfDiskSpace(final String message) {
