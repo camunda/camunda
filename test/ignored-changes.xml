@@ -1,8 +1,0 @@
-<differences>
-  <difference>
-    <className>io/zeebe/test/EmbeddedBrokerRule</className>
-    <method>*SocketAddress getGatewayAddress()</method>
-    <differenceType>7006</differenceType>
-    <to>*InetSocketAddress</to>
-  </difference>
-</differences> 
