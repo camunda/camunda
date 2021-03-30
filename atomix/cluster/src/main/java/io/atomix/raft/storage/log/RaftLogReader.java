@@ -92,12 +92,11 @@ public class RaftLogReader implements java.util.Iterator<IndexedRaftLogEntry>, A
   }
 
   public long seekToAsqn(final long asqn) {
-    nextIndex = journalReader.seekToAsqn(asqn);
-
-    if (nextIndex > log.getCommitIndex() && !log.isEmpty()) {
-      throw new UnsupportedOperationException("Cannot seek to an ASQN that is not yet committed");
+    if (mode == Mode.COMMITS) {
+      nextIndex = journalReader.seekToAsqn(asqn, log.getCommitIndex());
+    } else {
+      nextIndex = journalReader.seekToAsqn(asqn);
     }
-
     return nextIndex;
   }
 
