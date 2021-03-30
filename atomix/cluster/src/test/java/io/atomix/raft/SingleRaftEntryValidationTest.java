@@ -18,10 +18,12 @@ package io.atomix.raft;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.atomix.raft.storage.log.entry.InitializeEntry;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeEntry;
-import java.util.List;
+import io.zeebe.test.util.TestUtil;
+import java.util.Collection;
 import java.util.function.BiFunction;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,17 +52,19 @@ public class SingleRaftEntryValidationTest {
     // when
     assertThatThrownBy(() -> raftRule.appendEntry()).hasMessageContaining("invalid");
     entryValidator.validation = (last, current) -> ValidationResult.success();
-    raftRule.awaitNewLeader();
-    final var commitIndex =
-        raftRule.appendEntry(); // append another entry to await the commit index
+    TestUtil.waitUntil(() -> getEntryTypeCount(InitializeEntry.class) == 2);
+    raftRule.appendEntry();
 
     // then
-    raftRule.awaitCommit(commitIndex);
-    raftRule.awaitSameLogSizeOnAllNodes(commitIndex);
-    final var memberLog = raftRule.getMemberLogs();
+    assertThat(getEntryTypeCount(ZeebeEntry.class)).isOne();
+  }
 
-    final var logLength = memberLog.values().stream().map(List::size).findFirst().orElseThrow();
-    assertThat(logLength).withFailMessage(memberLog.toString()).isEqualTo(3);
+  private int getEntryTypeCount(final Class type) {
+    return (int)
+        raftRule.getMemberLogs().values().stream()
+            .flatMap(Collection::stream)
+            .filter(e -> e.entry().getClass().isAssignableFrom(type))
+            .count();
   }
 
   private static class TestEntryValidator implements EntryValidator {
