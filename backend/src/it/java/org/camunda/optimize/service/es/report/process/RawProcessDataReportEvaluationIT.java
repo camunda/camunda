@@ -227,7 +227,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .viewProperty(ViewProperty.RAW_DATA)
       .build();
     reportData.setTenantIds(selectedTenants);
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateRawReportWithDefaultPagination(reportData).getResult();
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateRawReportWithDefaultPagination(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
