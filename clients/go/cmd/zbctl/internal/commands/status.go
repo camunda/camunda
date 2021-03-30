@@ -47,7 +47,7 @@ func (s StatusResponseWrapper) human() (string, error) {
 
 	sort.Sort(ByNodeID(resp.Brokers))
 
-	for _, broker := range resp.Brokers {
+	for b, broker := range resp.Brokers {
 		stringBuilder.WriteString(fmt.Sprintf("  Broker %d - %s:%d\n", broker.NodeId, broker.Host, broker.Port))
 
 		version := "unavailable"
@@ -58,13 +58,13 @@ func (s StatusResponseWrapper) human() (string, error) {
 		stringBuilder.WriteString(fmt.Sprintf("    Version: %s\n", version))
 
 		sort.Sort(ByPartitionID(broker.Partitions))
-		for i, partition := range broker.Partitions {
+		for p, partition := range broker.Partitions {
 			stringBuilder.WriteString(fmt.Sprintf("    Partition %d : %s, %s",
 				partition.PartitionId,
 				roleToString(partition.Role),
 				healthToString(partition.Health)))
 
-			if i < len(broker.Partitions)-1 {
+			if p < len(broker.Partitions)-1 || b < len(broker.Partitions)-1 {
 				stringBuilder.WriteRune('\n')
 			}
 		}
