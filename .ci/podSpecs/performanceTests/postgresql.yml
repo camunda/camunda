@@ -6,6 +6,7 @@ metadata:
   namespace: ${NAMESPACE}
   labels:
     app: postgresql
+    team: optimize
 spec:
   serviceName: postgres
   replicas: 1
