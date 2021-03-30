@@ -130,6 +130,7 @@ if (ENVIRONMENT == 'prod') {
               headWildcardFilter {
                 // Space-separated list of name patterns to consider.
                 includes 'master prototype_zeebeint PR-* CI-*'
+                excludes ''
               }
 
               // Disable sending Github status notifications in non-prod envs.
