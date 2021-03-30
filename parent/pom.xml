@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
   <artifactId>zeebe-parent</artifactId>
-  <version>0.26.1-SNAPSHOT</version>
+  <version>0.26.2</version>
   <packaging>pom</packaging>
   <inceptionYear>2017</inceptionYear>
   <url>http://zeebe.io/</url>
@@ -11,7 +11,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>0.26.1-SNAPSHOT</version>
+    <version>0.26.2</version>
     <relativePath>../bom</relativePath>
   </parent>
 
@@ -998,7 +998,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore/>
+                    <ignore />
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -1093,7 +1093,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence/>
+                  <dependencyConvergence />
                 </rules>
               </configuration>
             </execution>
@@ -1104,7 +1104,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions/>
+                  <banDuplicatePomDependencyVersions />
                 </rules>
               </configuration>
             </execution>
