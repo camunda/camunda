@@ -273,7 +273,6 @@ public class ErrorEventTest {
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
-            tuple("error-start-event", ProcessInstanceIntent.EVENT_OCCURRED),
             tuple("task", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple("error-subprocess", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("error-start-event", ProcessInstanceIntent.ELEMENT_ACTIVATED),
