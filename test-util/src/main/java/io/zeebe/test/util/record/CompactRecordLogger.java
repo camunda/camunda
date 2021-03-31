@@ -20,6 +20,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.zeebe.protocol.record.value.ErrorRecordValue;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.record.value.JobRecordValue;
@@ -56,11 +57,20 @@ public class CompactRecordLogger {
   private static final Map<String, String> ABBREVIATIONS =
       ofEntries(
           entry("PROCESS", "PROC"),
+          entry("INSTANCE", "INST"),
           entry("MESSAGE", "MSG"),
           entry("SUBSCRIPTION", "SUB"),
           entry("SEQUENCE", "SEQ"),
           entry("DISTRIBUTED", "DISTR"),
-          entry("ELEMENT", "ELMNT"));
+          entry("VARIABLE", "VAR"),
+          entry("ELEMENT_", ""),
+          entry("_ELEMENT", ""));
+
+  private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
+      ofEntries(
+          entry(RecordType.COMMAND, 'C'),
+          entry(RecordType.EVENT, 'E'),
+          entry(RecordType.COMMAND_REJECTION, 'R'));
 
   private final Map<ValueType, Function<Record<?>, String>> valueLoggers = new HashMap<>();
   private final int keyDigits;
@@ -86,6 +96,7 @@ public class CompactRecordLogger {
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION, this::summarizeProcessInstanceSubscription);
     valueLoggers.put(ValueType.VARIABLE, this::summarizeVariable);
     valueLoggers.put(ValueType.TIMER, this::summarizeTimer);
+    valueLoggers.put(ValueType.ERROR, this::summarizeError);
     // TODO please extend list
   }
 
@@ -168,13 +179,13 @@ public class CompactRecordLogger {
   private StringBuilder summarizeRecord(final Record<?> record) {
     final StringBuilder message = new StringBuilder();
 
-    if (record.getRecordType() != RecordType.COMMAND_REJECTION) {
-      message.append(summarizeIntent(record));
-      message.append(summarizePositionFields(record));
-      message.append(summarizeValue(record));
-    } else {
+    message.append(summarizeIntent(record));
+    message.append(summarizePositionFields(record));
+    message.append(summarizeValue(record));
+
+    if (record.getRecordType() == RecordType.COMMAND_REJECTION) {
+      message.append(" ");
       message.append(summarizeRejection(record));
-      message.append(summarizePositionFields(record));
     }
 
     return message;
@@ -194,7 +205,7 @@ public class CompactRecordLogger {
     final var valueType = record.getValueType();
 
     return new StringBuilder()
-        .append(record.getRecordType().toString().charAt(0))
+        .append(RECORD_TYPE_ABBREVIATIONS.get(record.getRecordType()))
         .append(" ")
         .append(rightPad(abbreviate(valueType.name()), valueTypeChars))
         .append(" ")
@@ -224,13 +235,13 @@ public class CompactRecordLogger {
   }
 
   private String summarizeProcessInformation(
-      final String bpmnProcessId, final long processInstancekey) {
-    if (!StringUtils.isEmpty(bpmnProcessId)) {
-      return String.format(
-          " in <process %s[%s]>", formatId(bpmnProcessId), shortenKey(processInstancekey));
-    } else {
-      return " in <process ?>";
-    }
+      final String bpmnProcessId, final long processInstanceKey) {
+
+    final var formattedProcessId =
+        StringUtils.isEmpty(bpmnProcessId) ? "?" : formatId(bpmnProcessId);
+    final var formattedInstanceKey = processInstanceKey < 0 ? "?" : shortenKey(processInstanceKey);
+
+    return String.format(" in <process %s[%s]>", formattedProcessId, formattedInstanceKey);
   }
 
   private String summarizeVariables(final Map<String, Object> variables) {
@@ -454,9 +465,11 @@ public class CompactRecordLogger {
 
   private StringBuilder summarizeRejection(final Record<?> record) {
     return new StringBuilder()
+        .append("!")
         .append(record.getRejectionType())
-        .append(" ")
-        .append(record.getRejectionReason());
+        .append(" (")
+        .append(StringUtils.abbreviate(record.getRejectionReason(), "..", 200))
+        .append(")");
   }
 
   private String summarizeTimer(final Record<?> record) {
@@ -479,6 +492,20 @@ public class CompactRecordLogger {
     }
 
     return builder.toString();
+  }
+
+  private String summarizeError(final Record<?> record) {
+    final var value = (ErrorRecordValue) record.getValue();
+    return new StringBuilder()
+        .append("\"")
+        .append(value.getExceptionMessage())
+        .append("\"")
+        .append(" ")
+        .append(summarizeProcessInformation(null, value.getProcessInstanceKey()))
+        .append(" (")
+        .append(StringUtils.abbreviate(value.getStacktrace(), "..", 100))
+        .append(")")
+        .toString();
   }
 
   private String shortenKey(final long input) {
