@@ -32,16 +32,13 @@ public final class StepTriggerTimer extends AbstractExecutionStep {
 
     final StepTriggerTimer that = (StepTriggerTimer) o;
 
-    if (timeToAdd != null ? !timeToAdd.equals(that.timeToAdd) : that.timeToAdd != null) {
-      return false;
-    }
-    return variables.equals(that.variables);
+    return getTimeToAdd() != null
+        ? getTimeToAdd().equals(that.getTimeToAdd())
+        : that.getTimeToAdd() == null;
   }
 
   @Override
   public int hashCode() {
-    int result = timeToAdd != null ? timeToAdd.hashCode() : 0;
-    result = 31 * result + variables.hashCode();
-    return result;
+    return getTimeToAdd() != null ? getTimeToAdd().hashCode() : 0;
   }
 }
