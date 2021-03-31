@@ -195,7 +195,7 @@ public class NonInterruptingEventSubprocessTest {
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
             .filter(r -> r.getValue().getElementId().startsWith("event_sub_"))
-            .limit(14)
+            .limit(15)
             .asList();
 
     assertThat(events)
