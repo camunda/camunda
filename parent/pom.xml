@@ -81,7 +81,7 @@
     <version.snakeyaml>1.28</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>2.27.2</version.wiremock>
-    <version.conscrypt>2.5.1</version.conscrypt>
+    <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.1</version.asm>
     <version.testcontainers>1.15.2</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
@@ -95,7 +95,7 @@
     <version.kryo>5.0.4</version.kryo>
     <version.awaitility>4.0.3</version.awaitility>
     <version.failsafe>2.4.0</version.failsafe>
-    <version.jqwik>1.5.0</version.jqwik>
+    <version.jqwik>1.5.1</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
 
 
