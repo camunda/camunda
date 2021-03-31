@@ -6,13 +6,12 @@
 package org.camunda.optimize.rest.engine;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.plugin.EngineRestFilterProvider;
 import org.camunda.optimize.plugin.engine.rest.EngineRestFilter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.glassfish.jersey.client.ClientProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -25,12 +24,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.util.EngineVersionChecker.checkEngineVersionSupport;
-
 @AllArgsConstructor
 @Component
+@Slf4j
 public class EngineContextFactory {
-  private static final Logger logger = LoggerFactory.getLogger(EngineContextFactory.class);
 
   private final ConfigurationService configurationService;
   private final EngineObjectMapperContextResolver engineObjectMapperContextResolver;
@@ -43,10 +40,6 @@ public class EngineContextFactory {
     this.configuredEngines = new HashMap<>();
     for (Map.Entry<String, EngineConfiguration> config : configurationService.getConfiguredEngines().entrySet()) {
       EngineContext engineContext = constructEngineContext(config);
-      checkEngineVersionSupport(
-        configurationService.getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()),
-        engineContext
-      );
       configuredEngines.put(engineContext.getEngineAlias(), engineContext);
     }
   }
@@ -54,9 +47,17 @@ public class EngineContextFactory {
   @PreDestroy
   public void close() {
     if (this.configuredEngines != null) {
-      this.configuredEngines.values().stream().map(EngineContext::getEngineClient).forEach(Client::close);
+      this.configuredEngines.values().forEach(EngineContext::close);
       this.configuredEngines = null;
     }
+  }
+
+  public EngineContext getConfiguredEngineByAlias(final String engineAlias) {
+    return configuredEngines.get(engineAlias);
+  }
+
+  public Collection<EngineContext> getConfiguredEngines() {
+    return configuredEngines.values();
   }
 
   private EngineContext constructEngineContext(Map.Entry<String, EngineConfiguration> config) {
@@ -78,29 +79,21 @@ public class EngineContextFactory {
     }
     for (EngineRestFilter engineRestFilter : engineRestFilterProvider.getPlugins()) {
       client.register((ClientRequestFilter) requestContext -> engineRestFilter.filter(
-        requestContext,
-        config.getKey(),
-        config.getValue().getName()
+        requestContext, config.getKey(), config.getValue().getName()
       ));
     }
     client.register(engineObjectMapperContextResolver);
     return client;
   }
 
-  public class LoggingFilter implements ClientRequestFilter {
+  private static class LoggingFilter implements ClientRequestFilter {
     @Override
     public void filter(ClientRequestContext requestContext) {
-      Object body = requestContext.getEntity() != null ? requestContext.getEntity() : "";
-      logger.trace("sending request to [{}] with body [{}]", requestContext.getUri(), body);
+      if (log.isTraceEnabled()) {
+        Object body = requestContext.getEntity() != null ? requestContext.getEntity() : "";
+        log.trace("sending request to [{}] with body [{}]", requestContext.getUri(), body);
+      }
     }
-  }
-
-  public EngineContext getConfiguredEngineByAlias(final String engineAlias) {
-    return configuredEngines.get(engineAlias);
-  }
-
-  public Collection<EngineContext> getConfiguredEngines() {
-    return configuredEngines.values();
   }
 
 }

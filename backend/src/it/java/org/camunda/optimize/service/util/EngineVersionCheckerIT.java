@@ -5,51 +5,35 @@
  */
 package org.camunda.optimize.service.util;
 
+import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Order;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_CONTEXT_LOCATION;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
+import org.slf4j.event.Level;
 
 public class EngineVersionCheckerIT extends AbstractIT {
 
   @RegisterExtension
-  @Order(5)
-  public EmbeddedOptimizeExtension embeddedOptimizeExtension2 =
-    new EmbeddedOptimizeExtension("org.camunda.optimize.service.util.VersionCheckerSpringITConfig");
+  protected final LogCapturer engineContextLogCapturer = LogCapturer.create()
+    .forLevel(Level.ERROR)
+    .captureForType(EngineContext.class);
 
   @Test
   public void engineVersionCantBeDetermined() {
-    embeddedOptimizeExtension2.stopOptimize();
+    // given
+    embeddedOptimizeExtension.getDefaultEngineConfiguration()
+      .setRest("http://localhost:8080/engine-rest/ding-dong-you-rest-path-is-wrong");
 
-    try {
-      embeddedOptimizeExtension2.startOptimize();
-    } catch (Exception e) {
-      //expected
-      assertThat(
-        e.getCause()
-          .getMessage()
-          .contains("While checking the Engine version, following error occurred: Status code: 404,\n this " +
-                      "means you either configured a wrong endpoint or you have an unsupported engine version < "),
-        is(true)
-      );
-      return;
-    }
+    // when
+    embeddedOptimizeExtension.reloadConfiguration();
+    embeddedOptimizeExtension.authenticateUser("", "");
 
-    fail("Exception expected");
+    engineContextLogCapturer.assertContains(
+      "Failed to validate engine camunda-bpm version with error message: While checking the Engine version, " +
+        "following error occurred: Status code: 404, this means you either configured a wrong endpoint or you have" +
+        " an unsupported engine version < "
+    );
   }
 
-  @AfterEach
-  public void setContextBack() throws Exception {
-    embeddedOptimizeExtension2.stopOptimize();
-    EmbeddedOptimizeExtension embeddedOptimizeExtension =
-      new EmbeddedOptimizeExtension(DEFAULT_CONTEXT_LOCATION);
-    embeddedOptimizeExtension.startOptimize();
-  }
 }

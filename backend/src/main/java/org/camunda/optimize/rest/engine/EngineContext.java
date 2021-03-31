@@ -24,6 +24,7 @@ import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionNotFoun
 import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionFetchException;
 import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionNotFoundException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.EngineVersionChecker;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import javax.ws.rs.client.Client;
@@ -86,6 +87,8 @@ public class EngineContext {
   private final Client engineClient;
   private final ConfigurationService configurationService;
 
+  private boolean versionValidated;
+
   public EngineContext(final String engineAlias,
                        final Client engineClient,
                        final ConfigurationService configurationService) {
@@ -95,7 +98,22 @@ public class EngineContext {
   }
 
   public Client getEngineClient() {
+    if (!versionValidated) {
+      try {
+        EngineVersionChecker.checkEngineVersionSupport(
+          engineClient, configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias())
+        );
+        this.versionValidated = true;
+      } catch (Exception e) {
+        log.error("Failed to validate engine {} version with error message: {}", getEngineAlias(), e.getMessage(), e);
+        throw e;
+      }
+    }
     return engineClient;
+  }
+
+  public void close() {
+    this.engineClient.close();
   }
 
   public String getEngineAlias() {
@@ -176,7 +194,7 @@ public class EngineContext {
 
   public DecisionDefinitionOptimizeDto fetchDecisionDefinition(final String decisionDefinitionId) {
     final Response response =
-      engineClient.target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+      getEngineClient().target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(DECISION_DEFINITION_ENDPOINT_TEMPLATE)
         .resolveTemplate("id", decisionDefinitionId)
         .request(MediaType.APPLICATION_JSON)
@@ -221,7 +239,7 @@ public class EngineContext {
 
   public ProcessDefinitionOptimizeDto fetchProcessDefinition(final String processDefinitionId) {
     final Response response =
-      engineClient.target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+      getEngineClient().target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(PROCESS_DEFINITION_ENDPOINT_TEMPLATE)
         .resolveTemplate("id", processDefinitionId)
         .request(MediaType.APPLICATION_JSON)
@@ -266,7 +284,7 @@ public class EngineContext {
 
   public HistoricProcessInstanceDto fetchProcessInstance(final String processInstanceId) {
     final Response response =
-      engineClient.target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+      getEngineClient().target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(PROCESS_INSTANCE_ENDPOINT_TEMPLATE)
         .resolveTemplate("id", processInstanceId)
         .request(MediaType.APPLICATION_JSON)

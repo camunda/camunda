@@ -62,7 +62,7 @@ public class EngineAuthenticationProvider {
         Exception runtimeException = response.readEntity(RuntimeException.class);
         return getAuthenticationResultFromError(credentialsRequestDto, engineContext, runtimeException);
       }
-    } catch (ProcessingException e) {
+    } catch (ProcessingException | OptimizeRuntimeException e) {
       String errorMessage =
         String.format(
           "Could not authenticated against engine [%s]. " + CONNECTION_WAS_REFUSED_ERROR,

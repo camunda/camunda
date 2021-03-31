@@ -77,8 +77,7 @@ public class CompositeAggregationScroller {
         log.info(
           "Was not able to get next page of {} aggregation because at least one instance from {} does not exist.",
           pathToAggregation.getLast(),
-          Arrays.toString(searchRequest.indices()),
-          e
+          Arrays.toString(searchRequest.indices())
         );
         return Collections.emptyList();
       }
