@@ -96,8 +96,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
       if (isInstanceIndexNotFoundException(e)) {
         log.info(
           "Could not evaluate report because required instance index {} does not exist. Returning empty result instead",
-          getIndexName(executionContext),
-          e
+          getIndexName(executionContext)
         );
         return mapToReportResult.apply(new CompositeCommandResult(
           executionContext.getReportData(),

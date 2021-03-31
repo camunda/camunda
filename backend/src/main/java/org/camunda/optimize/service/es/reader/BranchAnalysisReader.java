@@ -231,8 +231,7 @@ public class BranchAnalysisReader {
         log.info(
           "Was not able to perform branch analysis because the required instance index {} does not " +
             "exist. Returning 0 instead.",
-          getProcessInstanceIndexAliasName(request.getProcessDefinitionKey()),
-          e
+          getProcessInstanceIndexAliasName(request.getProcessDefinitionKey())
         );
         return 0L;
       }

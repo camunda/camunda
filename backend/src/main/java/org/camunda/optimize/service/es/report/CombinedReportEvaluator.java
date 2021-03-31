@@ -85,8 +85,7 @@ public class CombinedReportEvaluator {
       if (isInstanceIndexNotFoundException(e)) {
         log.info(
           "Could not evaluate combined instance count because no instance indices exist. " +
-            "Returning a count of 0 instead.",
-          e
+            "Returning a count of 0 instead."
         );
         return 0L;
       } else {

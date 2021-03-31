@@ -289,8 +289,7 @@ public class MinMaxStatsService {
       log.info(
         "Could not calculate minMaxStats because required instance index with name {} does not exist. " +
           "Returning min and max 0 instead.",
-        indexName,
-        e
+        indexName
       );
       return new MinMaxStatDto(0, 0);
     }

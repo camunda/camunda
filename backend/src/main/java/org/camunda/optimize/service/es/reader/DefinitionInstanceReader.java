@@ -77,8 +77,7 @@ public class DefinitionInstanceReader {
         log.info(
           "Was not able to retrieve definition keys for instances because no {} instance indices exist. " +
             "Returning empty set.",
-          type,
-          e
+          type
         );
         return Collections.emptySet();
       }

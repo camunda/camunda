@@ -169,8 +169,7 @@ public class DecisionVariableReader {
         log.info(
           "Was not able to fetch variable values because no instance index with alias {} exists. " +
             "Returning empty list.",
-          getDecisionInstanceIndexAliasName(requestDto.getDecisionDefinitionKey()),
-          e
+          getDecisionInstanceIndexAliasName(requestDto.getDecisionDefinitionKey())
         );
         return Collections.emptyList();
       }

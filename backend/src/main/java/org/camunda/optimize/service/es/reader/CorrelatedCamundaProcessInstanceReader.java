@@ -118,7 +118,7 @@ public class CorrelatedCamundaProcessInstanceReader {
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.warn("Was not able to fetch sample correlation values because no instance indices exist. " +
-                    "Returning empty list.", e);
+                    "Returning empty list.");
         return Collections.emptyList();
       }
       throw e;
@@ -167,7 +167,7 @@ public class CorrelatedCamundaProcessInstanceReader {
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info("Was not able to fetch instances for correlation values because no instance indices exist. " +
-            "Returning empty list.", e);
+            "Returning empty list.");
         return Collections.emptyList();
       }
       throw e;

@@ -158,8 +158,7 @@ public class ProcessInstanceReader {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
           "Was not able to obtain process instance IDs because instance index {} does not exist. Returning empty result.",
-          getProcessInstanceIndexAliasName(processDefinitionKey),
-          e
+          getProcessInstanceIndexAliasName(processDefinitionKey)
         );
         result.setPagingState(null);
         return result;

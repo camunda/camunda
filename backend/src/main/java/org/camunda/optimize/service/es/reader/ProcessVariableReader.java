@@ -196,7 +196,7 @@ public class ProcessVariableReader {
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info("Was not able to fetch variable values because no instance indices exist. Returning empty list.", e);
+        log.info("Was not able to fetch variable values because no instance indices exist. Returning empty list.");
         return Collections.emptyList();
       }
       throw e;
