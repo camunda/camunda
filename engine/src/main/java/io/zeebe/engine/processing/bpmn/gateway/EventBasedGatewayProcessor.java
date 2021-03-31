@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.bpmn.gateway;
 
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnElementProcessor;
+import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
@@ -50,9 +51,19 @@ public final class EventBasedGatewayProcessor
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
 
+    final var eventTrigger =
+        eventSubscriptionBehavior
+            .findEventTrigger(context)
+            .orElseThrow(
+                () ->
+                    new BpmnProcessingException(
+                        context,
+                        "Expected an event trigger to complete the event-based gateway but not found."));
+
     // transition to completed and continue on the event of the gateway that was triggered
     // - according to the BPMN specification, the sequence flow to this event is not taken
-    eventSubscriptionBehavior.triggerEventBasedGateway(context);
+    final var completed = stateTransitionBehavior.transitionToCompleted(context);
+    eventSubscriptionBehavior.activateTriggeredEvent(completed, eventTrigger);
   }
 
   @Override

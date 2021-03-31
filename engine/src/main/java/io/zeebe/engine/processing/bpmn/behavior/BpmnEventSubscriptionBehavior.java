@@ -18,7 +18,7 @@ import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableReceiveTask;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.message.MessageCorrelationKeyException;
 import io.zeebe.engine.processing.message.MessageNameException;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
@@ -39,6 +39,7 @@ import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.util.Either;
+import java.util.Optional;
 
 public final class BpmnEventSubscriptionBehavior {
 
@@ -113,27 +114,7 @@ public final class BpmnEventSubscriptionBehavior {
     catchEventBehavior.unsubscribeFromEvents(context, commandWriter, sideEffects);
   }
 
-  public void triggerBoundaryOrIntermediateEvent(
-      final ExecutableReceiveTask element, final BpmnElementContext context) {
-
-    eventTriggerBehavior.triggerEvent(
-        context,
-        eventTrigger -> {
-          final boolean hasEventTriggeredForBoundaryEvent =
-              element.getBoundaryEvents().stream()
-                  .anyMatch(
-                      boundaryEvent -> boundaryEvent.getId().equals(eventTrigger.getElementId()));
-
-          if (hasEventTriggeredForBoundaryEvent) {
-            return triggerBoundaryEvent(element, context, eventTrigger);
-
-          } else {
-            stateTransitionBehavior.transitionToCompleting(context);
-            return context.getElementInstanceKey();
-          }
-        });
-  }
-
+  // TODO (saig0): replace by findEventTrigger + activateTriggeredEvent (#6187)
   public void triggerBoundaryEvent(
       final ExecutableActivity element, final BpmnElementContext context) {
     eventTriggerBehavior.triggerEvent(
@@ -204,43 +185,42 @@ public final class BpmnEventSubscriptionBehavior {
         Purpose.DEFERRED);
   }
 
+  // TODO (saig0): replace by findEventTrigger + activateTriggeredEvent (#6187)
   public void publishTriggeredBoundaryEvent(final BpmnElementContext context) {
     publishTriggeredEvent(context, BpmnElementType.BOUNDARY_EVENT);
   }
 
-  private void publishTriggeredEvent(
-      final BpmnElementContext context, final BpmnElementType elementType) {
-    elementInstanceState.getDeferredRecords(context.getElementInstanceKey()).stream()
-        .filter(record -> record.getValue().getBpmnElementType() == elementType)
-        .filter(record -> record.getState() == ProcessInstanceIntent.ELEMENT_ACTIVATING)
-        .findFirst()
-        .ifPresent(
-            deferredRecord ->
-                publishActivatingEvent(deferredRecord.getKey(), deferredRecord.getValue()));
+  /**
+   * Checks if the given element instance was triggered by an event. Should be used in combination
+   * with {@link #activateTriggeredEvent(BpmnElementContext, EventTrigger)}.
+   *
+   * @param context the element instance to check
+   * @return the event data if the element instance was triggered. Otherwise, it returns {@link
+   *     Optional#empty()}.
+   */
+  public Optional<EventTrigger> findEventTrigger(final BpmnElementContext context) {
+    final var elementInstanceKey = context.getElementInstanceKey();
+    return Optional.ofNullable(eventScopeInstanceState.peekEventTrigger(elementInstanceKey));
   }
 
-  private void publishActivatingEvent(
-      final long elementInstanceKey, final ProcessInstanceRecord eventRecord) {
+  /**
+   * Activates the element that was triggered by an event and pass in the variables of the event.
+   * Should be called after {@link #findEventTrigger(BpmnElementContext)}.
+   *
+   * @param context the element instance that was triggered
+   * @param eventTrigger the event data returned by {@link #findEventTrigger(BpmnElementContext)}
+   */
+  public void activateTriggeredEvent(
+      final BpmnElementContext context, final EventTrigger eventTrigger) {
 
-    stateWriter.appendFollowUpEvent(
-        elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
-  }
-
-  public void triggerEventBasedGateway(final BpmnElementContext context) {
-
-    final var eventTrigger =
-        eventScopeInstanceState.peekEventTrigger(context.getElementInstanceKey());
-    if (eventTrigger == null) {
-      throw new BpmnProcessingException(
-          context, "Expected event trigger for event-based gateway but not found.");
-    }
+    final var triggeredEvent =
+        processState.getFlowElement(
+            context.getProcessDefinitionKey(),
+            eventTrigger.getElementId(),
+            ExecutableFlowElement.class);
 
     final var elementRecord =
-        getEventRecord(
-            context.getRecordValue(), eventTrigger, BpmnElementType.INTERMEDIATE_CATCH_EVENT);
-
-    // the event trigger is deleted on transition to completed
-    stateTransitionBehavior.transitionToCompleted(context);
+        getEventRecord(context.getRecordValue(), eventTrigger, triggeredEvent.getElementType());
 
     final var eventInstanceKey = keyGenerator.nextKey();
     // transition to activating and activated directly to pass the variables to this instance
@@ -261,6 +241,24 @@ public final class BpmnEventSubscriptionBehavior {
 
     commandWriter.appendFollowUpCommand(
         eventInstanceKey, ProcessInstanceIntent.COMPLETE_ELEMENT, elementRecord);
+  }
+
+  private void publishTriggeredEvent(
+      final BpmnElementContext context, final BpmnElementType elementType) {
+    elementInstanceState.getDeferredRecords(context.getElementInstanceKey()).stream()
+        .filter(record -> record.getValue().getBpmnElementType() == elementType)
+        .filter(record -> record.getState() == ProcessInstanceIntent.ELEMENT_ACTIVATING)
+        .findFirst()
+        .ifPresent(
+            deferredRecord ->
+                publishActivatingEvent(deferredRecord.getKey(), deferredRecord.getValue()));
+  }
+
+  private void publishActivatingEvent(
+      final long elementInstanceKey, final ProcessInstanceRecord eventRecord) {
+
+    stateWriter.appendFollowUpEvent(
+        elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
   }
 
   public boolean tryToActivateTriggeredStartEvent(final BpmnElementContext context) {

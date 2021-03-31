@@ -12,7 +12,6 @@ import io.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
-import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableReceiveTask;
@@ -20,7 +19,6 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableReceiveTask
 public final class ReceiveTaskProcessor implements BpmnElementProcessor<ExecutableReceiveTask> {
 
   private final BpmnIncidentBehavior incidentBehavior;
-  private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
@@ -28,7 +26,6 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   public ReceiveTaskProcessor(final BpmnBehaviors behaviors) {
     eventSubscriptionBehavior = behaviors.eventSubscriptionBehavior();
     incidentBehavior = behaviors.incidentBehavior();
-    stateBehavior = behaviors.stateBehavior();
     stateTransitionBehavior = behaviors.stateTransitionBehavior();
     variableMappingBehavior = behaviors.variableMappingBehavior();
   }
@@ -39,7 +36,8 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onActivating(final ExecutableReceiveTask element, final BpmnElementContext context) {
+  public void onActivate(final ExecutableReceiveTask element, final BpmnElementContext context) {
+
     variableMappingBehavior
         .applyInputMappings(context, element)
         .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
@@ -49,45 +47,35 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onActivated(final ExecutableReceiveTask element, final BpmnElementContext context) {
-    // nothing to do here
-  }
+  public void onComplete(final ExecutableReceiveTask element, final BpmnElementContext context) {
 
-  @Override
-  public void onCompleting(final ExecutableReceiveTask element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .ifRightOrLeft(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              stateTransitionBehavior.transitionToCompleted(context);
+              final var completed = stateTransitionBehavior.transitionToCompleted(context);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             },
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
-  public void onCompleted(final ExecutableReceiveTask element, final BpmnElementContext context) {
-    stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
-    stateBehavior.removeElementInstance(context);
-  }
+  public void onTerminate(final ExecutableReceiveTask element, final BpmnElementContext context) {
 
-  @Override
-  public void onTerminating(final ExecutableReceiveTask element, final BpmnElementContext context) {
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
-    stateTransitionBehavior.transitionToTerminated(context);
-  }
-
-  @Override
-  public void onTerminated(final ExecutableReceiveTask element, final BpmnElementContext context) {
-    eventSubscriptionBehavior.publishTriggeredBoundaryEvent(context);
     incidentBehavior.resolveIncidents(context);
-    stateTransitionBehavior.onElementTerminated(element, context);
-    stateBehavior.removeElementInstance(context);
-  }
 
-  @Override
-  public void onEventOccurred(
-      final ExecutableReceiveTask element, final BpmnElementContext context) {
-    eventSubscriptionBehavior.triggerBoundaryOrIntermediateEvent(element, context);
+    eventSubscriptionBehavior
+        .findEventTrigger(context)
+        .ifPresentOrElse(
+            eventTrigger -> {
+              final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+              eventSubscriptionBehavior.activateTriggeredEvent(terminated, eventTrigger);
+            },
+            () -> {
+              final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+              stateTransitionBehavior.onElementTerminated(element, terminated);
+            });
   }
 }
