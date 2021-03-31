@@ -159,38 +159,6 @@ public final class ReplayStateTest {
                       .withElementType(BpmnElementType.END_EVENT)
                       .withElementId("end")
                       .getFirst();
-                }),
-        // TODO (saig0): replace with property-based test (#6662)
-        testCase("triggered event-based gateway")
-            .withProcess(
-                Bpmn.createExecutableProcess(PROCESS_ID)
-                    .startEvent()
-                    .eventBasedGateway("fork")
-                    .intermediateCatchEvent(
-                        "a", e -> e.message(m -> m.name("a").zeebeCorrelationKeyExpression("key")))
-                    .endEvent("end-a")
-                    .moveToNode("fork")
-                    .intermediateCatchEvent(
-                        "b", e -> e.message(m -> m.name("b").zeebeCorrelationKeyExpression("key")))
-                    .endEvent("end-b")
-                    .done())
-            .withExecution(
-                engine -> {
-                  final long piKey =
-                      engine
-                          .processInstance()
-                          .ofBpmnProcessId(PROCESS_ID)
-                          .withVariable("key", "x")
-                          .create();
-
-                  engine.message().withName("a").withCorrelationKey("x").publish();
-
-                  return RecordingExporter.processInstanceRecords(
-                          ProcessInstanceIntent.ELEMENT_COMPLETED)
-                      .withProcessInstanceKey(piKey)
-                      .withElementType(BpmnElementType.END_EVENT)
-                      .withElementId("end-a")
-                      .getFirst();
                 }));
   }
 
