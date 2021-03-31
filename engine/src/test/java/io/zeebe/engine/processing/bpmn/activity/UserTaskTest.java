@@ -185,6 +185,37 @@ public final class UserTaskTest {
   }
 
   @Test
+  public void shouldCreateJobWithFormKeyHeader() {
+    // given
+    final String formKey = Strings.newRandomValidBpmnId();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeUserTaskForm(formKey, "User Task Form")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders)
+        .hasSize(1)
+        .containsEntry(
+            Protocol.USER_TASK_FORM_KEY_HEADER_NAME,
+            String.format(
+                "%s:%s:%s",
+                USER_TASK_FORM_KEY_CAMUNDA_FORMS_FORMAT,
+                USER_TASK_FORM_KEY_BPMN_LOCATION,
+                formKey));
+  }
+
+  @Test
   public void shouldCreateJobWithFormKeyHeaderAndCustomHeaders() {
     // given
     final String formKey = Strings.newRandomValidBpmnId();
