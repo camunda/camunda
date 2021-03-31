@@ -19,14 +19,14 @@ fixture('Operations')
     await t.useRole(demoUser);
     await t.maximizeWindow();
     await t.click(
-      screen.getByRole('listitem', {
+      screen.queryByRole('listitem', {
         name: /running instances/i,
       })
     );
   });
 
 test('infinite scrolling', async (t) => {
-  await t.click(screen.getByTitle('Expand Operations'));
+  await t.click(screen.queryByTitle('Expand Operations'));
 
   await t.expect(screen.getAllByTestId('operations-entry').count).eql(20);
 
@@ -42,7 +42,7 @@ test.skip('Retry and Cancel single instance ', async (t) => {
 
   // filter by instance id
   await t.typeText(
-    screen.getByRole('textbox', {
+    screen.queryByRole('textbox', {
       name: 'Instance Id(s) separated by space or comma',
     }),
     instance.processInstanceKey,
@@ -52,41 +52,41 @@ test.skip('Retry and Cancel single instance ', async (t) => {
   // wait for filter to be applied
   await t
     .expect(
-      within(screen.getByTestId('instances-list')).getAllByRole('row').count
+      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
     )
     .eql(1);
 
   // retry single instance using operation button
   await t.click(
-    screen.getByRole('button', {
+    screen.queryByRole('button', {
       name: `Retry Instance ${instance.processInstanceKey}`,
     })
   );
 
   // expect spinner to show and disappear
-  await t.expect(screen.getByTestId('operation-spinner').exists).ok();
+  await t.expect(screen.queryByTestId('operation-spinner').exists).ok();
   await t.expect(screen.queryByTestId('operation-spinner').exists).notOk();
 
   // cancel single instance using operation button
   await t.click(
-    screen.getByRole('button', {
+    screen.queryByRole('button', {
       name: `Cancel Instance ${instance.processInstanceKey}`,
     })
   );
 
   await t
-    .expect(screen.getByTestId('operations-list').visible)
+    .expect(screen.queryByTestId('operations-list').visible)
     .notOk()
-    .click(screen.getByRole('button', {name: 'Expand Operations'}))
+    .click(screen.queryByRole('button', {name: 'Expand Operations'}))
     .expect(screen.findByTestId('operations-list').visible)
     .ok();
 
-  const operationItem = within(screen.getByTestId('operations-list'))
+  const operationItem = within(screen.queryByTestId('operations-list'))
     .getAllByRole('listitem')
     .nth(0);
-  const operationId = await within(operationItem).getByTestId('operation-id')
+  const operationId = await within(operationItem).queryByTestId('operation-id')
     .innerText;
-  await t.expect(within(operationItem).getByText('Cancel').exists).ok();
+  await t.expect(within(operationItem).queryByText('Cancel').exists).ok();
 
   // wait for instance to disappear from instances list
   await t
@@ -99,30 +99,30 @@ test.skip('Retry and Cancel single instance ', async (t) => {
   // wait for instance to finish in operation list (end time is present)
   await t.expect(within(operationItem).queryByText(DATE_REGEX).exists).ok();
 
-  await t.click(within(operationItem).getByText('1 Instance'));
+  await t.click(within(operationItem).queryByText('1 Instance'));
 
   // wait for filter to be applied
   await t
     .expect(
-      within(screen.getByTestId('instances-list')).getAllByRole('row').count
+      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
     )
     .eql(1);
 
   // expect operation id filter to be set
   await t
     .expect(
-      screen.getByRole('textbox', {
+      screen.queryByRole('textbox', {
         name: 'Operation Id',
       }).value
     )
     .eql(operationId);
 
   const instanceRow = within(
-    within(screen.getByTestId('instances-list')).getAllByRole('row').nth(0)
+    within(screen.queryByTestId('instances-list')).getAllByRole('row').nth(0)
   );
   await t
     .expect(
-      instanceRow.getByTestId(`CANCELED-icon-${instance.processInstanceKey}`)
+      instanceRow.queryByTestId(`CANCELED-icon-${instance.processInstanceKey}`)
         .exists
     )
     .ok()
@@ -131,9 +131,9 @@ test.skip('Retry and Cancel single instance ', async (t) => {
         .exists
     )
     .notOk()
-    .expect(instanceRow.getByText(instance.bpmnProcessId).exists)
+    .expect(instanceRow.queryByText(instance.bpmnProcessId).exists)
     .ok()
-    .expect(instanceRow.getByText(instance.processInstanceKey).exists)
+    .expect(instanceRow.queryByText(instance.processInstanceKey).exists)
     .ok();
 });
 
@@ -142,12 +142,12 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
   const {initialData} = t.fixtureCtx;
   const instances = initialData.batchOperationInstances.slice(0, 5);
   const instancesListItems = within(
-    screen.getByTestId('operations-list')
+    screen.queryByTestId('operations-list')
   ).getAllByRole('listitem');
 
   // filter by instance ids
   await t.typeText(
-    screen.getByRole('textbox', {
+    screen.queryByRole('textbox', {
       name: 'Instance Id(s) separated by space or comma',
     }),
     // @ts-ignore I had to use ignore instead of expect-error here because Testcafe would not run the tests with it
@@ -155,7 +155,7 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
     {paste: true}
   );
 
-  const instancesList = screen.getByTestId('instances-list');
+  const instancesList = screen.queryByTestId('instances-list');
 
   // wait for the filter to be applied
   await t
@@ -163,24 +163,26 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
     .eql(instances.length);
 
   await t.click(
-    screen.getByRole('checkbox', {
+    screen.queryByRole('checkbox', {
       name: 'Select all instances',
     })
   );
 
   await t.click(
-    screen.getByRole('button', {
+    screen.queryByRole('button', {
       name: `Apply Operation on ${instances.length} Instances...`,
     })
   );
 
   await t
     .click(
-      within(screen.getByTestId('menu')).getByRole('button', {name: 'Retry'})
+      within(screen.queryByTestId('menu')).queryByRole('button', {
+        name: 'Retry',
+      })
     )
-    .expect(screen.getByTestId('operations-list').visible)
+    .expect(screen.queryByTestId('operations-list').visible)
     .notOk()
-    .click(screen.getByRole('button', {name: 'Apply'}))
+    .click(screen.queryByRole('button', {name: 'Apply'}))
     .expect(screen.findByTestId('operations-list').visible)
     .ok()
     .expect(screen.getAllByTitle(/has scheduled operations/i).count)
@@ -189,7 +191,7 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
   // expect first operation item to have progress bar
   await t
     .expect(
-      within(instancesListItems.nth(0)).getByTestId('progress-bar').exists
+      within(instancesListItems.nth(0)).queryByTestId('progress-bar').exists
     )
     .ok();
 
@@ -204,26 +206,26 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
 
   // reset filters
   await t
-    .click(screen.getByRole('button', {name: 'Reset filters'}))
+    .click(screen.queryByRole('button', {name: 'Reset filters'}))
     .expect(within(instancesList).getAllByRole('row').count)
     .gt(instances.length);
 
   // select all instances from operation
   await t
     .click(
-      within(instancesListItems.nth(0)).getByText(
+      within(instancesListItems.nth(0)).queryByText(
         `${instances.length} Instances`
       )
     )
     .expect(within(instancesList).getAllByRole('row').count)
     .eql(instances.length)
     .expect(
-      screen.getByRole('textbox', {
+      screen.queryByRole('textbox', {
         name: 'Operation Id',
       }).value
     )
     .eql(
-      await within(instancesListItems.nth(0)).getByTestId('operation-id')
+      await within(instancesListItems.nth(0)).queryByTestId('operation-id')
         .innerText
     );
 
@@ -234,29 +236,32 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
       async (instance) =>
         await t
           .expect(
-            within(instancesList).getByText(instance.processInstanceKey).exists
+            within(instancesList).queryByText(instance.processInstanceKey)
+              .exists
           )
           .ok()
     )
   );
 
   await t.click(
-    screen.getByRole('checkbox', {
+    screen.queryByRole('checkbox', {
       name: 'Select all instances',
     })
   );
 
   await t.click(
-    screen.getByRole('button', {
+    screen.queryByRole('button', {
       name: `Apply Operation on ${instances.length} Instances...`,
     })
   );
 
   await t
     .click(
-      within(screen.getByTestId('menu')).getByRole('button', {name: 'Cancel'})
+      within(screen.queryByTestId('menu')).queryByRole('button', {
+        name: 'Cancel',
+      })
     )
-    .click(screen.getByRole('button', {name: 'Apply'}))
+    .click(screen.queryByRole('button', {name: 'Apply'}))
     .expect(screen.findByTestId('operations-list').visible)
     .ok()
     .expect(screen.getAllByTitle(/has scheduled operations/i).count)
@@ -265,7 +270,7 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
   // expect first operation item to have progress bar
   await t
     .expect(
-      within(instancesListItems.nth(0)).getByTestId('progress-bar').exists
+      within(instancesListItems.nth(0)).queryByTestId('progress-bar').exists
     )
     .ok();
 

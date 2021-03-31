@@ -22,7 +22,7 @@ fixture('Instances')
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
     await t.click(
-      screen.getByRole('listitem', {
+      screen.queryByRole('listitem', {
         name: /running instances/i,
       })
     );
@@ -32,48 +32,50 @@ test('Instances Page Initial Load', async (t) => {
   const {initialData} = t.fixtureCtx;
 
   await t
-    .expect(screen.getByRole('checkbox', {name: 'Running Instances'}).checked)
+    .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
     .ok()
-    .expect(screen.getByRole('checkbox', {name: 'Active'}).checked)
+    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
     .ok()
-    .expect(screen.getByRole('checkbox', {name: 'Incidents'}).checked)
+    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
     .ok()
-    .expect(screen.getByRole('checkbox', {name: 'Finished Instances'}).checked)
+    .expect(
+      screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
+    )
     .notOk()
-    .expect(screen.getByRole('checkbox', {name: 'Completed'}).checked)
+    .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
     .notOk()
-    .expect(screen.getByRole('checkbox', {name: 'Canceled'}).checked)
+    .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
     .notOk();
 
   await t
-    .expect(screen.getByText('There is no Process selected').exists)
+    .expect(screen.queryByText('There is no Process selected').exists)
     .ok()
     .expect(
-      screen.getByText(
+      screen.queryByText(
         'To see a Diagram, select a Process in the Filters panel'
       ).exists
     )
     .ok();
 
   await t.typeText(
-    screen.getByRole('textbox', {
+    screen.queryByRole('textbox', {
       name: /instance id\(s\) separated by space or comma/i,
     }),
     `${initialData.instanceWithoutAnIncident.processInstanceKey}, ${initialData.instanceWithAnIncident.processInstanceKey}`
   );
 
-  const withinInstancesList = within(screen.getByTestId('instances-list'));
+  const withinInstancesList = within(screen.queryByTestId('instances-list'));
   await t.expect(withinInstancesList.getAllByRole('row').count).eql(2);
 
   await t
     .expect(
-      withinInstancesList.getByTestId(
+      withinInstancesList.queryByTestId(
         `INCIDENT-icon-${initialData.instanceWithAnIncident.processInstanceKey}`
       ).exists
     )
     .ok()
     .expect(
-      withinInstancesList.getByTestId(
+      withinInstancesList.queryByTestId(
         `ACTIVE-icon-${initialData.instanceWithoutAnIncident.processInstanceKey}`
       ).exists
     )
@@ -86,20 +88,20 @@ test('Select flow node in diagram', async (t) => {
 
   // Filter by Instance ID
   await t.typeText(
-    screen.getByRole('textbox', {
+    screen.queryByRole('textbox', {
       name: 'Instance Id(s) separated by space or comma',
     }),
     instance.processInstanceKey,
     {paste: true}
   );
 
-  const processCombobox = screen.getByRole('combobox', {
+  const processCombobox = screen.queryByRole('combobox', {
     name: 'Process',
   });
 
   // Select "Order Process"
   await t.click(processCombobox).click(
-    within(processCombobox).getByRole('option', {
+    within(processCombobox).queryByRole('option', {
       name: 'Order process',
     })
   );
@@ -107,8 +109,8 @@ test('Select flow node in diagram', async (t) => {
   // Select "Ship Articles" flow node
   const shipArticlesTaskId = 'shipArticles';
   await t
-    .click(within(screen.getByTestId('diagram')).getByText('Ship Articles'))
-    .expect(screen.getByRole('combobox', {name: 'Flow Node'}).value)
+    .click(within(screen.queryByTestId('diagram')).queryByText('Ship Articles'))
+    .expect(screen.queryByRole('combobox', {name: 'Flow Node'}).value)
     .eql(shipArticlesTaskId)
     .expect(
       screen.queryByText('There are no Instances matching this filter set')
@@ -132,11 +134,11 @@ test('Select flow node in diagram', async (t) => {
   // Select "Check Payment" flow node
   const checkPaymentTaskId = 'checkPayment';
   await t
-    .click(within(screen.getByTestId('diagram')).getByText('Check payment'))
-    .expect(screen.getByRole('combobox', {name: 'Flow Node'}).value)
+    .click(within(screen.queryByTestId('diagram')).queryByText('Check payment'))
+    .expect(screen.queryByRole('combobox', {name: 'Flow Node'}).value)
     .eql(checkPaymentTaskId)
     .expect(
-      within(screen.getByTestId('instances-list')).getAllByRole('row').count
+      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
     )
     .eql(1)
     .expect(await getPathname())

@@ -20,7 +20,7 @@ fixture('Dashboard')
     await t.useRole(demoUser);
     await t.maximizeWindow();
     await t.click(
-      screen.getByRole('listitem', {
+      screen.queryByRole('listitem', {
         name: /dashboard/i,
       })
     );
@@ -28,18 +28,18 @@ fixture('Dashboard')
 
 test('Statistics', async (t) => {
   const incidentInstancesCount = Number(
-    await within(screen.getByTestId('metric-panel')).queryByTestId(
+    await within(screen.queryByTestId('metric-panel')).queryByTestId(
       'incident-instances-badge'
     ).textContent
   );
   const activeInstancesCount = Number(
-    await within(screen.getByTestId('metric-panel')).queryByTestId(
+    await within(screen.queryByTestId('metric-panel')).queryByTestId(
       'active-instances-badge'
     ).textContent
   );
 
   await t
-    .expect(screen.getByTestId('total-instances-link').textContent)
+    .expect(screen.queryByTestId('total-instances-link').textContent)
     .eql(
       `${
         incidentInstancesCount + activeInstancesCount
@@ -53,14 +53,14 @@ test('Statistics', async (t) => {
   await t
     .expect(
       within(
-        screen.getByRole('listitem', {name: 'Running Instances'})
-      ).getByTestId('badge').textContent
+        screen.queryByRole('listitem', {name: 'Running Instances'})
+      ).queryByTestId('badge').textContent
     )
     .eql('38');
 
   await t
     .expect(
-      within(screen.getByRole('listitem', {name: 'Filters'})).getByTestId(
+      within(screen.queryByRole('listitem', {name: 'Filters'})).queryByTestId(
         'badge'
       ).textContent
     )
@@ -68,7 +68,7 @@ test('Statistics', async (t) => {
 
   await t
     .expect(
-      within(screen.getByRole('listitem', {name: 'Incidents'})).getByTestId(
+      within(screen.queryByRole('listitem', {name: 'Incidents'})).queryByTestId(
         'badge'
       ).textContent
     )
@@ -85,32 +85,32 @@ test('Navigation to Instances View', async (t) => {
     .nth(0).textContent;
 
   await t
-    .click(screen.getByTestId('active-instances-link'))
-    .expect(screen.getByRole('checkbox', {name: 'Active'}).checked)
+    .click(screen.queryByTestId('active-instances-link'))
+    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
     .ok()
-    .expect(screen.getByRole('checkbox', {name: 'Incidents'}).checked)
+    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
     .notOk();
 
   await t
     .expect(
-      within(screen.getByRole('listitem', {name: 'Filters'})).getByTestId(
+      within(screen.queryByRole('listitem', {name: 'Filters'})).queryByTestId(
         'badge'
       ).textContent
     )
     .eql(activeInstancesCount);
 
-  await t.click(screen.getByRole('listitem', {name: 'Dashboard'}));
+  await t.click(screen.queryByRole('listitem', {name: 'Dashboard'}));
 
   await t
-    .click(screen.getByTestId('incident-instances-link'))
-    .expect(screen.getByRole('checkbox', {name: 'Active'}).checked)
+    .click(screen.queryByTestId('incident-instances-link'))
+    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
     .notOk()
-    .expect(screen.getByRole('checkbox', {name: 'Incidents'}).checked)
+    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
     .ok();
 
   await t
     .expect(
-      within(screen.getByRole('listitem', {name: 'Filters'})).getByTestId(
+      within(screen.queryByRole('listitem', {name: 'Filters'})).queryByTestId(
         'badge'
       ).textContent
     )
@@ -121,30 +121,30 @@ test('Select instances by process', async (t) => {
   await t.expect(screen.queryByTestId('instances-by-process').exists).ok();
 
   const withinInstanceByProcess = within(
-    screen.getByTestId('incident-byProcess-0')
+    screen.queryByTestId('incident-byProcess-0')
   );
 
   const incidentCount = Number(
-    await withinInstanceByProcess.getByTestId('incident-instances-badge')
+    await withinInstanceByProcess.queryByTestId('incident-instances-badge')
       .textContent
   );
   const runningInstanceCount = Number(
-    await withinInstanceByProcess.getByTestId('active-instances-badge')
+    await withinInstanceByProcess.queryByTestId('active-instances-badge')
       .textContent
   );
 
   const totalInstanceCount = incidentCount + runningInstanceCount;
 
-  await t.click(screen.getByTestId('incident-byProcess-0'));
+  await t.click(screen.queryByTestId('incident-byProcess-0'));
 
   await t
-    .expect(screen.getByRole('checkbox', {name: 'Active'}).checked)
+    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
     .ok()
-    .expect(screen.getByRole('checkbox', {name: 'Incidents'}).checked)
+    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
     .ok();
   await t
     .expect(
-      within(screen.getByRole('listitem', {name: 'Filters'})).getByTestId(
+      within(screen.queryByRole('listitem', {name: 'Filters'})).queryByTestId(
         'badge'
       ).textContent
     )
@@ -155,34 +155,34 @@ test('Select instances by error message', async (t) => {
   await t.expect(screen.queryByTestId('incidents-by-error').exists).ok();
 
   const withinInstanceByError = within(
-    screen.getByTestId('incident-byError-0')
+    screen.queryByTestId('incident-byError-0')
   );
 
-  const incidentCount = await withinInstanceByError.getByTestId(
+  const incidentCount = await withinInstanceByError.queryByTestId(
     'incident-instances-badge'
   ).textContent;
-  const incidentMessage = await withinInstanceByError.getByTestId(
+  const incidentMessage = await withinInstanceByError.queryByTestId(
     'incident-message'
   ).textContent;
 
-  await t.click(screen.getByTestId('incident-byError-0'));
+  await t.click(screen.queryByTestId('incident-byError-0'));
 
   await t
-    .expect(screen.getByRole('checkbox', {name: 'Active'}).checked)
+    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
     .notOk()
-    .expect(screen.getByRole('checkbox', {name: 'Incidents'}).checked)
+    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
     .ok();
 
   await t
     .expect(
-      within(screen.getByRole('listitem', {name: 'Filters'})).getByTestId(
+      within(screen.queryByRole('listitem', {name: 'Filters'})).queryByTestId(
         'badge'
       ).textContent
     )
     .eql(incidentCount);
 
   await t
-    .expect(screen.getByRole('textbox', {name: 'Error Message'}).value)
+    .expect(screen.queryByRole('textbox', {name: 'Error Message'}).value)
     .eql(incidentMessage);
 
   await t.expect(screen.queryByTestId('diagram').exists).notOk();
@@ -192,44 +192,44 @@ test('Select instances by error message (expanded)', async (t) => {
   await t.expect(screen.queryByTestId('incidents-by-error').exists).ok();
 
   const withinInstanceByError = within(
-    screen.getByTestId('incident-byError-0')
+    screen.queryByTestId('incident-byError-0')
   );
 
-  const incidentCount = await withinInstanceByError.getByTestId(
+  const incidentCount = await withinInstanceByError.queryByTestId(
     'incident-instances-badge'
   ).textContent;
-  const incidentMessage = await withinInstanceByError.getByTestId(
+  const incidentMessage = await withinInstanceByError.queryByTestId(
     'incident-message'
   ).textContent;
 
   await t.click(
-    within(screen.getByTestId('incident-byError-0')).getByRole('button', {
+    within(screen.queryByTestId('incident-byError-0')).queryByRole('button', {
       name: /Expand/,
     })
   );
   await t.click(
-    within(screen.getByTestId('incident-byError-0'))
+    within(screen.queryByTestId('incident-byError-0'))
       .getAllByRole('listitem')
       .nth(0)
   );
 
   await t
-    .expect(screen.getByRole('checkbox', {name: 'Active'}).checked)
+    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
     .notOk()
-    .expect(screen.getByRole('checkbox', {name: 'Incidents'}).checked)
+    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
     .ok();
 
   await t
     .expect(
-      within(screen.getByRole('listitem', {name: 'Filters'})).getByTestId(
+      within(screen.queryByRole('listitem', {name: 'Filters'})).queryByTestId(
         'badge'
       ).textContent
     )
     .eql(incidentCount);
 
   await t
-    .expect(screen.getByRole('textbox', {name: 'Error Message'}).value)
+    .expect(screen.queryByRole('textbox', {name: 'Error Message'}).value)
     .eql(incidentMessage);
 
-  await t.expect(screen.getByTestId('diagram').exists).ok();
+  await t.expect(screen.queryByTestId('diagram').exists).ok();
 });

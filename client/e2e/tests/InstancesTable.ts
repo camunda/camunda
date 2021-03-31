@@ -37,7 +37,7 @@ fixture('InstancesTable')
     await t.useRole(demoUser);
     await t.maximizeWindow();
     await t.click(
-      screen.getByRole('listitem', {
+      screen.queryByRole('listitem', {
         name: /running instances/i,
       })
     );
@@ -56,20 +56,20 @@ test('Sorting', async (t) => {
 
   await t
     .typeText(
-      screen.getByRole('textbox', {
+      screen.queryByRole('textbox', {
         name: 'Instance Id(s) separated by space or comma',
       }),
       instanceIds.join(),
       {paste: true}
     )
     .expect(
-      within(screen.getByTestId('header-link-filters')).getByTestId('badge')
+      within(screen.queryByTestId('header-link-filters')).queryByTestId('badge')
         .innerText
     )
     .eql('3', {timeout: 10000});
 
   const instanceRows = within(
-    screen.getByTestId('instances-list')
+    screen.queryByTestId('instances-list')
   ).getAllByRole('row');
 
   // test default process sorting
@@ -82,7 +82,7 @@ test('Sorting', async (t) => {
     .contains('instancesTableProcessA');
 
   await t
-    .click(screen.getByRole('button', {name: 'Sort by processName'}))
+    .click(screen.queryByRole('button', {name: 'Sort by processName'}))
     .expect(instanceRows.nth(0).innerText)
     .contains('instancesTableProcessA')
     .expect(instanceRows.nth(1).innerText)
@@ -91,7 +91,7 @@ test('Sorting', async (t) => {
     .contains('instancesTableProcessB');
 
   await t
-    .click(screen.getByRole('button', {name: 'Sort by processName'}))
+    .click(screen.queryByRole('button', {name: 'Sort by processName'}))
     .expect(instanceRows.nth(0).innerText)
     .contains('instancesTableProcessB')
     .expect(instanceRows.nth(1).innerText)
@@ -100,7 +100,7 @@ test('Sorting', async (t) => {
     .contains('instancesTableProcessA');
 
   await t
-    .click(screen.getByRole('button', {name: 'Sort by id'}))
+    .click(screen.queryByRole('button', {name: 'Sort by id'}))
     .expect(instanceRows.nth(0).innerText)
     .contains(instanceIds[2])
     .expect(instanceRows.nth(1).innerText)
@@ -109,7 +109,7 @@ test('Sorting', async (t) => {
     .contains(instanceIds[0]);
 
   await t
-    .click(screen.getByRole('button', {name: 'Sort by id'}))
+    .click(screen.queryByRole('button', {name: 'Sort by id'}))
     .expect(instanceRows.nth(0).innerText)
     .contains(instanceIds[0])
     .expect(instanceRows.nth(1).innerText)
@@ -118,7 +118,7 @@ test('Sorting', async (t) => {
     .contains(instanceIds[2]);
 
   await t
-    .click(screen.getByRole('button', {name: 'Sort by processVersion'}))
+    .click(screen.queryByRole('button', {name: 'Sort by processVersion'}))
     .expect(instanceRows.nth(0).innerText)
     .contains('Version 2')
     .expect(instanceRows.nth(1).innerText)
@@ -127,7 +127,7 @@ test('Sorting', async (t) => {
     .contains('Version 1');
 
   await t
-    .click(screen.getByRole('button', {name: 'Sort by processVersion'}))
+    .click(screen.queryByRole('button', {name: 'Sort by processVersion'}))
     .expect(instanceRows.nth(0).innerText)
     .contains('Version 1')
     .expect(instanceRows.nth(1).innerText)
@@ -136,7 +136,7 @@ test('Sorting', async (t) => {
     .contains('Version 2');
 
   await t
-    .click(screen.getByRole('button', {name: 'Sort by startDate'}))
+    .click(screen.queryByRole('button', {name: 'Sort by startDate'}))
     .expect(instanceRows.nth(0).innerText)
     .contains(instanceIds[2])
     .expect(instanceRows.nth(1).innerText)
@@ -145,7 +145,7 @@ test('Sorting', async (t) => {
     .contains(instanceIds[0]);
 
   await t
-    .click(screen.getByRole('button', {name: 'Sort by startDate'}))
+    .click(screen.queryByRole('button', {name: 'Sort by startDate'}))
     .expect(instanceRows.nth(0).innerText)
     .contains(instanceIds[0])
     .expect(instanceRows.nth(1).innerText)
@@ -167,20 +167,20 @@ test('Scrolling', async (t) => {
       return instanceId2 - instanceId1;
     });
 
-  const processCombobox = screen.getByRole('combobox', {
+  const processCombobox = screen.queryByRole('combobox', {
     name: 'Process',
   });
 
   await t.click(processCombobox).click(
-    within(processCombobox).getByRole('option', {
+    within(processCombobox).queryByRole('option', {
       name: 'Process For Infinite Scroll',
     })
   );
 
-  await t.click(screen.getByRole('button', {name: /Sort by id/}));
+  await t.click(screen.queryByRole('button', {name: /Sort by id/}));
 
   const instanceRows = within(
-    screen.getByTestId('instances-list')
+    screen.queryByTestId('instances-list')
   ).getAllByRole('row');
 
   let totalRowCount = await instanceRows.count;

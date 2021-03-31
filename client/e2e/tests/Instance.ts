@@ -36,34 +36,35 @@ test('Instance with an incident - header and instance header', async (t) => {
     )
     .ok()
     .expect(
-      within(screen.getByRole('banner')).getByText(`Instance ${instanceId}`)
+      within(screen.queryByRole('banner')).queryByText(`Instance ${instanceId}`)
         .exists
     )
     .ok();
 
-  const withinInstanceHeader = within(screen.getByTestId('instance-header'));
+  const withinInstanceHeader = within(screen.queryByTestId('instance-header'));
 
   await t
-    .expect(withinInstanceHeader.getByTestId('INCIDENT-icon').exists)
+    .expect(withinInstanceHeader.queryByTestId('INCIDENT-icon').exists)
     .ok()
-    .expect(withinInstanceHeader.getByText('processWithAnIncident').exists)
+    .expect(withinInstanceHeader.queryByText('processWithAnIncident').exists)
     .ok()
-    .expect(withinInstanceHeader.getByText(instanceId).exists)
+    .expect(withinInstanceHeader.queryByText(instanceId).exists)
     .ok()
-    .expect(withinInstanceHeader.getByText('Version 1').exists)
-    .ok()
-    .expect(
-      withinInstanceHeader.getByRole('button', {name: /retry instance/i}).exists
-    )
+    .expect(withinInstanceHeader.queryByText('Version 1').exists)
     .ok()
     .expect(
-      withinInstanceHeader.getByRole('button', {name: /cancel instance/i})
+      withinInstanceHeader.queryByRole('button', {name: /retry instance/i})
         .exists
     )
     .ok()
-    .expect(withinInstanceHeader.getByTestId('start-date').textContent)
+    .expect(
+      withinInstanceHeader.queryByRole('button', {name: /cancel instance/i})
+        .exists
+    )
+    .ok()
+    .expect(withinInstanceHeader.queryByTestId('start-date').textContent)
     .match(DATE_REGEX)
-    .expect(withinInstanceHeader.getByTestId('end-date').textContent)
+    .expect(withinInstanceHeader.queryByTestId('end-date').textContent)
     .eql('--');
 });
 
@@ -78,15 +79,15 @@ test('Instance with an incident - history panel', async (t) => {
   await t.expect(screen.queryByText('Instance History').exists).ok();
 
   await t
-    .click(within(screen.getByTestId('diagram')).getByText(/Task A/))
+    .click(within(screen.queryByTestId('diagram')).queryByText(/Task A/))
     .expect(
-      within(screen.getByTestId('popover')).getByText(
+      within(screen.queryByTestId('popover')).queryByText(
         'To view metadata for any of these, select one instance in the Instance History.'
       ).exists
     )
     .ok()
     .expect(
-      screen.getByText(
+      screen.queryByText(
         'To view the Variables, select a single Flow Node Instance in the Instance History.'
       ).exists
     )
@@ -94,26 +95,29 @@ test('Instance with an incident - history panel', async (t) => {
 
   await t
     .click(
-      within(screen.getByTestId('instance-history'))
+      within(screen.queryByTestId('instance-history'))
         .getAllByText(/Task A/)
         .nth(0)
     )
-    .expect(within(screen.getByTestId('popover')).getByText(/Task A/).exists)
+    .expect(
+      within(screen.queryByTestId('popover')).queryByText(/Task A/).exists
+    )
     .ok()
-    .expect(screen.getByText('The Flow Node has no variables.').exists)
+    .expect(screen.queryByText('The Flow Node has no variables.').exists)
     .ok();
 
   await t
     .click(
-      within(screen.getByTestId('instance-history'))
+      within(screen.queryByTestId('instance-history'))
         .getAllByText(/Task A/)
         .nth(0)
     )
     .expect(screen.queryByTestId('popover').exists)
     .notOk()
     .expect(
-      within(screen.getByTestId('variables-list')).getByText('shouldContinue')
-        .exists
+      within(screen.queryByTestId('variables-list')).queryByText(
+        'shouldContinue'
+      ).exists
     )
     .ok();
 });
@@ -129,24 +133,26 @@ test('Instance with an incident - diagram', async (t) => {
 
   await t.expect(screen.queryByTestId('popover').exists).notOk();
 
-  await t.click(within(screen.getByTestId('diagram')).getByText(/upper task/i));
+  await t.click(
+    within(screen.queryByTestId('diagram')).queryByText(/upper task/i)
+  );
 
-  const withinPopopver = within(screen.getByTestId('popover'));
+  const withinPopopver = within(screen.queryByTestId('popover'));
   await t
     .expect(withinPopopver.queryByText(/flowNodeInstanceId/).exists)
     .ok()
-    .expect(withinPopopver.getByText(/startDate/).exists)
+    .expect(withinPopopver.queryByText(/startDate/).exists)
     .ok()
-    .expect(withinPopopver.getByText(/endDate/).exists)
+    .expect(withinPopopver.queryByText(/endDate/).exists)
     .ok();
 
   await t.click(
-    withinPopopver.getByRole('button', {name: 'Show more metadata'})
+    withinPopopver.queryByRole('button', {name: 'Show more metadata'})
   );
 
-  const withinModal = within(screen.getByTestId('modal'));
+  const withinModal = within(screen.queryByTestId('modal'));
   await t
-    .expect(withinModal.getByText('Flow Node "Upper task" Metadata').exists)
+    .expect(withinModal.queryByText('Flow Node "Upper task" Metadata').exists)
     .ok();
   await t.click(screen.getAllByRole('button', {name: 'Close Modal'}));
   await t.expect(screen.queryByTestId('modal').exists).notOk();
@@ -163,43 +169,43 @@ test('Instance with an incident - resolve an incident', async (t) => {
 
   await t
     .click(screen.queryByRole('button', {name: 'Add variable'}))
-    .typeText(screen.getByRole('textbox', {name: /variable/i}), 'goUp', {
+    .typeText(screen.queryByRole('textbox', {name: /variable/i}), 'goUp', {
       paste: true,
     })
-    .typeText(screen.getByRole('textbox', {name: /value/i}), '10', {
+    .typeText(screen.queryByRole('textbox', {name: /value/i}), '10', {
       paste: true,
     })
-    .click(screen.getByRole('button', {name: 'Save variable'}));
+    .click(screen.queryByRole('button', {name: 'Save variable'}));
 
   await t
-    .click(screen.getByRole('button', {name: 'Add variable'}))
-    .typeText(screen.getByRole('textbox', {name: /variable/i}), 'orderId', {
+    .click(screen.queryByRole('button', {name: 'Add variable'}))
+    .typeText(screen.queryByRole('textbox', {name: /variable/i}), 'orderId', {
       paste: true,
     })
-    .typeText(screen.getByRole('textbox', {name: /value/i}), '123', {
+    .typeText(screen.queryByRole('textbox', {name: /value/i}), '123', {
       paste: true,
     })
-    .click(screen.getByRole('button', {name: 'Save variable'}));
+    .click(screen.queryByRole('button', {name: 'Save variable'}));
 
   await t
-    .click(screen.getByRole('button', {name: 'Add variable'}))
-    .typeText(screen.getByRole('textbox', {name: /variable/i}), 'clientId', {
+    .click(screen.queryByRole('button', {name: 'Add variable'}))
+    .typeText(screen.queryByRole('textbox', {name: /variable/i}), 'clientId', {
       paste: true,
     })
-    .typeText(screen.getByRole('textbox', {name: /value/i}), '"test"', {
+    .typeText(screen.queryByRole('textbox', {name: /value/i}), '"test"', {
       paste: true,
     })
-    .click(screen.getByRole('button', {name: 'Save variable'}));
+    .click(screen.queryByRole('button', {name: 'Save variable'}));
 
   await t.expect(screen.queryByTestId('operation-spinner').exists).notOk();
 
   await t
     .click(
-      screen.getByRole('button', {
+      screen.queryByRole('button', {
         name: `Retry Instance ${instanceId}`,
       })
     )
-    .expect(screen.getByTestId('operation-spinner').exists)
+    .expect(screen.queryByTestId('operation-spinner').exists)
     .ok();
 
   await t.expect(screen.queryByTestId('operation-spinner').exists).notOk();
@@ -214,14 +220,16 @@ test('Instance with an incident - resolve an incident', async (t) => {
 
   await t
     .expect(
-      within(screen.getByTestId('instance-header')).queryByTestId('ACTIVE-icon')
-        .exists
+      within(screen.queryByTestId('instance-header')).queryByTestId(
+        'ACTIVE-icon'
+      ).exists
     )
     .ok();
 
   await t
     .expect(
-      within(screen.getByRole('banner')).getByTestId('state-icon-ACTIVE').exists
+      within(screen.queryByRole('banner')).queryByTestId('state-icon-ACTIVE')
+        .exists
     )
     .ok();
 });
@@ -240,98 +248,98 @@ test('Instance with an incident - incident bar', async (t) => {
     .click(
       screen.queryByRole('button', {name: /view 3 incidents in instance/i})
     )
-    .expect(screen.getByText(/incident type:/i).exists)
+    .expect(screen.queryByText(/incident type:/i).exists)
     .ok()
-    .expect(screen.getByText(/flow node:/i).exists)
+    .expect(screen.queryByText(/flow node:/i).exists)
     .ok();
 
-  const withinIncidentsTable = within(screen.getByTestId('incidents-table'));
-  const withinHistoryPanel = within(screen.getByTestId('instance-history'));
-  const withinVariablesTable = within(screen.getByTestId('variables-list'));
+  const withinIncidentsTable = within(screen.queryByTestId('incidents-table'));
+  const withinHistoryPanel = within(screen.queryByTestId('instance-history'));
+  const withinVariablesTable = within(screen.queryByTestId('variables-list'));
 
   // should be ordered by incident type by default
   await t
     .expect(
-      within(withinIncidentsTable.getAllByRole('row').nth(1)).getByText(
+      within(withinIncidentsTable.getAllByRole('row').nth(1)).queryByText(
         /i\/o mapping error/i
       ).exists
     )
     .ok()
     .expect(
-      within(withinIncidentsTable.getAllByRole('row').nth(2)).getByText(
+      within(withinIncidentsTable.getAllByRole('row').nth(2)).queryByText(
         /extract value error/i
       ).exists
     )
     .ok()
     .expect(
-      within(withinIncidentsTable.getAllByRole('row').nth(3)).getByText(
+      within(withinIncidentsTable.getAllByRole('row').nth(3)).queryByText(
         /extract value error/i
       ).exists
     )
     .ok();
 
   // change the order of incident type
-  await t.click(screen.getByRole('button', {name: /sort by errortype/i}));
+  await t.click(screen.queryByRole('button', {name: /sort by errortype/i}));
 
   await t
     .expect(
-      within(withinIncidentsTable.getAllByRole('row').nth(1)).getByText(
+      within(withinIncidentsTable.getAllByRole('row').nth(1)).queryByText(
         /extract value error/i
       ).exists
     )
     .ok()
     .expect(
-      within(withinIncidentsTable.getAllByRole('row').nth(2)).getByText(
+      within(withinIncidentsTable.getAllByRole('row').nth(2)).queryByText(
         /extract value error/i
       ).exists
     )
     .ok()
     .expect(
-      within(withinIncidentsTable.getAllByRole('row').nth(3)).getByText(
+      within(withinIncidentsTable.getAllByRole('row').nth(3)).queryByText(
         /i\/o mapping error/i
       ).exists
     )
     .ok();
 
   // order by process name
-  await t.click(screen.getByRole('button', {name: /sort by flownodename/i}));
+  await t.click(screen.queryByRole('button', {name: /sort by flownodename/i}));
   await t
     .expect(
-      within(withinIncidentsTable.getAllByRole('row').nth(1)).getByText(
+      within(withinIncidentsTable.getAllByRole('row').nth(1)).queryByText(
         'Where to go?'
       ).exists
     )
     .ok()
     .expect(
-      within(withinIncidentsTable.getAllByRole('row').nth(2)).getByText(
+      within(withinIncidentsTable.getAllByRole('row').nth(2)).queryByText(
         'Upper task'
       ).exists
     )
     .ok()
     .expect(
-      within(withinIncidentsTable.getAllByRole('row').nth(3)).getByText(
+      within(withinIncidentsTable.getAllByRole('row').nth(3)).queryByText(
         'message'
       ).exists
     )
     .ok();
 
   // change the order of process name
-  await t.click(screen.getByRole('button', {name: /sort by flownodename/i}));
+  await t.click(screen.queryByRole('button', {name: /sort by flownodename/i}));
   await t
     .expect(
-      within(withinIncidentsTable.getAllByRole('row').nth(1)).getByText(
+      within(withinIncidentsTable.getAllByRole('row').nth(1)).queryByText(
         'message'
       ).exists
     )
     .ok()
     .expect(
-      within(withinIncidentsTable.getAllByRole('row').nth(2)).getByText(
+      within(withinIncidentsTable.getAllByRole('row').nth(2)).queryByText(
         'Upper task'
       ).exists
     )
     .ok()
     .expect(
-      within(withinIncidentsTable.getAllByRole('row').nth(3)).getByText(
+      within(withinIncidentsTable.getAllByRole('row').nth(3)).queryByText(
         'Where to go?'
       ).exists
     )
@@ -339,7 +347,7 @@ test('Instance with an incident - incident bar', async (t) => {
 
   // filter by incident type pills
   await t
-    .click(screen.getByRole('button', {name: /extract value error/i}))
+    .click(screen.queryByRole('button', {name: /extract value error/i}))
     .expect(withinIncidentsTable.queryAllByRole('row').count)
     .eql(3)
     .expect(withinIncidentsTable.getAllByText(/extract value error/i).count)
@@ -347,81 +355,81 @@ test('Instance with an incident - incident bar', async (t) => {
     .expect(withinIncidentsTable.findByText(/i\/o mapping error/i).exists)
     .notOk();
 
-  await t.click(screen.getByRole('button', {name: /extract value error/i})); // deselect pill
+  await t.click(screen.queryByRole('button', {name: /extract value error/i})); // deselect pill
 
   await t
-    .click(screen.getByRole('button', {name: /i\/o mapping error/i}))
+    .click(screen.queryByRole('button', {name: /i\/o mapping error/i}))
     .expect(withinIncidentsTable.queryAllByRole('row').count)
     .eql(2)
-    .expect(withinIncidentsTable.getByText(/i\/o mapping error/i).exists)
+    .expect(withinIncidentsTable.queryByText(/i\/o mapping error/i).exists)
     .ok()
     .expect(withinIncidentsTable.findByText(/extract value error/i).exists)
     .notOk();
 
   // clear filter pills
   await t
-    .click(screen.getByRole('button', {name: /clear all/i}))
+    .click(screen.queryByRole('button', {name: /clear all/i}))
     .expect(withinIncidentsTable.queryAllByRole('row').count)
     .eql(4)
     .expect(withinIncidentsTable.getAllByText(/extract value error/i).count)
     .eql(2)
-    .expect(withinIncidentsTable.getByText(/i\/o mapping error/i).exists)
+    .expect(withinIncidentsTable.queryByText(/i\/o mapping error/i).exists)
     .ok();
 
   // filter by flow node pills
   await t
-    .click(screen.getByRole('button', {name: /where to go\? /i}))
+    .click(screen.queryByRole('button', {name: /where to go\? /i}))
     .expect(withinIncidentsTable.queryAllByRole('row').count)
     .eql(2)
-    .click(screen.getByRole('button', {name: /message /i}))
+    .click(screen.queryByRole('button', {name: /message /i}))
     .expect(withinIncidentsTable.queryAllByRole('row').count)
     .eql(3)
-    .click(screen.getByRole('button', {name: /upper task /i}))
+    .click(screen.queryByRole('button', {name: /upper task /i}))
     .expect(withinIncidentsTable.queryAllByRole('row').count)
     .eql(4);
 
   // clear filter pills
   await t
-    .click(screen.getByRole('button', {name: /clear all/i}))
+    .click(screen.queryByRole('button', {name: /clear all/i}))
     .expect(withinIncidentsTable.getAllByRole('row').count)
     .eql(4);
 
   // select a node from history panel, add variables to it, also see the variables when nodes are selected from the table inside the incident bar
-  await t.click(withinHistoryPanel.getByText(/where to go\?/i));
+  await t.click(withinHistoryPanel.queryByText(/where to go\?/i));
 
   await t
-    .click(screen.getByRole('button', {name: 'Add variable'}))
-    .typeText(screen.getByRole('textbox', {name: /variable/i}), 'goUp', {
+    .click(screen.queryByRole('button', {name: 'Add variable'}))
+    .typeText(screen.queryByRole('textbox', {name: /variable/i}), 'goUp', {
       paste: true,
     })
-    .typeText(screen.getByRole('textbox', {name: /value/i}), '10', {
+    .typeText(screen.queryByRole('textbox', {name: /value/i}), '10', {
       paste: true,
     })
-    .click(screen.getByRole('button', {name: 'Save variable'}));
+    .click(screen.queryByRole('button', {name: 'Save variable'}));
 
-  await t.click(withinHistoryPanel.getByText(/upper task/i));
-
-  await t
-    .click(screen.getByRole('button', {name: 'Add variable'}))
-    .typeText(screen.getByRole('textbox', {name: /variable/i}), 'orderId', {
-      paste: true,
-    })
-    .typeText(screen.getByRole('textbox', {name: /value/i}), '123', {
-      paste: true,
-    })
-    .click(screen.getByRole('button', {name: 'Save variable'}));
-
-  await t.click(withinHistoryPanel.getByText(/message/i));
+  await t.click(withinHistoryPanel.queryByText(/upper task/i));
 
   await t
-    .click(screen.getByRole('button', {name: 'Add variable'}))
-    .typeText(screen.getByRole('textbox', {name: /variable/i}), 'clientId', {
+    .click(screen.queryByRole('button', {name: 'Add variable'}))
+    .typeText(screen.queryByRole('textbox', {name: /variable/i}), 'orderId', {
       paste: true,
     })
-    .typeText(screen.getByRole('textbox', {name: /value/i}), '"test"', {
+    .typeText(screen.queryByRole('textbox', {name: /value/i}), '123', {
       paste: true,
     })
-    .click(screen.getByRole('button', {name: 'Save variable'}));
+    .click(screen.queryByRole('button', {name: 'Save variable'}));
+
+  await t.click(withinHistoryPanel.queryByText(/message/i));
+
+  await t
+    .click(screen.queryByRole('button', {name: 'Add variable'}))
+    .typeText(screen.queryByRole('textbox', {name: /variable/i}), 'clientId', {
+      paste: true,
+    })
+    .typeText(screen.queryByRole('textbox', {name: /value/i}), '"test"', {
+      paste: true,
+    })
+    .click(screen.queryByRole('button', {name: 'Save variable'}));
 
   await t
     .expect(screen.queryByTestId('operation-spinner').exists)
@@ -429,42 +437,44 @@ test('Instance with an incident - incident bar', async (t) => {
 
   // clear filters
   await t
-    .click(screen.getByRole('button', {name: /clear all/i}))
+    .click(screen.queryByRole('button', {name: /clear all/i}))
     .expect(withinIncidentsTable.queryAllByRole('row').count)
     .eql(4);
 
   await t
-    .click(withinIncidentsTable.getByRole('row', {name: /Upper task/}))
+    .click(withinIncidentsTable.queryByRole('row', {name: /Upper task/}))
     .expect(withinVariablesTable.queryAllByRole('row').count)
     .eql(2)
-    .expect(withinVariablesTable.getByRole('cell', {name: /orderid/i}).exists)
+    .expect(withinVariablesTable.queryByRole('cell', {name: /orderid/i}).exists)
     .ok();
 
   await t
-    .click(withinIncidentsTable.getByRole('row', {name: /Where to go\?/}))
+    .click(withinIncidentsTable.queryByRole('row', {name: /Where to go\?/}))
     .expect(withinVariablesTable.queryAllByRole('row').count)
     .eql(2)
-    .expect(withinVariablesTable.getByRole('cell', {name: /goUp/i}).exists)
+    .expect(withinVariablesTable.queryByRole('cell', {name: /goUp/i}).exists)
     .ok();
 
   await t
-    .click(withinIncidentsTable.getByRole('row', {name: /message/}))
+    .click(withinIncidentsTable.queryByRole('row', {name: /message/}))
     .expect(withinVariablesTable.queryAllByRole('row').count)
     .eql(2)
-    .expect(withinVariablesTable.getByRole('cell', {name: /clientId/i}).exists)
+    .expect(
+      withinVariablesTable.queryByRole('cell', {name: /clientId/i}).exists
+    )
     .ok();
 
   // resolve one incident, see it disappears after resolving
   await t
     .click(
       within(
-        withinIncidentsTable.getByRole('row', {name: /Upper task/})
-      ).getByRole('button', {name: 'Retry Incident'})
+        withinIncidentsTable.queryByRole('row', {name: /Upper task/})
+      ).queryByRole('button', {name: 'Retry Incident'})
     )
     .expect(
       within(
-        withinIncidentsTable.getByRole('row', {name: /Upper task/})
-      ).getByTestId('operation-spinner').exists
+        withinIncidentsTable.queryByRole('row', {name: /Upper task/})
+      ).queryByTestId('operation-spinner').exists
     )
     .ok();
 
@@ -478,13 +488,13 @@ test('Instance with an incident - incident bar', async (t) => {
   await t
     .click(
       within(
-        withinIncidentsTable.getByRole('row', {name: /Where to go\?/})
-      ).getByRole('button', {name: 'Retry Incident'})
+        withinIncidentsTable.queryByRole('row', {name: /Where to go\?/})
+      ).queryByRole('button', {name: 'Retry Incident'})
     )
     .click(
       within(
-        withinIncidentsTable.getByRole('row', {name: /message/})
-      ).getByRole('button', {name: 'Retry Incident'})
+        withinIncidentsTable.queryByRole('row', {name: /message/})
+      ).queryByRole('button', {name: 'Retry Incident'})
     );
 
   await t
@@ -495,14 +505,16 @@ test('Instance with an incident - incident bar', async (t) => {
 
   await t
     .expect(
-      within(screen.getByTestId('instance-header')).queryByTestId('ACTIVE-icon')
-        .exists
+      within(screen.queryByTestId('instance-header')).queryByTestId(
+        'ACTIVE-icon'
+      ).exists
     )
     .ok();
 
   await t
     .expect(
-      within(screen.getByRole('banner')).getByTestId('state-icon-ACTIVE').exists
+      within(screen.queryByRole('banner')).queryByTestId('state-icon-ACTIVE')
+        .exists
     )
     .ok();
 });
@@ -527,11 +539,11 @@ test.skip('Instance with an incident - cancel an instance', async (t) => {
 
   await t
     .click(
-      screen.getByRole('button', {
+      screen.queryByRole('button', {
         name: `Cancel Instance ${instanceId}`,
       })
     )
-    .expect(screen.getByTestId('operation-spinner').exists)
+    .expect(screen.queryByTestId('operation-spinner').exists)
     .ok();
 
   await t.expect(screen.queryByTestId('operation-spinner').exists).notOk();
@@ -545,7 +557,7 @@ test.skip('Instance with an incident - cancel an instance', async (t) => {
 
   await t
     .expect(
-      within(screen.getByTestId('instance-header')).queryByTestId(
+      within(screen.queryByTestId('instance-header')).queryByTestId(
         'CANCELED-icon'
       ).exists
     )
@@ -553,12 +565,12 @@ test.skip('Instance with an incident - cancel an instance', async (t) => {
 
   await t
     .expect(
-      within(screen.getByTestId('instance-header')).getByTestId('end-date')
+      within(screen.queryByTestId('instance-header')).queryByTestId('end-date')
         .textContent
     )
     .match(DATE_REGEX)
     .expect(
-      within(screen.getByRole('banner')).getByTestId('state-icon-CANCELED')
+      within(screen.queryByRole('banner')).queryByTestId('state-icon-CANCELED')
         .exists
     )
     .ok();
@@ -579,22 +591,24 @@ test('Instance without an incident', async (t) => {
     .expect(screen.queryByTestId('incidents-banner').exists)
     .notOk()
     .expect(
-      within(screen.getByRole('banner')).getByTestId('state-icon-ACTIVE').exists
+      within(screen.queryByRole('banner')).queryByTestId('state-icon-ACTIVE')
+        .exists
     )
     .ok()
     .expect(
-      within(screen.getByRole('banner')).getByText(
+      within(screen.queryByRole('banner')).queryByText(
         `Instance ${instanceWithoutAnIncident.processInstanceKey}`
       ).exists
     )
     .ok()
     .expect(
-      within(screen.getByTestId('instance-header')).getByTestId('ACTIVE-icon')
-        .exists
+      within(screen.queryByTestId('instance-header')).queryByTestId(
+        'ACTIVE-icon'
+      ).exists
     )
     .ok()
-    .expect(screen.getByText('Instance History').exists)
+    .expect(screen.queryByText('Instance History').exists)
     .ok()
-    .expect(screen.getByRole('button', {name: 'Add variable'}).exists)
+    .expect(screen.queryByRole('button', {name: 'Add variable'}).exists)
     .ok();
 });

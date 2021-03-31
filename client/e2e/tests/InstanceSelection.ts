@@ -20,7 +20,7 @@ fixture('Select Instances')
     await t.useRole(demoUser);
     await t.maximizeWindow();
     await t.click(
-      screen.getByRole('listitem', {
+      screen.queryByRole('listitem', {
         name: /running instances/i,
       })
     );
@@ -28,30 +28,30 @@ fixture('Select Instances')
 
 test('Selection of instances are removed on header navigation', async (t) => {
   await t
-    .click(screen.getByRole('checkbox', {name: 'Select all instances'}))
+    .click(screen.queryByRole('checkbox', {name: 'Select all instances'}))
     .expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
     )
     .ok();
 
   await t
-    .click(screen.getByRole('listitem', {name: 'Incidents'}))
+    .click(screen.queryByRole('listitem', {name: 'Incidents'}))
     .expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
     )
     .notOk();
 
   await t
-    .click(screen.getByRole('checkbox', {name: 'Select all instances'}))
+    .click(screen.queryByRole('checkbox', {name: 'Select all instances'}))
     .expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
     )
     .ok();
 
   await t
-    .click(screen.getByRole('listitem', {name: 'Running Instances'}))
+    .click(screen.queryByRole('listitem', {name: 'Running Instances'}))
     .expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
     )
     .notOk();
 });
@@ -67,27 +67,27 @@ test('Selection of instances are removed on filter selection', async (t) => {
 
   // instances are not selected after selecting finished instances filter
   await t
-    .click(screen.getByRole('checkbox', {name: 'Finished Instances'}))
+    .click(screen.queryByRole('checkbox', {name: 'Finished Instances'}))
     .expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
     )
     .notOk();
 
   // select instances
   await t
-    .click(screen.getByRole('checkbox', {name: 'Select all instances'}))
+    .click(screen.queryByRole('checkbox', {name: 'Select all instances'}))
     .expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
     )
     .ok();
 
   // instances are not selected after applying instance id filter
-  const instanceId = await within(screen.getByTestId('instances-list'))
+  const instanceId = await within(screen.queryByTestId('instances-list'))
     .getAllByRole('link', {name: /View instance/i})
     .nth(0).innerText;
 
   await t.typeText(
-    screen.getByRole('textbox', {
+    screen.queryByRole('textbox', {
       name: 'Instance Id(s) separated by space or comma',
     }),
     instanceId.toString(),
@@ -104,9 +104,9 @@ test('Selection of instances are removed on filter selection', async (t) => {
 
   // select instances
   await t
-    .click(screen.getByRole('checkbox', {name: 'Select all instances'}))
+    .click(screen.queryByRole('checkbox', {name: 'Select all instances'}))
     .expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
     )
     .ok();
 
@@ -114,7 +114,7 @@ test('Selection of instances are removed on filter selection', async (t) => {
   const errorMessage =
     "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'";
   await t.typeText(
-    screen.getByRole('textbox', {name: /error message/i}),
+    screen.queryByRole('textbox', {name: /error message/i}),
     errorMessage,
     {
       paste: true,
@@ -130,16 +130,16 @@ test('Selection of instances are removed on filter selection', async (t) => {
 
 test('Selection of instances are not removed on sort', async (t) => {
   await t
-    .click(screen.getByRole('checkbox', {name: 'Select all instances'}))
+    .click(screen.queryByRole('checkbox', {name: 'Select all instances'}))
     .expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
     )
     .ok();
 
   await t
-    .click(screen.getByRole('button', {name: 'Sort by processName'}))
+    .click(screen.queryByRole('button', {name: 'Sort by processName'}))
     .expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
     )
     .ok();
 });

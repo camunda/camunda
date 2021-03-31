@@ -33,7 +33,7 @@ test('Validations for add/edit variable works correctly', async (t) => {
     .click(screen.queryByRole('button', {name: 'Add variable'}))
     .expect(
       screen
-        .getByRole('button', {name: 'Save variable'})
+        .queryByRole('button', {name: 'Save variable'})
         .hasAttribute('disabled')
     )
     .ok()
@@ -44,10 +44,10 @@ test('Validations for add/edit variable works correctly', async (t) => {
 
   // add a new variable called test, see that save button is disabled, and no sipnner is displayed.
   await t
-    .typeText(screen.getByRole('textbox', {name: /variable/i}), 'test')
+    .typeText(screen.queryByRole('textbox', {name: /variable/i}), 'test')
     .expect(
       screen
-        .getByRole('button', {name: 'Save variable'})
+        .queryByRole('button', {name: 'Save variable'})
         .hasAttribute('disabled')
     )
     .ok()
@@ -58,10 +58,10 @@ test('Validations for add/edit variable works correctly', async (t) => {
 
   // add a valid value to the newly added variable, see that save button is enabled and no spinner is displayed.
   await t
-    .typeText(screen.getByRole('textbox', {name: /value/i}), '123')
+    .typeText(screen.queryByRole('textbox', {name: /value/i}), '123')
     .expect(
       screen
-        .getByRole('button', {name: 'Save variable'})
+        .queryByRole('button', {name: 'Save variable'})
         .hasAttribute('disabled')
     )
     .notOk()
@@ -72,12 +72,12 @@ test('Validations for add/edit variable works correctly', async (t) => {
 
   // delete the value of the variable and add some invalid value instead. see that save button is disabled and no spinner is displayed.
   await t
-    .selectText(screen.getByRole('textbox', {name: /value/i}))
+    .selectText(screen.queryByRole('textbox', {name: /value/i}))
     .pressKey('delete')
-    .typeText(screen.getByRole('textbox', {name: /value/i}), 'someTestValue')
+    .typeText(screen.queryByRole('textbox', {name: /value/i}), 'someTestValue')
     .expect(
       screen
-        .getByRole('button', {name: 'Save variable'})
+        .queryByRole('button', {name: 'Save variable'})
         .hasAttribute('disabled')
     )
     .ok()
@@ -88,12 +88,15 @@ test('Validations for add/edit variable works correctly', async (t) => {
 
   // delete the value of the variable and add some valid string value instead. see that save button is enabled and no spinner is displayed.
   await t
-    .selectText(screen.getByRole('textbox', {name: /value/i}))
+    .selectText(screen.queryByRole('textbox', {name: /value/i}))
     .pressKey('delete')
-    .typeText(screen.getByRole('textbox', {name: /value/i}), '"someTestValue"')
+    .typeText(
+      screen.queryByRole('textbox', {name: /value/i}),
+      '"someTestValue"'
+    )
     .expect(
       screen
-        .getByRole('button', {name: 'Save variable'})
+        .queryByRole('button', {name: 'Save variable'})
         .hasAttribute('disabled')
     )
     .notOk()
@@ -104,15 +107,15 @@ test('Validations for add/edit variable works correctly', async (t) => {
 
   // delete the value of the variable and add some valid json value instead. see that save button is enabled and no spinner is displayed.
   await t
-    .selectText(screen.getByRole('textbox', {name: /value/i}))
+    .selectText(screen.queryByRole('textbox', {name: /value/i}))
     .pressKey('delete')
     .typeText(
-      screen.getByRole('textbox', {name: /value/i}),
+      screen.queryByRole('textbox', {name: /value/i}),
       '{"name": "value","found":true}'
     )
     .expect(
       screen
-        .getByRole('button', {name: 'Save variable'})
+        .queryByRole('button', {name: 'Save variable'})
         .hasAttribute('disabled')
     )
     .notOk()
@@ -123,11 +126,11 @@ test('Validations for add/edit variable works correctly', async (t) => {
 
   // delete the key of the newly added variable and see that save button is disabled and no spinner is displayed.
   await t
-    .selectText(screen.getByRole('textbox', {name: /variable/i}))
+    .selectText(screen.queryByRole('textbox', {name: /variable/i}))
     .pressKey('delete')
     .expect(
       screen
-        .getByRole('button', {name: 'Save variable'})
+        .queryByRole('button', {name: 'Save variable'})
         .hasAttribute('disabled')
     )
     .ok()
@@ -136,7 +139,7 @@ test('Validations for add/edit variable works correctly', async (t) => {
     .expect(screen.queryByTestId('operation-spinner').exists)
     .notOk();
 
-  await t.click(screen.getByRole('button', {name: 'Exit edit mode'}));
+  await t.click(screen.queryByRole('button', {name: 'Exit edit mode'}));
 });
 
 test('Edit variables', async (t) => {
@@ -149,19 +152,19 @@ test('Edit variables', async (t) => {
     .click(screen.queryByTestId('edit-variable-button'))
     .expect(
       screen
-        .getByRole('button', {name: 'Save variable'})
+        .queryByRole('button', {name: 'Save variable'})
         .hasAttribute('disabled')
     )
     .ok();
 
   // delete the value of the variable and add something else. see that save variable button is enabled, and no spinner is displayed.
   await t
-    .selectText(screen.getByTestId('edit-value'))
+    .selectText(screen.queryByTestId('edit-value'))
     .pressKey('delete')
-    .typeText(screen.getByTestId('edit-value'), '"editedTestValue"')
+    .typeText(screen.queryByTestId('edit-value'), '"editedTestValue"')
     .expect(
       screen
-        .getByRole('button', {name: 'Save variable'})
+        .queryByRole('button', {name: 'Save variable'})
         .hasAttribute('disabled')
     )
     .notOk()
@@ -172,10 +175,10 @@ test('Edit variables', async (t) => {
 
   // click save variable button and see that both edit variable spinner and operation spinner are displayed.
   await t
-    .click(screen.getByRole('button', {name: 'Save variable'}))
-    .expect(screen.getByTestId('edit-variable-spinner').exists)
+    .click(screen.queryByRole('button', {name: 'Save variable'}))
+    .expect(screen.queryByTestId('edit-variable-spinner').exists)
     .ok()
-    .expect(screen.getByTestId('operation-spinner').exists)
+    .expect(screen.queryByTestId('operation-spinner').exists)
     .ok();
 
   // see that spinners both disappear after save variable operation completes.
@@ -201,17 +204,20 @@ test('Add variables', async (t) => {
     .click(screen.queryByRole('button', {name: 'Add variable'}))
     .expect(
       screen
-        .getByRole('button', {name: 'Save variable'})
+        .queryByRole('button', {name: 'Save variable'})
         .hasAttribute('disabled')
     )
     .ok();
 
   // add a key to the newly added variable and see that save variable button is disabled and no spinner is displayed.
   await t
-    .typeText(screen.getByRole('textbox', {name: /variable/i}), 'secondTestKey')
+    .typeText(
+      screen.queryByRole('textbox', {name: /variable/i}),
+      'secondTestKey'
+    )
     .expect(
       screen
-        .getByRole('button', {name: 'Save variable'})
+        .queryByRole('button', {name: 'Save variable'})
         .hasAttribute('disabled')
     )
     .ok()
@@ -223,12 +229,12 @@ test('Add variables', async (t) => {
   // add a value to the newly added variable and see that save variable button is enabled and no spinner is displayed.
   await t
     .typeText(
-      screen.getByRole('textbox', {name: /value/i}),
+      screen.queryByRole('textbox', {name: /value/i}),
       '"secondTestValue"'
     )
     .expect(
       screen
-        .getByRole('button', {name: 'Save variable'})
+        .queryByRole('button', {name: 'Save variable'})
         .hasAttribute('disabled')
     )
     .notOk()
@@ -239,10 +245,10 @@ test('Add variables', async (t) => {
 
   // click save variable button and see that both edit variable spinner and operation spinner are displayed.
   await t
-    .click(screen.getByRole('button', {name: 'Save variable'}))
-    .expect(screen.getByTestId('edit-variable-spinner').exists)
+    .click(screen.queryByRole('button', {name: 'Save variable'}))
+    .expect(screen.queryByTestId('edit-variable-spinner').exists)
     .ok()
-    .expect(screen.getByTestId('operation-spinner').exists)
+    .expect(screen.queryByTestId('operation-spinner').exists)
     .ok();
 
   // see that spinners both disappear after save variable operation completes
@@ -255,22 +261,28 @@ test('Add variables', async (t) => {
   // refresh the page and see the variable is still there.
   await t
     .navigateTo(`/instances/${instance.processInstanceKey}`)
-    .expect(screen.getByRole('cell', {name: 'secondTestKey'}).exists)
+    .expect(screen.queryByRole('cell', {name: 'secondTestKey'}).exists)
     .ok()
-    .expect(screen.getByRole('cell', {name: '"secondTestValue"'}).exists)
+    .expect(screen.queryByRole('cell', {name: '"secondTestValue"'}).exists)
     .ok();
 
   // go to instance page, filter and find the instance by added variable
   await t
     .click(
-      screen.getByRole('listitem', {
+      screen.queryByRole('listitem', {
         name: /running instances/i,
       })
     )
-    .typeText(screen.getByRole('textbox', {name: 'Variable'}), 'secondTestKey')
-    .typeText(screen.getByRole('textbox', {name: 'Value'}), '"secondTestValue"')
     .typeText(
-      screen.getByRole('textbox', {
+      screen.queryByRole('textbox', {name: 'Variable'}),
+      'secondTestKey'
+    )
+    .typeText(
+      screen.queryByRole('textbox', {name: 'Value'}),
+      '"secondTestValue"'
+    )
+    .typeText(
+      screen.queryByRole('textbox', {
         name: /instance id\(s\) separated by space or comma/i,
       }),
       instance.processInstanceKey
@@ -278,7 +290,7 @@ test('Add variables', async (t) => {
 
   await t
     .expect(
-      within(screen.getByTestId('instances-list')).queryByRole('cell', {
+      within(screen.queryByTestId('instances-list')).queryByRole('cell', {
         name: `View instance ${instance.processInstanceKey}`,
       }).exists
     )
@@ -288,14 +300,14 @@ test('Add variables', async (t) => {
 test('Remove fields when instance is canceled', async (t) => {
   await t
     .click(screen.queryByRole('button', {name: 'Add variable'}))
-    .expect(screen.getByRole('textbox', {name: /variable/i}).exists)
+    .expect(screen.queryByRole('textbox', {name: /variable/i}).exists)
     .ok()
-    .expect(screen.getByRole('textbox', {name: /value/i}).exists)
+    .expect(screen.queryByRole('textbox', {name: /value/i}).exists)
     .ok();
 
   await t
-    .click(screen.getByRole('button', {name: /^Cancel Instance/}))
-    .expect(screen.getByTestId('operation-spinner').exists)
+    .click(screen.queryByRole('button', {name: /^Cancel Instance/}))
+    .expect(screen.queryByTestId('operation-spinner').exists)
     .ok();
 
   await t

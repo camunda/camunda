@@ -38,13 +38,13 @@ test('Should select multi instance flow nodes', async (t) => {
       selected: true,
     }
   );
-  const withinIncidentsTable = within(screen.getByTestId('incidents-table'));
+  const withinIncidentsTable = within(screen.queryByTestId('incidents-table'));
 
   const selectedIncidentsTableRows = withinIncidentsTable.getAllByRole('row', {
     selected: true,
   });
 
-  const withinPopover = within(screen.getByTestId('popover'));
+  const withinPopover = within(screen.queryByTestId('popover'));
 
   await t
     .expect(
@@ -75,7 +75,7 @@ test('Should select multi instance flow nodes', async (t) => {
     .eql(10);
 
   await t
-    .click(within(screen.getByTestId('diagram')).getByText(/Task B/))
+    .click(within(screen.queryByTestId('diagram')).queryByText(/Task B/))
     .expect(selectedInstanceHistoryRows.count)
     .eql(5);
 
@@ -88,7 +88,9 @@ test('Should select multi instance flow nodes', async (t) => {
   );
 
   await t
-    .click(screen.getByRole('button', {name: /view 25 incidents in instance/i}))
+    .click(
+      screen.queryByRole('button', {name: /view 25 incidents in instance/i})
+    )
     .expect(withinIncidentsTable.findByRole('row', {selected: true}).exists)
     .notOk();
 
@@ -104,14 +106,14 @@ test('Should select multi instance flow nodes', async (t) => {
     .eql('Task B');
 
   await t.click(
-    screen.getByRole('button', {name: /view 25 incidents in instance/i})
+    screen.queryByRole('button', {name: /view 25 incidents in instance/i})
   );
 
   await t
-    .click(withinPopover.getByRole('button', {name: 'Task B'}))
+    .click(withinPopover.queryByRole('button', {name: 'Task B'}))
     .expect(selectedInstanceHistoryRows.count)
     .eql(10)
-    .expect(withinPopover.getByText(/there are 25 instances/i).exists)
+    .expect(withinPopover.queryByText(/there are 25 instances/i).exists)
     .ok();
 
   await Promise.all(
@@ -121,7 +123,9 @@ test('Should select multi instance flow nodes', async (t) => {
   );
 
   await t
-    .click(screen.getByRole('button', {name: /view 25 incidents in instance/i}))
+    .click(
+      screen.queryByRole('button', {name: /view 25 incidents in instance/i})
+    )
     .expect(selectedIncidentsTableRows.count)
     .eql(25);
 
@@ -131,9 +135,13 @@ test('Should select multi instance flow nodes', async (t) => {
     .eql(1);
 
   await t
-    .click(screen.getByRole('button', {name: /view 25 incidents in instance/i}))
-    .click(withinPopover.getByRole('button', {name: 'Task B (Multi Instance)'}))
-    .expect(withinPopover.getByText(/there are 5 instances/i).exists)
+    .click(
+      screen.queryByRole('button', {name: /view 25 incidents in instance/i})
+    )
+    .click(
+      withinPopover.queryByRole('button', {name: 'Task B (Multi Instance)'})
+    )
+    .expect(withinPopover.queryByText(/there are 5 instances/i).exists)
     .ok()
     .expect(selectedInstanceHistoryRows.count)
     .eql(5);
