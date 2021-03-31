@@ -15,15 +15,12 @@ export async function evaluateEntity(id, type, query = {}) {
 
 export function createLoadReportCallback(dashboardShareId) {
   return async (reportId, filter, query) => {
-    try {
-      const response = await post(
-        `api/share/dashboard/${dashboardShareId}/report/${reportId}/evaluate`,
-        {filter},
-        {query}
-      );
-      return await response.json();
-    } catch (error) {
-      return (await error.json()).reportDefinition;
-    }
+    const response = await post(
+      `api/share/dashboard/${dashboardShareId}/report/${reportId}/evaluate`,
+      {filter},
+      {query}
+    );
+
+    return await response.json();
   };
 }

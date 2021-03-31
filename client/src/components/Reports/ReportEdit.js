@@ -197,29 +197,40 @@ export class ReportEdit extends React.Component {
   setLoading = (value) => this.setState({loadingReportData: value});
 
   loadReport = (params, query = this.state.report) =>
-    this.props.mightFail(
-      evaluateReport(query, [], params),
-      (response) =>
-        this.setState({
-          report: response,
-          serverError: null,
-        }),
-      async (e) => {
-        const errorData = await e.json();
-        if (errorData) {
-          this.setState({
-            report: errorData.reportDefinition,
-            serverError: {status: e.status, data: errorData},
-          });
-        } else {
-          this.setState({
-            serverError: {
-              status: e.status,
-              data: {errorMessage: t('apiErrors.reportEvaluationError')},
+    new Promise((resolve) =>
+      this.props.mightFail(
+        evaluateReport(query, [], params),
+        (response) =>
+          this.setState(
+            {
+              report: response,
+              serverError: null,
             },
-          });
+            resolve
+          ),
+        async (e) => {
+          const errorData = await e.json();
+          if (errorData) {
+            this.setState(
+              {
+                report: errorData.reportDefinition,
+                serverError: {status: e.status, data: errorData},
+              },
+              resolve
+            );
+          } else {
+            this.setState(
+              {
+                serverError: {
+                  status: e.status,
+                  data: {errorMessage: t('apiErrors.reportEvaluationError')},
+                },
+              },
+              resolve
+            );
+          }
         }
-      }
+      )
     );
 
   render() {
