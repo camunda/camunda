@@ -21,9 +21,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
-import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.storage.RaftStorage;
-import io.atomix.utils.serializer.Serializer;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -42,7 +40,7 @@ public class MetaStoreTest {
   @Before
   public void setup() throws IOException {
     storage = RaftStorage.builder().withDirectory(temporaryFolder.newFolder("store")).build();
-    metaStore = new MetaStore(storage, Serializer.using(RaftNamespaces.RAFT_STORAGE));
+    metaStore = new MetaStore(storage);
   }
 
   @Test
@@ -100,7 +98,7 @@ public class MetaStoreTest {
 
     // when
     metaStore.close();
-    metaStore = new MetaStore(storage, Serializer.using(RaftNamespaces.RAFT_STORAGE));
+    metaStore = new MetaStore(storage);
 
     // then
     final Configuration readConfig = metaStore.loadConfiguration();
@@ -119,7 +117,7 @@ public class MetaStoreTest {
 
     // when
     metaStore.close();
-    metaStore = new MetaStore(storage, Serializer.using(RaftNamespaces.RAFT_STORAGE));
+    metaStore = new MetaStore(storage);
 
     // then
     assertThat(metaStore.loadTerm()).isEqualTo(2L);
@@ -132,7 +130,7 @@ public class MetaStoreTest {
 
     // when
     metaStore.close();
-    metaStore = new MetaStore(storage, Serializer.using(RaftNamespaces.RAFT_STORAGE));
+    metaStore = new MetaStore(storage);
 
     // then
     assertThat(metaStore.loadVote().id()).isEqualTo("id");

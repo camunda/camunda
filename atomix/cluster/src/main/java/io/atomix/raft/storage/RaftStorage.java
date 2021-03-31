@@ -24,8 +24,6 @@ import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.buffer.FileBuffer;
-import io.atomix.utils.serializer.Namespace;
-import io.atomix.utils.serializer.Serializer;
 import io.zeebe.snapshots.raft.PersistedSnapshotStore;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.io.File;
@@ -55,7 +53,6 @@ public final class RaftStorage {
 
   private final String prefix;
   private final File directory;
-  private final Namespace namespace;
   private final int maxSegmentSize;
   private final int maxEntrySize;
   private final long freeDiskSpace;
@@ -66,7 +63,6 @@ public final class RaftStorage {
   private RaftStorage(
       final String prefix,
       final File directory,
-      final Namespace namespace,
       final int maxSegmentSize,
       final int maxEntrySize,
       final long freeDiskSpace,
@@ -75,7 +71,6 @@ public final class RaftStorage {
       final int journalIndexDensity) {
     this.prefix = prefix;
     this.directory = directory;
-    this.namespace = namespace;
     this.maxSegmentSize = maxSegmentSize;
     this.maxEntrySize = maxEntrySize;
     this.freeDiskSpace = freeDiskSpace;
@@ -102,15 +97,6 @@ public final class RaftStorage {
    */
   public String prefix() {
     return prefix;
-  }
-
-  /**
-   * Returns the storage serializer.
-   *
-   * @return The storage serializer.
-   */
-  public Namespace namespace() {
-    return namespace;
   }
 
   /**
@@ -187,7 +173,7 @@ public final class RaftStorage {
    */
   public MetaStore openMetaStore() {
     try {
-      return new MetaStore(this, Serializer.using(namespace));
+      return new MetaStore(this);
     } catch (final IOException e) {
       throw new StorageException("Failed to open metastore", e);
     }
@@ -302,7 +288,6 @@ public final class RaftStorage {
 
     private String prefix = DEFAULT_PREFIX;
     private File directory = new File(DEFAULT_DIRECTORY);
-    private Namespace namespace;
     private int maxSegmentSize = DEFAULT_MAX_SEGMENT_SIZE;
     private int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
     private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
@@ -351,18 +336,6 @@ public final class RaftStorage {
      */
     public Builder withDirectory(final File directory) {
       this.directory = checkNotNull(directory, "directory");
-      return this;
-    }
-
-    /**
-     * Sets the storage namespace.
-     *
-     * @param namespace The storage namespace.
-     * @return The storage builder.
-     * @throws NullPointerException If the {@code namespace} is {@code null}
-     */
-    public Builder withNamespace(final Namespace namespace) {
-      this.namespace = checkNotNull(namespace, "namespace cannot be null");
       return this;
     }
 
@@ -449,7 +422,6 @@ public final class RaftStorage {
       return new RaftStorage(
           prefix,
           directory,
-          namespace,
           maxSegmentSize,
           maxEntrySize,
           freeDiskSpace,

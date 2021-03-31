@@ -22,7 +22,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.serializer.MetaStoreSerializer;
 import io.atomix.storage.StorageException;
-import io.atomix.utils.serializer.Serializer;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -53,7 +52,7 @@ public class MetaStore implements AutoCloseable {
   private final File confFile;
   private final MetaStoreSerializer serializer = new MetaStoreSerializer();
 
-  public MetaStore(final RaftStorage storage, final Serializer serializer) throws IOException {
+  public MetaStore(final RaftStorage storage) throws IOException {
     if (!(storage.directory().isDirectory() || storage.directory().mkdirs())) {
       throw new IllegalArgumentException(
           String.format("Can't create storage directory [%s].", storage.directory()));
