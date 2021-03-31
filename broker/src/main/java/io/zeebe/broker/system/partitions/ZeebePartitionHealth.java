@@ -16,6 +16,7 @@ import io.zeebe.util.health.HealthStatus;
  * transitions either succeeded or failed.
  */
 class ZeebePartitionHealth implements HealthMonitorable {
+
   private HealthStatus healthStatus = HealthStatus.UNHEALTHY;
   private final String name;
   private FailureListener failureListener;
@@ -25,7 +26,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
   * - diskSpaceAvailable
   */
   private boolean servicesInstalled;
-  // We assume diskspace is available until otherwise notified
+  // We assume disk space is available until otherwise notified
   private boolean diskSpaceAvailable = true;
 
   public ZeebePartitionHealth(final int partitionId) {
@@ -43,8 +44,12 @@ class ZeebePartitionHealth implements HealthMonitorable {
   }
 
   private void updateHealthStatus() {
-    final boolean healthy = diskSpaceAvailable && servicesInstalled;
     final var previousStatus = healthStatus;
+    if (previousStatus == HealthStatus.DEAD) {
+      return;
+    }
+
+    final boolean healthy = diskSpaceAvailable && servicesInstalled;
     if (healthy) {
       healthStatus = HealthStatus.HEALTHY;
     } else {
@@ -73,6 +78,10 @@ class ZeebePartitionHealth implements HealthMonitorable {
   void setDiskSpaceAvailable(final boolean diskSpaceAvailable) {
     this.diskSpaceAvailable = diskSpaceAvailable;
     updateHealthStatus();
+  }
+
+  void onUnrecoverableFailure() {
+    healthStatus = HealthStatus.DEAD;
   }
 
   public String getName() {

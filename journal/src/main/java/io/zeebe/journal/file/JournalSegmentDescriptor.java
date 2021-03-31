@@ -58,7 +58,7 @@ import java.nio.ByteBuffer;
  *
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
-final class JournalSegmentDescriptor {
+public final class JournalSegmentDescriptor {
   public static final int BYTES = 64;
 
   // Current segment version.
