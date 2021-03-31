@@ -18,7 +18,6 @@
     <module>parent</module>
     <module>atomix</module>
     <module>broker</module>
-    <module>qa</module>
     <module>protocol-test-util</module>
     <module>samples</module>
     <module>dist</module>
@@ -43,12 +42,25 @@
     <module>exporters/elasticsearch-exporter</module>
     <module>protocol-impl</module>
     <module>zb-db</module>
-    <module>update-tests</module>
     <module>expression-language</module>
     <module>snapshot</module>
-    <module>benchmarks/project</module>
     <module>journal</module>
   </modules>
+
+  <profiles>
+    <profile>
+      <id>development</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+
+      <modules>
+        <module>qa</module>
+        <module>update-tests</module>
+        <module>benchmarks/project</module>
+      </modules>
+    </profile>
+  </profiles>
 
   <scm>
     <url>https://github.com/camunda-cloud/zeebe</url>
