@@ -5,7 +5,7 @@
   "dependencies": {
     "@camunda-cloud/common-ui": "^0.0.15",
     "@camunda-cloud/common-ui-react": "^0.0.15",
-    "@testing-library/user-event": "^13.1.0",
+    "@testing-library/user-event": "^13.1.1",
     "@types/enzyme": "^3.10.8",
     "@types/enzyme-adapter-react-16": "^1.0.6",
     "@types/history": "^4.7.8",
