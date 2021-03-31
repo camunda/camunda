@@ -24,6 +24,7 @@ import io.zeebe.test.util.bpmn.random.steps.StepPickDefaultCase;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
+import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimer;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
@@ -72,6 +73,9 @@ public class ProcessExecutor {
     } else if (step instanceof StepExpressionIncidentCase) {
       final var expressionIncident = (StepExpressionIncidentCase) step;
       resolveExpressionIncident(expressionIncident);
+    } else if (step instanceof StepTriggerTimer) {
+      final StepTriggerTimer timerStep = (StepTriggerTimer) step;
+      triggerTimer(timerStep);
     } else {
       throw new IllegalStateException("Not yet implemented: " + step);
     }
@@ -80,13 +84,14 @@ public class ProcessExecutor {
   private void activateAndCompleteJob(final StepActivateAndCompleteJob activateAndCompleteJob) {
     waitForJobToBeCreated(activateAndCompleteJob.getJobType());
 
+    final Map<String, Object> variables = activateAndCompleteJob.getVariables();
     engineRule
         .jobs()
         .withType(activateAndCompleteJob.getJobType())
         .activate()
         .getValue()
         .getJobKeys()
-        .forEach(jobKey -> engineRule.job().withKey(jobKey).complete());
+        .forEach(jobKey -> engineRule.job().withKey(jobKey).withVariables(variables).complete());
   }
 
   private void activateAndFailJob(final StepActivateAndFailJob activateAndFailJob) {
@@ -217,6 +222,10 @@ public class ProcessExecutor {
         .ofBpmnProcessId(startProcess.getProcessId())
         .withVariables(startProcess.getVariables())
         .create();
+  }
+
+  private void triggerTimer(final StepTriggerTimer timerStep) {
+    engineRule.increaseTime(timerStep.getTimeToAdd());
   }
 
   private void resolveExpressionIncident(final StepExpressionIncidentCase expressionIncident) {

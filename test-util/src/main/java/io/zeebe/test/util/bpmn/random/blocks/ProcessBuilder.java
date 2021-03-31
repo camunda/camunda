@@ -26,7 +26,10 @@ public final class ProcessBuilder {
 
   private static final List<Function<ConstructionContext, StartEventBlockBuilder>>
       START_EVENT_BUILDER_FACTORIES =
-          List.of(NoneStartEventBuilder::new, MessageStartEventBuilder::new);
+          List.of(
+              NoneStartEventBuilder::new,
+              MessageStartEventBuilder::new,
+              TimerStartEventBuilder::new);
 
   private final BlockBuilder blockBuilder;
   private final StartEventBlockBuilder startEventBuilder;
