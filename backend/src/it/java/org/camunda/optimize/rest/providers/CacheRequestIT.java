@@ -116,6 +116,25 @@ public class CacheRequestIT extends AbstractIT {
     assertThat(headers.get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
   }
 
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionXmlRequest_cacheControlHeadersIsNoStoreForAllVersion(DefinitionType type) {
+    // given
+    String key = "test", version = "1";
+    createAndSaveDefinitionToElasticsearch(key, version, type, false);
+
+    // when
+    Response response = executeDefinitionRequest(key, ReportConstants.ALL_VERSIONS, type);
+
+    // then
+    final MultivaluedMap<String, Object> headers = response.getHeaders();
+
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(headers).isNotNull();
+    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL)).contains(CACHE_CONTROL_NO_STORE);
+    assertThat(headers.get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
+  }
+
   private void createAndSaveDefinitionToElasticsearch(final String key,
                                                       final String version,
                                                       final DefinitionType type,

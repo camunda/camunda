@@ -54,7 +54,7 @@ import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 public class ProcessReportImportIT extends AbstractExportImportIT {
 
   private static Stream<String> specialVersionKeywords() {
-    return Stream.of(ALL_VERSIONS.toLowerCase(), LATEST_VERSION.toLowerCase()); // export results in lower case
+    return Stream.of(ALL_VERSIONS, LATEST_VERSION);
   }
 
   @ParameterizedTest

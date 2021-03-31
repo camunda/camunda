@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
@@ -47,6 +46,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAllOrLatest;
 
 @AllArgsConstructor
 @Slf4j
@@ -206,7 +206,7 @@ public class DefinitionRestService {
       logAndThrowNotFoundException(type, key, version);
     }
     final Response.ResponseBuilder responseBuilder = Response.ok().type(MediaType.APPLICATION_XML);
-    if (ReportConstants.LATEST_VERSION.equals(version)) {
+    if (isDefinitionVersionSetToAllOrLatest(version)) {
       addNoStoreCacheHeader(responseBuilder);
     }
     switch (type) {
