@@ -117,7 +117,7 @@ const Task: React.FC = () => {
                     const {name} = variable;
 
                     if (values.hasOwnProperty(createVariableFieldName(name))) {
-                      return {name: 'Variable must be unique'};
+                      return {name: 'Name must be unique'};
                     }
 
                     if (
@@ -135,7 +135,7 @@ const Task: React.FC = () => {
                       return undefined;
                     }
 
-                    return {name: 'Variable must be unique'};
+                    return {name: 'Name must be unique'};
                   }),
                 };
               }

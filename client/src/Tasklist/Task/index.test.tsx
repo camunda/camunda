@@ -402,7 +402,7 @@ describe('<Task />', () => {
     );
 
     expect(
-      screen.getByTitle('Variable must be unique and Value has to be JSON'),
+      screen.getByTitle('Name must be unique and Value has to be JSON'),
     ).toBeInTheDocument();
 
     fireEvent.change(
@@ -423,14 +423,14 @@ describe('<Task />', () => {
 
     expect(
       within(screen.getByTestId('newVariables[1]')).getByTitle(
-        'Variable must be unique and Value has to be JSON',
+        'Name must be unique and Value has to be JSON',
       ),
     ).toBeInTheDocument();
 
     const withinFirstVariable = within(screen.getByTestId('newVariables[0]'));
     expect(
       withinFirstVariable.queryByTitle(
-        'Variable must be unique and Value has to be JSON',
+        'Name must be unique and Value has to be JSON',
       ),
     ).not.toBeInTheDocument();
 
@@ -439,7 +439,7 @@ describe('<Task />', () => {
     );
 
     expect(
-      screen.queryByTitle('Variable must be unique and Value has to be JSON'),
+      screen.queryByTitle('Name must be unique and Value has to be JSON'),
     ).not.toBeInTheDocument();
   });
 });

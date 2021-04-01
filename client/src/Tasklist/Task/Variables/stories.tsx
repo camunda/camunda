@@ -32,11 +32,11 @@ const StyledTextarea = styled(EditTextarea)`
 `;
 
 const Input: React.FC = () => {
-  return <NameInput name="variable" placeholder="Variable" />;
+  return <NameInput name="name" placeholder="Name" />;
 };
 
 const InputError: React.FC = () => {
-  return <NameInput name="variable" placeholder="Variable" aria-invalid />;
+  return <NameInput name="name" placeholder="Name" aria-invalid />;
 };
 
 const Textarea: React.FC = () => {

@@ -165,7 +165,7 @@ describe('<Variables />', () => {
     );
 
     expect(
-      await screen.findByTitle('Variable has to be filled'),
+      await screen.findByTitle('Name has to be filled'),
     ).toBeInTheDocument();
   });
 
@@ -200,7 +200,7 @@ describe('<Variables />', () => {
 
     expect(
       await screen.findByTitle(
-        'Variable has to be filled and Value has to be JSON',
+        'Name has to be filled and Value has to be JSON',
       ),
     ).toBeInTheDocument();
   });
@@ -223,10 +223,10 @@ describe('<Variables />', () => {
     );
 
     expect(
-      screen.queryByTitle('Variable has to be filled and Value has to be JSON'),
+      screen.queryByTitle('Name has to be filled and Value has to be JSON'),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByTitle('Variable has to be filled'),
+      screen.queryByTitle('Name has to be filled'),
     ).not.toBeInTheDocument();
     expect(screen.queryByTitle('Value has to be JSON')).not.toBeInTheDocument();
   });

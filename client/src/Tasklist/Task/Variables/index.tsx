@@ -127,7 +127,7 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
             <Table data-testid="variables-table">
               <thead>
                 <TR hasNoBorder>
-                  <VariableNameTH>Variable</VariableNameTH>
+                  <VariableNameTH>Name</VariableNameTH>
                   <VariableValueTH colSpan={2}>Value</VariableValueTH>
                 </TR>
               </thead>
@@ -196,7 +196,7 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
                                 {({input, meta}) => (
                                   <NameInput
                                     {...input}
-                                    placeholder="Variable"
+                                    placeholder="Name"
                                     aria-label={`${variable}.name`}
                                     aria-invalid={
                                       meta.error !== undefined &&

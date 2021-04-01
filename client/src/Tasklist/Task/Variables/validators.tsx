@@ -18,7 +18,7 @@ const validateJSON = (value?: string) => {
 
 const validateNonEmpty = (value?: string) => {
   if (value === undefined || value.trim() === '') {
-    return 'Variable has to be filled';
+    return 'Name has to be filled';
   }
   return undefined;
 };

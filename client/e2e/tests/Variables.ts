@@ -40,14 +40,28 @@ test('display variables when task has variables', async (t) => {
       .nth(0),
   );
   await t.expect(screen.queryByText('Task has no Variables').exists).notOk();
+
+  const withinVariablesTable = within(screen.getByTestId('variables-table'));
   await t
-    .expect(screen.getByRole('columnheader', {name: 'Variable'}).exists)
+    .expect(
+      withinVariablesTable.getByRole('columnheader', {name: 'Name'}).exists,
+    )
     .ok();
-  await t.expect(screen.getByRole('columnheader', {name: 'Value'}).exists).ok();
   await t
-    .expect(screen.getByRole('columnheader', {name: 'testData'}).exists)
+    .expect(
+      withinVariablesTable.getByRole('columnheader', {name: 'Value'}).exists,
+    )
     .ok();
-  await t.expect(screen.getByRole('cell', {name: '"something"'}).exists).ok();
+  await t
+    .expect(
+      withinVariablesTable.getByRole('columnheader', {name: 'testData'}).exists,
+    )
+    .ok();
+  await t
+    .expect(
+      withinVariablesTable.getByRole('cell', {name: '"something"'}).exists,
+    )
+    .ok();
 });
 
 test.after(async (t) => {

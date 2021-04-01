@@ -34,7 +34,7 @@ describe('Validators', () => {
 
     it('should not validate', () => {
       [undefined, '', ' ', '           '].forEach((value) => {
-        expect(validateNonEmpty(value)).toBe('Variable has to be filled');
+        expect(validateNonEmpty(value)).toBe('Name has to be filled');
       });
     });
   });
