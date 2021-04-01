@@ -25,5 +25,4 @@ const VariablesPanel = styled(Panel)`
     `;
   }}
 `;
-
 export {VariablesPanel};

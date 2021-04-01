@@ -24,7 +24,7 @@ import {mockServer} from 'modules/mock-server/node';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 
-const EMPTY_PLACEHOLDER = 'The Flow Node has no variables.';
+const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
 type Props = {
   children?: React.ReactNode;
@@ -114,7 +114,7 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(screen.getByText('Variable')).toBeInTheDocument();
+      expect(screen.getByText('Name')).toBeInTheDocument();
       expect(screen.getByText('Value')).toBeInTheDocument();
 
       const {items} = variablesStore.state;
@@ -198,7 +198,7 @@ describe('Variables', () => {
       expect(
         screen.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
-      fireEvent.change(screen.getByRole('textbox', {name: /variable/i}), {
+      fireEvent.change(screen.getByRole('textbox', {name: /name/i}), {
         target: {value: 'test'},
       });
       expect(
@@ -224,14 +224,14 @@ describe('Variables', () => {
       });
       expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
 
-      fireEvent.change(screen.getByRole('textbox', {name: /variable/i}), {
+      fireEvent.change(screen.getByRole('textbox', {name: /name/i}), {
         target: {value: '"test"'},
       });
       expect(
         screen.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
 
-      fireEvent.change(screen.getByRole('textbox', {name: /variable/i}), {
+      fireEvent.change(screen.getByRole('textbox', {name: /name/i}), {
         target: {value: 'test'},
       });
       expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
@@ -246,7 +246,7 @@ describe('Variables', () => {
       ).toBeDisabled();
 
       // already existing variable
-      fireEvent.change(screen.getByRole('textbox', {name: /variable/i}), {
+      fireEvent.change(screen.getByRole('textbox', {name: /name/i}), {
         target: {value: variablesStore.state.items[0].name},
       });
 
@@ -276,7 +276,7 @@ describe('Variables', () => {
       const newVariableName = 'newVariable';
       const newVariableValue = '1234';
 
-      fireEvent.change(screen.getByRole('textbox', {name: /variable/i}), {
+      fireEvent.change(screen.getByRole('textbox', {name: /name/i}), {
         target: {value: newVariableName},
       });
       fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {

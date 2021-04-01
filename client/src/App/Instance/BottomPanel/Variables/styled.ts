@@ -51,7 +51,7 @@ const VariablesContent = styled(Panel.Body)`
 const TableScroll = styled.div`
   overflow-y: auto;
   height: 100%;
-  margin-top: 45px;
+  margin-top: 79px;
   margin-bottom: 40px;
 `;
 
@@ -83,41 +83,58 @@ const TD = styled.td<TDProps>`
       color: ${colors.color};
       font-weight: ${isBold ? 'bold' : 'normal'};
 
-      padding-top: 5px;
       padding-bottom: 5px;
-      padding-left: 17px;
+      padding-left: 16px;
       padding-right: 9px;
 
       &:not(:nth-child(2)) {
         white-space: nowrap;
       }
       vertical-align: top;
+
+      :first-child {
+        padding-top: 5px;
+      }
     `;
   }}
 `;
 
-const THead = styled.thead`
-  ${({theme}) => {
+type THeadProps = {
+  isVariableHeaderVisible: boolean;
+};
+
+const THead = styled.thead<THeadProps>`
+  ${({theme, isVariableHeaderVisible}) => {
     const colors = theme.colors.variables.tHead;
 
     return css`
       tr:first-child {
         position: absolute;
-        width: 100%;
         top: 0;
+        height: 45px;
+        margin-top: 14px;
+        margin-left: 13.5px;
+        font-size: 15px;
+        font-weight: 500;
+        color: ${theme.colors.ui06};
+      }
+
+      ${isVariableHeaderVisible &&
+      `      tr:last-child {
+        position: absolute;
+        width: 100%;
+        top: 35px;
         border-bottom: 1px solid ${colors.borderColor};
         background: ${colors.backgroundColor};
-        z-index: 2;
         border-top: none;
         height: 45px;
-        border-top: none;
         > th {
           padding-top: 21px;
         }
         > th:first-child {
-          min-width: 226px;
+          min-width: 230px;
         }
-      }
+      }`}
     `;
   }}
 `;
@@ -313,7 +330,7 @@ const LinesSeparator = styled.span`
 
 const EmptyPanel = styled(EmptyPanelComponent)`
   position: absolute;
-  top: 20px;
+  top: 19px;
   z-index: 1;
 `;
 
@@ -341,6 +358,10 @@ const Footer = styled(Panel.Footer)`
   height: 41px;
 `;
 
+const TH = styled.th`
+  font-weight: 500;
+`;
+
 export {
   Spinner,
   Variables,
@@ -348,6 +369,7 @@ export {
   TableScroll,
   Placeholder,
   TD,
+  TH,
   THead,
   VariableName,
   TextInput,

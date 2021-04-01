@@ -44,7 +44,7 @@ test('Validations for add/edit variable works correctly', async (t) => {
 
   // add a new variable called test, see that save button is disabled, and no sipnner is displayed.
   await t
-    .typeText(screen.queryByRole('textbox', {name: /variable/i}), 'test')
+    .typeText(screen.queryByRole('textbox', {name: /name/i}), 'test')
     .expect(
       screen
         .queryByRole('button', {name: 'Save variable'})
@@ -126,7 +126,7 @@ test('Validations for add/edit variable works correctly', async (t) => {
 
   // delete the key of the newly added variable and see that save button is disabled and no spinner is displayed.
   await t
-    .selectText(screen.queryByRole('textbox', {name: /variable/i}))
+    .selectText(screen.queryByRole('textbox', {name: /name/i}))
     .pressKey('delete')
     .expect(
       screen
@@ -211,10 +211,7 @@ test('Add variables', async (t) => {
 
   // add a key to the newly added variable and see that save variable button is disabled and no spinner is displayed.
   await t
-    .typeText(
-      screen.queryByRole('textbox', {name: /variable/i}),
-      'secondTestKey'
-    )
+    .typeText(screen.queryByRole('textbox', {name: /name/i}), 'secondTestKey')
     .expect(
       screen
         .queryByRole('button', {name: 'Save variable'})
@@ -300,7 +297,7 @@ test('Add variables', async (t) => {
 test('Remove fields when instance is canceled', async (t) => {
   await t
     .click(screen.queryByRole('button', {name: 'Add variable'}))
-    .expect(screen.queryByRole('textbox', {name: /variable/i}).exists)
+    .expect(screen.queryByRole('textbox', {name: /name/i}).exists)
     .ok()
     .expect(screen.queryByRole('textbox', {name: /value/i}).exists)
     .ok();

@@ -10,7 +10,7 @@ import {Table as DefaultTable} from '../VariablesTable';
 
 const SkeletonTD = styled.td`
   height: 100%;
-  padding-top: 44px;
+  padding-top: 38px;
 `;
 
 const Table = styled(DefaultTable)`

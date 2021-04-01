@@ -10,7 +10,7 @@ const TH = styled.th`
   font-style: italic;
   font-weight: normal;
   text-align: left;
-  padding-left: 17px;
+  padding-left: 15px;
   height: 31px;
 `;
 

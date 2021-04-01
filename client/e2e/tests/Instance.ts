@@ -103,7 +103,7 @@ test('Instance with an incident - history panel', async (t) => {
       within(screen.queryByTestId('popover')).queryByText(/Task A/).exists
     )
     .ok()
-    .expect(screen.queryByText('The Flow Node has no variables.').exists)
+    .expect(screen.queryByText('The Flow Node has no Variables').exists)
     .ok();
 
   await t
@@ -169,7 +169,7 @@ test('Instance with an incident - resolve an incident', async (t) => {
 
   await t
     .click(screen.queryByRole('button', {name: 'Add variable'}))
-    .typeText(screen.queryByRole('textbox', {name: /variable/i}), 'goUp', {
+    .typeText(screen.queryByRole('textbox', {name: /name/i}), 'goUp', {
       paste: true,
     })
     .typeText(screen.queryByRole('textbox', {name: /value/i}), '10', {
@@ -179,7 +179,7 @@ test('Instance with an incident - resolve an incident', async (t) => {
 
   await t
     .click(screen.queryByRole('button', {name: 'Add variable'}))
-    .typeText(screen.queryByRole('textbox', {name: /variable/i}), 'orderId', {
+    .typeText(screen.queryByRole('textbox', {name: /name/i}), 'orderId', {
       paste: true,
     })
     .typeText(screen.queryByRole('textbox', {name: /value/i}), '123', {
@@ -189,7 +189,7 @@ test('Instance with an incident - resolve an incident', async (t) => {
 
   await t
     .click(screen.queryByRole('button', {name: 'Add variable'}))
-    .typeText(screen.queryByRole('textbox', {name: /variable/i}), 'clientId', {
+    .typeText(screen.queryByRole('textbox', {name: /name/i}), 'clientId', {
       paste: true,
     })
     .typeText(screen.queryByRole('textbox', {name: /value/i}), '"test"', {
@@ -399,7 +399,7 @@ test('Instance with an incident - incident bar', async (t) => {
 
   await t
     .click(screen.queryByRole('button', {name: 'Add variable'}))
-    .typeText(screen.queryByRole('textbox', {name: /variable/i}), 'goUp', {
+    .typeText(screen.queryByRole('textbox', {name: /name/i}), 'goUp', {
       paste: true,
     })
     .typeText(screen.queryByRole('textbox', {name: /value/i}), '10', {
@@ -411,7 +411,7 @@ test('Instance with an incident - incident bar', async (t) => {
 
   await t
     .click(screen.queryByRole('button', {name: 'Add variable'}))
-    .typeText(screen.queryByRole('textbox', {name: /variable/i}), 'orderId', {
+    .typeText(screen.queryByRole('textbox', {name: /name/i}), 'orderId', {
       paste: true,
     })
     .typeText(screen.queryByRole('textbox', {name: /value/i}), '123', {
@@ -423,7 +423,7 @@ test('Instance with an incident - incident bar', async (t) => {
 
   await t
     .click(screen.queryByRole('button', {name: 'Add variable'}))
-    .typeText(screen.queryByRole('textbox', {name: /variable/i}), 'clientId', {
+    .typeText(screen.queryByRole('textbox', {name: /name/i}), 'clientId', {
       paste: true,
     })
     .typeText(screen.queryByRole('textbox', {name: /value/i}), '"test"', {
@@ -444,21 +444,21 @@ test('Instance with an incident - incident bar', async (t) => {
   await t
     .click(withinIncidentsTable.queryByRole('row', {name: /Upper task/}))
     .expect(withinVariablesTable.queryAllByRole('row').count)
-    .eql(2)
+    .eql(3)
     .expect(withinVariablesTable.queryByRole('cell', {name: /orderid/i}).exists)
     .ok();
 
   await t
     .click(withinIncidentsTable.queryByRole('row', {name: /Where to go\?/}))
     .expect(withinVariablesTable.queryAllByRole('row').count)
-    .eql(2)
+    .eql(3)
     .expect(withinVariablesTable.queryByRole('cell', {name: /goUp/i}).exists)
     .ok();
 
   await t
     .click(withinIncidentsTable.queryByRole('row', {name: /message/}))
     .expect(withinVariablesTable.queryAllByRole('row').count)
-    .eql(2)
+    .eql(3)
     .expect(
       withinVariablesTable.queryByRole('cell', {name: /clientId/i}).exists
     )

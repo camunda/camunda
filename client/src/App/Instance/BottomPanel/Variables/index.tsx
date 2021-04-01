@@ -24,7 +24,7 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 
 const Variables: React.FC = observer(function Variables() {
   const {
-    state: {items, status},
+    state: {items: variables, status},
     hasNoVariables,
   } = variablesStore;
   const {processInstanceId} = useInstancePageParams();
@@ -36,7 +36,7 @@ const Variables: React.FC = observer(function Variables() {
   }, [processInstanceId]);
 
   const [editMode, setEditMode] = useState('');
-  const [key, setKey] = useState('');
+  const [name, setName] = useState('');
   const [value, setValue] = useState('');
 
   const variablesContentRef = useRef(null);
@@ -80,7 +80,7 @@ const Variables: React.FC = observer(function Variables() {
 
   function closeEdit() {
     setEditMode('');
-    setKey('');
+    setName('');
     setValue('');
   }
 
@@ -94,14 +94,14 @@ const Variables: React.FC = observer(function Variables() {
     if (editMode === VARIABLE_MODE.ADD) {
       variablesStore.addVariable({
         id: processInstanceId,
-        name: key,
+        name,
         value,
         onError: handleError,
       });
     } else if (editMode === VARIABLE_MODE.EDIT) {
       variablesStore.updateVariable({
         id: processInstanceId,
-        name: key,
+        name,
         value,
         onError: handleError,
       });
@@ -112,7 +112,7 @@ const Variables: React.FC = observer(function Variables() {
 
   function handleOpenEditVariable(name: any, value: any) {
     setEditMode(VARIABLE_MODE.EDIT);
-    setKey(name);
+    setName(name);
     setValue(value);
   }
 
@@ -138,7 +138,7 @@ const Variables: React.FC = observer(function Variables() {
           // @ts-expect-error
           title="Save variable"
           disabled={
-            !value || !isValidJSON(value) || key.includes('"') || isDisabled
+            !value || !isValidJSON(value) || name.includes('"') || isDisabled
           }
           onClick={saveVariable}
           size="large"
@@ -176,18 +176,19 @@ const Variables: React.FC = observer(function Variables() {
 
   function renderInlineAdd() {
     const variableAlreadyExists =
-      items.map((variable) => variable.name).filter((name) => name === key)
-        .length > 0;
-    const isVariableEmpty = key.trim() === '';
+      variables
+        .map((variable) => variable.name)
+        .filter((variableName) => variableName === name).length > 0;
+    const isVariableEmpty = name.trim() === '';
     return (
       <TR data-testid="add-key-row">
         <Styled.EditInputTD>
           <Styled.TextInput
             autoFocus
             type="text"
-            placeholder="Variable"
-            value={key}
-            onChange={(e: any) => setKey(e.target.value)}
+            placeholder="Name"
+            value={name}
+            onChange={(e: any) => setName(e.target.value)}
           />
         </Styled.EditInputTD>
         <Styled.EditInputTD>
@@ -214,60 +215,74 @@ const Variables: React.FC = observer(function Variables() {
     const {instance} = currentInstanceStore.state;
     const isCurrentInstanceRunning =
       instance && isRunning({state: instance.state});
+
+    const isVariableHeaderVisible =
+      (editMode !== '' || !hasNoVariables) &&
+      variablesStore.state.status === 'fetched';
+
     return (
       <Styled.TableScroll>
         <Table data-testid="variables-list">
-          <Styled.THead>
+          <Styled.THead isVariableHeaderVisible={isVariableHeaderVisible}>
             <TR>
-              <TH>Variable</TH>
-              <TH>Value</TH>
-              <TH />
+              <Styled.TH>Variables</Styled.TH>
             </TR>
+            {isVariableHeaderVisible && (
+              <TR>
+                <TH>Name</TH>
+                <TH>Value</TH>
+                <TH />
+              </TR>
+            )}
           </Styled.THead>
           <tbody>
-            {items.map(({name, value: propValue, hasActiveOperation}) => (
-              <TR
-                key={name}
-                data-testid={name}
-                // @ts-expect-error ts-migrate(2769) FIXME: Property 'hasActiveOperation' does not exist on ty... Remove this comment to see the full error message
-                hasActiveOperation={hasActiveOperation}
-              >
-                <Styled.TD isBold={true}>
-                  <Styled.VariableName title={name}>{name}</Styled.VariableName>
-                </Styled.TD>
-                {key === name &&
-                editMode === VARIABLE_MODE.EDIT &&
-                isCurrentInstanceRunning ? (
-                  // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 2.
-                  renderInlineEdit(propValue, name)
-                ) : (
-                  <>
-                    <Styled.DisplayTextTD>
-                      <Styled.DisplayText>{propValue}</Styled.DisplayText>
-                    </Styled.DisplayTextTD>
-                    {isCurrentInstanceRunning && (
-                      <Styled.EditButtonsTD>
-                        {hasActiveOperation ? (
-                          <Styled.Spinner data-testid="edit-variable-spinner" />
-                        ) : (
-                          <Styled.EditButton
-                            // @ts-expect-error ts-migrate(2769) FIXME: Property 'title' does not exist on type 'Intrinsic... Remove this comment to see the full error message
-                            title="Enter edit mode"
-                            data-testid="edit-variable-button"
-                            onClick={() =>
-                              handleOpenEditVariable(name, propValue)
-                            }
-                            size="large"
-                            iconButtonTheme="default"
-                            icon={<Styled.EditIcon />}
-                          />
-                        )}
-                      </Styled.EditButtonsTD>
-                    )}
-                  </>
-                )}
-              </TR>
-            ))}
+            {variables.map(
+              ({name: variableName, value: propValue, hasActiveOperation}) => (
+                <TR
+                  key={variableName}
+                  data-testid={variableName}
+                  // @ts-expect-error ts-migrate(2769) FIXME: Property 'hasActiveOperation' does not exist on ty... Remove this comment to see the full error message
+                  hasActiveOperation={hasActiveOperation}
+                >
+                  <Styled.TD isBold={true}>
+                    <Styled.VariableName title={variableName}>
+                      {variableName}
+                    </Styled.VariableName>
+                  </Styled.TD>
+                  {name === variableName &&
+                  editMode === VARIABLE_MODE.EDIT &&
+                  isCurrentInstanceRunning ? (
+                    // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 2.
+                    renderInlineEdit(propValue, variableName)
+                  ) : (
+                    <>
+                      <Styled.DisplayTextTD>
+                        <Styled.DisplayText>{propValue}</Styled.DisplayText>
+                      </Styled.DisplayTextTD>
+                      {isCurrentInstanceRunning && (
+                        <Styled.EditButtonsTD>
+                          {hasActiveOperation ? (
+                            <Styled.Spinner data-testid="edit-variable-spinner" />
+                          ) : (
+                            <Styled.EditButton
+                              // @ts-expect-error ts-migrate(2769) FIXME: Property 'title' does not exist on type 'Intrinsic... Remove this comment to see the full error message
+                              title="Enter edit mode"
+                              data-testid="edit-variable-button"
+                              onClick={() =>
+                                handleOpenEditVariable(variableName, propValue)
+                              }
+                              size="large"
+                              iconButtonTheme="default"
+                              icon={<Styled.EditIcon />}
+                            />
+                          )}
+                        </Styled.EditButtonsTD>
+                      )}
+                    </>
+                  )}
+                </TR>
+              )
+            )}
             {editMode === VARIABLE_MODE.ADD &&
               isCurrentInstanceRunning &&
               renderInlineAdd()}
@@ -296,7 +311,7 @@ const Variables: React.FC = observer(function Variables() {
           <Skeleton type="skeleton" rowHeight={32} />
         )}
         {!editMode && hasNoVariables && (
-          <Skeleton type="info" label="The Flow Node has no variables." />
+          <Skeleton type="info" label="The Flow Node has no Variables" />
         )}
         {renderContent()}
       </Styled.VariablesContent>

@@ -8,7 +8,6 @@ import React from 'react';
 import * as Styled from './styled';
 import {Rows} from './Rows';
 import EmptyPanel from 'modules/components/EmptyPanel';
-import {TH, TR} from '../VariablesTable';
 
 type Props = {
   type?: string;
@@ -19,13 +18,6 @@ type Props = {
 const Skeleton = ({type, label, rowHeight}: Props) => {
   return (
     <Styled.Table>
-      <Styled.THead>
-        <TR>
-          <TH>Variable</TH>
-          <TH>Value</TH>
-          <TH />
-        </TR>
-      </Styled.THead>
       <tbody>
         <tr>
           <Styled.SkeletonTD>
