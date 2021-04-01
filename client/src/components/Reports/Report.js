@@ -109,11 +109,12 @@ export class Report extends React.Component {
           <ReportEdit
             error={serverError}
             isNew={this.isNew()}
-            updateOverview={(newReport) => {
+            updateOverview={(newReport, serverError) => {
               const {mightFail, getUser} = this.props;
 
               mightFail(getUser(), (user) =>
                 this.setState({
+                  serverError,
                   report: {
                     ...newReport,
                     lastModified: getFormattedNowDate(),

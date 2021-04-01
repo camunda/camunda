@@ -107,7 +107,10 @@ export class ReportEdit extends React.Component {
     }
     if (id) {
       nowPristine();
-      this.props.updateOverview(update(this.state.report, {id: {$set: id}}));
+      this.props.updateOverview(
+        update(this.state.report, {id: {$set: id}}),
+        this.state.serverError
+      );
 
       const params = new URLSearchParams(this.props.location.search);
       const returnTo = params.get('returnTo');
