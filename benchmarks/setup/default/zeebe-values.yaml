@@ -13,7 +13,7 @@ gatewayMetrics: true
 
 podSecurityContext:
   capabilities:
-        add: ["NET_ADMIN"]
+    add: [ "NET_ADMIN" ]
 
 gateway:
   replicas: 1
@@ -82,6 +82,11 @@ env:
     value: "0.8"
   - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
     value: "0.9"
+  - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_JOB
+    value: "false"
+  - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_VARIABLE
+    value: "false"
+
 
 # RESOURCES
 resources:
@@ -93,8 +98,8 @@ resources:
     memory: 12Gi
 
 # PVC
-pvcAccessMode: ["ReadWriteOnce"]
-pvcSize: 128Gi
+pvcAccessMode: [ "ReadWriteOnce" ]
+pvcSize: 64Gi
 pvcStorageClassName: ssd
 
 
@@ -111,7 +116,7 @@ elasticsearch:
     storageClassName: "ssd"
     resources:
       requests:
-        storage: 600Gi
+        storage: 200Gi
 
   esJavaOpts: "-Xmx4g -Xms4g"
 
