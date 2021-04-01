@@ -8,7 +8,7 @@ import {sequenceFlowsStore} from './sequenceFlows';
 import {currentInstanceStore} from './currentInstance';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {createSequenceFlows} from 'modules/testUtils';
+import {createInstance, createSequenceFlows} from 'modules/testUtils';
 import {waitFor} from '@testing-library/react';
 
 describe('stores/sequenceFlows', () => {
@@ -28,7 +28,9 @@ describe('stores/sequenceFlows', () => {
   });
 
   it('should fetch sequence flows when current instance is available', async () => {
-    currentInstanceStore.setCurrentInstance({id: 123, state: 'CANCELED'});
+    currentInstanceStore.setCurrentInstance(
+      createInstance({id: '123', state: 'CANCELED'})
+    );
 
     sequenceFlowsStore.init();
 
@@ -43,7 +45,9 @@ describe('stores/sequenceFlows', () => {
   });
 
   it('should poll when current instance is running', async () => {
-    currentInstanceStore.setCurrentInstance({id: 123, state: 'ACTIVE'});
+    currentInstanceStore.setCurrentInstance(
+      createInstance({id: '123', state: 'ACTIVE'})
+    );
 
     jest.useFakeTimers();
     sequenceFlowsStore.init();
@@ -110,7 +114,9 @@ describe('stores/sequenceFlows', () => {
     );
 
     // stop polling when current instance is no longer running
-    currentInstanceStore.setCurrentInstance({id: 123, state: 'CANCELED'});
+    currentInstanceStore.setCurrentInstance(
+      createInstance({id: '123', state: 'CANCELED'})
+    );
 
     jest.runOnlyPendingTimers();
     jest.runOnlyPendingTimers();

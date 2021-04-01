@@ -12,6 +12,7 @@ import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockServer} from 'modules/mock-server/node';
 import {PopoverOverlay} from './';
+import {createInstance} from 'modules/testUtils';
 
 const FLOW_NODE_ID = 'startEvent';
 const FLOW_NODE_INSTANCE_ID = '2251799813686348';
@@ -86,10 +87,12 @@ describe('PopoverOverlay', () => {
   beforeEach(() => {
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
-    currentInstanceStore.setCurrentInstance({
-      id: FLOW_NODE_ID,
-      state: 'ACTIVE',
-    });
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: FLOW_NODE_ID,
+        state: 'ACTIVE',
+      })
+    );
   });
 
   afterEach(() => {

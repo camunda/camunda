@@ -10,7 +10,11 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
 import {instancesStore} from './instances';
-import {mockProcessXML, groupedProcessesMock} from 'modules/testUtils';
+import {
+  mockProcessXML,
+  groupedProcessesMock,
+  createInstance,
+} from 'modules/testUtils';
 
 const mockInstance = {
   id: '2251799813685625',
@@ -130,7 +134,7 @@ describe('stores/statistics', () => {
     expect(statisticsStore.state.withIncidents).toBe(211);
 
     // should fetch statistics when current instance exists
-    currentInstanceStore.setCurrentInstance({id: '1'});
+    currentInstanceStore.setCurrentInstance(createInstance({id: '1'}));
     jest.runOnlyPendingTimers();
 
     await waitFor(() => expect(statisticsStore.state.running).toBe(100));

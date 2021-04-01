@@ -39,6 +39,7 @@ class Variables {
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
   variablesWithActiveOperationsDisposer: null | IReactionDisposer = null;
+  fetchVariablesDisposer: null | IReactionDisposer = null;
 
   constructor() {
     makeObservable(this, {
@@ -58,14 +59,17 @@ class Variables {
     });
   }
 
-  init = async (instanceId: ProcessInstanceEntity['id']) => {
+  init = (instanceId: ProcessInstanceEntity['id']) => {
     this.variablesWithActiveOperationsDisposer = when(
       () => currentInstanceStore.state.instance?.state === STATE.CANCELED,
       this.removeVariablesWithActiveOperations
     );
 
     this.disposer = autorun(() => {
-      if (isInstanceRunning(currentInstanceStore.state.instance)) {
+      if (
+        isInstanceRunning(currentInstanceStore.state.instance) &&
+        this.scopeId !== undefined
+      ) {
         if (this.intervalId === null) {
           this.startPolling(instanceId);
         }
@@ -73,16 +77,13 @@ class Variables {
         this.stopPolling();
       }
     });
-  };
 
-  reset = () => {
-    if (['first-fetch', 'fetching'].includes(this.state.status)) {
-      this.shouldCancelOngoingRequests = true;
-    }
-    this.stopPolling();
-    this.state = {...DEFAULT_STATE};
-    this.disposer?.();
-    this.variablesWithActiveOperationsDisposer?.();
+    this.fetchVariablesDisposer = autorun(() => {
+      if (this.scopeId !== undefined) {
+        this.clearItems();
+        this.fetchVariables(instanceId);
+      }
+    });
   };
 
   clearItems = () => {
@@ -306,6 +307,17 @@ class Variables {
       clearInterval(intervalId);
       this.intervalId = null;
     }
+  };
+
+  reset = () => {
+    if (['first-fetch', 'fetching'].includes(this.state.status)) {
+      this.shouldCancelOngoingRequests = true;
+    }
+    this.stopPolling();
+    this.state = {...DEFAULT_STATE};
+    this.disposer?.();
+    this.variablesWithActiveOperationsDisposer?.();
+    this.fetchVariablesDisposer?.();
   };
 }
 

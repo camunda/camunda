@@ -73,8 +73,8 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
     <Styled.Pane expandState={expandState}>
       <InstanceHeader />
       <Styled.SplitPaneBody data-testid="diagram-panel-body">
-        {['first-fetch', 'fetching'].includes(status) && (
-          <SpinnerSkeleton data-testid="spinner" />
+        {['initial', 'first-fetch', 'fetching'].includes(status) && (
+          <SpinnerSkeleton data-testid="diagram-spinner" />
         )}
         {status === 'error' && (
           <StatusMessage variant="error">

@@ -21,13 +21,18 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {autorun} from 'mobx';
 import {useInstancePageParams} from './useInstancePageParams';
+import {useHistory} from 'react-router-dom';
+import {useNotifications} from 'modules/notifications';
 
 import * as Styled from './styled';
 
 const Instance = observer(() => {
   const {processInstanceId} = useInstancePageParams();
+  const history = useHistory();
+  const notifications = useNotifications();
+
   useEffect(() => {
-    currentInstanceStore.init(processInstanceId);
+    currentInstanceStore.init(processInstanceId, history, notifications);
     flowNodeInstanceStore.init();
 
     let disposer = autorun(() => {
@@ -49,7 +54,7 @@ const Instance = observer(() => {
         disposer();
       }
     };
-  }, [processInstanceId]);
+  }, [history, notifications, processInstanceId]);
 
   const {instance} = currentInstanceStore.state;
   return (

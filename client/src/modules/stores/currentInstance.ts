@@ -17,13 +17,19 @@ import {getProcessName} from 'modules/utils/instance';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 
 import {PAGE_TITLE} from 'modules/constants';
+import {logger} from 'modules/logger';
+import {History} from 'history';
+import {Locations} from 'modules/routes';
+import {NotificationContextType} from 'modules/notifications';
 
 type State = {
   instance: null | ProcessInstanceEntity;
+  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
   instance: null,
+  status: 'initial',
 };
 
 class CurrentInstance {
@@ -32,6 +38,10 @@ class CurrentInstance {
   };
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
+  retryCount: number = 0;
+  refetchTimeout: NodeJS.Timeout | null = null;
+  history: History | undefined;
+  notifications: NotificationContextType | undefined;
 
   constructor() {
     makeObservable(this, {
@@ -40,15 +50,22 @@ class CurrentInstance {
       setCurrentInstance: action,
       activateOperation: action,
       deactivateOperation: action,
+      startFetch: action,
+      handleFetchSuccess: action,
+      handleFetchFailure: action,
       processTitle: computed,
+      isRunning: computed,
     });
   }
 
-  async init(id: any) {
-    const response = await fetchProcessInstance(id);
-    if (response.ok) {
-      this.setCurrentInstance(await response.json());
-    }
+  init(
+    id: ProcessInstanceEntity['id'],
+    history?: History,
+    notifications?: NotificationContextType
+  ) {
+    this.history = history;
+    this.notifications = notifications;
+    this.fetchCurrentInstance(id);
 
     this.disposer = autorun(() => {
       if (isInstanceRunning(this.state.instance)) {
@@ -61,7 +78,27 @@ class CurrentInstance {
     });
   }
 
-  setCurrentInstance = (currentInstance: any) => {
+  fetchCurrentInstance = async (id: ProcessInstanceEntity['id']) => {
+    this.startFetch();
+    try {
+      const response = await fetchProcessInstance(id);
+
+      if (response.ok) {
+        this.handleFetchSuccess(await response.json());
+        this.resetRefetch();
+      } else {
+        if (response.status === 404) {
+          this.handleRefetch(id);
+        } else {
+          this.handleFetchFailure();
+        }
+      }
+    } catch (error) {
+      this.handleFetchFailure(error);
+    }
+  };
+
+  setCurrentInstance = (currentInstance: ProcessInstanceEntity | null) => {
     this.state.instance = currentInstance;
   };
 
@@ -98,11 +135,61 @@ class CurrentInstance {
     }
   }
 
-  handlePolling = async (instanceId: any) => {
-    const response = await fetchProcessInstance(instanceId);
+  startFetch = () => {
+    if (this.state.status === 'initial') {
+      this.state.status = 'first-fetch';
+    } else {
+      this.state.status = 'fetching';
+    }
+  };
 
-    if (this.intervalId !== null && response.ok) {
-      this.setCurrentInstance(await response.json());
+  handleFetchSuccess = (currentInstance: ProcessInstanceEntity | null) => {
+    this.state.instance = currentInstance;
+    this.state.status = 'fetched';
+  };
+
+  handleFetchFailure = (error?: Error) => {
+    this.state.status = 'error';
+
+    logger.error('Failed to fetch process instance');
+    if (error !== undefined) {
+      logger.error(error);
+    }
+  };
+
+  handleRefetch = (id: ProcessInstanceEntity['id']) => {
+    if (this.retryCount < 3) {
+      this.retryCount += 1;
+
+      this.refetchTimeout = setTimeout(() => {
+        this.fetchCurrentInstance(id);
+      }, 5000);
+    } else {
+      this.retryCount = 0;
+      this.handleFetchFailure();
+      if (this.history !== undefined) {
+        this.history.push(Locations.runningInstances(this.history.location));
+        this.notifications?.displayNotification('error', {
+          headline: `Instance ${id} could not be found`,
+        });
+      }
+    }
+  };
+
+  handlePolling = async (instanceId: any) => {
+    try {
+      const response = await fetchProcessInstance(instanceId);
+
+      if (this.intervalId !== null) {
+        if (response.ok) {
+          this.setCurrentInstance(await response.json());
+        } else {
+          logger.error('Failed to poll process instance');
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to poll process instance');
+      logger.error(error);
     }
   };
 
@@ -121,10 +208,19 @@ class CurrentInstance {
     }
   };
 
+  resetRefetch = () => {
+    if (this.refetchTimeout !== null) {
+      clearTimeout(this.refetchTimeout);
+    }
+
+    this.retryCount = 0;
+  };
+
   reset = () => {
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
     this.disposer?.();
+    this.resetRefetch();
   };
 }
 

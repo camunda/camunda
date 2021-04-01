@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useRef, useEffect, useState} from 'react';
+import React, {useRef, useState} from 'react';
 
 import {isValidJSON} from 'modules/utils';
 import {isRunning} from 'modules/utils/instance';
@@ -22,18 +22,13 @@ import {Table, TH, TR} from './VariablesTable';
 import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 
-const Variables: React.FC = observer(function Variables() {
+const Variables: React.FC = observer(() => {
   const {
     state: {items: variables, status},
     hasNoVariables,
   } = variablesStore;
   const {processInstanceId} = useInstancePageParams();
   const notifications = useNotifications();
-
-  useEffect(() => {
-    variablesStore.fetchVariables(processInstanceId);
-    return () => variablesStore.clearItems();
-  }, [processInstanceId]);
 
   const [editMode, setEditMode] = useState('');
   const [name, setName] = useState('');

@@ -10,6 +10,7 @@ import {flowNodeSelectionStore} from './flowNodeSelection';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
+import {createInstance} from 'modules/testUtils';
 
 describe('stores/variables', () => {
   const mockVariables = [
@@ -51,8 +52,11 @@ describe('stores/variables', () => {
     operationsFinishedCount: 0,
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockServer.use(
+      rest.get('/api/process-instances/:instanceId', (_, res, ctx) =>
+        res.once(ctx.json({id: '123', state: 'ACTIVE'}))
+      ),
       rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(ctx.json(mockVariables))
       ),
@@ -60,6 +64,13 @@ describe('stores/variables', () => {
         res.once(ctx.json(mockVariableOperation))
       )
     );
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'StartEvent_1',
+      flowNodeInstanceId: '123',
+    });
+
+    await currentInstanceStore.fetchCurrentInstance('123');
   });
 
   afterEach(() => {
@@ -70,15 +81,15 @@ describe('stores/variables', () => {
 
   it('should remove variables with active operations if instance is canceled', async () => {
     variablesStore.init('1');
-    await Promise.all([
-      variablesStore.fetchVariables('1'),
-      variablesStore.addVariable({
-        id: '1',
-        name: 'test',
-        value: '1',
-        onError: () => {},
-      }),
-    ]);
+
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+
+    await variablesStore.addVariable({
+      id: '1',
+      name: 'test',
+      value: '1',
+      onError: () => {},
+    });
 
     expect(variablesStore.state.items).toEqual([
       ...mockVariables,
@@ -89,16 +100,17 @@ describe('stores/variables', () => {
         processInstanceId: '1',
       },
     ]);
-    currentInstanceStore.setCurrentInstance({id: '123', state: 'CANCELED'});
+    currentInstanceStore.setCurrentInstance(
+      createInstance({id: '123', state: 'CANCELED'})
+    );
     expect(variablesStore.state.items).toEqual(mockVariables);
   });
 
   it('should poll variables when instance is running', async () => {
-    variablesStore.init('1');
-
     jest.useFakeTimers();
-    currentInstanceStore.setCurrentInstance({id: '123', state: 'ACTIVE'});
-    jest.runOnlyPendingTimers();
+
+    variablesStore.init('123');
+
     await waitFor(() =>
       expect(variablesStore.state.items).toEqual(mockVariables)
     );
@@ -183,7 +195,9 @@ describe('stores/variables', () => {
       ])
     );
 
-    currentInstanceStore.setCurrentInstance({id: '123', state: 'CANCELED'});
+    currentInstanceStore.setCurrentInstance(
+      createInstance({id: '123', state: 'CANCELED'})
+    );
     jest.runOnlyPendingTimers();
     jest.runOnlyPendingTimers();
 
@@ -443,11 +457,6 @@ describe('stores/variables', () => {
   });
 
   it('should get scopeId', async () => {
-    expect(variablesStore.scopeId).toBe(undefined);
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'StartEvent_1',
-      flowNodeInstanceId: '123',
-    });
     expect(variablesStore.scopeId).toBe('123');
   });
 

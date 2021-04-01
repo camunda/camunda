@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect} from 'react';
+import {useEffect} from 'react';
 import Variables from '../Variables';
 import {FAILED_PLACEHOLDER, MULTI_SCOPE_PLACEHOLDER} from './constants';
 import {variablesStore} from 'modules/stores/variables';
@@ -27,7 +27,6 @@ const VariablePanel = observer(function VariablePanel() {
   }, [processInstanceId]);
 
   const {
-    scopeId,
     state: {status},
   } = variablesStore;
 
@@ -42,7 +41,7 @@ const VariablePanel = observer(function VariablePanel() {
               {MULTI_SCOPE_PLACEHOLDER}
             </StatusMessage>
           ) : (
-            <Variables key={scopeId ?? processInstanceId} />
+            <Variables />
           )}
         </>
       )}

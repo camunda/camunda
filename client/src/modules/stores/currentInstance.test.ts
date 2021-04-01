@@ -26,13 +26,15 @@ describe('stores/currentInstance', () => {
   });
 
   it('should fetch current instance on init state', async () => {
-    await currentInstanceStore.init(1);
-    expect(currentInstanceStore.state.instance).toEqual(currentInstanceMock);
+    currentInstanceStore.init('1');
+    await waitFor(() =>
+      expect(currentInstanceStore.state.instance).toEqual(currentInstanceMock)
+    );
   });
 
   it('should poll if current instance is running', async () => {
     jest.useFakeTimers();
-    currentInstanceStore.init(1);
+    currentInstanceStore.init('1');
     await waitFor(() =>
       expect(currentInstanceStore.state.instance).toEqual(currentInstanceMock)
     );
@@ -98,47 +100,49 @@ describe('stores/currentInstance', () => {
   });
 
   it('should set current instance', async () => {
+    const mockInstance = createInstance({id: '123', state: 'ACTIVE'});
     expect(currentInstanceStore.state.instance).toEqual(null);
-    currentInstanceStore.setCurrentInstance({id: '123', state: 'ACTIVE'});
-    expect(currentInstanceStore.state.instance).toEqual({
-      id: '123',
-      state: 'ACTIVE',
-    });
+    currentInstanceStore.setCurrentInstance(
+      createInstance({id: '123', state: 'ACTIVE'})
+    );
+    expect(currentInstanceStore.state.instance).toEqual(mockInstance);
   });
 
   it('should get process title', async () => {
     expect(currentInstanceStore.processTitle).toBe(null);
-    currentInstanceStore.setCurrentInstance({
-      id: '123',
-      state: 'ACTIVE',
-      processName: 'processName',
-    });
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: '123',
+        state: 'ACTIVE',
+        processName: 'processName',
+      })
+    );
     expect(currentInstanceStore.processTitle).toBe(
       'Camunda Operate: Instance 123 of Process processName'
     );
   });
 
   it('should reset store', async () => {
+    const mockInstance = createInstance({
+      id: '123',
+      state: 'ACTIVE',
+      processName: 'processName',
+    });
+
     expect(currentInstanceStore.processTitle).toBe(null);
-    currentInstanceStore.setCurrentInstance({
-      id: '123',
-      state: 'ACTIVE',
-      processName: 'processName',
-    });
-    expect(currentInstanceStore.state.instance).toEqual({
-      id: '123',
-      state: 'ACTIVE',
-      processName: 'processName',
-    });
+    currentInstanceStore.setCurrentInstance(mockInstance);
+    expect(currentInstanceStore.state.instance).toEqual(mockInstance);
     currentInstanceStore.reset();
     expect(currentInstanceStore.processTitle).toBe(null);
   });
 
   it('should set active operation state', async () => {
-    currentInstanceStore.setCurrentInstance({
-      id: '123',
-      hasActiveOperation: false,
-    });
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: '123',
+        hasActiveOperation: false,
+      })
+    );
 
     expect(currentInstanceStore.state.instance?.hasActiveOperation).toBe(false);
     currentInstanceStore.activateOperation();

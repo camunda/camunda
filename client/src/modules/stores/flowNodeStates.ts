@@ -4,8 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {makeAutoObservable, when} from 'mobx';
+import {makeAutoObservable, when, IReactionDisposer} from 'mobx';
 import {fetchFlowNodeStates} from 'modules/api/flowNodeStates';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {logger} from 'modules/logger';
 
 type State = {
@@ -22,6 +23,8 @@ const DEFAULT_STATE: State = {
 class FlowNodeStates {
   state: State = {...DEFAULT_STATE};
   intervalId: null | ReturnType<typeof setInterval> = null;
+  flowNodeStatesDisposer: null | IReactionDisposer = null;
+  completedFlowNodesDisposer: null | IReactionDisposer = null;
 
   constructor() {
     makeAutoObservable(this, {
@@ -33,9 +36,18 @@ class FlowNodeStates {
   }
 
   init = (processInstanceId: string) => {
-    this.fetchFlowNodeStates(processInstanceId);
-    this.startPolling(processInstanceId);
-    when(() => this.areAllFlowNodesCompleted, this.stopPolling);
+    this.flowNodeStatesDisposer = when(
+      () => currentInstanceStore.state.instance !== null,
+      () => {
+        this.fetchFlowNodeStates(processInstanceId);
+        this.startPolling(processInstanceId);
+      }
+    );
+
+    this.completedFlowNodesDisposer = when(
+      () => this.intervalId !== null && this.areAllFlowNodesCompleted,
+      this.stopPolling
+    );
   };
 
   fetchFlowNodeStates = async (processInstanceId: string) => {
@@ -49,11 +61,6 @@ class FlowNodeStates {
     } catch (error) {
       this.handleFetchFailure(error);
     }
-  };
-
-  reset = () => {
-    this.stopPolling();
-    this.state = {...DEFAULT_STATE};
   };
 
   handleFetchSuccess = (flowNodes: State['flowNodes']) => {
@@ -97,6 +104,13 @@ class FlowNodeStates {
   get selectableFlowNodes() {
     return Object.keys(this.state.flowNodes);
   }
+
+  reset = () => {
+    this.stopPolling();
+    this.state = {...DEFAULT_STATE};
+    this.flowNodeStatesDisposer?.();
+    this.completedFlowNodesDisposer?.();
+  };
 }
 
 export const flowNodeStatesStore = new FlowNodeStates();

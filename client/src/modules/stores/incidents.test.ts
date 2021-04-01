@@ -9,6 +9,7 @@ import {currentInstanceStore} from './currentInstance';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
+import {createInstance} from 'modules/testUtils';
 
 describe('stores/incidents', () => {
   const mockIncidents = {
@@ -52,7 +53,9 @@ describe('stores/incidents', () => {
   });
 
   it('should poll for incidents if instance state is incident', async () => {
-    currentInstanceStore.setCurrentInstance({id: 123, state: 'INCIDENT'});
+    currentInstanceStore.setCurrentInstance(
+      createInstance({id: '123', state: 'INCIDENT'})
+    );
 
     jest.useFakeTimers();
     incidentsStore.init();
@@ -92,7 +95,9 @@ describe('stores/incidents', () => {
     );
 
     // stop polling when instance state is no longer an incident.
-    currentInstanceStore.setCurrentInstance({id: 123, state: 'CANCELED'});
+    currentInstanceStore.setCurrentInstance(
+      createInstance({id: '123', state: 'CANCELED'})
+    );
 
     jest.runOnlyPendingTimers();
     jest.runOnlyPendingTimers();

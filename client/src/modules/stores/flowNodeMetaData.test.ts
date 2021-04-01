@@ -35,7 +35,7 @@ describe('stores/flowNodeMetaData', () => {
       )
     );
 
-    await currentInstanceStore.init(PROCESS_INSTANCE_ID);
+    await currentInstanceStore.fetchCurrentInstance(PROCESS_INSTANCE_ID);
   });
 
   afterAll(() => {

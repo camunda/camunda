@@ -7,7 +7,7 @@
 import React from 'react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {VariablePanel} from './index';
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import {FAILED_PLACEHOLDER, MULTI_SCOPE_PLACEHOLDER} from './constants';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
@@ -15,15 +15,7 @@ import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {MemoryRouter, Route} from 'react-router-dom';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-
-jest.mock('../Variables', () => {
-  return {
-    __esModule: true,
-    default: () => {
-      return <div>{'Variables'}</div>;
-    },
-  };
-});
+import {createInstance} from 'modules/testUtils';
 
 type Props = {
   children?: React.ReactNode;
@@ -42,22 +34,37 @@ const Wrapper: React.FC<Props> = ({children}) => {
 describe('VariablePanel', () => {
   beforeEach(() => {
     mockServer.use(
-      rest.get(
-        '/api/process-instances/invalid_instance/variables',
-        (_, res, ctx) => res.once(ctx.json({}), ctx.status(500))
-      ),
       rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json([]))
+        res.once(
+          ctx.json([
+            {
+              id: '9007199254742796-test',
+              name: 'test',
+              value: '123',
+              scopeId: '9007199254742796',
+              processInstanceId: '9007199254742796',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       )
     );
 
-    currentInstanceStore.setCurrentInstance({
-      id: 'instance_id',
-      state: 'ACTIVE',
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: 'instance_id',
+        state: 'ACTIVE',
+      })
+    );
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: '1',
+      flowNodeInstanceId: '2',
     });
   });
 
   afterEach(() => {
+    variablesStore.reset();
     flowNodeSelectionStore.reset();
   });
 
@@ -65,30 +72,40 @@ describe('VariablePanel', () => {
     flowNodeSelectionStore.setSelection({
       flowNodeId: '1',
     });
+
     render(<VariablePanel />, {wrapper: Wrapper});
 
     expect(screen.getByText(MULTI_SCOPE_PLACEHOLDER)).toBeInTheDocument();
   });
 
-  it('should show failed placeholder when variables could not be fetched', async () => {
+  it('should show failed placeholder if server error occurs while fetching variables', async () => {
+    render(<VariablePanel />, {wrapper: Wrapper});
+
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+
     mockServer.use(
       rest.get(
         '/api/process-instances/invalid_instance/variables',
         (_, res, ctx) => res.once(ctx.json({}), ctx.status(500))
-      ),
+      )
+    );
+
+    variablesStore.fetchVariables('invalid_instance');
+
+    expect(await screen.findByText(FAILED_PLACEHOLDER)).toBeInTheDocument();
+  });
+
+  it('should show failed placeholder if network error occurs while fetching variables', async () => {
+    render(<VariablePanel />, {wrapper: Wrapper});
+
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+
+    mockServer.use(
       rest.get('/api/process-instances/invalid_instance/variables', (_, res) =>
         res.networkError('A network error')
       )
     );
 
-    const {unmount} = render(<VariablePanel />, {wrapper: Wrapper});
-    variablesStore.fetchVariables('invalid_instance');
-
-    expect(await screen.findByText(FAILED_PLACEHOLDER)).toBeInTheDocument();
-
-    unmount();
-
-    render(<VariablePanel />, {wrapper: Wrapper});
     variablesStore.fetchVariables('invalid_instance');
 
     expect(await screen.findByText(FAILED_PLACEHOLDER)).toBeInTheDocument();
@@ -96,8 +113,7 @@ describe('VariablePanel', () => {
 
   it('should render variables', async () => {
     render(<VariablePanel />, {wrapper: Wrapper});
-    await variablesStore.fetchVariables('1');
 
-    expect(screen.getByText('Variables')).toBeInTheDocument();
+    expect(await screen.findByText('test')).toBeInTheDocument();
   });
 });

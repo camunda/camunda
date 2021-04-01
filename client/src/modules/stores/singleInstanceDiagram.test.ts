@@ -8,7 +8,7 @@ import {singleInstanceDiagramStore} from './singleInstanceDiagram';
 import {currentInstanceStore} from './currentInstance';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {mockProcessXML} from 'modules/testUtils';
+import {createInstance, mockProcessXML} from 'modules/testUtils';
 import {waitFor} from '@testing-library/react';
 
 describe('stores/singleInstanceDiagram', () => {
@@ -26,11 +26,13 @@ describe('stores/singleInstanceDiagram', () => {
   });
 
   it('should fetch process xml when current instance is available', async () => {
-    currentInstanceStore.setCurrentInstance({
-      id: 123,
-      state: 'ACTIVE',
-      processId: '10',
-    });
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: '123',
+        state: 'ACTIVE',
+        processId: '10',
+      })
+    );
 
     singleInstanceDiagramStore.init();
 

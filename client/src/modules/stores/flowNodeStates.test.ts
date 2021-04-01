@@ -7,6 +7,7 @@
 import {waitFor} from '@testing-library/react';
 import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
+import {currentInstanceStore} from './currentInstance';
 import {flowNodeStatesStore} from './flowNodeStates';
 
 const PROCESS_INSTANCE_ID = '2251799813686320';
@@ -33,10 +34,14 @@ describe('stores/flowNodeStates', () => {
       rest.get(
         `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-states`,
         (_, res, ctx) => res.once(ctx.json(mockFlowNodeStatesActive))
+      ),
+      rest.get(`/api/process-instances/:id`, (_, res, ctx) =>
+        res.once(ctx.json({id: PROCESS_INSTANCE_ID}))
       )
     );
 
     jest.useFakeTimers();
+    currentInstanceStore.fetchCurrentInstance(PROCESS_INSTANCE_ID);
     flowNodeStatesStore.init(PROCESS_INSTANCE_ID);
   });
 

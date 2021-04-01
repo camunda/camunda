@@ -8,7 +8,10 @@ import {waitFor} from '@testing-library/react';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
-import {createMultiInstanceFlowNodeInstances} from 'modules/testUtils';
+import {
+  createInstance,
+  createMultiInstanceFlowNodeInstances,
+} from 'modules/testUtils';
 import {flowNodeInstanceStore} from './flowNodeInstance';
 
 const PROCESS_INSTANCE_ID = 'processInstance';
@@ -29,10 +32,13 @@ describe('stores/flowNodeInstance', () => {
         res.once(ctx.json(mockFlowNodeInstances.level3))
       )
     );
-    currentInstanceStore.setCurrentInstance({
-      id: PROCESS_INSTANCE_ID,
-      state: 'ACTIVE',
-    });
+
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      })
+    );
   });
 
   it('should initialize, add and remove nested sub trees from store', async () => {

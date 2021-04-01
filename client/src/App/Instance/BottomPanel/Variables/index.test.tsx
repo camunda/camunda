@@ -23,12 +23,15 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import {createInstance} from 'modules/testUtils';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
 type Props = {
   children?: React.ReactNode;
 };
+
+const instanceMock = createInstance({id: '1'});
 
 const Wrapper = ({children}: Props) => {
   return (
@@ -60,6 +63,7 @@ describe('Variables', () => {
       );
 
       render(<Variables />, {wrapper: Wrapper});
+      variablesStore.fetchVariables('1');
 
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
       expect(screen.getByText(EMPTY_PLACEHOLDER)).toBeInTheDocument();
@@ -72,6 +76,8 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
+
       render(<Variables />, {wrapper: Wrapper});
 
       expect(screen.getByTestId('skeleton-rows')).toBeInTheDocument();
@@ -85,6 +91,7 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -111,6 +118,8 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
+
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -128,13 +137,15 @@ describe('Variables', () => {
     });
 
     it('should show/hide spinner next to variable according to it having an active operation', async () => {
-      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+      currentInstanceStore.setCurrentInstance(instanceMock);
       mockServer.use(
         rest.get(
           '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
+
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
       const {items} = variablesStore.state;
@@ -163,7 +174,7 @@ describe('Variables', () => {
 
   describe('Add variable', () => {
     it('should show/hide add variable inputs', async () => {
-      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+      currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
         rest.get(
@@ -171,6 +182,8 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
+
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -182,7 +195,7 @@ describe('Variables', () => {
     });
 
     it('should validate when adding variable', async () => {
-      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+      currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
         rest.get(
@@ -190,6 +203,8 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
+
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -260,7 +275,7 @@ describe('Variables', () => {
     });
 
     it('should save new variable', async () => {
-      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+      currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
         rest.get(
@@ -268,6 +283,8 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
+
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -330,7 +347,7 @@ describe('Variables', () => {
 
   describe('Edit variable', () => {
     it('should show/hide edit button next to variable according to it having an active operation', async () => {
-      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+      currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
         rest.get(
@@ -338,6 +355,8 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
+
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -364,7 +383,7 @@ describe('Variables', () => {
     });
 
     it('should not display edit button next to variables if instance is completed or canceled', async () => {
-      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+      currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
         rest.get(
@@ -372,6 +391,8 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
+
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -385,7 +406,10 @@ describe('Variables', () => {
         )
       ).toBeInTheDocument();
 
-      currentInstanceStore.setCurrentInstance({id: 1, state: 'CANCELED'});
+      currentInstanceStore.setCurrentInstance({
+        ...instanceMock,
+        state: 'CANCELED',
+      });
 
       expect(
         within(
@@ -396,7 +420,7 @@ describe('Variables', () => {
     });
 
     it('should show/hide edit variable inputs', async () => {
-      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+      currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
         rest.get(
@@ -404,6 +428,8 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
+
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -434,7 +460,7 @@ describe('Variables', () => {
     });
 
     it('should disable save button when nothing is changed', async () => {
-      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+      currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
         rest.get(
@@ -442,6 +468,8 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
+
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -459,7 +487,7 @@ describe('Variables', () => {
     });
 
     it('should validate when editing variables', async () => {
-      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+      currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
         rest.get(
@@ -467,6 +495,8 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
+
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -502,7 +532,7 @@ describe('Variables', () => {
 
   describe('Footer', () => {
     it('should disable add variable button when loading', async () => {
-      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+      currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
         rest.get(
@@ -510,6 +540,8 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
+
       render(<Variables />, {wrapper: Wrapper});
 
       expect(screen.getByText('Add Variable')).toBeDisabled();
@@ -518,7 +550,10 @@ describe('Variables', () => {
     });
 
     it('should disable add variable button if instance state is cancelled', async () => {
-      currentInstanceStore.setCurrentInstance({id: 1, state: 'CANCELED'});
+      currentInstanceStore.setCurrentInstance({
+        ...instanceMock,
+        state: 'CANCELED',
+      });
 
       mockServer.use(
         rest.get(
@@ -526,6 +561,8 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+
+      variablesStore.fetchVariables('1');
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -534,7 +571,7 @@ describe('Variables', () => {
     });
 
     it('should disable add variable button if add/edit variable button is clicked', async () => {
-      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+      currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
         rest.get(
@@ -542,6 +579,8 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
+
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -559,7 +598,7 @@ describe('Variables', () => {
     });
 
     it('should disable add variable button when clicked', async () => {
-      currentInstanceStore.setCurrentInstance({id: 1, state: 'ACTIVE'});
+      currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
         rest.get(
@@ -567,6 +606,8 @@ describe('Variables', () => {
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
+      variablesStore.fetchVariables('1');
+
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
@@ -584,7 +625,8 @@ describe('Variables', () => {
       );
 
       flowNodeMetaDataStore.init();
-      currentInstanceStore.setCurrentInstance({id: '1', state: 'ACTIVE'});
+      currentInstanceStore.setCurrentInstance(instanceMock);
+      variablesStore.fetchVariables('1');
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));

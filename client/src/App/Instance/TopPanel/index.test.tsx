@@ -95,9 +95,10 @@ describe('TopPanel', () => {
     });
 
     currentInstanceStore.init('active_instance');
+
     singleInstanceDiagramStore.fetchProcessXml('1');
-    expect(screen.getByTestId('spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('spinner'));
+    expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
   });
 
   it('should render incident bar', async () => {
