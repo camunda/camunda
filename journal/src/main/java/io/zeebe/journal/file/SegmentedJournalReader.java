@@ -120,8 +120,13 @@ class SegmentedJournalReader implements JournalReader {
 
   @Override
   public long seekToAsqn(final long asqn) {
+    return seekToAsqn(asqn, journal.getLastIndex());
+  }
+
+  @Override
+  public long seekToAsqn(final long asqn, final long indexUpperBound) {
     final var journalIndex = journal.getJournalIndex();
-    final var index = journalIndex.lookupAsqn(asqn);
+    final var index = journalIndex.lookupAsqn(asqn, indexUpperBound);
 
     // depending on the type of index, it's possible there is no ASQN indexed, in which case start
     // from the beginning
@@ -136,6 +141,9 @@ class SegmentedJournalReader implements JournalReader {
     JournalRecord record = null;
     while (hasNext()) {
       final var currentRecord = next();
+      if (currentRecord.index() > indexUpperBound) {
+        break;
+      }
       if (currentRecord.asqn() <= asqn && currentRecord.asqn() != ASQN_IGNORE) {
         record = currentRecord;
       } else if (currentRecord.asqn() >= asqn) {

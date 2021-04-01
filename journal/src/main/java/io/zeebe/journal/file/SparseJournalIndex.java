@@ -53,8 +53,20 @@ class SparseJournalIndex implements JournalIndex {
 
   @Override
   public Long lookupAsqn(final long asqn) {
+    return lookupAsqn(asqn, Long.MAX_VALUE);
+  }
+
+  @Override
+  public Long lookupAsqn(final long asqn, final long indexUpperBound) {
     final Map.Entry<Long, Long> entry = asqnToIndex.floorEntry(asqn);
-    return entry != null ? entry.getValue() : null;
+    if (entry != null) {
+      if (entry.getValue() <= indexUpperBound) {
+        return entry.getValue();
+      } else {
+        return indexToAsqn.floorKey(indexUpperBound);
+      }
+    }
+    return null;
   }
 
   @Override

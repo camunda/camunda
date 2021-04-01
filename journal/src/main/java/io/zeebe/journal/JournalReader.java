@@ -91,6 +91,19 @@ public interface JournalReader extends Iterator<JournalRecord>, AutoCloseable {
    */
   long seekToAsqn(long asqn);
 
+  /**
+   * Seek to a record with the highest ASQN less than or equal to the given {@code asqn}, with the
+   * restriction that it seeks to a record with index less than or equal to the given
+   * indexUpperBound.
+   *
+   * <p>Otherwise, the semantics is similar to {@code seekToAsqn(asqn)}
+   *
+   * @param asqn application sequence number to seek
+   * @param indexUpperBound the index until which it seeks
+   * @return the index of the record that will be returned by {@link #next()}
+   */
+  long seekToAsqn(long asqn, long indexUpperBound);
+
   @Override
   void close();
 }

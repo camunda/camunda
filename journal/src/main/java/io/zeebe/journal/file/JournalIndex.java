@@ -42,10 +42,21 @@ interface JournalIndex {
   /**
    * Look up the index for the given application sequence number.
    *
-   * @param asqn
+   * @param asqn asqn to lookup
    * @return the index of a record with asqn less than or equal to the given asqn.
    */
   Long lookupAsqn(long asqn);
+
+  /**
+   * Look up the index for the given application sequence number. Same as {code lookupAsqn(asqn)},
+   * but the returned index will be less than or equal to the given indexUpperBound.
+   *
+   * @param asqn asqn to lookup
+   * @param indexUpperBound the upper bound of the index that will be returned
+   * @return the index (<= indexUpperBound) of a record with asqn less than or equal to the given
+   *     asqn.
+   */
+  Long lookupAsqn(long asqn, long indexUpperBound);
 
   /**
    * Delete all entries after the given index.
