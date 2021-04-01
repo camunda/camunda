@@ -74,6 +74,7 @@ export default function DashboardRenderer({
               w: report.dimensions.width,
               h: report.dimensions.height,
               minW: 2,
+              minH: 2,
             }}
           >
             <DashboardReport

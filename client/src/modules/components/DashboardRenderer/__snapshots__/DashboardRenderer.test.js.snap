@@ -26,6 +26,7 @@ exports[`should render a Dashboard Report for every Report in the props 1`] = `
     data-grid={
       Object {
         "h": 1,
+        "minH": 2,
         "minW": 2,
         "w": 3,
         "x": 0,
@@ -56,6 +57,7 @@ exports[`should render a Dashboard Report for every Report in the props 1`] = `
     data-grid={
       Object {
         "h": 4,
+        "minH": 2,
         "minW": 2,
         "w": 1,
         "x": 2,
@@ -86,6 +88,7 @@ exports[`should render a Dashboard Report for every Report in the props 1`] = `
     data-grid={
       Object {
         "h": 2,
+        "minH": 2,
         "minW": 2,
         "w": 2,
         "x": 3,
