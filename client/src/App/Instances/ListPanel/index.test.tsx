@@ -14,7 +14,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {mockProcessInstances} from 'modules/testUtils';
+import {groupedProcessesMock, mockProcessInstances} from 'modules/testUtils';
 import CollapsablePanelContext from 'modules/contexts/CollapsablePanelContext';
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {ListPanel} from './index';
@@ -376,11 +376,11 @@ describe('ListPanel', () => {
       )
     );
 
-    instancesStore.fetchInstancesFromFilters();
-
     const {unmount} = render(<ListPanel />, {
       wrapper: createWrapper(),
     });
+
+    instancesStore.fetchInstancesFromFilters();
 
     expect(
       await screen.findByText('Instances could not be fetched')
@@ -404,5 +404,201 @@ describe('ListPanel', () => {
     expect(
       await screen.findByText('Instances could not be fetched')
     ).toBeInTheDocument();
+  });
+
+  describe('getting started experience', () => {
+    it('should poll until there is a process instance', async () => {
+      jest.useFakeTimers();
+
+      mockServer.use(
+        rest.get('/api/processes/grouped', (_, res, ctx) =>
+          res.once(ctx.json(groupedProcessesMock))
+        ),
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(ctx.json({processInstances: [], totalCount: 0}))
+        )
+      );
+
+      render(<ListPanel />, {
+        wrapper: createWrapper({
+          history: createMemoryHistory({
+            initialEntries: ['/instances?incidents=true&active=true'],
+          }),
+        }),
+      });
+
+      instancesStore.init(true);
+      await instancesStore.fetchInstancesFromFilters();
+
+      expect(screen.getByTestId('listpanel-skeleton')).toBeInTheDocument();
+
+      mockServer.use(
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(ctx.json({processInstances: [], totalCount: 0}))
+        )
+      );
+      jest.runOnlyPendingTimers();
+
+      mockServer.use(
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(ctx.json(mockProcessInstances))
+        )
+      );
+
+      jest.runOnlyPendingTimers();
+
+      await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+      expect(
+        screen.queryByTestId('listpanel-skeleton')
+      ).not.toBeInTheDocument();
+      expect(screen.getByText('2251799813685594')).toBeInTheDocument();
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    });
+
+    it('should poll 3 times, then display empty list message (on first render)', async () => {
+      jest.useFakeTimers();
+
+      mockServer.use(
+        rest.get('/api/processes/grouped', (_, res, ctx) =>
+          res.once(ctx.json(groupedProcessesMock))
+        ),
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(ctx.json({processInstances: [], totalCount: 0}))
+        )
+      );
+
+      render(<ListPanel />, {
+        wrapper: createWrapper({
+          history: createMemoryHistory({
+            initialEntries: ['/instances?incidents=true&active=true'],
+          }),
+        }),
+      });
+
+      instancesStore.init(true);
+      await instancesStore.fetchInstancesFromFilters();
+
+      expect(screen.getByTestId('listpanel-skeleton')).toBeInTheDocument();
+
+      mockServer.use(
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(ctx.json({processInstances: [], totalCount: 0}))
+        )
+      );
+      jest.runOnlyPendingTimers();
+
+      mockServer.use(
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(ctx.json({processInstances: [], totalCount: 0}))
+        )
+      );
+
+      jest.runOnlyPendingTimers();
+
+      mockServer.use(
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(ctx.json({processInstances: [], totalCount: 0}))
+        )
+      );
+
+      jest.runOnlyPendingTimers();
+
+      await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+      expect(
+        screen.queryByTestId('listpanel-skeleton')
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByText('There are no Instances matching this filter set')
+      ).toBeInTheDocument();
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    });
+
+    it('should poll 3 times, then display empty list message (on filter change)', async () => {
+      jest.useFakeTimers();
+
+      mockServer.use(
+        rest.get('/api/processes/grouped', (_, res, ctx) =>
+          res.once(ctx.json(groupedProcessesMock))
+        ),
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(ctx.json(mockProcessInstances))
+        )
+      );
+
+      const mockHistory = createMemoryHistory({
+        initialEntries: ['/instances?incidents=true&active=true'],
+      });
+
+      instancesStore.init(true);
+      await instancesStore.fetchInstancesFromFilters();
+
+      render(<ListPanel />, {
+        wrapper: createWrapper({
+          history: mockHistory,
+        }),
+      });
+
+      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+      expect(screen.getByText('2251799813685594')).toBeInTheDocument();
+
+      mockServer.use(
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(ctx.json({processInstances: [], totalCount: 0}))
+        )
+      );
+
+      mockHistory.push(
+        '/instances?incidents=true&active=true&process=bigVarProcess'
+      );
+      instancesStore.fetchInstancesFromFilters();
+
+      await waitFor(() =>
+        expect(instancesStore.state.status).toBe('refetching')
+      );
+      expect(
+        screen.queryByTestId('listpanel-skeleton')
+      ).not.toBeInTheDocument();
+      expect(screen.getByTestId('instances-loader')).toBeInTheDocument();
+      expect(
+        screen.queryByText('There are no Instances matching this filter set')
+      ).not.toBeInTheDocument();
+
+      mockServer.use(
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(ctx.json({processInstances: [], totalCount: 0}))
+        )
+      );
+      jest.runOnlyPendingTimers();
+
+      mockServer.use(
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(ctx.json({processInstances: [], totalCount: 0}))
+        )
+      );
+
+      jest.runOnlyPendingTimers();
+
+      mockServer.use(
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(ctx.json({processInstances: [], totalCount: 0}))
+        )
+      );
+
+      jest.runOnlyPendingTimers();
+
+      await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+      expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument();
+
+      expect(
+        screen.getByText('There are no Instances matching this filter set')
+      ).toBeInTheDocument();
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    });
   });
 });

@@ -53,6 +53,8 @@ const ListPanel = observer((props: any) => {
           }
         />
       );
+    } else if (status === 'refetching') {
+      return null;
     } else {
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'Message' does not exist on type 'typeof ... Remove this comment to see the full error message
       return <List.Message message={getEmptyListMessage()} />;
@@ -61,7 +63,8 @@ const ListPanel = observer((props: any) => {
 
   const renderSpinner = () => {
     return (
-      status === 'fetching' && (() => <Spinner data-test="instances-loader" />)
+      (status === 'fetching' || status === 'refetching') &&
+      (() => <Spinner data-testid="instances-loader" />)
     );
   };
 

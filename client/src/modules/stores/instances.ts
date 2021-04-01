@@ -37,6 +37,7 @@ type State = {
     | 'fetching-next'
     | 'fetching-prev'
     | 'fetched'
+    | 'refetching'
     | 'error';
 };
 
@@ -58,7 +59,10 @@ class Instances {
   fetchInstancesDisposer: null | IReactionDisposer = null;
   completedOperationActionsDisposer: null | IReactionDisposer = null;
   instancesPollingDisposer: null | IReactionDisposer = null;
+  retryInstanceFetchTimeout: NodeJS.Timeout | null = null;
   completedOperationsHandlers: Array<() => void> = [];
+  shouldRetryOnEmptyResponse: boolean = false;
+  retryCount: number = 0;
 
   constructor() {
     makeObservable(this, {
@@ -68,6 +72,7 @@ class Instances {
       startFetchingNext: action,
       startFetchingPrev: action,
       handleFetchSuccess: action,
+      handleRefetch: action,
       handleFetchError: action,
       setInstances: action,
       markInstancesWithActiveOperations: action,
@@ -86,7 +91,9 @@ class Instances {
     this.completedOperationsHandlers.push(handler);
   }
 
-  init() {
+  init(shouldRetryOnEmptyResponse: boolean = false) {
+    this.shouldRetryOnEmptyResponse = shouldRetryOnEmptyResponse;
+
     this.instancesPollingDisposer = autorun(() => {
       if (this.instanceIdsWithActiveOperations.length > 0) {
         if (this.intervalId === null) {
@@ -199,6 +206,7 @@ class Instances {
   };
 
   fetchInstancesFromFilters = async () => {
+    this.resetRetryInstancesFetch();
     this.startFetching();
     this.fetchInstances({
       fetchType: 'initial',
@@ -224,6 +232,7 @@ class Instances {
 
       if (response.ok) {
         const {processInstances, totalCount} = await response.json();
+
         this.setInstances({
           filteredInstancesCount: totalCount,
           processInstances: this.getProcessInstances(
@@ -233,7 +242,12 @@ class Instances {
         });
 
         this.setLatestFetchDetails(fetchType, processInstances.length);
-        this.handleFetchSuccess();
+
+        if (this.shouldRefetchInstances) {
+          this.handleRefetch();
+        } else {
+          this.handleFetchSuccess();
+        }
       } else {
         this.handleFetchError();
       }
@@ -241,6 +255,13 @@ class Instances {
       this.handleFetchError(error);
     }
   };
+
+  get shouldRefetchInstances() {
+    return (
+      this.shouldRetryOnEmptyResponse &&
+      this.state.processInstances.length === 0
+    );
+  }
 
   refreshAllInstances = async (payload: Payload) => {
     try {
@@ -277,8 +298,44 @@ class Instances {
     this.state.status = 'fetching-prev';
   };
 
+  resetRetryInstancesFetch = () => {
+    if (this.retryInstanceFetchTimeout !== null) {
+      clearTimeout(this.retryInstanceFetchTimeout);
+    }
+
+    this.retryCount = 0;
+  };
+
   handleFetchSuccess = () => {
     this.state.status = 'fetched';
+  };
+
+  handleRefetch = () => {
+    if (this.retryCount < 3) {
+      this.retryCount += 1;
+
+      this.retryInstanceFetchTimeout = setTimeout(() => {
+        this.fetchInstances({
+          fetchType: 'initial',
+          payload: {
+            query: getRequestFilters(),
+            sorting: getSorting(),
+            pageSize: MAX_INSTANCES_PER_REQUEST,
+            searchBefore: undefined,
+            searchAfter: undefined,
+          },
+        });
+      }, 5000);
+
+      if (this.state.status === 'first-fetch') {
+        return;
+      }
+
+      this.state.status = 'refetching';
+    } else {
+      this.resetRetryInstancesFetch();
+      this.handleFetchSuccess();
+    }
   };
 
   handleFetchError = (error?: Error) => {
@@ -425,6 +482,7 @@ class Instances {
     this.completedOperationActionsDisposer?.();
     this.instancesPollingDisposer?.();
     this.completedOperationsHandlers = [];
+    this.resetRetryInstancesFetch();
   };
 }
 

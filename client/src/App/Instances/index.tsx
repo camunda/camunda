@@ -32,10 +32,12 @@ const Instances: React.FC = observer(() => {
   const {status: processesStatus} = processesStore.state;
   const isSingleProcessSelected = processId !== undefined;
   const filtersJSON = JSON.stringify(filters);
+  const searchParams = new URLSearchParams(location.search);
+  const gseUrl = searchParams.get('gseUrl');
 
   useEffect(() => {
     instanceSelectionStore.init();
-    instancesStore.init();
+    instancesStore.init(gseUrl !== null);
     processStatisticsStore.init();
     processesStore.fetchProcesses();
     document.title = PAGE_TITLE.INSTANCES;
@@ -47,7 +49,7 @@ const Instances: React.FC = observer(() => {
       instancesStore.reset();
       processesStore.reset();
     };
-  }, []);
+  }, [gseUrl]);
 
   useEffect(() => {
     instanceSelectionStore.resetState();
