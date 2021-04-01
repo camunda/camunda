@@ -6,6 +6,7 @@
 
 import {config} from '../config';
 import {setup} from './Instances.setup';
+import {deploy} from '../setup-utils';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {getPathname} from './utils/getPathname';
@@ -154,4 +155,40 @@ test('Select flow node in diagram', async (t) => {
         flowNodeId: checkPaymentTaskId,
       })
     );
+});
+
+test('Wait for process creation', async (t) => {
+  await t.navigateTo(
+    '/instances?active=true&incidents=true&process=testProcess&version=1'
+  );
+
+  await t.expect(screen.queryByTestId('listpanel-skeleton').exists).ok();
+  await t.expect(screen.queryByTestId('diagram-spinner').exists).ok();
+  await t
+    .expect(
+      screen.queryByRole('combobox', {name: 'Process'}).hasAttribute('disabled')
+    )
+    .ok();
+
+  await deploy(['./e2e/tests/resources/newProcess.bpmn']);
+
+  await t.expect(screen.queryByTestId('diagram').exists).ok();
+  await t.expect(screen.queryByTestId('diagram-spinner').exists).notOk();
+
+  await t.expect(screen.queryByTestId('listpanel-skeleton').exists).notOk();
+  await t
+    .expect(
+      screen.getByText('There are no Instances matching this filter set').exists
+    )
+    .ok();
+
+  await t
+    .expect(
+      screen.getByRole('combobox', {name: 'Process'}).hasAttribute('disabled')
+    )
+    .notOk();
+
+  await t
+    .expect(screen.getByRole('combobox', {name: 'Process'}).value)
+    .eql('testProcess');
 });

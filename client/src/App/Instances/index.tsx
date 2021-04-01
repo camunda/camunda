@@ -16,13 +16,16 @@ import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {processesStore} from 'modules/stores/processes';
 import {Filters} from './Filters';
-import {getFilters} from 'modules/utils/filter';
+import {getFilters, deleteSearchParams} from 'modules/utils/filter';
 import {observer} from 'mobx-react';
 import * as Styled from './styled';
-import {useLocation} from 'react-router-dom';
+import {useLocation, useHistory} from 'react-router-dom';
+import {useNotifications} from 'modules/notifications';
 
 const Instances: React.FC = observer(() => {
   const location = useLocation();
+  const history = useHistory();
+
   const filters = getFilters(location.search);
   const {process, version} = filters;
   const processId =
@@ -35,11 +38,14 @@ const Instances: React.FC = observer(() => {
   const searchParams = new URLSearchParams(location.search);
   const gseUrl = searchParams.get('gseUrl');
 
+  const notifications = useNotifications();
+
   useEffect(() => {
     instanceSelectionStore.init();
     instancesStore.init(gseUrl !== null);
     processStatisticsStore.init();
     processesStore.fetchProcesses();
+
     document.title = PAGE_TITLE.INSTANCES;
 
     return () => {
@@ -62,13 +68,28 @@ const Instances: React.FC = observer(() => {
   }, [location.search, processesStatus]);
 
   useEffect(() => {
-    if (processId === undefined) {
-      instancesDiagramStore.resetDiagramModel();
-      processStatisticsStore.reset();
-    } else {
-      instancesDiagramStore.fetchProcessXml(processId);
+    if (processesStatus === 'fetched') {
+      if (processId === undefined) {
+        instancesDiagramStore.resetDiagramModel();
+        processStatisticsStore.reset();
+
+        if (
+          process !== undefined &&
+          processesStore.processes.filter((item) => item.value === process)
+            .length === 0
+        ) {
+          history.push(
+            deleteSearchParams(history.location, ['process', 'version'])
+          );
+          notifications.displayNotification('error', {
+            headline: `Procescs could not be found`,
+          });
+        }
+      } else {
+        instancesDiagramStore.fetchProcessXml(processId);
+      }
     }
-  }, [processId]);
+  }, [process, processId, history, processesStatus, notifications]);
 
   useEffect(() => {
     if (isSingleProcessSelected) {

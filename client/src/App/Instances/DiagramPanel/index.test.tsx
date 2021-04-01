@@ -85,10 +85,10 @@ describe('DiagramPanel', () => {
     });
     instancesDiagramStore.fetchProcessXml('1');
 
-    expect(screen.getByTestId('spinner')).toBeInTheDocument();
+    expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
 
-    await waitForElementToBeRemoved(screen.getByTestId('spinner'));
+    await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
 
     expect(screen.getByTestId('diagram')).toBeInTheDocument();
   });
@@ -173,7 +173,7 @@ describe('DiagramPanel', () => {
 
     instancesDiagramStore.fetchProcessXml('1');
 
-    await waitForElementToBeRemoved(screen.getByTestId('spinner'));
+    await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
 
     expect(
       screen.queryByText('Diagram could not be fetched')

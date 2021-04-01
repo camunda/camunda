@@ -7,6 +7,7 @@
 import {addDays, startOfDay, addMinutes, format, parse} from 'date-fns';
 import {processesStore} from 'modules/stores/processes';
 import {getSearchString} from 'modules/utils/getSearchString';
+import {Location} from 'history';
 
 type FilterFieldsType =
   | 'process'
@@ -106,6 +107,18 @@ function getFilters(
     },
     {}
   );
+}
+function deleteSearchParams(location: Location, paramsToDelete: string[]) {
+  const params = new URLSearchParams(location.search);
+
+  paramsToDelete.forEach((param) => {
+    params.delete(param);
+  });
+
+  return {
+    ...location,
+    search: params.toString(),
+  };
 }
 
 type GetRequestDatePairReturn =
@@ -351,5 +364,6 @@ export {
   getRequestFilters,
   updateFiltersSearchString,
   getSorting,
+  deleteSearchParams,
 };
 export type {FilterFieldsType, FiltersType, RequestFilters};

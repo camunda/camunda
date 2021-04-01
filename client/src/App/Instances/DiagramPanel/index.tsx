@@ -15,7 +15,7 @@ import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {useHistory} from 'react-router-dom';
 import {Location} from 'history';
-import {getFilters} from 'modules/utils/filter';
+import {getFilters, deleteSearchParams} from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes';
 
 const Message: React.FC = ({children}) => {
@@ -25,17 +25,6 @@ const Message: React.FC = ({children}) => {
     </Styled.EmptyMessageWrapper>
   );
 };
-
-function deleteSearchParam(location: Location, param: string) {
-  const params = new URLSearchParams(location.search);
-
-  params.delete(param);
-
-  return {
-    ...location,
-    search: params.toString(),
-  };
-}
 
 function setSearchParam(
   location: Location,
@@ -76,8 +65,11 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
         <span>{processName ?? 'Process'}</span>
       </Styled.PaneHeader>
       <SplitPane.Pane.Body style={{position: 'relative'}}>
-        {(processStatisticsStore.state.isLoading || status === 'fetching') && (
-          <SpinnerSkeleton data-testid="spinner" />
+        {(processStatisticsStore.state.isLoading ||
+          status === 'fetching' ||
+          processesStore.state.status === 'initial' ||
+          processesStore.state.status === 'fetching') && (
+          <SpinnerSkeleton data-testid="diagram-spinner" />
         )}
         {status === 'error' && (
           <Message>
@@ -106,7 +98,9 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
             definitions={diagramModel.definitions}
             onFlowNodeSelection={(flowNodeId) => {
               if (flowNodeId === null || flowNodeId === undefined) {
-                history.push(deleteSearchParam(history.location, 'flowNodeId'));
+                history.push(
+                  deleteSearchParams(history.location, ['flowNodeId'])
+                );
               } else {
                 history.push(
                   setSearchParam(history.location, ['flowNodeId', flowNodeId])

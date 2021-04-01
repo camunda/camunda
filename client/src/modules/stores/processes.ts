@@ -6,6 +6,8 @@
 
 import {makeAutoObservable} from 'mobx';
 import {fetchGroupedProcesses} from 'modules/api/instances';
+import {getFilters} from 'modules/utils/filter';
+import {getSearchString} from 'modules/utils/getSearchString';
 import {logger} from 'modules/logger';
 
 type ProcessVersion = {
@@ -33,6 +35,8 @@ const INITIAL_STATE: State = {
 
 class Processes {
   state: State = INITIAL_STATE;
+  retryCount: number = 0;
+  retryProcessesFetchTimeout: NodeJS.Timeout | null = null;
 
   constructor() {
     makeAutoObservable(this, {
@@ -43,11 +47,24 @@ class Processes {
   fetchProcesses = async () => {
     this.startFetching();
 
+    const {process} = getFilters(getSearchString());
+
     try {
       const response = await fetchGroupedProcesses();
 
       if (response.ok) {
-        this.handleFetchSuccess(await response.json());
+        const processes: Process[] = await response.json();
+
+        if (
+          process !== undefined &&
+          processes.filter((item) => item.bpmnProcessId === process).length ===
+            0
+        ) {
+          this.handleRefetch(processes);
+        } else {
+          this.resetRetryProcessesFetch();
+          this.handleFetchSuccess(processes);
+        }
       } else {
         this.handleFetchError();
       }
@@ -72,6 +89,19 @@ class Processes {
   handleFetchSuccess = (processes: Process[]) => {
     this.state.processes = processes;
     this.state.status = 'fetched';
+  };
+
+  handleRefetch = (processes: Process[]) => {
+    if (this.retryCount < 3) {
+      this.retryCount += 1;
+
+      this.retryProcessesFetchTimeout = setTimeout(() => {
+        this.fetchProcesses();
+      }, 5000);
+    } else {
+      this.resetRetryProcessesFetch();
+      this.handleFetchSuccess(processes);
+    }
   };
 
   get processes() {
@@ -113,8 +143,17 @@ class Processes {
     );
   }
 
+  resetRetryProcessesFetch = () => {
+    if (this.retryProcessesFetchTimeout !== null) {
+      clearTimeout(this.retryProcessesFetchTimeout);
+    }
+
+    this.retryCount = 0;
+  };
+
   reset = () => {
     this.state = INITIAL_STATE;
+    this.resetRetryProcessesFetch();
   };
 }
 
