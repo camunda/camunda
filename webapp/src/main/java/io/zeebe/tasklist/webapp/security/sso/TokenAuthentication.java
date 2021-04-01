@@ -8,12 +8,12 @@ package io.zeebe.tasklist.webapp.security.sso;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import io.zeebe.tasklist.property.TasklistProperties;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -32,18 +32,19 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class TokenAuthentication extends AbstractAuthenticationToken {
 
-  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+  protected final transient Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private DecodedJWT jwt;
   private boolean authenticated = false;
 
-  @Autowired private SSOWebSecurityConfig config;
+  @Autowired private transient TasklistProperties tasklistProperties;
 
-  private final Predicate<Map> idEqualsOrganization =
+  private final transient Predicate<Map> idEqualsOrganization =
       new Predicate<>() {
         @Override
         public boolean test(Map orgs) {
-          return orgs.containsKey("id") && orgs.get("id").equals(config.getOrganization());
+          return orgs.containsKey("id")
+              && orgs.get("id").equals(tasklistProperties.getAuth0().getOrganization());
         }
       };
 
@@ -79,13 +80,10 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     this.authenticated = false;
   }
 
-  public void authenticate(Tokens tokens) throws IdentityVerificationException {
+  public void authenticate(Tokens tokens) {
     jwt = JWT.decode(tokens.getIdToken());
-    final Claim claim = jwt.getClaim(config.getClaimName());
-    tryAuthenticateAsListOfStrings(claim);
-    if (!authenticated) {
-      tryAuthenticateAsListOfMaps(claim);
-    }
+    final Claim claim = jwt.getClaim(tasklistProperties.getAuth0().getClaimName());
+    tryAuthenticateAsListOfMaps(claim);
     if (!authenticated) {
       throw new InsufficientAuthenticationException(
           "No permission for Zeebe Tasklist - check your organization id");
@@ -100,17 +98,6 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
       }
     } catch (JWTDecodeException e) {
       logger.warn("Read organization claim as list of maps failed.", e);
-    }
-  }
-
-  private void tryAuthenticateAsListOfStrings(Claim claim) {
-    try {
-      final List<String> claims = claim.asList(String.class);
-      if (claims != null) {
-        authenticated = claims.contains(config.getOrganization());
-      }
-    } catch (JWTDecodeException e) {
-      logger.debug("Read organization claim as list of strings failed.", e);
     }
   }
 

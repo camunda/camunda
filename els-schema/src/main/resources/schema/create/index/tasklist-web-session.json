@@ -1,0 +1,25 @@
+{
+  "aliases": {},
+  "mappings": {
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "creationTime": {
+        "type": "long"
+      },
+      "lastAccessedTime": {
+        "type": "long"
+      },
+      "maxInactiveIntervalInSeconds": {
+        "type": "integer"
+      },
+      "attributes": {
+        "properties": {
+          "name": { "type":  "keyword"},
+          "value": { "type":  "binary"}
+        }
+      }
+    }
+  }
+}

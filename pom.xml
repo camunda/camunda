@@ -32,6 +32,7 @@
 
     <version.elasticsearch>6.8.13</version.elasticsearch>
     <version.spring.boot>2.4.3</version.spring.boot>
+    <version.spring.session>1.3.5.RELEASE</version.spring.session>
     <version.log4j>2.13.3</version.log4j>
     <version.junit>4.13.1</version.junit>
     <version.javax.json>1.1.4</version.javax.json>
@@ -99,6 +100,12 @@
         <version>${version.elasticsearch}</version>
       </dependency>
       <!-- END -->
+
+      <dependency>
+        <groupId>org.springframework.session</groupId>
+        <artifactId>spring-session</artifactId>
+        <version>${version.spring.session}</version>
+      </dependency>
 
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>

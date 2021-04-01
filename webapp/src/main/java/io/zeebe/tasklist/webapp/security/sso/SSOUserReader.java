@@ -9,6 +9,7 @@ import static io.zeebe.tasklist.util.CollectionUtil.map;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 
 import com.auth0.jwt.interfaces.Claim;
+import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
 import io.zeebe.tasklist.webapp.security.UserReader;
 import java.util.List;
@@ -25,7 +26,7 @@ public class SSOUserReader implements UserReader {
 
   private static final String EMPTY = "";
 
-  @Autowired private SSOWebSecurityConfig configuration;
+  @Autowired private TasklistProperties tasklistProperties;
 
   @Override
   public UserDTO getCurrentUser() {
@@ -37,8 +38,8 @@ public class SSOUserReader implements UserReader {
   private UserDTO buildUserDTOFrom(TokenAuthentication tokenAuth) {
     final Map<String, Claim> claims = tokenAuth.getClaims();
     String name = "No name";
-    if (claims.containsKey(configuration.getNameKey())) {
-      name = claims.get(configuration.getNameKey()).asString();
+    if (claims.containsKey(tasklistProperties.getAuth0().getNameKey())) {
+      name = claims.get(tasklistProperties.getAuth0().getNameKey()).asString();
     }
     return createUserDTO(name);
   }

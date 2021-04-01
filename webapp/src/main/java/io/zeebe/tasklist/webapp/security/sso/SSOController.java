@@ -13,10 +13,16 @@ import static io.zeebe.tasklist.webapp.security.TasklistURIs.ROOT;
 import static io.zeebe.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 
 import com.auth0.AuthenticationController;
+import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
+import io.zeebe.tasklist.property.TasklistProperties;
 import java.io.IOException;
+import java.time.Duration;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -25,6 +31,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -33,9 +40,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Profile(SSO_AUTH_PROFILE)
 public class SSOController {
 
+  public static final String ACCESS_TOKENS = "access_tokens";
+
   private static final Logger LOGGER = LoggerFactory.getLogger(SSOController.class);
 
-  @Autowired protected SSOWebSecurityConfig config;
+  @Autowired protected TasklistProperties tasklistProperties;
 
   @Autowired private BeanFactory beanFactory;
 
@@ -59,7 +68,9 @@ public class SSOController {
     return authenticationController
         .buildAuthorizeUrl(req, res, getRedirectURI(req, CALLBACK_URI))
         .withAudience(
-            String.format("https://%s/userinfo", config.getBackendDomain())) // get user profile
+            String.format(
+                "https://%s/userinfo",
+                tasklistProperties.getAuth0().getBackendDomain())) // get user profile
         .withScope("openid profile email") // which info we request
         .build();
   }
@@ -68,27 +79,68 @@ public class SSOController {
    * Logged in callback - Is called by auth0 with results of user authentication (GET) <br>
    * Redirects to root url if successful, otherwise it will redirected to an error url.
    */
-  @RequestMapping(value = CALLBACK_URI, method = RequestMethod.GET)
+  @GetMapping(value = CALLBACK_URI)
   public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res)
       throws IOException {
-    LOGGER.debug("Called back by auth0 with {} {}", req.getRequestURI(), req.getQueryString());
+    LOGGER.debug(
+        "Called back by auth0 with {} {} and SessionId: {}",
+        req.getRequestURI(),
+        req.getQueryString(),
+        req.getSession().getId());
     try {
-      final Tokens tokens = authenticationController.handle(req, res);
-      final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
-      authentication.authenticate(tokens);
-      SecurityContextHolder.getContext().setAuthentication(authentication);
-      final Object originalRequestUrl =
-          req.getSession().getAttribute(SSOWebSecurityConfig.REQUESTED_URL);
-      if (originalRequestUrl != null) {
-        res.sendRedirect(originalRequestUrl.toString());
-      } else {
-        res.sendRedirect(ROOT);
-      }
+      final String operationName = "Retrieve tokens";
+      final RetryPolicy<Tokens> retryPolicy =
+          new RetryPolicy<Tokens>()
+              .handle(IdentityVerificationException.class)
+              .withDelay(Duration.ofMillis(500))
+              .withMaxAttempts(10)
+              .onRetry(e -> LOGGER.debug("Retrying #{} {}", e.getAttemptCount(), operationName))
+              .onAbort(e -> LOGGER.error("Abort {} by {}", operationName, e.getFailure()))
+              .onRetriesExceeded(
+                  e ->
+                      LOGGER.error(
+                          "Retries {} exceeded for {}", e.getAttemptCount(), operationName));
+      final Tokens tokens = Failsafe.with(retryPolicy).get(() -> retrieveToken(req, res));
+      authenticate(tokens);
+      saveTokens(req, tokens);
+      redirectToPage(req, res);
     } catch (InsufficientAuthenticationException iae) {
       logoutAndRedirectToNoPermissionPage(req, res);
     } catch (Exception t /*AuthenticationException | IdentityVerificationException e*/) {
       clearContextAndRedirectToNoPermission(req, res, t);
     }
+  }
+
+  private Tokens retrieveToken(final HttpServletRequest request, final HttpServletResponse response)
+      throws IdentityVerificationException {
+    Tokens tokens = (Tokens) request.getSession().getAttribute(ACCESS_TOKENS);
+    if (tokens == null) {
+      tokens = authenticationController.handle(request, response);
+    }
+    return tokens;
+  }
+
+  private void authenticate(final Tokens tokens) {
+    final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
+    authentication.authenticate(tokens);
+    SecurityContextHolder.getContext().setAuthentication(authentication);
+  }
+
+  private void redirectToPage(final HttpServletRequest req, final HttpServletResponse res)
+      throws IOException {
+    final Object originalRequestUrl =
+        req.getSession().getAttribute(SSOWebSecurityConfig.REQUESTED_URL);
+    if (originalRequestUrl != null) {
+      res.sendRedirect(originalRequestUrl.toString());
+    } else {
+      res.sendRedirect(ROOT);
+    }
+  }
+
+  private void saveTokens(final HttpServletRequest req, final Tokens tokens) {
+    final HttpSession httpSession = req.getSession();
+    httpSession.setMaxInactiveInterval(tokens.getExpiresIn().intValue());
+    httpSession.setAttribute(ACCESS_TOKENS, tokens);
   }
 
   /** Is called when there was an in authentication or authorization */
@@ -128,7 +180,9 @@ public class SSOController {
   public String getLogoutUrlFor(String returnTo) {
     return String.format(
         "https://%s/v2/logout?client_id=%s&returnTo=%s",
-        config.getDomain(), config.getClientId(), returnTo);
+        tasklistProperties.getAuth0().getDomain(),
+        tasklistProperties.getAuth0().getClientId(),
+        returnTo);
   }
 
   protected void logoutFromAuth0(HttpServletResponse res, String returnTo) throws IOException {
@@ -141,7 +195,7 @@ public class SSOController {
         || (req.getScheme().equals("https") && req.getServerPort() != 443)) {
       redirectUri += ":" + req.getServerPort();
     }
-    final String clusterId = req.getContextPath().replaceAll("/", "");
+    final String clusterId = req.getContextPath().replace("/", "");
     final String result =
         redirectUri + /* req.getContextPath()+ */ redirectTo + "?uuid=" + clusterId;
     LOGGER.debug("RedirectURI: {}", result);

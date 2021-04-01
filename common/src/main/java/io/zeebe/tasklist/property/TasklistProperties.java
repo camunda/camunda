@@ -23,6 +23,7 @@ public class TasklistProperties {
   private boolean archiverEnabled = true;
   private boolean webappEnabled = true;
 
+  private boolean persistentSessionsEnabled = false;
   /** Indicates, whether CSRF prevention is enabled. */
   private boolean csrfPreventionEnabled = true;
 
@@ -52,6 +53,8 @@ public class TasklistProperties {
 
   @NestedConfigurationProperty
   private ClusterNodeProperties clusterNode = new ClusterNodeProperties();
+
+  @NestedConfigurationProperty private Auth0Properties auth0 = new Auth0Properties();
 
   public boolean isImporterEnabled() {
     return importerEnabled;
@@ -171,5 +174,23 @@ public class TasklistProperties {
 
   public void setClient(final ClientProperties client) {
     this.client = client;
+  }
+
+  public boolean isPersistentSessionsEnabled() {
+    return persistentSessionsEnabled;
+  }
+
+  public TasklistProperties setPersistentSessionsEnabled(boolean persistentSessionsEnabled) {
+    this.persistentSessionsEnabled = persistentSessionsEnabled;
+    return this;
+  }
+
+  public Auth0Properties getAuth0() {
+    return auth0;
+  }
+
+  public TasklistProperties setAuth0(final Auth0Properties auth0) {
+    this.auth0 = auth0;
+    return this;
   }
 }

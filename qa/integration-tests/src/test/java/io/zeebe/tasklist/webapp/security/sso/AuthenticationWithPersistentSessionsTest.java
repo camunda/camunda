@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -63,18 +64,21 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
 
 @RunWith(Parameterized.class)
 @SpringBootTest(
-    classes = {AuthSSOApplication.class},
+    classes = {
+      AuthSSOApplication.class,
+    },
     properties = {
       "zeebe.tasklist.auth0.clientId=1",
       "zeebe.tasklist.auth0.clientSecret=2",
       "zeebe.tasklist.auth0.organization=3",
       "zeebe.tasklist.auth0.domain=domain",
       "zeebe.tasklist.auth0.backendDomain=backendDomain",
-      "zeebe.tasklist.auth0.claimName=claimName"
+      "zeebe.tasklist.auth0.claimName=claimName",
+      "zeebe.tasklist.persistentSessionsEnabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({TasklistURIs.SSO_AUTH_PROFILE, "test"})
-public class AuthenticationTest {
+public class AuthenticationWithPersistentSessionsTest {
 
   @ClassRule public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
   private static final String CURRENT_USER_QUERY =
@@ -94,7 +98,7 @@ public class AuthenticationTest {
   @Autowired private ObjectMapper objectMapper;
   private final BiFunction<String, String, Tokens> orgExtractor;
 
-  public AuthenticationTest(BiFunction<String, String, Tokens> orgExtractor) {
+  public AuthenticationWithPersistentSessionsTest(BiFunction<String, String, Tokens> orgExtractor) {
     this.orgExtractor = orgExtractor;
   }
 
@@ -120,7 +124,6 @@ public class AuthenticationTest {
   public void testLoginSuccess() throws Exception {
     final HttpEntity<?> cookies = loginWithSSO();
     final ResponseEntity<String> response = get(ROOT, cookies);
-
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   }
 
@@ -306,7 +309,7 @@ public class AuthenticationTest {
     return new JSONObject(map).toString();
   }
 
-  private HttpEntity<?> loginWithSSO() throws IdentityVerificationException {
+  private HttpEntity<?> loginWithSSO() throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
@@ -330,6 +333,8 @@ public class AuthenticationTest {
                 tasklistProperties.getAuth0().getOrganization()));
 
     get(CALLBACK_URI, cookies);
+    // Sometimes the testLogin fails without waiting
+    TimeUnit.MILLISECONDS.sleep(1000);
     return cookies;
   }
 

@@ -9,9 +9,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 
+import io.zeebe.tasklist.es.RetryElasticsearchClient;
 import io.zeebe.tasklist.management.HealthCheckTest.AddManagementPropertiesInitializer;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.zeebe.tasklist.webapp.security.ElasticsearchSessionRepository;
 import io.zeebe.tasklist.webapp.security.TasklistURIs;
 import io.zeebe.tasklist.webapp.security.WebSecurityConfig;
 import io.zeebe.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
@@ -35,7 +37,10 @@ import org.springframework.test.context.junit4.SpringRunner;
       TasklistProperties.class,
       TestApplicationWithNoBeans.class,
       ElsIndicesHealthIndicator.class,
-      WebSecurityConfig.class
+      WebSecurityConfig.class,
+      ElasticsearchSessionRepository.class,
+      RetryElasticsearchClient.class,
+      TasklistProperties.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
