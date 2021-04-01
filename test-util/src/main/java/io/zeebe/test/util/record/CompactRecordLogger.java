@@ -80,6 +80,8 @@ public class CompactRecordLogger {
   private final Map<Long, String> substitutions = new HashMap<>();
   private final ArrayList<Record<?>> records;
 
+  private final Map<String, String> processes = new HashMap<>();
+
   {
     valueLoggers.put(ValueType.DEPLOYMENT, this::summarizeDeployment);
     valueLoggers.put(ValueType.INCIDENT, this::summarizeIncident);
@@ -144,6 +146,16 @@ public class CompactRecordLogger {
 
   public void log() {
     final var bulkMessage = new StringBuilder().append("Compact log representation:\n");
+    addSummarizedRecords(bulkMessage);
+
+    addDeployedProcesses(bulkMessage);
+
+    addDecomposedKeys(bulkMessage);
+
+    LOG.info(bulkMessage.toString());
+  }
+
+  private void addSummarizedRecords(final StringBuilder bulkMessage) {
     bulkMessage
         .append("--------\n")
         .append(
@@ -160,8 +172,16 @@ public class CompactRecordLogger {
         record -> {
           bulkMessage.append(summarizeRecord(record)).append("\n");
         });
+  }
 
-    bulkMessage.append("--------\n").append("Decomposed keys (for debugging):\n");
+  private void addDeployedProcesses(final StringBuilder bulkMessage) {
+    bulkMessage.append("\n-------------- Deployed Processes ----------------------\n");
+    processes.forEach(
+        (name, resource) -> bulkMessage.append(name).append(" ------ \n").append(resource));
+  }
+
+  private void addDecomposedKeys(final StringBuilder bulkMessage) {
+    bulkMessage.append("\n--------------- Decomposed keys (for debugging) -----------------\n");
 
     substitutions.entrySet().stream()
         .sorted(comparing(Entry::getValue))
@@ -172,8 +192,6 @@ public class CompactRecordLogger {
                     .append(" <-> ")
                     .append(entry.getKey())
                     .append("\n"));
-
-    LOG.info(bulkMessage.toString());
   }
 
   private StringBuilder summarizeRecord(final Record<?> record) {
@@ -225,6 +243,7 @@ public class CompactRecordLogger {
     final var value = (DeploymentRecordValue) record.getValue();
 
     return value.getResources().stream()
+        .peek(res -> processes.put(res.getResourceName(), new String(res.getResource())))
         .map(DeploymentResource::getResourceName)
         .collect(Collectors.joining());
   }
