@@ -58,7 +58,6 @@ public class EngineImportSchedulerManagerService implements ConfigurationReloada
       oldScheduler.stopImportScheduling();
       oldScheduler.shutdown();
     }
-    engineContextFactory.close();
   }
 
   public synchronized void startSchedulers() {
@@ -80,7 +79,6 @@ public class EngineImportSchedulerManagerService implements ConfigurationReloada
   @Override
   public synchronized void reloadConfiguration(ApplicationContext context) {
     shutdown();
-    engineContextFactory.init();
     importIndexHandlerRegistry.reloadConfiguration();
     initSchedulers();
   }

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
+import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -120,7 +121,13 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   }
 
   public void reloadConfiguration() {
-    Map<String, ?> refreshableServices = getApplicationContext().getBeansOfType(ConfigurationReloadable.class);
+    // reset engine context factory first to ensure we have new clients before reinitializing any other object
+    // as they might make use of the engine client
+    final EngineContextFactory engineContextFactory = getApplicationContext().getBean(EngineContextFactory.class);
+    engineContextFactory.close();
+    engineContextFactory.init();
+
+    final Map<String, ?> refreshableServices = getApplicationContext().getBeansOfType(ConfigurationReloadable.class);
     for (Map.Entry<String, ?> entry : refreshableServices.entrySet()) {
       Object beanRef = entry.getValue();
       if (beanRef instanceof ConfigurationReloadable) {

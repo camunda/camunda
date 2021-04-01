@@ -55,8 +55,6 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
   private void onSessionCreateOrRefresh(final String identityId) {
     // invalidate to force removal of old entry synchronously
     userAuthorizationLoadingCache.invalidate(identityId);
-    // trigger eager load of authorizations when new session is created
-    userAuthorizationLoadingCache.refresh(identityId);
   }
 
   @Override
