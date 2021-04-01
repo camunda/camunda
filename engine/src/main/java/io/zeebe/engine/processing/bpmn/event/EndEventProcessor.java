@@ -9,7 +9,6 @@ package io.zeebe.engine.processing.bpmn.event;
 
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import static io.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnElementProcessor;
@@ -18,10 +17,8 @@ import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
-import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.value.ErrorType;
 
 public final class EndEventProcessor implements BpmnElementProcessor<ExecutableEndEvent> {
   private static final String TRANSITION_TO_COMPLETED_PRECONDITION_ERROR =
@@ -57,17 +54,14 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     // the error must be caught at the parent or an upper scope (e.g. interrupting boundary event or
     // event sub process). This is also why we don't have to transition to the completing state here
-    final boolean errorThrownAndCaught =
-        eventPublicationBehavior.throwErrorEvent(errorCode, activating);
-
-    if (!errorThrownAndCaught) {
-      final var errorMessage =
-          String.format(
-              "Expected to throw an error event with the code '%s', but it was not caught.",
-              bufferAsString(errorCode));
-      final var failure = new Failure(errorMessage, ErrorType.UNHANDLED_ERROR_EVENT);
-      incidentBehavior.createIncident(failure, activating);
-    }
+    eventPublicationBehavior
+        .findErrorCatchEvent(errorCode, activating)
+        .ifRightOrLeft(
+            catchEvent -> {
+              stateTransitionBehavior.transitionToActivated(activating);
+              eventPublicationBehavior.throwErrorEvent(catchEvent);
+            },
+            failure -> incidentBehavior.createIncident(failure, activating));
   }
 
   @Override
