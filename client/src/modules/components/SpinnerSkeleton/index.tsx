@@ -7,10 +7,12 @@
 import React from 'react';
 import * as Styled from './styled';
 
-export default function SpinnerSkeleton(props: any) {
+const SpinnerSkeleton: React.FC = (props) => {
   return (
     <Styled.Skeleton {...props}>
       <Styled.SkeletonSpinner />
     </Styled.Skeleton>
   );
-}
+};
+
+export {SpinnerSkeleton};

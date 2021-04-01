@@ -6,6 +6,7 @@
 
 import React, {useEffect} from 'react';
 import {computed} from 'mobx';
+import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {observer} from 'mobx-react';
 import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
@@ -15,7 +16,6 @@ import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import Diagram from 'modules/components/Diagram';
-import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {IncidentsWrapper} from '../IncidentsWrapper';
 import {InstanceHeader} from './InstanceHeader';

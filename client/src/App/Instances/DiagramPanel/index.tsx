@@ -6,7 +6,7 @@
 
 import React from 'react';
 import SplitPane from 'modules/components/SplitPane';
-import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
+import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import Diagram from 'modules/components/Diagram';
 import * as Styled from './styled';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';

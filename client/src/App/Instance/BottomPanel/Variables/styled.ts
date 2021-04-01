@@ -21,6 +21,7 @@ import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
 
 import EmptyPanelComponent from 'modules/components/EmptyPanel';
 import DefaultButton from 'modules/components/Button';
+import {errorBorders} from 'modules/theme/interactions';
 
 const Spinner = styled(OperationSpinner)`
   margin-top: 4px;
@@ -159,6 +160,7 @@ const TextInput = styled(BasicInput)`
   font-size: 14px;
   max-width: 181px;
   ${inputMargin};
+  ${errorBorders}
 `;
 
 const DisplayText = styled.div`
@@ -182,10 +184,12 @@ const textAreaStyles = css`
 
 const AddTextarea = styled(BasicTextarea)`
   ${textAreaStyles};
+  ${errorBorders}
 `;
 
 const EditTextarea = styled(BasicTextarea)`
   ${textAreaStyles};
+  ${errorBorders}
 `;
 
 const EditButtonsTD = styled.td`
@@ -193,7 +197,6 @@ const EditButtonsTD = styled.td`
   padding-top: 8px;
   display: flex;
   justify-content: flex-end;
-  width: 100px;
 `;
 
 const AddButtonsTD = styled(EditButtonsTD)`
@@ -223,7 +226,7 @@ const EditButton = styled(IconButton)`
     const colors = theme.colors.variables.editButton;
 
     return css`
-      margin-left: 10px;
+      margin-left: 5px;
       z-index: 0;
 
       svg {
@@ -362,6 +365,13 @@ const TH = styled.th`
   font-weight: 500;
 `;
 
+const Warning = styled.div`
+  display: flex;
+  margin: 0 11px 0 6px;
+  width: 16px;
+  height: 16px;
+`;
+
 export {
   Spinner,
   Variables,
@@ -392,4 +402,5 @@ export {
   Button,
   Plus,
   Footer,
+  Warning,
 };

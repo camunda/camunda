@@ -8,7 +8,7 @@ import styled from 'styled-components';
 import Table from 'modules/components/Table';
 
 import SplitPane from 'modules/components/SplitPane';
-import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
+import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 
 const Spinner = styled(SpinnerSkeleton)`
   margin-top: 39px;

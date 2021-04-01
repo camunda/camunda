@@ -14,12 +14,11 @@ const TH = styled.th`
   height: 31px;
 `;
 
-const TR = styled.tr`
-  ${({
-    theme,
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'hasActiveOperation' does not exist on ty... Remove this comment to see the full error message
-    hasActiveOperation,
-  }) => {
+type TRProps = {
+  hasActiveOperation?: boolean;
+};
+const TR = styled.tr<TRProps>`
+  ${({theme, hasActiveOperation}) => {
     const colors = theme.colors.variables.variablesTable.tr;
     const opacity = theme.opacity.variables.variablesTable.tr;
 

@@ -10,6 +10,9 @@ import * as Styled from './styled';
 
 type Props = {
   iconButtonTheme: 'default' | 'incidentsBanner' | 'foldable';
+  disabled?: boolean;
+  title?: string;
+  onClick?: () => void;
   size?: 'medium' | 'large';
   children?: React.ReactNode;
   icon?: React.ReactNode;

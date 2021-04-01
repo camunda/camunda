@@ -11,7 +11,7 @@ type Props = {
   label?: string;
   type?: 'info' | 'warning' | 'skeleton';
   rowHeight?: number;
-  Skeleton?: React.ReactElement;
+  Skeleton?: React.FC;
 };
 
 export default function EmptyPanel({
@@ -25,9 +25,8 @@ export default function EmptyPanel({
 
   return (
     <Styled.EmptyPanel {...props} ref={containerRef}>
-      {type === 'skeleton' ? (
+      {type === 'skeleton' && Skeleton !== undefined ? (
         <WithRowCount rowHeight={rowHeight} containerRef={containerRef}>
-          {/* @ts-expect-error ts-migrate(2604) FIXME: JSX element type 'Skeleton' does not have any cons... Remove this comment to see the full error message */}
           <Skeleton />
         </WithRowCount>
       ) : (

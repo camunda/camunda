@@ -25,7 +25,6 @@ const Skeleton = ({type, label, rowHeight}: Props) => {
               // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type '"info" | ... Remove this comment to see the full error message
               type={type}
               label={label}
-              // @ts-expect-error ts-migrate(2739) FIXME: Type 'NamedExoticComponent<object>' is missing the... Remove this comment to see the full error message
               Skeleton={Rows}
               rowHeight={rowHeight}
             />

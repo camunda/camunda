@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useRef, useState} from 'react';
+import React, {useRef, useEffect, useState, useCallback} from 'react';
 
 import {isValidJSON} from 'modules/utils';
 import {isRunning} from 'modules/utils/instance';
@@ -15,12 +15,13 @@ import {useNotifications} from 'modules/notifications';
 
 import * as Styled from './styled';
 import {observer} from 'mobx-react';
-import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
+import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {Skeleton} from './Skeleton';
 import {VARIABLE_MODE} from './constants';
 import {Table, TH, TR} from './VariablesTable';
 import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {Warning} from 'modules/components/Warning';
 
 const Variables: React.FC = observer(() => {
   const {
@@ -33,37 +34,68 @@ const Variables: React.FC = observer(() => {
   const [editMode, setEditMode] = useState('');
   const [name, setName] = useState('');
   const [value, setValue] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string>();
 
-  const variablesContentRef = useRef(null);
-  const editInputTDRef = useRef(null);
-  /**
-   * Determine, if bottom of currently opened edit textarea is
-   * out of bottom bounds of visible scroll area.
-   *
-   * @return boolean
-   */
+  const variablesContentRef = useRef<HTMLDivElement>(null);
+  const editInputTDRef = useRef<HTMLTableDataCellElement>(null);
+
+  const validateName = useCallback(() => {
+    if (value.trim() !== '' && !name) {
+      return 'Name has to be filled';
+    }
+
+    if (name.includes('"') || (name.length > 0 && name.trim() === '')) {
+      return 'Name is invalid';
+    }
+
+    if (editMode === VARIABLE_MODE.ADD) {
+      const isVariableDuplicate =
+        variables
+          .map((variable) => variable.name)
+          .filter((variableName) => variableName === name).length > 0;
+
+      if (isVariableDuplicate) {
+        return 'Name should be unique';
+      }
+    }
+  }, [name, value, editMode, variables]);
+
+  const validateValue = useCallback(() => {
+    if ((value !== '' || name !== '') && !isValidJSON(value)) {
+      return 'Value has to be JSON';
+    }
+  }, [name, value]);
+
+  useEffect(() => {
+    const errorMessageForVariable = validateName();
+    const errorMessageForValue = validateValue();
+
+    if (
+      errorMessageForVariable !== undefined &&
+      errorMessageForValue !== undefined
+    ) {
+      return setErrorMessage(
+        `${errorMessageForVariable} and ${errorMessageForValue}`
+      );
+    }
+    setErrorMessage(errorMessageForVariable || errorMessageForValue);
+  }, [validateName, validateValue]);
+
   function isTextareaOutOfBounds() {
     const inputTD = editInputTDRef.current;
-    let container = variablesContentRef.current;
 
     const theadHeight = 45;
 
-    if (inputTD && container) {
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'children' does not exist on type 'never'... Remove this comment to see the full error message
-      container = container.children[0];
-
+    if (inputTD && variablesContentRef.current) {
+      const container = variablesContentRef.current.children[0];
       // distance from top edge of container to bottom edge of td
       const tdPosition =
-        // @ts-expect-error ts-migrate(2339) FIXME: Property 'offsetTop' does not exist on type 'never... Remove this comment to see the full error message
         inputTD.offsetTop -
         theadHeight -
-        // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
         container.scrollTop +
-        // @ts-expect-error ts-migrate(2339) FIXME: Property 'offsetHeight' does not exist on type 'ne... Remove this comment to see the full error message
         inputTD.offsetHeight;
 
-      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-      return tdPosition > container.offsetHeight;
+      return tdPosition > container.clientHeight;
     }
   }
 
@@ -105,23 +137,30 @@ const Variables: React.FC = observer(() => {
     closeEdit();
   }
 
-  function handleOpenEditVariable(name: any, value: any) {
+  function handleOpenEditVariable(name: string, value: string) {
     setEditMode(VARIABLE_MODE.EDIT);
     setName(name);
     setValue(value);
   }
 
   function scrollToBottom() {
-    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-    const scrollableElement = variablesContentRef.current.children[0];
-    scrollableElement.scrollTop = scrollableElement.scrollHeight;
+    if (variablesContentRef !== null && variablesContentRef.current !== null) {
+      const scrollableElement = variablesContentRef.current.children[0];
+      scrollableElement.scrollTop = scrollableElement.scrollHeight;
+    }
   }
 
-  function renderEditButtons({isDisabled}: any) {
+  function renderEditButtons(
+    errorMessage?: string,
+    isValueChangedOnEdit?: boolean
+  ) {
     return (
       <>
+        <Styled.Warning>
+          {errorMessage !== undefined && <Warning title={errorMessage} />}
+        </Styled.Warning>
+
         <Styled.EditButton
-          // @ts-expect-error
           title="Exit edit mode"
           onClick={closeEdit}
           size="large"
@@ -130,10 +169,12 @@ const Variables: React.FC = observer(() => {
         />
 
         <Styled.EditButton
-          // @ts-expect-error
           title="Save variable"
           disabled={
-            !value || !isValidJSON(value) || name.includes('"') || isDisabled
+            (editMode === VARIABLE_MODE.EDIT && !isValueChangedOnEdit) ||
+            errorMessage !== undefined ||
+            name.trim() === '' ||
+            value.trim() === ''
           }
           onClick={saveVariable}
           size="large"
@@ -144,7 +185,7 @@ const Variables: React.FC = observer(() => {
     );
   }
 
-  function renderInlineEdit(propValue: any) {
+  function renderInlineEdit(propValue: string) {
     return (
       <>
         <Styled.EditInputTD ref={editInputTDRef}>
@@ -156,25 +197,21 @@ const Variables: React.FC = observer(() => {
             data-testid="edit-value"
             placeholder="Value"
             value={value}
-            onChange={(e: any) => setValue(e.target.value)}
+            hasError={errorMessage !== undefined}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+              setValue(e.target.value)
+            }
             onHeightChange={handleHeightChange}
           />
         </Styled.EditInputTD>
         <Styled.EditButtonsTD>
-          {renderEditButtons({
-            isDisabled: propValue === value,
-          })}
+          {renderEditButtons(errorMessage, propValue !== value)}
         </Styled.EditButtonsTD>
       </>
     );
   }
 
   function renderInlineAdd() {
-    const variableAlreadyExists =
-      variables
-        .map((variable) => variable.name)
-        .filter((variableName) => variableName === name).length > 0;
-    const isVariableEmpty = name.trim() === '';
     return (
       <TR data-testid="add-key-row">
         <Styled.EditInputTD>
@@ -183,7 +220,10 @@ const Variables: React.FC = observer(() => {
             type="text"
             placeholder="Name"
             value={name}
-            onChange={(e: any) => setName(e.target.value)}
+            hasError={validateName() !== undefined}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setName(e.target.value)
+            }
           />
         </Styled.EditInputTD>
         <Styled.EditInputTD>
@@ -193,14 +233,15 @@ const Variables: React.FC = observer(() => {
             minRows={1}
             maxRows={4}
             value={value}
-            onChange={(e: any) => setValue(e.target.value)}
+            hasError={validateValue() !== undefined}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+              setValue(e.target.value)
+            }
             onHeightChange={scrollToBottom}
           />
         </Styled.EditInputTD>
         <Styled.AddButtonsTD>
-          {renderEditButtons({
-            isDisabled: variableAlreadyExists || isVariableEmpty,
-          })}
+          {renderEditButtons(errorMessage)}
         </Styled.AddButtonsTD>
       </TR>
     );
@@ -236,7 +277,6 @@ const Variables: React.FC = observer(() => {
                 <TR
                   key={variableName}
                   data-testid={variableName}
-                  // @ts-expect-error ts-migrate(2769) FIXME: Property 'hasActiveOperation' does not exist on ty... Remove this comment to see the full error message
                   hasActiveOperation={hasActiveOperation}
                 >
                   <Styled.TD isBold={true}>
@@ -247,8 +287,7 @@ const Variables: React.FC = observer(() => {
                   {name === variableName &&
                   editMode === VARIABLE_MODE.EDIT &&
                   isCurrentInstanceRunning ? (
-                    // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 2.
-                    renderInlineEdit(propValue, variableName)
+                    renderInlineEdit(propValue)
                   ) : (
                     <>
                       <Styled.DisplayTextTD>
@@ -260,7 +299,6 @@ const Variables: React.FC = observer(() => {
                             <Styled.Spinner data-testid="edit-variable-spinner" />
                           ) : (
                             <Styled.EditButton
-                              // @ts-expect-error ts-migrate(2769) FIXME: Property 'title' does not exist on type 'Intrinsic... Remove this comment to see the full error message
                               title="Enter edit mode"
                               data-testid="edit-variable-button"
                               onClick={() =>
@@ -287,10 +325,6 @@ const Variables: React.FC = observer(() => {
     );
   }
 
-  function handleOpenAddVariable() {
-    setEditMode(VARIABLE_MODE.ADD);
-  }
-
   return (
     <>
       <Styled.VariablesContent ref={variablesContentRef}>
@@ -298,7 +332,6 @@ const Variables: React.FC = observer(() => {
           <Styled.EmptyPanel
             data-testid="variables-spinner"
             type="skeleton"
-            // @ts-expect-error ts-migrate(2769) FIXME: Type '(props: any) => Element' is not assignable t... Remove this comment to see the full error message
             Skeleton={SpinnerSkeleton}
           />
         )}
@@ -314,7 +347,7 @@ const Variables: React.FC = observer(() => {
         <Styled.Button
           title="Add variable"
           size="small"
-          onClick={() => handleOpenAddVariable()}
+          onClick={() => setEditMode(VARIABLE_MODE.ADD)}
           disabled={
             status === 'first-fetch' ||
             editMode !== '' ||

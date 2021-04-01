@@ -194,7 +194,7 @@ describe('Variables', () => {
       expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
     });
 
-    it('should validate when adding variable', async () => {
+    it('should not allow empty value', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
@@ -219,59 +219,182 @@ describe('Variables', () => {
       expect(
         screen.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
+
       fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
-        target: {value: 'test'},
+        target: {value: '    '},
       });
+
       expect(
         screen.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
-      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
-        target: {value: '"test"'},
-      });
-      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
+      expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
+    });
+
+    it('should not allow empty variable name', async () => {
+      currentInstanceStore.setCurrentInstance(instanceMock);
+
+      mockServer.use(
+        rest.get(
+          '/api/process-instances/:instanceId/variables',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
+
+      variablesStore.fetchVariables('1');
+
+      render(<Variables />, {wrapper: Wrapper});
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      fireEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+
+      expect(
+        screen.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
       fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
         target: {value: '123'},
       });
-      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
-
-      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
-        target: {value: '{}'},
-      });
-      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
-
-      fireEvent.change(screen.getByRole('textbox', {name: /name/i}), {
-        target: {value: '"test"'},
-      });
       expect(
         screen.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
+      expect(screen.getByTitle('Name has to be filled')).toBeInTheDocument();
 
-      fireEvent.change(screen.getByRole('textbox', {name: /name/i}), {
+      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
         target: {value: 'test'},
       });
-      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
 
-      const invalidJSONObject = "{invalidKey: 'value'}";
-
-      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
-        target: {value: invalidJSONObject},
-      });
       expect(
         screen.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
+      expect(
+        screen.getByTitle('Name has to be filled and Value has to be JSON')
+      ).toBeInTheDocument();
 
-      // already existing variable
       fireEvent.change(screen.getByRole('textbox', {name: /name/i}), {
-        target: {value: variablesStore.state.items[0].name},
+        target: {value: '   '},
       });
 
+      expect(
+        screen.getByTitle('Name is invalid and Value has to be JSON')
+      ).toBeInTheDocument();
+
       fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
-        target: {value: variablesStore.state.items[0].value},
+        target: {value: '"valid value"'},
+      });
+
+      expect(screen.getByTitle('Name is invalid')).toBeInTheDocument();
+    });
+
+    it('should not allow to add duplicate variables', async () => {
+      currentInstanceStore.setCurrentInstance(instanceMock);
+
+      mockServer.use(
+        rest.get(
+          '/api/process-instances/:instanceId/variables',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
+
+      variablesStore.fetchVariables('1');
+
+      render(<Variables />, {wrapper: Wrapper});
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      fireEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+
+      expect(
+        screen.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
+      fireEvent.change(screen.getByRole('textbox', {name: /name/i}), {
+        target: {value: mockVariables[0].name},
       });
 
       expect(
         screen.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
+      expect(
+        screen.getByTitle('Name should be unique and Value has to be JSON')
+      ).toBeInTheDocument();
+
+      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
+        target: {value: 'invalid json'},
+      });
+
+      expect(
+        screen.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
+      expect(
+        screen.getByTitle('Name should be unique and Value has to be JSON')
+      ).toBeInTheDocument();
+
+      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
+        target: {value: '123'},
+      });
+
+      expect(
+        screen.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
+      expect(screen.getByTitle('Name should be unique')).toBeInTheDocument();
+
+      fireEvent.change(screen.getByRole('textbox', {name: /name/i}), {
+        target: {value: 'someOtherName'},
+      });
+      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
+    });
+
+    it('should not allow to add variable with invalid name', async () => {
+      currentInstanceStore.setCurrentInstance(instanceMock);
+
+      mockServer.use(
+        rest.get(
+          '/api/process-instances/:instanceId/variables',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
+
+      variablesStore.fetchVariables('1');
+
+      render(<Variables />, {wrapper: Wrapper});
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      fireEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+
+      expect(
+        screen.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
+      fireEvent.change(screen.getByRole('textbox', {name: /name/i}), {
+        target: {value: '"invalid"'},
+      });
+
+      expect(
+        screen.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
+      expect(
+        screen.getByTitle('Name is invalid and Value has to be JSON')
+      ).toBeInTheDocument();
+
+      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
+        target: {value: 'invalid json'},
+      });
+
+      expect(
+        screen.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
+      expect(
+        screen.getByTitle('Name is invalid and Value has to be JSON')
+      ).toBeInTheDocument();
+
+      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
+        target: {value: '123'},
+      });
+      expect(
+        screen.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
+      expect(screen.getByTitle('Name is invalid')).toBeInTheDocument();
+
+      fireEvent.change(screen.getByRole('textbox', {name: /name/i}), {
+        target: {value: 'someOtherName'},
+      });
+      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
     });
 
     it('should save new variable', async () => {
@@ -517,6 +640,16 @@ describe('Variables', () => {
       expect(
         withinFirstVariable.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
+      expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
+
+      fireEvent.change(screen.getByTestId('edit-value'), {
+        target: {value: '   '},
+      });
+
+      expect(
+        withinFirstVariable.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
+      expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
 
       const invalidJSONObject = "{invalidKey: 'value'}";
 
@@ -527,6 +660,7 @@ describe('Variables', () => {
       expect(
         withinFirstVariable.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
+      expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
     });
   });
 

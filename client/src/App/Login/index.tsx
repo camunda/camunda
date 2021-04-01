@@ -27,8 +27,8 @@ import {
   PasswordInput,
   Copyright,
 } from './styled';
-import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 import {Routes} from 'modules/routes';
+import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 
 type FormValues = {
   username: string;
