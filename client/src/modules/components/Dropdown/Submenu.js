@@ -19,6 +19,7 @@ export default class Submenu extends React.Component {
     super(props);
 
     this.containerRef = React.createRef();
+    this.menuObserver = new MutationObserver(this.calculatePlacement);
 
     this.state = {styles: {}, scrollable: false};
   }
@@ -97,12 +98,16 @@ export default class Submenu extends React.Component {
   };
 
   componentDidMount() {
-    new MutationObserver(this.calculatePlacement).observe(this.containerRef.current, {
+    this.menuObserver.observe(this.containerRef.current, {
       childList: true,
       subtree: true,
     });
 
     this.initilizeHeaderAndFooterRefs();
+  }
+
+  componentWillUnmount() {
+    this.menuObserver.disconnect();
   }
 
   initilizeHeaderAndFooterRefs() {
