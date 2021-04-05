@@ -27,7 +27,7 @@ import io.zeebe.test.util.bpmn.random.steps.StepPickDefaultCase;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
-import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimer;
+import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerStartEvent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
@@ -81,9 +81,9 @@ public class ProcessExecutor {
     } else if (step instanceof StepExpressionIncidentCase) {
       final var expressionIncident = (StepExpressionIncidentCase) step;
       resolveExpressionIncident(expressionIncident);
-    } else if (step instanceof StepTriggerTimer) {
-      final StepTriggerTimer timerStep = (StepTriggerTimer) step;
-      triggerTimer(timerStep);
+    } else if (step instanceof StepTriggerTimerStartEvent) {
+      final StepTriggerTimerStartEvent timerStep = (StepTriggerTimerStartEvent) step;
+      triggerTimerStartEvent(timerStep);
     } else {
       throw new IllegalStateException("Not yet implemented: " + step);
     }
@@ -232,7 +232,7 @@ public class ProcessExecutor {
         .create();
   }
 
-  private void triggerTimer(final StepTriggerTimer timerStep) {
+  private void triggerTimerStartEvent(final StepTriggerTimerStartEvent timerStep) {
     final Record<TimerRecordValue> timerSchedulingRecord =
         RecordingExporter.timerRecords(TimerIntent.CREATE).getFirst();
     waitUntilRecordIsProcessed("until start timer is scheduled", timerSchedulingRecord);
@@ -242,8 +242,6 @@ public class ProcessExecutor {
     // await that the timer is triggered or otherwise there may be a race condition where a test may
     // think we've already reached a wait state, when in truth the timer trigger hasn't even been
     // processed and so we haven't actually moved on from the previous wait state
-    // TODO(npepinpe): if reused for other timers than start event, modify so we filter and await
-    // the right timer, not just any timer
     RecordingExporter.timerRecords(TimerIntent.TRIGGERED).await();
   }
 

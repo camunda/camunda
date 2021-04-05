@@ -13,7 +13,7 @@ import io.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.zeebe.test.util.bpmn.random.StartEventBlockBuilder;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateAndCompleteJob;
-import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimer;
+import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerStartEvent;
 import java.time.Duration;
 import java.util.Map;
 
@@ -50,7 +50,7 @@ public class TimerStartEventBuilder implements StartEventBlockBuilder {
   public ExecutionPathSegment findRandomExecutionPath(
       final String processId, final Map<String, Object> variables) {
     final ExecutionPathSegment pathSegment = new ExecutionPathSegment();
-    pathSegment.append(new StepTriggerTimer(timeToAdd));
+    pathSegment.append(new StepTriggerTimerStartEvent(timeToAdd));
     pathSegment.append(
         new StepActivateAndCompleteJob(startEventId + VARIABLES_JOB_TYPE_SUFFIX, variables));
     return pathSegment;

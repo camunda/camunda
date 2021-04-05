@@ -9,11 +9,11 @@ package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
 
-public final class StepTriggerTimer extends AbstractExecutionStep {
+public final class StepTriggerTimerStartEvent extends AbstractExecutionStep {
 
   private final Duration timeToAdd;
 
-  public StepTriggerTimer(final Duration timeToAdd) {
+  public StepTriggerTimerStartEvent(final Duration timeToAdd) {
     this.timeToAdd = timeToAdd;
   }
 
@@ -30,7 +30,7 @@ public final class StepTriggerTimer extends AbstractExecutionStep {
       return false;
     }
 
-    final StepTriggerTimer that = (StepTriggerTimer) o;
+    final StepTriggerTimerStartEvent that = (StepTriggerTimerStartEvent) o;
 
     return getTimeToAdd() != null
         ? getTimeToAdd().equals(that.getTimeToAdd())
