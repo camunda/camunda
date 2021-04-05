@@ -238,6 +238,13 @@ public class ProcessExecutor {
     waitUntilRecordIsProcessed("until start timer is scheduled", timerSchedulingRecord);
 
     engineRule.increaseTime(timerStep.getTimeToAdd());
+
+    // await that the timer is triggered or otherwise there may be a race condition where a test may
+    // think we've already reached a wait state, when in truth the timer trigger hasn't even been
+    // processed and so we haven't actually moved on from the previous wait state
+    // TODO(npepinpe): if reused for other timers than start event, modify so we filter and await
+    // the right timer, not just any timer
+    RecordingExporter.timerRecords(TimerIntent.TRIGGERED).await();
   }
 
   private void resolveExpressionIncident(final StepExpressionIncidentCase expressionIncident) {
