@@ -9,11 +9,11 @@ package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
 
-public final class StepTriggerTimer extends AbstractExecutionStep {
+public final class StepTriggerTimerStartEvent extends AbstractExecutionStep {
 
   private final Duration timeToAdd;
 
-  public StepTriggerTimer(final Duration timeToAdd) {
+  public StepTriggerTimerStartEvent(final Duration timeToAdd) {
     this.timeToAdd = timeToAdd;
   }
 
@@ -30,18 +30,15 @@ public final class StepTriggerTimer extends AbstractExecutionStep {
       return false;
     }
 
-    final StepTriggerTimer that = (StepTriggerTimer) o;
+    final StepTriggerTimerStartEvent that = (StepTriggerTimerStartEvent) o;
 
-    if (timeToAdd != null ? !timeToAdd.equals(that.timeToAdd) : that.timeToAdd != null) {
-      return false;
-    }
-    return variables.equals(that.variables);
+    return getTimeToAdd() != null
+        ? getTimeToAdd().equals(that.getTimeToAdd())
+        : that.getTimeToAdd() == null;
   }
 
   @Override
   public int hashCode() {
-    int result = timeToAdd != null ? timeToAdd.hashCode() : 0;
-    result = 31 * result + variables.hashCode();
-    return result;
+    return getTimeToAdd() != null ? getTimeToAdd().hashCode() : 0;
   }
 }

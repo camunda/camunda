@@ -168,12 +168,12 @@ public final class EngineRule extends ExternalResource {
   }
 
   public EngineRule withOnProcessedCallback(final Consumer<TypedRecord> onProcessedCallback) {
-    this.onProcessedCallback = onProcessedCallback;
+    this.onProcessedCallback = this.onProcessedCallback.andThen(onProcessedCallback);
     return this;
   }
 
   public EngineRule withOnSkippedCallback(final Consumer<LoggedEvent> onSkippedCallback) {
-    this.onSkippedCallback = onSkippedCallback;
+    this.onSkippedCallback = this.onSkippedCallback.andThen(onSkippedCallback);
     return this;
   }
 
