@@ -121,7 +121,7 @@ public class UpgradeProcedure {
     if (REINDEX.equals(step.getType())) {
       final ReindexStep reindexStep = (ReindexStep) step;
       return String.format(
-        "%s and %s",
+        "%s-TO-%s",
         esClient.getIndexNameService().getOptimizeIndexNameWithVersion(reindexStep.getSourceIndex()),
         esClient.getIndexNameService().getOptimizeIndexNameWithVersion(reindexStep.getTargetIndex())
       );

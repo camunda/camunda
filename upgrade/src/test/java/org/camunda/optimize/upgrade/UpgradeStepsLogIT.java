@@ -55,7 +55,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
     // then
     final Optional<UpgradeStepLogEntryDto> updateLogEntries = getDocumentOfIndexByIdAs(
       UpdateLogEntryIndex.INDEX_NAME,
-      TO_VERSION + "_" + SCHEMA_CREATE_INDEX.toString() + "_001",
+      TO_VERSION + "_" + SCHEMA_CREATE_INDEX + "_" + indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1),
       UpgradeStepLogEntryDto.class
     );
     assertThat(updateLogEntries)
@@ -212,14 +212,15 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
   public void upgradeIsResumedWhenUpgradeLogUpdateFails() {
     // given
     final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final CreateIndexStep createIndexStep = buildCreateIndexStep(TEST_INDEX_V1);
     final UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V1))
+        .addUpgradeStep(createIndexStep)
         .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_V2))
         .build();
-    final HttpRequest stepOneLogUpsertRequest = createUpdateLogUpsertRequest(SCHEMA_CREATE_INDEX);
+    final HttpRequest stepOneLogUpsertRequest = createUpdateLogUpsertRequest(createIndexStep);
     esMockServer
       .when(stepOneLogUpsertRequest, Times.exactly(1))
       .error(HttpError.error().withDropConnection(true));
