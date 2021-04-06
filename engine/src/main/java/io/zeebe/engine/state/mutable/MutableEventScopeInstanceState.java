@@ -61,6 +61,8 @@ public interface MutableEventScopeInstanceState extends EventScopeInstanceState 
    * @param variables the variables of the occurred event, i.e. message variables
    * @return true if the event was accepted by the event scope, false otherwise
    */
+  // TODO: once only the event appliers are calling this, change signature to void as the processors
+  // should have checked that the event could be triggered (#6202)
   boolean triggerEvent(
       long eventScopeKey, long eventKey, DirectBuffer elementId, DirectBuffer variables);
 
