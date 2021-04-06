@@ -11,7 +11,6 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.tasklist.entities.FormEntity;
 import io.zeebe.tasklist.entities.ProcessEntity;
 import io.zeebe.tasklist.exceptions.PersistenceException;
@@ -21,11 +20,13 @@ import io.zeebe.tasklist.util.ConversionUtils;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.zeebeimport.util.XMLUtil;
 import io.zeebe.tasklist.zeebeimport.v100.record.value.DeploymentRecordValueImpl;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -63,18 +64,40 @@ public class ProcessZeebeRecordProcessor {
       final DeploymentRecordValueImpl recordValue = (DeploymentRecordValueImpl) record.getValue();
       final Map<String, DeploymentResource> resources = resourceToMap(recordValue.getResources());
       for (DeployedProcess process : recordValue.getDeployedProcesses()) {
-        persistProcess(process, resources, bulkRequest);
+
+        final Map<String, String> userTaskForms = new HashMap<>();
+        persistProcess(
+            process,
+            resources,
+            bulkRequest,
+            (formKey, schema) -> userTaskForms.put(formKey, schema));
+
+        final List<PersistenceException> exceptions = new ArrayList<>();
+        userTaskForms.forEach(
+            (formKey, schema) -> {
+              try {
+                persistForm(process.getProcessDefinitionKey(), formKey, schema, bulkRequest);
+              } catch (PersistenceException e) {
+                exceptions.add(e);
+              }
+            });
+        if (!exceptions.isEmpty()) {
+          throw exceptions.get(0);
+        }
       }
     }
   }
 
   private void persistProcess(
-      DeployedProcess process, Map<String, DeploymentResource> resources, BulkRequest bulkRequest)
+      DeployedProcess process,
+      Map<String, DeploymentResource> resources,
+      BulkRequest bulkRequest,
+      BiConsumer<String, String> userTaskFormCollector)
       throws PersistenceException {
     final String resourceName = process.getResourceName();
     final DeploymentResource resource = resources.get(resourceName);
 
-    final ProcessEntity processEntity = createEntity(process, resource);
+    final ProcessEntity processEntity = createEntity(process, resource, userTaskFormCollector);
     LOGGER.debug("Process: key {}", processEntity.getKey());
 
     try {
@@ -91,22 +114,22 @@ public class ProcessZeebeRecordProcessor {
     }
   }
 
-  private ProcessEntity createEntity(DeployedProcess process, DeploymentResource resource) {
+  private ProcessEntity createEntity(
+      DeployedProcess process,
+      DeploymentResource resource,
+      BiConsumer<String, String> userTaskFormCollector) {
     final ProcessEntity processEntity = new ProcessEntity();
 
     processEntity.setId(String.valueOf(process.getProcessDefinitionKey()));
     processEntity.setKey(process.getProcessDefinitionKey());
 
-    final ResourceType resourceType = resource.getResourceType();
-    if (ResourceType.BPMN_XML.equals(resourceType)) {
-      final byte[] byteArray = resource.getResource();
+    final byte[] byteArray = resource.getResource();
 
-      final Optional<ProcessEntity> diagramData = xmlUtil.extractDiagramData(byteArray);
-      if (diagramData.isPresent()) {
-        processEntity.setName(diagramData.get().getName());
-        processEntity.setFlowNodes(diagramData.get().getFlowNodes());
-      }
-    }
+    xmlUtil.extractDiagramData(
+        byteArray,
+        name -> processEntity.setName(name),
+        flowNode -> processEntity.getFlowNodes().add(flowNode),
+        userTaskFormCollector);
 
     return processEntity;
   }
@@ -116,7 +139,6 @@ public class ProcessZeebeRecordProcessor {
         .collect(Collectors.toMap(DeploymentResource::getResourceName, Function.identity()));
   }
 
-  // TODO for future use
   private void persistForm(
       long processDefinitionKey, String formKey, String schema, BulkRequest bulkRequest)
       throws PersistenceException {

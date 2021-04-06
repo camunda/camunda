@@ -9,6 +9,7 @@ import io.zeebe.tasklist.entities.ProcessEntity;
 import io.zeebe.tasklist.entities.ProcessFlowNodeEntity;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class ProcessCacheEntity {
@@ -46,14 +47,7 @@ public class ProcessCacheEntity {
   }
 
   @Override
-  public int hashCode() {
-    int result = name != null ? name.hashCode() : 0;
-    result = 31 * result + (flowNodeNames != null ? flowNodeNames.hashCode() : 0);
-    return result;
-  }
-
-  @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -69,5 +63,10 @@ public class ProcessCacheEntity {
     return flowNodeNames != null
         ? flowNodeNames.equals(that.flowNodeNames)
         : that.flowNodeNames == null;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, flowNodeNames);
   }
 }

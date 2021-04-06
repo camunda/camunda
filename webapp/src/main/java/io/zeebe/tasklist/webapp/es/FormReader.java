@@ -30,10 +30,12 @@ public class FormReader {
 
   @Autowired private ObjectMapper objectMapper;
 
-  public FormDTO getFormDTO(final String id) {
+  public FormDTO getFormDTO(final String id, String processDefinitionId) {
     try {
+      final String formId = String.format("%s_%s", processDefinitionId, id);
+
       final GetRequest getRequest =
-          new GetRequest(formIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, id);
+          new GetRequest(formIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, formId);
 
       final GetResponse response = esClient.get(getRequest, RequestOptions.DEFAULT);
       if (response.isExists()) {

@@ -5,12 +5,12 @@
  */
 package io.zeebe.tasklist.zeebeimport.util;
 
-import io.zeebe.tasklist.entities.ProcessEntity;
 import io.zeebe.tasklist.entities.ProcessFlowNodeEntity;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 import org.slf4j.Logger;
@@ -43,41 +43,79 @@ public class XMLUtil {
     }
   }
 
-  public Optional<ProcessEntity> extractDiagramData(byte[] byteArray) {
+  public void extractDiagramData(
+      byte[] byteArray,
+      Consumer<String> nameConsumer,
+      Consumer<ProcessFlowNodeEntity> flowNodeConsumer,
+      BiConsumer<String, String> userTaskFormConsumer) {
     final SAXParserFactory saxParserFactory = getSAXParserFactory();
     final InputStream is = new ByteArrayInputStream(byteArray);
-    final BpmnXmlParserHandler handler = new BpmnXmlParserHandler();
+    final BpmnXmlParserHandler handler =
+        new BpmnXmlParserHandler(nameConsumer, flowNodeConsumer, userTaskFormConsumer);
     try {
       saxParserFactory.newSAXParser().parse(is, handler);
-      return Optional.of(handler.getProcessEntity());
     } catch (ParserConfigurationException | SAXException | IOException e) {
       LOGGER.warn("Unable to parse diagram: " + e.getMessage(), e);
-      return Optional.empty();
     }
   }
 
   public static class BpmnXmlParserHandler extends DefaultHandler {
 
-    ProcessEntity processEntity = new ProcessEntity();
+    private Consumer<String> nameConsumer;
+    private Consumer<ProcessFlowNodeEntity> flowNodeConsumer;
+    private BiConsumer<String, String> userTaskFormConsumer;
+
+    private boolean isUserTaskForm = false;
+
+    private String userTaskFormId;
+    private StringBuilder userTaskFormJson = new StringBuilder();
+
+    public BpmnXmlParserHandler(
+        final Consumer<String> nameConsumer,
+        final Consumer<ProcessFlowNodeEntity> flowNodeConsumer,
+        final BiConsumer<String, String> userTaskFormConsumer) {
+      this.nameConsumer = nameConsumer;
+      this.flowNodeConsumer = flowNodeConsumer;
+      this.userTaskFormConsumer = userTaskFormConsumer;
+    }
 
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes)
         throws SAXException {
       if ("process".equalsIgnoreCase(localName)) {
         if (attributes.getValue("name") != null) {
-          processEntity.setName(attributes.getValue("name"));
+          nameConsumer.accept(attributes.getValue("name"));
         }
-      } else if ("serviceTask".equalsIgnoreCase(localName)) {
+      } else if ("userTask".equalsIgnoreCase(localName)
+          || "serviceTask".equalsIgnoreCase(localName)) {
         if (attributes.getValue("name") != null) {
           final ProcessFlowNodeEntity flowNodeEntity =
               new ProcessFlowNodeEntity(attributes.getValue("id"), attributes.getValue("name"));
-          processEntity.getFlowNodes().add(flowNodeEntity);
+          flowNodeConsumer.accept(flowNodeEntity);
+        }
+      } else if ("userTaskForm".equalsIgnoreCase(localName)) {
+        isUserTaskForm = true;
+        if (attributes.getValue("id") != null) {
+          userTaskFormId = attributes.getValue("id");
         }
       }
     }
 
-    public ProcessEntity getProcessEntity() {
-      return processEntity;
+    @Override
+    public void endElement(final String uri, final String localName, final String qName)
+        throws SAXException {
+      if ("userTaskForm".equalsIgnoreCase(localName)) {
+        userTaskFormConsumer.accept(userTaskFormId, userTaskFormJson.toString());
+        isUserTaskForm = false;
+        userTaskFormJson = new StringBuilder();
+      }
+    }
+
+    @Override
+    public void characters(final char[] ch, final int start, final int length) throws SAXException {
+      if (isUserTaskForm) {
+        userTaskFormJson.append(new String(ch, start, length));
+      }
     }
   }
 }

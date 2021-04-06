@@ -17,5 +17,7 @@ query getTasks($query: TaskQuery!){
         taskState
         sortValues
         isFirst
+        formKey
+        processDefinitionId
     }
 }

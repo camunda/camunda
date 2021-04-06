@@ -13,6 +13,7 @@ import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
 import io.zeebe.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import java.io.IOException;
@@ -49,7 +50,7 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
         Bpmn.createExecutableProcess(bpmnProcessId)
             .startEvent("start")
             .serviceTask(flowNodeBpmnId)
-            .zeebeJobType(tasklistProperties.getImporter().getJobType())
+            .zeebeJobType(Protocol.USER_TASK_JOB_TYPE)
             .zeebeInput("=5", "overwrittenVar")
             .zeebeInput("=upperLevelVar*2", "innerVar")
             .endEvent()
@@ -107,7 +108,7 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
             .embeddedSubProcess()
             .startEvent()
             .serviceTask(flowNodeBpmnId)
-            .zeebeJobType(tasklistProperties.getImporter().getJobType())
+            .zeebeJobType(Protocol.USER_TASK_JOB_TYPE)
             .zeebeInput("=333", "taskVar")
             .endEvent()
             .subProcessDone()
@@ -149,7 +150,7 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
         Bpmn.createExecutableProcess(bpmnProcessId)
             .startEvent("start")
             .serviceTask(flowNodeBpmnId)
-            .zeebeJobType(tasklistProperties.getImporter().getJobType())
+            .zeebeJobType(Protocol.USER_TASK_JOB_TYPE)
             .zeebeInput("=333", "taskVar")
             .multiInstance()
             .sequential()

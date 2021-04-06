@@ -23,6 +23,7 @@ import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.entities.TaskState;
 import io.zeebe.tasklist.property.TasklistProperties;
@@ -116,7 +117,7 @@ public class TasklistTester {
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .serviceTask(flowNodeBpmnId)
-            .zeebeJobType(tasklistProperties.getImporter().getJobType())
+            .zeebeJobType(Protocol.USER_TASK_JOB_TYPE)
             .endEvent()
             .done();
     processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
@@ -195,6 +196,13 @@ public class TasklistTester {
 
   public String get(String path) {
     return graphQLResponse.get(path);
+  }
+
+  public GraphQLResponse getForm(String id) throws IOException {
+    final ObjectNode args = objectMapper.createObjectNode();
+    args.put("id", id).put("processDefinitionId", processDefinitionKey);
+    graphQLResponse = graphQLTestTemplate.perform("graphql/formIT/get-form.graphql", args);
+    return graphQLResponse;
   }
 
   public TasklistTester claimTask(String claimRequest) {

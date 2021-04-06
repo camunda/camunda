@@ -13,9 +13,8 @@ public class FormIndex extends AbstractIndexDescriptor {
   public static final String INDEX_NAME = "form";
 
   public static final String ID = "id";
-  public static final String KEY = "key";
-  public static final String FORM_KEY = "formKey";
-  public static final String PROCESS_ID = "processId";
+  public static final String BPMN_ID = "bpmnId";
+  public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String SCHEMA = "schema";
 
   @Override

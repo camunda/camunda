@@ -9,16 +9,16 @@ import java.util.Objects;
 
 public class FormEntity extends TasklistEntity<FormEntity> {
 
-  private String formKey;
-  private String processId;
+  private String bpmnId;
+  private String processDefinitionId;
   private String schema;
 
   public FormEntity() {}
 
-  public FormEntity(String processId, String formKey, String schema) {
-    setId(createId(processId, formKey));
-    this.formKey = formKey;
-    this.processId = processId;
+  public FormEntity(String processDefinitionId, String bpmnId, String schema) {
+    setId(createId(processDefinitionId, bpmnId));
+    this.bpmnId = bpmnId;
+    this.processDefinitionId = processDefinitionId;
     this.schema = schema;
   }
 
@@ -31,13 +31,31 @@ public class FormEntity extends TasklistEntity<FormEntity> {
     return this;
   }
 
+  public String getBpmnId() {
+    return bpmnId;
+  }
+
+  public FormEntity setBpmnId(final String bpmnId) {
+    this.bpmnId = bpmnId;
+    return this;
+  }
+
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
+  }
+
+  public FormEntity setProcessDefinitionId(final String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
+    return this;
+  }
+
   public static String createId(String processId, String formKey) {
     return String.format("%s_%s", processId, formKey);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), formKey, processId, schema);
+    return Objects.hash(super.hashCode(), bpmnId, processDefinitionId, schema);
   }
 
   @Override
@@ -52,8 +70,8 @@ public class FormEntity extends TasklistEntity<FormEntity> {
       return false;
     }
     final FormEntity that = (FormEntity) o;
-    return Objects.equals(formKey, that.formKey)
-        && Objects.equals(processId, that.processId)
+    return Objects.equals(bpmnId, that.bpmnId)
+        && Objects.equals(processDefinitionId, that.processDefinitionId)
         && Objects.equals(schema, that.schema);
   }
 
@@ -61,10 +79,10 @@ public class FormEntity extends TasklistEntity<FormEntity> {
   public String toString() {
     return "FormEntity{"
         + "formKey='"
-        + formKey
+        + bpmnId
         + '\''
         + ", processId='"
-        + processId
+        + processDefinitionId
         + '\''
         + ", schema='"
         + schema

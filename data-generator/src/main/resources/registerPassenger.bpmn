@@ -1,29 +1,98 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.9.1">
   <bpmn:process id="flightRegistration" name="Flight registration" isExecutable="true">
+     <bpmn:extensionElements>
+      <zeebe:userTaskForm id="userTaskForm_1">
+{
+ &quot;components&quot;: [
+   {
+	 &quot;key&quot;: &quot;firstName&quot;,
+	 &quot;label&quot;: &quot;First name&quot;,
+	 &quot;type&quot;: &quot;textfield&quot;,
+	 &quot;validate&quot;: {
+	   &quot;required&quot;: true
+	 }
+   },
+   {
+	 &quot;key&quot;: &quot;lastName&quot;,
+	 &quot;label&quot;: &quot;Last name&quot;,
+	 &quot;type&quot;: &quot;textfield&quot;,
+	 &quot;validate&quot;: {
+	   &quot;required&quot;: true
+	 }
+   },
+   {
+	 &quot;key&quot;: &quot;passNo&quot;,
+	 &quot;label&quot;: &quot;Passport number&quot;,
+	 &quot;type&quot;: &quot;textfield&quot;,
+	 &quot;validate&quot;: {
+	   &quot;required&quot;: true
+	 }
+   },
+   {
+	 &quot;key&quot;: &quot;ticketNo&quot;,
+	 &quot;label&quot;: &quot;Ticket number&quot;,
+	 &quot;type&quot;: &quot;textfield&quot;,
+	 &quot;validate&quot;: {
+	   &quot;required&quot;: true
+	 }
+   },
+   {
+	 &quot;key&quot;: &quot;registered&quot;,
+	 &quot;label&quot;: &quot;Registered successfully&quot;,
+	 &quot;type&quot;: &quot;textfield&quot;
+   }
+ ],
+ &quot;type&quot;: &quot;default&quot;
+}
+      </zeebe:userTaskForm>
+      <zeebe:userTaskForm id="userTaskForm_2">
+      {
+       &quot;components&quot;: [
+         {
+      	 &quot;key&quot;: &quot;ticketNo&quot;,
+      	 &quot;label&quot;: &quot;Ticket number&quot;,
+      	 &quot;type&quot;: &quot;textfield&quot;,
+      	 &quot;validate&quot;: {
+      	   &quot;required&quot;: true
+      	 }
+         },
+         {
+      	 &quot;key&quot;: &quot;cabinBagRegistered&quot;,
+      	 &quot;label&quot;: &quot;Cabin bag registered&quot;,
+      	 &quot;type&quot;: &quot;textfield&quot;
+      	 &quot;validate&quot;: {
+               	   &quot;required&quot;: true
+               	 }
+         }
+       ],
+       &quot;type&quot;: &quot;default&quot;
+      }
+            </zeebe:userTaskForm>
+    </bpmn:extensionElements>
     <bpmn:startEvent id="StartEvent_1" name="Passenger arrived on registration desk">
       <bpmn:outgoing>SequenceFlow_0kkr7lf</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:serviceTask id="registerPassenger" name="Register the passenger">
+    <bpmn:userTask id="registerPassenger" name="Register the passenger">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="humanTask" />
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:userTaskForm_1" />
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_0kkr7lf</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1n3aihd</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:userTask>
     <bpmn:sequenceFlow id="SequenceFlow_0kkr7lf" sourceRef="StartEvent_1" targetRef="registerPassenger" />
     <bpmn:exclusiveGateway id="ExclusiveGateway_0dhe4io" name="Passenger has luggage?">
       <bpmn:incoming>SequenceFlow_04tw8w0</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_06gtrty</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_15n7i0o</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:serviceTask id="registerCabinBag" name="Register cabin bag">
+    <bpmn:userTask id="registerCabinBag" name="Register cabin bag">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="humanTask" />
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:userTaskForm_2" />
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_1n3aihd</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_04tw8w0</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:userTask>
     <bpmn:sequenceFlow id="SequenceFlow_1n3aihd" sourceRef="registerPassenger" targetRef="registerCabinBag" />
     <bpmn:sequenceFlow id="SequenceFlow_04tw8w0" sourceRef="registerCabinBag" targetRef="ExclusiveGateway_0dhe4io" />
     <bpmn:serviceTask id="determineLuggageWeight" name="Determine luggage weight">

@@ -6,7 +6,6 @@
 package io.zeebe.tasklist.webapp.graphql.query;
 
 import graphql.kickstart.tools.GraphQLQueryResolver;
-import graphql.schema.DataFetchingEnvironment;
 import io.zeebe.tasklist.webapp.es.FormReader;
 import io.zeebe.tasklist.webapp.graphql.entity.FormDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +16,7 @@ public final class FormQueryResolver implements GraphQLQueryResolver {
 
   @Autowired private FormReader formReader;
 
-  public FormDTO form(String id, DataFetchingEnvironment dataFetchingEnvironment) {
-    return formReader.getFormDTO(id);
+  public FormDTO form(String id, String processDefinitionId) {
+    return formReader.getFormDTO(id, processDefinitionId);
   }
 }

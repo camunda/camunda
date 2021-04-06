@@ -1,13 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.9.1">
   <bpmn:process id="orderProcess" name="Order process" isExecutable="true">
+    <bpmn:extensionElements>
+        <zeebe:userTaskForm id="userTaskForm:checkPayment">
+  {
+   &quot;components&quot;: [
+     {
+  	 &quot;key&quot;: &quot;clientNo&quot;,
+  	 &quot;label&quot;: &quot;Client number&quot;,
+  	 &quot;type&quot;: &quot;textfield&quot;,
+  	 &quot;validate&quot;: {
+  	   &quot;required&quot;: true
+  	 }
+     },
+     {
+  	 &quot;key&quot;: &quot;orderNo&quot;,
+  	 &quot;label&quot;: &quot;Order number&quot;,
+  	 &quot;type&quot;: &quot;textfield&quot;,
+  	 &quot;validate&quot;: {
+  	   &quot;required&quot;: true
+  	 }
+     },
+     {
+  	 &quot;key&quot;: &quot;paid&quot;,
+  	 &quot;label&quot;: &quot;Order is paid?&quot;,
+  	 &quot;type&quot;: &quot;textfield&quot;,
+  	 &quot;validate&quot;: {
+  	   &quot;required&quot;: true
+  	 }
+     }
+   ],
+   &quot;type&quot;: &quot;default&quot;
+  }
+        </zeebe:userTaskForm>
+      </bpmn:extensionElements>
     <bpmn:startEvent id="StartEvent_1" name="Order received">
       <bpmn:outgoing>SequenceFlow_0j6tsnn</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="SequenceFlow_0j6tsnn" sourceRef="StartEvent_1" targetRef="Task_1b1r7ow" />
-    <bpmn:serviceTask id="Task_1b1r7ow" name="Check payment">
+    <bpmn:userTask id="Task_1b1r7ow" name="Check payment">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="humanTask" />
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:userTaskForm:checkPayment" />
         <zeebe:ioMapping>
           <zeebe:input source="=orderNo" target="orderId" />
           <zeebe:input source="=total" target="amountToPay" />
@@ -16,7 +49,7 @@
       <bpmn:incoming>SequenceFlow_0j6tsnn</bpmn:incoming>
       <bpmn:incoming>SequenceFlow_1q6ade7</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1s6g17c</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:userTask>
     <bpmn:serviceTask id="Task_162x79i" name="Ship Articles">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="humanTask" />

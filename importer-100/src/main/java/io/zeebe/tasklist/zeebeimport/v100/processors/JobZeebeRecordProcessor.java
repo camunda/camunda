@@ -11,6 +11,7 @@ import static io.zeebe.tasklist.zeebeimport.v100.record.Intent.COMPLETED;
 import static io.zeebe.tasklist.zeebeimport.v100.record.Intent.CREATED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.entities.TaskState;
@@ -45,7 +46,7 @@ public class JobZeebeRecordProcessor {
 
   public void processJobRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     final JobRecordValueImpl recordValue = (JobRecordValueImpl) record.getValue();
-    if (recordValue.getType().equals(tasklistProperties.getImporter().getJobType())) {
+    if (recordValue.getType().equals(Protocol.USER_TASK_JOB_TYPE)) {
       bulkRequest.add(persistTask(record, recordValue));
     }
     // else skip task
@@ -53,6 +54,7 @@ public class JobZeebeRecordProcessor {
 
   private UpdateRequest persistTask(Record record, JobRecordValueImpl recordValue)
       throws PersistenceException {
+    final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
     final TaskEntity entity =
         new TaskEntity()
             .setId(String.valueOf(record.getKey()))
@@ -62,7 +64,11 @@ public class JobZeebeRecordProcessor {
             .setFlowNodeInstanceId(String.valueOf(recordValue.getElementInstanceKey()))
             .setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()))
             .setBpmnProcessId(recordValue.getBpmnProcessId())
-            .setProcessId(String.valueOf(recordValue.getProcessDefinitionKey()));
+            .setProcessDefinitionId(processDefinitionId);
+    final String formKey =
+        recordValue.getCustomHeaders().get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME);
+    entity.setFormKey(formKey);
+
     final String taskState = record.getIntent().name();
     LOGGER.debug("JobState {}", taskState);
     if (taskState.equals(CANCELED.name())) {

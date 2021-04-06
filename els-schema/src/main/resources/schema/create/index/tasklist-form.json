@@ -5,10 +5,10 @@
       "id": {
         "type": "keyword"
       },
-      "processId": {
+      "processDefinitionId": {
         "type": "keyword"
       },
-      "formKey": {
+      "bpmnId": {
         "type": "keyword"
       },
       "schema": {

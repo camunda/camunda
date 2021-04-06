@@ -38,13 +38,13 @@
 			"bpmnProcessId": {
 				"type": "keyword"
 			},
-			"processId": {
+			"processDefinitionId": {
 				"type": "keyword"
 			},
 			"assignee": {
 				"type": "keyword"
 			},
-			"formId": {
+			"formKey": {
 				"type": "keyword"
 			}
 

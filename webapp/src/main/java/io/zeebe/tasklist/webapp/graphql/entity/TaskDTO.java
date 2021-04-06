@@ -22,7 +22,7 @@ public final class TaskDTO {
 
   private String flowNodeInstanceId;
   /** Field is used to resolve process name. */
-  private String processId;
+  private String processDefinitionId;
   /** Fallback value for process name. */
   private String bpmnProcessId;
 
@@ -37,7 +37,7 @@ public final class TaskDTO {
 
   private boolean isFirst = false;
 
-  private String formId;
+  private String formKey;
 
   public String getId() {
     return id;
@@ -75,12 +75,12 @@ public final class TaskDTO {
     return this;
   }
 
-  public String getProcessId() {
-    return processId;
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
   }
 
-  public TaskDTO setProcessId(String processId) {
-    this.processId = processId;
+  public TaskDTO setProcessDefinitionId(String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
     return this;
   }
 
@@ -147,12 +147,12 @@ public final class TaskDTO {
     return this;
   }
 
-  public String getFormId() {
-    return formId;
+  public String getFormKey() {
+    return formKey;
   }
 
-  public TaskDTO setFormId(final String formId) {
-    this.formId = formId;
+  public TaskDTO setFormKey(final String formKey) {
+    this.formKey = formKey;
     return this;
   }
 
@@ -172,10 +172,10 @@ public final class TaskDTO {
             .setTaskState(taskEntity.getState())
             .setAssigneeUsername(taskEntity.getAssignee())
             .setBpmnProcessId(taskEntity.getBpmnProcessId())
-            .setProcessId(taskEntity.getProcessId())
+            .setProcessDefinitionId(taskEntity.getProcessDefinitionId())
             .setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId())
             .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
-            .setFormId(taskEntity.getFormId());
+            .setFormKey(taskEntity.getFormKey());
     if (sortValues != null) {
       taskDTO.setSortValues(toArrayOfStrings(sortValues));
     }
@@ -196,14 +196,14 @@ public final class TaskDTO {
         && Objects.equals(processInstanceId, taskDTO.processInstanceId)
         && Objects.equals(flowNodeBpmnId, taskDTO.flowNodeBpmnId)
         && Objects.equals(flowNodeInstanceId, taskDTO.flowNodeInstanceId)
-        && Objects.equals(processId, taskDTO.processId)
+        && Objects.equals(processDefinitionId, taskDTO.processDefinitionId)
         && Objects.equals(bpmnProcessId, taskDTO.bpmnProcessId)
         && Objects.equals(creationTime, taskDTO.creationTime)
         && Objects.equals(completionTime, taskDTO.completionTime)
         && Objects.equals(assigneeUsername, taskDTO.assigneeUsername)
         && taskState == taskDTO.taskState
         && Arrays.equals(sortValues, taskDTO.sortValues)
-        && Objects.equals(formId, taskDTO.formId);
+        && Objects.equals(formKey, taskDTO.formKey);
   }
 
   @Override
@@ -214,14 +214,14 @@ public final class TaskDTO {
             processInstanceId,
             flowNodeBpmnId,
             flowNodeInstanceId,
-            processId,
+            processDefinitionId,
             bpmnProcessId,
             creationTime,
             completionTime,
             assigneeUsername,
             taskState,
             isFirst,
-            formId);
+            formKey);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
@@ -242,7 +242,7 @@ public final class TaskDTO {
         + flowNodeInstanceId
         + '\''
         + ", processId='"
-        + processId
+        + processDefinitionId
         + '\''
         + ", bpmnProcessId='"
         + bpmnProcessId
@@ -263,7 +263,7 @@ public final class TaskDTO {
         + ", isFirst="
         + isFirst
         + ", formId='"
-        + formId
+        + formKey
         + '\''
         + '}';
   }

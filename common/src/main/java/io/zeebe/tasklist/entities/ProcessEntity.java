@@ -7,6 +7,7 @@ package io.zeebe.tasklist.entities;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
 
@@ -33,15 +34,7 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
   }
 
   @Override
-  public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (name != null ? name.hashCode() : 0);
-    result = 31 * result + (flowNodes != null ? flowNodes.hashCode() : 0);
-    return result;
-  }
-
-  @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -53,10 +46,11 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
     }
 
     final ProcessEntity that = (ProcessEntity) o;
+    return Objects.equals(name, that.name) && Objects.equals(flowNodes, that.flowNodes);
+  }
 
-    if (name != null ? !name.equals(that.name) : that.name != null) {
-      return false;
-    }
-    return flowNodes != null ? flowNodes.equals(that.flowNodes) : that.flowNodes == null;
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), name, flowNodes);
   }
 }

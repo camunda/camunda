@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.tasklist.entities.TaskState;
 import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
@@ -326,6 +327,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
             .processIsDeployed()
             .and()
             .startProcessInstances(bpmnProcessId, 5)
+            .waitUntil()
+            .tasksAreCreated(flowNodeBpmnId, 5)
             .when()
             .cancelProcessInstance()
             .and()
@@ -624,7 +627,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
           Bpmn.createExecutableProcess(bpmnProcessId)
               .startEvent()
               .serviceTask(flowNodeBpmnId)
-              .zeebeJobType(tasklistProperties.getImporter().getJobType())
+              .zeebeJobType(Protocol.USER_TASK_JOB_TYPE)
               .endEvent()
               .done();
       tester
@@ -654,7 +657,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
             .startEvent("start")
             .serviceTask(taskId)
             .name(taskName)
-            .zeebeJobType(tasklistProperties.getImporter().getJobType())
+            .zeebeJobType(Protocol.USER_TASK_JOB_TYPE)
             .endEvent()
             .done();
 
@@ -689,7 +692,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
             .startEvent("start")
             .serviceTask(taskId)
             // .name("Task A")
-            .zeebeJobType(tasklistProperties.getImporter().getJobType())
+            .zeebeJobType(Protocol.USER_TASK_JOB_TYPE)
             .endEvent()
             .done();
 

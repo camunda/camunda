@@ -21,13 +21,17 @@ type Task {
     # Flag to show that the task is first in current filter
     isFirst: Boolean
     # Reference to the task form
-    formId: String
+    formKey: String
+    #Reference to process definition
+    processDefinitionId: String
 }
 
-#Describes task form
+#Describes task embedded form
 type Form {
-    #The unique identifier of the form
+    #The unique identifier of the embedded form within one process
     id: String!
+    #Reference to process definition
+    processDefinitionId: String!
     #Form content
     schema: String!
 }
@@ -81,8 +85,8 @@ type Query {
     task(id: String!): Task!
     # Get currently logged in user.
     currentUser: User!
-    # Get task form by id
-    form(id: String!): Form
+    # Get task form by id and processDefinitionId
+    form(id: String!, processDefinitionId: String!): Form
 }
 # What can be changed.
 type Mutation {

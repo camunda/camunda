@@ -12,6 +12,16 @@
           }
         }
       },
+      "userTaskForms": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "definition": {
+            "type": "text"
+          }
+        }
+      },
       "id": {
         "type": "keyword"
       },

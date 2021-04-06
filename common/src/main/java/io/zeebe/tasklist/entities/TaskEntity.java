@@ -11,7 +11,7 @@ import java.util.Objects;
 public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
 
   private String bpmnProcessId;
-  private String processId;
+  private String processDefinitionId;
   private String flowNodeBpmnId;
   private String flowNodeInstanceId;
   private String processInstanceId;
@@ -19,7 +19,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
   private OffsetDateTime completionTime;
   private TaskState state;
   private String assignee;
-  private String formId;
+  private String formKey;
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
@@ -30,12 +30,12 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
-  public String getProcessId() {
-    return processId;
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
   }
 
-  public TaskEntity setProcessId(String processId) {
-    this.processId = processId;
+  public TaskEntity setProcessDefinitionId(String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
     return this;
   }
 
@@ -102,12 +102,12 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
-  public String getFormId() {
-    return formId;
+  public String getFormKey() {
+    return formKey;
   }
 
-  public TaskEntity setFormId(final String formId) {
-    this.formId = formId;
+  public TaskEntity setFormKey(final String formId) {
+    this.formKey = formId;
     return this;
   }
 
@@ -124,7 +124,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     }
     final TaskEntity that = (TaskEntity) o;
     return Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(processId, that.processId)
+        && Objects.equals(processDefinitionId, that.processDefinitionId)
         && Objects.equals(flowNodeBpmnId, that.flowNodeBpmnId)
         && Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId)
         && Objects.equals(processInstanceId, that.processInstanceId)
@@ -132,7 +132,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         && Objects.equals(completionTime, that.completionTime)
         && state == that.state
         && Objects.equals(assignee, that.assignee)
-        && Objects.equals(formId, that.formId);
+        && Objects.equals(formKey, that.formKey);
   }
 
   @Override
@@ -140,7 +140,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return Objects.hash(
         super.hashCode(),
         bpmnProcessId,
-        processId,
+        processDefinitionId,
         flowNodeBpmnId,
         flowNodeInstanceId,
         processInstanceId,
@@ -148,6 +148,6 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         completionTime,
         state,
         assignee,
-        formId);
+        formKey);
   }
 }

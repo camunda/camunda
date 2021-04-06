@@ -51,7 +51,7 @@ public class TaskResolver implements GraphQLResolver<TaskDTO> {
   }
 
   public String getProcessName(TaskDTO task) {
-    final String processName = processCache.getProcessName(task.getProcessId());
+    final String processName = processCache.getProcessName(task.getProcessDefinitionId());
     if (processName == null) {
       return task.getBpmnProcessId();
     }
@@ -59,7 +59,8 @@ public class TaskResolver implements GraphQLResolver<TaskDTO> {
   }
 
   public String getName(TaskDTO task) {
-    final String taskName = processCache.getTaskName(task.getProcessId(), task.getFlowNodeBpmnId());
+    final String taskName =
+        processCache.getTaskName(task.getProcessDefinitionId(), task.getFlowNodeBpmnId());
     if (taskName == null) {
       return task.getFlowNodeBpmnId();
     }

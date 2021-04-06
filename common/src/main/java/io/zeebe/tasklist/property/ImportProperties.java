@@ -26,8 +26,6 @@ public class ImportProperties {
   /** Indicates, whether loading of Zeebe data should start on startup. */
   private boolean startLoadingDataOnStartup = true;
 
-  private String jobType = "humanTask";
-
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;
   }
@@ -66,13 +64,5 @@ public class ImportProperties {
 
   public void setSchedulerBackoff(int schedulerBackoff) {
     this.schedulerBackoff = schedulerBackoff;
-  }
-
-  public String getJobType() {
-    return jobType;
-  }
-
-  public void setJobType(String jobType) {
-    this.jobType = jobType;
   }
 }

@@ -12,6 +12,8 @@ public class FormDTO {
 
   private String id;
 
+  private String processDefinitionId;
+
   private String schema;
 
   public String getId() {
@@ -20,6 +22,15 @@ public class FormDTO {
 
   public FormDTO setId(final String id) {
     this.id = id;
+    return this;
+  }
+
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
+  }
+
+  public FormDTO setProcessDefinitionId(final String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
     return this;
   }
 
@@ -33,12 +44,10 @@ public class FormDTO {
   }
 
   public static FormDTO createFrom(FormEntity formEntity) {
-    return new FormDTO().setId(formEntity.getId()).setSchema(formEntity.getSchema());
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, schema);
+    return new FormDTO()
+        .setId(formEntity.getBpmnId())
+        .setProcessDefinitionId(formEntity.getProcessDefinitionId())
+        .setSchema(formEntity.getSchema());
   }
 
   @Override
@@ -50,6 +59,13 @@ public class FormDTO {
       return false;
     }
     final FormDTO formDTO = (FormDTO) o;
-    return Objects.equals(id, formDTO.id) && Objects.equals(schema, formDTO.schema);
+    return Objects.equals(id, formDTO.id)
+        && Objects.equals(processDefinitionId, formDTO.processDefinitionId)
+        && Objects.equals(schema, formDTO.schema);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, processDefinitionId, schema);
   }
 }
