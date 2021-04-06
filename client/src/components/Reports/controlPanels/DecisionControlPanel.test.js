@@ -211,7 +211,7 @@ it('should not crash when no decisionDefinition is selected', () => {
 it('should show the number of decision instances in the current Filter', () => {
   const node = shallow(<DecisionControlPanel {...props} />);
 
-  expect(node).toIncludeText('Displaying 3 of 5 evaluations');
+  expect(node).toIncludeText('Displaying data from 3 of 5 evaluations');
 });
 
 it('should allow collapsing sections', () => {

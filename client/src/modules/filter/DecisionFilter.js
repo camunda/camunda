@@ -152,7 +152,7 @@ export default class DecisionFilter extends React.Component {
           </Dropdown>
         </div>
         {filters.length === 0 && (
-          <p className="emptyMessage">{t('common.filter.allVisible.instance')}</p>
+          <p className="emptyMessage">{t('common.filter.allVisible.decision')}</p>
         )}
         {filters.length > 1 && <p className="linkingTip">{t('common.filter.linkingTip')}</p>}
         <FilterList

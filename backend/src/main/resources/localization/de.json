@@ -260,19 +260,17 @@
       "appliedFilters": "Angewandte Filter",
       "reportFiltersHeading": "Berichtsfilter",
       "additionalFiltersHeading": "Dashboardfilter",
-      "label": "Zeigt Daten von {count} Instanz.",
-      "label-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanz.",
-      "label-plural": "Zeigt Daten von {count} Instanzen.",
-      "label-plural-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanzen.",
-      "reportFilters": "Zeigt Daten von {count} aus {totalCount} Instanz",
-      "reportFilters-plural": "Zeigt Daten von {count} aus {totalCount} Instanzen",
       "process": {
-        "label": "Zeigt Daten von {count} aus {totalCount} Instanz",
-        "label-plural": "Zeigt Daten von {count} aus {totalCount} Instanzen"
+        "label": "Zeigt Daten von {count} Instanz.",
+        "label-plural": "Zeigt Daten von {count} Instanzen.",
+        "label-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanz.",
+        "label-plural-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanzen."
       },
       "decision": {
-        "label": "Zeigt Daten von {count} aus {totalCount} Evaluierung",
-        "label-plural": "Zeigt Daten von {count} aus {totalCount} Evaluierungen"
+        "label": "Zeigt Daten von {count} Evaluierung.",
+        "label-plural": "Zeigt Daten von {count} Evaluierungen.",
+        "label-withFilter": "Zeigt Daten von {count} aus {totalCount} Evaluierung.",
+        "label-plural-withFilter": "Zeigt Daten von {count} aus {totalCount} Evaluierungen."
       }
     },
     "view": {
@@ -996,16 +994,17 @@
       "dropdownLabel": {
         "instance": "Prozessinstanzen filtern",
         "view": "Prozessknoten-Daten filtern",
-        "decision": "Entscheidungsinstanzen filtern"
+        "decision": "Entscheidungsevaluierungen filtern"
       },
       "allVisible": {
         "instance": "Alle Instanzen sichtbar",
-        "view": "Alle Prozessknoten-Daten sichtbar"
+        "view": "Alle Prozessknoten-Daten sichtbar",
+        "decision": "Alle Evaluierungen sichtbar"
       },
       "linkingTip": "Filter sind durch 'und' Logik verbunden",
       "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind.",
       "instanceFilter": "Prozessinstanzen Filter",
-      "decisionFilter": "Entscheidungsinstanzen Filter",
+      "decisionFilter": "Entscheidungsevaluierungen Filter",
       "flowNodeFilter": "Prozessknoten-Daten Filter"
     },
     "definitionSelection": {

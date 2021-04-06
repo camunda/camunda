@@ -375,7 +375,7 @@ export default withErrorHandling(
               {t(
                 `report.instanceCount.process.label${
                   result.instanceCountWithoutFilters !== 1 ? '-plural' : ''
-                }`,
+                }-withFilter`,
                 {count: result.instanceCount, totalCount: result.instanceCountWithoutFilters}
               )}
             </div>

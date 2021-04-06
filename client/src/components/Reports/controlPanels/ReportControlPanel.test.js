@@ -431,7 +431,7 @@ it('should not reset process part on definition change if flow nodes exist', asy
 it('should show the number of process instances in the current Filter', () => {
   const node = shallow(<ReportControlPanel {...props} />);
 
-  expect(node).toIncludeText('Displaying 3 of 5 instances');
+  expect(node).toIncludeText('Displaying data from 3 of 5 instances');
 });
 
 it('should show a measure selection for views that have a measure', () => {

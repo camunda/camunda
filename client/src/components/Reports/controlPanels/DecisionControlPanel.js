@@ -257,7 +257,7 @@ export class DecisionControlPanel extends React.Component {
             {t(
               `report.instanceCount.decision.label${
                 result.instanceCountWithoutFilters !== 1 ? '-plural' : ''
-              }`,
+              }-withFilter`,
               {count: result.instanceCount, totalCount: result.instanceCountWithoutFilters}
             )}
           </div>

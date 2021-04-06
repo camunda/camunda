@@ -260,19 +260,17 @@
       "appliedFilters": "Applied filters",
       "reportFiltersHeading": "Report level filters",
       "additionalFiltersHeading": "Dashboard level filters",
-      "label": "Displaying data from {count} instance.",
-      "label-withFilter": "Displaying data from {count} of {totalCount} instance.",
-      "label-plural": "Displaying data from {count} instances.",
-      "label-plural-withFilter": "Displaying data from {count} of {totalCount} instances.",
-      "reportFilters": "Displaying {count} of {totalCount} instance",
-      "reportFilters-plural": "Displaying {count} of {totalCount} instances",
       "process": {
-        "label": "Displaying {count} of {totalCount} instance",
-        "label-plural": "Displaying {count} of {totalCount} instances"
+        "label": "Displaying data from {count} instance.",
+        "label-plural": "Displaying data from {count} instances.",
+        "label-withFilter": "Displaying data from {count} of {totalCount} instance.",
+        "label-plural-withFilter": "Displaying data from {count} of {totalCount} instances."
       },
       "decision": {
-        "label": "Displaying {count} of {totalCount} evaluation",
-        "label-plural": "Displaying {count} of {totalCount} evaluations"
+        "label": "Displaying data from {count} evaluation.",
+        "label-plural": "Displaying data from {count} evaluations.",
+        "label-withFilter": "Displaying data from {count} of {totalCount} evaluation.",
+        "label-plural-withFilter": "Displaying data from {count} of {totalCount} evaluations."
       }
     },
     "view": {
@@ -996,11 +994,12 @@
       "dropdownLabel": {
         "instance": "Filter Process Instances",
         "view": "Filter Flow Nodes",
-        "decision": "Filter Decision Instances"
+        "decision": "Filter Decision Evaluations"
       },
       "allVisible": {
         "instance": "All instances visible",
-        "view": "All Flow Node data visible"
+        "view": "All Flow Node data visible",
+        "decision": "All evaluations visible"
       },
       "linkingTip": "Filters are linked by 'and' logic",
       "incompatibleFilters": "No data shown due to incompatible filters",
