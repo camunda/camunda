@@ -27,6 +27,7 @@ import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.record.value.MessageRecordValue;
 import io.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
@@ -64,7 +65,8 @@ public class CompactRecordLogger {
           entry("DISTRIBUTED", "DISTR"),
           entry("VARIABLE", "VAR"),
           entry("ELEMENT_", ""),
-          entry("_ELEMENT", ""));
+          entry("_ELEMENT", ""),
+          entry("EVENT", "EVNT"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -99,6 +101,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.VARIABLE, this::summarizeVariable);
     valueLoggers.put(ValueType.TIMER, this::summarizeTimer);
     valueLoggers.put(ValueType.ERROR, this::summarizeError);
+    valueLoggers.put(ValueType.PROCESS_EVENT, this::summarizeProcessEvent);
     // TODO please extend list
   }
 
@@ -261,6 +264,15 @@ public class CompactRecordLogger {
     final var formattedInstanceKey = processInstanceKey < 0 ? "?" : shortenKey(processInstanceKey);
 
     return String.format(" in <process %s[%s]>", formattedProcessId, formattedInstanceKey);
+  }
+
+  private String summarizeProcessInformation(
+      final long processDefinitionKey, final long processInstanceKey) {
+    final var formattedDefinitionKey =
+        processDefinitionKey < 0 ? "?" : shortenKey(processDefinitionKey);
+    final var formattedInstanceKey = processInstanceKey < 0 ? "?" : shortenKey(processInstanceKey);
+
+    return String.format(" in <process %s[%s]>", formattedDefinitionKey, formattedInstanceKey);
   }
 
   private String summarizeVariables(final Map<String, Object> variables) {
@@ -525,6 +537,14 @@ public class CompactRecordLogger {
         .append(StringUtils.abbreviate(value.getStacktrace(), "..", 100))
         .append(")")
         .toString();
+  }
+
+  private String summarizeProcessEvent(final Record<?> record) {
+    final ProcessEventRecordValue value = (ProcessEventRecordValue) record.getValue();
+    return summarizeElementInformation(value.getTargetElementId(), value.getScopeKey())
+        + summarizeProcessInformation(
+            value.getProcessDefinitionKey(), value.getProcessInstanceKey())
+        + summarizeVariables(value.getVariables());
   }
 
   private String shortenKey(final long input) {
