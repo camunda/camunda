@@ -36,7 +36,8 @@ public interface Intent {
           ProcessInstanceCreationIntent.class,
           ErrorIntent.class,
           ProcessIntent.class,
-          DeploymentDistributionIntent.class);
+          DeploymentDistributionIntent.class,
+          ProcessEventIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN =
       new Intent() {
@@ -91,6 +92,8 @@ public interface Intent {
         return ProcessIntent.from(intent);
       case DEPLOYMENT_DISTRIBUTION:
         return DeploymentDistributionIntent.from(intent);
+      case PROCESS_EVENT:
+        return ProcessEventIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -138,6 +141,8 @@ public interface Intent {
         return ProcessIntent.valueOf(intent);
       case DEPLOYMENT_DISTRIBUTION:
         return DeploymentDistributionIntent.valueOf(intent);
+      case PROCESS_EVENT:
+        return ProcessEventIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
