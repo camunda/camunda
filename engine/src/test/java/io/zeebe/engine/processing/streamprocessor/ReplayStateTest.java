@@ -22,9 +22,9 @@ import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 import org.assertj.core.api.SoftAssertions;
 import org.awaitility.Awaitility;
@@ -170,7 +170,7 @@ public final class ReplayStateTest {
   @Test
   public void shouldRestoreState() {
     // given
-    testCase.process.ifPresent(process -> engine.deployment().withXmlResource(process).deploy());
+    testCase.processes.forEach(process -> engine.deployment().withXmlResource(process).deploy());
 
     final Record<?> finalRecord = testCase.execution.apply(engine);
 
@@ -227,7 +227,7 @@ public final class ReplayStateTest {
 
   private static final class TestCase {
     private final String description;
-    private Optional<BpmnModelInstance> process = Optional.empty();
+    private final List<BpmnModelInstance> processes = new ArrayList<>();
     private Function<EngineRule, Record<?>> execution =
         engine -> RecordingExporter.records().getFirst();
 
@@ -236,7 +236,7 @@ public final class ReplayStateTest {
     }
 
     private TestCase withProcess(final BpmnModelInstance process) {
-      this.process = Optional.of(process);
+      processes.add(process);
       return this;
     }
 
