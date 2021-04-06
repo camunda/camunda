@@ -228,7 +228,7 @@ import:
   #States how often the import index should be stored to Elasticsearch.
   importIndexStorageIntervalInSec: 10
   # the time interval the import backs off from the current tip of the time, to reread potentially missed concurrent writes
-  currentTimeBackoffMilliseconds: 10000
+  currentTimeBackoffMilliseconds: 300000
   # The identity sync enables Optimize to build up a in memory cache containing Optimize authorized users & groups.
   # This data is used in the collection permissions to allow convenient search capabilities
   # and to display member meta-data such as first name, last name or email.
