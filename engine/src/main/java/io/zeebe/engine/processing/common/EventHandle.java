@@ -17,7 +17,9 @@ import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import org.agrona.DirectBuffer;
@@ -26,6 +28,8 @@ public final class EventHandle {
 
   private final ProcessInstanceRecord recordForPICreation = new ProcessInstanceRecord();
   private final ProcessInstanceRecord eventOccurredRecord = new ProcessInstanceRecord();
+  private final ProcessEventRecord processEventRecord = new ProcessEventRecord();
+
   private final KeyGenerator keyGenerator;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
@@ -55,25 +59,31 @@ public final class EventHandle {
         && eventScopeInstanceState.isAcceptingEvent(eventScopeInstance.getKey());
   }
 
-  public boolean triggerEvent(
-      final ElementInstance eventScopeInstance,
-      final ExecutableFlowElement catchEvent,
+  /**
+   * Triggers a process by updating the state with a new {@link ProcessEventIntent#TRIGGERED} event.
+   *
+   * <p>NOTE: this method assumes that the caller already verified that the target can accept new
+   * events!
+   *
+   * @param eventScope the event's scope, whose key is used to index the trigger in {@link
+   *     io.zeebe.engine.state.immutable.EventScopeInstanceState}
+   * @param catchEventId the ID of the element which should be triggered by the event
+   * @param variables the variables/payload of the event (can be empty)
+   */
+  public void triggerProcessEvent(
+      final ElementInstance eventScope,
+      final DirectBuffer catchEventId,
       final DirectBuffer variables) {
-
-    final var canTriggerElement = canTriggerElement(eventScopeInstance);
-    if (canTriggerElement) {
-
-      final var eventScopeKey = eventScopeInstance.getKey();
-      final var elementRecord = eventScopeInstance.getValue();
-
-      final var newElementInstanceKey = keyGenerator.nextKey();
-      eventScopeInstanceState.triggerEvent(
-          eventScopeInstance.getKey(), newElementInstanceKey, catchEvent.getId(), variables);
-
-      activateElement(catchEvent, eventScopeKey, elementRecord);
-    }
-
-    return canTriggerElement;
+    final var newElementInstanceKey = keyGenerator.nextKey();
+    processEventRecord.reset();
+    processEventRecord
+        .setScopeKey(eventScope.getKey())
+        .setTargetElementIdBuffer(catchEventId)
+        .setVariablesBuffer(variables)
+        .setProcessDefinitionKey(eventScope.getValue().getProcessDefinitionKey())
+        .setProcessInstanceKey(eventScope.getValue().getProcessInstanceKey());
+    stateWriter.appendFollowUpEvent(
+        newElementInstanceKey, ProcessEventIntent.TRIGGERED, processEventRecord);
   }
 
   public void activateElement(

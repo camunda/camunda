@@ -13,10 +13,12 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.common.EventHandle;
 import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.common.Failure;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTuple;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
+import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.util.Either;
@@ -45,9 +47,22 @@ public final class BpmnEventPublicationBehavior {
     catchEventAnalyzer = new CatchEventAnalyzer(zeebeState.getProcessState(), elementInstanceState);
   }
 
+  /**
+   * Throws an error event to the given element instance/catch event pair. Only throws the event if
+   * the given element instance is exists and is accepting events, e.g. isn't terminating, wasn't
+   * interrupted, etc.
+   *
+   * @param catchEventTuple a tuple representing a catch event and its current instance
+   */
   public void throwErrorEvent(final CatchEventAnalyzer.CatchEventTuple catchEventTuple) {
-    eventHandle.triggerEvent(
-        catchEventTuple.getElementInstance(), catchEventTuple.getCatchEvent(), NO_VARIABLES);
+    final ElementInstance eventScopeInstance = catchEventTuple.getElementInstance();
+    final ExecutableCatchEvent catchEvent = catchEventTuple.getCatchEvent();
+
+    if (eventHandle.canTriggerElement(eventScopeInstance)) {
+      eventHandle.triggerProcessEvent(eventScopeInstance, catchEvent.getId(), NO_VARIABLES);
+      eventHandle.activateElement(
+          catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue());
+    }
   }
 
   /**
