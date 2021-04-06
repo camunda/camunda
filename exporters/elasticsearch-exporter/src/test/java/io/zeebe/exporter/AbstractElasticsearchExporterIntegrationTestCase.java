@@ -48,7 +48,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
 
   @Before
   public void setUp() {
-    elastic = new ElasticsearchContainer();
+    elastic = new ElasticsearchContainer().withEnv("ES_JAVA_OPTS", "-Xms750m -Xmx750m");
   }
 
   @After
