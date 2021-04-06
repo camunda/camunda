@@ -1,7 +1,0 @@
-{
-	"@type": "processorStep",
-	"indexName": "user",
-	"version": "0.23.0",
-	"order": 2,
-	"content": "{\"set\": {\"field\": \"firstname\",\"value\": \"Demo\"}}"
-}

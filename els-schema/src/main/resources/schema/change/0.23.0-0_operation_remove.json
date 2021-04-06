@@ -1,7 +1,0 @@
-{
-	"@type": "processorStep",
-	"indexName": "operation",
-	"version": "0.23.0",
-	"order": 0,
-	"content": "{\"remove\": {\"field\": [\"startDate\",\"endDate\"]}}"
-}

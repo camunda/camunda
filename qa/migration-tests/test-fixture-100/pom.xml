@@ -8,65 +8,43 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Camunda Operate Migration tests</name>
-  <artifactId>test-migration</artifactId>
+  <name>Camunda Operate Migration tests - test fixture 1.0.0</name>
+  <artifactId>test-fixture-100</artifactId>
 
   <properties>
     <license.header>${project.baseUri}/../../../license/license-header</license.header>
   </properties>
 
   <dependencies>
+
+    <dependency>
+      <groupId>org.camunda.operate</groupId>
+      <artifactId>camunda-operate-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <dependency>
       <groupId>org.camunda.operate</groupId>
       <artifactId>camunda-operate-qa-util</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>test-fixture-100</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-els-schema</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- TEST CONTAINERS -->
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>elasticsearch</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <!-- ELASTICSEARCH -->
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-high-level-client</artifactId>
-      <scope>test</scope>
     </dependency>
 
-
+    <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
     <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
-      <scope>test</scope>
+      <groupId>org.glassfish</groupId>
+      <artifactId>javax.json</artifactId>
     </dependency>
 
   </dependencies>
 
   <build>
+
     <plugins>
 
       <!-- LICENSE PLUGIN -->
@@ -75,24 +53,13 @@
         <artifactId>license-maven-plugin</artifactId>
       </plugin>
 
+      <!-- LICENSE PLUGIN -->
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <forkCount>1</forkCount>
-          <redirectTestOutputToFile>false</redirectTestOutputToFile>
-        </configuration>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
       </plugin>
+
     </plugins>
-    <!--
-			Enabled setting of schema version
-		 -->
-    <testResources>
-      <testResource>
-        <directory>src/test/resources/</directory>
-        <filtering>true</filtering>
-      </testResource>
-    </testResources>
   </build>
 
   <profiles>

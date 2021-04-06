@@ -1,8 +1,0 @@
-{
-	"description": "Calculates a hash over errorMessage",
-	"@type": "processorStep",
-	"indexName": "incident",
-	"version": "0.22.1",
-	"order": 0,
-	"content": "{\"script\": {\"lang\": \"painless\",\"source\": \"ctx.errorMessageHash = ctx.errorMessage.hashCode()\"}}"
-}

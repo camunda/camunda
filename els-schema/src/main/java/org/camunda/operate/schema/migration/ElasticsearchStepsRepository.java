@@ -7,20 +7,21 @@ package org.camunda.operate.schema.migration;
 
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
+import org.camunda.operate.es.RetryElasticsearchClient;
 import org.camunda.operate.exceptions.MigrationException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.indices.MigrationRepositoryIndex;
-import org.camunda.operate.es.RetryElasticsearchClient;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.support.IndicesOptions;
-
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -31,7 +32,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Saves and retrieves Steps from Elasticsearch index.<br>
  * After creation it updates the repository index by looking in classpath folder for new steps.<br>
@@ -80,13 +80,23 @@ public class ElasticsearchStepsRepository implements StepsRepository {
   private List<Step> readStepsFromClasspath() throws IOException {
     List<Step> steps = new ArrayList<>();
     PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-    Resource[] resources = resolver.getResources(ElasticsearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER + "/*" + STEP_FILE_EXTENSION);
+    try {
+      Resource[] resources =
+          resolver.getResources(
+              ElasticsearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER
+                  + "/*"
+                  + STEP_FILE_EXTENSION);
 
-    for(Resource resource: resources) {
-      logger.info("Read step {} ", resource.getFilename());
-      steps.add(readStepFromFile(resource.getInputStream()));
+      for (Resource resource : resources) {
+        logger.info("Read step {} ", resource.getFilename());
+        steps.add(readStepFromFile(resource.getInputStream()));
+      }
+      steps.sort(Step.SEMANTICVERSION_ORDER_COMPARATOR);
+      return steps;
+    } catch (FileNotFoundException ex) {
+      //ignore
+      logger.warn("Directory with migration steps was not found: " + ex.getMessage());
     }
-    steps.sort(Step.SEMANTICVERSION_ORDER_COMPARATOR);
     return steps;
   }
 

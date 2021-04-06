@@ -48,11 +48,12 @@ public abstract class AbstractTestFixture implements TestFixture {
   protected void startOperate(String version) {
     logger.info("************ Starting Operate {} ************", version);
     operateContainer = new GenericContainer<>(String.format("%s:%s", DOCKER_OPERATE_IMAGE_NAME, version))
+        .withExposedPorts(8080)
         .withNetwork(testContext.getNetwork())
         .withCopyFileToContainer(MountableFile.forHostPath(createConfigurationFile()), "/usr/local/operate/config/application.properties")
         .waitingFor(new HttpWaitStrategy()
             .forPort(8080)
-            .forPath("/actuator/prometheus")
+            .forPath("/actuator/health")
             .withReadTimeout(Duration.ofSeconds(30)));
     applyConfiguration(operateContainer, testContext.getInternalElsHost(),
         testContext.getInternalElsPort(), testContext.getInternalZeebeContactPoint());

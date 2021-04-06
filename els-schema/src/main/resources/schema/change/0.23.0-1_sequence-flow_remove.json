@@ -1,7 +1,0 @@
-{
-	"@type": "processorStep",
-	"indexName": "sequence-flow",
-	"version": "0.23.0",
-	"order": 1,
-	"content": "{\"remove\": {\"field\": [\"key\",\"partitionId\"]}}"
-}

@@ -1,9 +1,0 @@
-[[exporters]]
-  id = "elasticsearch"
-  className = "io.zeebe.exporter.ElasticsearchExporter"
-
-  [exporters.args]
-  url = "http://elasticsearch:9200"
-
-    [exporters.args.index]
-    prefix = "migration-test"

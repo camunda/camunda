@@ -20,7 +20,7 @@ import org.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.meta.ImportPositionEntity;
 import org.camunda.operate.qa.migration.util.AbstractMigrationTest;
-import org.camunda.operate.qa.migration.v120.BasicProcessDataGenerator;
+import org.camunda.operate.qa.migration.v100.BasicProcessDataGenerator;
 import org.camunda.operate.schema.indices.UserIndex;
 import org.camunda.operate.schema.templates.EventTemplate;
 import org.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
@@ -31,7 +31,6 @@ import org.camunda.operate.schema.templates.VariableTemplate;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -94,7 +93,6 @@ public class BasicProcessTest extends AbstractMigrationTest {
   }
 
   @Test
-  @Ignore("Activity instances are not migrated to flow node instances")
   public void testFlowNodeInstances() {
     SearchRequest searchRequest = new SearchRequest(flowNodeInstanceTemplate.getAlias());
     searchRequest.source().query(termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceIds));
@@ -156,8 +154,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
   public void testUsers() {
     final List<UserEntity> users = entityReader.getEntitiesFor(userIndex.getAlias(), UserEntity.class);
     assertThat(users.size()).isEqualTo(2);
-    assertThat(users).extracting(UserIndex.FIRSTNAME).containsOnly("Demo");
-    assertThat(users).extracting(UserIndex.LASTNAME).containsOnly("user");
+    assertThat(users).extracting(UserIndex.USERNAME).contains("demo", "act");
   }
 
 }
