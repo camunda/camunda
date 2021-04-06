@@ -35,6 +35,6 @@ public class UpgradeStepLogEntryDto {
 
   @JsonIgnore
   public String getId() {
-    return String.join("_", optimizeVersion, indexName, stepType.toString());
+    return String.join("_", optimizeVersion, stepType.toString(), String.format("%03d", stepNumber));
   }
 }

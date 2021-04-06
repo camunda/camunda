@@ -237,17 +237,10 @@ public abstract class AbstractUpgradeIT {
     return searchResponse.getHits().getHits();
   }
 
-  protected HttpRequest createUpdateLogUpsertRequest(final IndexMappingCreator index,
-                                                     final UpgradeStepType stepType) {
+  protected HttpRequest createUpdateLogUpsertRequest(final UpgradeStepType dataUpdate) {
     return request()
-      .withPath("/" + getLogIndexAlias() + "/_update/" + createLogEntryId(index, stepType))
+      .withPath("/" + getLogIndexAlias() + "/_update/" + TO_VERSION + "_" + dataUpdate.toString() + "_001")
       .withMethod(POST);
-  }
-
-  protected String createLogEntryId(final IndexMappingCreator index, final UpgradeStepType stepType) {
-    return String.join(
-      "_", TO_VERSION, indexNameService.getOptimizeIndexNameWithVersion(index), stepType.toString()
-    );
   }
 
   protected HttpRequest createIndexDeleteRequest(final String versionedIndexName) {

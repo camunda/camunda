@@ -146,8 +146,8 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
   }
 
   private void updateStepIsIdempotentAndCanBeRetried(final UpgradeStepType stepType,
-                                                     final List<UpgradeStep> prepareSteps,
-                                                     final UpgradeStep upgradeStep) {
+                                                    final List<UpgradeStep> prepareSteps,
+                                                    final UpgradeStep upgradeStep) {
     updateStepIsIdempotentAndCanBeRetried(
       stepType,
       () -> upgradeProcedure.performUpgrade(
@@ -162,13 +162,13 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
   }
 
   private void updateStepIsIdempotentAndCanBeRetried(final UpgradeStepType stepType,
-                                                     final Runnable prepareFunction,
-                                                     final UpgradeStep upgradeStep) {
+                                                    final Runnable prepareFunction,
+                                                    final UpgradeStep upgradeStep) {
     updateStepIsIdempotentAndCanBeRetried(
       stepType,
       prepareFunction,
       () -> {
-        final HttpRequest stepOneLogUpsertRequest = createUpdateLogUpsertRequest(upgradeStep.getIndex(), stepType);
+        final HttpRequest stepOneLogUpsertRequest = createUpdateLogUpsertRequest(stepType);
         esMockServer
           .when(stepOneLogUpsertRequest, Times.exactly(1))
           .error(HttpError.error().withDropConnection(true));
@@ -180,9 +180,9 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
   }
 
   private void updateStepIsIdempotentAndCanBeRetried(final UpgradeStepType stepType,
-                                                     final Runnable prepareFunction,
-                                                     final Supplier<HttpRequest> mockServerFailPreparation,
-                                                     final UpgradeStep upgradeStep) {
+                                                    final Runnable prepareFunction,
+                                                    final Supplier<HttpRequest> mockServerFailPreparation,
+                                                    final UpgradeStep upgradeStep) {
     // given
     prepareFunction.run();
 
