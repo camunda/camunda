@@ -130,7 +130,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
           ProcessInstanceIntent.ELEMENT_ACTIVATING);
     }
 
-    // process the event
+    // process the record
     if (stateTransitionGuard.isValidStateTransition(context)) {
       LOGGER.trace("Process process instance event [context: {}]", context);
 

@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.bpmn;
 
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -54,6 +55,31 @@ public final class ProcessInstanceStateTransitionGuard {
   }
 
   private Either<String, ?> checkStateTransition(final BpmnElementContext context) {
+    // migrated processors expect their state to be set via event appliers, and non migrated
+    // processors in the processor. this means that ELEMENT_COMPLETING of a migrated processor will
+    // set the element state to ELEMENT_COMPLETING on replay, but ELEMENT_COMPLETING of a non
+    // migrated will expect its state to ALREADY be ELEMENT_COMPLETING. To avoid too much
+    // complexity, when reprocessing events for non migrated processors, just set their state as
+    // expected; this could in the future be a source of error, but as its only temporary until
+    // all processors are migrated, it's OK for now
+    // TODO(npepinpe): remove as part of https://github.com/camunda-cloud/zeebe/issues/6202
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      if (context.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETING) {
+        return hasElementInstanceWithState(
+                context, context.getIntent(), ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .flatMap(ok -> hasActiveFlowScopeInstance(context));
+      } else if (context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
+        return hasElementInstanceWithState(
+            context,
+            context.getIntent(),
+            ProcessInstanceIntent.ELEMENT_COMPLETING,
+            ProcessInstanceIntent.ELEMENT_ACTIVATED);
+      } else if (context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATED) {
+        return hasElementInstanceWithState(
+            context, context.getIntent(), ProcessInstanceIntent.ELEMENT_TERMINATING);
+      }
+    }
+
     switch (context.getIntent()) {
       case COMPLETE_ELEMENT:
         return hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATED)
