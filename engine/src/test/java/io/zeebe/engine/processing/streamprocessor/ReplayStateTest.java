@@ -40,6 +40,7 @@ import org.junit.runners.Parameterized.Parameters;
 public final class ReplayStateTest {
 
   private static final String PROCESS_ID = "process";
+  private static final String PROCESS_CHILD_ID = "child_process";
   @Parameter public TestCase testCase;
 
   private long lastProcessedPosition = -1L;
@@ -127,6 +128,31 @@ public final class ReplayStateTest {
                 Bpmn.createExecutableProcess(PROCESS_ID)
                     .startEvent()
                     .serviceTask("task", b -> b.zeebeJobType("type"))
+                    .boundaryEvent("timer", b -> b.cancelActivity(true))
+                    .timerWithDuration("PT0S")
+                    .endEvent("end")
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.PROCESS)
+                      .getFirst();
+                }),
+        // TODO(@korthout): remove after https://github.com/camunda-cloud/zeebe/issues/6197
+        testCase("interrupting timer boundary event on call activity")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_CHILD_ID)
+                    .startEvent()
+                    .serviceTask("task", b -> b.zeebeJobType("type"))
+                    .endEvent()
+                    .done())
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .callActivity("call-child", b -> b.zeebeProcessId(PROCESS_CHILD_ID))
                     .boundaryEvent("timer", b -> b.cancelActivity(true))
                     .timerWithDuration("PT0S")
                     .endEvent("end")
