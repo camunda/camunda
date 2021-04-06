@@ -69,7 +69,16 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   }
 
   public boolean isSuperUserIdentity(final String userId) {
-    return configurationService.getSuperUserIds().contains(userId);
+    return configurationService.getSuperUserIds().contains(userId)||
+      isInSuperUserGroup(userId);
+  }
+
+  private boolean isInSuperUserGroup(final String userId) {
+    final List<String> authorizedGroupIds = configurationService.getSuperGroupIds();
+    return getAllGroupsOfUser(userId)
+      .stream()
+      .map(IdentityDto::getId)
+      .anyMatch(authorizedGroupIds::contains);
   }
 
   public List<AuthorizationType> getUserAuthorizations(final String userId) {

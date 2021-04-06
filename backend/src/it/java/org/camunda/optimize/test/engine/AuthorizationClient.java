@@ -66,6 +66,10 @@ public class AuthorizationClient {
     engineExtension.grantGroupOptimizeAccess(GROUP_ID);
   }
 
+  public void grantGroupOptimizeAccess(final String groupId) {
+    engineExtension.grantGroupOptimizeAccess(groupId);
+  }
+
   public void addGlobalAuthorizationForResource(final int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(resourceType);

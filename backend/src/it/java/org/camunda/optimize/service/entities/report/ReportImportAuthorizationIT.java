@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.service.entities.AbstractExportImportIT;
+import org.camunda.optimize.util.SuperUserType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -19,30 +20,33 @@ import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
 public class ReportImportAuthorizationIT extends AbstractExportImportIT {
 
   @ParameterizedTest
-  @MethodSource("reportTypes")
-  public void importReport_asSuperuser(final ReportType reportType) {
+  @MethodSource("reportAndAuthType")
+  public void importReport_asSuperuser(final ReportType reportType, final SuperUserType superUserType) {
     // given
     createAndSaveDefinition(reportType.toDefinitionType(), null);
 
     // when
-    final Response response = importClient.importEntity(createSimpleExportDto(reportType));
+    final Response response;
+    if (superUserType == SuperUserType.USER) {
+      response = importClient.importEntity(createSimpleExportDto(reportType));
+    } else {
+      setAuthorizedSuperGroup();
+      response = importClient.importEntityAsUser(KERMIT_USER, KERMIT_USER, createSimpleExportDto(reportType));
+    }
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
-  @MethodSource("reportTypes")
-  public void importReport_asSuperuser_withoutDefinitionAuth(final ReportType reportType) {
+  @MethodSource("reportAndAuthType")
+  public void importReport_asSuperuser_withoutDefinitionAuth(final ReportType reportType, final SuperUserType superUserType) {
     // given two reports for a forbidden definition
-    authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    createAuthorizationForSuperUser(superUserType);
     createAndSaveDefinition(reportType.toDefinitionType(), null);
     final OptimizeEntityExportDto report1 = createSimpleExportDto(reportType);
     final OptimizeEntityExportDto report2 = createSimpleExportDto(reportType);
@@ -71,15 +75,20 @@ public class ReportImportAuthorizationIT extends AbstractExportImportIT {
   }
 
   @ParameterizedTest
-  @MethodSource("reportTypes")
-  public void importReport_asSuperuser_withoutTenantAuth(final ReportType reportType) {
+  @MethodSource("reportAndAuthType")
+  public void importReport_asSuperuser_withoutTenantAuth(final ReportType reportType, final SuperUserType superUserType) {
     // given two reports with forbidden tenants
-    authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    createAuthorizationForSuperUser(superUserType);
     engineIntegrationExtension.createTenant("tenant1");
     createAndSaveDefinition(reportType.toDefinitionType(), "tenant1");
-    final OptimizeEntityExportDto report1 = createSimpleExportDtoWithTenants(reportType, Collections.singletonList("tenant1"));
-    final OptimizeEntityExportDto report2 = createSimpleExportDtoWithTenants(reportType, Collections.singletonList("tenant1"));
+    final OptimizeEntityExportDto report1 = createSimpleExportDtoWithTenants(
+      reportType,
+      Collections.singletonList("tenant1")
+    );
+    final OptimizeEntityExportDto report2 = createSimpleExportDtoWithTenants(
+      reportType,
+      Collections.singletonList("tenant1")
+    );
     report2.setId("some other ID");
 
     // when
@@ -104,7 +113,7 @@ public class ReportImportAuthorizationIT extends AbstractExportImportIT {
   }
 
   @ParameterizedTest
-  @MethodSource("reportTypes")
+  @MethodSource("reportAndAuthType")
   public void importReport_asNonSuperuser(final ReportType reportType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -121,10 +130,18 @@ public class ReportImportAuthorizationIT extends AbstractExportImportIT {
   }
 
   @ParameterizedTest
-  @MethodSource("reportTypes")
-  public void importReportIntoCollection_asSuperuser(final ReportType reportType) {
+  @MethodSource("reportAndAuthType")
+  public void importReportIntoCollection_asSuperuser(final ReportType reportType, final SuperUserType superUserType) {
     // given
     createAndSaveDefinition(reportType.toDefinitionType(), null);
+    if (superUserType == SuperUserType.USER) {
+      embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.emptyList());
+    } else {
+      embeddedOptimizeExtension.getConfigurationService().setSuperUserIds(Collections.emptyList());
+      authorizationClient.addUserAndGrantOptimizeAccess(DEFAULT_USERNAME);
+      authorizationClient.createGroupAndAddUser(GROUP_ID, DEFAULT_USERNAME);
+      embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    }
     final String collectionId = collectionClient.createNewCollectionWithScope(
       DEFAULT_USERNAME,
       DEFAULT_PASSWORD,
@@ -167,6 +184,18 @@ public class ReportImportAuthorizationIT extends AbstractExportImportIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  private void createAuthorizationForSuperUser(final SuperUserType superUserType) {
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    if (superUserType == SuperUserType.USER) {
+      embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.emptyList());
+      embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    } else {
+      embeddedOptimizeExtension.getConfigurationService().setSuperUserIds(Collections.emptyList());
+      authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+      embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    }
   }
 
 }

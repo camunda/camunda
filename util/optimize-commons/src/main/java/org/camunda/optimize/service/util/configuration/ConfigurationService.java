@@ -67,6 +67,7 @@ public class ConfigurationService {
   private String tokenSecret;
   private Boolean sameSiteCookieFlagEnabled;
   private List<String> superUserIds;
+  private List<String> superGroupIds;
 
   // http response security header configurations
   private Long HTTPStrictTransportSecurityMaxAge;
@@ -249,6 +250,13 @@ public class ConfigurationService {
       superUserIds = configJsonContext.read(ConfigurationServiceConstants.SUPER_USER_IDS, LIST_OF_STRINGS_TYPE_REF);
     }
     return superUserIds;
+  }
+
+  public List<String> getSuperGroupIds() {
+    if (superGroupIds == null) {
+      superGroupIds = configJsonContext.read(ConfigurationServiceConstants.SUPER_GROUP_IDS, LIST_OF_STRINGS_TYPE_REF);
+    }
+    return superGroupIds;
   }
 
   public Long getHTTPStrictTransportSecurityMaxAge() {

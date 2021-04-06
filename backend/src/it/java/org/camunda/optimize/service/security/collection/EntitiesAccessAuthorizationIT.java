@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.hamcrest.CoreMatchers.everyItem;
 import static org.hamcrest.CoreMatchers.is;
@@ -126,10 +127,58 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   @Test
+  public void superGroupAllEntitiesAvailable() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+
+    final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
+    final String combinedReportId = reportClient.createEmptyCombinedReport(null);
+    final String processReportId = reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto());
+    final String decisionReportId = reportClient.createSingleDecisionReport(new SingleDecisionReportDefinitionRequestDto());
+    final String dashboardId = dashboardClient.createDashboard(null);
+
+    // when
+    final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
+
+    // then
+    assertThat(authorizedEntities.size(), is(5));
+    assertThat(
+      authorizedEntities.stream().map(EntityResponseDto::getId).collect(Collectors.toList()),
+      containsInAnyOrder(collectionId, combinedReportId, processReportId, decisionReportId, dashboardId)
+    );
+    assertThat(
+      authorizedEntities.stream().map(EntityResponseDto::getCurrentUserRole).collect(Collectors.toList()),
+      everyItem(greaterThanOrEqualTo(RoleType.EDITOR))
+    );
+  }
+
+  @Test
   public void superUserEntitiesNotAuthorizedForDefinitionAreHidden() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+
+    ProcessDefinitionEngineDto unauthorizedProcess = deploySimpleServiceTaskProcess("unauthorizedProcess");
+    DecisionDefinitionEngineDto unauthorizedDecision = deploySimpleDecisionDefinition("unauthorizedDecision");
+
+    reportClient.createAndStoreProcessReport(unauthorizedProcess.getKey());
+    reportClient.createSingleDecisionReportDefinitionDto(unauthorizedDecision.getKey()).getId();
+
+    // when
+    final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
+
+    // then
+    assertThat(authorizedEntities.size(), is(0));
+  }
+
+  @Test
+  public void superGroupEntitiesNotAuthorizedForDefinitionAreHidden() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     ProcessDefinitionEngineDto unauthorizedProcess = deploySimpleServiceTaskProcess("unauthorizedProcess");
     DecisionDefinitionEngineDto unauthorizedDecision = deploySimpleDecisionDefinition("unauthorizedDecision");

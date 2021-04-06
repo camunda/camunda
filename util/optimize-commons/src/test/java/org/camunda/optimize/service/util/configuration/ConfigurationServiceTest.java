@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
@@ -50,6 +49,8 @@ public class ConfigurationServiceTest {
   private static final String ACCESS_URL = "accessUrl";
   private static final String CUSTOM_EVENT_BASED_USER_IDS = "[demo,kermit]";
   private static final String CUSTOM_SUPER_USER_IDS = "[demo, kermit]";
+  private static final String CUSTOM_SUPER_GROUP_IDS = "[demoGroup, kermitGroup]";
+
 
   @RegisterExtension
   @Order(1)
@@ -173,6 +174,7 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("ACCESS_URL", ACCESS_URL);
     environmentVariablesExtension.set("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     environmentVariablesExtension.set("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
+
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -196,6 +198,7 @@ public class ConfigurationServiceTest {
     System.setProperty("ACCESS_URL", ACCESS_URL);
     System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
+    System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -230,6 +233,7 @@ public class ConfigurationServiceTest {
     System.setProperty("ACCESS_URL", ACCESS_URL);
     System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
+    System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -263,6 +267,7 @@ public class ConfigurationServiceTest {
     System.setProperty("ACCESS_URL", ACCESS_URL);
     System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
+    System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then

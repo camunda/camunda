@@ -8,7 +8,10 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.service.util.configuration.TelemetryConfiguration;
+import org.camunda.optimize.util.SuperUserType;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
@@ -19,6 +22,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
 public class SettingsRestServiceIT extends AbstractIT {
+  public final String GROUP_ID = "someGroup";
 
   @Test
   public void testGetSettings_defaultSettings() {
@@ -36,13 +40,15 @@ public class SettingsRestServiceIT extends AbstractIT {
     assertThat(settings).isEqualTo(expectedSettings);
   }
 
-  @Test
-  public void testCreateSettings() {
+  @ParameterizedTest
+  @EnumSource(SuperUserType.class)
+  public void testCreateSettings(SuperUserType superUserType) {
     // given
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
     final SettingsResponseDto newSettings = SettingsResponseDto.builder().metadataTelemetryEnabled(true).build();
 
     // when
+    addSuperUserAndPermissions(superUserType);
     setSettings(newSettings);
     final SettingsResponseDto settings = getSettings();
 
@@ -53,16 +59,15 @@ public class SettingsRestServiceIT extends AbstractIT {
     assertThat(settings.isManuallyConfirmed()).isTrue();
   }
 
-  @Test
-  public void testUpdateExistingSettings() {
+  @ParameterizedTest
+  @EnumSource(SuperUserType.class)
+  public void testUpdateExistingSettings(SuperUserType superUserType) {
     // given
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
     final SettingsResponseDto existingSettings = SettingsResponseDto.builder().metadataTelemetryEnabled(true).build();
+    addSuperUserAndPermissions(superUserType);
     setSettings(existingSettings);
-
     final SettingsResponseDto newSettings = SettingsResponseDto.builder().metadataTelemetryEnabled(false).build();
-
-    // when
     setSettings(newSettings);
     final SettingsResponseDto settings = getSettings();
 
@@ -73,9 +78,18 @@ public class SettingsRestServiceIT extends AbstractIT {
     assertThat(settings.isManuallyConfirmed()).isTrue();
   }
 
-  private void setSettings(final SettingsResponseDto newSettings) {
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(DEFAULT_USERNAME);
+  private void addSuperUserAndPermissions(final SuperUserType superUserType) {
+    if (superUserType == SuperUserType.USER) {
+      embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(DEFAULT_USERNAME);
+    } else {
+      authorizationClient.addUserAndGrantOptimizeAccess(DEFAULT_USERNAME);
+      authorizationClient.createGroupAndAddUser(GROUP_ID, DEFAULT_USERNAME);
+      authorizationClient.grantGroupOptimizeAccess(GROUP_ID);
+      embeddedOptimizeExtension.getConfigurationService().getSuperGroupIds().add(GROUP_ID);
+    }
+  }
 
+  private void setSettings(final SettingsResponseDto newSettings) {
     embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)

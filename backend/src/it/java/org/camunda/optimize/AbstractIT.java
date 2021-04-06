@@ -123,5 +123,4 @@ public abstract class AbstractIT {
   protected LocalizationClient localizationClient = new LocalizationClient(optimizeRequestExecutorSupplier);
   protected IdentityClient identityClient = new IdentityClient(optimizeRequestExecutorSupplier);
 
-
 }

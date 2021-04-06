@@ -24,9 +24,11 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
+import org.camunda.optimize.util.SuperUserType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -44,6 +46,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_ENDPOINT;
+import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
@@ -488,12 +491,18 @@ public class IdentityRestServiceIT extends AbstractIT {
     assertThat(currentUserDto.getUserDto().getName()).isEqualTo(KERMIT_USER);
   }
 
-  @Test
-  public void getCurrentUserIdentity_withSuperUserAuthorizations() {
+  @ParameterizedTest
+  @EnumSource(SuperUserType.class)
+  public void getCurrentUserIdentity_withSuperUserAndSuperGroupAuthorizations(SuperUserType superUserType) {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
-    embeddedOptimizeExtension.reloadConfiguration();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    if (superUserType == SuperUserType.USER) {
+      embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    } else {
+      authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+      embeddedOptimizeExtension.getConfigurationService().getSuperGroupIds().add(GROUP_ID);
+    }
+    embeddedOptimizeExtension.reloadConfiguration();
 
     // when
     final UserResponseDto currentUserDto = identityClient.getCurrentUserIdentity(KERMIT_USER, KERMIT_USER);

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.security.authorization;
 
 import org.camunda.optimize.AbstractAlertIT;
+import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
@@ -14,9 +15,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -26,44 +32,78 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class AlertAuthorizationIT extends AbstractAlertIT {
 
+  public final String PROCESS_DEFINITION_KEY = "processDefinition";
+  public final String PROCESS_DEFINITION_KEY_2 = "processDefinition2";
+
   @Test
   public void getOwnAuthorizedAlertsOnly() {
     // given
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
-    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, "processDefinition1");
+    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, PROCESS_DEFINITION_KEY);
 
-    AlertCreationRequestDto alert1 = setupBasicProcessAlertAsUser("processDefinition1", KERMIT_USER, KERMIT_USER);
-    AlertCreationRequestDto alert2 = setupBasicProcessAlertAsUser("processDefinition2", DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    AlertCreationRequestDto alert1 = setupBasicProcessAlertAsUser(PROCESS_DEFINITION_KEY, KERMIT_USER, KERMIT_USER);
+    AlertCreationRequestDto alert2 = setupBasicProcessAlertAsUser(
+      PROCESS_DEFINITION_KEY_2,
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD
+    );
     final String ownAlertId = addAlertToOptimizeAsUser(alert1, KERMIT_USER, KERMIT_USER);
     addAlertToOptimizeAsUser(alert2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
-    List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
+    List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(allAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), contains(ownAlertId));
+    assertThat(allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), contains(ownAlertId));
   }
 
   @Test
   public void superUserGetAllAlerts() {
     // given
-    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
-    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
-    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, "processDefinition1");
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    createSuperUserAuthorization();
+    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, PROCESS_DEFINITION_KEY);
 
-    AlertCreationRequestDto alert1 = setupBasicProcessAlertAsUser("processDefinition1", KERMIT_USER, KERMIT_USER);
-    AlertCreationRequestDto alert2 = setupBasicProcessAlertAsUser("processDefinition1", DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    AlertCreationRequestDto alert1 = setupBasicProcessAlertAsUser(PROCESS_DEFINITION_KEY, KERMIT_USER, KERMIT_USER);
+    AlertCreationRequestDto alert2 = setupBasicProcessAlertAsUser(
+      PROCESS_DEFINITION_KEY,
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD
+    );
     final String alertId1 = addAlertToOptimizeAsUser(alert1, KERMIT_USER, KERMIT_USER);
     final String alertId2 = addAlertToOptimizeAsUser(alert2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
-    List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
+    List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(
-      allAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
+      allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
+      containsInAnyOrder(alertId1, alertId2)
+    );
+  }
+
+  @Test
+  public void superGroupGetAllAlerts() {
+    // given
+    createSuperGroupAuthorization();
+    grantSingleDefinitionAuthorizationsForGroup(GROUP_ID, PROCESS_DEFINITION_KEY);
+
+    AlertCreationRequestDto alert1 = setupBasicProcessAlertAsUser(PROCESS_DEFINITION_KEY, KERMIT_USER, KERMIT_USER);
+    AlertCreationRequestDto alert2 = setupBasicProcessAlertAsUser(
+      PROCESS_DEFINITION_KEY,
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD
+    );
+    final String alertId1 = addAlertToOptimizeAsUser(alert1, KERMIT_USER, KERMIT_USER);
+    final String alertId2 = addAlertToOptimizeAsUser(alert2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+
+    // when
+    List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
+
+    // then
+    assertThat(
+      allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
       containsInAnyOrder(alertId1, alertId2)
     );
   }
@@ -71,58 +111,94 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
   @Test
   public void superUserGetAllAlertsOnlyForAuthorizedDefinitions() {
     // given
-    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
-    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
-    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, "processDefinition1");
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    createSuperUserAuthorization();
+    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, PROCESS_DEFINITION_KEY);
 
-    AlertCreationRequestDto alert1 = setupBasicProcessAlertAsUser("processDefinition1", KERMIT_USER, KERMIT_USER);
-    AlertCreationRequestDto alert2 = setupBasicProcessAlertAsUser("processDefinition2", DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    AlertCreationRequestDto alert1 = setupBasicProcessAlertAsUser(PROCESS_DEFINITION_KEY, KERMIT_USER, KERMIT_USER);
+    AlertCreationRequestDto alert2 = setupBasicProcessAlertAsUser(
+      PROCESS_DEFINITION_KEY_2,
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD
+    );
     final String authorizedAlertId = addAlertToOptimizeAsUser(alert1, KERMIT_USER, KERMIT_USER);
     addAlertToOptimizeAsUser(alert2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
-    List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
+    List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(allAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), contains(authorizedAlertId));
+    assertThat(allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), contains(authorizedAlertId));
+  }
+
+  @Test
+  public void superGroupGetAllAlertsOnlyForAuthorizedDefinitions() {
+    // given
+    createSuperGroupAuthorization();
+    grantSingleDefinitionAuthorizationsForGroup(GROUP_ID, PROCESS_DEFINITION_KEY);
+
+    AlertCreationRequestDto alert1 = setupBasicProcessAlertAsUser(PROCESS_DEFINITION_KEY, KERMIT_USER, KERMIT_USER);
+    AlertCreationRequestDto alert2 = setupBasicProcessAlertAsUser(
+      PROCESS_DEFINITION_KEY_2,
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD
+    );
+    final String authorizedAlertId = addAlertToOptimizeAsUser(alert1, KERMIT_USER, KERMIT_USER);
+    addAlertToOptimizeAsUser(alert2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+
+    // when
+    List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
+
+    // then
+    assertThat(allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), contains(authorizedAlertId));
   }
 
   @Test
   public void superUserGetAllAlertsOfCollectionReports() {
     // given
-    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
-    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    createSuperUserAuthorization();
 
-    final String definitionKey = "processDefinition1";
-    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess(definitionKey);
-    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, definitionKey);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess(PROCESS_DEFINITION_KEY);
+    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, PROCESS_DEFINITION_KEY);
 
     importAllEngineEntitiesFromScratch();
 
     final String alertId = createAlertInCollectionAsDefaultUser(processDefinition);
 
     // when
-    List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
+    List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(allAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), containsInAnyOrder(alertId));
+    assertThat(allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), contains(alertId));
+  }
+
+  @Test
+  public void superGroupGetAllAlertsOfCollectionReports() {
+    // given
+    createSuperGroupAuthorization();
+
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess(PROCESS_DEFINITION_KEY);
+    grantSingleDefinitionAuthorizationsForGroup(GROUP_ID, PROCESS_DEFINITION_KEY);
+
+    importAllEngineEntitiesFromScratch();
+
+    final String alertId = createAlertInCollectionAsDefaultUser(processDefinition);
+
+    // when
+    List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
+
+    // then
+    assertThat(allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), containsInAnyOrder(alertId));
   }
 
   @Test
   public void superUserGetAllAlertsOfCollectionReportsOnlyForAuthorizedDefinitions() {
     // given
-    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
-    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    createSuperUserAuthorization();
 
-    final String definitionKey1 = "processDefinition1";
-    ProcessDefinitionEngineDto processDefinition1 = deploySimpleServiceTaskProcess(definitionKey1);
-    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, definitionKey1);
+    ProcessDefinitionEngineDto processDefinition1 = deploySimpleServiceTaskProcess(PROCESS_DEFINITION_KEY);
+    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, PROCESS_DEFINITION_KEY);
 
-    final String definitionKey2 = "processDefinition2";
-    ProcessDefinitionEngineDto processDefinition2 = deploySimpleServiceTaskProcess(definitionKey2);
+    ProcessDefinitionEngineDto processDefinition2 = deploySimpleServiceTaskProcess(PROCESS_DEFINITION_KEY_2);
 
     importAllEngineEntitiesFromScratch();
 
@@ -130,11 +206,42 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     createAlertInCollectionAsDefaultUser(processDefinition2);
 
     // when
-    List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
+    List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(
-      allAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
+      allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
+      contains(authorizedAlertId)
+    );
+  }
+
+  private void createSuperUserAuthorization() {
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().setSuperUserIds(Collections.singletonList(KERMIT_USER));
+  }
+
+  @Test
+  public void superGroupGetAllAlertsOfCollectionReportsOnlyForAuthorizedDefinitions() {
+    // given
+    createSuperGroupAuthorization();
+
+    ProcessDefinitionEngineDto processDefinition1 = deploySimpleServiceTaskProcess(PROCESS_DEFINITION_KEY);
+    grantSingleDefinitionAuthorizationsForGroup(GROUP_ID, PROCESS_DEFINITION_KEY);
+
+    ProcessDefinitionEngineDto processDefinition2 = deploySimpleServiceTaskProcess(PROCESS_DEFINITION_KEY_2);
+
+    importAllEngineEntitiesFromScratch();
+
+    final String authorizedAlertId = createAlertInCollectionAsDefaultUser(processDefinition1);
+    createAlertInCollectionAsDefaultUser(processDefinition2);
+
+    // when
+    List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
+
+    // then
+    assertThat(
+      allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
       containsInAnyOrder(authorizedAlertId)
     );
   }
@@ -173,6 +280,35 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
       .buildCreateAlertRequest(creationDto)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
+  }
+
+  private void grantSingleDefinitionAuthorizationsForUser(String userId, String definitionKey) {
+    AuthorizationDto authorizationDto = createAuthorizationDto(definitionKey);
+    authorizationDto.setUserId(userId);
+    engineIntegrationExtension.createAuthorization(authorizationDto);
+  }
+
+  private void grantSingleDefinitionAuthorizationsForGroup(String groupId, String definitionKey) {
+    AuthorizationDto authorizationDto = createAuthorizationDto(definitionKey);
+    authorizationDto.setGroupId(groupId);
+    engineIntegrationExtension.createAuthorization(authorizationDto);
+  }
+
+  private AuthorizationDto createAuthorizationDto(final String definitionKey) {
+    AuthorizationDto authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
+    authorizationDto.setResourceId(definitionKey);
+    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
+    return authorizationDto;
+  }
+
+  private void createSuperGroupAuthorization() {
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtension.createGroup(GROUP_ID);
+    engineIntegrationExtension.addUserToGroup(KERMIT_USER, GROUP_ID);
+    engineIntegrationExtension.grantGroupOptimizeAccess(GROUP_ID);
+    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
   }
 
 }

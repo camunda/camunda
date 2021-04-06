@@ -235,7 +235,6 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
     // given
     final String definitionKey = "myProcess";
     deployAndStartUserTaskProcess(definitionKey);
-
     importAllEngineEntitiesFromScratch();
     processEventTracesAndSequences();
 

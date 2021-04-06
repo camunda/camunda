@@ -7,7 +7,10 @@ package org.camunda.optimize.service.entities.dashboard;
 
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.service.entities.AbstractExportImportIT;
+import org.camunda.optimize.util.SuperUserType;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -18,13 +21,22 @@ import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class DashboardExportAuthorizationIT extends AbstractExportImportIT {
 
-  @Test
-  public void exportDashboardAsJson_asSuperuser() {
+  @ParameterizedTest
+  @EnumSource(SuperUserType.class)
+  public void exportDashboardAsJson_asSuperuser(SuperUserType superUserType) {
     // given
     final String dashboardId = dashboardClient.createEmptyDashboard(null);
 
-    // when
-    final Response response = exportClient.exportDashboard(dashboardId, "my_file.json");
+    //when
+    final Response response;
+    if (superUserType == SuperUserType.USER) {
+      response = exportClient.exportDashboardAsUser("demo", "demo", dashboardId, "my_file.json");
+    } else {
+      authorizationClient.addKermitUserAndGrantAccessToOptimize();
+      authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+      embeddedOptimizeExtension.getConfigurationService().getSuperGroupIds().add(GROUP_ID);
+      response = exportClient.exportDashboardAsUser(KERMIT_USER, KERMIT_USER, dashboardId, "my_file.json");
+    }
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
