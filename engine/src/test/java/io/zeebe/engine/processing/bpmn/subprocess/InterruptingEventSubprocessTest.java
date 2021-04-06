@@ -154,8 +154,8 @@ public class InterruptingEventSubprocessTest {
         .containsSubsequence(
             tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
@@ -196,8 +196,8 @@ public class InterruptingEventSubprocessTest {
         .containsSubsequence(
             tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
@@ -295,7 +295,7 @@ public class InterruptingEventSubprocessTest {
     final long eventSubprocKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(wfInstanceKey)
-            .withElementType(BpmnElementType.SUB_PROCESS)
+            .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
             .getFirst()
             .getKey();
 

@@ -49,7 +49,7 @@ public final class MultipleEventSubprocessTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(wfInstanceKey)
-                .withElementType(BpmnElementType.SUB_PROCESS)
+                .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
                 .limit(8))
         .extracting(r -> tuple(r.getValue().getElementId(), r.getIntent()))
         .containsSubsequence(
@@ -209,10 +209,10 @@ public final class MultipleEventSubprocessTest {
         .containsSubsequence(
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
@@ -246,7 +246,7 @@ public final class MultipleEventSubprocessTest {
                 .withProcessInstanceKey(wfInstanceKey)
                 .limitToProcessInstanceCompleted()
                 .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withElementType(BpmnElementType.SUB_PROCESS))
+                .withElementType(BpmnElementType.EVENT_SUB_PROCESS))
         .extracting(r -> r.getValue().getElementId())
         .containsExactly("event_sub_proc_timer");
   }

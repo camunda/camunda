@@ -47,6 +47,8 @@ public final class BpmnElementProcessors {
     // containers
     processors.put(BpmnElementType.PROCESS, new ProcessProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.SUB_PROCESS, new SubProcessProcessor(bpmnBehaviors));
+    // TODO (saig0): extract the logic for event subprocesses into its own processor (#6196)
+    processors.put(BpmnElementType.EVENT_SUB_PROCESS, new SubProcessProcessor(bpmnBehaviors));
     processors.put(
         BpmnElementType.MULTI_INSTANCE_BODY, new MultiInstanceBodyProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.CALL_ACTIVITY, new CallActivityProcessor(bpmnBehaviors));

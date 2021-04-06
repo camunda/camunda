@@ -109,8 +109,7 @@ public final class EventAppliers implements EventApplier {
             elementInstanceState, processState, variableState, eventScopeInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_ACTIVATED,
-        new ProcessInstanceElementActivatedApplier(
-            elementInstanceState, processState, eventScopeInstanceState));
+        new ProcessInstanceElementActivatedApplier(elementInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_COMPLETING,
         new ProcessInstanceElementCompletingApplier(elementInstanceState));

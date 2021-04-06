@@ -386,7 +386,8 @@ public final class BpmnEventSubscriptionBehavior {
         eventTrigger -> {
           final var eventSubProcessElementId = startEvent.getEventSubProcess();
           final var record =
-              getEventRecord(context.getRecordValue(), eventTrigger, BpmnElementType.SUB_PROCESS)
+              getEventRecord(
+                      context.getRecordValue(), eventTrigger, BpmnElementType.EVENT_SUB_PROCESS)
                   .setElementId(eventSubProcessElementId);
 
           final long eventElementInstanceKey = keyGenerator.nextKey();
@@ -437,7 +438,8 @@ public final class BpmnEventSubscriptionBehavior {
     if (isInterrupted(isChildMigrated, elementInstance)) {
       elementInstanceState.getDeferredRecords(context.getElementInstanceKey()).stream()
           .filter(record -> record.getKey() == elementInstance.getInterruptingEventKey())
-          .filter(record -> record.getValue().getBpmnElementType() == BpmnElementType.SUB_PROCESS)
+          .filter(
+              record -> record.getValue().getBpmnElementType() == BpmnElementType.EVENT_SUB_PROCESS)
           .findFirst()
           .ifPresent(
               record -> {
