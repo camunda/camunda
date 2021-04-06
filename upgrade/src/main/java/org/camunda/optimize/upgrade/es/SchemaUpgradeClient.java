@@ -32,7 +32,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -171,7 +170,7 @@ public class SchemaUpgradeClient {
   public boolean indexExists(final String indexName) {
     log.debug("Checking if index exists [{}].", indexName);
     try {
-      return getHighLevelRestClient().indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
+      return elasticsearchClient.exists(indexName);
     } catch (Exception e) {
       String errorMessage = String.format("Could not validate whether index [%s] exists!", indexName);
       throw new UpgradeRuntimeException(errorMessage, e);
@@ -184,6 +183,27 @@ public class SchemaUpgradeClient {
         elasticsearchClient.deleteIndexByRawIndexNames(indexName);
       } catch (Exception e) {
         String errorMessage = String.format("Could not delete index [%s]!", indexName);
+        throw new UpgradeRuntimeException(errorMessage, e);
+      }
+    }
+  }
+
+  public boolean indexTemplateExists(final String indexTemplateName) {
+    log.debug("Checking if index template exists [{}].", indexTemplateName);
+    try {
+      return elasticsearchClient.templateExists(indexTemplateName);
+    } catch (Exception e) {
+      String errorMessage = String.format("Could not validate whether index template [%s] exists!", indexTemplateName);
+      throw new UpgradeRuntimeException(errorMessage, e);
+    }
+  }
+
+  public void deleteTemplateIfExists(final String indexTemplateName) {
+    if (indexTemplateExists(indexTemplateName)) {
+      try {
+        elasticsearchClient.deleteIndexTemplateByIndexTemplateName(indexTemplateName);
+      } catch (Exception e) {
+        String errorMessage = String.format("Could not delete index template [%s]!", indexTemplateName);
         throw new UpgradeRuntimeException(errorMessage, e);
       }
     }

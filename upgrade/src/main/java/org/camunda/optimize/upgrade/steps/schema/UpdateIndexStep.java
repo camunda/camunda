@@ -107,6 +107,7 @@ public class UpdateIndexStep extends UpgradeStep {
         schemaUpgradeClient.addAlias(indexAlias, targetIndexName, true);
       }
       schemaUpgradeClient.deleteIndexIfExists(sourceIndex);
+      schemaUpgradeClient.deleteTemplateIfExists(sourceTemplateName);
     }
   }
 
