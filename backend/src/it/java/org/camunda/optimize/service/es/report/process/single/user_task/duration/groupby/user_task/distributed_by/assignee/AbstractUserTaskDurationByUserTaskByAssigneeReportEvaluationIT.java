@@ -1168,9 +1168,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     assertThat(resultReportDataDto.getView().getFirstProperty())
       .withFailMessage("View property should be DURATION.")
       .isEqualTo(ViewProperty.DURATION);
-    assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTime())
+    assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTimes())
       .withFailMessage("UserTaskDurationTime in report configuration does not match expected userTaskDurationTime")
-      .isEqualTo(getUserTaskDurationTime());
+      .containsExactly(getUserTaskDurationTime());
     assertThat(resultReportDataDto.getDistributedBy().getType())
       .withFailMessage("Distributed by should be ASSIGNEE.")
       .isEqualTo(DistributedByType.ASSIGNEE);

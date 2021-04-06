@@ -328,7 +328,6 @@ export default withErrorHandling(
                         }
 
                         change.configuration.aggregationTypes = {$set: newAggregations};
-                        change.configuration.aggregationType = {$set: newAggregations[0]};
                       }
                       this.props.updateReport(change, true);
                     }}

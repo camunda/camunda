@@ -37,7 +37,8 @@ public class TemplatedProcessReportDataBuilder {
   private AggregateByDateUnit groupByDateVariableUnit = new SingleReportConfigurationDto().getGroupByDateVariableUnit();
   private String startFlowNodeId;
   private String endFlowNodeId;
-  private UserTaskDurationTime userTaskDurationTime = new SingleReportConfigurationDto().getUserTaskDurationTime();
+  private UserTaskDurationTime userTaskDurationTime = new SingleReportConfigurationDto().getUserTaskDurationTimes()
+    .stream().findFirst().orElse(null);
   private ProcessVisualization visualization;
 
   private List<ProcessFilterDto<?>> filter = new ArrayList<>();

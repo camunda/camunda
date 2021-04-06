@@ -22,7 +22,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.targe
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -109,47 +108,9 @@ public class SingleReportConfigurationDto implements Combinable {
       && userTaskDurationTimesAmount <= 1 && userTaskDurationTimesAmount == that.getUserTaskDurationTimes().size();
   }
 
-  // to be removed with OPT-4871 when the result evaluation needs to read all values
-  @Deprecated
-  public AggregationType getAggregationType() {
-    return this.aggregationTypes != null && !this.aggregationTypes.isEmpty() ? this.aggregationTypes.iterator().next() : null;
-  }
-  // to be removed with OPT-4871 when the result evaluation needs to read all values
-
-  @Deprecated
-  public void setAggregationType(final AggregationType aggregationType) {
-    if (this.aggregationTypes == null || this.aggregationTypes.isEmpty()) {
-      this.aggregationTypes = new LinkedHashSet<>(Collections.singletonList(aggregationType));
-    } else {
-      final ArrayList<AggregationType> aggregationTypeList = new ArrayList<>(this.aggregationTypes);
-      aggregationTypeList.set(0, aggregationType);
-      this.aggregationTypes = new LinkedHashSet<>(aggregationTypeList);
-    }
-  }
-
   public void setAggregationTypes(final AggregationType... aggregationTypes) {
     // deduplication using an intermediate set
     this.aggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
-  }
-  // to be removed with OPT-4871 when the result evaluation needs to read all values
-
-  @Deprecated
-  public UserTaskDurationTime getUserTaskDurationTime() {
-    return this.userTaskDurationTimes != null && !this.userTaskDurationTimes.isEmpty()
-      ? this.userTaskDurationTimes.iterator().next()
-      : null;
-  }
-  // to be removed with OPT-4871 when the result evaluation needs to read all values
-
-  @Deprecated
-  public void setUserTaskDurationTime(final UserTaskDurationTime userTaskDurationTime) {
-    if (this.userTaskDurationTimes == null || this.userTaskDurationTimes.isEmpty()) {
-      this.userTaskDurationTimes = new LinkedHashSet<>(Collections.singletonList(userTaskDurationTime));
-    } else {
-      final ArrayList<UserTaskDurationTime> userTaskDurationTimesList = new ArrayList<>(this.userTaskDurationTimes);
-      userTaskDurationTimesList.set(0, userTaskDurationTime);
-      this.userTaskDurationTimes = new LinkedHashSet<>(userTaskDurationTimesList);
-    }
   }
 
   public void setUserTaskDurationTimes(final UserTaskDurationTime... userTaskDurationTimes) {

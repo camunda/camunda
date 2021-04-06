@@ -43,9 +43,10 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
+    final UserTaskDurationTime userTaskDurationTime = getUserTaskDurationTime(context);
     return durationAggregationService
       .createLimitedGroupByScriptedUserTaskDurationAggregation(
-        searchSourceBuilder, context, distributedByPart, getDurationScript(getUserTaskDurationTime(context))
+        searchSourceBuilder, context, distributedByPart, getDurationScript(userTaskDurationTime), userTaskDurationTime
       )
       .map(durationAggregation -> (AggregationBuilder) createFilteredUserTaskAggregation(context, durationAggregation))
       .map(Collections::singletonList)

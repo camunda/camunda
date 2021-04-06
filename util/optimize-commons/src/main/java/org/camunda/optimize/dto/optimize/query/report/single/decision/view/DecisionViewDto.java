@@ -31,23 +31,7 @@ public class DecisionViewDto  {
 
   @JsonIgnore
   public String createCommandKey() {
-    return getProperty().toString();
-  }
-
-  // to be removed with OPT-4872, just here for jackson and API backwards compatibility thus protected
-  @Deprecated
-  public ViewProperty getProperty() {
-    return this.properties != null && !this.properties.isEmpty() ? properties.get(0) : null;
-  }
-
-  // to be removed with OPT-4872, just here for jackson and API backwards compatibility thus protected
-  @Deprecated
-  public void setProperty(final ViewProperty property) {
-    if (this.properties == null || this.properties.isEmpty()) {
-      this.properties = Arrays.asList(property);
-    } else {
-      this.properties.set(0, property);
-    }
+    return getProperties().stream().findFirst().map(ViewProperty::toString).orElse(null);
   }
 
   @JsonSetter

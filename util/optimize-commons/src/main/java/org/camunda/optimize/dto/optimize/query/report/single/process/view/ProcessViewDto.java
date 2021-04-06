@@ -71,25 +71,9 @@ public class ProcessViewDto implements Combinable {
     return createCommandKeys().get(0);
   }
 
-  // to be removed with OPT-4871 when the result evaluation needs to read all properties
-  @Deprecated
-  public ViewProperty getProperty() {
-    return getFirstProperty();
-  }
-
   @JsonIgnore
   public ViewProperty getFirstProperty() {
     return this.properties != null && !this.properties.isEmpty() ? properties.get(0) : null;
-  }
-
-  // to be removed with OPT-4872, just here for jackson and API backwards compatibility thus protected
-  @Deprecated
-  protected void setProperty(final ViewProperty property) {
-    if (this.properties == null || this.properties.isEmpty()) {
-      this.properties = new ArrayList<>(Arrays.asList(property));
-    } else {
-      this.properties.set(0, property);
-    }
   }
 
   @JsonSetter

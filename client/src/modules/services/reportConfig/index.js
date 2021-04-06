@@ -28,7 +28,6 @@ config.process.update = (type, data, props) => {
       data.entity !== 'variable' &&
       props.report.data.configuration?.aggregationTypes?.includes('sum')
     ) {
-      changes.configuration.aggregationType = {$set: 'avg'};
       changes.configuration.aggregationTypes = {$set: ['avg']};
     }
 

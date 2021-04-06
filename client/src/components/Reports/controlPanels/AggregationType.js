@@ -37,14 +37,11 @@ export default function AggregationType({report, onChange}) {
       (a, b) => orders[field].indexOf(a) - orders[field].indexOf(b)
     );
 
-    const singularField = field.slice(0, -1);
-
     const changes = {
       configuration: {
         [field]: {
           $set: newAggregations,
         },
-        [singularField]: {$set: newAggregations[0]},
         targetValue: {active: {$set: false}},
       },
     };
@@ -61,14 +58,12 @@ export default function AggregationType({report, onChange}) {
       (existingType) => existingType !== type
     );
 
-    const singularField = field.slice(0, -1);
     return onChange(
       {
         configuration: {
           [field]: {
             $set: remainingAggregations,
           },
-          [singularField]: {$set: remainingAggregations[0]},
         },
       },
       true

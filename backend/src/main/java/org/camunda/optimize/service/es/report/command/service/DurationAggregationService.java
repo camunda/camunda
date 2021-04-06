@@ -101,7 +101,8 @@ public class DurationAggregationService {
     final SearchSourceBuilder searchSourceBuilder,
     final ExecutionContext<ProcessReportDataDto> context,
     final DistributedByPart<ProcessReportDataDto> distributedByPart,
-    final Script durationCalculationScript) {
+    final Script durationCalculationScript,
+    final UserTaskDurationTime userTaskDurationTime) {
 
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
       context, searchSourceBuilder.query(), getIndexName(context), USER_TASKS, durationCalculationScript
@@ -112,7 +113,7 @@ public class DurationAggregationService {
       durationCalculationScript,
       minMaxStats,
       (filterOperator, filterValueInMillis) -> createUserTaskLimitingFilterQuery(
-        filterOperator, context.getReportConfiguration().getUserTaskDurationTime(), filterValueInMillis
+        filterOperator, userTaskDurationTime, filterValueInMillis
       )
     );
   }

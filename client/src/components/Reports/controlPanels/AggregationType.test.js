@@ -88,7 +88,6 @@ it('should reevaluate the report when changing the aggregation type', () => {
     {
       configuration: {
         aggregationTypes: {$set: ['median', 'max']},
-        aggregationType: {$set: 'median'},
         targetValue: {active: {$set: false}},
       },
     },

@@ -50,7 +50,7 @@ describe('process update', () => {
     const changes = config.process.update(
       'view',
       {properties: ['duration'], entity: 'processInstance'},
-      {report: {data: {configuration: {aggregationType: 'sum'}}, configuration: {}}}
+      {report: {data: {configuration: {aggregationTypes: ['sum']}}, configuration: {}}}
     );
 
     expect(changes.configuration.tableColumns.columnOrder).toEqual({$set: []});
