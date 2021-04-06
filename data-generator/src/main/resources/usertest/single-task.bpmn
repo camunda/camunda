@@ -4,13 +4,10 @@
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>SequenceFlow_04ev4jl</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:serviceTask id="ServiceTask_0kt6c5i">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="task" />
-      </bpmn:extensionElements>
+    <bpmn:userTask id="ServiceTask_0kt6c5i">
       <bpmn:incoming>SequenceFlow_04ev4jl</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1njhlr0</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:userTask>
     <bpmn:sequenceFlow id="SequenceFlow_04ev4jl" sourceRef="StartEvent_1" targetRef="ServiceTask_0kt6c5i" />
     <bpmn:endEvent id="EndEvent_0crvjrk">
       <bpmn:incoming>SequenceFlow_1njhlr0</bpmn:incoming>

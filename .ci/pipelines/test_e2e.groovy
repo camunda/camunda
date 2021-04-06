@@ -133,8 +133,8 @@ spec:
           cpu: 2
           memory: 4Gi
     - name: zeebe
-      image: camunda/zeebe:1.0.0-alpha4
-      #imagePullPolicy: Always   #this must be uncommented when snapshot is used
+      image: camunda/zeebe:SNAPSHOT
+      imagePullPolicy: Always   #this must be uncommented when snapshot is used
       env:
       volumeMounts:
         - name: zeebe-configuration
