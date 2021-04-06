@@ -303,6 +303,20 @@ public final class BpmnElementTypeTest {
                   .endEvent()
                   .done();
             }
+          },
+          new BpmnElementTypeScenario("Event Subprocess", BpmnElementType.EVENT_SUB_PROCESS) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .eventSubProcess(
+                      elementId(),
+                      eventSubProcess ->
+                          eventSubProcess.startEvent().timerWithDuration("PT0S").endEvent())
+                  .startEvent()
+                  .serviceTask("task", t -> t.zeebeJobType("test"))
+                  .endEvent()
+                  .done();
+            }
           });
 
   @Rule

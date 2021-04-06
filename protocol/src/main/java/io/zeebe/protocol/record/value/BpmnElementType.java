@@ -23,6 +23,7 @@ public enum BpmnElementType {
   // Containers
   PROCESS,
   SUB_PROCESS,
+  EVENT_SUB_PROCESS,
 
   // Events
   START_EVENT,
