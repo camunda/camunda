@@ -1,10 +1,12 @@
 .NoDataNotice {
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
   justify-content: center;
   height: 100%;
   border-radius: 8px;
-  margin: 0 auto;
+  padding-left: 25px;
+  overflow: auto;
 
   &.warning .Icon {
     color: var(--orange-base-60);
@@ -18,22 +20,32 @@
     color: var(--grey-lighten-56);
   }
 
-  h1 {
-    font-size: 14px;
-    font-weight: bold;
-    margin-bottom: 3px;
-    position: relative;
-    color: var(--grey-darken-36);
+  .container {
+    align-self: center;
+    margin: 0 auto;
 
-    .Icon {
-      position: absolute;
-      left: -25px;
-      margin-right: 10px;
+    h1 {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 3px;
+      position: relative;
+      color: var(--grey-darken-36);
+
+      .Icon {
+        position: absolute;
+        left: -25px;
+        margin-right: 10px;
+
+        svg {
+          min-height: 20px;
+          min-width: 20px;
+        }
+      }
     }
-  }
 
-  p {
-    font-size: 12px;
-    margin: 0;
+    p {
+      font-size: 12px;
+      margin: 0;
+    }
   }
 }

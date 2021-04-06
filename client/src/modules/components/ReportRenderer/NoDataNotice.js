@@ -15,11 +15,13 @@ import './NoDataNotice.scss';
 export default function NoDataNotice({type, title, children}) {
   return (
     <div className={classnames('NoDataNotice', type)}>
-      <h1>
-        {type && <Icon size="20" type={getIconName(type) + '-outline'} />}
-        {title || t('report.noDataNotice')}
-      </h1>
-      <p>{children}</p>
+      <div className="container">
+        <h1>
+          {type && <Icon size="20" type={getIconName(type) + '-outline'} />}
+          {title || t('report.noDataNotice')}
+        </h1>
+        <p>{children}</p>
+      </div>
     </div>
   );
 }
