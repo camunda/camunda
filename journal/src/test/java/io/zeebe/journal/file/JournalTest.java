@@ -23,10 +23,20 @@ import io.zeebe.journal.JournalException.InvalidChecksum;
 import io.zeebe.journal.JournalException.InvalidIndex;
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
+import io.zeebe.journal.file.record.JournalRecordReaderUtil;
+import io.zeebe.journal.file.record.SBESerializer;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +46,7 @@ import org.junit.jupiter.api.io.TempDir;
 class JournalTest {
 
   @TempDir Path directory;
+  @TempDir Path temp;
 
   private byte[] entry;
   private final DirectBuffer data = new UnsafeBuffer();
@@ -495,6 +506,102 @@ class JournalTest {
     assertThat(reader.next()).isEqualTo(firstRecord);
     assertThat(reader.next()).isEqualTo(secondRecord);
     assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  public void shouldTruncateCorruptedEntriesOnStartup() throws Exception {
+    // given
+    data.wrap("000".getBytes(StandardCharsets.UTF_8));
+    final var firstRecord = journal.append(data);
+    final var secondRecord = journal.append(data);
+    assertThat(directory.toFile().listFiles()).hasSize(1);
+    assertThat(directory.toFile().listFiles()[0].listFiles()).hasSize(1);
+    final File log = directory.toFile().listFiles()[0].listFiles()[0];
+
+    final File tempFile = new File(temp.toFile(), "rand");
+    assertThat(tempFile.createNewFile()).isTrue();
+
+    // when
+    journal.close();
+    assertThat(corruptFile(tempFile, log, secondRecord.index())).isTrue();
+    journal = openJournal();
+    final var reader = journal.openReader();
+
+    // then
+    assertThat(journal.getLastIndex()).isEqualTo(firstRecord.index());
+    assertThat(reader.seekToLast()).isEqualTo(firstRecord.index());
+    assertThat(reader.next()).isEqualTo(firstRecord);
+  }
+
+  @Test
+  public void shouldWriteEntriesAfterTruncatedCorruptedEntries() throws Exception {
+    // given
+    data.wrap("000".getBytes(StandardCharsets.UTF_8));
+    final var firstRecord = journal.append(data);
+    final var secondRecord = journal.append(data);
+    assertThat(directory.toFile().listFiles()).hasSize(1);
+    assertThat(directory.toFile().listFiles()[0].listFiles()).hasSize(1);
+    final File log = directory.toFile().listFiles()[0].listFiles()[0];
+
+    final File tempFile = new File(temp.toFile(), "rand");
+    assertThat(tempFile.createNewFile()).isTrue();
+
+    // when
+    journal.close();
+    assertThat(corruptFile(tempFile, log, secondRecord.index())).isTrue();
+    journal = openJournal();
+    data.wrap("111".getBytes(StandardCharsets.UTF_8));
+    final var lastRecord = journal.append(data);
+    final var reader = journal.openReader();
+
+    // then
+    assertThat(reader.next()).isEqualTo(firstRecord);
+    assertThat(reader.next()).isEqualTo(lastRecord);
+  }
+
+  static boolean corruptFile(final File temp, final File file, final long index)
+      throws IOException {
+    final byte[] bytes = new byte[1024];
+    int read = 0;
+
+    try (final BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
+      while (in.available() > 0 && read < 1024) {
+        read += in.read(bytes, read, Math.min(1024, in.available()) - read);
+      }
+    }
+
+    if (!corruptRecord(bytes, index)) {
+      return false;
+    }
+
+    try (final BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(temp))) {
+      out.write(bytes, 0, read);
+    }
+
+    return temp.renameTo(file);
+  }
+
+  private static boolean corruptRecord(final byte[] bytes, final long targetIndex) {
+    final JournalRecordReaderUtil reader = new JournalRecordReaderUtil(new SBESerializer());
+    final ByteBuffer buffer = ByteBuffer.wrap(bytes);
+    buffer.position(JournalSegmentDescriptor.BYTES);
+
+    Optional<Integer> version = FrameUtil.readVersion(buffer);
+    for (long index = 1; version.isPresent() && version.get() == 1; index++) {
+      final var record = reader.read(buffer, index);
+
+      if (record == null || record.index() > targetIndex) {
+        break;
+      } else if (record.index() == targetIndex) {
+        final int lastPos = buffer.position() - 1;
+        buffer.put(lastPos, (byte) ~buffer.get(lastPos));
+        return true;
+      }
+
+      version = FrameUtil.readVersion(buffer);
+    }
+
+    return false;
   }
 
   private SegmentedJournal openJournal() {
