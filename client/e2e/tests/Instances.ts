@@ -21,12 +21,14 @@ fixture('Instances')
     await wait();
   })
   .beforeEach(async (t) => {
-    await t.useRole(demoUser);
-    await t.click(
-      screen.queryByRole('listitem', {
-        name: /running instances/i,
-      })
-    );
+    await t
+      .useRole(demoUser)
+      .navigateTo('/')
+      .click(
+        screen.getByRole('listitem', {
+          name: /running instances/i,
+        })
+      );
   });
 
 test('Instances Page Initial Load', async (t) => {
@@ -158,15 +160,19 @@ test('Select flow node in diagram', async (t) => {
 });
 
 test('Wait for process creation', async (t) => {
-  await t.navigateTo(
-    '/instances?active=true&incidents=true&process=testProcess&version=1'
+  await t.openWindow(
+    `${config.endpoint}/#/instances?active=true&incidents=true&process=testProcess&version=1`
   );
 
   await t.expect(screen.queryByTestId('listpanel-skeleton').exists).ok();
   await t.expect(screen.queryByTestId('diagram-spinner').exists).ok();
   await t
     .expect(
-      screen.queryByRole('combobox', {name: 'Process'}).hasAttribute('disabled')
+      screen
+        .queryByRole('combobox', {
+          name: 'Process',
+        })
+        .hasAttribute('disabled')
     )
     .ok();
 

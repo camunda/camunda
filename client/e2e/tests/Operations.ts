@@ -16,13 +16,15 @@ fixture('Operations')
     ctx.initialData = await setup();
   })
   .beforeEach(async (t) => {
-    await t.useRole(demoUser);
-    await t.maximizeWindow();
-    await t.click(
-      screen.queryByRole('listitem', {
-        name: /running instances/i,
-      })
-    );
+    await t
+      .useRole(demoUser)
+      .maximizeWindow()
+      .navigateTo('/')
+      .click(
+        screen.queryByRole('listitem', {
+          name: /running instances/i,
+        })
+      );
   });
 
 test('infinite scrolling', async (t) => {

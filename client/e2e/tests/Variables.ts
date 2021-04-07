@@ -24,7 +24,7 @@ fixture('Add/Edit Variables')
 
     await t.useRole(demoUser);
     await t.maximizeWindow();
-    await t.navigateTo(`/instances/${instance.processInstanceKey}`);
+    await t.navigateTo(`#/instances/${instance.processInstanceKey}`);
   });
 
 test('Validations for add/edit variable works correctly', async (t) => {
@@ -190,7 +190,7 @@ test('Edit variables', async (t) => {
 
   // refresh the page and see the variable is still there.
   await t
-    .navigateTo(`/instances/${instance.processInstanceKey}`)
+    .navigateTo(`#/instances/${instance.processInstanceKey}`)
     .expect(Selector('[data-testid="testData"]').exists)
     .ok();
 });
@@ -257,7 +257,7 @@ test('Add variables', async (t) => {
 
   // refresh the page and see the variable is still there.
   await t
-    .navigateTo(`/instances/${instance.processInstanceKey}`)
+    .navigateTo(`#/instances/${instance.processInstanceKey}`)
     .expect(screen.queryByRole('cell', {name: 'secondTestKey'}).exists)
     .ok()
     .expect(screen.queryByRole('cell', {name: '"secondTestValue"'}).exists)

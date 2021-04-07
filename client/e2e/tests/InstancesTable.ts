@@ -34,13 +34,10 @@ fixture('InstancesTable')
   })
 
   .beforeEach(async (t) => {
-    await t.useRole(demoUser);
-    await t.maximizeWindow();
-    await t.click(
-      screen.queryByRole('listitem', {
-        name: /running instances/i,
-      })
-    );
+    await t
+      .useRole(demoUser)
+      .maximizeWindow()
+      .navigateTo('#/instances?active=true&incidents=true');
   });
 
 test('Sorting', async (t) => {

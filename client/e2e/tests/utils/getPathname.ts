@@ -6,6 +6,8 @@
 
 import {ClientFunction} from 'testcafe';
 
-const getPathname = ClientFunction(() => window.location.pathname);
+const getPathname = ClientFunction(() => {
+  return window.location.hash.replace(/^#/, '').split('?')[0];
+});
 
 export {getPathname};

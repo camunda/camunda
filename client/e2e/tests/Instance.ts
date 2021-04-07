@@ -27,7 +27,7 @@ test('Instance with an incident - header and instance header', async (t) => {
   } = t.fixtureCtx;
 
   const instanceId = instanceWithIncident.processInstanceKey;
-  await t.navigateTo(`/instances/${instanceId}`);
+  await t.navigateTo(`#/instances/${instanceId}`);
 
   await t
     .expect(
@@ -74,7 +74,7 @@ test('Instance with an incident - history panel', async (t) => {
   } = t.fixtureCtx;
 
   await t.navigateTo(
-    `/instances/${processWithMultipleTokens.processInstanceKey}`
+    `#/instances/${processWithMultipleTokens.processInstanceKey}`
   );
   await t.expect(screen.queryByText('Instance History').exists).ok();
 
@@ -129,7 +129,7 @@ test('Instance with an incident - diagram', async (t) => {
 
   const instanceId = instanceWithIncident.processInstanceKey;
 
-  await t.navigateTo(`/instances/${instanceId}`);
+  await t.navigateTo(`#/instances/${instanceId}`);
 
   await t.expect(screen.queryByTestId('popover').exists).notOk();
 
@@ -165,7 +165,7 @@ test('Instance with an incident - resolve an incident', async (t) => {
 
   const instanceId = instanceWithIncidentToResolve.processInstanceKey;
 
-  await t.navigateTo(`/instances/${instanceId}`);
+  await t.navigateTo(`#/instances/${instanceId}`);
 
   await t
     .click(screen.queryByRole('button', {name: 'Add variable'}))
@@ -241,7 +241,7 @@ test('Instance with an incident - incident bar', async (t) => {
 
   const instanceId = instanceWithIncidentForIncidentsBar.processInstanceKey;
 
-  await t.navigateTo(`/instances/${instanceId}`);
+  await t.navigateTo(`#/instances/${instanceId}`);
 
   // click and expand incident bar
   await t
@@ -527,7 +527,7 @@ test.skip('Instance with an incident - cancel an instance', async (t) => {
 
   const instanceId = instanceWithIncidentToCancel.processInstanceKey;
 
-  await t.navigateTo(`/instances/${instanceId}`);
+  await t.navigateTo(`#/instances/${instanceId}`);
 
   await t
     .expect(
@@ -582,7 +582,7 @@ test('Instance without an incident', async (t) => {
   } = t.fixtureCtx;
 
   await t.navigateTo(
-    `/instances/${instanceWithoutAnIncident.processInstanceKey}`
+    `#/instances/${instanceWithoutAnIncident.processInstanceKey}`
   );
 
   await t
