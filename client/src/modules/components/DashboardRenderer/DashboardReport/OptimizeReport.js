@@ -60,7 +60,7 @@ export class OptimizeReport extends React.Component {
           this.props.filter,
           params
         ),
-        (data) => this.setState({data}, resolve),
+        (data) => this.setState({data, error: null}, resolve),
         async (e) => {
           const errorData = await e.json();
           this.setState(
