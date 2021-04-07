@@ -62,6 +62,7 @@ public final class MigratedStreamProcessors {
     MIGRATED_VALUE_TYPES.put(ValueType.VARIABLE, MIGRATED);
     MIGRATED_VALUE_TYPES.put(ValueType.INCIDENT, MIGRATED);
     MIGRATED_VALUE_TYPES.put(ValueType.TIMER, MIGRATED);
+    MIGRATED_VALUE_TYPES.put(ValueType.PROCESS_EVENT, MIGRATED);
   }
 
   private MigratedStreamProcessors() {}

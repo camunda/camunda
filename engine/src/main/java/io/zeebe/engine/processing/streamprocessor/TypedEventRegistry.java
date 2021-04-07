@@ -19,6 +19,7 @@ import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
@@ -55,6 +56,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.PROCESS_INSTANCE_RESULT, ProcessInstanceResultRecord.class);
     registry.put(ValueType.PROCESS, ProcessRecord.class);
     registry.put(ValueType.DEPLOYMENT_DISTRIBUTION, DeploymentDistributionRecord.class);
+    registry.put(ValueType.PROCESS_EVENT, ProcessEventRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
   }

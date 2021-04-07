@@ -38,6 +38,7 @@
       <validValue name="PROCESS_INSTANCE_RESULT">21</validValue>
       <validValue name="PROCESS">22</validValue>
       <validValue name="DEPLOYMENT_DISTRIBUTION">23</validValue>
+      <validValue name="PROCESS_EVENT">24</validValue>
     </enum>
 
     <enum name="RecordType" encodingType="uint8">
