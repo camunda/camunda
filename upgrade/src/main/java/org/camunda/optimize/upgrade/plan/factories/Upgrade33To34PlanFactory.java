@@ -32,6 +32,7 @@ import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.ReindexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -66,6 +67,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
@@ -401,7 +403,11 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
     final SearchResponse response;
     try {
       response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
+    } catch (Exception e) {
+      if (e instanceof ElasticsearchStatusException
+        && isInstanceIndexNotFoundException((ElasticsearchStatusException) e)) {
+        return Collections.emptySet();
+      }
       throw new UpgradeRuntimeException(String.format("Was not able to retrieve instances of type %s", type), e);
     }
     final Terms definitionKeyTerms = response.getAggregations().get(defKeyAggName);
