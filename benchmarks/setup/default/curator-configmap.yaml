@@ -23,16 +23,10 @@ data:
           disable_action: False
           ignore_empty_list: True
         filters:
-        - filtertype: age
+        - filtertype: space
+          disk_space: 10
           source: name
-          direction: older
           timestring: '%Y-%m-%d'
-          unit: days
-          unit_count: 1
-          field:
-          stats_result:
-          epoch:
-          exclude: False
   config.yml: |-
     ---
     # Remember, leave a key empty if there is no value.  None will be a string,
