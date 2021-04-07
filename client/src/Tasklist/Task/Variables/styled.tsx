@@ -20,22 +20,8 @@ const Container = styled.div`
   overflow-y: hidden;
 `;
 
-const Title = styled.h1`
-  font-size: 20px;
-  font-weight: 600;
-  color: ${({theme}) => theme.colors.ui06};
-  margin: 0;
-`;
-
 const TableContainer = styled.div`
   overflow-y: auto;
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 44px 20px 30px 20px;
 `;
 
 const Body = styled.div`
@@ -157,10 +143,20 @@ const IconContainer = styled.div`
   justify-content: flex-end;
 `;
 
+type FormProps = {
+  hasFooter?: boolean;
+};
+
+const Form = styled.form<FormProps>`
+  display: grid;
+  grid-template-columns: 100%;
+  grid-template-rows: ${({hasFooter}) => (hasFooter ? '1fr 62px' : '1fr')};
+  overflow-y: hidden;
+`;
+
 export {
   Container,
   Body,
-  Title,
   TableContainer,
   EmptyMessage,
   Cross,
@@ -174,8 +170,8 @@ export {
   Warning,
   CreateButton,
   Plus,
-  Header,
   NameInput,
   IconButton,
   IconContainer,
+  Form,
 };

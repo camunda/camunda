@@ -1278,6 +1278,31 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
+"@bpmn-io/form-js-editor@^0.0.9":
+  version "0.0.9"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-editor/-/form-js-editor-0.0.9.tgz#1da5bb8f179ace6cf9151a68fa6027bb174e77ac"
+  integrity sha512-bNUWQncwXkVB077plKSCNnHU6SOJWaChF5WXy57VBny5049lSCeyNRwnJX1NxpakJNARPwSpgQXI0BdF91X1Og==
+  dependencies:
+    "@bpmn-io/form-js-viewer" "^0.0.9"
+    array-move "^3.0.1"
+    dragula "^3.7.3"
+    preact "^10.5.12"
+
+"@bpmn-io/form-js-viewer@^0.0.9":
+  version "0.0.9"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-0.0.9.tgz#133be2f56416903274dc8ed7b19f9fe922818435"
+  integrity sha512-WfVYwiSh4EG+UYo8x/rMy35p2z+KV13lLVJSMyQiRkB2vnJU6TkoCD3N5Ll8106qJvwGMnuTQi6o94KCEedj1w==
+  dependencies:
+    preact "^10.5.12"
+
+"@bpmn-io/form-js@^0.0.9":
+  version "0.0.9"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js/-/form-js-0.0.9.tgz#39747446748144c4452efd9c7dc54739247a0e3a"
+  integrity sha512-hkdYoESwZ1y6etW7kX0DUfQ0/8VGTq7L+5heUte4bv7gRUE0I+DmxKYBCKDrH8qyT1SqzBhVXNmKIdORtDEftw==
+  dependencies:
+    "@bpmn-io/form-js-editor" "^0.0.9"
+    "@bpmn-io/form-js-viewer" "^0.0.9"
+
 "@camunda-cloud/common-ui-react@^0.0.15":
   version "0.0.15"
   resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui-react/-/common-ui-react-0.0.15.tgz#a40b4c27f6aa13c2e8439da3393ec1fd5025491e"
@@ -3679,6 +3704,11 @@ array-includes@^3.0.3, array-includes@^3.1.1, array-includes@^3.1.2, array-inclu
     get-intrinsic "^1.1.1"
     is-string "^1.0.5"
 
+array-move@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/array-move/-/array-move-3.0.1.tgz#179645cc0987b65953a4fc06b6df9045e4ba9618"
+  integrity sha512-H3Of6NIn2nNU1gsVDqDnYKY/LCdWvCMMOWifNGhKcVQgiZ6nOek39aESOvro6zmueP07exSl93YLvkN4fZOkSg==
+
 array-union@^1.0.1, array-union@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/array-union/-/array-union-1.0.2.tgz#9a34410e4f4e3da23dea375be5be70f24778ec39"
@@ -3874,6 +3904,11 @@ at-least-node@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/at-least-node/-/at-least-node-1.0.0.tgz#602cd4b46e844ad4effc92a8011a3c46e0238dc2"
   integrity sha512-+q/t7Ekv1EDY2l6Gda6LLiX14rU9TV20Wa3ofeQmwPFZbOMo9DXrLbOjFaaclkXKWidIaopwAObQDqwWtGUjqg==
+
+atoa@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/atoa/-/atoa-1.0.0.tgz#0cc0e91a480e738f923ebc103676471779b34a49"
+  integrity sha1-DMDpGkgOc4+SPrwQNnZHF3mzSkk=
 
 atob@^2.1.2:
   version "2.1.2"
@@ -5544,6 +5579,14 @@ content-type@~1.0.4:
   resolved "https://registry.yarnpkg.com/content-type/-/content-type-1.0.4.tgz#e138cc75e040c727b1966fe5e5f8c9aee256fe3b"
   integrity sha512-hIP3EEPs8tB9AT1L+NUqtwOAps4mk2Zob89MWXMHjHWg9milF/j4osnnQLXBCBFBk/tvIG/tUc9mOUJiPBhPXA==
 
+contra@1.9.4:
+  version "1.9.4"
+  resolved "https://registry.yarnpkg.com/contra/-/contra-1.9.4.tgz#f53bde42d7e5b5985cae4d99a8d610526de8f28d"
+  integrity sha1-9TveQtfltZhcrk2ZqNYQUm3o8o0=
+  dependencies:
+    atoa "1.0.0"
+    ticky "1.0.1"
+
 convert-source-map@1.7.0, convert-source-map@^1.4.0, convert-source-map@^1.5.0, convert-source-map@^1.6.0, convert-source-map@^1.7.0:
   version "1.7.0"
   resolved "https://registry.yarnpkg.com/convert-source-map/-/convert-source-map-1.7.0.tgz#17a2cb882d7f77d3490585e2ce6c524424a3a442"
@@ -5738,6 +5781,13 @@ cross-spawn@^6.0.0, cross-spawn@^6.0.5:
     semver "^5.5.0"
     shebang-command "^1.2.0"
     which "^1.2.9"
+
+crossvent@1.5.5:
+  version "1.5.5"
+  resolved "https://registry.yarnpkg.com/crossvent/-/crossvent-1.5.5.tgz#ad20878e4921e9be73d9d6976f8b2ecd0f71a0b1"
+  integrity sha1-rSCHjkkh6b5z2daXb4suzQ9xoLE=
+  dependencies:
+    custom-event "^1.0.0"
 
 crypto-browserify@^3.11.0:
   version "3.12.0"
@@ -6050,6 +6100,11 @@ currently-unhandled@^0.4.1:
   integrity sha1-mI3zP+qxke95mmE2nddsF635V+o=
   dependencies:
     array-find-index "^1.0.1"
+
+custom-event@^1.0.0:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/custom-event/-/custom-event-1.0.1.tgz#5d02a46850adf1b4a317946a3928fccb5bfd0425"
+  integrity sha1-XQKkaFCt8bSjF5RqOSj8y1v9BCU=
 
 cyclist@^1.0.1:
   version "1.0.1"
@@ -6579,6 +6634,14 @@ downshift@^6.0.6:
     compute-scroll-into-view "^1.0.17"
     prop-types "^15.7.2"
     react-is "^17.0.1"
+
+dragula@^3.7.3:
+  version "3.7.3"
+  resolved "https://registry.yarnpkg.com/dragula/-/dragula-3.7.3.tgz#909460fd0b4acba5409c6dbb1b64d24f5bc9efb6"
+  integrity sha512-/rRg4zRhcpf81TyDhaHLtXt6sEywdfpv1cRUMeFFy7DuypH2U0WUL0GTdyAQvXegviT4PJK4KuMmOaIDpICseQ==
+  dependencies:
+    contra "1.9.4"
+    crossvent "1.5.5"
 
 duplexer3@^0.1.4:
   version "0.1.4"
@@ -13195,6 +13258,11 @@ postcss@^8.1.0:
     nanoid "^3.1.20"
     source-map "^0.6.1"
 
+preact@^10.5.12:
+  version "10.5.13"
+  resolved "https://registry.yarnpkg.com/preact/-/preact-10.5.13.tgz#85f6c9197ecd736ce8e3bec044d08fd1330fa019"
+  integrity sha512-q/vlKIGNwzTLu+jCcvywgGrt+H/1P/oIRSD6mV4ln3hmlC+Aa34C7yfPI4+5bzW8pONyVXYS7SvXosy2dKKtWQ==
+
 prelude-ls@^1.2.1:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/prelude-ls/-/prelude-ls-1.2.1.tgz#debc6489d7a6e6b0e7611888cec880337d316396"
@@ -15967,6 +16035,11 @@ thunky@^1.0.2:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/thunky/-/thunky-1.1.0.tgz#5abaf714a9405db0504732bbccd2cedd9ef9537d"
   integrity sha512-eHY7nBftgThBqOyHGVN+l8gF0BucP09fMo0oO/Lb0w1OF80dJv+lDVpXG60WMQvkcxAkNybKsrEIE3ZtKGmPrA==
+
+ticky@1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/ticky/-/ticky-1.0.1.tgz#b7cfa71e768f1c9000c497b9151b30947c50e46d"
+  integrity sha1-t8+nHnaPHJAAxJe5FRswlHxQ5G0=
 
 time-limit-promise@^1.0.2:
   version "1.0.4"

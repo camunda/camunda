@@ -21,6 +21,8 @@ const tasks: ReadonlyArray<Task> = [
     taskState: TaskStates.Created,
     sortValues: ['0', '1'],
     isFirst: true,
+    formKey: null,
+    processDefinitionId: null,
   },
   {
     __typename: 'Task',
@@ -41,6 +43,8 @@ const tasks: ReadonlyArray<Task> = [
     taskState: TaskStates.Created,
     sortValues: ['1', '2'],
     isFirst: false,
+    formKey: null,
+    processDefinitionId: null,
   },
   {
     __typename: 'Task',
@@ -54,6 +58,8 @@ const tasks: ReadonlyArray<Task> = [
     taskState: TaskStates.Created,
     sortValues: ['2', '3'],
     isFirst: false,
+    formKey: null,
+    processDefinitionId: null,
   },
 ];
 

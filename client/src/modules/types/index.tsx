@@ -29,6 +29,15 @@ type Task = Readonly<{
   taskState: TaskState;
   sortValues: [string, string];
   isFirst: boolean;
+  formKey: string | null;
+  processDefinitionId: string | null;
 }>;
 
-export type {User, Variable, Task, TaskState};
+type Form = Readonly<{
+  __typename: string;
+  id: string;
+  processDefinitionId: string;
+  schema: string;
+}>;
+
+export type {User, Variable, Task, TaskState, Form};

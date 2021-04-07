@@ -46,7 +46,7 @@ const mockCompleteTask = {
   },
   result: {
     data: {
-      completeTask: completedTask,
+      completeTask: completedTask(),
     },
   },
 };
@@ -58,7 +58,7 @@ const mockCompleteTaskWithEditedVariable = {
   },
   result: {
     data: {
-      completeTask: completedTaskWithEditedVariables,
+      completeTask: completedTaskWithEditedVariables(),
     },
   },
 };
@@ -73,7 +73,7 @@ const mockCompleteTaskWithAddedVariable = {
   },
   result: {
     data: {
-      completeTask: completedTask,
+      completeTask: completedTask(),
     },
   },
 };

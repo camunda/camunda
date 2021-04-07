@@ -4,6 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {createVariableFieldName} from './createVariableFieldName';
+import {Variable} from 'modules/types';
+import {FormValues} from './types';
+
 const validateJSON = (value?: string) => {
   try {
     if (value === undefined || value === '') {
@@ -23,4 +27,34 @@ const validateNonEmpty = (value?: string) => {
   return undefined;
 };
 
-export {validateJSON, validateNonEmpty};
+function validateDuplicateVariableName(
+  variable: Variable,
+  values: FormValues,
+  variableIndex: number,
+): string | void {
+  const {name} = variable;
+  const {newVariables} = values;
+
+  if (values.hasOwnProperty(createVariableFieldName(name))) {
+    return 'Name must be unique';
+  }
+
+  if (newVariables === undefined) {
+    return undefined;
+  }
+
+  if (newVariables.filter((variable) => variable?.name === name).length <= 1) {
+    return undefined;
+  }
+
+  if (
+    newVariables.findIndex((variable) => variable?.name === name) ===
+    variableIndex
+  ) {
+    return undefined;
+  }
+
+  return 'Name must be unique';
+}
+
+export {validateJSON, validateNonEmpty, validateDuplicateVariableName};

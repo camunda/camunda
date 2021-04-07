@@ -4,23 +4,22 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect, useRef} from 'react';
-import {useParams} from 'react-router-dom';
-import {Field, useForm, useField} from 'react-final-form';
+import React, {useRef} from 'react';
+import {FieldState} from 'final-form';
+import {Field, Form} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
-
-import {useTask} from 'modules/queries/get-task';
+import {get, intersection} from 'lodash';
+import arrayMutators from 'final-form-arrays';
+import {Button} from 'modules/components/Button';
 import {Table, TD, TR} from 'modules/components/Table';
 import {
   Container,
   Body,
-  Title,
   TableContainer,
   EmptyMessage,
   EditTextarea,
   CreateButton,
   Plus,
-  Header,
   Cross,
   NameInputTD,
   ValueInputTD,
@@ -32,61 +31,60 @@ import {
   NameInput,
   IconButton,
   RowTH,
+  Form as StyledForm,
 } from './styled';
-import {validateJSON, validateNonEmpty} from './validators';
+import {
+  validateJSON,
+  validateNonEmpty,
+  validateDuplicateVariableName,
+} from './validators';
 import {createVariableFieldName} from './createVariableFieldName';
+import {getVariableFieldName} from './getVariableFieldName';
+import {Variable} from 'modules/types';
+import {
+  GetCurrentUser,
+  GET_CURRENT_USER,
+} from 'modules/queries/get-current-user';
+import {useQuery} from '@apollo/client';
+import {DetailsFooter} from 'modules/components/DetailsFooter';
+import {ResetForm} from './ResetForm';
+import {GetTask} from 'modules/queries/get-task';
+import {FormValues} from './types';
+import {PanelTitle} from 'modules/components/PanelTitle';
+import {PanelHeader} from 'modules/components/PanelHeader';
 
-const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
+type Props = {
+  onSubmit: (variables: Variable[]) => Promise<void>;
+  task: GetTask['task'];
+};
+
+const Variables: React.FC<Props> = ({onSubmit, task}) => {
   const tableContainer = useRef<HTMLDivElement>(null);
-  const {id: taskId} = useParams<{id: string}>();
-  const {data} = useTask(taskId);
-  const form = useForm();
-  const newVariablesFieldArray = useField('newVariables');
-  const newVariableCount = useRef(newVariablesFieldArray.input.value.length);
+  const {data: userData, loading} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
 
-  useEffect(() => {
-    const updatedLength = newVariablesFieldArray.input.value.length;
-    if (
-      tableContainer.current !== null &&
-      updatedLength > newVariableCount.current
-    ) {
-      tableContainer.current.scrollTop = tableContainer.current.scrollHeight;
-    }
-
-    newVariableCount.current = updatedLength;
-  }, [newVariablesFieldArray.input.value.length]);
-
-  useEffect(() => {
-    if (!canEdit && !form.getState().submitting) {
-      form.reset();
-    }
-  }, [canEdit, form]);
-
-  useEffect(() => {
-    return () => {
-      form.reset();
-    };
-  }, [taskId, form]);
-
-  if (data === undefined) {
+  if (loading) {
     return null;
   }
 
-  const handleAddVariable = () => {
-    form.mutators.push('newVariables');
+  const {assignee, taskState, variables} = task;
+  const canCompleteTask =
+    userData?.currentUser.username === assignee?.username &&
+    taskState === 'CREATED';
+
+  const isVariableDirty = (
+    name: undefined | FieldState<string>,
+    value: undefined | FieldState<string>,
+  ): boolean => {
+    return Boolean(name?.dirty || value?.dirty);
   };
 
-  const isVariableDirty = (variable: string): boolean => {
-    return Boolean(
-      form.getFieldState(`${variable}.name`)?.dirty ||
-        form.getFieldState(`${variable}.value`)?.dirty,
-    );
-  };
-
-  const getError = (variable: string): string | void => {
-    const nameFieldError = form.getFieldState(`${variable}.name`)?.error;
-    const valueFieldError = form.getFieldState(`${variable}.value`)?.error;
-    const isDirty = isVariableDirty(variable);
+  const getError = (
+    name: undefined | FieldState<string>,
+    value: undefined | FieldState<string>,
+  ): string | void => {
+    const nameFieldError = name?.error;
+    const valueFieldError = value?.error;
+    const isDirty = isVariableDirty(name, value);
 
     if (
       !isDirty ||
@@ -102,159 +100,250 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
     return nameFieldError ?? valueFieldError;
   };
 
-  const {variables} = data.task;
-
   return (
-    <Container>
-      <Header>
-        <Title>Variables</Title>
-        {canEdit && (
-          <CreateButton
-            type="button"
-            variant="small"
-            onClick={handleAddVariable}
-          >
-            <Plus /> Add Variable
-          </CreateButton>
-        )}
-      </Header>
-      <Body>
-        {variables.length === 0 &&
-        newVariablesFieldArray.input.value.length === 0 ? (
-          <EmptyMessage>Task has no Variables</EmptyMessage>
-        ) : (
-          <TableContainer ref={tableContainer}>
-            <Table data-testid="variables-table">
-              <thead>
-                <TR hasNoBorder>
-                  <VariableNameTH>Name</VariableNameTH>
-                  <VariableValueTH colSpan={2}>Value</VariableValueTH>
-                </TR>
-              </thead>
-              <tbody>
-                {variables.map((variable) => {
-                  return (
-                    <TR key={variable.name}>
-                      {canEdit ? (
-                        <>
-                          <RowTH>
-                            <label htmlFor={variable.name}>
-                              {variable.name}
-                            </label>
-                          </RowTH>
-                          <ValueInputTD>
-                            <Field
-                              name={createVariableFieldName(variable.name)}
-                              initialValue={variable.value}
-                              validate={validateJSON}
-                            >
-                              {({input, meta}) => (
-                                <EditTextarea
-                                  {...input}
-                                  id={variable.name}
-                                  aria-invalid={meta.error !== undefined}
-                                />
-                              )}
-                            </Field>
-                          </ValueInputTD>
-                          <IconTD>
-                            {form.getFieldState(
-                              createVariableFieldName(variable.name),
-                            )?.error !== undefined && (
-                              <Warning
-                                title={
-                                  form.getFieldState(
-                                    createVariableFieldName(variable.name),
-                                  )?.error
-                                }
-                                data-testid={`warning-icon-${variable.name}`}
-                              />
-                            )}
-                          </IconTD>
-                        </>
-                      ) : (
-                        <>
-                          <RowTH>{variable.name}</RowTH>
-                          <TD>{variable.value}</TD>
-                        </>
-                      )}
-                    </TR>
-                  );
-                })}
-                {canEdit && (
-                  <FieldArray name="newVariables">
-                    {({fields}) =>
-                      fields.map((variable, index) => {
-                        const error = getError(variable);
+    <Form<FormValues>
+      mutators={{...arrayMutators}}
+      onSubmit={async (values, form) => {
+        const {dirtyFields, initialValues = []} = form.getState();
+
+        const existingVariables: ReadonlyArray<Variable> = intersection(
+          Object.keys(initialValues),
+          Object.keys(dirtyFields),
+        ).map((name) => ({
+          name,
+          value: values[name],
+        }));
+
+        const newVariables: ReadonlyArray<Variable> =
+          get(values, 'newVariables') || [];
+
+        await onSubmit([
+          ...existingVariables.map((variable) => ({
+            ...variable,
+            name: getVariableFieldName(variable.name),
+          })),
+          ...newVariables,
+        ]);
+      }}
+      validate={(values) => {
+        const {newVariables} = values;
+
+        if (newVariables !== undefined) {
+          return {
+            newVariables: newVariables.map((variable, index) => {
+              if (variable === undefined) {
+                return {
+                  name: validateNonEmpty(''),
+                  value: validateJSON(''),
+                };
+              }
+              const {value, name} = variable;
+
+              return {
+                name:
+                  validateNonEmpty(name) ??
+                  validateDuplicateVariableName(variable, values, index),
+                value: validateJSON(value),
+              };
+            }),
+          };
+        }
+
+        return {};
+      }}
+    >
+      {({form, handleSubmit, values}) => (
+        <StyledForm onSubmit={handleSubmit} hasFooter={canCompleteTask}>
+          <ResetForm isAssigned={canCompleteTask} />
+          <Container>
+            <PanelHeader>
+              <PanelTitle>Variables</PanelTitle>
+              {canCompleteTask && (
+                <CreateButton
+                  type="button"
+                  variant="small"
+                  onClick={() => {
+                    const element = tableContainer.current;
+                    if (element !== null) {
+                      element.scrollTop = element.scrollHeight;
+                    }
+
+                    form.mutators.push('newVariables');
+                  }}
+                >
+                  <Plus /> Add Variable
+                </CreateButton>
+              )}
+            </PanelHeader>
+            <Body>
+              {variables.length >= 1 ||
+              (values?.newVariables?.length !== undefined &&
+                values?.newVariables?.length >= 1) ? (
+                <TableContainer ref={tableContainer}>
+                  <Table data-testid="variables-table">
+                    <thead>
+                      <TR hasNoBorder>
+                        <VariableNameTH>Name</VariableNameTH>
+                        <VariableValueTH colSpan={2}>Value</VariableValueTH>
+                      </TR>
+                    </thead>
+                    <tbody>
+                      {variables.map((variable) => {
                         return (
-                          <TR key={variable} data-testid={variable}>
-                            <NameInputTD>
-                              <Field
-                                name={`${variable}.name`}
-                                validate={validateNonEmpty}
-                              >
-                                {({input, meta}) => (
-                                  <NameInput
-                                    {...input}
-                                    placeholder="Name"
-                                    aria-label={`${variable}.name`}
-                                    aria-invalid={
-                                      meta.error !== undefined &&
-                                      isVariableDirty(variable)
-                                    }
-                                  />
-                                )}
-                              </Field>
-                            </NameInputTD>
-                            <ValueInputTD>
-                              <Field
-                                name={`${variable}.value`}
-                                validate={validateJSON}
-                              >
-                                {({input, meta}) => (
-                                  <EditTextarea
-                                    {...input}
-                                    aria-label={`${variable}.value`}
-                                    placeholder="Value"
-                                    aria-invalid={
-                                      meta.error !== undefined &&
-                                      isVariableDirty(variable)
-                                    }
-                                  />
-                                )}
-                              </Field>
-                            </ValueInputTD>
-                            <IconTD>
-                              <IconContainer>
-                                {error !== undefined && (
-                                  <Warning
-                                    title={error}
-                                    data-testid={`warning-icon-${variable}.value`}
-                                  />
-                                )}
-                                <IconButton
-                                  type="button"
-                                  aria-label={`Remove new variable ${index}`}
-                                  onClick={() => {
-                                    fields.remove(index);
-                                  }}
-                                >
-                                  <Cross />
-                                </IconButton>
-                              </IconContainer>
-                            </IconTD>
+                          <TR key={variable.name}>
+                            {canCompleteTask ? (
+                              <>
+                                <RowTH>
+                                  <label htmlFor={variable.name}>
+                                    {variable.name}
+                                  </label>
+                                </RowTH>
+                                <ValueInputTD>
+                                  <Field
+                                    name={createVariableFieldName(
+                                      variable.name,
+                                    )}
+                                    initialValue={variable.value}
+                                    validate={validateJSON}
+                                  >
+                                    {({input, meta}) => (
+                                      <EditTextarea
+                                        {...input}
+                                        id={variable.name}
+                                        aria-invalid={meta.error !== undefined}
+                                      />
+                                    )}
+                                  </Field>
+                                </ValueInputTD>
+                                <IconTD>
+                                  {form.getFieldState(
+                                    createVariableFieldName(variable.name),
+                                  )?.error !== undefined && (
+                                    <Warning
+                                      title={
+                                        form.getFieldState(
+                                          createVariableFieldName(
+                                            variable.name,
+                                          ),
+                                        )?.error
+                                      }
+                                      data-testid={`warning-icon-${variable.name}`}
+                                    />
+                                  )}
+                                </IconTD>
+                              </>
+                            ) : (
+                              <>
+                                <RowTH>{variable.name}</RowTH>
+                                <TD>{variable.value}</TD>
+                              </>
+                            )}
                           </TR>
                         );
-                      })
-                    }
-                  </FieldArray>
-                )}
-              </tbody>
-            </Table>
-          </TableContainer>
-        )}
-      </Body>
-    </Container>
+                      })}
+                      {canCompleteTask && (
+                        <FieldArray name="newVariables">
+                          {({fields}) =>
+                            fields.map((variable, index) => {
+                              const error = getError(
+                                form.getFieldState(`${variable}.name`),
+                                form.getFieldState(`${variable}.value`),
+                              );
+                              return (
+                                <TR key={variable} data-testid={variable}>
+                                  <NameInputTD>
+                                    <Field name={`${variable}.name`}>
+                                      {({input, meta}) => (
+                                        <NameInput
+                                          {...input}
+                                          placeholder="Name"
+                                          aria-label={`New variable ${index} name`}
+                                          aria-invalid={
+                                            meta.error !== undefined &&
+                                            isVariableDirty(
+                                              form.getFieldState(
+                                                `${variable}.name`,
+                                              ),
+                                              form.getFieldState(
+                                                `${variable}.value`,
+                                              ),
+                                            )
+                                          }
+                                        />
+                                      )}
+                                    </Field>
+                                  </NameInputTD>
+                                  <ValueInputTD>
+                                    <Field name={`${variable}.value`}>
+                                      {({input, meta}) => (
+                                        <EditTextarea
+                                          {...input}
+                                          aria-label={`New variable ${index} value`}
+                                          placeholder="Value"
+                                          aria-invalid={
+                                            meta.error !== undefined &&
+                                            isVariableDirty(
+                                              form.getFieldState(
+                                                `${variable}.name`,
+                                              ),
+                                              form.getFieldState(
+                                                `${variable}.value`,
+                                              ),
+                                            )
+                                          }
+                                        />
+                                      )}
+                                    </Field>
+                                  </ValueInputTD>
+                                  <IconTD>
+                                    <IconContainer>
+                                      {error !== undefined && (
+                                        <Warning
+                                          title={error}
+                                          data-testid={`warning-icon-${variable}.value`}
+                                        />
+                                      )}
+                                      <IconButton
+                                        type="button"
+                                        aria-label={`Remove new variable ${index}`}
+                                        onClick={() => {
+                                          fields.remove(index);
+                                        }}
+                                      >
+                                        <Cross />
+                                      </IconButton>
+                                    </IconContainer>
+                                  </IconTD>
+                                </TR>
+                              );
+                            })
+                          }
+                        </FieldArray>
+                      )}
+                    </tbody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <EmptyMessage>Task has no Variables</EmptyMessage>
+              )}
+            </Body>
+          </Container>
+          {canCompleteTask && (
+            <DetailsFooter>
+              <Button
+                type="submit"
+                disabled={
+                  form.getState().submitting ||
+                  form.getState().hasValidationErrors
+                }
+              >
+                Complete Task
+              </Button>
+            </DetailsFooter>
+          )}
+        </StyledForm>
+      )}
+    </Form>
   );
 };
 export {Variables};

@@ -83,11 +83,11 @@ test.after(async (t) => {
     .click(screen.getByRole('button', {name: 'Add Variable'}));
 
   await t.typeText(
-    screen.getByRole('textbox', {name: 'newVariables[0].name'}),
+    screen.getByRole('textbox', {name: 'New variable 0 name'}),
     'newVariableName',
   );
   await t.typeText(
-    screen.getByRole('textbox', {name: 'newVariables[0].value'}),
+    screen.getByRole('textbox', {name: 'New variable 0 value'}),
     '"newVariableValue"',
   );
 
@@ -116,11 +116,11 @@ test('new variable still exists after refresh if task is completed', async (t) =
     .click(screen.getByRole('button', {name: 'Add Variable'}));
 
   await t.typeText(
-    screen.getByRole('textbox', {name: 'newVariables[0].name'}),
+    screen.getByRole('textbox', {name: 'New variable 0 name'}),
     'newVariableName',
   );
   await t.typeText(
-    screen.getByRole('textbox', {name: 'newVariables[0].value'}),
+    screen.getByRole('textbox', {name: 'New variable 0 value'}),
     '"newVariableValue"',
   );
 

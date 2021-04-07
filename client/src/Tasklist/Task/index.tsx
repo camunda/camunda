@@ -7,11 +7,6 @@
 import React from 'react';
 import {useParams, useLocation, useHistory} from 'react-router-dom';
 import {useQuery, useMutation} from '@apollo/client';
-import {Form} from 'react-final-form';
-import {get, intersection} from 'lodash';
-import arrayMutators from 'final-form-arrays';
-
-import {TaskStates} from 'modules/constants/taskStates';
 import {GetTask, useTask} from 'modules/queries/get-task';
 import {
   COMPLETE_TASK,
@@ -19,35 +14,37 @@ import {
 } from 'modules/mutations/complete-task';
 import {getCompleteTaskErrorMessage} from './getCompleteTaskErrorMessage';
 import {shouldFetchMore} from './shouldFetchMore';
-import {Button} from 'modules/components/Button';
-
 import {Variables} from './Variables';
 import {Details} from './Details';
-import {Footer, Form as StyledForm, Container, LoadingOverlay} from './styled';
+import {Container, LoadingOverlay} from './styled';
 import {
   GetCurrentUser,
   GET_CURRENT_USER,
 } from 'modules/queries/get-current-user';
 import {Pages} from 'modules/constants/pages';
-import {Variable} from 'modules/types';
+import {Task as TaskType, Variable} from 'modules/types';
 import {GetTasks, GET_TASKS} from 'modules/queries/get-tasks';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
 import {FilterValues} from 'modules/constants/filterValues';
 import {useNotifications} from 'modules/notifications';
-import {getVariableFieldName} from './getVariableFieldName';
+import {FormJS} from './FormJS';
+
 import {
   MAX_TASKS_PER_REQUEST,
   MAX_TASKS_DISPLAYED,
 } from 'modules/constants/tasks';
 import {getSortValues} from './getSortValues';
-import {createVariableFieldName} from './Variables/createVariableFieldName';
 
-type FormType = {
-  [key: string]: string;
-} & {
-  newVariables?: Variable[];
-};
+const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
+
+function isCamundaForms(formKey: NonNullable<TaskType['formKey']>): boolean {
+  return formKey.startsWith(CAMUNDA_FORMS_PREFIX);
+}
+
+function getFormId(formKey: NonNullable<TaskType['formKey']>): string {
+  return formKey.replace(CAMUNDA_FORMS_PREFIX, '');
+}
 
 const Task: React.FC = () => {
   const {id} = useParams<{id: string}>();
@@ -85,11 +82,54 @@ const Task: React.FC = () => {
     },
   );
   const notifications = useNotifications();
-  const {taskState, assignee} = data?.task ?? {};
+  const {formKey, processDefinitionId} = data?.task ?? {};
 
-  const canCompleteTask =
-    userData?.currentUser.username === assignee?.username &&
-    taskState === TaskStates.Created;
+  async function handleSubmission(variables: Variable[]) {
+    try {
+      await completeTask({
+        variables: {
+          id,
+          variables,
+        },
+      });
+
+      notifications.displayNotification('success', {
+        headline: 'Task completed',
+      });
+
+      const searchParams = new URLSearchParams(location.search);
+      const gseUrl = searchParams.get('gseUrl');
+
+      if (gseUrl !== null && !notifications.isGseNotificationVisible) {
+        notifications.displayNotification('info', {
+          headline: 'To continue to getting started, go back to',
+          isDismissable: false,
+          isGseNotification: true,
+          navigation: {
+            label: 'Cloud',
+            navigationHandler: () => {
+              window.location.href = gseUrl;
+            },
+          },
+        });
+      }
+
+      history.push({
+        pathname: Pages.Initial(),
+        search: history.location.search,
+      });
+    } catch (error) {
+      notifications.displayNotification('error', {
+        headline: 'Task could not be completed',
+        description: getCompleteTaskErrorMessage(error.message),
+      });
+
+      // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getCompleteTaskErrorMessage
+      if (shouldFetchMore(error.message)) {
+        fetchMore({variables: {id}});
+      }
+    }
+  }
 
   return (
     <Container>
@@ -99,139 +139,19 @@ const Task: React.FC = () => {
       {data !== undefined && (
         <>
           <Details />
-          <Form<FormType>
-            mutators={{...arrayMutators}}
-            validate={(values) => {
-              const {newVariables} = values;
-
-              if (
-                newVariables !== undefined &&
-                newVariables.some((variable) => variable !== undefined)
-              ) {
-                return {
-                  newVariables: newVariables.map((variable, index) => {
-                    if (variable === undefined) {
-                      return undefined;
-                    }
-
-                    const {name} = variable;
-
-                    if (values.hasOwnProperty(createVariableFieldName(name))) {
-                      return {name: 'Name must be unique'};
-                    }
-
-                    if (
-                      newVariables.filter((variable) => variable?.name === name)
-                        .length <= 1
-                    ) {
-                      return undefined;
-                    }
-
-                    if (
-                      newVariables.findIndex(
-                        (variable) => variable?.name === name,
-                      ) === index
-                    ) {
-                      return undefined;
-                    }
-
-                    return {name: 'Name must be unique'};
-                  }),
-                };
-              }
-
-              return {};
-            }}
-            onSubmit={async (values, form) => {
-              const {dirtyFields, initialValues = []} = form.getState();
-
-              const existingVariables: ReadonlyArray<Variable> = intersection(
-                Object.keys(initialValues),
-                Object.keys(dirtyFields),
-              ).map((name) => ({
-                name,
-                value: values[name],
-              }));
-
-              const newVariables: ReadonlyArray<Variable> =
-                get(values, 'newVariables') || [];
-
-              try {
-                await completeTask({
-                  variables: {
-                    id,
-                    variables: [
-                      ...existingVariables.map((variable) => ({
-                        ...variable,
-                        name: getVariableFieldName(variable.name),
-                      })),
-                      ...newVariables,
-                    ],
-                  },
-                });
-
-                notifications.displayNotification('success', {
-                  headline: 'Task completed',
-                });
-
-                const searchParams = new URLSearchParams(location.search);
-                const gseUrl = searchParams.get('gseUrl');
-
-                if (
-                  gseUrl !== null &&
-                  !notifications.isGseNotificationVisible
-                ) {
-                  notifications.displayNotification('info', {
-                    headline: 'To continue to getting started, go back to',
-                    isDismissable: false,
-                    isGseNotification: true,
-                    navigation: {
-                      label: 'Cloud',
-                      navigationHandler: () => {
-                        window.location.href = gseUrl;
-                      },
-                    },
-                  });
-                }
-
-                history.push({
-                  pathname: Pages.Initial(),
-                  search: history.location.search,
-                });
-              } catch (error) {
-                notifications.displayNotification('error', {
-                  headline: 'Task could not be completed',
-                  description: getCompleteTaskErrorMessage(error.message),
-                });
-
-                // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getCompleteTaskErrorMessage
-                if (shouldFetchMore(error.message)) {
-                  fetchMore({variables: {id}});
-                }
-              }
-            }}
-          >
-            {({form, handleSubmit}) => {
-              return (
-                <StyledForm onSubmit={handleSubmit} hasFooter={canCompleteTask}>
-                  <Variables canEdit={canCompleteTask} />
-                  {canCompleteTask && (
-                    <Footer>
-                      <Button
-                        type="submit"
-                        disabled={
-                          form.getState().submitting ||
-                          form.getState().hasValidationErrors
-                        }
-                      >
-                        Complete Task
-                      </Button>
-                    </Footer>
-                  )}
-                </StyledForm>
-              );
-            }}
-          </Form>
+          {typeof formKey === 'string' &&
+          typeof processDefinitionId === 'string' &&
+          isCamundaForms(formKey) ? (
+            <FormJS
+              key={id}
+              task={data.task}
+              id={getFormId(formKey)}
+              onSubmit={handleSubmission}
+              processDefinitionId={processDefinitionId}
+            />
+          ) : (
+            <Variables key={id} task={data.task} onSubmit={handleSubmission} />
+          )}
         </>
       )}
     </Container>

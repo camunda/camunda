@@ -47,7 +47,7 @@ const getWrapper = ({id, mocks}: GetWrapperProps) => {
 describe('<Details />', () => {
   it('should render completed task details', async () => {
     render(<Details />, {
-      wrapper: getWrapper({id: '0', mocks: [mockGetTaskCompleted]}),
+      wrapper: getWrapper({id: '0', mocks: [mockGetTaskCompleted()]}),
     });
 
     expect(await screen.findByText('My Task')).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe('<Details />', () => {
 
   it('should render unclaimed task details', async () => {
     render(<Details />, {
-      wrapper: getWrapper({id: '0', mocks: [mockGetTaskUnclaimed]}),
+      wrapper: getWrapper({id: '0', mocks: [mockGetTaskUnclaimed()]}),
     });
 
     expect(await screen.findByText('My Task')).toBeInTheDocument();
@@ -91,7 +91,11 @@ describe('<Details />', () => {
     render(<Details />, {
       wrapper: getWrapper({
         id: '0',
-        mocks: [mockGetTaskUnclaimed, mockClaimTask, mockGetAllOpenTasks(true)],
+        mocks: [
+          mockGetTaskUnclaimed(),
+          mockClaimTask,
+          mockGetAllOpenTasks(true),
+        ],
       }),
     });
     expect(
@@ -123,7 +127,7 @@ describe('<Details />', () => {
       wrapper: getWrapper({
         id: '0',
         mocks: [
-          mockGetTaskClaimed,
+          mockGetTaskClaimed(),
           mockUnclaimTask,
           mockGetAllOpenTasksUnclaimed(true),
         ],

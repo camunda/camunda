@@ -12,29 +12,27 @@ import {createMemoryHistory, History} from 'history';
 import {
   render,
   screen,
-  fireEvent,
   waitFor,
   waitForElementToBeRemoved,
   within,
 } from '@testing-library/react';
 import {MockedResponse} from '@apollo/client/testing';
-
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {
   mockGetTaskClaimedWithVariables,
   mockGetTaskClaimed,
   mockGetTaskCompletedWithVariables,
+  mockGetTaskClaimedWithPrefilledForm,
+  mockGetTaskCompletedWithForm,
 } from 'modules/queries/get-task';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-import {
-  mockCompleteTask,
-  mockCompleteTaskWithAddedVariable,
-  mockCompleteTaskWithEditedVariable,
-} from 'modules/mutations/complete-task';
+import {mockCompleteTask} from 'modules/mutations/complete-task';
 import {mockGetAllOpenTasks} from 'modules/queries/get-tasks';
 import {mockClaimTask} from 'modules/mutations/claim-task';
 import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
+import userEvent from '@testing-library/user-event';
+import {mockGetForm} from 'modules/queries/get-form';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -71,14 +69,46 @@ describe('<Task />', () => {
     render(<Task />, {
       wrapper: getWrapper({
         history,
-        mocks: [mockGetTaskClaimedWithVariables, mockGetCurrentUser],
+        mocks: [
+          mockGetTaskClaimedWithVariables(),
+          mockGetCurrentUser,
+          mockGetTaskClaimedWithPrefilledForm(),
+          mockGetForm,
+        ],
       }),
     });
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
     expect(
-      await screen.findByRole('button', {name: 'Complete Task'}),
+      await screen.findByRole('button', {
+        name: 'Complete Task',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('should render created task with embedded form', async () => {
+    const history = createMemoryHistory({
+      initialEntries: ['/0'],
+    });
+
+    render(<Task />, {
+      wrapper: getWrapper({
+        history,
+        mocks: [
+          mockGetCurrentUser,
+          mockGetTaskClaimedWithPrefilledForm(),
+          mockGetForm,
+        ],
+      }),
+    });
+
+    expect(await screen.findByTestId('details-table')).toBeInTheDocument();
+    expect(await screen.findByTestId('embedded-form')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', {
+        name: 'Complete Task',
+      }),
     ).toBeInTheDocument();
   });
 
@@ -90,14 +120,41 @@ describe('<Task />', () => {
     render(<Task />, {
       wrapper: getWrapper({
         history,
-        mocks: [mockGetTaskCompletedWithVariables, mockGetCurrentUser],
+        mocks: [mockGetTaskCompletedWithVariables(), mockGetCurrentUser],
       }),
     });
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'Complete Task'}),
+      screen.queryByRole('button', {
+        name: 'Complete Task',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should render completed task with embedded form', async () => {
+    const history = createMemoryHistory({
+      initialEntries: ['/0'],
+    });
+
+    render(<Task />, {
+      wrapper: getWrapper({
+        history,
+        mocks: [
+          mockGetCurrentUser,
+          mockGetTaskCompletedWithForm(),
+          mockGetForm,
+        ],
+      }),
+    });
+
+    expect(await screen.findByTestId('details-table')).toBeInTheDocument();
+    expect(await screen.findByTestId('embedded-form')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: 'Complete Task',
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -110,7 +167,7 @@ describe('<Task />', () => {
       wrapper: getWrapper({
         history,
         mocks: [
-          mockGetTaskClaimed,
+          mockGetTaskClaimed(),
           mockGetCurrentUser,
           mockCompleteTask,
           mockGetAllOpenTasks(true),
@@ -118,7 +175,11 @@ describe('<Task />', () => {
       }),
     });
 
-    fireEvent.click(await screen.findByRole('button', {name: 'Complete Task'}));
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: 'Complete Task',
+      }),
+    );
 
     await waitFor(() => {
       expect(history.location.pathname).toBe('/');
@@ -137,11 +198,15 @@ describe('<Task />', () => {
     render(<Task />, {
       wrapper: getWrapper({
         history,
-        mocks: [mockGetTaskClaimedWithVariables, mockGetCurrentUser],
+        mocks: [mockGetTaskClaimedWithVariables(), mockGetCurrentUser],
       }),
     });
 
-    fireEvent.click(await screen.findByRole('button', {name: 'Complete Task'}));
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: 'Complete Task',
+      }),
+    );
 
     await waitFor(() => {
       expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
@@ -160,7 +225,7 @@ describe('<Task />', () => {
       wrapper: getWrapper({
         history,
         mocks: [
-          mockGetTaskClaimed,
+          mockGetTaskClaimed(),
           mockGetCurrentUser,
           mockCompleteTask,
           mockGetAllOpenTasks(true),
@@ -168,7 +233,11 @@ describe('<Task />', () => {
       }),
     });
 
-    fireEvent.click(await screen.findByRole('button', {name: 'Complete Task'}));
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: 'Complete Task',
+      }),
+    );
 
     await waitFor(() => {
       expect(history.location.pathname).toBe('/');
@@ -184,131 +253,6 @@ describe('<Task />', () => {
     });
   });
 
-  it('should change variable and complete task', async () => {
-    const history = createMemoryHistory({
-      initialEntries: ['/0'],
-    });
-
-    render(<Task />, {
-      wrapper: getWrapper({
-        history,
-        mocks: [
-          mockGetTaskClaimedWithVariables,
-          mockGetCurrentUser,
-          mockCompleteTaskWithEditedVariable,
-          mockGetAllOpenTasks(true),
-        ],
-      }),
-    });
-
-    fireEvent.change(await screen.findByRole('textbox', {name: 'myVar'}), {
-      target: {value: '"newValue"'},
-    });
-
-    fireEvent.click(await screen.findByRole('button', {name: 'Complete Task'}));
-
-    await waitFor(() => {
-      expect(history.location.pathname).toBe('/');
-    });
-
-    expect(mockDisplayNotification).toHaveBeenCalledWith('success', {
-      headline: 'Task completed',
-    });
-  });
-
-  it('should add new variable and complete task', async () => {
-    const history = createMemoryHistory({
-      initialEntries: ['/0'],
-    });
-
-    render(<Task />, {
-      wrapper: getWrapper({
-        history,
-        mocks: [
-          mockGetTaskClaimed,
-          mockGetCurrentUser,
-          mockCompleteTaskWithAddedVariable,
-          mockGetAllOpenTasks(true),
-        ],
-      }),
-    });
-
-    fireEvent.click(await screen.findByText('Add Variable'));
-
-    fireEvent.change(
-      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
-      {
-        target: {value: 'newVariableName'},
-      },
-    );
-
-    fireEvent.change(
-      screen.getByRole('textbox', {name: 'newVariables[0].value'}),
-      {
-        target: {value: '"newVariableValue"'},
-      },
-    );
-
-    fireEvent.click(await screen.findByRole('button', {name: 'Complete Task'}));
-
-    await waitFor(() => {
-      expect(history.location.pathname).toBe('/');
-    });
-
-    expect(mockDisplayNotification).toHaveBeenCalledWith('success', {
-      headline: 'Task completed',
-    });
-  });
-
-  it('should disable submit button on form errors for existing variables', async () => {
-    const history = createMemoryHistory({
-      initialEntries: ['/0'],
-    });
-
-    render(<Task />, {
-      wrapper: getWrapper({
-        history,
-        mocks: [mockGetTaskClaimedWithVariables, mockGetCurrentUser],
-      }),
-    });
-
-    fireEvent.change(await screen.findByRole('textbox', {name: 'myVar'}), {
-      target: {value: '{{ invalid value'},
-    });
-
-    expect(screen.getAllByTestId(/^warning-icon/)).toHaveLength(1);
-    expect(screen.getByTestId('warning-icon-myVar')).toBeInTheDocument();
-    expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Complete Task'})).toBeDisabled();
-  });
-
-  it('should disable submit button on form errors for new variables', async () => {
-    const history = createMemoryHistory({
-      initialEntries: ['/0'],
-    });
-
-    render(<Task />, {
-      wrapper: getWrapper({
-        history,
-        mocks: [mockGetTaskClaimedWithVariables, mockGetCurrentUser],
-      }),
-    });
-
-    fireEvent.click(await screen.findByText('Add Variable'));
-    fireEvent.change(
-      screen.getByRole('textbox', {name: 'newVariables[0].value'}),
-      {
-        target: {value: '{{ invalid value'},
-      },
-    );
-
-    expect(screen.getAllByTestId(/^warning-icon/)).toHaveLength(1);
-    expect(
-      screen.getByTestId('warning-icon-newVariables[0].value'),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Complete Task'})).toBeDisabled();
-  });
-
   it('should show a loading spinner while loading', async () => {
     const history = createMemoryHistory({
       initialEntries: ['/0'],
@@ -317,7 +261,7 @@ describe('<Task />', () => {
     render(<Task />, {
       wrapper: getWrapper({
         history,
-        mocks: [mockGetTaskClaimedWithVariables, mockGetCurrentUser],
+        mocks: [mockGetTaskClaimedWithVariables(), mockGetCurrentUser],
       }),
     });
 
@@ -326,51 +270,76 @@ describe('<Task />', () => {
     await waitForElementToBeRemoved(screen.getByTestId('details-overlay'));
   });
 
-  it('should reset variables on unclaim/claim', async () => {
+  it('should reset variables', async () => {
+    const mockHistory = createMemoryHistory({
+      initialEntries: ['/0'],
+    });
     render(<Task />, {
       wrapper: getWrapper({
-        history: createMemoryHistory({
-          initialEntries: ['/0'],
-        }),
+        history: mockHistory,
         mocks: [
           mockGetCurrentUser,
-          mockGetTaskClaimed,
+          mockGetTaskClaimed(),
           mockUnclaimTask,
           mockGetAllOpenTasks(true),
           mockClaimTask,
           mockGetAllOpenTasks(true),
-          mockGetTaskClaimed,
+          mockGetTaskClaimed('1'),
         ],
       }),
     });
 
-    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
-
-    fireEvent.change(
-      await screen.findByRole('textbox', {name: 'newVariables[0].name'}),
-      {target: {value: 'valid_name'}},
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: /Add Variable/,
+      }),
     );
 
-    fireEvent.change(
-      await screen.findByRole('textbox', {name: 'newVariables[0].value'}),
-      {target: {value: '"valid_value"'}},
+    userEvent.type(
+      await screen.findByRole('textbox', {
+        name: 'New variable 0 name',
+      }),
+      'valid_name',
+    );
+
+    userEvent.type(
+      await screen.findByRole('textbox', {
+        name: 'New variable 0 value',
+      }),
+      '"valid_value"',
     );
 
     expect(
-      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
+      screen.getByRole('textbox', {
+        name: 'New variable 0 name',
+      }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('textbox', {name: 'newVariables[0].value'}),
+      screen.getByRole('textbox', {
+        name: 'New variable 0 value',
+      }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', {name: 'Unclaim'}));
+    userEvent.click(
+      screen.getByRole('button', {
+        name: 'Unclaim',
+      }),
+    );
     expect(
-      await screen.findByRole('button', {name: 'Claim'}),
+      await screen.findByRole('button', {
+        name: 'Claim',
+      }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', {name: 'Claim'}));
+    userEvent.click(
+      screen.getByRole('button', {
+        name: 'Claim',
+      }),
+    );
     expect(
-      await screen.findByRole('button', {name: 'Unclaim'}),
+      await screen.findByRole('button', {
+        name: 'Unclaim',
+      }),
     ).toBeInTheDocument();
 
     expect(screen.getByText(/Task has no Variables/)).toBeInTheDocument();
@@ -384,7 +353,7 @@ describe('<Task />', () => {
         }),
         mocks: [
           mockGetCurrentUser,
-          mockGetTaskClaimedWithVariables,
+          mockGetTaskClaimedWithVariables(),
           mockUnclaimTask,
           mockGetAllOpenTasks(true),
           mockClaimTask,
@@ -393,21 +362,34 @@ describe('<Task />', () => {
       }),
     });
 
-    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: /Add Variable/,
+      }),
+    );
 
     // try to add a variable with a same name from one of the existing variables
-    fireEvent.change(
-      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
-      {target: {value: 'myVar'}},
+    userEvent.type(
+      screen.getByRole('textbox', {
+        name: 'New variable 0 name',
+      }),
+      'myVar',
     );
 
     expect(
       screen.getByTitle('Name must be unique and Value has to be JSON'),
     ).toBeInTheDocument();
 
-    fireEvent.change(
-      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
-      {target: {value: 'myVar2'}},
+    userEvent.clear(
+      screen.getByRole('textbox', {
+        name: 'New variable 0 name',
+      }),
+    );
+    userEvent.type(
+      screen.getByRole('textbox', {
+        name: 'New variable 0 name',
+      }),
+      'myVar2',
     );
 
     expect(
@@ -415,10 +397,16 @@ describe('<Task />', () => {
     ).toBeInTheDocument();
 
     // try to add a variable with a same name from one of the new added variables
-    fireEvent.click(screen.getByRole('button', {name: /Add Variable/}));
-    fireEvent.change(
-      screen.getByRole('textbox', {name: 'newVariables[1].name'}),
-      {target: {value: 'myVar2'}},
+    userEvent.click(
+      screen.getByRole('button', {
+        name: /Add Variable/,
+      }),
+    );
+    userEvent.type(
+      screen.getByRole('textbox', {
+        name: 'New variable 1 name',
+      }),
+      'myVar2',
     );
 
     expect(
@@ -434,8 +422,10 @@ describe('<Task />', () => {
       ),
     ).not.toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole('button', {name: 'Remove new variable 0'}),
+    userEvent.click(
+      screen.getByRole('button', {
+        name: 'Remove new variable 0',
+      }),
     );
 
     expect(

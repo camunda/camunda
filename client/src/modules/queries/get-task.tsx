@@ -14,6 +14,11 @@ import {
   unclaimedTaskWithVariables,
   completedTaskWithVariables,
   claimedTaskWithVariables,
+  unclaimedTaskWithForm,
+  unclaimedTaskWithPrefilledForm,
+  claimedTaskWithForm,
+  claimedTaskWithPrefilledForm,
+  completedTaskWithForm,
 } from 'modules/mock-schema/mocks/task';
 
 type TaskQueryVariables = Pick<Task, 'id'>;
@@ -29,6 +34,8 @@ interface GetTask {
     | 'creationTime'
     | 'completionTime'
     | 'variables'
+    | 'formKey'
+    | 'processDefinitionId'
   >;
 }
 
@@ -36,6 +43,8 @@ const GET_TASK = gql`
   query GetTask($id: String!) {
     task(id: $id) {
       id
+      formKey
+      processDefinitionId
       assignee {
         username
         firstname
@@ -54,77 +63,159 @@ const GET_TASK = gql`
   }
 `;
 
-const mockGetTaskUnclaimed = {
+const mockGetTaskUnclaimed = (id = '0') => ({
   request: {
     query: GET_TASK,
-    variables: {id: '0'},
+    variables: {
+      id,
+    },
   },
   result: {
     data: {
-      task: unclaimedTask,
+      task: unclaimedTask(id),
     },
   },
-};
+});
 
-const mockGetTaskCompleted = {
+const mockGetTaskUnclaimedWithForm = (id = '0') => ({
   request: {
     query: GET_TASK,
-    variables: {id: '0'},
+    variables: {
+      id,
+    },
   },
   result: {
     data: {
-      task: completedTask,
+      task: unclaimedTaskWithForm(id),
     },
   },
-};
+});
 
-const mockGetTaskClaimed = {
+const mockGetTaskUnclaimedWithPrefilledForm = (id = '0') => ({
   request: {
     query: GET_TASK,
-    variables: {id: '0'},
+    variables: {
+      id,
+    },
   },
   result: {
     data: {
-      task: claimedTask,
+      task: unclaimedTaskWithPrefilledForm(id),
     },
   },
-};
+});
 
-const mockGetTaskUnclaimedWithVariables = {
+const mockGetTaskCompleted = (id = '0') => ({
   request: {
     query: GET_TASK,
-    variables: {id: '0'},
+    variables: {
+      id,
+    },
   },
   result: {
     data: {
-      task: unclaimedTaskWithVariables,
+      task: completedTask(id),
     },
   },
-};
+});
 
-const mockGetTaskCompletedWithVariables = {
+const mockGetTaskClaimed = (id = '0') => ({
   request: {
     query: GET_TASK,
-    variables: {id: '0'},
+    variables: {
+      id,
+    },
   },
   result: {
     data: {
-      task: completedTaskWithVariables,
+      task: claimedTask(id),
     },
   },
-};
+});
 
-const mockGetTaskClaimedWithVariables = {
+const mockGetTaskClaimedWithForm = (id = '0') => ({
   request: {
     query: GET_TASK,
-    variables: {id: '0'},
+    variables: {
+      id,
+    },
   },
   result: {
     data: {
-      task: claimedTaskWithVariables,
+      task: claimedTaskWithForm(id),
     },
   },
-};
+});
+
+const mockGetTaskClaimedWithPrefilledForm = (id = '0') => ({
+  request: {
+    query: GET_TASK,
+    variables: {
+      id,
+    },
+  },
+  result: {
+    data: {
+      task: claimedTaskWithPrefilledForm(id),
+    },
+  },
+});
+
+const mockGetTaskUnclaimedWithVariables = (id = '0') => ({
+  request: {
+    query: GET_TASK,
+    variables: {
+      id,
+    },
+  },
+  result: {
+    data: {
+      task: unclaimedTaskWithVariables(id),
+    },
+  },
+});
+
+const mockGetTaskCompletedWithVariables = (id = '0') => ({
+  request: {
+    query: GET_TASK,
+    variables: {
+      id,
+    },
+  },
+  result: {
+    data: {
+      task: completedTaskWithVariables(id),
+    },
+  },
+});
+
+const mockGetTaskClaimedWithVariables = (id = '0') => ({
+  request: {
+    query: GET_TASK,
+    variables: {
+      id,
+    },
+  },
+  result: {
+    data: {
+      task: claimedTaskWithVariables(id),
+    },
+  },
+});
+
+const mockGetTaskCompletedWithForm = (id = '0') => ({
+  request: {
+    query: GET_TASK,
+    variables: {
+      id,
+    },
+  },
+  result: {
+    data: {
+      task: completedTaskWithForm(id),
+    },
+  },
+});
 
 function useTask(id: Task['id']) {
   const result = useQuery<GetTask, TaskQueryVariables>(GET_TASK, {
@@ -146,5 +237,10 @@ export {
   mockGetTaskUnclaimedWithVariables,
   mockGetTaskCompletedWithVariables,
   mockGetTaskClaimedWithVariables,
+  mockGetTaskUnclaimedWithForm,
+  mockGetTaskUnclaimedWithPrefilledForm,
+  mockGetTaskClaimedWithForm,
+  mockGetTaskClaimedWithPrefilledForm,
+  mockGetTaskCompletedWithForm,
   useTask,
 };

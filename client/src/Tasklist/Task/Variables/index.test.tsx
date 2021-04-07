@@ -5,47 +5,35 @@
  */
 
 import * as React from 'react';
-import {MockedResponse} from '@apollo/client/testing';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {Route, MemoryRouter, Link} from 'react-router-dom';
-import {Form} from 'react-final-form';
-import arrayMutators from 'final-form-arrays';
-
+import {render, screen, waitFor} from '@testing-library/react';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
-import {
-  mockGetTaskClaimed,
-  mockGetTaskClaimedWithVariables,
-} from 'modules/queries/get-task';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {Variables} from './';
+import {Variables} from './index';
+import {
+  claimedTask,
+  claimedTaskWithVariables,
+  unclaimedTaskWithVariables,
+} from 'modules/mock-schema/mocks/task';
+import userEvent from '@testing-library/user-event';
 
-const getWrapper = ({mocks}: {mocks: Array<MockedResponse>}) => {
-  const Wrapper: React.FC = ({children}) => (
-    <MemoryRouter initialEntries={['/0']}>
-      <MockedApolloProvider mocks={[mockGetCurrentUser, ...mocks]}>
-        <MockThemeProvider>
-          <Route
-            path="/:id"
-            component={() => (
-              <Form mutators={{...arrayMutators}} onSubmit={() => {}}>
-                {() => children}
-              </Form>
-            )}
-          ></Route>
-        </MockThemeProvider>
-      </MockedApolloProvider>
-    </MemoryRouter>
-  );
-
-  return Wrapper;
-};
+const Wrapper: React.FC = ({children}) => (
+  <MockedApolloProvider mocks={[mockGetCurrentUser]}>
+    <MockThemeProvider>{children}</MockThemeProvider>
+  </MockedApolloProvider>
+);
 
 describe('<Variables />', () => {
-  it('should render with variables (readonly)', async () => {
-    render(<Variables />, {
-      wrapper: getWrapper({mocks: [mockGetTaskClaimedWithVariables]}),
-    });
+  it('should show existing variables for unassigned tasks', async () => {
+    render(
+      <Variables
+        task={unclaimedTaskWithVariables()}
+        onSubmit={() => Promise.resolve()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
     expect(screen.getByText('myVar')).toBeInTheDocument();
@@ -55,10 +43,13 @@ describe('<Variables />', () => {
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 
-  it('should render with empty message', async () => {
-    render(<Variables />, {
-      wrapper: getWrapper({mocks: [mockGetTaskClaimed]}),
-    });
+  it('should show a message when the tasks has no variables', async () => {
+    render(
+      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(
       await screen.findByText('Task has no Variables'),
@@ -67,16 +58,21 @@ describe('<Variables />', () => {
   });
 
   it('should edit variable', async () => {
-    render(<Variables canEdit />, {
-      wrapper: getWrapper({mocks: [mockGetTaskClaimedWithVariables]}),
-    });
+    render(
+      <Variables
+        task={claimedTaskWithVariables()}
+        onSubmit={() => Promise.resolve()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
     const newVariableValue = '"changedValue"';
 
     expect(await screen.findByDisplayValue('"0001"')).toBeInTheDocument();
 
-    fireEvent.change(await screen.findByDisplayValue('"0001"'), {
-      target: {value: newVariableValue},
-    });
+    userEvent.clear(screen.getByDisplayValue('"0001"'));
+    userEvent.type(screen.getByLabelText('myVar'), newVariableValue);
 
     expect(
       await screen.findByDisplayValue(newVariableValue),
@@ -84,84 +80,139 @@ describe('<Variables />', () => {
   });
 
   it('should add two variables and remove one', async () => {
-    render(<Variables canEdit />, {
-      wrapper: getWrapper({mocks: [mockGetTaskClaimedWithVariables]}),
-    });
+    render(
+      <Variables
+        task={claimedTaskWithVariables()}
+        onSubmit={() => Promise.resolve()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
-    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
-    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
-
-    expect(
-      await screen.findAllByRole('textbox', {name: /newVariables/}),
-    ).toHaveLength(4);
-
-    expect(
-      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('textbox', {name: 'newVariables[0].value'}),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('textbox', {name: 'newVariables[1].name'}),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('textbox', {name: 'newVariables[1].value'}),
-    ).toBeInTheDocument();
-
-    fireEvent.click(
-      await screen.findByRole('button', {name: 'Remove new variable 1'}),
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: /Add Variable/,
+      }),
+    );
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: /Add Variable/,
+      }),
     );
 
     expect(
-      await screen.findAllByRole('textbox', {name: /newVariables/}),
+      await screen.findAllByRole('textbox', {
+        name: /new variable/i,
+      }),
+    ).toHaveLength(4);
+
+    expect(
+      screen.getByRole('textbox', {
+        name: 'New variable 0 name',
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('textbox', {
+        name: 'New variable 0 value',
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('textbox', {
+        name: 'New variable 1 name',
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('textbox', {
+        name: 'New variable 1 value',
+      }),
+    ).toBeInTheDocument();
+
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: 'Remove new variable 1',
+      }),
+    );
+
+    expect(
+      await screen.findAllByRole('textbox', {
+        name: /new variable/i,
+      }),
     ).toHaveLength(2);
 
     expect(
-      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
+      screen.getByRole('textbox', {
+        name: 'New variable 0 name',
+      }),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('textbox', {name: 'newVariables[0].value'}),
+      screen.getByRole('textbox', {
+        name: 'New variable 0 value',
+      }),
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByRole('textbox', {name: 'newVariables[1].name'}),
+      screen.queryByRole('textbox', {
+        name: 'New variable 1 name',
+      }),
     ).not.toBeInTheDocument();
 
     expect(
-      screen.queryByRole('textbox', {name: 'newVariables[1].value'}),
+      screen.queryByRole('textbox', {
+        name: 'New variable 1 value',
+      }),
     ).not.toBeInTheDocument();
   });
 
   it('should add variable on task without variables', async () => {
-    render(<Variables canEdit />, {
-      wrapper: getWrapper({mocks: [mockGetTaskClaimed]}),
-    });
+    render(
+      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
-    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: /Add Variable/,
+      }),
+    );
 
     expect(
-      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
+      screen.getByRole('textbox', {
+        name: 'New variable 0 name',
+      }),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('textbox', {name: 'newVariables[0].value'}),
+      screen.getByRole('textbox', {
+        name: 'New variable 0 value',
+      }),
     ).toBeInTheDocument();
   });
 
-  it('should add validation error on empty variable name', async () => {
-    render(<Variables canEdit />, {
-      wrapper: getWrapper({mocks: [mockGetTaskClaimed]}),
-    });
+  it('should validate an empty variable name', async () => {
+    render(
+      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
-    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
-
-    fireEvent.change(
-      await screen.findByRole('textbox', {name: 'newVariables[0].value'}),
-      {target: {value: '"valid_value"'}},
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: /Add Variable/,
+      }),
+    );
+    userEvent.type(
+      await screen.findByRole('textbox', {
+        name: 'New variable 0 value',
+      }),
+      '"valid_value"',
     );
 
     expect(
@@ -169,16 +220,24 @@ describe('<Variables />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should add validation error on empty variable value', async () => {
-    render(<Variables canEdit />, {
-      wrapper: getWrapper({mocks: [mockGetTaskClaimed]}),
-    });
+  it('should validate an empty variable value', async () => {
+    render(
+      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
-    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
-
-    fireEvent.change(
-      await screen.findByRole('textbox', {name: 'newVariables[0].name'}),
-      {target: {value: 'valid_name'}},
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: /Add Variable/,
+      }),
+    );
+    userEvent.type(
+      await screen.findByRole('textbox', {
+        name: 'New variable 0 name',
+      }),
+      'valid_name',
     );
 
     expect(
@@ -186,16 +245,23 @@ describe('<Variables />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should add validation error on invalid variable name', async () => {
-    render(<Variables canEdit />, {
-      wrapper: getWrapper({mocks: [mockGetTaskClaimed]}),
-    });
+  it('should validate an invalid variable value', async () => {
+    render(
+      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
-    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: /Add Variable/,
+      }),
+    );
 
-    fireEvent.change(
-      await screen.findByRole('textbox', {name: 'newVariables[0].value'}),
-      {target: {value: 'invalid_value}}}'}},
+    userEvent.type(
+      await screen.findByRole('textbox', {name: 'New variable 0 value'}),
+      'invalid_value}}}',
     );
 
     expect(
@@ -205,21 +271,32 @@ describe('<Variables />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should show no validation error on valid name/value', async () => {
-    render(<Variables canEdit />, {
-      wrapper: getWrapper({mocks: [mockGetTaskClaimed]}),
-    });
-
-    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
-
-    fireEvent.change(
-      await screen.findByRole('textbox', {name: 'newVariables[0].name'}),
-      {target: {value: 'valid_name'}},
+  it('should not validate valid variables', async () => {
+    render(
+      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      {
+        wrapper: Wrapper,
+      },
     );
 
-    fireEvent.change(
-      await screen.findByRole('textbox', {name: 'newVariables[0].value'}),
-      {target: {value: '"valid_value"'}},
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: /Add Variable/,
+      }),
+    );
+
+    userEvent.type(
+      await screen.findByRole('textbox', {
+        name: 'New variable 0 name',
+      }),
+      'valid_name',
+    );
+
+    userEvent.type(
+      await screen.findByRole('textbox', {
+        name: 'New variable 0 value',
+      }),
+      '"valid_value"',
     );
 
     expect(
@@ -231,49 +308,245 @@ describe('<Variables />', () => {
     expect(screen.queryByTitle('Value has to be JSON')).not.toBeInTheDocument();
   });
 
-  it('should reset variables on task id change', async () => {
-    render(
-      <>
-        <Link
-          to={(location: Location) => ({
-            ...location,
-            pathname: '/1',
-          })}
-        >
-          Change route
-        </Link>
-        <Variables canEdit />
-      </>,
+  it('should handle submission', async () => {
+    const mockOnSubmit = jest.fn();
+    const {rerender} = render(
+      <Variables key="id_0" task={claimedTask()} onSubmit={mockOnSubmit} />,
       {
-        wrapper: getWrapper({
-          mocks: [mockGetTaskClaimed, mockGetCurrentUser, mockGetTaskClaimed],
-        }),
+        wrapper: Wrapper,
       },
     );
 
-    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
-
-    fireEvent.change(
-      await screen.findByRole('textbox', {name: 'newVariables[0].name'}),
-      {target: {value: 'valid_name'}},
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: /complete task/i,
+      }),
     );
 
-    fireEvent.change(
-      await screen.findByRole('textbox', {name: 'newVariables[0].value'}),
-      {target: {value: '"valid_value"'}},
+    await waitFor(() => expect(mockOnSubmit).toHaveBeenNthCalledWith(1, []));
+    expect(mockOnSubmit).toHaveBeenCalledTimes(1);
+
+    userEvent.click(
+      screen.getByRole('button', {
+        name: /add variable/i,
+      }),
+    );
+    userEvent.type(
+      screen.getByRole('textbox', {
+        name: 'New variable 0 name',
+      }),
+      'var',
+    );
+    userEvent.type(
+      screen.getByRole('textbox', {
+        name: 'New variable 0 value',
+      }),
+      '1',
+    );
+    userEvent.click(
+      screen.getByRole('button', {
+        name: /complete task/i,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(mockOnSubmit).toHaveBeenNthCalledWith(2, [
+        {
+          name: 'var',
+          value: '1',
+        },
+      ]),
+    );
+    expect(mockOnSubmit).toHaveBeenCalledTimes(2);
+
+    rerender(
+      <Variables
+        key="id_1"
+        task={claimedTaskWithVariables()}
+        onSubmit={mockOnSubmit}
+      />,
+    );
+
+    expect(await screen.findByLabelText('myVar')).toBeInTheDocument();
+
+    userEvent.click(
+      screen.getByRole('button', {
+        name: /add variable/i,
+      }),
+    );
+    userEvent.type(
+      screen.getByRole('textbox', {
+        name: 'New variable 0 name',
+      }),
+      'name',
+    );
+    userEvent.type(
+      screen.getByRole('textbox', {
+        name: 'New variable 0 value',
+      }),
+      '"Jon"',
+    );
+    userEvent.click(
+      screen.getByRole('button', {
+        name: /complete task/i,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(mockOnSubmit).toHaveBeenNthCalledWith(3, [
+        {
+          name: 'name',
+          value: '"Jon"',
+        },
+      ]),
+    );
+    expect(mockOnSubmit).toHaveBeenCalledTimes(3);
+  });
+
+  it('should change variable and complete task', async () => {
+    const mockOnSubmit = jest.fn();
+
+    render(
+      <Variables task={claimedTaskWithVariables()} onSubmit={mockOnSubmit} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    userEvent.clear(await screen.findByLabelText('myVar'));
+    userEvent.type(screen.getByLabelText('myVar'), '"newValue"');
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: 'Complete Task',
+      }),
+    );
+
+    await waitFor(() =>
+      expect(mockOnSubmit).toHaveBeenCalledWith([
+        {
+          name: 'myVar',
+          value: '"newValue"',
+        },
+      ]),
+    );
+  });
+
+  it('should add new variable and complete task', async () => {
+    const mockOnSubmit = jest.fn();
+
+    render(<Variables task={claimedTask()} onSubmit={mockOnSubmit} />, {
+      wrapper: Wrapper,
+    });
+
+    userEvent.click(await screen.findByText('Add Variable'));
+    userEvent.type(
+      screen.getByRole('textbox', {
+        name: 'New variable 0 name',
+      }),
+      'newVariableName',
+    );
+    userEvent.type(
+      screen.getByRole('textbox', {
+        name: 'New variable 0 value',
+      }),
+      '"newVariableValue"',
+    );
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: 'Complete Task',
+      }),
+    );
+
+    await waitFor(() =>
+      expect(mockOnSubmit).toHaveBeenCalledWith([
+        {
+          name: 'newVariableName',
+          value: '"newVariableValue"',
+        },
+      ]),
+    );
+  });
+
+  it('should disable submit button on form errors for existing variables', async () => {
+    render(
+      <Variables
+        task={claimedTaskWithVariables()}
+        onSubmit={() => Promise.resolve()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    userEvent.type(
+      await screen.findByRole('textbox', {
+        name: 'myVar',
+      }),
+      '{{ invalid value',
+    );
+
+    expect(screen.getAllByTestId(/^warning-icon/)).toHaveLength(1);
+    expect(screen.getByTestId('warning-icon-myVar')).toBeInTheDocument();
+    expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'Complete Task',
+      }),
+    ).toBeDisabled();
+  });
+
+  it('should disable submit button on form errors for new variables', async () => {
+    render(
+      <Variables
+        task={claimedTaskWithVariables()}
+        onSubmit={() => Promise.resolve()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: /add variable/i,
+      }),
+    );
+    userEvent.type(
+      screen.getByRole('textbox', {
+        name: 'New variable 0 value',
+      }),
+      '{{ invalid value',
+    );
+
+    expect(screen.getAllByTestId(/^warning-icon/)).toHaveLength(1);
+    expect(
+      screen.getByTestId('warning-icon-newVariables[0].value'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'Complete Task',
+      }),
+    ).toBeDisabled();
+  });
+
+  it('should disable completion button', async () => {
+    render(
+      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    userEvent.click(
+      await screen.findByRole('button', {
+        name: /add variable/i,
+      }),
     );
 
     expect(
-      screen.getByRole('textbox', {name: 'newVariables[0].name'}),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('textbox', {name: 'newVariables[0].value'}),
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('link', {name: 'Change route'}));
-
-    expect(
-      await screen.findByText(/Task has no Variables/),
-    ).toBeInTheDocument();
+      screen.getByRole('button', {
+        name: /complete task/i,
+      }),
+    ).toBeDisabled();
   });
 });

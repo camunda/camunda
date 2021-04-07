@@ -35,7 +35,7 @@ const mockUnclaimTask = {
   },
   result: {
     data: {
-      unclaimTask: unclaimedTask,
+      unclaimTask: unclaimedTask(),
     },
   },
 };

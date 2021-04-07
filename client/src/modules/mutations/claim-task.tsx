@@ -34,7 +34,7 @@ const mockClaimTask = {
   },
   result: {
     data: {
-      claimTask: claimedTask,
+      claimTask: claimedTask(),
     },
   },
 };

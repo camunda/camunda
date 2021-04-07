@@ -8,9 +8,9 @@ import {Task} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
 
-const unclaimedTask: Task = {
+const unclaimedTask = (id = '0'): Task => ({
   __typename: 'Task',
-  id: '0',
+  id,
   name: 'My Task',
   processName: 'Nice Process',
   assignee: null,
@@ -20,11 +20,29 @@ const unclaimedTask: Task = {
   taskState: TaskStates.Created,
   isFirst: false,
   sortValues: ['1', '2'],
-};
+  formKey: null,
+  processDefinitionId: null,
+});
 
-const unclaimedTaskWithVariables: Task = {
+const unclaimedTaskWithForm = (id = '0'): Task => ({
   __typename: 'Task',
-  id: '0',
+  id,
+  name: 'My Task',
+  processName: 'Nice Process',
+  assignee: null,
+  creationTime: new Date('2019').toISOString(),
+  completionTime: null,
+  variables: [],
+  taskState: TaskStates.Created,
+  isFirst: false,
+  sortValues: ['1', '2'],
+  formKey: 'camunda-forms:bpmn:form-0',
+  processDefinitionId: 'process',
+});
+
+const unclaimedTaskWithVariables = (id = '0'): Task => ({
+  __typename: 'Task',
+  id,
   name: 'My Task',
   processName: 'Nice Process',
   assignee: null,
@@ -37,11 +55,32 @@ const unclaimedTaskWithVariables: Task = {
   taskState: TaskStates.Created,
   isFirst: false,
   sortValues: ['1', '2'],
-};
+  formKey: null,
+  processDefinitionId: null,
+});
 
-const completedTask: Task = {
+const unclaimedTaskWithPrefilledForm = (id = '0'): Task => ({
   __typename: 'Task',
-  id: '0',
+  id,
+  name: 'My Task',
+  processName: 'Nice Process',
+  assignee: null,
+  creationTime: new Date('2019').toISOString(),
+  completionTime: null,
+  variables: [
+    {name: 'myVar', value: '"0001"'},
+    {name: 'isCool', value: '"yes"'},
+  ],
+  taskState: TaskStates.Created,
+  isFirst: false,
+  sortValues: ['1', '2'],
+  formKey: 'camunda-forms:bpmn:form-0',
+  processDefinitionId: 'process',
+});
+
+const completedTask = (id = '0'): Task => ({
+  __typename: 'Task',
+  id,
   name: 'My Task',
   processName: 'Nice Process',
   assignee: currentUser,
@@ -51,11 +90,13 @@ const completedTask: Task = {
   taskState: TaskStates.Completed,
   isFirst: false,
   sortValues: ['1', '2'],
-};
+  formKey: null,
+  processDefinitionId: null,
+});
 
-const completedTaskWithVariables: Task = {
+const completedTaskWithVariables = (id = '0'): Task => ({
   __typename: 'Task',
-  id: '0',
+  id,
   name: 'My Task',
   processName: 'Nice Process',
   assignee: currentUser,
@@ -68,11 +109,13 @@ const completedTaskWithVariables: Task = {
   taskState: TaskStates.Completed,
   isFirst: false,
   sortValues: ['1', '2'],
-};
+  formKey: null,
+  processDefinitionId: null,
+});
 
-const completedTaskWithEditedVariables: Task = {
+const completedTaskWithEditedVariables = (id = '0'): Task => ({
   __typename: 'Task',
-  id: '0',
+  id,
   name: 'My Task',
   processName: 'Nice Process',
   assignee: currentUser,
@@ -85,11 +128,32 @@ const completedTaskWithEditedVariables: Task = {
   taskState: TaskStates.Completed,
   isFirst: false,
   sortValues: ['1', '2'],
-};
+  formKey: null,
+  processDefinitionId: null,
+});
 
-const claimedTask: Task = {
+const completedTaskWithForm = (id = '0'): Task => ({
   __typename: 'Task',
-  id: '0',
+  id,
+  name: 'My Task',
+  processName: 'Nice Process',
+  assignee: currentUser,
+  creationTime: new Date('2019').toISOString(),
+  completionTime: null,
+  variables: [
+    {name: 'myVar', value: '"0001"'},
+    {name: 'isCool', value: '"yes"'},
+  ],
+  taskState: TaskStates.Completed,
+  isFirst: false,
+  sortValues: ['1', '2'],
+  formKey: 'camunda-forms:bpmn:form-0',
+  processDefinitionId: 'process',
+});
+
+const claimedTask = (id = '0'): Task => ({
+  __typename: 'Task',
+  id,
   name: 'My Task',
   processName: 'Nice Process',
   assignee: currentUser,
@@ -99,11 +163,29 @@ const claimedTask: Task = {
   taskState: TaskStates.Created,
   isFirst: false,
   sortValues: ['1', '2'],
-};
+  formKey: null,
+  processDefinitionId: null,
+});
 
-const claimedTaskWithVariables: Task = {
+const claimedTaskWithForm = (id = '0'): Task => ({
   __typename: 'Task',
-  id: '0',
+  id,
+  name: 'My Task',
+  processName: 'Nice Process',
+  assignee: currentUser,
+  creationTime: new Date('2019').toISOString(),
+  completionTime: null,
+  variables: [],
+  taskState: TaskStates.Created,
+  isFirst: false,
+  sortValues: ['1', '2'],
+  formKey: 'camunda-forms:bpmn:form-0',
+  processDefinitionId: 'process',
+});
+
+const claimedTaskWithVariables = (id = '0'): Task => ({
+  __typename: 'Task',
+  id,
   name: 'My Task',
   processName: 'Nice Process',
   assignee: currentUser,
@@ -116,7 +198,28 @@ const claimedTaskWithVariables: Task = {
   taskState: TaskStates.Created,
   isFirst: false,
   sortValues: ['1', '2'],
-};
+  formKey: null,
+  processDefinitionId: null,
+});
+
+const claimedTaskWithPrefilledForm = (id = '0'): Task => ({
+  __typename: 'Task',
+  id,
+  name: 'My Task',
+  processName: 'Nice Process',
+  assignee: currentUser,
+  creationTime: new Date('2019').toISOString(),
+  completionTime: null,
+  variables: [
+    {name: 'myVar', value: '"0001"'},
+    {name: 'isCool', value: '"yes"'},
+  ],
+  taskState: TaskStates.Created,
+  isFirst: false,
+  sortValues: ['1', '2'],
+  formKey: 'camunda-forms:bpmn:form-0',
+  processDefinitionId: 'process',
+});
 
 export {
   unclaimedTask,
@@ -126,4 +229,9 @@ export {
   completedTaskWithVariables,
   claimedTaskWithVariables,
   completedTaskWithEditedVariables,
+  unclaimedTaskWithForm,
+  unclaimedTaskWithPrefilledForm,
+  claimedTaskWithForm,
+  claimedTaskWithPrefilledForm,
+  completedTaskWithForm,
 };

@@ -3,72 +3,72 @@
   <bpmn:process id="flightRegistration" name="Flight registration" isExecutable="true">
      <bpmn:extensionElements>
       <zeebe:userTaskForm id="userTaskForm_1">
-{
- &quot;components&quot;: [
-   {
-	 &quot;key&quot;: &quot;firstName&quot;,
-	 &quot;label&quot;: &quot;First name&quot;,
-	 &quot;type&quot;: &quot;textfield&quot;,
-	 &quot;validate&quot;: {
-	   &quot;required&quot;: true
-	 }
-   },
-   {
-	 &quot;key&quot;: &quot;lastName&quot;,
-	 &quot;label&quot;: &quot;Last name&quot;,
-	 &quot;type&quot;: &quot;textfield&quot;,
-	 &quot;validate&quot;: {
-	   &quot;required&quot;: true
-	 }
-   },
-   {
-	 &quot;key&quot;: &quot;passNo&quot;,
-	 &quot;label&quot;: &quot;Passport number&quot;,
-	 &quot;type&quot;: &quot;textfield&quot;,
-	 &quot;validate&quot;: {
-	   &quot;required&quot;: true
-	 }
-   },
-   {
-	 &quot;key&quot;: &quot;ticketNo&quot;,
-	 &quot;label&quot;: &quot;Ticket number&quot;,
-	 &quot;type&quot;: &quot;textfield&quot;,
-	 &quot;validate&quot;: {
-	   &quot;required&quot;: true
-	 }
-   },
-   {
-	 &quot;key&quot;: &quot;registered&quot;,
-	 &quot;label&quot;: &quot;Registered successfully&quot;,
-	 &quot;type&quot;: &quot;textfield&quot;
-   }
- ],
- &quot;type&quot;: &quot;default&quot;
-}
+        {
+          "components": [
+            {
+              "key": "firstName",
+              "label": "First name",
+              "type": "textfield",
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "key": "lastName",
+              "label": "Last name",
+              "type": "textfield",
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "key": "passNo",
+              "label": "Passport number",
+              "type": "textfield",
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "key": "ticketNo",
+              "label": "Ticket number",
+              "type": "textfield",
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "key": "registered",
+              "label": "Registered successfully",
+              "type": "textfield"
+            }
+          ],
+          "type": "default"
+        }
       </zeebe:userTaskForm>
       <zeebe:userTaskForm id="userTaskForm_2">
-      {
-       &quot;components&quot;: [
-         {
-      	 &quot;key&quot;: &quot;ticketNo&quot;,
-      	 &quot;label&quot;: &quot;Ticket number&quot;,
-      	 &quot;type&quot;: &quot;textfield&quot;,
-      	 &quot;validate&quot;: {
-      	   &quot;required&quot;: true
-      	 }
-         },
-         {
-      	 &quot;key&quot;: &quot;cabinBagRegistered&quot;,
-      	 &quot;label&quot;: &quot;Cabin bag registered&quot;,
-      	 &quot;type&quot;: &quot;textfield&quot;
-      	 &quot;validate&quot;: {
-               	   &quot;required&quot;: true
-               	 }
-         }
-       ],
-       &quot;type&quot;: &quot;default&quot;
-      }
-            </zeebe:userTaskForm>
+        {
+          "components": [
+            {
+              "key": "ticketNo",
+              "label": "Ticket number",
+              "type": "textfield",
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "key": "cabinBagRegistered",
+              "label": "Cabin bag registered",
+              "type": "textfield",
+              "validate": {
+                "required": true
+              }
+            }
+          ],
+          "type": "default"
+        }
+      </zeebe:userTaskForm>
     </bpmn:extensionElements>
     <bpmn:startEvent id="StartEvent_1" name="Passenger arrived on registration desk">
       <bpmn:outgoing>SequenceFlow_0kkr7lf</bpmn:outgoing>

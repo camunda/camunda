@@ -119,7 +119,7 @@ const theme = {
     select: `0 2px 2px 0 ${rgba(palette.black, 0.08)}`,
     fakeOutline: '0 0 0 1px #2b7bff, 0 0 0 4px #8cb7ff',
     dropdownMenu: `0 0 2px 0 ${rgba(palette.black, 0.2)}`,
-    variablesFooter: `0 -1px 2px 0 ${rgba(palette.black, 0.1)}`,
+    detailsFooter: `0 -1px 2px 0 ${rgba(palette.black, 0.1)}`,
     invalidInput: `0 0 0 1px ${palette.red}, 0 0 0 4px #ffafaf`,
     button: {
       large: `0 2px 2px 0 ${rgba(palette.black, 0.08)}`,
