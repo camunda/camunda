@@ -35,6 +35,8 @@ export default function Tooltip({
 
     const body = document.fullscreenElement || document.body;
     const tooltipBox = tooltip.current.getBoundingClientRect();
+    const tooltipMargin = 14; // top and bottom margin
+    const tooltipHeight = tooltipBox.height + tooltipMargin;
     const hoverElementBox = hoverElement.current.getBoundingClientRect();
 
     const widthToArrow = align === 'center' ? tooltipBox.width / 2 : tooltipBox.width;
@@ -52,9 +54,9 @@ export default function Tooltip({
     }
 
     let tooltipPosition = position;
-    if (position === 'bottom' && hoverElementBox.y + tooltipBox.height > body.clientHeight) {
+    if (position === 'bottom' && hoverElementBox.bottom + tooltipHeight > body.clientHeight) {
       tooltipPosition = 'top';
-    } else if (position === 'top' && hoverElementBox.y - tooltipBox.height < 0) {
+    } else if (position === 'top' && hoverElementBox.y - tooltipHeight < 0) {
       tooltipPosition = 'bottom';
     }
 
