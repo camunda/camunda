@@ -82,7 +82,7 @@ const Instances: React.FC = observer(() => {
             deleteSearchParams(history.location, ['process', 'version'])
           );
           notifications.displayNotification('error', {
-            headline: `Procescs could not be found`,
+            headline: `Process could not be found`,
           });
         }
       } else {
