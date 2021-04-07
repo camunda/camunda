@@ -113,34 +113,38 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
   private static String createMigrateFlowNodeStatusConfigToFiltersScript() {
     //@formatter:off
     return
-      "def reportEntityType = ctx._source.data.view.entity;\n" +
-      "def currentFilters = ctx._source.data.filter;\n" +
-      "if (reportEntityType == 'userTask' || reportEntityType == 'flowNode') {\n" +
-      "  def executionState = ctx._source.data.configuration.flowNodeExecutionState;\n" +
-      "  if (executionState == 'completed') {\n" +
-      "    def newFilter = [\n" +
-      "      'type': 'completedOrCanceledFlowNodesOnly',\n" +
-      "      'filterLevel': 'view'\n" +
-      "     ];" +
-      "    newFilter.data = null;" +
-      "    currentFilters.add(newFilter);\n" +
-      "  } else if (executionState == 'running') {\n" +
-      "    def newFilter = [\n" +
-      "      'type': 'runningFlowNodesOnly',\n" +
-      "      'filterLevel': 'view'\n" +
-      "     ];" +
-      "    newFilter.data = null;" +
-      "    currentFilters.add(newFilter);\n" +
-      "  } else if (executionState == 'canceled') {\n" +
-      "    def newFilter = [\n" +
-      "      'type': 'canceledFlowNodesOnly',\n" +
-      "      'filterLevel': 'view'\n" +
-      "     ];" +
-      "    newFilter.data = null;" +
-      "    currentFilters.add(newFilter);\n" +
+      "if (ctx._source.data.view != null) {\n" +
+      "  def reportEntityType = ctx._source.data.view.entity;\n" +
+      "  def currentFilters = ctx._source.data.filter;\n" +
+      "  if (reportEntityType == 'userTask' || reportEntityType == 'flowNode') {\n" +
+      "    def executionState = ctx._source.data.configuration.flowNodeExecutionState;\n" +
+      "    if (executionState == 'completed') {\n" +
+      "      def newFilter = [\n" +
+      "        'type': 'completedOrCanceledFlowNodesOnly',\n" +
+      "        'filterLevel': 'view'\n" +
+      "       ];" +
+      "      newFilter.data = null;" +
+      "      currentFilters.add(newFilter);\n" +
+      "    } else if (executionState == 'running') {\n" +
+      "      def newFilter = [\n" +
+      "        'type': 'runningFlowNodesOnly',\n" +
+      "        'filterLevel': 'view'\n" +
+      "       ];" +
+      "      newFilter.data = null;" +
+      "     currentFilters.add(newFilter);\n" +
+      "    } else if (executionState == 'canceled') {\n" +
+      "      def newFilter = [\n" +
+      "        'type': 'canceledFlowNodesOnly',\n" +
+      "        'filterLevel': 'view'\n" +
+      "       ];" +
+      "      newFilter.data = null;" +
+      "     currentFilters.add(newFilter);\n" +
+      "    }\n" +
       "  }\n" +
       "}\n" +
-      "ctx._source.data.configuration.remove(\"flowNodeExecutionState\");\n";
+      "if (ctx._source.data.configuration.flowNodeExecutionState != null) {\n" +
+      "  ctx._source.data.configuration.remove(\"flowNodeExecutionState\");\n" +
+      "}\n";
     //@formatter:on
   }
 
@@ -158,12 +162,14 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
       "  reportConfiguration.userTaskDurationTimes.add(reportConfiguration.userTaskDurationTime);\n" +
       "}\n" +
       "reportConfiguration.remove(\"userTaskDurationTime\");\n" +
-      "def reportView = ctx._source.data.view;\n" +
-      "reportView.properties = [];\n" +
-      "if (reportView.property != null) {\n" +
-      "  reportView.properties.add(reportView.property);\n" +
-      "}\n" +
-      "reportView.remove(\"property\");\n";
+      "if (ctx._source.data.view != null) {\n" +
+      "  def reportView = ctx._source.data.view;\n" +
+      "  reportView.properties = [];\n" +
+      "  if (reportView.property != null) {\n" +
+      "    reportView.properties.add(reportView.property);\n" +
+      "  }\n" +
+      "  reportView.remove(\"property\");\n" +
+      "}\n";
     //@formatter:on
   }
 
@@ -191,12 +197,14 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
   private static String createDecisionReportViewScript() {
     //@formatter:off
     return
-      "def reportView = ctx._source.data.view;\n" +
-      "reportView.properties = [];\n" +
-      "if (reportView.property != null) {\n" +
-      "  reportView.properties.add(reportView.property);\n" +
-      "}\n" +
-      "reportView.remove(\"property\");\n";
+      "if (ctx._source.data.view != null) {\n" +
+      "  def reportView = ctx._source.data.view;\n" +
+      "  reportView.properties = [];\n" +
+      "  if (reportView.property != null) {\n" +
+      "    reportView.properties.add(reportView.property);\n" +
+      "  }\n" +
+      "  reportView.remove(\"property\");\n" +
+      "}\n";
     //@formatter:on
   }
 
