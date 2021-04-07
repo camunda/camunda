@@ -15,7 +15,6 @@ import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.snapshots.broker.ConstructableSnapshotStore;
 import io.zeebe.snapshots.raft.SnapshotChunk;
-import io.zeebe.util.ChecksumUtil;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
@@ -26,11 +25,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 import org.junit.Before;
 import org.junit.Rule;
@@ -87,13 +83,7 @@ public class SnapshotChunkReaderTest {
     assertThat(snapshotChunkIds)
         .containsExactly(asByteBuffer("file1"), asByteBuffer("file2"), asByteBuffer("file3"));
 
-    final var path = persistedSnapshot.getPath();
-    final var paths =
-        Arrays.stream(Objects.requireNonNull(path.toFile().listFiles()))
-            .sorted()
-            .map(File::toPath)
-            .collect(Collectors.toList());
-    final var expectedSnapshotChecksum = ChecksumUtil.createCombinedChecksum(paths);
+    final var expectedSnapshotChecksum = SnapshotChecksum.calculate(persistedSnapshot.getPath());
 
     // chunks should always read in order
     assertSnapshotChunk(
@@ -141,13 +131,7 @@ public class SnapshotChunkReaderTest {
 
     assertThat(snapshotChunkIds).containsExactly(asByteBuffer("file2"), asByteBuffer("file3"));
 
-    final var path = persistedSnapshot.getPath();
-    final var paths =
-        Arrays.stream(Objects.requireNonNull(path.toFile().listFiles()))
-            .sorted()
-            .map(File::toPath)
-            .collect(Collectors.toList());
-    final var expectedSnapshotChecksum = ChecksumUtil.createCombinedChecksum(paths);
+    final var expectedSnapshotChecksum = SnapshotChecksum.calculate(persistedSnapshot.getPath());
 
     // chunks should always read in order
     assertSnapshotChunk(

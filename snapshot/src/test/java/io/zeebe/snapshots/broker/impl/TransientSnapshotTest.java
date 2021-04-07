@@ -22,10 +22,11 @@ import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CompletableFuture;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,48 +56,24 @@ public class TransientSnapshotTest {
   }
 
   @Test
-  public void shouldTransientPathDoesntExist() {
-    // given
-    final var index = 1L;
-    final var term = 0L;
-    final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
-    final AtomicReference<Path> transientPath = new AtomicReference<>();
-
-    // when
-    transientSnapshot
-        .take(
-            p -> {
-              transientPath.set(p);
-              return true;
-            })
-        .join();
-
-    // then
-    assertThat(transientPath.get()).doesNotExist();
-  }
-
-  @Test
   public void shouldTransientPathContainsMetadata() {
     // given
     final var index = 1L;
     final var term = 2L;
     final var transientSnapshot =
         persistedSnapshotStore.newTransientSnapshot(index, term, 3, 4).get();
-    final AtomicReference<Path> transientPath = new AtomicReference<>();
+    final CompletableFuture<Path> transientPath = new CompletableFuture<>();
 
     // when
-    transientSnapshot
-        .take(
-            p -> {
-              transientPath.set(p);
-              return true;
-            })
-        .join();
+    transientSnapshot.take(
+        p -> {
+          transientPath.complete(p);
+          return true;
+        });
 
     // then
-    final var metadata =
-        FileBasedSnapshotMetadata.ofFileName(transientPath.get().getFileName().toString()).get();
+    final var path = transientPath.join();
+    final var metadata = FileBasedSnapshotMetadata.ofFileName(path.getFileName().toString()).get();
     assertThat(metadata.getIndex()).isEqualTo(1);
     assertThat(metadata.getTerm()).isEqualTo(2);
     assertThat(metadata.getProcessedPosition()).isEqualTo(3);
@@ -112,7 +89,19 @@ public class TransientSnapshotTest {
         persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
 
     // when
-    final var success = transientSnapshot.take(p -> true).join();
+    final var success =
+        transientSnapshot
+            .take(
+                p -> {
+                  try {
+                    FileUtil.ensureDirectoryExists(p);
+                    p.resolve("file").toFile().createNewFile();
+                    return true;
+                  } catch (final IOException e) {
+                    throw new UncheckedIOException(e);
+                  }
+                })
+            .join();
 
     // then
     assertThat(success).isTrue();
@@ -165,7 +154,7 @@ public class TransientSnapshotTest {
 
     // when - then
     assertThatThrownBy(() -> transientSnapshot.persist().join())
-        .hasCauseInstanceOf(UncheckedIOException.class);
+        .hasCauseInstanceOf(IllegalStateException.class);
   }
 
   @Test
@@ -206,7 +195,11 @@ public class TransientSnapshotTest {
     assertThat(committedSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactlyInAnyOrder("file1.txt");
+    assertThat(persistedSnapshot.getChecksumPath())
+        .exists()
+        .hasBinaryContent(
+            ByteBuffer.allocate(Long.BYTES).putLong(0, persistedSnapshot.getChecksum()).array());
   }
 
   @Test
@@ -266,6 +259,7 @@ public class TransientSnapshotTest {
 
     // then
     assertThat(previousSnapshot.getPath()).doesNotExist();
+    assertThat(previousSnapshot.getChecksumPath()).doesNotExist();
 
     final var snapshotPath = persistedSnapshot.getPath();
     assertThat(snapshotPath).exists();
@@ -276,7 +270,7 @@ public class TransientSnapshotTest {
     assertThat(committedSnapshotDir.listFiles())
         .isNotNull()
         .extracting(File::getName)
-        .containsExactly("file1.txt");
+        .containsExactlyInAnyOrder("file1.txt");
   }
 
   @Test

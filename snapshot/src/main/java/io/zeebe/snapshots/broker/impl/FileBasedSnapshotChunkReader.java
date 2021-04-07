@@ -10,7 +10,6 @@ package io.zeebe.snapshots.broker.impl;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.snapshots.raft.SnapshotChunk;
 import io.zeebe.snapshots.raft.SnapshotChunkReader;
-import io.zeebe.util.ChecksumUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -21,7 +20,6 @@ import java.nio.file.Path;
 import java.util.NavigableSet;
 import java.util.NoSuchElementException;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 import org.agrona.AsciiSequenceView;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -43,17 +41,14 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
   private final long snapshotChecksum;
   private final String snapshotID;
 
-  FileBasedSnapshotChunkReader(final Path directory) throws IOException {
+  FileBasedSnapshotChunkReader(final Path directory, final long checksum) throws IOException {
     this.directory = directory;
     chunks = collectChunks(directory);
     totalCount = chunks.size();
     chunksView = chunks;
     chunkIdView = new CharSequenceView();
 
-    try (final var fileStream = Files.list(directory).sorted()) {
-      snapshotChecksum =
-          ChecksumUtil.createCombinedChecksum(fileStream.collect(Collectors.toList()));
-    }
+    snapshotChecksum = checksum;
 
     snapshotID = directory.getFileName().toString();
   }

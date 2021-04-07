@@ -62,6 +62,11 @@ public class NoopSnapshotStore implements PersistedSnapshotStore {
                   }
 
                   @Override
+                  public Path getChecksumPath() {
+                    return null;
+                  }
+
+                  @Override
                   public long getCompactionBound() {
                     return index;
                   }
@@ -69,6 +74,11 @@ public class NoopSnapshotStore implements PersistedSnapshotStore {
                   @Override
                   public String getId() {
                     return null;
+                  }
+
+                  @Override
+                  public long getChecksum() {
+                    return 0;
                   }
 
                   @Override

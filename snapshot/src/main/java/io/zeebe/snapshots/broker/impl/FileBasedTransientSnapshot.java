@@ -35,6 +35,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private final ActorFuture<Boolean> takenFuture = new CompletableActorFuture<>();
   private boolean isValid = false;
   private PersistedSnapshot snapshot;
+  private long checksum;
 
   FileBasedTransientSnapshot(
       final FileBasedSnapshotMetadata metadata,
@@ -42,8 +43,8 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
       final FileBasedSnapshotStore snapshotStore,
       final ActorControl actor) {
     this.metadata = metadata;
-    this.snapshotStore = snapshotStore;
     this.directory = directory;
+    this.snapshotStore = snapshotStore;
     this.actor = actor;
   }
 
@@ -66,6 +67,11 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
         isValid = takeSnapshot.test(getPath());
         if (!isValid) {
           abortInternal();
+        } else if (!directory.toFile().exists() || directory.toFile().listFiles().length == 0) {
+          // If no snapshot files are created, snapshot is not valid
+          isValid = false;
+        } else {
+          checksum = SnapshotChecksum.calculate(directory);
         }
 
         snapshot = null;
@@ -108,7 +114,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
             return;
           }
           try {
-            snapshot = snapshotStore.newSnapshot(metadata, directory);
+            snapshot = snapshotStore.newSnapshot(metadata, directory, checksum);
             future.complete(snapshot);
           } catch (final Exception e) {
             future.completeExceptionally(e);
@@ -126,7 +132,6 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     try {
       isValid = false;
       snapshot = null;
-      LOGGER.debug("DELETE dir {}", directory);
       FileUtil.deleteFolder(directory);
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete pending snapshot {}", this, e);

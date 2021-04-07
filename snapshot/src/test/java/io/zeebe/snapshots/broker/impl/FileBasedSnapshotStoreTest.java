@@ -12,11 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.utils.time.WallClockTimestamp;
+import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -30,7 +33,10 @@ import org.junit.rules.TemporaryFolder;
 
 public class FileBasedSnapshotStoreTest {
 
+  private static final String SNAPSHOT_CONTENT_FILE_NAME = "file1.txt";
+
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
   private Path snapshotsDir;
   private Path pendingSnapshotsDir;
   private FileBasedSnapshotStoreFactory factory;
@@ -120,8 +126,12 @@ public class FileBasedSnapshotStoreTest {
     snapshots.forEach(
         snapshotId -> {
           try {
-            snapshotsDir.resolve(snapshotId.getSnapshotIdAsString()).toFile().createNewFile();
-          } catch (final IOException e) {
+            final var snapshot = snapshotsDir.resolve(snapshotId.getSnapshotIdAsString()).toFile();
+            snapshot.mkdir();
+            createSnapshotDir(snapshot.toPath());
+            final var checksum = SnapshotChecksum.calculate(snapshot.toPath());
+            SnapshotChecksum.persist(snapshot.toPath(), checksum);
+          } catch (final Exception e) {
             fail("Failed to create directory", e);
           }
         });
@@ -133,18 +143,77 @@ public class FileBasedSnapshotStoreTest {
 
     // then
     final var currentSnapshotIndex = snapshotStore.getCurrentSnapshotIndex();
+    final PersistedSnapshot persistedSnapshot = snapshotStore.getLatestSnapshot().get();
     assertThat(currentSnapshotIndex).isEqualTo(10L);
-    // should delete older snapshots
-    assertThat(snapshotsDir.toFile().list()).hasSize(1);
-    assertThat(snapshotsDir.toFile().list())
-        .containsExactly(snapshotStore.getLatestSnapshot().get().getId());
+    assertThat(Files.list(snapshotsDir))
+        .hasSize(2)
+        .containsExactlyInAnyOrder(
+            persistedSnapshot.getPath(), persistedSnapshot.getChecksumPath());
+  }
+
+  @Test
+  public void shouldPersistChecksumForExistingSnapshotWithoutChecksumFile() throws IOException {
+    // given
+    final var timeStamp = WallClockTimestamp.from(System.currentTimeMillis());
+    final FileBasedSnapshotMetadata snapshotId =
+        new FileBasedSnapshotMetadata(1, 1, timeStamp, 1, 1);
+    final var snapshot = snapshotsDir.resolve(snapshotId.getSnapshotIdAsString());
+    Files.createDirectories(snapshot);
+    createSnapshotDir(snapshot);
+
+    // when
+    final var snapshotStore =
+        new FileBasedSnapshotStoreFactory(createActorScheduler())
+            .createReceivableSnapshotStore(root.toPath(), partitionName);
+
+    // then
+    final var expectedChecksum = SnapshotChecksum.calculate(snapshot);
+    final var checksumFile = snapshotsDir.resolve(snapshotId.getSnapshotIdAsString() + ".checksum");
+    assertThat(checksumFile)
+        .exists()
+        .hasBinaryContent(ByteBuffer.allocate(Long.BYTES).putLong(0, expectedChecksum).array());
+  }
+
+  @Test
+  public void shouldNotLoadCorruptedSnapshot() throws IOException {
+    // given
+    final var index = 1L;
+    final var term = 0L;
+    final var transientSnapshot =
+        factory
+            .getConstructableSnapshotStore(partitionName)
+            .newTransientSnapshot(index, term, 1, 0)
+            .orElseThrow();
+    transientSnapshot.take(this::createSnapshotDir);
+    final var persistedSnapshot = transientSnapshot.persist().join();
+
+    corruptSnapshot(persistedSnapshot);
+
+    // when
+    final var snapshotStore =
+        new FileBasedSnapshotStoreFactory(createActorScheduler())
+            .createReceivableSnapshotStore(root.toPath(), partitionName);
+
+    // then
+    final var currentSnapshotIndex = snapshotStore.getCurrentSnapshotIndex();
+    assertThat(currentSnapshotIndex).isEqualTo(0L);
+    assertThat(snapshotStore.getLatestSnapshot()).isEmpty();
+  }
+
+  private void corruptSnapshot(final io.zeebe.snapshots.raft.PersistedSnapshot persistedSnapshot)
+      throws IOException {
+    final var corruptedFile =
+        persistedSnapshot.getPath().resolve(SNAPSHOT_CONTENT_FILE_NAME).toFile();
+    try (final RandomAccessFile file = new RandomAccessFile(corruptedFile, "rw")) {
+      file.writeLong(12346L);
+    }
   }
 
   private boolean createSnapshotDir(final Path path) {
     try {
       FileUtil.ensureDirectoryExists(path);
       Files.write(
-          path.resolve("file1.txt"),
+          path.resolve(SNAPSHOT_CONTENT_FILE_NAME),
           "This is the content".getBytes(),
           CREATE_NEW,
           StandardOpenOption.WRITE);

@@ -166,6 +166,7 @@ public class RaftContext implements AutoCloseable {
     persistedSnapshotStore
         .getLatestSnapshot()
         .ifPresent(persistedSnapshot -> currentSnapshot = persistedSnapshot);
+    verifySnapshotLogConsistent();
 
     logCompactor = new LogCompactor(this);
 
@@ -180,6 +181,19 @@ public class RaftContext implements AutoCloseable {
     replicationMetrics = new RaftReplicationMetrics(name);
     replicationMetrics.setAppendIndex(logWriter.getLastIndex());
     started = true;
+  }
+
+  private void verifySnapshotLogConsistent() {
+    final long currentSnapshotIndex = getCurrentSnapshotIndex();
+    if ((currentSnapshotIndex <= 0L && logReader.getFirstIndex() != 1)
+        || (currentSnapshotIndex > 0L
+            && currentSnapshot.getIndex() + 1 < logReader.getFirstIndex())) {
+      // There is no snapshot, but the log has been compacted!
+      throw new IllegalStateException(
+          String.format(
+              "Expected to find a snapshot at index >= log's first index %d, but found snapshot %d",
+              logReader.getFirstIndex(), currentSnapshotIndex));
+    }
   }
 
   private void setSnapshot(final PersistedSnapshot persistedSnapshot) {
