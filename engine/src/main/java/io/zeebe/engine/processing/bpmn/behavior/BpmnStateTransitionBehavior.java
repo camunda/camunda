@@ -390,36 +390,59 @@ public final class BpmnStateTransitionBehavior {
 
   public void onElementCompleted(
       final ExecutableFlowElement element, final BpmnElementContext childContext) {
-    final ExecutableFlowElement containerScope;
-    final BpmnElementContext containerContext;
-    final var flowScope = element.getFlowScope();
-    if (flowScope != null) {
-      containerScope = flowScope;
-      containerContext = stateBehavior.getFlowScopeContext(childContext);
-    } else {
-      // no flowscope, assume this is called from a parent process
-      containerContext = stateBehavior.getParentElementInstanceContext(childContext);
-      containerScope = getParentProcessScope(containerContext, childContext);
-    }
-    final var containerProcessor = processorLookUp.apply(containerScope.getElementType());
-    containerProcessor.onChildCompleted(containerScope, containerContext, childContext);
+
+    invokeElementContainerIfPresent(
+        element,
+        childContext,
+        (containerProcessor, containerScope, containerContext) ->
+            containerProcessor.onChildCompleted(containerScope, containerContext, childContext));
   }
 
   public void onElementTerminated(
       final ExecutableFlowElement element, final BpmnElementContext childContext) {
+
+    invokeElementContainerIfPresent(
+        element,
+        childContext,
+        (containerProcessor, containerScope, containerContext) ->
+            containerProcessor.onChildTerminated(containerScope, containerContext, childContext));
+  }
+
+  public void onElementActivating(
+      final ExecutableFlowElement element, final BpmnElementContext childContext) {
+
+    invokeElementContainerIfPresent(
+        element,
+        childContext,
+        (containerProcessor, containerScope, containerContext) ->
+            containerProcessor.onChildActivating(containerScope, containerContext, childContext));
+  }
+
+  private void invokeElementContainerIfPresent(
+      final ExecutableFlowElement childElement,
+      final BpmnElementContext childContext,
+      final ElementContainerProcessorFunction containerFunction) {
+
     final ExecutableFlowElement containerScope;
     final BpmnElementContext containerContext;
-    final var flowScope = element.getFlowScope();
+    final var flowScope = childElement.getFlowScope();
+
     if (flowScope != null) {
       containerContext = stateBehavior.getFlowScopeContext(childContext);
       containerScope = flowScope;
-    } else {
-      // no flowscope, assume this is called from a parent process
+
+    } else if (childContext.getParentElementInstanceKey() > 0) {
+      // no flow scope, it is called from a parent process
       containerContext = stateBehavior.getParentElementInstanceContext(childContext);
       containerScope = getParentProcessScope(containerContext, childContext);
+
+    } else {
+      // no flow scope or no parent process
+      return;
     }
-    final var containerProcessor = processorLookUp.apply(containerContext.getBpmnElementType());
-    containerProcessor.onChildTerminated(containerScope, containerContext, childContext);
+    final var containerProcessor = processorLookUp.apply(containerScope.getElementType());
+
+    containerFunction.apply(containerProcessor, containerScope, containerContext);
   }
 
   private ExecutableCallActivity getParentProcessScope(
@@ -472,5 +495,13 @@ public final class BpmnStateTransitionBehavior {
         .ifPresentOrElse(
             childInstanceContext -> transitionToTerminating(childInstanceContext) /* TERMINATING */,
             () -> transitionToTerminated(context) /* TERMINATED */);
+  }
+
+  @FunctionalInterface
+  private interface ElementContainerProcessorFunction {
+    void apply(
+        BpmnElementContainerProcessor<ExecutableFlowElement> containerProcessor,
+        ExecutableFlowElement containerScope,
+        BpmnElementContext containerContext);
   }
 }

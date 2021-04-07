@@ -22,6 +22,19 @@ public interface BpmnElementContainerProcessor<T extends ExecutableFlowElement>
     extends BpmnElementProcessor<T> {
 
   /**
+   * A child element is on activating (but not yet activated). Perform additional logic for the new
+   * child element, like setting variables.
+   *
+   * @param element the instance of the BPMN element container
+   * @param flowScopeContext process instance-related data of the element container
+   * @param childContext process instance-related data of the child element that is on activating
+   */
+  void onChildActivating(
+      final T element,
+      final BpmnElementContext flowScopeContext,
+      final BpmnElementContext childContext);
+
+  /**
    * A child element is completed. Leave the element container if it has no more active child
    * elements.
    *

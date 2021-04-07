@@ -147,6 +147,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       case ACTIVATE_ELEMENT:
         if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
           final var activatingContext = stateTransitionBehavior.transitionToActivating(context);
+          stateTransitionBehavior.onElementActivating(element, activatingContext);
           processor.onActivate(element, activatingContext);
         } else {
           processor.onActivating(element, context);
