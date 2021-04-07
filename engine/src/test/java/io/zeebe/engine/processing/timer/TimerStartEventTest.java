@@ -230,13 +230,12 @@ public final class TimerStartEventTest {
             RecordingExporter.processInstanceRecords()
                 .withProcessDefinitionKey(processDefinitionKey)
                 .skipUntil(r -> r.getPosition() >= triggerRecordPosition)
-                .limit(4))
+                .limit(3))
         .extracting(Record::getIntent)
         .containsExactly(
-            ProcessInstanceIntent.EVENT_OCCURRED, // causes the instance creation
             ProcessInstanceIntent.ELEMENT_ACTIVATING, // causes the flow node activation
             ProcessInstanceIntent.ELEMENT_ACTIVATED, // input mappings applied
-            ProcessInstanceIntent.ELEMENT_ACTIVATING); // triggers the start event
+            ProcessInstanceIntent.ACTIVATE_ELEMENT); // triggers the start event
   }
 
   @Test

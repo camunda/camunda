@@ -9,6 +9,7 @@ package io.zeebe.engine.processing;
 
 import io.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
+import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.message.PendingProcessMessageSubscriptionChecker;
 import io.zeebe.engine.processing.message.ProcessMessageSubscriptionCorrelateProcessor;
@@ -51,6 +52,7 @@ public final class ProcessEventProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final CatchEventBehavior catchEventBehavior,
       final DueDateTimerChecker timerChecker,
+      final EventTriggerBehavior eventTriggerBehavior,
       final Writers writers) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         zeebeState.getProcessMessageSubscriptionState();
@@ -62,16 +64,27 @@ public final class ProcessEventProcessors {
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(
-            expressionProcessor, catchEventBehavior, variableBehavior, zeebeState, writers);
+            expressionProcessor,
+            catchEventBehavior,
+            variableBehavior,
+            eventTriggerBehavior,
+            zeebeState,
+            writers);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
     addMessageStreamProcessors(
-        typedRecordProcessors, subscriptionState, subscriptionCommandSender, zeebeState, writers);
+        typedRecordProcessors,
+        subscriptionState,
+        subscriptionCommandSender,
+        eventTriggerBehavior,
+        zeebeState,
+        writers);
     addTimerStreamProcessors(
         typedRecordProcessors,
         timerChecker,
         zeebeState,
         catchEventBehavior,
+        eventTriggerBehavior,
         expressionProcessor,
         writers);
     addVariableDocumentStreamProcessors(
@@ -124,6 +137,7 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessMessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender,
+      final EventTriggerBehavior eventTriggerBehavior,
       final MutableZeebeState zeebeState,
       final Writers writers) {
     typedRecordProcessors
@@ -136,7 +150,11 @@ public final class ProcessEventProcessors {
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.CORRELATE,
             new ProcessMessageSubscriptionCorrelateProcessor(
-                subscriptionState, subscriptionCommandSender, zeebeState, writers))
+                subscriptionState,
+                subscriptionCommandSender,
+                zeebeState,
+                eventTriggerBehavior,
+                writers))
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.DELETE,
@@ -151,6 +169,7 @@ public final class ProcessEventProcessors {
       final DueDateTimerChecker timerChecker,
       final MutableZeebeState zeebeState,
       final CatchEventBehavior catchEventOutput,
+      final EventTriggerBehavior eventTriggerBehavior,
       final ExpressionProcessor expressionProcessor,
       final Writers writers) {
     typedRecordProcessors
@@ -161,7 +180,8 @@ public final class ProcessEventProcessors {
         .onCommand(
             ValueType.TIMER,
             TimerIntent.TRIGGER,
-            new TriggerTimerProcessor(zeebeState, catchEventOutput, expressionProcessor, writers))
+            new TriggerTimerProcessor(
+                zeebeState, catchEventOutput, eventTriggerBehavior, expressionProcessor, writers))
         .onCommand(
             ValueType.TIMER,
             TimerIntent.CANCEL,

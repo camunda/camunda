@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.bpmn.behavior;
 
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.common.EventHandle;
+import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.deployment.DeployedProcess;
@@ -29,13 +30,19 @@ public final class BpmnBufferedMessageStartEventBehavior {
   private final EventHandle eventHandle;
 
   public BpmnBufferedMessageStartEventBehavior(
-      final MutableZeebeState zeebeState, final Writers writers) {
+      final MutableZeebeState zeebeState,
+      final EventTriggerBehavior eventTriggerBehavior,
+      final Writers writers) {
     messageState = zeebeState.getMessageState();
     processState = zeebeState.getProcessState();
 
     eventHandle =
         new EventHandle(
-            zeebeState.getKeyGenerator(), zeebeState.getEventScopeInstanceState(), writers);
+            zeebeState.getKeyGenerator(),
+            zeebeState.getEventScopeInstanceState(),
+            writers,
+            processState,
+            eventTriggerBehavior);
   }
 
   public void correlateMessage(final BpmnElementContext context) {

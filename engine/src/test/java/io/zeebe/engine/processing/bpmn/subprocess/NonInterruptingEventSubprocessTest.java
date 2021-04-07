@@ -114,17 +114,26 @@ public class NonInterruptingEventSubprocessTest {
     final long wfInstanceKey = createInstanceAndTriggerEvent(model);
 
     // then
-    final Record<ProcessInstanceRecordValue> eventOccurred =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.EVENT_OCCURRED)
+    final Record<ProcessInstanceRecordValue> startEventActivate =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+            .withElementId("event_sub_start")
+            .withElementType(BpmnElementType.START_EVENT)
             .withProcessInstanceKey(wfInstanceKey)
             .getFirst();
-    Assertions.assertThat(eventOccurred.getValue())
+
+    final Record<ProcessInstanceRecordValue> subProcessActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId("event_sub_proc")
+            .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+            .withProcessInstanceKey(wfInstanceKey)
+            .getFirst();
+    Assertions.assertThat(startEventActivate.getValue())
         .hasProcessDefinitionKey(currentProcess.getProcessDefinitionKey())
         .hasProcessInstanceKey(wfInstanceKey)
         .hasBpmnElementType(BpmnElementType.START_EVENT)
         .hasElementId("event_sub_start")
         .hasVersion(currentProcess.getVersion())
-        .hasFlowScopeKey(wfInstanceKey);
+        .hasFlowScopeKey(subProcessActivated.getKey());
 
     assertEventSubprocessLifecycle(wfInstanceKey);
   }
@@ -145,7 +154,6 @@ public class NonInterruptingEventSubprocessTest {
                 .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
-            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
@@ -187,17 +195,18 @@ public class NonInterruptingEventSubprocessTest {
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
             .filter(r -> r.getValue().getElementId().startsWith("event_sub_"))
-            .limit(13)
+            .limit(14)
             .asList();
 
     assertThat(events)
         .extracting(Record::getIntent, e -> e.getValue().getElementId())
         .containsExactly(
-            tuple(ProcessInstanceIntent.EVENT_OCCURRED, "event_sub_start"),
             tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, "event_sub_proc"),
             tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, "event_sub_proc"),
+            tuple(ProcessInstanceIntent.ACTIVATE_ELEMENT, "event_sub_start"),
             tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, "event_sub_start"),
             tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, "event_sub_start"),
+            tuple(ProcessInstanceIntent.COMPLETE_ELEMENT, "event_sub_start"),
             tuple(ProcessInstanceIntent.ELEMENT_COMPLETING, "event_sub_start"),
             tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, "event_sub_start"),
             tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, "event_sub_end"),

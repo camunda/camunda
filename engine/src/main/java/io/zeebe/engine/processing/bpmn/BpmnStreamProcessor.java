@@ -13,6 +13,7 @@ import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.TypedResponseWriterProxy;
 import io.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
+import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
@@ -52,6 +53,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final ExpressionProcessor expressionProcessor,
       final CatchEventBehavior catchEventBehavior,
       final VariableBehavior variableBehavior,
+      final EventTriggerBehavior eventTriggerBehavior,
       final MutableZeebeState zeebeState,
       final Writers writers) {
     processState = zeebeState.getProcessState();
@@ -66,6 +68,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             zeebeState,
             catchEventBehavior,
             variableBehavior,
+            eventTriggerBehavior,
             this::getContainerProcessor,
             writers);
     processors = new BpmnElementProcessors(bpmnBehaviors);
@@ -127,7 +130,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
           ProcessInstanceIntent.ELEMENT_ACTIVATING);
     }
 
-    // process the event
+    // process the record
     if (stateTransitionGuard.isValidStateTransition(context)) {
       LOGGER.trace("Process process instance event [context: {}]", context);
 

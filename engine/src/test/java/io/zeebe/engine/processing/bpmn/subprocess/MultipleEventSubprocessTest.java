@@ -90,7 +90,6 @@ public final class MultipleEventSubprocessTest {
         .containsSubsequence(
             tuple("event_sub_proc_timer", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("event_sub_task_timer", ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("event_sub_start_msg", ProcessInstanceIntent.EVENT_OCCURRED),
             tuple("event_sub_proc_timer", ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple("event_sub_task_timer", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple("event_sub_proc_timer", ProcessInstanceIntent.ELEMENT_TERMINATED),
@@ -230,7 +229,7 @@ public final class MultipleEventSubprocessTest {
             .create();
 
     triggerTimerStart(wfInstanceKey);
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.EVENT_OCCURRED)
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ACTIVATE_ELEMENT)
         .withProcessInstanceKey(wfInstanceKey)
         .withElementId("event_sub_start_timer")
         .await();

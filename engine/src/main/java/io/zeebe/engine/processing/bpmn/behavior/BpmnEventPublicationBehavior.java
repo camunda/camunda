@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.bpmn.behavior;
 
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.common.ErrorEventHandler;
+import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
@@ -24,6 +25,7 @@ public final class BpmnEventPublicationBehavior {
 
   public BpmnEventPublicationBehavior(
       final MutableZeebeState zeebeState,
+      final EventTriggerBehavior eventTriggerBehavior,
       final TypedStreamWriter streamWriter,
       final Writers writers) {
     final var processState = zeebeState.getProcessState();
@@ -35,6 +37,7 @@ public final class BpmnEventPublicationBehavior {
             zeebeState.getElementInstanceState(),
             zeebeState.getEventScopeInstanceState(),
             zeebeState.getKeyGenerator(),
+            eventTriggerBehavior,
             writers);
     this.streamWriter = streamWriter;
   }

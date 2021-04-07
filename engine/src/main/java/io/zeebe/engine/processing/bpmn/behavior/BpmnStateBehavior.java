@@ -69,6 +69,11 @@ public final class BpmnStateBehavior {
     elementInstanceState.updateInstance(context.getFlowScopeKey(), modifier);
   }
 
+  public void updateElementInstance(
+      final long elementInstanceKey, final Consumer<ElementInstance> modifier) {
+    elementInstanceState.updateInstance(elementInstanceKey, modifier);
+  }
+
   public JobState getJobState() {
     return jobState;
   }
