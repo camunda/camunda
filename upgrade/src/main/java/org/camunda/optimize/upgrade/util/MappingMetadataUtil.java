@@ -149,7 +149,8 @@ public class MappingMetadataUtil {
     dynamicMappings.addAll(retrieveAllCamundaActivityEventIndices(esClient));
     dynamicMappings.addAll(retrieveAllSequenceCountIndices(esClient));
     dynamicMappings.addAll(retrieveAllEventTraceIndices(esClient));
-    dynamicMappings.addAll(retrieveAllProcessIndices(esClient));
+    // TODO needs to get reactivated, see https://jira.camunda.com/browse/OPT-5104
+    // dynamicMappings.addAll(retrieveAllProcessIndices(esClient));
     dynamicMappings.addAll(retrieveAllDecisionInstanceIndices(esClient));
     return dynamicMappings;
   }
