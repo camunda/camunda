@@ -67,15 +67,6 @@ class JournalSegment implements AutoCloseable {
   }
 
   /**
-   * Returns the segment version.
-   *
-   * @return The segment version.
-   */
-  public long version() {
-    return descriptor.version();
-  }
-
-  /**
    * Returns the segment's starting index.
    *
    * @return The segment's starting index.
@@ -196,10 +187,6 @@ class JournalSegment implements AutoCloseable {
 
   @Override
   public String toString() {
-    return toStringHelper(this)
-        .add("id", id())
-        .add("version", version())
-        .add("index", index())
-        .toString();
+    return toStringHelper(this).add("id", id()).add("index", index()).toString();
   }
 }

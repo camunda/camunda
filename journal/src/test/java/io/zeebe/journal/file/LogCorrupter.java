@@ -51,7 +51,7 @@ public class LogCorrupter {
   private static boolean corruptRecord(final byte[] bytes, final long targetIndex) {
     final JournalRecordReaderUtil reader = new JournalRecordReaderUtil(new SBESerializer());
     final ByteBuffer buffer = ByteBuffer.wrap(bytes);
-    buffer.position(JournalSegmentDescriptor.BYTES);
+    buffer.position(JournalSegmentDescriptor.getEncodingLength());
 
     Optional<Integer> version = FrameUtil.readVersion(buffer);
     for (long index = 1; version.isPresent() && version.get() == 1; index++) {

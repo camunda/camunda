@@ -338,7 +338,8 @@ class SegmentedJournalTest {
   private SegmentedJournal openJournal(final float entriesPerSegment, final int entrySize) {
     return SegmentedJournal.builder()
         .withDirectory(directory.resolve("data").toFile())
-        .withMaxSegmentSize((int) (entrySize * entriesPerSegment) + JournalSegmentDescriptor.BYTES)
+        .withMaxSegmentSize(
+            (int) (entrySize * entriesPerSegment) + JournalSegmentDescriptor.getEncodingLength())
         .withMaxEntrySize(entrySize)
         .withJournalIndexDensity(journalIndexDensity)
         .build();

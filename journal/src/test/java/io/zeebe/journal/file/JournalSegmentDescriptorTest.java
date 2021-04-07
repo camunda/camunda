@@ -16,58 +16,33 @@
  */
 package io.zeebe.journal.file;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 
-/**
- * Segment descriptor test.
- *
- * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
- */
 public class JournalSegmentDescriptorTest {
 
-  /** Tests the segment descriptor builder. */
   @Test
-  public void shouldBuildDescriptor() {
-    final JournalSegmentDescriptor descriptor =
-        JournalSegmentDescriptor.builder(ByteBuffer.allocate(JournalSegmentDescriptor.BYTES))
-            .withId(2)
-            .withIndex(1025)
-            .withMaxSegmentSize(1024 * 1024)
-            .build();
-
-    assertEquals(2, descriptor.id());
-    assertEquals(JournalSegmentDescriptor.VERSION, descriptor.version());
-    assertEquals(1025, descriptor.index());
-    assertEquals(1024 * 1024, descriptor.maxSegmentSize());
-
-    assertEquals(0, descriptor.updated());
-    final long time = System.currentTimeMillis();
-    descriptor.update(time);
-    assertEquals(time, descriptor.updated());
-  }
-
-  /** Tests copying the segment descriptor. */
-  @Test
-  public void shouldCopyDescriptor() {
+  public void shouldWriteAndReadDescriptor() {
+    // given
     JournalSegmentDescriptor descriptor =
         JournalSegmentDescriptor.builder()
             .withId(2)
-            .withIndex(1025)
-            .withMaxSegmentSize(1024 * 1024)
+            .withIndex(100)
+            .withMaxSegmentSize(1024)
             .build();
+    final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
+    descriptor = descriptor.copyTo(buffer);
 
-    final long time = System.currentTimeMillis();
-    descriptor.update(time);
+    // when
+    final JournalSegmentDescriptor descriptorRead = new JournalSegmentDescriptor(buffer);
 
-    descriptor = descriptor.copyTo(ByteBuffer.allocate(JournalSegmentDescriptor.BYTES));
-
-    assertEquals(2, descriptor.id());
-    assertEquals(JournalSegmentDescriptor.VERSION, descriptor.version());
-    assertEquals(1025, descriptor.index());
-    assertEquals(1024 * 1024, descriptor.maxSegmentSize());
-    assertEquals(time, descriptor.updated());
+    // then
+    assertThat(descriptorRead).isEqualTo(descriptor);
+    assertThat(descriptorRead.id()).isEqualTo(2);
+    assertThat(descriptorRead.index()).isEqualTo(100);
+    assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
+    assertThat(descriptorRead.length()).isEqualTo(JournalSegmentDescriptor.getEncodingLength());
   }
 }

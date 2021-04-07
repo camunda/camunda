@@ -47,6 +47,7 @@ class MappedJournalSegmentWriter {
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
   private final JournalRecordSerializer serializer = new SBESerializer();
   private final MutableDirectBuffer writeBuffer = new UnsafeBuffer();
+  private final int descriptorLength;
 
   MappedJournalSegmentWriter(
       final MappedByteBuffer buffer,
@@ -54,6 +55,7 @@ class MappedJournalSegmentWriter {
       final int maxEntrySize,
       final JournalIndex index) {
     this.segment = segment;
+    descriptorLength = segment.descriptor().length();
     this.maxEntrySize = maxEntrySize;
     recordUtil = new JournalRecordReaderUtil(serializer);
     this.index = index;
@@ -196,7 +198,7 @@ class MappedJournalSegmentWriter {
     long nextIndex = firstIndex;
 
     // Clear the buffer indexes.
-    buffer.position(JournalSegmentDescriptor.BYTES);
+    buffer.position(descriptorLength);
     buffer.mark();
     int position = buffer.position();
     try {
@@ -239,8 +241,8 @@ class MappedJournalSegmentWriter {
     this.index.deleteAfter(index);
 
     if (index < segment.index()) {
-      buffer.position(JournalSegmentDescriptor.BYTES);
-      invalidateNextEntry(JournalSegmentDescriptor.BYTES);
+      buffer.position(descriptorLength);
+      invalidateNextEntry(descriptorLength);
     } else {
       reset(index);
       invalidateNextEntry(buffer.position());
