@@ -243,6 +243,7 @@ public final class ExclusiveGatewayTest {
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED,
             ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
+            ProcessInstanceIntent.ACTIVATE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
             ProcessInstanceIntent.ELEMENT_COMPLETING,

@@ -185,6 +185,33 @@ public final class ReplayStateTest {
                       .withElementType(BpmnElementType.END_EVENT)
                       .withElementId("end")
                       .getFirst();
+                }),
+        testCase("throw error end event")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .subProcess("subProcess")
+                    .embeddedSubProcess()
+                    .startEvent()
+                    .endEvent("errorEndEvent", b -> b.error("error"))
+                    .subProcessDone()
+                    .boundaryEvent("errorCatchEvent", b -> b.error("error").cancelActivity(true))
+                    .endEvent()
+                    .moveToActivity("subProcess")
+                    .intermediateCatchEvent("neverProcessed")
+                    .message(m -> m.name("message").zeebeCorrelationKey("=\"key\""))
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+                  // the process will only finish if it goes through the error catch event boundary
+                  // event, which simplifies verification
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withElementType(BpmnElementType.PROCESS)
+                      .withRecordKey(piKey)
+                      .getFirst();
                 }));
   }
 

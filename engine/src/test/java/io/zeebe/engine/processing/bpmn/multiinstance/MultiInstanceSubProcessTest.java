@@ -140,6 +140,7 @@ public final class MultiInstanceSubProcessTest {
             tuple("sub-process-start", ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple("sub-process-start", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("sub-process-to-end", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("sub-process-end", ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple("sub-process-end", ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple("sub-process-end", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("sub-process-end", ProcessInstanceIntent.ELEMENT_COMPLETING),
