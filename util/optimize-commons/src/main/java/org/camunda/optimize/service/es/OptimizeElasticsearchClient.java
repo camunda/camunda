@@ -26,6 +26,7 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.rollover.Condition;
 import org.elasticsearch.action.admin.indices.rollover.MaxSizeCondition;
+import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -52,6 +53,7 @@ import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.GetMappingsResponse;
+import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
 import org.elasticsearch.client.indices.rollover.RolloverRequest;
 import org.elasticsearch.client.indices.rollover.RolloverResponse;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
@@ -144,6 +146,10 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     return highLevelClient.indices().getAlias(getAliasesRequest, options);
   }
 
+  public final boolean exists(final String indexName) throws IOException {
+    return exists(new GetIndexRequest(convertToPrefixedAliasNames(new String[]{indexName})), RequestOptions.DEFAULT);
+  }
+
   public final boolean exists(final GetIndexRequest getRequest, final RequestOptions options) throws IOException {
     final GetIndexRequest prefixedGetRequest = new GetIndexRequest(convertToPrefixedAliasNames(getRequest.indices()));
     return highLevelClient.indices().exists(prefixedGetRequest, options);
@@ -152,6 +158,13 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   public final boolean exists(final IndexMappingCreator indexMappingCreator) throws IOException {
     return highLevelClient.indices().exists(
       new GetIndexRequest(indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMappingCreator)),
+      RequestOptions.DEFAULT
+    );
+  }
+
+  public final boolean templateExists(final String indexName) throws IOException {
+    return highLevelClient.indices().existsTemplate(
+      new IndexTemplatesExistRequest(convertToPrefixedAliasNames(new String[]{indexName})),
       RequestOptions.DEFAULT
     );
   }
@@ -258,6 +271,20 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
       }
     }
     log.debug("Successfully deleted index [{}].", indexNamesString);
+  }
+
+  public void deleteIndexTemplateByIndexTemplateName(final String indexTemplateName) {
+    final String prefixedIndexTemplateName = indexNameService.getOptimizeIndexAliasForIndex(indexTemplateName);
+    log.debug("Deleting index template [{}].", prefixedIndexTemplateName);
+    try {
+      highLevelClient.indices().deleteTemplate(
+        new DeleteIndexTemplateRequest(prefixedIndexTemplateName), RequestOptions.DEFAULT
+      );
+    } catch (IOException e) {
+      final String errorMessage = String.format("Could not delete index template [%s]!", prefixedIndexTemplateName);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+    log.debug("Successfully deleted index template [{}].", prefixedIndexTemplateName);
   }
 
   public void applyIndexPrefixes(final IndicesRequest.Replaceable request) {

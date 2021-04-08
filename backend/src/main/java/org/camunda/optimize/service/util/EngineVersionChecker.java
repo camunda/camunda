@@ -10,7 +10,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.EngineVersionDto;
-import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 
@@ -30,48 +29,44 @@ import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EngineVersionChecker {
 
+  private static final String ERROR_CONNECTION_REFUSED = "Engine didn't respond. Can not verify this engine's version";
+
   @Getter
   private static final List<String> supportedEngines = new ArrayList<>();
 
   // Any minor or major versions newer than specified here will also be accepted
   static {
-    supportedEngines.add("7.12.11");
     supportedEngines.add("7.13.5");
     supportedEngines.add("7.14.0");
+    supportedEngines.add("7.15.0");
   }
 
-  public static void checkEngineVersionSupport(String engineRestPath, EngineContext engineContext) {
-    Client client = engineContext.getEngineClient();
-    Response response;
+  public static void checkEngineVersionSupport(final Client engineClient,
+                                               final String engineRestPath) {
+    final Response response;
     try {
-      response = client.target(engineRestPath + EngineConstants.VERSION_ENDPOINT)
-        .request()
-        .get();
+      response = engineClient.target(engineRestPath + EngineConstants.VERSION_ENDPOINT).request().get();
     } catch (Exception e) {
-      // if we can't connect to the engine, we will just log an error and skip the check
-      String errorMessage = buildEngineConnectionRefusedErrorMessage(engineContext.getEngineAlias());
-      log.error(errorMessage, e);
-      return;
+      throw new OptimizeRuntimeException(ERROR_CONNECTION_REFUSED);
     }
 
-    int status = response.getStatus();
+    final int status = response.getStatus();
     if (status != Response.Status.OK.getStatusCode()) {
-      String errorMessageTemplate = "While checking the Engine version, following error occurred:";
+      final String errorMessageTemplate = "While checking the Engine version, following error occurred:";
       if (status == Response.Status.NOT_FOUND.getStatusCode()) {
-        String errorMessage = "While checking the Engine version, following error occurred: Status code: 404,\n this " +
-          "means you either configured a wrong endpoint or you have an unsupported engine version < " + supportedEngines.get(0);
+        final String errorMessage = "While checking the Engine version, following error occurred: Status code: 404,"
+          + " this means you either configured a wrong endpoint or you have an unsupported engine version < "
+          + supportedEngines.get(0);
         throw new OptimizeRuntimeException(errorMessage);
       } else {
-        throw new OptimizeRuntimeException(errorMessageTemplate +
-                                             "\nStatus code:" + response.getStatus() +
-                                             "\nResponse body:" + response.readEntity(String.class));
+        throw new OptimizeRuntimeException(
+          errorMessageTemplate + "\nStatus code:" + status + "\nResponse body:" + response.readEntity(String.class)
+        );
       }
     }
 
-    String currentVersion = response.readEntity(EngineVersionDto.class).getVersion();
-    boolean versionMatched = isVersionSupported(currentVersion, supportedEngines);
-
-    if (!versionMatched) {
+    final String currentVersion = response.readEntity(EngineVersionDto.class).getVersion();
+    if (!isVersionSupported(currentVersion, supportedEngines)) {
       throw new OptimizeRuntimeException(buildUnsupportedEngineErrorMessage(currentVersion));
     }
   }
@@ -117,7 +112,4 @@ public class EngineVersionChecker {
     return message.toString();
   }
 
-  private static String buildEngineConnectionRefusedErrorMessage(String engineAlias) {
-    return "Engine with alias [{" + engineAlias + "}] didn't respond. Can not verify this engine's version";
-  }
 }

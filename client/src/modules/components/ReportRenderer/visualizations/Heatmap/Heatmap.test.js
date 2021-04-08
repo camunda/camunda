@@ -6,11 +6,13 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import update from 'immutability-helper';
+
+import {Button, HeatmapOverlay} from 'components';
+import {formatters, loadRawData, getTooltipText, processResult} from 'services';
 
 import {Heatmap} from './Heatmap';
-import {Button, HeatmapOverlay} from 'components';
 import {calculateTargetValueHeat} from './service';
-import {formatters, loadRawData} from 'services';
 
 const {convertToMilliseconds} = formatters;
 
@@ -35,6 +37,7 @@ jest.mock('services', () => {
     loadRawData: jest.fn().mockReturnValue({result: {data: [{processInstanceId: 'test'}]}}),
     isDurationReport: jest.fn().mockReturnValue(false),
     getTooltipText: jest.fn(),
+    processResult: jest.fn().mockReturnValue({data: {}}),
   };
 });
 
@@ -45,20 +48,31 @@ const report = {
   data: {
     configuration: {
       xml: 'some diagram XML',
+      aggregationTypes: ['avg'],
     },
     view: {
-      property: 'frequency',
+      properties: ['frequency'],
     },
     visualization: 'heat',
   },
   result: {
-    data: [
-      {key: 'a', value: 1},
-      {key: 'b', value: 2},
+    measures: [
+      {
+        property: 'frequency',
+        aggregationType: null,
+        data: [
+          {key: 'a', value: 1},
+          {key: 'b', value: 2},
+        ],
+      },
     ],
     instanceCount: 5,
   },
 };
+
+beforeEach(() => {
+  processResult.mockClear();
+});
 
 it('should load the process definition xml', () => {
   const node = shallow(<Heatmap report={report} />);
@@ -83,7 +97,22 @@ it('should display a loading indication while loading', () => {
 });
 
 it('should display an error message if visualization is incompatible with data', () => {
-  const node = shallow(<Heatmap report={{...report, result: {data: 1234}}} errorMessage="Error" />);
+  const node = shallow(
+    <Heatmap
+      report={{
+        ...report,
+        result: {
+          measures: [
+            {
+              property: 'frequency',
+              data: 1234,
+            },
+          ],
+        },
+      }}
+      errorMessage="Error"
+    />
+  );
 
   expect(node).toIncludeText('Error');
 });
@@ -108,7 +137,13 @@ it('should convert the data to target value heat when target value mode is activ
 
   shallow(
     <Heatmap
-      report={{...report, data: {...report.data, configuration: {xml: 'test', heatmapTargetValue}}}}
+      report={update(report, {
+        data: {
+          view: {properties: {$set: ['duration']}},
+          configuration: {heatmapTargetValue: {$set: heatmapTargetValue}},
+        },
+        result: {measures: {0: {aggregationType: {$set: ['avg']}}}},
+      })}
     />
   );
 
@@ -132,13 +167,13 @@ it('should show a tooltip with information about actual and target value', () =>
 
   const node = shallow(
     <Heatmap
-      report={{
-        ...report,
+      report={update(report, {
         data: {
-          ...report.data,
-          configuration: {xml: 'test', heatmapTargetValue, aggregationType: 'avg'},
+          view: {properties: {$set: ['duration']}},
+          configuration: {heatmapTargetValue: {$set: heatmapTargetValue}},
         },
-      }}
+        result: {measures: {0: {aggregationType: {$set: ['avg']}}}},
+      })}
     />
   );
 
@@ -161,13 +196,13 @@ it('should inform if the actual value is less than 1% of the target value', () =
 
   const node = shallow(
     <Heatmap
-      report={{
-        ...report,
+      report={update(report, {
         data: {
-          ...report.data,
-          configuration: {xml: 'test', heatmapTargetValue, aggregationType: 'avg'},
+          view: {properties: {$set: ['duration']}},
+          configuration: {heatmapTargetValue: {$set: heatmapTargetValue}},
         },
-      }}
+        result: {measures: {0: {aggregationType: {$set: ['avg']}}}},
+      })}
     />
   );
 
@@ -193,10 +228,18 @@ it('should show a tooltip with information if no actual value is available', () 
     <Heatmap
       report={{
         ...report,
-        result: {data: []},
+        result: {
+          measures: [
+            {
+              property: 'duration',
+              data: [],
+            },
+          ],
+          instanceCount: 5,
+        },
         data: {
           ...report.data,
-          configuration: {xml: 'test', heatmapTargetValue, aggregationType: 'avg'},
+          configuration: {xml: 'test', heatmapTargetValue, aggregationTypes: ['avg']},
         },
       }}
     />
@@ -221,13 +264,13 @@ it('should invoke report evaluation when clicking the download instances button'
   const node = shallow(
     <Heatmap
       mightFail={jest.fn().mockImplementation((a, b) => b(a))}
-      report={{
-        ...report,
+      report={update(report, {
         data: {
-          ...report.data,
-          configuration: {xml: 'test', heatmapTargetValue, aggregationType: 'avg'},
+          view: {properties: {$set: ['duration']}},
+          configuration: {heatmapTargetValue: {$set: heatmapTargetValue}},
         },
-      }}
+        result: {measures: {0: {aggregationType: {$set: ['avg']}}}},
+      })}
     />
   );
 
@@ -236,4 +279,51 @@ it('should invoke report evaluation when clicking the download instances button'
   await tooltip.find(Button).props().onClick();
 
   expect(loadRawData).toHaveBeenCalledWith('config');
+});
+
+describe('multi-measure reports', () => {
+  const multiMeasureReport = update(report, {
+    data: {view: {properties: {$set: ['frequency', 'duration']}}},
+    result: {
+      measures: {
+        $push: [
+          {
+            property: 'duration',
+            data: [
+              {key: 'a', value: 1234},
+              {key: 'b', value: 5678},
+            ],
+          },
+        ],
+      },
+    },
+  });
+
+  it('should show a tooltip with information about multi-measure reports', () => {
+    const node = shallow(<Heatmap report={multiMeasureReport} />);
+
+    getTooltipText.mockReturnValueOnce('12');
+    getTooltipText.mockReturnValueOnce('2d 15s');
+
+    const tooltip = node.find('HeatmapOverlay').renderProp('formatter')('', 'b');
+
+    expect(tooltip).toMatchSnapshot();
+  });
+
+  it('should allow switching between heat visualizations for multi-measure reports', () => {
+    const node = shallow(<Heatmap report={multiMeasureReport} />);
+
+    expect(processResult).toHaveBeenCalledWith(
+      update(multiMeasureReport, {result: {$set: multiMeasureReport.result.measures[0]}})
+    );
+    expect(processResult).not.toHaveBeenCalledWith(
+      update(multiMeasureReport, {result: {$set: multiMeasureReport.result.measures[1]}})
+    );
+
+    node.find('Select').simulate('change', 1);
+
+    expect(processResult).toHaveBeenCalledWith(
+      update(multiMeasureReport, {result: {$set: multiMeasureReport.result.measures[1]}})
+    );
+  });
 });

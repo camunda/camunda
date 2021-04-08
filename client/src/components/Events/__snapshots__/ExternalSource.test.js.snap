@@ -44,7 +44,8 @@ exports[`should match snapshot 1`] = `
       <ForwardRef(LabeledInput)
         checked={false}
         className=""
-        label="All events in a single group"
+        disabled={false}
+        label="Combine all events in a single group"
         onChange={[Function]}
         type="checkbox"
       />

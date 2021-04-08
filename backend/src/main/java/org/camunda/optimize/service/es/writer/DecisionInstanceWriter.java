@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
@@ -29,6 +28,7 @@ import org.springframework.stereotype.Component;
 import java.security.InvalidParameterException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -144,7 +144,7 @@ public class DecisionInstanceWriter implements ConfigurationReloadable {
     defKeysOfMissingIndices.forEach(defKey -> elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
       esClient,
       new DecisionInstanceIndex(defKey),
-      Sets.newHashSet(DECISION_INSTANCE_MULTI_ALIAS)
+      Collections.singleton(DECISION_INSTANCE_MULTI_ALIAS)
     ));
     existingInstanceIndexDefinitionKeys.addAll(defKeysOfMissingIndices);
   }

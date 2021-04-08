@@ -10,27 +10,38 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAccessor;
 
 public class CustomOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTime> {
 
   public static final String OFFSET_X_DATE_TIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSSX";
+
   private final DateTimeFormatter formatter;
 
-  public CustomOffsetDateTimeDeserializer(DateTimeFormatter formatter) {
+  public CustomOffsetDateTimeDeserializer(final DateTimeFormatter formatter) {
     this.formatter = formatter;
   }
 
   @Override
-  public OffsetDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+  public OffsetDateTime deserialize(final JsonParser parser, final DeserializationContext context) throws IOException {
     try {
-      return OffsetDateTime.parse(parser.getText(), this.formatter);
+      final TemporalAccessor parsedTemporal = this.formatter.parseBest(
+        // having LocalDateTime here as fallback in case the pattern is not including a time zone
+        parser.getText(), OffsetDateTime::from, LocalDateTime::from
+      );
+      if (parsedTemporal instanceof OffsetDateTime) {
+        return (OffsetDateTime) parsedTemporal;
+      } else {
+        return ((LocalDateTime) parsedTemporal).atZone(ZoneId.systemDefault()).toOffsetDateTime();
+      }
     } catch (DateTimeParseException exception) {
-      // If the offset is a 'Z', we can handle using a backup `X` pattern rather than failing
+      // If the offset is a 'Z', we can handle it using a backup `X` pattern rather than failing
       return ZonedDateTime
         .parse(
           parser.getText(),

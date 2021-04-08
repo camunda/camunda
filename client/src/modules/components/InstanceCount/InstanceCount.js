@@ -5,7 +5,7 @@
  */
 
 import React, {useState} from 'react';
-import equals from 'deep-equal';
+import equals from 'fast-deep-equal';
 import update from 'immutability-helper';
 
 import {Popover} from 'components';
@@ -104,7 +104,7 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
           >
             <div className="countString">
               {typeof instanceCount === 'number' &&
-                t(`report.instanceCount.reportFilters${totalCount !== 1 ? '-plural' : ''}`, {
+                t(`report.instanceCount.${reportType}.label${totalCount !== 1 ? '-plural' : ''}`, {
                   count: instanceCount,
                   totalCount,
                 })}
@@ -141,7 +141,7 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
       <span className="countString">
         {typeof instanceCount === 'number' &&
           t(
-            `report.instanceCount.label${totalCount !== 1 ? '-plural' : ''}${
+            `report.instanceCount.${reportType}.label${totalCount !== 1 ? '-plural' : ''}${
               hasFilter ? '-withFilter' : ''
             }`,
             {

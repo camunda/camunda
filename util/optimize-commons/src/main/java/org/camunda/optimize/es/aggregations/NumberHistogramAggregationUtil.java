@@ -12,33 +12,42 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.histogram.HistogramAggregationBuilder;
 
+import java.util.List;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class NumberHistogramAggregationUtil {
 
-  public static HistogramAggregationBuilder generateHistogramWithField(final String histogramName, final double intervalSize,
-                                                                final double offsetValue, final double max,
-                                                                final String fieldName, final String formatString,
-                                                                final AggregationBuilder subAggregation) {
-    return AggregationBuilders
+  public static HistogramAggregationBuilder generateHistogramWithField(final String histogramName,
+                                                                       final double intervalSize,
+                                                                       final double offsetValue,
+                                                                       final double max,
+                                                                       final String fieldName,
+                                                                       final String formatString,
+                                                                       final List<AggregationBuilder> subAggregations) {
+    final HistogramAggregationBuilder histogramAggregationBuilder = AggregationBuilders
       .histogram(histogramName)
       .interval(intervalSize)
       .offset(offsetValue)
       .field(fieldName)
       .extendedBounds(offsetValue, max)
-      .format(formatString)
-      .subAggregation(subAggregation);
+      .format(formatString);
+    subAggregations.forEach(histogramAggregationBuilder::subAggregation);
+    return histogramAggregationBuilder;
   }
 
-  public static HistogramAggregationBuilder generateHistogramFromScript(final String histogramName, final double intervalSize,
-                                                                 final double offsetValue,
-                                                                 final Script script, final double max,
-                                                                 final AggregationBuilder subAggregation) {
-    return AggregationBuilders
+  public static HistogramAggregationBuilder generateHistogramFromScript(final String histogramName,
+                                                                        final double intervalSize,
+                                                                        final double offsetValue,
+                                                                        final Script script,
+                                                                        final double max,
+                                                                        final List<AggregationBuilder> subAggregations) {
+    final HistogramAggregationBuilder histogramAggregationBuilder = AggregationBuilders
       .histogram(histogramName)
       .interval(intervalSize)
       .offset(offsetValue)
       .script(script)
-      .extendedBounds(offsetValue, max)
-      .subAggregation(subAggregation);
+      .extendedBounds(offsetValue, max);
+    subAggregations.forEach(histogramAggregationBuilder::subAggregation);
+    return histogramAggregationBuilder;
   }
 }

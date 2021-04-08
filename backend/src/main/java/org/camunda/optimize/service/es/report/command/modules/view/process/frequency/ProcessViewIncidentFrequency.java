@@ -25,4 +25,5 @@ public class ProcessViewIncidentFrequency extends ProcessViewFrequency {
   public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
     dataForCommandKey.setView(new ProcessViewDto(ProcessViewEntity.INCIDENT, ViewProperty.FREQUENCY));
   }
+
 }

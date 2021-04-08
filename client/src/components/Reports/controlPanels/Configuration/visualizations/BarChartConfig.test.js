@@ -22,10 +22,13 @@ const barReport = {
   combined: false,
   data: {
     visualization: 'bar',
-    view: {property: 'frequency'},
+    view: {properties: ['frequency']},
     groupBy: {},
     distributedBy: {type: 'none', value: null},
     configuration,
+  },
+  result: {
+    measures: [{data: []}],
   },
 };
 
@@ -40,7 +43,7 @@ it('should not display show instance count and color picker for combined reports
       report={{
         ...barReport,
         combined: true,
-        result: {data: {test: {data: {view: {property: 'frequency'}}}}},
+        result: {data: {test: {data: {view: {properties: ['frequency']}}}}},
       }}
     />
   );
@@ -64,4 +67,21 @@ it('should not display color picker for hyper reports (distributed by userTask/a
   );
 
   expect(node.find('ColorPicker')).not.toExist();
+});
+
+it('should not show target value, color picker or y axis label for multi-measure reports', () => {
+  const node = shallow(
+    <BarChartConfig
+      report={{
+        ...barReport,
+        result: {
+          measures: [{data: []}, {data: []}],
+        },
+      }}
+    />
+  );
+
+  expect(node.find('ColorPicker')).not.toExist();
+  expect(node.find('[placeholder="xAxis"]')).not.toExist();
+  expect(node.find('ChartTargetInput')).not.toExist();
 });

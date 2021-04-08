@@ -35,7 +35,7 @@ const singleReportData = {
   processDefinitionVersion: '1',
   view: {
     entity: 'flowNode',
-    property: 'duration',
+    properties: ['duration'],
   },
   groupBy: {
     type: 'flowNodes',
@@ -121,7 +121,7 @@ const reportsList = [
       processDefinitionVersion: '1',
       view: {
         entity: 'flowNode',
-        property: 'duration',
+        properties: ['duration'],
       },
       groupBy: {
         type: 'flowNodes',
@@ -140,7 +140,7 @@ const reportsList = [
       ...singleReportData,
       view: {
         entity: 'variable',
-        property: {name: 'doubleVar', type: 'Double'},
+        properties: [{name: 'doubleVar', type: 'Double'}],
       },
       groupBy: {type: 'none', value: null},
       visualization: 'number',
@@ -222,7 +222,7 @@ describe('isCompatible', () => {
         ...reportsList[0].data,
         view: {
           entity: 'flowNode',
-          property: 'duration',
+          properties: ['duration'],
         },
       },
     };
@@ -237,7 +237,7 @@ describe('isCompatible', () => {
         ...reportsList[0].data,
         view: {
           entity: 'process instance',
-          property: 'frequency',
+          properties: ['frequency'],
         },
       },
     };
@@ -337,7 +337,7 @@ describe('isCompatible', () => {
         ...referenceReport.data,
         view: {
           entity: 'variable',
-          property: {name: 'longVar', type: 'Long'},
+          properties: [{name: 'longVar', type: 'Long'}],
         },
       },
     };
@@ -352,7 +352,7 @@ describe('isCompatible', () => {
         ...reportsList[0].data,
         view: {
           entity: 'userTask',
-          property: 'duration',
+          properties: ['duration'],
         },
       },
     };
@@ -368,7 +368,7 @@ describe('isCompatible', () => {
         processDefinitionVersion: '1',
         view: {
           entity: 'flowNode',
-          property: 'duration',
+          properties: ['duration'],
         },
         groupBy: {
           type: 'startDate',
@@ -384,7 +384,7 @@ describe('isCompatible', () => {
         processDefinitionVersion: '2',
         view: {
           entity: 'flowNode',
-          property: 'duration',
+          properties: ['duration'],
         },
         groupBy: {
           type: 'endDate',
@@ -424,7 +424,7 @@ describe('isCompatible', () => {
         processDefinitionVersion: '1',
         view: {
           entity: 'processInstance',
-          property: 'frequency',
+          properties: ['frequency'],
         },
         groupBy: {
           type: 'runningDate',
@@ -440,7 +440,7 @@ describe('isCompatible', () => {
         processDefinitionVersion: '2',
         view: {
           entity: 'processInstance',
-          property: 'frequency',
+          properties: ['frequency'],
         },
         groupBy: {
           type: 'startDate',
@@ -480,7 +480,7 @@ describe('isCompatible', () => {
         processDefinitionVersion: '1',
         view: {
           entity: 'processInstance',
-          property: 'frequency',
+          properties: ['frequency'],
         },
         groupBy: {
           type: 'none',
@@ -496,7 +496,7 @@ describe('isCompatible', () => {
         processDefinitionVersion: '2',
         view: {
           entity: 'variable',
-          property: {name: 'longVar', type: 'Long'},
+          properties: [{name: 'longVar', type: 'Long'}],
         },
         groupBy: {
           type: 'none',

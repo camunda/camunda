@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.engine.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricUserOperationLogDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationLogEntryDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationType;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -14,8 +15,10 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.UserOperationLogElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.engine.handler.RunningProcessInstanceImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.importing.UserOperationType.NOT_SUSPENSION_RELATED_OPERATION;
@@ -26,13 +29,19 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final RunningProcessInstanceImportIndexHandler runningProcessInstanceImportIndexHandler;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
+  private final ProcessInstanceResolverService processInstanceResolverService;
 
   public UserOperationLogImportService(final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                        final RunningProcessInstanceWriter runningProcessInstanceWriter,
-                                       final RunningProcessInstanceImportIndexHandler runningProcessInstanceImportIndexHandler) {
+                                       final RunningProcessInstanceImportIndexHandler runningProcessInstanceImportIndexHandler,
+                                       final ProcessDefinitionResolverService processDefinitionResolverService,
+                                       final ProcessInstanceResolverService processInstanceResolverService) {
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.runningProcessInstanceImportIndexHandler = runningProcessInstanceImportIndexHandler;
+    this.processDefinitionResolverService = processDefinitionResolverService;
+    this.processInstanceResolverService = processInstanceResolverService;
   }
 
   /**
@@ -89,11 +98,18 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
                 !UserOperationType.fromHistoricUserOperationLog(historicUserOpLog)
                   .equals(NOT_SUSPENSION_RELATED_OPERATION))
       .map(this::mapEngineEntityToOptimizeEntity)
+      .filter(this::filterUnknownDefinitionOperations)
       .distinct()
       .collect(Collectors.toList());
   }
 
   private UserOperationLogEntryDto mapEngineEntityToOptimizeEntity(final HistoricUserOperationLogDto engineEntity) {
+    if (engineEntity.getProcessDefinitionKey() == null) {
+      // To update instance data, we need to know the definition key (for the index name).
+      // Depending on the user operation, the key may not be present in the userOpLog so we need to retrieve it
+      // before importing.
+      enrichOperationLogDtoWithDefinitionKey(engineEntity);
+    }
     return UserOperationLogEntryDto.builder()
       .id(engineEntity.getId())
       .processInstanceId(engineEntity.getProcessInstanceId())
@@ -106,6 +122,30 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
   private boolean containsBatchOperation(List<UserOperationLogEntryDto> userOperationLogEntryDtos) {
     return userOperationLogEntryDtos.stream()
       .anyMatch(userOpLog -> isSuspensionViaBatchOperation(userOpLog.getOperationType()));
+  }
+
+  private void enrichOperationLogDtoWithDefinitionKey(final HistoricUserOperationLogDto engineEntity) {
+    Optional<String> definitionKey = Optional.empty();
+    if (engineEntity.getProcessDefinitionId() != null) {
+      definitionKey = processDefinitionResolverService.getDefinition(
+        engineEntity.getProcessDefinitionId(),
+        runningProcessInstanceImportIndexHandler.getEngineContext()
+      ).map(ProcessDefinitionOptimizeDto::getKey);
+    } else if (engineEntity.getProcessInstanceId() != null) {
+      definitionKey = processInstanceResolverService.getProcessInstanceDefinitionKey(
+        engineEntity.getProcessInstanceId(),
+        runningProcessInstanceImportIndexHandler.getEngineContext()
+      );
+    }
+    definitionKey.ifPresent(engineEntity::setProcessDefinitionKey);
+  }
+
+  private boolean filterUnknownDefinitionOperations(final UserOperationLogEntryDto userOpLogEntryDto) {
+    // If the operation is not a batch operation we need to know the definition key to update the specific instance
+    // index. If the defKey is not present, the relevant definition or instance has not yet been imported, so we do
+    // not import the suspension operation. Note that this might cause a race conditions in rare edge cases.
+    return isSuspensionViaBatchOperation(userOpLogEntryDto.getOperationType()) ||
+      userOpLogEntryDto.getProcessDefinitionKey() != null;
   }
 
 }

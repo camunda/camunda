@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -18,6 +19,9 @@ import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+
+import java.util.Collections;
+import java.util.List;
 
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 
@@ -32,19 +36,32 @@ public class DecisionViewCountInstanceFrequency extends DecisionViewPart {
   }
 
   @Override
-  public AggregationBuilder createAggregation(final ExecutionContext<DecisionReportDataDto> context) {
-    return filter(COUNT_AGGREGATION, QueryBuilders.matchAllQuery());
+  public List<AggregationBuilder> createAggregations(final ExecutionContext<DecisionReportDataDto> context) {
+    return Collections.singletonList(filter(COUNT_AGGREGATION, QueryBuilders.matchAllQuery()));
   }
 
   @Override
   public ViewResult retrieveResult(final SearchResponse response, final Aggregations aggs,
                                    final ExecutionContext<DecisionReportDataDto> context) {
     final Filter count = aggs.get(COUNT_AGGREGATION);
-    return new ViewResult().setNumber((double) count.getDocCount());
+    return createViewResult((double) count.getDocCount());
+  }
+
+  @Override
+  public ViewResult createEmptyResult(final ExecutionContext<DecisionReportDataDto> context) {
+    // for instance count the default is 0
+    // see https://jira.camunda.com/browse/OPT-3336
+    return createViewResult(0.);
   }
 
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto dataForCommandKey) {
     dataForCommandKey.setView(new DecisionViewDto(ViewProperty.FREQUENCY));
+  }
+
+  private ViewResult createViewResult(final double value) {
+    return ViewResult.builder()
+      .viewMeasure(CompositeCommandResult.ViewMeasure.builder().value(value).build())
+      .build();
   }
 }

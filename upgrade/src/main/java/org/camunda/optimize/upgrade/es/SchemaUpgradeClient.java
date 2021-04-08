@@ -32,7 +32,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -49,6 +48,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
 
@@ -81,12 +81,18 @@ public class SchemaUpgradeClient {
 
   public void reindex(final IndexMappingCreator sourceIndex,
                       final IndexMappingCreator targetIndex,
-                      final QueryBuilder sourceDocumentFilterQuery) {
+                      final QueryBuilder sourceDocumentFilterQuery,
+                      final String mappingScript) {
     final ReindexRequest reindexRequest = new ReindexRequest()
       .setSourceIndices(getIndexNameService().getOptimizeIndexNameWithVersion(sourceIndex))
       .setDestIndex(getIndexNameService().getOptimizeIndexNameWithVersion(targetIndex))
       .setSourceQuery(sourceDocumentFilterQuery)
       .setRefresh(true);
+
+    if (mappingScript != null) {
+      reindexRequest.setScript(createDefaultScript(mappingScript));
+    }
+
     String reindexTaskId;
 
     try {
@@ -164,7 +170,7 @@ public class SchemaUpgradeClient {
   public boolean indexExists(final String indexName) {
     log.debug("Checking if index exists [{}].", indexName);
     try {
-      return getHighLevelRestClient().indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
+      return elasticsearchClient.exists(indexName);
     } catch (Exception e) {
       String errorMessage = String.format("Could not validate whether index [%s] exists!", indexName);
       throw new UpgradeRuntimeException(errorMessage, e);
@@ -177,6 +183,27 @@ public class SchemaUpgradeClient {
         elasticsearchClient.deleteIndexByRawIndexNames(indexName);
       } catch (Exception e) {
         String errorMessage = String.format("Could not delete index [%s]!", indexName);
+        throw new UpgradeRuntimeException(errorMessage, e);
+      }
+    }
+  }
+
+  public boolean indexTemplateExists(final String indexTemplateName) {
+    log.debug("Checking if index template exists [{}].", indexTemplateName);
+    try {
+      return elasticsearchClient.templateExists(indexTemplateName);
+    } catch (Exception e) {
+      String errorMessage = String.format("Could not validate whether index template [%s] exists!", indexTemplateName);
+      throw new UpgradeRuntimeException(errorMessage, e);
+    }
+  }
+
+  public void deleteTemplateIfExists(final String indexTemplateName) {
+    if (indexTemplateExists(indexTemplateName)) {
+      try {
+        elasticsearchClient.deleteIndexTemplateByIndexTemplateName(indexTemplateName);
+      } catch (Exception e) {
+        String errorMessage = String.format("Could not delete index template [%s]!", indexTemplateName);
         throw new UpgradeRuntimeException(errorMessage, e);
       }
     }
@@ -243,19 +270,23 @@ public class SchemaUpgradeClient {
     }
   }
 
-  public void addAlias(final String indexAlias, final String indexName, final boolean isWriteAlias) {
-    log.debug("Adding alias [{}] to index [{}].", indexAlias, indexName);
+  public void addAlias(final String indexAlias, final String completeIndexName, final boolean isWriteAlias) {
+    addAliases(Collections.singleton(indexAlias), completeIndexName, isWriteAlias);
+  }
+
+  public void addAliases(final Set<String> indexAliases, final String completeIndexName, final boolean isWriteAlias) {
+    log.debug("Adding aliases [{}] to index [{}].", indexAliases, completeIndexName);
 
     try {
       final IndicesAliasesRequest indicesAliasesRequest = new IndicesAliasesRequest();
       final AliasActions aliasAction = new AliasActions(AliasActions.Type.ADD)
-        .index(indexName)
+        .index(completeIndexName)
         .writeIndex(isWriteAlias)
-        .alias(indexAlias);
+        .aliases(indexAliases.toArray(new String[0]));
       indicesAliasesRequest.addAliasAction(aliasAction);
       getHighLevelRestClient().indices().updateAliases(indicesAliasesRequest, RequestOptions.DEFAULT);
     } catch (Exception e) {
-      String errorMessage = String.format("Could not add alias to index [%s]!", indexName);
+      String errorMessage = String.format("Could not add alias to index [%s]!", completeIndexName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }

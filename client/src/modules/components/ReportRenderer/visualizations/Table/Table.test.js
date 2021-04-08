@@ -17,6 +17,10 @@ jest.mock('./processRawData', () => ({
   decision: jest.fn().mockReturnValue({}),
 }));
 
+jest.mock('./processDefaultData', () =>
+  jest.fn().mockReturnValue({head: ['col1', 'col2', {id: 'col3'}]})
+);
+
 jest.mock('config', () => ({getWebappEndpoints: jest.fn()}));
 
 const report = {
@@ -27,12 +31,13 @@ const report = {
       value: {},
       type: '',
     },
-    view: {property: 'duration'},
+    view: {properties: ['duration']},
     configuration: {
       tableColumns: {
         includeNewVariables: true,
         includedColumns: [],
         excludedColumns: [],
+        columnOrder: ['col1', 'col2', 'col3'],
       },
     },
     visualization: 'table',
@@ -58,7 +63,7 @@ it('should get the camunda endpoints for raw data', () => {
       {...props}
       report={{
         ...report,
-        data: {...report.data, view: {property: 'rawData'}},
+        data: {...report.data, view: {properties: ['rawData']}},
         result: {data: [1, 2, 3], pagination: {limit: 20}},
       }}
     />
@@ -124,7 +129,7 @@ it('should reload report with correct pagination parameters', async () => {
       loadReport={spy}
       report={{
         ...report,
-        data: {...report.data, view: {property: 'rawData'}},
+        data: {...report.data, view: {properties: ['rawData']}},
         result: {data: [1, 2, 3], pagination: {limit: 20}},
       }}
     />
@@ -133,4 +138,17 @@ it('should reload report with correct pagination parameters', async () => {
 
   node.find('Table').prop('fetchData')({pageIndex: 2, pageSize: 50});
   expect(spy).toHaveBeenCalledWith({limit: 50, offset: 100});
+});
+
+it('should update configuration when arranging columns', async () => {
+  const spy = jest.fn();
+  const node = shallow(<Table {...props} updateReport={spy} />);
+
+  runLastEffect();
+
+  node.find('ColumnRearrangement').prop('onChange')(0, 2);
+
+  expect(spy).toHaveBeenCalledWith({
+    configuration: {tableColumns: {columnOrder: {$set: ['col2', 'col3', 'col1']}}},
+  });
 });

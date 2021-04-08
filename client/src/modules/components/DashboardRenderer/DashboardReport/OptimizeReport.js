@@ -9,18 +9,16 @@ import React from 'react';
 import {
   ReportRenderer,
   LoadingIndicator,
-  NoDataNotice,
   EntityName,
   ReportDetails,
   InstanceCount,
 } from 'components';
 import {withErrorHandling} from 'HOC';
-import deepEqual from 'deep-equal';
+import deepEqual from 'fast-deep-equal';
 
 import {themed} from 'theme';
 
 import './OptimizeReport.scss';
-import {t} from 'translation';
 
 export class OptimizeReport extends React.Component {
   constructor(props) {
@@ -62,13 +60,13 @@ export class OptimizeReport extends React.Component {
           this.props.filter,
           params
         ),
-        (data) => this.setState({data}, resolve),
+        (data) => this.setState({data, error: null}, resolve),
         async (e) => {
           const errorData = await e.json();
           this.setState(
             {
               data: errorData.reportDefinition,
-              error: formatError(e, errorData),
+              error: {status: e.status, data: errorData},
             },
             resolve
           );
@@ -78,12 +76,6 @@ export class OptimizeReport extends React.Component {
   };
 
   refreshReport = () => this.loadReport(this.state.lastParams);
-
-  getName = () => {
-    if (this.state.data) {
-      return this.state.data.name;
-    }
-  };
 
   exitDarkmode = () => {
     if (this.props.theme === 'dark') {
@@ -100,25 +92,26 @@ export class OptimizeReport extends React.Component {
 
     const {disableNameLink, filter, children = () => {}} = this.props;
 
-    const reportName = this.getName();
-
     return (
       <div className="OptimizeReport DashboardReport__wrapper">
-        <div className="titleBar" tabIndex="-1">
-          <EntityName
-            linkTo={!disableNameLink && `report/${data.id}/`}
-            details={<ReportDetails report={data} />}
-          >
-            {reportName}
-          </EntityName>
-          <InstanceCount report={data} additionalFilter={filter} useIcon="filter" />
-        </div>
+        {data && (
+          <div className="titleBar" tabIndex="-1">
+            <EntityName
+              linkTo={!disableNameLink && `report/${data.id}/`}
+              details={<ReportDetails report={data} />}
+            >
+              {data.name}
+            </EntityName>
+            <InstanceCount report={data} additionalFilter={filter} useIcon="filter" />
+          </div>
+        )}
         <div className="visualization">
-          {error ? (
-            <NoDataNotice title={error.title}>{error.text}</NoDataNotice>
-          ) : (
-            <ReportRenderer report={data} context="dashboard" loadReport={this.loadReport} />
-          )}
+          <ReportRenderer
+            error={error}
+            report={data}
+            context="dashboard"
+            loadReport={this.loadReport}
+          />
         </div>
         {children({loadReportData: this.refreshReport})}
       </div>
@@ -127,16 +120,3 @@ export class OptimizeReport extends React.Component {
 }
 
 export default themed(withErrorHandling(OptimizeReport));
-
-function formatError(e, {errorCode, errorMessage}) {
-  if (e.status === 403) {
-    return {
-      title: t('dashboard.noAuthorization'),
-      text: t('dashboard.noReportAccess'),
-    };
-  }
-
-  return {
-    text: errorCode ? t('apiErrors.' + errorCode) : errorMessage,
-  };
-}

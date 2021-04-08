@@ -47,8 +47,9 @@ public class MapCommandResult extends CommandEvaluationResult<List<MapResultEntr
   private void addDurationHeader(final List<String[]> csvStrings) {
     final SingleReportDataDto singleReportData = getReportDataAs(SingleReportDataDto.class);
     final String normalizedCommandKey = getViewIdentifier(singleReportData);
-    final String[] operations =
-      new String[]{"", CSVUtils.mapAggregationType(singleReportData.getConfiguration().getAggregationTypes().get(0))};
+    final String[] operations = new String[]{
+      "", CSVUtils.mapAggregationType(singleReportData.getConfiguration().getAggregationTypes().iterator().next())
+    };
     csvStrings.add(0, operations);
     final String[] header =
       new String[]{getGroupByIdentifier(singleReportData), normalizedCommandKey};

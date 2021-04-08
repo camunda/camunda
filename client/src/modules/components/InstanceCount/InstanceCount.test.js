@@ -57,7 +57,7 @@ it('should should show the instance count', () => {
   expect(node).toIncludeText('123');
 });
 
-it('should not show the total instance count if there are not filters', () => {
+it('should not show the total instance count if there are no filters', () => {
   const noFilterReport = update(props.report, {data: {filter: {$set: []}}});
   const node = shallow(<InstanceCount {...props} report={noFilterReport} />);
 

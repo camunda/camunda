@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.candidate_group.distributed_by.none;
 
 import com.google.common.collect.ImmutableMap;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -16,10 +15,8 @@ import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_CANDIDATE;
@@ -93,15 +90,15 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
 
   @Override
   protected void assertMap_ForSeveralProcessesWithAllAggregationTypes(
-    final Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> results) {
+    final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+    assertThat(result.getInstanceCount()).isEqualTo(2);
     assertDurationMapReportResults(
-      results,
+      result,
       ImmutableMap.of(
         FIRST_CANDIDATE_GROUP_ID, SET_DURATIONS,
         SECOND_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[0]}
       )
     );
-    assertThat(results.get(MIN).getInstanceCount()).isEqualTo(2);
   }
 
   @Override
@@ -120,9 +117,10 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertMap_ForMultipleEventsWithAllAggregationTypes(final Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> results) {
+  protected void assertMap_ForMultipleEventsWithAllAggregationTypes(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result) {
     assertDurationMapReportResults(
-      results,
+      result,
       ImmutableMap.of(
         FIRST_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[0]},
         SECOND_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[1]}

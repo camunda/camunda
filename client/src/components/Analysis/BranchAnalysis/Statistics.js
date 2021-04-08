@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import equal from 'deep-equal';
+import equal from 'fast-deep-equal';
 import ChartRenderer from 'chart.js';
 
 import {loadCorrelationData} from './service';

@@ -132,3 +132,13 @@ it('should not crash if the report result is empty', () => {
     />
   );
 });
+
+it('should not crash if the report result is missing', () => {
+  shallow(
+    <ColumnSelection
+      report={{
+        data: {configuration: {}},
+      }}
+    />
+  );
+});

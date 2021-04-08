@@ -33,12 +33,12 @@ import java.util.Date;
 @Configuration
 public class ObjectMapperFactory {
   private final DateTimeFormatter optimizeDateTimeFormatter;
-  private final DateTimeFormatter engineDateTimeFormatter;
+  private final ConfigurationService configurationService;
 
   public ObjectMapperFactory(final DateTimeFormatter optimizeDateTimeFormatter,
                              final ConfigurationService configurationService) {
     this.optimizeDateTimeFormatter = optimizeDateTimeFormatter;
-    this.engineDateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
+    this.configurationService = configurationService;
   }
 
   @Primary
@@ -51,7 +51,11 @@ public class ObjectMapperFactory {
   @Qualifier("engineMapper")
   @Bean
   public ObjectMapper createEngineMapper() {
-    return buildObjectMapper(engineDateTimeFormatter);
+    return buildObjectMapper(createEngineDateTimeFormatter());
+  }
+
+  private DateTimeFormatter createEngineDateTimeFormatter() {
+    return DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
   }
 
   private ObjectMapper buildObjectMapper(final DateTimeFormatter deserializationDateTimeFormatter) {

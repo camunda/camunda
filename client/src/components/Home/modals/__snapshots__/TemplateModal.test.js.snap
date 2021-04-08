@@ -10,7 +10,9 @@ Object {
     "template": Object {
       "view": Object {
         "entity": "flowNode",
-        "property": "frequency",
+        "properties": Array [
+          "frequency",
+        ],
       },
     },
     "tenants": Array [

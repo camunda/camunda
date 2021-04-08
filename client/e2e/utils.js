@@ -46,9 +46,6 @@ export async function createNewReport(t) {
   await t.click('.CreateNewButton');
   await t.click(Selector('.Submenu').withText('New Report'));
   await t.click(Selector('.Submenu .DropdownOption').withText('Process Report'));
-
-  await t.click(Selector('.Modal .Typeahead'));
-  await t.click(Selector('.Modal .DropdownOption'));
   await t.click(Selector('.Modal .primary.confirm.Button'));
 }
 
@@ -102,11 +99,6 @@ export async function save(t) {
 export async function cancel(t) {
   await t.click('.cancel-button');
   await t.expect(Selector('.edit-button').visible).ok();
-}
-
-export async function selectAggregation(t, type) {
-  await t.click('.AggregationType .Select');
-  await t.click(Selector('.AggregationType .DropdownOption').withText(type));
 }
 
 export async function gotoOverview(t) {

@@ -72,7 +72,9 @@ export default class VariablesTable extends React.Component {
         head: [],
         body: [],
         noData: data ? (
-          <NoDataNotice>{t('analysis.outlier.detailsModal.table.emptyTableMessage')}</NoDataNotice>
+          <NoDataNotice type="info">
+            {t('analysis.outlier.detailsModal.table.emptyTableMessage')}
+          </NoDataNotice>
         ) : (
           <LoadingIndicator />
         ),

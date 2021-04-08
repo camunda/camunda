@@ -45,8 +45,10 @@ def seedJob = job('seed-job-optimize') {
     }
   }
 
-  triggers {
-    githubPush()
+  if (ENVIRONMENT == 'prod') {
+    triggers {
+      githubPush()
+    }
   }
 
   label 'master'
@@ -94,37 +96,85 @@ def seedJob = job('seed-job-optimize') {
 queue(seedJob)
 
 // By default, this job is enabled for prod env only.
-if (binding.variables.get("ENVIRONMENT") == "prod") {
+if (ENVIRONMENT == 'prod') {
   multibranchPipelineJob('camunda-optimize') {
 
     displayName 'Camunda Optimize'
     description 'MultiBranchJob for Camunda Optimize'
 
     branchSources {
-      github {
-        id 'optimize-repo'
-        repoOwner githubOrga
-        repository gitRepository
-        scanCredentialsId 'github-optimize-app'
-        // Discover branches => All branches
-        buildOriginBranch()
-        // Discover pull requests from origin => The current pull request revision
-        buildOriginPRHead()
-        // Based on team usage and decision, only main branch, PRs, and selected branches will be part of CI.
-        // That to avoid running the same CI job twice (one for branch and one for PR).
-        includes 'master prototype_zeebeint PR-* CI-*'
+      branchSource {
+        source {
+          github {
+            id 'optimize-repo'
+            repoOwner githubOrga
+            repository gitRepository
+            credentialsId 'github-optimize-app'
+            repositoryUrl "https://github.com/${githubOrga}/${gitRepository}"
+            configuredByUrl false
+            traits {
+              // Discover branches.
+              // Strategy ID 3 => Discover all branches.
+              gitHubBranchDiscovery {
+                strategyId 3
+              }
+
+              // Discovers pull requests where the origin repository is the same as the target repository.
+              // Strategy ID 2 => The current pull request revision.
+              gitHubPullRequestDiscovery {
+                strategyId 2
+              }
+
+              // Based on team usage and decision, only main branch, PRs, and selected branches will be part of CI.
+              // That to avoid running the same CI job twice (one for branch and one for PR).
+              headWildcardFilter {
+                // Space-separated list of name patterns to consider.
+                includes 'master prototype_zeebeint PR-* CI-*'
+                excludes ''
+              }
+
+              // Disable sending Github status notifications in non-prod envs.
+              if (ENVIRONMENT != 'prod') {
+                notificationsSkip()
+              }
+            }            
+          }
+        }
+        buildStrategies {
+          // Don't auto build discovered branches/PRs for non prod envs.
+          if (ENVIRONMENT == 'prod') {
+            // Builds regular branches whenever a change is detected.
+            buildRegularBranches()
+
+            // Builds change requests / pull requests.
+            buildChangeRequests {
+              ignoreTargetOnlyChanges false
+              ignoreUntrustedChanges true
+            }
+          }
+        }
+        strategy {
+          allBranchesSame {
+            props {
+              if (ENVIRONMENT != 'prod') {
+                // Suppresses the normal SCM commit trigger coming from branch indexing.
+                suppressAutomaticTriggering()
+              }
+            }
+          }
+        }
       }
     }
 
     orphanedItemStrategy {
       discardOldItems {
-        daysToKeep(1)
+        daysToKeep 1
       }
     }
 
     triggers {
       periodicFolderTrigger {
-        interval('1d')
+        interval '1d'
       }
     }
   }

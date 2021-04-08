@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.assignee.distributed_by.none;
 
 import com.google.common.collect.ImmutableMap;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -16,10 +15,8 @@ import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE;
@@ -58,14 +55,19 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
   @Override
   protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportResultResponseDto<List<MapResultEntryDto>> result,
                                                               final FlowNodeStateTestValues flowNodeStatusValues) {
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME).map(MapResultEntryDto::getValue).orElse(null))
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME)
+                 .map(MapResultEntryDto::getValue)
+                 .orElse(null))
       .isEqualTo(flowNodeStatusValues.getExpectedWorkDurationValues().get(DEFAULT_USERNAME));
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_USER).map(MapResultEntryDto::getValue).orElse(null))
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_USER)
+                 .map(MapResultEntryDto::getValue)
+                 .orElse(null))
       .isEqualTo(flowNodeStatusValues.getExpectedWorkDurationValues().get(SECOND_USER));
   }
 
   @Override
-  protected void assertMap_ForOneProcessWithUnassignedTasks(final double setDuration, final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+  protected void assertMap_ForOneProcessWithUnassignedTasks(final double setDuration,
+                                                            final ReportResultResponseDto<List<MapResultEntryDto>> result) {
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME)).isPresent().get()
@@ -94,15 +96,16 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void assertMap_ForSeveralProcessesWithAllAggregationTypes(final Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> results) {
-    assertDurationMapReportResults(
-      results,
+  protected void assertMap_ForSeveralProcessesWithAllAggregationTypes(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertDurationMapReportResultsForAllAggregationTypes(
+      result,
       ImmutableMap.of(
         DEFAULT_USERNAME, SET_DURATIONS,
         SECOND_USER, new Double[]{SET_DURATIONS[0]}
       )
     );
-    assertThat(results.get(MIN).getInstanceCount()).isEqualTo(2L);
   }
 
   @Override
@@ -121,9 +124,10 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void assertMap_ForMultipleEventsWithAllAggregationTypes(final Map<AggregationType, ReportResultResponseDto<List<MapResultEntryDto>>> results) {
-    assertDurationMapReportResults(
-      results,
+  protected void assertMap_ForMultipleEventsWithAllAggregationTypes(
+    final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+    assertDurationMapReportResultsForAllAggregationTypes(
+      result,
       ImmutableMap.of(
         DEFAULT_USERNAME, new Double[]{SET_DURATIONS[0]},
         SECOND_USER, new Double[]{SET_DURATIONS[1]}
@@ -147,12 +151,6 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " for result 2")
         .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
       );
-  }
-
-  @Override
-  protected void assertCustomOrderOnResultValueIsApplied(ReportResultResponseDto<List<MapResultEntryDto>> result) {
-    assertThat(result.getFirstMeasureData()).hasSize(2);
-    assertCorrectValueOrdering(result);
   }
 
 }

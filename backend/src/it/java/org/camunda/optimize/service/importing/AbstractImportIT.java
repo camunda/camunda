@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.util.BpmnModels;
@@ -18,6 +19,7 @@ import org.mockserver.model.HttpResponse;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -99,6 +101,11 @@ public abstract class AbstractImportIT extends AbstractIT {
       (request, times, mockServer) -> mockServer.when(request, times)
         .respond(HttpResponse.response().withStatusCode(Response.Status.FORBIDDEN.getStatusCode()))
     );
+  }
+
+  protected boolean indicesExist(final List<IndexMappingCreator> mappings) {
+    return embeddedOptimizeExtension.getElasticSearchSchemaManager()
+      .indicesExist(embeddedOptimizeExtension.getOptimizeElasticClient(), mappings);
   }
 
 }

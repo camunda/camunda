@@ -10,12 +10,19 @@ import {shallow} from 'enzyme';
 import ColumnRearrangement from './ColumnRearrangement';
 jest.mock('./processRawData', () => jest.fn());
 
-it('should render child node', () => {
+it('should render child node only if it is disabled', () => {
   const node = shallow(
-    <ColumnRearrangement report={{result: {data: {}}, data: {view: {}}}}>
-      some child content
-    </ColumnRearrangement>
+    <ColumnRearrangement enabled={false}>some child content</ColumnRearrangement>
   );
 
+  expect(node).not.toHaveClassName('.ColumnRearrangement');
   expect(node).toIncludeText('some child content');
+});
+
+it('should render columnRearrangement wrapper if it is enabled', () => {
+  const node = shallow(
+    <ColumnRearrangement enabled={true}>some child content</ColumnRearrangement>
+  );
+
+  expect(node).toHaveClassName('.ColumnRearrangement');
 });

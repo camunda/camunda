@@ -16,7 +16,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -62,7 +62,7 @@ public class EngineRestFilterPluginIT extends AbstractIT {
     );
 
     // then
-    allEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_INDEX_NAME);
+    allEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS);
   }
 
   private void deployAndStartSimpleServiceTask() {

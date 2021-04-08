@@ -89,6 +89,7 @@ public abstract class AbstractIncidentImportService implements ImportService<His
   private IncidentDto mapEngineEntityToOptimizeEntity(final HistoricIncidentEngineDto engineEntity) {
     return new IncidentDto(
       engineEntity.getProcessInstanceId(),
+      engineEntity.getProcessDefinitionKey(),
       engineContext.getEngineAlias(),
       engineEntity.getId(),
       engineEntity.getCreateTime(),

@@ -39,6 +39,8 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -98,6 +100,50 @@ public class DecisionViewRawData extends DecisionViewPart {
         .from(context.getPagination().getOffset());
     }
     addSortingToQuery(context.getReportData(), searchRequest.source());
+  }
+
+  @Override
+  public List<AggregationBuilder> createAggregations(final ExecutionContext<DecisionReportDataDto> context) {
+    return Collections.emptyList();
+  }
+
+  @Override
+  public ViewResult retrieveResult(final SearchResponse response,
+                                   final Aggregations aggs,
+                                   final ExecutionContext<DecisionReportDataDto> context) {
+    final List<DecisionInstanceDto> rawDataDecisionInstanceDtos;
+    if (context.isExport()) {
+      rawDataDecisionInstanceDtos =
+        ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
+          response,
+          DecisionInstanceDto.class,
+          objectMapper,
+          esClient,
+          configurationService.getEsScrollTimeoutInSeconds(),
+          context.getPagination().getLimit()
+        );
+    } else {
+      rawDataDecisionInstanceDtos = ElasticsearchReaderUtil.mapHits(
+        response.getHits(),
+        DecisionInstanceDto.class,
+        objectMapper
+      );
+    }
+
+    final List<RawDataDecisionInstanceDto> rawData = rawDataSingleReportResultDtoMapper
+      .mapFrom(rawDataDecisionInstanceDtos);
+    addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawData);
+    return ViewResult.builder().rawData(rawData).build();
+  }
+
+  @Override
+  public ViewResult createEmptyResult(final ExecutionContext<DecisionReportDataDto> context) {
+    return ViewResult.builder().rawData(new ArrayList<>()).build();
+  }
+
+  @Override
+  public void addViewAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto dataForCommandKey) {
+    dataForCommandKey.setView(new DecisionViewDto(ViewProperty.RAW_DATA));
   }
 
   private void addSortingToQuery(final DecisionReportDataDto decisionReportData,
@@ -170,46 +216,6 @@ public class DecisionViewRawData extends DecisionViewPart {
           .setFilter(termQuery(variableIdPath, inputVariableId))
       )
       .order(sortOrder);
-  }
-
-
-  @Override
-  public AggregationBuilder createAggregation(final ExecutionContext<DecisionReportDataDto> context) {
-    return null;
-  }
-
-  @Override
-  public ViewResult retrieveResult(final SearchResponse response,
-                                   final Aggregations aggs,
-                                   final ExecutionContext<DecisionReportDataDto> context) {
-    final List<DecisionInstanceDto> rawDataDecisionInstanceDtos;
-    if (context.isExport()) {
-      rawDataDecisionInstanceDtos =
-        ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
-          response,
-          DecisionInstanceDto.class,
-          objectMapper,
-          esClient,
-          configurationService.getEsScrollTimeoutInSeconds(),
-          context.getPagination().getLimit()
-        );
-    } else {
-      rawDataDecisionInstanceDtos = ElasticsearchReaderUtil.mapHits(
-        response.getHits(),
-        DecisionInstanceDto.class,
-        objectMapper
-      );
-    }
-
-    final List<RawDataDecisionInstanceDto> rawData = rawDataSingleReportResultDtoMapper
-      .mapFrom(rawDataDecisionInstanceDtos);
-    addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawData);
-    return new ViewResult().setRawData(rawData);
-  }
-
-  @Override
-  public void addViewAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto dataForCommandKey) {
-    dataForCommandKey.setView(new DecisionViewDto(ViewProperty.RAW_DATA));
   }
 
   private void addNewVariablesAndDtoFieldsToTableColumnConfig(final ExecutionContext<DecisionReportDataDto> context,

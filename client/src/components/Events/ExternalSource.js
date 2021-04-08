@@ -22,7 +22,13 @@ const debounceRequest = debouncePromise();
 const externalSource = {type: 'external', configuration: {includeAllGroups: true, group: null}};
 const pageSize = 10;
 
-export function ExternalSource({empty, mightFail, onChange, existingSources}) {
+export function ExternalSource({
+  empty,
+  mightFail,
+  onChange,
+  externalSources,
+  existingExternalSources,
+}) {
   const [availableValues, setAvailableValues] = useState([]);
   const [valuesToLoad, setValuesToLoad] = useState(pageSize);
   const [loading, setLoading] = useState(false);
@@ -69,8 +75,12 @@ export function ExternalSource({empty, mightFail, onChange, existingSources}) {
 
   const toggleAllEventsGroup = ({target: {checked}}) => onChange(checked ? [externalSource] : []);
 
-  const selectAll = existingSources.some((src) => src.configuration.includeAllGroups);
-  const selected = existingSources.map((src) => src.configuration.group);
+  const selectAllExists = existingExternalSources.some((src) => src.configuration.includeAllGroups);
+  const selectAll =
+    externalSources.some((src) => src.configuration.includeAllGroups) || selectAllExists;
+  const selectedGroups = externalSources
+    .filter((src) => !src.configuration.includeAllGroups)
+    .map((src) => src.configuration.group);
 
   return (
     <div className="ExternalSource">
@@ -80,15 +90,16 @@ export function ExternalSource({empty, mightFail, onChange, existingSources}) {
           !loading &&
           !query && (
             <LabeledInput
-              className={classnames({highlight: selectAll})}
+              className={classnames({highlight: selectAll && !selectAllExists})}
               checked={selectAll}
+              disabled={selectAllExists}
               type="checkbox"
               label={t('events.sources.allInOne')}
               onChange={toggleAllEventsGroup}
             />
           )
         }
-        selectedItems={selected}
+        selectedItems={selectedGroups}
         allItems={availableValues}
         onSearch={setQuery}
         onChange={(selected) =>
@@ -101,12 +112,18 @@ export function ExternalSource({empty, mightFail, onChange, existingSources}) {
         }
         loading={loading}
         formatter={(values, selectedValues) =>
-          values.map((value) => ({
-            id: value,
-            label: formatGroup(value),
-            checked: selectAll || selectedValues.includes(value),
-            disabled: selectAll,
-          }))
+          values.map((value) => {
+            const existingGroup = existingExternalSources.some(
+              (src) => !src.configuration.includeAllGroups && src.configuration.group === value
+            );
+
+            return {
+              id: value,
+              label: formatGroup(value),
+              checked: selectAll || existingGroup || selectedValues.includes(value),
+              disabled: selectAll || existingGroup,
+            };
+          })
         }
         labels={{
           search: t('events.sources.search'),

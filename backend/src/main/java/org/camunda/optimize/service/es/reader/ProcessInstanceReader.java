@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.PageResultDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -24,34 +25,39 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_ID;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @AllArgsConstructor
 @Component
+@Slf4j
 public class ProcessInstanceReader {
   private final ConfigurationService configurationService;
   private final OptimizeElasticsearchClient esClient;
   private final DateTimeFormatter dateTimeFormatter;
+  private final DefinitionInstanceReader definitionInstanceReader;
 
   public PageResultDto<String> getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(final String processDefinitionKey,
                                                                                                final OffsetDateTime endDate,
                                                                                                final Integer limit) {
     return getFirstPageOfProcessInstanceIdsForFilter(
+      processDefinitionKey,
       boolQuery()
-        .filter(termQuery(ProcessInstanceIndex.PROCESS_DEFINITION_KEY, processDefinitionKey))
         .filter(rangeQuery(ProcessInstanceIndex.END_DATE).lt(dateTimeFormatter.format(endDate)))
         .filter(nestedQuery(VARIABLES, existsQuery(VARIABLES + "." + VARIABLE_ID), ScoreMode.None)),
       limit
@@ -72,8 +78,8 @@ public class ProcessInstanceReader {
                                                                                final OffsetDateTime endDate,
                                                                                final Integer limit) {
     return getFirstPageOfProcessInstanceIdsForFilter(
+      processDefinitionKey,
       boolQuery()
-        .filter(termQuery(ProcessInstanceIndex.PROCESS_DEFINITION_KEY, processDefinitionKey))
         .filter(rangeQuery(ProcessInstanceIndex.END_DATE).lt(dateTimeFormatter.format(endDate))),
       limit
     );
@@ -87,6 +93,16 @@ public class ProcessInstanceReader {
       previousPage,
       () -> getFirstPageOfProcessInstanceIdsThatEndedBefore(processDefinitionKey, endDate, limit)
     );
+  }
+
+  public Set<String> getExistingProcessDefinitionKeysFromInstances() {
+    return definitionInstanceReader.getAllExistingDefinitionKeys(PROCESS);
+  }
+
+  public Optional<String> getProcessDefinitionKeysForInstanceId(final String instanceId) {
+    return definitionInstanceReader.getAllExistingDefinitionKeys(PROCESS, Collections.singleton(instanceId))
+      .stream()
+      .findFirst();
   }
 
   private PageResultDto<String> getNextPageOfProcessInstanceIds(final PageResultDto<String> previousPage,
@@ -107,13 +123,13 @@ public class ProcessInstanceReader {
       if (RestStatus.NOT_FOUND.equals(e.status())) {
         // this error occurs when the scroll id expired in the meantime, thus just restart it
         return firstPageFetchFunction.get();
-      } else {
-        throw e;
       }
+      throw e;
     }
   }
 
-  private PageResultDto<String> getFirstPageOfProcessInstanceIdsForFilter(final BoolQueryBuilder filterQuery,
+  private PageResultDto<String> getFirstPageOfProcessInstanceIdsForFilter(final String processDefinitionKey,
+                                                                          final BoolQueryBuilder filterQuery,
                                                                           final Integer limit) {
     final PageResultDto<String> result = new PageResultDto<>(limit);
     final Integer resolvedLimit = Optional.ofNullable(limit).orElse(MAX_RESPONSE_SIZE_LIMIT);
@@ -123,7 +139,7 @@ public class ProcessInstanceReader {
       // size of each scroll page, needs to be capped to max size of elasticsearch
       .size(resolvedLimit <= MAX_RESPONSE_SIZE_LIMIT ? resolvedLimit : MAX_RESPONSE_SIZE_LIMIT);
 
-    final SearchRequest scrollSearchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+    final SearchRequest scrollSearchRequest = new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
       .source(searchSourceBuilder)
       .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
@@ -138,6 +154,16 @@ public class ProcessInstanceReader {
       result.setPagingState(response.getScrollId());
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not obtain process instance ids.", e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to obtain process instance IDs because instance index {} does not exist. Returning empty result.",
+          getProcessInstanceIndexAliasName(processDefinitionKey)
+        );
+        result.setPagingState(null);
+        return result;
+      }
+      throw e;
     }
 
     return result;

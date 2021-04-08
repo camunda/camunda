@@ -49,16 +49,16 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 3
+        value: 2
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 6
-        memory: 6Gi
+        cpu: 4
+        memory: 4Gi
       requests:
-        cpu: 6
-        memory: 6Gi
+        cpu: 4
+        memory: 4Gi
 """
 }
 
@@ -73,10 +73,10 @@ static String camBpmContainerSpec(String camBpmVersion) {
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 4
+        cpu: 2
         memory: 2Gi
       requests:
-        cpu: 4
+        cpu: 2
         memory: 2Gi
     volumeMounts:
     - name: cambpm-config
@@ -122,7 +122,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
     timestamps()
-    timeout(time: 240, unit: 'MINUTES')
+    timeout(time: 480, unit: 'MINUTES')
   }
 
   stages {

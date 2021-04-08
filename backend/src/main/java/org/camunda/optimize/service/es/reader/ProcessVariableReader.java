@@ -18,7 +18,9 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -45,17 +47,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.es.schema.index.InstanceType.LOWERCASE_FIELD;
 import static org.camunda.optimize.service.es.schema.index.InstanceType.N_GRAM_FIELD;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.buildWildcardQuery;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getValueSearchField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
@@ -103,11 +106,11 @@ public class ProcessVariableReader {
     variableNameRequests.stream()
       .filter(request -> request.getProcessDefinitionKey() != null)
       .filter(request -> !CollectionUtils.isEmpty(request.getProcessDefinitionVersions()))
-      .forEach(request -> query.should(createDefinitionQuery(
+      .forEach(request -> query.should(DefinitionQueryUtil.createDefinitionQuery(
         request.getProcessDefinitionKey(),
         request.getProcessDefinitionVersions(),
         request.getTenantIds(),
-        new ProcessInstanceIndex(),
+        new ProcessInstanceIndex(request.getProcessDefinitionKey()),
         processDefinitionReader::getLatestVersionToKey
       )));
 
@@ -125,7 +128,7 @@ public class ProcessVariableReader {
       .query(query)
       .aggregation(nested(VARIABLES, VARIABLES).subAggregation(varNameAndTypeAgg))
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS)
       .source(searchSourceBuilder);
 
     List<ProcessVariableNameResponseDto> variableNames = new ArrayList<>();
@@ -147,8 +150,6 @@ public class ProcessVariableReader {
     );
   }
 
-  // ----------------------------
-
   public List<String> getVariableValues(final ProcessVariableValuesQueryDto requestDto) {
     final List<ProcessVariableSourceDto> processVariableSources = requestDto.getProcessVariableSources()
       .stream()
@@ -163,11 +164,11 @@ public class ProcessVariableReader {
 
     final BoolQueryBuilder query = boolQuery();
     processVariableSources.forEach(source -> query.should(
-      createDefinitionQuery(
+      DefinitionQueryUtil.createDefinitionQuery(
         source.getProcessDefinitionKey(),
         source.getProcessDefinitionVersions(),
         source.getTenantIds(),
-        new ProcessInstanceIndex(),
+        new ProcessInstanceIndex(source.getProcessDefinitionKey()),
         processDefinitionReader::getLatestVersionToKey
       ))
     );
@@ -177,8 +178,8 @@ public class ProcessVariableReader {
       .aggregation(getVariableValueAggregation(requestDto))
       .size(0);
 
-    final SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder);
+    final SearchRequest searchRequest =
+      new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -193,6 +194,12 @@ public class ProcessVariableReader {
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info("Was not able to fetch variable values because no instance indices exist. Returning empty list.");
+        return Collections.emptyList();
+      }
+      throw e;
     }
   }
 

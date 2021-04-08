@@ -53,7 +53,9 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.SuperUserType;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.provider.Arguments;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -65,8 +67,9 @@ import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.report.single.ViewProperty.FREQUENCY;
 import static org.camunda.optimize.dto.optimize.query.report.single.ViewProperty.RAW_DATA;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE;
@@ -84,6 +87,9 @@ public abstract class AbstractExportImportIT extends AbstractIT {
   protected static final String VALID_DECISION_REPORT_ID = "11111111-0000-0000-0000-000000000000";
   protected static final String VALID_PROCESS_REPORT_ID = "22222222-0000-0000-0000-000000000000";
   protected static final String VALID_COMBINED_REPORT_ID = "33333333-0000-0000-0000-000000000000";
+  public static final String DEFAULT_USERNAME = "demo";
+  public static final String DEFAULT_PASSWORD = "demo";
+  public static final String GROUP_ID = "kermitGroup";
 
   @BeforeEach
   public void setUp() {
@@ -492,5 +498,24 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     reportDef.setLastModifier("lastModifierId");
     reportDef.setOwner("ownerId");
     return reportDef;
+  }
+
+  private static Stream<Arguments> reportAndAuthType() {
+    return Stream.of(
+      Arguments.of(ReportType.PROCESS, SuperUserType.USER),
+      Arguments.of(ReportType.DECISION, SuperUserType.GROUP),
+      Arguments.of(ReportType.PROCESS, SuperUserType.GROUP),
+      Arguments.of(ReportType.DECISION, SuperUserType.USER)
+    );
+  }
+
+  protected void setAuthorizedSuperGroup() {
+    embeddedOptimizeExtension.getConfigurationService().setSuperUserIds(Collections.emptyList());
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
+    authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_DECISION_DEFINITION);
+    embeddedOptimizeExtension.getConfigurationService().getSuperGroupIds().add(GROUP_ID);
   }
 }

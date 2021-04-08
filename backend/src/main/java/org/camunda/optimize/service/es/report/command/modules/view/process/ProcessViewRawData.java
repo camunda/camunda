@@ -35,6 +35,8 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -99,33 +101,9 @@ public class ProcessViewRawData extends ProcessViewPart {
     addSorting(sortByField, sortOrder, searchRequest.source());
   }
 
-  private void addSorting(String sortByField, SortOrder sortOrder, SearchSourceBuilder searchSourceBuilder) {
-    if (sortByField.startsWith(VARIABLE_PREFIX)) {
-      final String variableName = sortByField.substring(VARIABLE_PREFIX.length());
-      searchSourceBuilder.sort(
-        SortBuilders
-          .fieldSort(getNestedVariableValueField())
-          .setNestedSort(
-            new NestedSortBuilder(VARIABLES)
-              .setFilter(termQuery(getNestedVariableNameField(), variableName))
-          ).order(sortOrder)
-      );
-    } else {
-      searchSourceBuilder.sort(
-        SortBuilders.fieldSort(sortByField).order(sortOrder)
-          // this ensures the query doesn't fail on unknown properties but just ignores them
-          // this is done to ensure consistent behavior compared to unknown variable names as ES doesn't fail there
-          // @formatter:off
-          // https://www.elastic.co/guide/en/elasticsearch/reference/6.0/search-request-sort.html#_ignoring_unmapped_fields
-          // @formatter:on
-          .unmappedType("short")
-      );
-    }
-  }
-
   @Override
-  public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
-    return null;
+  public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
+    return Collections.emptyList();
   }
 
   @Override
@@ -156,12 +134,41 @@ public class ProcessViewRawData extends ProcessViewPart {
       objectMapper
     );
     addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawData);
-    return new ViewResult().setRawData(rawData);
+    return ViewResult.builder().rawData(rawData).build();
+  }
+
+  @Override
+  public ViewResult createEmptyResult(final ExecutionContext<ProcessReportDataDto> context) {
+    return ViewResult.builder().rawData(new ArrayList<>()).build();
   }
 
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
     dataForCommandKey.setView(new ProcessViewDto(ViewProperty.RAW_DATA));
+  }
+
+  private void addSorting(String sortByField, SortOrder sortOrder, SearchSourceBuilder searchSourceBuilder) {
+    if (sortByField.startsWith(VARIABLE_PREFIX)) {
+      final String variableName = sortByField.substring(VARIABLE_PREFIX.length());
+      searchSourceBuilder.sort(
+        SortBuilders
+          .fieldSort(getNestedVariableValueField())
+          .setNestedSort(
+            new NestedSortBuilder(VARIABLES)
+              .setFilter(termQuery(getNestedVariableNameField(), variableName))
+          ).order(sortOrder)
+      );
+    } else {
+      searchSourceBuilder.sort(
+        SortBuilders.fieldSort(sortByField).order(sortOrder)
+          // this ensures the query doesn't fail on unknown properties but just ignores them
+          // this is done to ensure consistent behavior compared to unknown variable names as ES doesn't fail there
+          // @formatter:off
+          // https://www.elastic.co/guide/en/elasticsearch/reference/6.0/search-request-sort.html#_ignoring_unmapped_fields
+          // @formatter:on
+          .unmappedType("short")
+      );
+    }
   }
 
   private void addNewVariablesAndDtoFieldsToTableColumnConfig(final ExecutionContext<ProcessReportDataDto> context,

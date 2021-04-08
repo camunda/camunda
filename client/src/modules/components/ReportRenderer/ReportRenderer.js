@@ -5,9 +5,9 @@
  */
 
 import React from 'react';
-import deepEqual from 'deep-equal';
+import deepEqual from 'fast-deep-equal';
 
-import {ErrorBoundary, MessageBox} from 'components';
+import {ErrorBoundary} from 'components';
 import {formatters, getReportResult} from 'services';
 import {t} from 'translation';
 
@@ -16,19 +16,21 @@ import ProcessReportRenderer from './ProcessReportRenderer';
 import DecisionReportRenderer from './DecisionReportRenderer';
 import HyperReportRenderer from './HyperReportRenderer';
 import SetupNotice from './SetupNotice';
-import IncompleteReport from './IncompleteReport';
 import NoDataNotice from './NoDataNotice';
+import ReportErrorNotice from './ReportErrorNotice';
 
 import {isEmpty} from './service';
 
 import './ReportRenderer.scss';
 
 function ReportRenderer(props) {
-  const {report, updateReport, context} = props;
+  const {error, report, updateReport} = props;
   let View, somethingMissing;
+
   if (report) {
+    const result = getReportResult(report);
     const isDecision = report.reportType === 'decision';
-    const isHyper = getReportResult(report)?.type === 'hyperMap';
+    const isHyper = result?.type === 'hyperMap';
 
     if (report.combined) {
       View = CombinedReportRenderer;
@@ -42,76 +44,52 @@ function ReportRenderer(props) {
     }
 
     if (somethingMissing) {
-      if (context === 'dashboard' || context === 'shared') {
-        return <IncompleteReport id={report.id} />;
-      } else if (updateReport) {
+      if (updateReport) {
         return <SetupNotice>{somethingMissing}</SetupNotice>;
       } else {
-        return <SetupNotice dangerouslySetInnerHTML={{__html: t('report.editReportMessage')}} />;
+        return <NoDataNotice type="warning">{t('report.incompleteNotice')}</NoDataNotice>;
       }
     }
 
-    const showNoDataMessage = !containsData(report);
+    if (error) {
+      return <ReportErrorNotice error={error} />;
+    }
+
+    if (!result) {
+      return <NoDataNotice type="info">{t('report.editSetupMessage')}</NoDataNotice>;
+    }
 
     return (
       <ErrorBoundary>
         <div className="ReportRenderer">
-          {showNoDataMessage ? (
-            <NoDataNotice>
-              {updateReport && !report.combined && t('report.editSetupMessage')}
-            </NoDataNotice>
-          ) : (
-            <>
-              <View {...props} />
-              {report.data.configuration.showInstanceCount && (
-                <div
-                  className="additionalInfo"
-                  dangerouslySetInnerHTML={{
-                    __html: t(`report.totalCount.${isDecision ? 'evaluation' : 'instance'}`, {
-                      count: formatters.frequency(report.result.instanceCount || 0),
-                    }),
-                  }}
-                />
-              )}
-            </>
+          <View {...props} />
+          {report.data.configuration.showInstanceCount && (
+            <div
+              className="additionalInfo"
+              dangerouslySetInnerHTML={{
+                __html: t(`report.totalCount.${isDecision ? 'evaluation' : 'instance'}`, {
+                  count: formatters.frequency(report.result.instanceCount || 0),
+                }),
+              }}
+            />
           )}
         </div>
       </ErrorBoundary>
     );
-  } else {
-    return <MessageBox type="error">{t('report.invalidCombinationError')}</MessageBox>;
   }
-}
 
-function containsData(report) {
-  const result = getReportResult(report);
-  if (!result) {
-    return false;
+  if (error) {
+    return <ReportErrorNotice error={error} />;
   }
-  if (report.combined) {
-    return report.data.reports.length > 0 && Object.values(result.data).some(containsData);
-  } else {
-    const {type, instanceCount, data} = result;
-    if (type && type.toLowerCase().includes('map') && data.length === 0) {
-      return false;
-    }
 
-    if (type === 'hyperMap' && data.some(({value}) => value.length === 0)) {
-      return false;
-    }
-
-    return (
-      instanceCount ||
-      (report.data.view.property === 'frequency' && report.data.visualization === 'number')
-    );
-  }
+  return <NoDataNotice type="error">{t('report.invalidCombinationError')}</NoDataNotice>;
 }
 
 export default React.memo(ReportRenderer, (prevProps, nextProps) => {
   const prevReport = {...prevProps.report, name: ''};
   const nextReport = {...nextProps.report, name: ''};
 
-  if (deepEqual(prevReport, nextReport)) {
+  if (deepEqual(prevReport, nextReport) && deepEqual(prevProps.error, nextProps.error)) {
     return true;
   }
   return false;

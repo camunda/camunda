@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.EqualsAndHashCode;
@@ -14,6 +15,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.String
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.TypedViewPropertyDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.VariableViewPropertyDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+
+import java.util.Optional;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_DURATION_PROPERTY;
 import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_FREQUENCY_PROPERTY;
@@ -39,7 +42,7 @@ public class ViewProperty implements Combinable {
   }
 
   @JsonCreator
-  private ViewProperty(@JsonProperty("name")final String name, @JsonProperty("type")final VariableType type) {
+  private ViewProperty(@JsonProperty("name") final String name, @JsonProperty("type") final VariableType type) {
     this.viewPropertyDto = new VariableViewPropertyDto(name, type);
   }
 
@@ -56,8 +59,15 @@ public class ViewProperty implements Combinable {
   }
 
   @JsonValue
-  public Object getViewPropertyDto() {
+  public TypedViewPropertyDto getViewPropertyDto() {
     return viewPropertyDto;
+  }
+
+  @JsonIgnore
+  public <T extends TypedViewPropertyDto> Optional<T> getViewPropertyDtoIfOfType(final Class<T> clazz) {
+    return Optional.of(this.viewPropertyDto)
+      .filter(clazz::isInstance)
+      .map(clazz::cast);
   }
 
   @Override

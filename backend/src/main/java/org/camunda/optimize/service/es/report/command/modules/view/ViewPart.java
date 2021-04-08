@@ -15,6 +15,8 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
+import java.util.List;
+
 public abstract class ViewPart<Data extends SingleReportDataDto> {
 
   public void adjustSearchRequest(final SearchRequest searchRequest,
@@ -25,11 +27,13 @@ public abstract class ViewPart<Data extends SingleReportDataDto> {
 
   public abstract ViewProperty getViewProperty(final ExecutionContext<Data> context);
 
-  public abstract AggregationBuilder createAggregation(final ExecutionContext<Data> context);
+  public abstract List<AggregationBuilder> createAggregations(final ExecutionContext<Data> context);
 
   public abstract ViewResult retrieveResult(final SearchResponse response,
                                             final Aggregations aggs,
                                             final ExecutionContext<Data> context);
 
   public abstract void addViewAdjustmentsForCommandKeyGeneration(Data dataForCommandKey);
+
+  public abstract ViewResult createEmptyResult(ExecutionContext<Data> context);
 }

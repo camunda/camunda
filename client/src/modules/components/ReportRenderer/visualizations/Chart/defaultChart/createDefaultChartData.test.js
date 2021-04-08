@@ -6,34 +6,19 @@
 
 import createDefaultChartData from './createDefaultChartData';
 
-import {uniteResults} from '../../service';
-
-jest.mock('../../service', () => {
-  return {
-    uniteResults: jest.fn().mockReturnValue([
-      {key: 'foo', value: 123},
-      {key: 'bar', value: 5},
-    ]),
-  };
-});
-
-jest.mock('../colorsUtils', () => {
-  const rest = jest.requireActual('../colorsUtils');
-  return {
-    ...rest,
-    createColors: jest.fn().mockReturnValue([]),
-  };
-});
-
 it('should return correct chart data object for a single report', () => {
-  uniteResults.mockClear();
   const result = {
-    data: [
-      {key: 'foo', value: 123},
-      {key: 'bar', value: 5},
+    measures: [
+      {
+        property: 'duration',
+        aggregationType: 'avg',
+        data: [
+          {key: 'foo', value: 123},
+          {key: 'bar', value: 5},
+        ],
+      },
     ],
   };
-  uniteResults.mockReturnValue([result]);
 
   const chartData = createDefaultChartData({
     report: {
@@ -45,24 +30,55 @@ it('should return correct chart data object for a single report', () => {
           type: '',
           value: '',
         },
-        view: {},
+        view: {properties: ['duration'], entity: 'flowNode'},
       },
       targetValue: false,
       combined: false,
+      reportType: 'process',
     },
     theme: 'light',
   });
 
-  expect(chartData).toEqual({
-    labels: ['foo', 'bar'],
-    datasets: [
-      {
-        legendColor: 'testColor',
-        data: [123, 5],
-        borderColor: 'testColor',
-        backgroundColor: 'transparent',
-        borderWidth: 2,
+  expect(chartData).toMatchSnapshot();
+});
+
+it('should return correct chart data object for multi-measure report', () => {
+  expect(
+    createDefaultChartData({
+      report: {
+        data: {
+          configuration: {color: 'testColor'},
+          visualization: 'line',
+          groupBy: {
+            type: '',
+            value: '',
+          },
+          view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
+        },
+        targetValue: false,
+        combined: false,
+        result: {
+          measures: [
+            {
+              property: 'frequency',
+              data: [
+                {key: 'foo', value: 123},
+                {key: 'bar', value: 5},
+              ],
+            },
+            {
+              property: 'duration',
+              aggregationType: 'avg',
+              data: [
+                {key: 'foo', value: 175824},
+                {key: 'bar', value: 592754},
+              ],
+            },
+          ],
+        },
+        reportType: 'process',
       },
-    ],
-  });
+      theme: 'light',
+    })
+  ).toMatchSnapshot();
 });

@@ -51,7 +51,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.USER_O
 import static org.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_UPDATE_ENDPOINT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
@@ -121,7 +121,7 @@ public class ImportIT extends AbstractImportIT {
     assertDocumentCountInES(DECISION_DEFINITION_INDEX_NAME, 1L);
     assertDocumentCountInES(PROCESS_DEFINITION_INDEX_NAME, 1L);
     assertDocumentCountInES(TENANT_INDEX_NAME, 1L);
-    assertDocumentCountInES(PROCESS_INSTANCE_INDEX_NAME, 1L);
+    assertDocumentCountInES(PROCESS_INSTANCE_MULTI_ALIAS, 1L);
 
     final List<ProcessInstanceDto> storedProcessInstances =
       elasticSearchIntegrationTestExtension.getAllProcessInstances();
@@ -145,11 +145,16 @@ public class ImportIT extends AbstractImportIT {
   public void nestedDocsLimitExceptionLogIncludesConfigHint() {
     // given a process instance with more nested docs than the limit
     final int originalNestedDocLimit = embeddedOptimizeExtension.getConfigurationService().getEsNestedDocumentsLimit();
-    updateProcessInstanceNestedDocLimit(1);
     final Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
+    final ProcessInstanceEngineDto instance = deployAndStartSimpleTwoUserTaskProcessWithVariables(variables);
+    // import first instance to create the index
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+
+    // update index setting and create second instance with more nested docs than the limit
+    updateProcessInstanceNestedDocLimit(instance.getProcessDefinitionKey(), 1);
     variables.put("var2", 2);
-    deployAndStartSimpleTwoUserTaskProcessWithVariables(variables);
+    engineIntegrationExtension.startProcessInstance(instance.getDefinitionId(), variables);
 
     // when
     try {
@@ -162,19 +167,18 @@ public class ImportIT extends AbstractImportIT {
           .isNotEmpty()
           .anyMatch(msg -> msg.contains("If you are experiencing failures due to too many nested documents, " +
                                           "try carefully increasing the configured nested object limit (es.settings" +
-                                          ".index.nested_documents_limit). " +
-                                          "See Optimize documentation for details.")));
+                                          ".index.nested_documents_limit). See Optimize documentation for details.")));
     } finally {
-      updateProcessInstanceNestedDocLimit(originalNestedDocLimit);
+      updateProcessInstanceNestedDocLimit(instance.getProcessDefinitionKey(), originalNestedDocLimit);
     }
   }
 
   @SneakyThrows
-  private void updateProcessInstanceNestedDocLimit(final int nestedDocLimit) {
+  private void updateProcessInstanceNestedDocLimit(final String processDefinitionKey, final int nestedDocLimit) {
     embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(nestedDocLimit);
     final OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
-    final String indexName =
-      esClient.getIndexNameService().getOptimizeIndexNameWithVersionForAllIndicesOf(new ProcessInstanceIndex());
+    final String indexName = esClient.getIndexNameService()
+        .getOptimizeIndexNameWithVersionForAllIndicesOf(new ProcessInstanceIndex(processDefinitionKey));
 
     esClient.getHighLevelClient().indices().putSettings(
       new UpdateSettingsRequest(

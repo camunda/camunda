@@ -47,13 +47,15 @@ public class ElasticsearchConstants {
   public static final String DECISION_INSTANCE_MULTI_ALIAS = "decision-instance";
   public static final String DECISION_INSTANCE_INDEX_PREFIX = "decision-instance-";
 
+  public static final String PROCESS_DEFINITION_INDEX_NAME = "process-definition";
+  public static final String PROCESS_INSTANCE_MULTI_ALIAS = "process-instance";
+  public static final String PROCESS_INSTANCE_INDEX_PREFIX = "process-instance-";
+
   public static final String SINGLE_PROCESS_REPORT_INDEX_NAME = "single-process-report";
   public static final String SINGLE_DECISION_REPORT_INDEX_NAME = "single-decision-report";
   public static final String COMBINED_REPORT_INDEX_NAME = "combined-report";
   public static final String DASHBOARD_INDEX_NAME = "dashboard";
   public static final String COLLECTION_INDEX_NAME = "collection";
-  public static final String PROCESS_DEFINITION_INDEX_NAME = "process-definition";
-  public static final String PROCESS_INSTANCE_INDEX_NAME = "process-instance";
   public static final String IMPORT_INDEX_INDEX_NAME = "import-index";
   public static final String LICENSE_INDEX_NAME = "license";
   public static final String ALERT_INDEX_NAME = "alert";

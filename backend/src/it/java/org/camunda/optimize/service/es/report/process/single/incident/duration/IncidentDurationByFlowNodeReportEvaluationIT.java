@@ -108,7 +108,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly("1");
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.INCIDENT);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.DURATION);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.FLOW_NODES);
 
     final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();

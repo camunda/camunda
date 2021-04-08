@@ -13,7 +13,7 @@ import NumberConfig from './NumberConfig';
 const props = {
   report: {
     data: {
-      view: {property: 'frequency'},
+      view: {properties: ['frequency']},
       configuration: {
         precision: null,
         targetValue: {
@@ -30,6 +30,7 @@ const props = {
             },
           },
         },
+        aggregationTypes: ['avg'],
       },
     },
   },
@@ -75,9 +76,33 @@ it('should contain a target input for variable reports', () => {
 });
 
 it('should contain a target input for duration property', () => {
-  props.report.data.view.property = 'duration';
+  props.report.data.view.properties = ['duration'];
   const node = shallow(<NumberConfig {...props} />);
 
   expect(node.find('CountTargetInput')).not.toExist();
   expect(node.find('DurationTargetInput')).toExist();
+});
+
+it('should not show target input for multi-measure reports', () => {
+  const node = shallow(
+    <NumberConfig
+      report={update(props.report, {data: {view: {properties: {$set: ['frequency', 'duration']}}}})}
+    />
+  );
+
+  expect(node.find('CountTargetInput')).not.toExist();
+  expect(node.find('DurationTargetInput')).not.toExist();
+});
+
+it('should not show target input for multi-aggregation reports', () => {
+  const node = shallow(
+    <NumberConfig
+      report={update(props.report, {
+        data: {configuration: {aggregationTypes: {$set: ['avg', 'max']}}},
+      })}
+    />
+  );
+
+  expect(node.find('CountTargetInput')).not.toExist();
+  expect(node.find('DurationTargetInput')).not.toExist();
 });

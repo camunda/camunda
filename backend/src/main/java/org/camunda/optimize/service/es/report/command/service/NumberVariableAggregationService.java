@@ -47,7 +47,7 @@ public class NumberVariableAggregationService {
       max,
       context.getNestedVariableValueFieldLabel(),
       digitFormat,
-      context.getSubAggregation()
+      context.getSubAggregations()
     );
 
     return Optional.of(histogramAggregation);
@@ -73,7 +73,7 @@ public class NumberVariableAggregationService {
     return intervalSize;
   }
 
-  private Optional<Double> getBaselineForNumberVariableAggregation(
+  Optional<Double> getBaselineForNumberVariableAggregation(
     final VariableAggregationContext context) {
     final Optional<MinMaxStatDto> combinedMinMaxStats = context.getCombinedRangeMinMaxStats();
     final Optional<Double> baselineForSingleReport = context.getCustomBucketDto().isActive()

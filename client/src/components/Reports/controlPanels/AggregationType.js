@@ -6,35 +6,148 @@
 
 import React from 'react';
 
-import {Select} from 'components';
+import {Popover, Icon, Form, Switch} from 'components';
 import {t} from 'translation';
-import {isDurationReport} from 'services';
+
+import './AggregationType.scss';
+
+const orders = {
+  aggregationTypes: ['sum', 'min', 'avg', 'median', 'max'],
+  userTaskDurationTimes: ['total', 'work', 'idle'],
+};
 
 export default function AggregationType({report, onChange}) {
-  const {data} = report;
+  const {configuration, distributedBy} = report;
+  const {aggregationTypes} = report.configuration;
 
-  const isVariableReport = data?.view?.entity === 'variable';
+  const isDurationReport = report?.view?.properties.includes('duration');
+  const isUserTaskReport = report?.view?.entity === 'userTask';
+  const isVariableReport = report?.view?.entity === 'variable';
 
-  if (isDurationReport(report) || isVariableReport) {
+  function isLastAggregation(field, type) {
+    return configuration[field].length === 1 && configuration[field][0] === type;
+  }
+
+  function hasAggregation(field, type) {
+    return configuration[field].includes(type);
+  }
+
+  function addAggregation(field, type) {
+    const newAggregations = [...configuration[field], type].sort(
+      (a, b) => orders[field].indexOf(a) - orders[field].indexOf(b)
+    );
+
+    const changes = {
+      configuration: {
+        [field]: {
+          $set: newAggregations,
+        },
+        targetValue: {active: {$set: false}},
+      },
+    };
+
+    if (distributedBy.type !== 'none') {
+      changes.visualization = {$set: 'table'};
+    }
+
+    return onChange(changes, true);
+  }
+
+  function removeAggregation(field, type) {
+    const remainingAggregations = configuration[field].filter(
+      (existingType) => existingType !== type
+    );
+
+    return onChange(
+      {
+        configuration: {
+          [field]: {
+            $set: remainingAggregations,
+          },
+        },
+      },
+      true
+    );
+  }
+
+  if (isDurationReport || isVariableReport) {
+    const availableAggregations = [];
+    if (isVariableReport) {
+      availableAggregations.push('sum');
+    }
+    availableAggregations.push('min', 'avg');
+    if (!report.configuration.processPart) {
+      availableAggregations.push('median');
+    }
+    availableAggregations.push('max');
+
+    let popoverTitle = t('report.config.aggregationShort.' + aggregationTypes[0]);
+    if (
+      availableAggregations.every((aggregation) => hasAggregation('aggregationTypes', aggregation))
+    ) {
+      popoverTitle = 'All';
+    } else if (aggregationTypes.length > 1) {
+      popoverTitle = 'Multi';
+    }
+
     return (
-      <li className="AggregationType">
-        <span className="label">{t('report.config.aggregation.legend')}</span>
-        <Select
-          className="ReportSelect"
-          value={data.configuration.aggregationType}
-          onChange={(value) => onChange({configuration: {aggregationType: {$set: value}}}, true)}
-        >
-          {isVariableReport && (
-            <Select.Option value="sum">{t('report.config.aggregation.sum')}</Select.Option>
+      <Popover
+        className="AggregationType"
+        title={
+          <>
+            <span className="content">{popoverTitle}</span>
+            <Icon className="editIcon" type="edit" />
+          </>
+        }
+      >
+        <Form compact>
+          {isUserTaskReport && (
+            <>
+              <h4>{t('report.config.aggregation.userTaskLegend')}</h4>
+              <fieldset>
+                {orders.userTaskDurationTimes.map((type) => (
+                  <Switch
+                    key={type}
+                    label={t('report.config.userTaskDuration.' + type)}
+                    checked={hasAggregation('userTaskDurationTimes', type)}
+                    disabled={isLastAggregation('userTaskDurationTimes', type)}
+                    onChange={({target}) => {
+                      if (target.checked) {
+                        addAggregation('userTaskDurationTimes', type);
+                      } else {
+                        removeAggregation('userTaskDurationTimes', type);
+                      }
+                    }}
+                  />
+                ))}
+              </fieldset>
+            </>
           )}
-          <Select.Option value="min">{t('report.config.aggregation.minimum')}</Select.Option>
-          <Select.Option value="avg">{t('report.config.aggregation.average')}</Select.Option>
-          {!data.configuration.processPart && (
-            <Select.Option value="median">{t('report.config.aggregation.median')}</Select.Option>
-          )}
-          <Select.Option value="max">{t('report.config.aggregation.maximum')}</Select.Option>
-        </Select>
-      </li>
+          <h4>
+            {t(
+              'report.config.aggregation.' +
+                (isVariableReport ? 'variableLegend' : 'durationLegend')
+            )}
+          </h4>
+          <fieldset>
+            {availableAggregations.map((type) => (
+              <Switch
+                key={type}
+                label={t('report.config.aggregation.' + type)}
+                checked={hasAggregation('aggregationTypes', type)}
+                disabled={isLastAggregation('aggregationTypes', type)}
+                onChange={({target}) => {
+                  if (target.checked) {
+                    addAggregation('aggregationTypes', type);
+                  } else {
+                    removeAggregation('aggregationTypes', type);
+                  }
+                }}
+              />
+            ))}
+          </fieldset>
+        </Form>
+      </Popover>
     );
   }
   return null;

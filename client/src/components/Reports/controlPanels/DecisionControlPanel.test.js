@@ -53,7 +53,7 @@ const report = {
     filter: [],
     configuration: {
       xml: 'someXml',
-      tableColumns: {columnOrder: []},
+      tableColumns: {columnOrder: [], includedColumns: [], excludedColumns: []},
     },
   },
   result: {instanceCount: 3, instanceCountWithoutFilters: 5},
@@ -166,7 +166,8 @@ it('should remove non existing variables from columnOrder configuration', async 
       configuration: {
         xml: 'someXml',
         tableColumns: {
-          columnOrder: ['inputVariable:nonExistingVariable', 'inputVariable:existingVariable'],
+          columnOrder: ['input:nonExistingVariable', 'input:existingVariable'],
+          includedColumns: [],
         },
       },
     },
@@ -187,7 +188,7 @@ it('should remove non existing variables from columnOrder configuration', async 
   await node.find(DefinitionSelection).prop('onChange')({});
 
   expect(spy.mock.calls[0][0].configuration.tableColumns).toEqual({
-    columnOrder: {$set: ['inputVariable:existingVariable']},
+    columnOrder: {$set: ['input:existingVariable']},
   });
 });
 
@@ -210,7 +211,7 @@ it('should not crash when no decisionDefinition is selected', () => {
 it('should show the number of decision instances in the current Filter', () => {
   const node = shallow(<DecisionControlPanel {...props} />);
 
-  expect(node).toIncludeText('Displaying 3 of 5 evaluations');
+  expect(node).toIncludeText('Displaying data from 3 of 5 evaluations');
 });
 
 it('should allow collapsing sections', () => {
@@ -221,4 +222,39 @@ it('should allow collapsing sections', () => {
 
   node.find('.source').find(Button).simulate('click');
   expect(node.find('.source')).not.toHaveClassName('hidden');
+});
+
+it('should add new variables to includedColumns when switching definition/version', async () => {
+  loadOutputVariables.mockReturnValueOnce([{id: 'existingVariable'}, {id: 'newVariable'}]);
+
+  const reportWithConfig = {
+    data: {
+      ...report.data,
+      configuration: {
+        xml: 'someXml',
+        tableColumns: {
+          columnOrder: [],
+          includedColumns: ['output:existingVariable'],
+        },
+      },
+    },
+  };
+
+  const spy = jest.fn();
+  const node = shallow(
+    <DecisionControlPanel
+      {...props}
+      report={reportWithConfig}
+      updateReport={spy}
+      setLoading={() => {}}
+    />
+  );
+
+  await flushPromises();
+
+  await node.find(DefinitionSelection).prop('onChange')({});
+
+  expect(spy.mock.calls[0][0].configuration.tableColumns).toEqual({
+    includedColumns: {$set: ['output:existingVariable', 'output:newVariable']},
+  });
 });

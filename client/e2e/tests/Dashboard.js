@@ -143,7 +143,7 @@ test('sharing with filters', async (t) => {
   await t.navigateTo(shareUrl);
 
   await t.expect(e.report.visible).ok();
-  await t.expect(e.report.textContent).contains('No data to display');
+  await t.expect(e.report.textContent).contains('No data');
 });
 
 test('remove a report from a dashboard', async (t) => {

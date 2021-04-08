@@ -4,9 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {createDatasetOptions} from '../defaultChart/createDefaultChartOptions';
-import {uniteResults} from '../../service';
+import {formatters} from 'services';
+
 import {getCombinedChartProps} from './service';
+import {createDatasetOptions} from '../defaultChart/createDefaultChartOptions';
 
 export default function createCombinedChartData(props) {
   const {
@@ -23,14 +24,14 @@ export default function createCombinedChartData(props) {
     return {
       label: reportsNames && reportsNames[index],
       data: report.map(({value}) => value),
-      ...createDatasetOptions(
-        visualization,
-        report,
+      ...createDatasetOptions({
+        type: visualization,
+        data: report,
         targetValue,
-        reportColors[index],
-        true,
-        isDark
-      ),
+        datasetColor: reportColors[index],
+        isStriped: true,
+        isDark,
+      }),
     };
   });
 
@@ -73,4 +74,22 @@ export function extractCombinedData({report, theme, targetValue}) {
     isDark,
     visualization: data.visualization,
   };
+}
+
+function uniteResults(results, allKeys) {
+  const unitedResults = [];
+  results.forEach((result) => {
+    const resultObj = formatters.objectifyResult(result);
+    const newResult = [];
+    allKeys.forEach((key) => {
+      if (typeof resultObj[key] === 'undefined') {
+        newResult.push({key, value: null});
+      } else {
+        newResult.push({key, value: resultObj[key]});
+      }
+    });
+    unitedResults.push(newResult);
+  });
+
+  return unitedResults;
 }

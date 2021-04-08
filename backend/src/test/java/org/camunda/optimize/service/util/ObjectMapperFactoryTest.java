@@ -22,9 +22,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
@@ -33,21 +33,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ExtendWith(MockitoExtension.class)
 public class ObjectMapperFactoryTest {
 
-  private ObjectMapper optimizeMapper;
-  private ObjectMapper engineMapper;
+  private ConfigurationService configurationService;
+  private ObjectMapperFactory objectMapperFactory;
 
   @BeforeEach
   public void init() {
-    ConfigurationService configurationService = ConfigurationServiceBuilder
+    configurationService = ConfigurationServiceBuilder
       .createConfiguration()
       .loadConfigurationFrom("service-config.yaml")
       .build();
-    OptimizeDateTimeFormatterFactory optimizeDateTimeFormatterFactory = new OptimizeDateTimeFormatterFactory();
-    ObjectMapperFactory objectMapperFactory = new ObjectMapperFactory(
-      optimizeDateTimeFormatterFactory.getObject(), configurationService
+    objectMapperFactory = new ObjectMapperFactory(
+      new OptimizeDateTimeFormatterFactory().getObject(), configurationService
     );
-    optimizeMapper = optimizeMapper == null ? objectMapperFactory.createOptimizeMapper() : optimizeMapper;
-    engineMapper = engineMapper == null ? objectMapperFactory.createEngineMapper() : engineMapper;
   }
 
   /**
@@ -58,7 +55,7 @@ public class ObjectMapperFactoryTest {
    */
   @Test
   public void testNoFailOnMissingReportDataAlthoughReportTypeSet() throws Exception {
-    final ReportDefinitionDto reportDefinitionDto = optimizeMapper.readValue(
+    final ReportDefinitionDto reportDefinitionDto = createOptimizeMapper().readValue(
       getClass().getResourceAsStream("/test/data/single-process-report-definition-create-request.json"),
       ReportDefinitionDto.class
     );
@@ -73,7 +70,7 @@ public class ObjectMapperFactoryTest {
 
   @Test
   public void testCanDeserializeToSingleProcessReport() throws Exception {
-    final SingleProcessReportDefinitionRequestDto reportDefinitionDto = optimizeMapper.readValue(
+    final SingleProcessReportDefinitionRequestDto reportDefinitionDto = createOptimizeMapper().readValue(
       getClass().getResourceAsStream("/test/data/single-process-report-definition-create-request.json"),
       SingleProcessReportDefinitionRequestDto.class
     );
@@ -86,7 +83,7 @@ public class ObjectMapperFactoryTest {
 
   @Test
   public void testCanDeserializeToSingleDecisionReport() throws Exception {
-    final SingleDecisionReportDefinitionRequestDto reportDefinitionDto = optimizeMapper.readValue(
+    final SingleDecisionReportDefinitionRequestDto reportDefinitionDto = createOptimizeMapper().readValue(
       getClass().getResourceAsStream("/test/data/single-decision-report-definition-create-request.json"),
       SingleDecisionReportDefinitionRequestDto.class
     );
@@ -99,7 +96,7 @@ public class ObjectMapperFactoryTest {
 
   @Test
   public void testCanDeserializeToCombinedProcessReport() throws Exception {
-    final CombinedReportDefinitionRequestDto reportDefinitionDto = optimizeMapper.readValue(
+    final CombinedReportDefinitionRequestDto reportDefinitionDto = createOptimizeMapper().readValue(
       getClass().getResourceAsStream("/test/data/combined-process-report-definition-create-request.json"),
       CombinedReportDefinitionRequestDto.class
     );
@@ -112,7 +109,7 @@ public class ObjectMapperFactoryTest {
 
   @Test
   public void testFilterSerialization() throws Exception {
-    ProcessReportDataDto data = optimizeMapper.readValue(
+    ProcessReportDataDto data = createOptimizeMapper().readValue(
       this.getClass()
         .getResourceAsStream("/test/data/filter_request.json"),
       ProcessReportDataDto.class
@@ -120,7 +117,7 @@ public class ObjectMapperFactoryTest {
     assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValues())
       .containsExactly(true);
 
-    data = optimizeMapper.readValue(
+    data = createOptimizeMapper().readValue(
       this.getClass().getResourceAsStream("/test/data/filter_request_single.json"),
       ProcessReportDataDto.class
     );
@@ -131,7 +128,7 @@ public class ObjectMapperFactoryTest {
 
   @Test
   public void testFilterSerializationWithLowercaseType() throws Exception {
-    ProcessReportDataDto data = optimizeMapper.readValue(
+    ProcessReportDataDto data = createOptimizeMapper().readValue(
       this.getClass()
         .getResourceAsStream("/test/data/filter_request_lowercase_type.json"),
       ProcessReportDataDto.class
@@ -139,7 +136,7 @@ public class ObjectMapperFactoryTest {
     assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValues())
       .containsExactly(true);
 
-    data = optimizeMapper.readValue(
+    data = createOptimizeMapper().readValue(
       this.getClass().getResourceAsStream("/test/data/filter_request_single.json"),
       ProcessReportDataDto.class
     );
@@ -148,79 +145,105 @@ public class ObjectMapperFactoryTest {
   }
 
   @Test
-  public void testDateSerialization() throws Exception {
+  public void testOptimizeMapperDateSerialization() throws Exception {
+    // given
+    final String dateString = "2017-12-11T17:28:38.222+0100";
+
+    // when
     DateHolder instance = new DateHolder();
-    instance.setDate(OffsetDateTime.now());
-    String parsedString = optimizeMapper.writeValueAsString(instance);
-    assertThat(parsedString).isNotNull();
+    instance.setDate(OffsetDateTime.parse(dateString, createEngineDateFormatter()));
+    String parsedString = createOptimizeMapper().writeValueAsString(instance);
 
-    DateHolder result = optimizeMapper.readValue(
-      parsedString,
-      DateHolder.class
-    );
-    assertThat(result.getDate()).isEqualTo(instance.getDate());
+    // then
+    assertThat(parsedString).contains(dateString);
   }
 
   @Test
-  public void testFromString() throws JsonProcessingException {
-    String value = "2017-12-11T17:28:38.222+0100";
-    DateHolder toTest = new DateHolder();
-    toTest.setDate(OffsetDateTime.parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")));
-
-    assertThat(optimizeMapper.writeValueAsString(toTest)).contains(value);
-  }
-
-  @Test
-  public void testFromStringWithOldEngineFormat() throws JsonProcessingException {
-    String value = "2017-12-11T17:28:38";
-    DateHolder toTest = new DateHolder();
-    toTest.setDate(
-      ZonedDateTime
-        .parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneId.systemDefault()))
-        .toOffsetDateTime()
+  public void testOptimizeMapperDateDeserialization() throws Exception {
+    // given
+    final String dateString = "2017-12-11T17:28:38.222+0100";
+    final OffsetDateTime expectedOffsetDateTime = OffsetDateTime.parse(
+      dateString, createEngineDateFormatter()
     );
 
-    assertThat(optimizeMapper.writeValueAsString(toTest)).contains(value);
+    // when
+    final OffsetDateTime parsedOffsetDateTime = createOptimizeMapper().readValue(
+      createDateHolderJsonString(dateString), DateHolder.class
+    ).getDate();
+
+    // then
+    assertThat(parsedOffsetDateTime).isEqualTo(expectedOffsetDateTime);
   }
 
   @Test
-  public void testEngineDateSerialization() throws Exception {
+  public void testEngineMapperDateSerialization() throws Exception {
+    // given
+    final String dateString = "2017-12-11T17:28:38.222+0100";
+
+    // when
     DateHolder instance = new DateHolder();
-    instance.setDate(OffsetDateTime.now());
-    String parsedString = engineMapper.writeValueAsString(instance);
-    assertThat(parsedString).isNotNull();
+    instance.setDate(OffsetDateTime.parse(dateString, createEngineDateFormatter()));
+    String parsedString = createEngineMapper().writeValueAsString(instance);
 
-    DateHolder result = engineMapper.readValue(
-      parsedString,
-      DateHolder.class
-    );
-    assertThat(result.getDate()).isEqualTo(instance.getDate());
+    // then
+    assertThat(parsedString).contains(dateString);
   }
 
   @Test
-  public void testEngineDateFromString() throws JsonProcessingException {
-    String value = "2017-12-11T17:28:38.222+0100";
-    DateHolder toTest = new DateHolder();
-    toTest.setDate(OffsetDateTime.parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")));
+  public void testEngineMapperDateDeserialization() throws JsonProcessingException {
+    // given
+    final String dateString = "2017-12-11T17:28:38.222+0100";
+    final OffsetDateTime expectedOffsetDateTime = OffsetDateTime.parse(
+      dateString, createEngineDateFormatter()
+    );
 
-    assertThat(engineMapper.writeValueAsString(toTest)).contains(value);
+    // when
+    final OffsetDateTime parsedOffsetDateTime = createEngineMapper().readValue(
+      createDateHolderJsonString(dateString), DateHolder.class
+    ).getDate();
+
+    // then
+    assertThat(parsedOffsetDateTime).isEqualTo(expectedOffsetDateTime);
   }
 
   @Test
-  public void testEngineDateFromStringWithOldEngineFormat() throws JsonProcessingException {
-    String value = "2017-12-11T17:28:38";
-    DateHolder toTest = new DateHolder();
-    toTest.setDate(
-      ZonedDateTime
-        .parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneId.systemDefault()))
-        .toOffsetDateTime()
-    );
+  public void testEngineMapperDateDeserializationFromStringWithoutMillisAndTimezone() throws JsonProcessingException {
+    // given
+    final String datePattern = "yyyy-MM-dd'T'HH:mm:ss";
+    configurationService.setEngineDateFormat(datePattern);
 
-    assertThat(engineMapper.writeValueAsString(toTest)).contains(value);
+    final String dateString = "2017-12-11T17:28:38";
+    final OffsetDateTime expectedOffsetDateTime =
+      LocalDateTime.parse(dateString, createEngineDateFormatter())
+        .atZone(ZoneId.systemDefault()).toOffsetDateTime();
+
+    // when
+    final OffsetDateTime parsedOffsetDateTime = createEngineMapper().readValue(
+      createDateHolderJsonString(dateString), DateHolder.class
+    ).getDate();
+
+    // then
+    assertThat(parsedOffsetDateTime).isEqualTo(expectedOffsetDateTime);
   }
 
+  private DateTimeFormatter createEngineDateFormatter() {
+    return DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
+  }
+
+  private ObjectMapper createEngineMapper() {
+    return objectMapperFactory.createEngineMapper();
+  }
+
+  private ObjectMapper createOptimizeMapper() {
+    return objectMapperFactory.createOptimizeMapper();
+  }
+
+  private String createDateHolderJsonString(final String dateString) {
+    return "{\"date\": \"" + dateString + "\"}";
+  }
 
   static class DateHolder {
+
     private OffsetDateTime date;
 
     public OffsetDateTime getDate() {

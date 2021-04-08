@@ -19,7 +19,9 @@ Object {
   "view": Object {
     "$set": Object {
       "entity": "processInstance",
-      "property": "frequency",
+      "properties": Array [
+        "frequency",
+      ],
     },
   },
   "visualization": Object {

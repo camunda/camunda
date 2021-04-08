@@ -18,6 +18,7 @@ import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -30,7 +31,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Slf4j
@@ -79,13 +81,23 @@ public class CombinedReportEvaluator {
       );
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(e)) {
+        log.info(
+          "Could not evaluate combined instance count because no instance indices exist. " +
+            "Returning a count of 0 instead."
+        );
+        return 0L;
+      } else {
+        throw e;
+      }
     }
   }
 
-  private CountRequest createInstanceCountRequest(List<BoolQueryBuilder> baseQueries) {
+  private CountRequest createInstanceCountRequest(final List<BoolQueryBuilder> baseQueries) {
     final BoolQueryBuilder baseQuery = new BoolQueryBuilder();
     baseQueries.forEach(baseQuery::should);
-    return new CountRequest(PROCESS_INSTANCE_INDEX_NAME).query(baseQuery);
+    return new CountRequest(PROCESS_INSTANCE_MULTI_ALIAS).query(baseQuery);
   }
 
   private List<BoolQueryBuilder> getAllBaseQueries(List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions,

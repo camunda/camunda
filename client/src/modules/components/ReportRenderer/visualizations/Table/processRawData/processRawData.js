@@ -10,15 +10,22 @@ import {format} from 'dates';
 import {formatters} from 'services';
 import {t} from 'translation';
 
-import {
-  sortColumns,
-  cockpitLink,
-  getNoDataMessage,
-  isVisibleColumn,
-  getLabelWithType,
-} from './service';
+import {sortColumns} from '../service';
+import {cockpitLink, getNoDataMessage, isVisibleColumn, getLabelWithType} from './service';
 
 const {duration} = formatters;
+
+const instanceColumns = [
+  'processDefinitionKey',
+  'processDefinitionId',
+  'processInstanceId',
+  'businessKey',
+  'startDate',
+  'endDate',
+  'duration',
+  'engineName',
+  'tenantId',
+];
 
 export default function processRawData(
   {
@@ -31,14 +38,9 @@ export default function processRawData(
   },
   endpoints = {}
 ) {
-  if (result.length === 0) {
-    return {head: [], body: []};
-  }
+  const instanceProps = instanceColumns.filter((entry) => isVisibleColumn(entry, tableColumns));
 
-  const instanceProps = Object.keys(result[0]).filter(
-    (entry) => entry !== 'variables' && isVisibleColumn(entry, tableColumns)
-  );
-  const variableNames = Object.keys(result[0].variables).filter((entry) =>
+  const variableNames = Object.keys(result[0]?.variables || {}).filter((entry) =>
     isVisibleColumn('variable:' + entry, tableColumns)
   );
 

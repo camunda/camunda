@@ -7,54 +7,46 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.security.InvalidParameterException;
 import java.util.Set;
 
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
-@AllArgsConstructor
-public abstract class AbstractProcessInstanceWriter<T extends OptimizeDto> {
-
-  protected final Logger log = LoggerFactory.getLogger(getClass());
+public abstract class AbstractProcessInstanceWriter extends AbstractProcessInstanceDataWriter<ProcessInstanceDto> {
   protected final ObjectMapper objectMapper;
 
-  protected void addImportProcessInstanceRequest(BulkRequest bulkRequest,
-                                                 T optimizeDto,
-                                                 Set<String> primitiveUpdatableFields,
-                                                 ObjectMapper objectMapper) {
-    if (!(optimizeDto instanceof ProcessInstanceDto)) {
-      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
-    }
-    ProcessInstanceDto procInst = (ProcessInstanceDto) optimizeDto;
-
-    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(
-      primitiveUpdatableFields,
-      procInst
-    );
-    addImportProcessInstanceRequest(bulkRequest, optimizeDto, updateScript, objectMapper);
+  protected AbstractProcessInstanceWriter(final OptimizeElasticsearchClient esClient,
+                                          final ElasticSearchSchemaManager elasticSearchSchemaManager,
+                                          final ObjectMapper objectMapper) {
+    super(esClient, elasticSearchSchemaManager);
+    this.objectMapper = objectMapper;
   }
 
   protected void addImportProcessInstanceRequest(BulkRequest bulkRequest,
-                                                 T optimizeDto,
+                                                 ProcessInstanceDto processInstanceDto,
+                                                 Set<String> primitiveUpdatableFields,
+                                                 ObjectMapper objectMapper) {
+    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(
+      primitiveUpdatableFields,
+      processInstanceDto
+    );
+    addImportProcessInstanceRequest(bulkRequest, processInstanceDto, updateScript, objectMapper);
+  }
+
+  protected void addImportProcessInstanceRequest(BulkRequest bulkRequest,
+                                                 ProcessInstanceDto processInstanceDto,
                                                  Script updateScript,
                                                  ObjectMapper objectMapper) {
-    if (!(optimizeDto instanceof ProcessInstanceDto)) {
-      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
-    }
-    ProcessInstanceDto procInst = (ProcessInstanceDto) optimizeDto;
-    final UpdateRequest updateRequest = createUpdateRequest(procInst, updateScript, objectMapper);
+    final UpdateRequest updateRequest = createUpdateRequest(processInstanceDto, updateScript, objectMapper);
     bulkRequest.add(updateRequest);
   }
 
@@ -83,7 +75,7 @@ public abstract class AbstractProcessInstanceWriter<T extends OptimizeDto> {
       throw new OptimizeRuntimeException(reason, e);
     }
     return new UpdateRequest()
-      .index(PROCESS_INSTANCE_INDEX_NAME)
+      .index(getProcessInstanceIndexAliasName(processInstanceDto.getProcessDefinitionKey()))
       .id(processInstanceDto.getProcessInstanceId())
       .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON)

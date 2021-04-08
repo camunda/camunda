@@ -25,7 +25,6 @@ import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,7 +95,8 @@ public abstract class UserTaskDurationByUserTaskStartDateReportEvaluationIT
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
     reportData.setFilter(flowNodeStatusTestValues.processFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(flowNodeStatusTestValues.expectedInstanceCount);
@@ -121,15 +121,4 @@ public abstract class UserTaskDurationByUserTaskStartDateReportEvaluationIT
     return ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE;
   }
 
-  @Override
-  protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
-    engineDatabaseExtension.changeUserTaskStartDates(updates);
-  }
-
-  @Override
-  protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
-                                        final String modelElementId,
-                                        final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), modelElementId, dateToChangeTo);
-  }
 }

@@ -49,7 +49,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EV
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
@@ -207,7 +207,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
 
     // then
     assertThat(getAllProcessDefinitionKeys()).isEmpty();
-    assertThat(getProcessInstanceIds()).isEmpty();
+    assertThat(elasticSearchIntegrationTestExtension.indexExists(PROCESS_INSTANCE_MULTI_ALIAS)).isFalse();
     assertThat(eventProcessClient.getAllEventProcessMappings())
       .isEqualTo(allEventProcessMappings)
       .extracting(EventProcessMappingDto::getState)
@@ -285,12 +285,11 @@ public class ForceReimportIT extends AbstractEventProcessIT {
   }
 
   private boolean hasNoEngineDecisionData() {
-    return noIndexGroupHasData(getEngineDecisionDataIndices())
-      && !indexExists(DECISION_INSTANCE_MULTI_ALIAS);
+    return noIndexGroupHasData(getEngineDecisionDataIndices()) && !indexExists(DECISION_INSTANCE_MULTI_ALIAS);
   }
 
   private boolean hasNoEngineProcessData() {
-    return noIndexGroupHasData(getEngineProcessDataIndices());
+    return noIndexGroupHasData(getEngineProcessDataIndices()) && !indexExists(PROCESS_INSTANCE_MULTI_ALIAS);
   }
 
   private boolean noIndexGroupHasData(final Set<List<String>> indexGroups) {
@@ -315,7 +314,6 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     indexGroups.add(Collections.singletonList(TIMESTAMP_BASED_IMPORT_INDEX_NAME));
     indexGroups.add(Collections.singletonList(IMPORT_INDEX_INDEX_NAME));
     indexGroups.add(Collections.singletonList(PROCESS_DEFINITION_INDEX_NAME));
-    indexGroups.add(Collections.singletonList(PROCESS_INSTANCE_INDEX_NAME));
     indexGroups.add(Collections.singletonList(BUSINESS_KEY_INDEX_NAME));
     indexGroups.add(Collections.singletonList(VARIABLE_UPDATE_INSTANCE_INDEX_NAME));
     indexGroups.add(Collections.singletonList(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"));

@@ -75,7 +75,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(definition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(getProcessViewEntity());
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.DURATION);
     assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(getDistributedByType());
 
@@ -109,7 +109,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(definition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(getProcessViewEntity());
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.DURATION);
     assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(getDistributedByType());
 

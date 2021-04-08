@@ -5,12 +5,14 @@
  */
 package org.camunda.optimize.service.importing.eventprocess;
 
+import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.EventProcessPublishStateReader;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -18,13 +20,13 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 @AllArgsConstructor
 @Slf4j
@@ -33,6 +35,7 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
   private final OptimizeElasticsearchClient elasticsearchClient;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final EventProcessPublishStateReader eventProcessPublishStateReader;
+  private final OptimizeIndexNameService indexNameService;
 
   private final Map<String, EventProcessPublishStateDto> publishedInstanceIndices = new HashMap<>();
   private final Map<String, AtomicInteger> usageCountPerIndex = new HashMap<>();
@@ -77,12 +80,18 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
       .forEach(publishStateDto -> {
         try {
           final EventProcessInstanceIndex processInstanceIndex = new EventProcessInstanceIndex(publishStateDto.getId());
-          final boolean indexAlreadyExists = elasticSearchSchemaManager.indexExists(
-            elasticsearchClient, processInstanceIndex
-          );
+          final boolean indexAlreadyExists =
+            elasticSearchSchemaManager.indexExists(elasticsearchClient, processInstanceIndex);
           if (!indexAlreadyExists) {
             elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
-              elasticsearchClient, processInstanceIndex, Collections.singleton(PROCESS_INSTANCE_INDEX_NAME)
+              elasticsearchClient,
+              processInstanceIndex,
+              Sets.newHashSet(
+                PROCESS_INSTANCE_MULTI_ALIAS,
+                // additional read alias that matches the non event based processInstanceIndex naming pattern so we can
+                // read from specific event instance indices without the need to determine if they are event based
+                indexNameService.getOptimizeIndexAliasForIndex(PROCESS_INSTANCE_INDEX_PREFIX + publishStateDto.getProcessKey())
+              )
             );
           }
           publishedInstanceIndices.putIfAbsent(publishStateDto.getId(), publishStateDto);

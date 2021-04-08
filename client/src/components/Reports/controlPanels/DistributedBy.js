@@ -22,6 +22,7 @@ export function DistributedBy({
       view,
       groupBy,
       visualization,
+      configuration: {aggregationTypes, userTaskDurationTimes},
     },
   },
   onChange,
@@ -70,6 +71,13 @@ export function DistributedBy({
 
             if (value !== 'none' && !['line', 'table'].includes(visualization)) {
               change.visualization = {$set: 'bar'};
+            }
+
+            if (
+              value !== 'none' &&
+              isMultiMeasureReport(view, aggregationTypes, userTaskDurationTimes)
+            ) {
+              change.visualization = {$set: 'table'};
             }
 
             onChange(change, true);
@@ -207,6 +215,24 @@ function isInstanceDateReport(view, groupBy) {
 
 function isInstanceVariableReport(view, groupBy) {
   return view?.entity === 'processInstance' && groupBy?.type === 'variable';
+}
+
+function isMultiMeasureReport(view, aggregationTypes, userTaskDurationTimes) {
+  if (view.properties.length > 1) {
+    return true;
+  }
+  if (view.properties[0] === 'duration' && aggregationTypes.length > 1) {
+    return true;
+  }
+  if (
+    view.properties[0] === 'duration' &&
+    view.entity === 'userTask' &&
+    userTaskDurationTimes.length > 1
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 export default withErrorHandling(DistributedBy);

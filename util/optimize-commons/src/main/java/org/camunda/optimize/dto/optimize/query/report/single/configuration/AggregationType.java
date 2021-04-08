@@ -28,6 +28,10 @@ public enum AggregationType {
 
   private final String id;
 
+  public static List<AggregationType> getAggregationTypesAsList() {
+    return Arrays.asList(AggregationType.values());
+  }
+
   public static List<AggregationType> getAggregationTypesAsListWithoutSum() {
     return Arrays.stream(AggregationType.values())
       .filter(type -> !AggregationType.SUM.equals(type))

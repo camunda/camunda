@@ -7,7 +7,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {DefinitionSelection, Select, Icon, Button} from 'components';
+import {DefinitionSelection, Icon, Button} from 'components';
 import {Filter} from 'filter';
 import {withErrorHandling} from 'HOC';
 import {getFlowNodeNames, reportConfig, loadProcessDefinitionXml, loadVariables} from 'services';
@@ -16,10 +16,10 @@ import {showError} from 'notifications';
 
 import DistributedBy from './DistributedBy';
 import AggregationType from './AggregationType';
-import UserTaskDurationTime from './UserTaskDurationTime';
 import ReportSelect from './ReportSelect';
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
+import Measure from './Measure';
 import {isDurationHeatmap, isProcessInstanceDuration} from './service';
 
 import './ReportControlPanel.scss';
@@ -92,17 +92,17 @@ export default withErrorHandling(
     variableExists = (varName) =>
       this.state.variables.some((variable) => variable.name === varName);
 
-    filterNonExistingVariables = (columns) =>
-      columns.filter((col) =>
-        col.startsWith('variable:') ? this.variableExists(col.split(':')[1]) : true
-      );
+    getNewVariables = (columns) =>
+      this.state.variables
+        .map((col) => 'variable:' + col.name)
+        .filter((col) => !columns.includes(col));
 
     getVariableConfig = () => {
       const {view, groupBy, distributedBy} = this.props.report.data;
 
       if (view?.entity === 'variable') {
         return {
-          name: view.property.name,
+          name: view.properties[0].name,
           reset: (change) => {
             change.view = {$set: null};
             change.groupBy = {$set: null};
@@ -129,10 +129,13 @@ export default withErrorHandling(
 
     changeDefinition = async ({key, versions, tenantIds, name}) => {
       const {
-        tableColumns: {columnOrder},
-        processPart,
-        heatmapTargetValue: {values},
-      } = this.props.report.data.configuration;
+        configuration: {
+          tableColumns: {columnOrder, includedColumns, excludedColumns},
+          processPart,
+          heatmapTargetValue: {values},
+        },
+        processDefinitionKey,
+      } = this.props.report.data;
       const targetFlowNodes = Object.keys(values);
 
       const definitionData = {
@@ -161,9 +164,18 @@ export default withErrorHandling(
         variableConfig.reset(change);
       }
 
-      if (columnOrder.length) {
+      if (columnOrder.length && key !== processDefinitionKey) {
+        change.configuration.tableColumns = {columnOrder: {$set: []}};
+      }
+
+      if (includedColumns.length) {
         change.configuration.tableColumns = {
-          columnOrder: {$set: this.filterNonExistingVariables(columnOrder)},
+          ...change.configuration.tableColumns,
+          includedColumns: {
+            $set: includedColumns.concat(
+              this.getNewVariables(includedColumns.concat(excludedColumns))
+            ),
+          },
         };
       }
 
@@ -181,7 +193,7 @@ export default withErrorHandling(
         change.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
       }
 
-      this.props.updateReport(change, true);
+      await this.props.updateReport(change, true);
       this.props.setLoading(false);
     };
 
@@ -193,7 +205,8 @@ export default withErrorHandling(
       const {data, result} = this.props.report;
       const {showSource, showSetup, showFilter, scrolled, flowNodeNames, variables} = this.state;
 
-      const shouldDisplayMeasure = ['frequency', 'duration'].includes(data.view?.property);
+      const shouldDisplayMeasure = ['frequency', 'duration'].includes(data.view?.properties[0]);
+      const shouldAllowAddingMeasure = data.view?.properties.length === 1 && shouldDisplayMeasure;
 
       return (
         <div className="ReportControlPanel">
@@ -236,6 +249,21 @@ export default withErrorHandling(
               </Button>
             </h3>
             <ul>
+              <li className="addMeasure">
+                <Button
+                  small
+                  disabled={!shouldAllowAddingMeasure}
+                  onClick={() =>
+                    this.updateReport('view', {
+                      ...data.view,
+                      properties: ['frequency', 'duration'],
+                    })
+                  }
+                >
+                  <Icon type="plus" />
+                  {t('report.addMeasure')}
+                </Button>
+              </li>
               <li className="select">
                 <span className="label">{t(`report.view.label`)}</span>
                 <ReportSelect
@@ -247,22 +275,18 @@ export default withErrorHandling(
                   disabled={!data.processDefinitionKey}
                   onChange={(newValue) => this.updateReport('view', newValue)}
                 />
+                {data.view?.entity === 'variable' && (
+                  <AggregationType report={data} onChange={this.props.updateReport} />
+                )}
               </li>
               {shouldDisplayMeasure && (
-                <li className="select">
-                  <span className="label">{t('report.measure')}</span>
-                  <Select
-                    value={data.view.property}
-                    onChange={(property) => this.updateReport('view', {...data.view, property})}
-                  >
-                    <Select.Option value="frequency">{t('report.view.count')}</Select.Option>
-                    <Select.Option value="duration">
-                      {data.view.entity === 'incident'
-                        ? t('report.view.resolutionDuration')
-                        : t('report.view.duration')}
-                    </Select.Option>
-                  </Select>
-                </li>
+                <Measure
+                  report={data}
+                  updateMeasure={(newMeasures) =>
+                    this.updateReport('view', {...data.view, properties: newMeasures})
+                  }
+                  updateAggregation={this.props.updateReport}
+                />
               )}
               <li className="select">
                 <span className="label">{t(`report.groupBy.label`)}</span>
@@ -277,8 +301,6 @@ export default withErrorHandling(
                   previous={[data.view]}
                 />
               </li>
-              <AggregationType report={this.props.report} onChange={this.props.updateReport} />
-              <UserTaskDurationTime report={this.props.report} onChange={this.props.updateReport} />
               <DistributedBy report={this.props.report} onChange={this.props.updateReport} />
               {isDurationHeatmap(data) && (
                 <li className="select">
@@ -297,8 +319,15 @@ export default withErrorHandling(
                     processPart={data.configuration.processPart}
                     update={(newPart) => {
                       const change = {configuration: {processPart: {$set: newPart}}};
-                      if (data.configuration.aggregationType === 'median') {
-                        change.configuration.aggregationType = {$set: 'avg'};
+                      if (data.configuration.aggregationTypes.includes('median')) {
+                        const newAggregations = data.configuration.aggregationTypes.filter(
+                          (type) => type !== 'median'
+                        );
+                        if (newAggregations.length === 0) {
+                          newAggregations.push('avg');
+                        }
+
+                        change.configuration.aggregationTypes = {$set: newAggregations};
                       }
                       this.props.updateReport(change, true);
                     }}
@@ -345,7 +374,7 @@ export default withErrorHandling(
               {t(
                 `report.instanceCount.process.label${
                   result.instanceCountWithoutFilters !== 1 ? '-plural' : ''
-                }`,
+                }-withFilter`,
                 {count: result.instanceCount, totalCount: result.instanceCountWithoutFilters}
               )}
             </div>

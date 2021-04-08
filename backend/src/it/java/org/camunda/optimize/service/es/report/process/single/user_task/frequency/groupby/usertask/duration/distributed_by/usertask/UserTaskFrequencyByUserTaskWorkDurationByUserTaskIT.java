@@ -37,6 +37,7 @@ public class UserTaskFrequencyByUserTaskWorkDurationByUserTaskIT
                                                     final OffsetDateTime startTime) {
     engineIntegrationExtension.claimAllRunningUserTasks(runningProcessInstance.getId());
     changeUserTaskClaimDate(runningProcessInstance, startTime, USER_TASK_1, 0);
+    changeUserTaskStartDate(runningProcessInstance, startTime, USER_TASK_1, 0);
   }
 
   @Override

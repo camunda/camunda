@@ -11,8 +11,16 @@ import React from 'react';
 const data = {
   configuration: {
     tableColumns: {
-      includeNewVariables: true,
-      includedColumns: [],
+      includeNewVariables: false,
+      includedColumns: [
+        'decisionInstanceId',
+        'decisionDefinitionId',
+        'processInstanceId',
+        'engineName',
+        'input:var1',
+        'input:var2',
+        'output:result',
+      ],
       excludedColumns: [],
       columnOrder: [],
     },
@@ -29,7 +37,8 @@ it('should display decision and process instance ids as links', () => {
             {
               decisionInstanceId: '123',
               processInstanceId: '456',
-              engineName: '1',
+              decisionDefinitionId: 'bar',
+              engineName: 'a',
               inputVariables: {},
               outputVariables: {},
             },
@@ -38,12 +47,12 @@ it('should display decision and process instance ids as links', () => {
         data,
       },
     },
-    {1: {endpoint: 'http://camunda.com', engineName: 'a'}}
+    {a: {endpoint: 'http://camunda.com', engineName: 'a'}}
   ).body[0];
 
-  expect(cell[0].type).toBe('a');
-  expect(cell[0].props.href).toBe('http://camunda.com/app/cockpit/a/#/decision-instance/123');
-  expect(cell[1].props.href).toBe('http://camunda.com/app/cockpit/a/#/process-instance/456');
+  expect(cell[1].type).toBe('a');
+  expect(cell[1].props.href).toBe('http://camunda.com/app/cockpit/a/#/decision-instance/123');
+  expect(cell[2].props.href).toBe('http://camunda.com/app/cockpit/a/#/process-instance/456');
 });
 
 it('should return correct table props for decision tables', () => {
@@ -51,7 +60,9 @@ it('should return correct table props for decision tables', () => {
     data: [
       {
         decisionInstanceId: 'foo',
+        processInstanceId: '456',
         decisionDefinitionId: 'bar',
+        engineName: '1',
         inputVariables: {
           var1: {id: 'var1', value: 12, name: 'Var 1'},
           var2: {id: 'var2', value: null, name: 'Var 2'},
@@ -62,7 +73,9 @@ it('should return correct table props for decision tables', () => {
       },
       {
         decisionInstanceId: 'xyz',
+        processInstanceId: '456',
         decisionDefinitionId: 'abc',
+        engineName: '1',
         inputVariables: {
           var1: {id: 'var1', value: null, name: 'Var 1'},
           var2: {id: 'var2', value: true, name: 'Var 2'},
@@ -102,12 +115,19 @@ it('should show no data message when all column are excluded for decision tables
         data: {
           configuration: {
             tableColumns: {
+              columnOrder: [],
               includeNewVariables: true,
               includedColumns: [],
               excludedColumns: [
-                'decisionInstanceId',
+                'decisionDefinitionKey',
                 'decisionDefinitionId',
+                'decisionInstanceId',
+                'processInstanceId',
+                'evaluationDateTime',
+                'engineName',
+                'tenantId',
                 'input:var1',
+                'input:var2',
                 'output:result',
               ],
             },
@@ -118,15 +138,12 @@ it('should show no data message when all column are excluded for decision tables
   ).toEqual({
     body: [],
     head: [],
-    noData: <NoDataNotice>You need to enable at least one table column</NoDataNotice>,
+    noData: <NoDataNotice type="info">You need to enable at least one table column</NoDataNotice>,
   });
 });
 
-it('should not crash for empty results', () => {
+it('should only show instance table column if result data is empty', () => {
   expect(
     processDecisionRawData({report: {data, reportType: 'decision', result: {data: []}}})
-  ).toEqual({
-    body: [],
-    head: [],
-  });
+  ).toMatchSnapshot();
 });

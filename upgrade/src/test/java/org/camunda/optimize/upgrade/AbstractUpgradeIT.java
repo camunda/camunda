@@ -35,7 +35,6 @@ import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
-import org.camunda.optimize.upgrade.steps.UpgradeStepType;
 import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.InsertDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
@@ -179,6 +178,10 @@ public abstract class AbstractUpgradeIT {
     prefixAwareClient.refresh(new RefreshRequest("*"));
   }
 
+  protected String getIndexNameWithVersion(final IndexMappingCreator testIndexV1) {
+    return indexNameService.getOptimizeIndexNameWithVersion(testIndexV1);
+  }
+
   protected String getVersionedIndexName(final String indexName, final int version) {
     return OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
       indexNameService.getOptimizeIndexAliasForIndex(indexName), String.valueOf(version)
@@ -233,9 +236,12 @@ public abstract class AbstractUpgradeIT {
     return searchResponse.getHits().getHits();
   }
 
-  protected HttpRequest createUpdateLogUpsertRequest(final UpgradeStepType dataUpdate) {
+  protected HttpRequest createUpdateLogUpsertRequest(final UpgradeStep upgradeStep) {
+    final String indexNameWithVersion = indexNameService.getOptimizeIndexNameWithVersion(upgradeStep.getIndex());
     return request()
-      .withPath("/" + getLogIndexAlias() + "/_update/" + TO_VERSION + "_" + dataUpdate.toString() + "_001")
+      .withPath(
+        "/" + getLogIndexAlias() + "/_update/" + TO_VERSION + "_" + upgradeStep.getType() + "_" + indexNameWithVersion
+      )
       .withMethod(POST);
   }
 

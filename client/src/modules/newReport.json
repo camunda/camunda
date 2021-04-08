@@ -4,8 +4,8 @@
     "data": {
       "configuration": {
         "color": "#1991c8",
-        "aggregationType": "avg",
-        "userTaskDurationTime": "total",
+        "aggregationTypes": ["avg"],
+        "userTaskDurationTimes": ["total"],
         "hiddenNodes": {
           "active": false,
           "keys": []
@@ -130,8 +130,8 @@
     "data": {
       "configuration": {
         "color": "#1991c8",
-        "aggregationType": "avg",
-        "userTaskDurationTime": "total",
+        "aggregationTypes": ["avg"],
+        "userTaskDurationTimes": ["total"],
         "hiddenNodes": {
           "active": false,
           "keys": []

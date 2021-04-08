@@ -56,6 +56,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_IN
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class MappingMetadataUtil {
@@ -78,7 +79,6 @@ public class MappingMetadataUtil {
       new MetadataIndex(),
       new OnboardingStateIndex(),
       new ProcessDefinitionIndex(),
-      new ProcessInstanceIndex(),
       new ReportShareIndex(),
       new SettingsIndex(),
       new TenantIndex(),
@@ -136,16 +136,25 @@ public class MappingMetadataUtil {
       .collect(toList());
   }
 
+  private static List<ProcessInstanceIndex> retrieveAllProcessIndices(
+    final OptimizeElasticsearchClient esClient) {
+    return retrieveAllDynamicIndexKeysForPrefix(esClient, PROCESS_INSTANCE_INDEX_PREFIX)
+      .stream()
+      .map(ProcessInstanceIndex::new)
+      .collect(toList());
+  }
+
   private static List<IndexMappingCreator> getAllDynamicMappings(final OptimizeElasticsearchClient esClient) {
     List<IndexMappingCreator> dynamicMappings = new ArrayList<>();
     dynamicMappings.addAll(retrieveAllCamundaActivityEventIndices(esClient));
     dynamicMappings.addAll(retrieveAllSequenceCountIndices(esClient));
     dynamicMappings.addAll(retrieveAllEventTraceIndices(esClient));
+    dynamicMappings.addAll(retrieveAllProcessIndices(esClient));
     dynamicMappings.addAll(retrieveAllDecisionInstanceIndices(esClient));
     return dynamicMappings;
   }
 
-  private static List<String> retrieveAllDynamicIndexKeysForPrefix(final OptimizeElasticsearchClient esClient,
+  public static List<String> retrieveAllDynamicIndexKeysForPrefix(final OptimizeElasticsearchClient esClient,
                                                                    final String dynamicIndexPrefix) {
     final GetAliasesResponse aliases;
     try {
@@ -153,7 +162,7 @@ public class MappingMetadataUtil {
         new GetAliasesRequest(dynamicIndexPrefix + "*"), RequestOptions.DEFAULT
       );
     } catch (IOException e) {
-      throw new OptimizeRuntimeException("Failed retrieving aliases for dynamic index prefix " + dynamicIndexPrefix);
+      throw new OptimizeRuntimeException("Failed retrieving aliases for dynamic index prefix " + dynamicIndexPrefix, e);
     }
     return aliases.getAliases()
       .values()

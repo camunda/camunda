@@ -13,7 +13,7 @@ import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.service.DurationAggregationService;
-import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
+import org.camunda.optimize.service.es.report.command.util.DurationScriptUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -32,7 +32,6 @@ import java.util.Optional;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_START_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -85,17 +84,18 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
   @Override
   public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
                                                 final BoolQueryBuilder baseQuery) {
-    return Optional.of(retrieveMinMaxDurationStats(baseQuery));
+    return Optional.of(retrieveMinMaxDurationStats(context, baseQuery));
   }
 
-  private MinMaxStatDto retrieveMinMaxDurationStats(final QueryBuilder baseQuery) {
+  private MinMaxStatDto retrieveMinMaxDurationStats(final ExecutionContext<ProcessReportDataDto> context,
+                                                    final QueryBuilder baseQuery) {
     return minMaxStatsService.getScriptedMinMaxStats(
-      baseQuery, PROCESS_INSTANCE_INDEX_NAME, EVENTS, getDurationScript()
+      baseQuery, getIndexName(context), EVENTS, getDurationScript()
     );
   }
 
   private Script getDurationScript() {
-    return AggregationFilterUtil.getDurationScript(
+    return DurationScriptUtil.getDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
       EVENTS + "." + ACTIVITY_DURATION,
       EVENTS + "." + ACTIVITY_START_DATE

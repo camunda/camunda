@@ -21,6 +21,7 @@ public class DecisionCleanupPerformanceStaticDataTest extends AbstractDataCleanu
   public static void setUp() {
     embeddedOptimizeExtension.setupOptimize();
     // given
+    // Note that when these tests run on jenkins, data is usually imported already during the "import" stage of the job
     importEngineData();
   }
 

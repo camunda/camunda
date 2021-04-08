@@ -55,7 +55,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
     // then
     final Optional<UpgradeStepLogEntryDto> updateLogEntries = getDocumentOfIndexByIdAs(
       UpdateLogEntryIndex.INDEX_NAME,
-      TO_VERSION + "_" + SCHEMA_CREATE_INDEX.toString() + "_001",
+      TO_VERSION + "_" + SCHEMA_CREATE_INDEX + "_" + indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1),
       UpgradeStepLogEntryDto.class
     );
     assertThat(updateLogEntries)
@@ -63,7 +63,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
       .get()
       .isEqualTo(
         UpgradeStepLogEntryDto.builder()
-          .indexName(TEST_INDEX_V1.getIndexName())
+          .indexName(getIndexNameWithVersion(TEST_INDEX_V1))
           .optimizeVersion(TO_VERSION)
           .stepNumber(1)
           .stepType(SCHEMA_CREATE_INDEX)
@@ -94,14 +94,14 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
     assertThat(updateLogEntries)
       .containsExactlyInAnyOrder(
         UpgradeStepLogEntryDto.builder()
-          .indexName(TEST_INDEX_V1.getIndexName())
+          .indexName(getIndexNameWithVersion(TEST_INDEX_V1))
           .optimizeVersion(TO_VERSION)
           .stepNumber(1)
           .stepType(SCHEMA_CREATE_INDEX)
           .appliedDate(frozenDate.toInstant())
           .build(),
         UpgradeStepLogEntryDto.builder()
-          .indexName(TEST_INDEX_V2.getIndexName())
+          .indexName(getIndexNameWithVersion(TEST_INDEX_V2))
           .optimizeVersion(TO_VERSION)
           .stepNumber(2)
           .stepType(UpgradeStepType.SCHEMA_UPDATE_INDEX)
@@ -122,7 +122,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
         .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_V2))
         .build();
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(
-      indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1)
+      getIndexNameWithVersion(TEST_INDEX_V1)
     );
     esMockServer
       .when(indexDeleteRequest, Times.exactly(1))
@@ -132,8 +132,8 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
     esMockServer.verify(indexDeleteRequest, exactly(1));
 
     // then only the successful first step is logged
-    logs.assertContains("Starting step 1/2: CreateIndexStep on index: " + TEST_INDEX_V1.getIndexName());
-    logs.assertContains("Successfully finished step 1/2: CreateIndexStep on index: " + TEST_INDEX_V1.getIndexName());
+    logs.assertContains("Starting step 1/2: CreateIndexStep on index: " + getIndexNameWithVersion(TEST_INDEX_V1));
+    logs.assertContains("Successfully finished step 1/2: CreateIndexStep on index: " + getIndexNameWithVersion(TEST_INDEX_V1));
     logs.assertContains("The upgrade will be aborted. Please investigate the cause and retry it..");
     final List<UpgradeStepLogEntryDto> updateLogEntries = getAllDocumentsOfIndexAs(
       UpdateLogEntryIndex.INDEX_NAME, UpgradeStepLogEntryDto.class
@@ -141,7 +141,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
     assertThat(updateLogEntries)
       .containsExactlyInAnyOrder(
         UpgradeStepLogEntryDto.builder()
-          .indexName(TEST_INDEX_V1.getIndexName())
+          .indexName(getIndexNameWithVersion(TEST_INDEX_V1))
           .optimizeVersion(TO_VERSION)
           .stepNumber(1)
           .stepType(SCHEMA_CREATE_INDEX)
@@ -162,7 +162,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
         .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_V2))
         .build();
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(
-      indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1)
+      getIndexNameWithVersion(TEST_INDEX_V1)
     );
     esMockServer
       .when(indexDeleteRequest, Times.exactly(1))
@@ -179,26 +179,27 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then it succeeds and the whole log is persisted
-    logs.assertContains(
-      "Skipping Step 1/2: CreateIndexStep on index: users as it was found to be previously completed " +
-        "already at: " + frozenDate.toInstant().toString() + "."
-    );
-    logs.assertContains("Starting step 2/2: UpdateIndexStep on index: " + TEST_INDEX_V1.getIndexName());
-    logs.assertContains("Successfully finished step 2/2: UpdateIndexStep on index: " + TEST_INDEX_V1.getIndexName());
+    logs.assertContains(String.format(
+      "Skipping Step 1/2: CreateIndexStep on index: %s as it was found to be previously completed already at: %s.",
+      getIndexNameWithVersion(TEST_INDEX_V1),
+      frozenDate.toInstant().toString()
+    ));
+    logs.assertContains("Starting step 2/2: UpdateIndexStep on index: " + getIndexNameWithVersion(TEST_INDEX_V2));
+    logs.assertContains("Successfully finished step 2/2: UpdateIndexStep on index: " + getIndexNameWithVersion(TEST_INDEX_V2));
     final List<UpgradeStepLogEntryDto> updateLogEntries = getAllDocumentsOfIndexAs(
       UpdateLogEntryIndex.INDEX_NAME, UpgradeStepLogEntryDto.class
     );
     assertThat(updateLogEntries)
       .containsExactlyInAnyOrder(
         UpgradeStepLogEntryDto.builder()
-          .indexName(TEST_INDEX_V1.getIndexName())
+          .indexName(getIndexNameWithVersion(TEST_INDEX_V1))
           .optimizeVersion(TO_VERSION)
           .stepNumber(1)
           .stepType(SCHEMA_CREATE_INDEX)
           .appliedDate(frozenDate.toInstant())
           .build(),
         UpgradeStepLogEntryDto.builder()
-          .indexName(TEST_INDEX_V2.getIndexName())
+          .indexName(getIndexNameWithVersion(TEST_INDEX_V2))
           .optimizeVersion(TO_VERSION)
           .stepNumber(2)
           .stepType(UpgradeStepType.SCHEMA_UPDATE_INDEX)
@@ -211,14 +212,15 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
   public void upgradeIsResumedWhenUpgradeLogUpdateFails() {
     // given
     final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final CreateIndexStep createIndexStep = buildCreateIndexStep(TEST_INDEX_V1);
     final UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX_V1))
+        .addUpgradeStep(createIndexStep)
         .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_V2))
         .build();
-    final HttpRequest stepOneLogUpsertRequest = createUpdateLogUpsertRequest(SCHEMA_CREATE_INDEX);
+    final HttpRequest stepOneLogUpsertRequest = createUpdateLogUpsertRequest(createIndexStep);
     esMockServer
       .when(stepOneLogUpsertRequest, Times.exactly(1))
       .error(HttpError.error().withDropConnection(true));
@@ -235,24 +237,27 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
 
     // then it succeeds and the whole log is persisted
     logs.assertDoesNotContain("Skipping Step 1/2: CreateIndexStep on index");
-    logs.assertContains("Starting step 1/2: CreateIndexStep on index: " + TEST_INDEX_V1.getIndexName());
-    logs.assertContains("Successfully finished step 1/2: CreateIndexStep on index: " + TEST_INDEX_V1.getIndexName());
-    logs.assertContains("Starting step 2/2: UpdateIndexStep on index: " + TEST_INDEX_V1.getIndexName());
-    logs.assertContains("Successfully finished step 2/2: UpdateIndexStep on index: " + TEST_INDEX_V1.getIndexName());
+    logs.assertContains(
+      "Starting step 1/2: CreateIndexStep on index: "
+        + getIndexNameWithVersion(TEST_INDEX_V1)
+    );
+    logs.assertContains("Successfully finished step 1/2: CreateIndexStep on index: " + getIndexNameWithVersion(TEST_INDEX_V1));
+    logs.assertContains("Starting step 2/2: UpdateIndexStep on index: " + getIndexNameWithVersion(TEST_INDEX_V2));
+    logs.assertContains("Successfully finished step 2/2: UpdateIndexStep on index: " + getIndexNameWithVersion(TEST_INDEX_V2));
     final List<UpgradeStepLogEntryDto> updateLogEntries = getAllDocumentsOfIndexAs(
       UpdateLogEntryIndex.INDEX_NAME, UpgradeStepLogEntryDto.class
     );
     assertThat(updateLogEntries)
       .containsExactlyInAnyOrder(
         UpgradeStepLogEntryDto.builder()
-          .indexName(TEST_INDEX_V1.getIndexName())
+          .indexName(getIndexNameWithVersion(TEST_INDEX_V1))
           .optimizeVersion(TO_VERSION)
           .stepNumber(1)
           .stepType(SCHEMA_CREATE_INDEX)
           .appliedDate(frozenDate2.toInstant())
           .build(),
         UpgradeStepLogEntryDto.builder()
-          .indexName(TEST_INDEX_V2.getIndexName())
+          .indexName(getIndexNameWithVersion(TEST_INDEX_V2))
           .optimizeVersion(TO_VERSION)
           .stepNumber(2)
           .stepType(UpgradeStepType.SCHEMA_UPDATE_INDEX)
@@ -266,7 +271,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
   }
 
   private UpdateIndexStep buildUpdateIndexStep(final IndexMappingCreator index) {
-    return new UpdateIndexStep(index, null);
+    return new UpdateIndexStep(index);
   }
 
 }

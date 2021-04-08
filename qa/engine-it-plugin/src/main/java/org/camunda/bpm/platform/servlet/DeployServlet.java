@@ -75,7 +75,7 @@ public class DeployServlet extends HttpServlet {
         = StandaloneInMemProcessEngineConfiguration.class.getMethod("setQueryMaxResultsLimit", int.class);
       setQueryMaxResultsLimit.invoke(configuration, 10_000);
     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-      logger.debug("You are using a version of the Camunda BPM runtime platform prior to 7.12, where" +
+      logger.debug("You are using a version of the Camunda Platform prior to 7.12, where" +
                      "it's not possible to set the query max result limit.", e);
     }
     return configuration.buildProcessEngine();

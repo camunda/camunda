@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
@@ -22,21 +23,25 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDa
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Optional;
+import java.util.Set;
 
 @AllArgsConstructor
 @Builder
 @Data
 @FieldNameConstants
 @NoArgsConstructor
-public class SingleReportConfigurationDto {
+public class SingleReportConfigurationDto implements Combinable {
   @Builder.Default
   private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
   @Builder.Default
-  private List<AggregationType> aggregationTypes = Arrays.asList(AggregationType.AVERAGE);
+  private Set<AggregationType> aggregationTypes =
+    new LinkedHashSet<>(Collections.singletonList(AggregationType.AVERAGE));
   @Builder.Default
-  private List<UserTaskDurationTime> userTaskDurationTimes = Arrays.asList(UserTaskDurationTime.TOTAL);
+  private Set<UserTaskDurationTime> userTaskDurationTimes =
+    new LinkedHashSet<>(Collections.singletonList(UserTaskDurationTime.TOTAL));
   @Builder.Default
   private HiddenNodesDto hiddenNodes = new HiddenNodesDto();
   @Builder.Default
@@ -91,44 +96,26 @@ public class SingleReportConfigurationDto {
     return getProcessPart().map(ProcessPartDto::createCommandKey).orElse(null);
   }
 
-  // to be removed with OPT-4871 when the result evaluation needs to read all values
-  @Deprecated
-  public AggregationType getAggregationType() {
-    return this.aggregationTypes != null && !this.aggregationTypes.isEmpty() ? this.aggregationTypes.get(0) : null;
-  }
-
-  // to be removed with OPT-4872, just here for jackson and API backwards compatibility thus protected
-  @Deprecated
-  protected void setAggregationType(final AggregationType aggregationType) {
-    if (this.aggregationTypes == null || this.aggregationTypes.isEmpty()) {
-      this.aggregationTypes = Arrays.asList(aggregationType);
-    } else {
-      this.aggregationTypes.set(0, aggregationType);
+  @Override
+  public boolean isCombinable(final Object o) {
+    if (!(o instanceof SingleReportConfigurationDto)) {
+      return false;
     }
+    final SingleReportConfigurationDto that = (SingleReportConfigurationDto) o;
+    final int aggregationTypesAmount = getAggregationTypes().size();
+    final int userTaskDurationTimesAmount = getUserTaskDurationTimes().size();
+    return aggregationTypesAmount <= 1 && aggregationTypesAmount == that.getAggregationTypes().size()
+      && userTaskDurationTimesAmount <= 1 && userTaskDurationTimesAmount == that.getUserTaskDurationTimes().size();
   }
 
   public void setAggregationTypes(final AggregationType... aggregationTypes) {
-    this.aggregationTypes = Arrays.asList(aggregationTypes);
-  }
-
-  // to be removed with OPT-4871 when the result evaluation needs to read all values
-  @Deprecated
-  public UserTaskDurationTime getUserTaskDurationTime() {
-    return this.userTaskDurationTimes != null && !this.userTaskDurationTimes.isEmpty() ? this.userTaskDurationTimes.get(0) : null;
-  }
-
-  // to be removed with OPT-4872, just here for jackson and API backwards compatibility thus protected
-  @Deprecated
-  protected void setUserTaskDurationTime(final UserTaskDurationTime userTaskDurationTime) {
-    if (this.userTaskDurationTimes == null || this.userTaskDurationTimes.isEmpty()) {
-      this.userTaskDurationTimes = Arrays.asList(userTaskDurationTime);
-    } else {
-      this.userTaskDurationTimes.set(0, userTaskDurationTime);
-    }
+    // deduplication using an intermediate set
+    this.aggregationTypes = new LinkedHashSet<>(Arrays.asList(aggregationTypes));
   }
 
   public void setUserTaskDurationTimes(final UserTaskDurationTime... userTaskDurationTimes) {
-    this.userTaskDurationTimes = Arrays.asList(userTaskDurationTimes);
+    // deduplication using an intermediate set
+    this.userTaskDurationTimes = new LinkedHashSet<>(Arrays.asList(userTaskDurationTimes));
   }
 
   public Optional<ReportSortingDto> getSorting() {
@@ -138,5 +125,4 @@ public class SingleReportConfigurationDto {
   public Optional<ProcessPartDto> getProcessPart() {
     return Optional.ofNullable(processPart);
   }
-
 }

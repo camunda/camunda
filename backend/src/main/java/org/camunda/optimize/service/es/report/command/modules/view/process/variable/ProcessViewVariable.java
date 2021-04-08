@@ -5,25 +5,19 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.view.process.variable;
 
-import com.google.common.collect.ImmutableMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.VariableViewPropertyDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
-import org.camunda.optimize.service.es.report.command.aggregations.AvgAggregation;
-import org.camunda.optimize.service.es.report.command.aggregations.MaxAggregation;
-import org.camunda.optimize.service.es.report.command.aggregations.MedianAggregation;
-import org.camunda.optimize.service.es.report.command.aggregations.MinAggregation;
-import org.camunda.optimize.service.es.report.command.aggregations.SumAggregation;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewMeasure;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
-import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewPart;
+import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewMultiAggregation;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -35,7 +29,9 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
-import java.util.Map;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
@@ -51,80 +47,74 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessViewVariable extends ProcessViewPart {
+public class ProcessViewVariable extends ProcessViewMultiAggregation {
 
   private static final String NESTED_VARIABLE_AGGREGATION = "nestedVariableAggregation";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
 
-  private static final Map<AggregationType, AggregationStrategy> aggregationStrategyMap =
-    ImmutableMap.<AggregationType, AggregationStrategy>builder()
-      .put(AggregationType.MIN, new MinAggregation())
-      .put(AggregationType.MAX, new MaxAggregation())
-      .put(AggregationType.AVERAGE, new AvgAggregation())
-      .put(AggregationType.MEDIAN, new MedianAggregation())
-      .put(AggregationType.SUM, new SumAggregation())
-      .build();
-
   @Override
   public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {
-    return ViewProperty.VARIABLE(getVariableName(context), getVariableType(context));
+    final VariableViewPropertyDto variableViewDto = getVariableViewDto(context);
+    return ViewProperty.VARIABLE(variableViewDto.getName(), variableViewDto.getType());
   }
 
   @Override
-  public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
-    if (!VariableType.getNumericTypes().contains(getVariableType(context))) {
+  public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
+    final VariableViewPropertyDto variableViewDto = getVariableViewDto(context);
+    final VariableType variableType = variableViewDto.getType();
+    if (!VariableType.getNumericTypes().contains(variableType)) {
       throw new BadRequestException(
         "Only numeric variable types are supported for reports with view on variables!"
       );
     }
-    final FilterAggregationBuilder filteredVariables = filter(
+
+    final FilterAggregationBuilder filteredVariablesAggregation = filter(
       FILTERED_VARIABLES_AGGREGATION,
       boolQuery()
-        .must(termQuery(getNestedVariableNameField(), getVariableName(context)))
-        .must(termQuery(getNestedVariableTypeField(), getVariableType(context).getId()))
-        .must(existsQuery(getNestedVariableValueFieldForType(getVariableType(context))))
+        .must(termQuery(getNestedVariableNameField(), variableViewDto.getName()))
+        .must(termQuery(getNestedVariableTypeField(), variableType.getId()))
+        .must(existsQuery(getNestedVariableValueFieldForType(variableType)))
     );
-    return nested(NESTED_VARIABLE_AGGREGATION, VARIABLES)
-      .subAggregation(
-        filteredVariables
-          .subAggregation(
-            getAggregationStrategy(context.getReportData()).getAggregationBuilder()
-              .field(getNestedVariableValueFieldForType(getVariableType(context)))
-          )
-      );
-  }
+    getAggregationStrategies(context.getReportData()).stream()
+      .map(strategy -> strategy.createAggregationBuilder().field(getNestedVariableValueFieldForType(variableType)))
+      .forEach(filteredVariablesAggregation::subAggregation);
 
-  private AggregationStrategy getAggregationStrategy(final ProcessReportDataDto definitionData) {
-    return aggregationStrategyMap.get(definitionData.getConfiguration().getAggregationType());
-  }
-
-  private VariableType getVariableType(final ExecutionContext<ProcessReportDataDto> context) {
-    return getVariableViewDto(context).getType();
-  }
-
-  private String getVariableName(final ExecutionContext<ProcessReportDataDto> context) {
-    return getVariableViewDto(context).getName();
-  }
-
-  private VariableViewPropertyDto getVariableViewDto(final ExecutionContext<ProcessReportDataDto> context) {
-    return getVariableGroupBy(context);
-  }
-
-  private VariableViewPropertyDto getVariableGroupBy(final ExecutionContext<ProcessReportDataDto> context) {
-    return (VariableViewPropertyDto) context.getReportData().getView().getProperty().getViewPropertyDto();
+    return Collections.singletonList(
+      nested(NESTED_VARIABLE_AGGREGATION, VARIABLES).subAggregation(filteredVariablesAggregation)
+    );
   }
 
   @Override
-  public ViewResult retrieveResult(final SearchResponse response, final Aggregations aggs,
+  public ViewResult retrieveResult(final SearchResponse response,
+                                   final Aggregations aggs,
                                    final ExecutionContext<ProcessReportDataDto> context) {
     final Nested nested = response.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
     final Filter filterVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    Double number = getAggregationStrategy(context.getReportData()).getValue(filterVariables.getAggregations());
-    return new ViewResult().setNumber(number);
+
+    final ViewResult.ViewResultBuilder viewResultBuilder = ViewResult.builder();
+    getAggregationStrategies(context.getReportData()).forEach(aggregationStrategy -> {
+      final Double measureResult = aggregationStrategy.getValue(filterVariables.getAggregations());
+      viewResultBuilder.viewMeasure(
+        ViewMeasure.builder().aggregationType(aggregationStrategy.getAggregationType()).value(measureResult).build()
+      );
+    });
+    return viewResultBuilder.build();
   }
 
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
     dataForCommandKey.setView(new ProcessViewDto(ProcessViewEntity.VARIABLE, ViewProperty.VARIABLE(null, null)));
   }
+
+  private VariableViewPropertyDto getVariableViewDto(final ExecutionContext<ProcessReportDataDto> context) {
+    return context.getReportData().getView().getProperties()
+      .stream()
+      .map(property -> property.getViewPropertyDtoIfOfType(VariableViewPropertyDto.class))
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      // we take the first as only one variable view property is supported
+      .findFirst()
+      .orElseThrow(() -> new OptimizeRuntimeException("No variable view property found in report configuration"));
+  }
+
 }

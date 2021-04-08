@@ -58,6 +58,7 @@ public class EngineConstants {
   // native engine endpoints
   public static final String TENANT_ENDPOINT = "/tenant";
   public static final String VERSION_ENDPOINT = "/version";
+  public static final String PROCESS_INSTANCE_ENDPOINT_TEMPLATE = "/history/process-instance/{id}";
   public static final String PROCESS_DEFINITION_ENDPOINT = "/process-definition";
   public static final String PROCESS_DEFINITION_ENDPOINT_TEMPLATE = "/process-definition/{id}";
   public static final String PROCESS_DEFINITION_XML_ENDPOINT_TEMPLATE = "/process-definition/{id}/xml";
@@ -110,5 +111,8 @@ public class EngineConstants {
   // incident type
   public static final String FAILED_JOB_INCIDENT_TYPE = "failedJob";
   public static final String FAILED_EXTERNAL_TASK_INCIDENT_TYPE = "failedExternalTask";
+
+  // variable types
+  public static final String VARIABLE_TYPE_OBJECT = "Object";
 
 }

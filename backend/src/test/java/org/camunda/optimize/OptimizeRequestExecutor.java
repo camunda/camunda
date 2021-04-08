@@ -344,9 +344,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGenericRequest(final String method, final String path, final Object payload) {
+    return buildGenericRequest(method, path, getBody(payload));
+  }
+
+  public OptimizeRequestExecutor buildGenericRequest(final String method, final String path, final Entity<?> entity) {
     this.path = path;
     this.method = method;
-    this.body = getBody(payload);
+    this.body = entity;
     return this;
   }
 

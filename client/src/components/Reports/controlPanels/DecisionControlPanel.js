@@ -53,64 +53,94 @@ export class DecisionControlPanel extends React.Component {
     }
   };
 
+  loadXml = ({decisionDefinitionKey, decisionDefinitionVersions, tenantIds}) => {
+    if (decisionDefinitionKey && decisionDefinitionVersions?.[0] && tenantIds) {
+      return new Promise((resolve, reject) => {
+        this.props.mightFail(
+          loadDecisionDefinitionXml(
+            decisionDefinitionKey,
+            decisionDefinitionVersions[0],
+            tenantIds[0]
+          ),
+          resolve,
+          (error) => reject(showError(error))
+        );
+      });
+    }
+
+    return null;
+  };
+
   variableExists = (type, varName) =>
     this.state.variables[type].some((variable) => variable.id === varName);
 
+  getNewVariables = (columns) => {
+    const types = ['input', 'output'];
+    return Object.values(this.state.variables)
+      .map((variables, i) => variables.map((variable) => types[i] + ':' + variable.id))
+      .flat()
+      .filter((col) => !columns.includes(col));
+  };
+
   filterNonExistingVariables = (columns) =>
     columns.filter((col) => {
-      if (col.includes('Variable:')) {
+      if (col.startsWith('input:') || col.startsWith('output:')) {
         const [type, name] = col.split(':');
-        return this.variableExists(type, name);
+        return this.variableExists(type + 'Variable', name);
       }
 
       return true;
     });
 
   changeDefinition = async ({key, versions, tenantIds, name}) => {
-    const {groupBy} = this.props.report.data;
-
-    const change = {
-      decisionDefinitionKey: {$set: key},
-      decisionDefinitionName: {$set: name},
-      decisionDefinitionVersions: {$set: versions},
-      tenantIds: {$set: tenantIds},
-      configuration: {
-        xml: {
-          $set:
-            key && versions && versions[0]
-              ? await loadDecisionDefinitionXml(key, versions[0], tenantIds[0])
-              : null,
-        },
-      },
-    };
-
+    const {groupBy, configuration} = this.props.report.data;
+    const {columnOrder, includedColumns, excludedColumns} = configuration.tableColumns;
     const definitionData = {
       decisionDefinitionKey: key,
       decisionDefinitionVersions: versions,
       tenantIds,
     };
 
-    const columnOrder = this.props.report.data.configuration.tableColumns.columnOrder;
+    this.props.setLoading(true);
+    const [xml] = await Promise.all([
+      this.loadXml(definitionData),
+      this.loadVariables(definitionData),
+    ]);
+
+    const change = {
+      decisionDefinitionKey: {$set: key},
+      decisionDefinitionName: {$set: name},
+      decisionDefinitionVersions: {$set: versions},
+      tenantIds: {$set: tenantIds},
+      configuration: {xml: {$set: xml}},
+    };
+
     const variableReport = ['inputVariable', 'outputVariable'].includes(groupBy?.type);
 
-    if (variableReport || columnOrder.length) {
-      this.props.setLoading(true);
-      await this.loadVariables(definitionData);
-      this.props.setLoading(false);
-      if (variableReport && !this.variableExists(groupBy.type, groupBy.value.id)) {
-        change.groupBy = {$set: null};
-        change.visualization = {$set: null};
-      }
-
-      if (columnOrder.length) {
-        change.configuration.tableColumns = {
-          columnOrder: {$set: this.filterNonExistingVariables(columnOrder)},
-        };
-      }
-    } else {
-      this.loadVariables(definitionData);
+    if (variableReport && !this.variableExists(groupBy.type, groupBy.value.id)) {
+      change.groupBy = {$set: null};
+      change.visualization = {$set: null};
     }
-    this.props.updateReport(change, true);
+
+    if (columnOrder.length) {
+      change.configuration.tableColumns = {
+        columnOrder: {$set: this.filterNonExistingVariables(columnOrder)},
+      };
+    }
+
+    if (includedColumns.length) {
+      change.configuration.tableColumns = {
+        ...change.configuration.tableColumns,
+        includedColumns: {
+          $set: includedColumns.concat(
+            this.getNewVariables(includedColumns.concat(excludedColumns))
+          ),
+        },
+      };
+    }
+
+    await this.props.updateReport(change, true);
+    this.props.setLoading(false);
   };
 
   updateReport = (type, newValue) => {
@@ -227,7 +257,7 @@ export class DecisionControlPanel extends React.Component {
             {t(
               `report.instanceCount.decision.label${
                 result.instanceCountWithoutFilters !== 1 ? '-plural' : ''
-              }`,
+              }-withFilter`,
               {count: result.instanceCount, totalCount: result.instanceCountWithoutFilters}
             )}
           </div>

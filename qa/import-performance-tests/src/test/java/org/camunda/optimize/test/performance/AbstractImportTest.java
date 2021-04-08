@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 public abstract class AbstractImportTest {
   protected final Logger logger = LoggerFactory.getLogger(getClass());
@@ -67,7 +67,7 @@ public abstract class AbstractImportTest {
       logger.info(
         "The Camunda Platform contains {} historic process instances. Optimize: {}",
         engineDatabaseExtension.countHistoricProcessInstances(),
-        elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME)
+        elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS)
       );
       logger.info(
         "The Camunda Platform contains {} historic variable instances. Optimize: {}",
@@ -110,9 +110,8 @@ public abstract class AbstractImportTest {
 
   private long computeImportProgress() {
     // assumption: we know how many process instances have been generated
-    Integer processInstancesImported = elasticSearchIntegrationTestExtension.getDocumentCountOf(
-      PROCESS_INSTANCE_INDEX_NAME
-    );
+    Integer processInstancesImported =
+      elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS);
     Long totalInstances;
     try {
       totalInstances = Math.max(engineDatabaseExtension.countHistoricProcessInstances(), 1L);
@@ -126,7 +125,7 @@ public abstract class AbstractImportTest {
   protected void assertThatEngineAndElasticDataMatch() throws SQLException {
     assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME))
       .as("processDefinitionsCount").isEqualTo(engineDatabaseExtension.countProcessDefinitions());
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME))
+    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS))
       .as("processInstanceTypeCount").isEqualTo(engineDatabaseExtension.countHistoricProcessInstances());
     assertThat(elasticSearchIntegrationTestExtension.getVariableInstanceCount())
       .as("variableInstanceCount").isEqualTo(engineDatabaseExtension.countHistoricVariableInstances());

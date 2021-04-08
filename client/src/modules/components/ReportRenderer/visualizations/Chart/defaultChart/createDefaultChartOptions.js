@@ -6,6 +6,7 @@
 
 import {ColorPicker} from 'components';
 import {isDurationReport, formatters} from 'services';
+import {t} from 'translation';
 
 import {getFormattedTargetValue} from './service';
 import {formatTooltip, getTooltipLabelColor, canBeInterpolated} from '../service';
@@ -15,13 +16,20 @@ const {createDurationFormattingOptions, duration} = formatters;
 
 export default function createDefaultChartOptions({report, targetValue, theme, formatter}) {
   const {
-    data: {visualization, groupBy, configuration, decisionDefinitionKey},
+    data: {visualization, view, groupBy, configuration, decisionDefinitionKey},
     result,
   } = report;
 
   const isDark = theme === 'dark';
   const isDuration = isDurationReport(report);
-  const maxValue = isDuration ? Math.max(...result.data.map(({value}) => value)) : 0;
+  const maxValue = isDuration
+    ? Math.max(
+        ...result.measures
+          .filter(({property}) => property === 'duration')
+          .map((measure) => measure.data.map(({value}) => value))
+          .flat()
+      )
+    : 0;
   const isPersistedTooltips = isDuration
     ? configuration.alwaysShowAbsolute
     : configuration.alwaysShowAbsolute || configuration.alwaysShowRelative;
@@ -44,6 +52,8 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         groupedByDurationMaxValue,
         isDark,
         isPersistedTooltips,
+        measures: result.measures,
+        entity: view.entity,
         autoSkip: canBeInterpolated(groupBy, configuration.xml, decisionDefinitionKey),
       });
       break;
@@ -53,13 +63,11 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
 
   const tooltipCallbacks = {
     label: (tooltipItem, data) => {
-      return formatTooltip(
-        tooltipItem,
-        data,
-        configuration,
-        formatter,
-        result.instanceCount,
-        isDuration
+      const {label, formatter} = data.datasets[tooltipItem.datasetIndex];
+      return (
+        label +
+        ': ' +
+        formatTooltip(tooltipItem, data, configuration, formatter, result.instanceCount, isDuration)
       );
     },
     labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization),
@@ -72,7 +80,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
   }
 
   if (visualization === 'pie' && !isPersistedTooltips && !groupedByDurationMaxValue) {
-    tooltipCallbacks.beforeLabel = ({index}, {labels}) => labels[index];
+    tooltipCallbacks.title = (data, {labels}) => data.length && labels[data[0].index];
   }
 
   if (visualization === 'pie' && groupedByDurationMaxValue) {
@@ -127,34 +135,78 @@ export function createBarOptions({
   isDark,
   autoSkip,
   isPersistedTooltips,
+  measures = [],
+  entity,
   groupedByDurationMaxValue = false,
 }) {
   const targetLine = targetValue && getFormattedTargetValue(targetValue);
+  const hasMultipleAxes = ['frequency', 'duration'].every((prop) =>
+    measures.some(({property}) => property === prop)
+  );
+
+  const yAxes = [
+    {
+      gridLines: {
+        color: getColorFor('grid', isDark),
+      },
+      scaleLabel: {
+        display: !!configuration.yLabel,
+        labelString: configuration.yLabel,
+        fontStyle: 'bold',
+      },
+      ticks: {
+        ...(maxDuration && !hasMultipleAxes
+          ? createDurationFormattingOptions(targetLine, maxDuration)
+          : {}),
+        beginAtZero: true,
+        fontColor: getColorFor('label', isDark),
+        suggestedMax: targetLine,
+      },
+      id: 'axis-0',
+    },
+  ];
+
+  if (hasMultipleAxes) {
+    yAxes[0].scaleLabel = {
+      display: true,
+      labelString: `${t('common.' + entity + '.label')} ${t('report.view.count')}`,
+      fontStyle: 'bold',
+    };
+
+    yAxes.push({
+      gridLines: {
+        drawOnChartArea: false,
+      },
+      scaleLabel: {
+        display: true,
+        labelString: `${t('common.' + entity + '.label')} ${t('report.view.duration')}`,
+        fontStyle: 'bold',
+      },
+      ticks: {
+        ...createDurationFormattingOptions(targetLine, maxDuration),
+        beginAtZero: true,
+        fontColor: getColorFor('label', isDark),
+        suggestedMax: targetLine,
+      },
+      position: 'right',
+      id: 'axis-1',
+    });
+  }
 
   return {
     ...(configuration.pointMarkers === false ? {elements: {point: {radius: 0}}} : {}),
-    legend: {display: false},
+    legend: {
+      display: measures.length > 1,
+      onClick: (e) => e.stopPropagation(),
+      labels: {
+        boxWidth: 12,
+      },
+    },
     layout: {
       padding: {top: isPersistedTooltips ? 30 : 0},
     },
     scales: {
-      yAxes: [
-        {
-          gridLines: {
-            color: getColorFor('grid', isDark),
-          },
-          scaleLabel: {
-            display: !!configuration.yLabel,
-            labelString: configuration.yLabel,
-          },
-          ticks: {
-            ...(maxDuration ? createDurationFormattingOptions(targetLine, maxDuration) : {}),
-            beginAtZero: true,
-            fontColor: getColorFor('label', isDark),
-            suggestedMax: targetLine,
-          },
-        },
-      ],
+      yAxes,
       xAxes: [
         {
           gridLines: {
@@ -163,6 +215,7 @@ export function createBarOptions({
           scaleLabel: {
             display: !!configuration.xLabel,
             labelString: configuration.xLabel,
+            fontStyle: 'bold',
           },
           ticks: {
             fontColor: getColorFor('label', isDark),
@@ -193,6 +246,7 @@ export function createBarOptions({
 
 function createPieOptions(isDark) {
   return {
+    emptyBackgroundColor: getColorFor('emptyPie', isDark),
     legend: {
       display: true,
       labels: {fontColor: getColorFor('label', isDark)},
@@ -200,7 +254,25 @@ function createPieOptions(isDark) {
   };
 }
 
-export function createDatasetOptions(type, data, targetValue, datasetColor, isStriped, isDark) {
+export function createDatasetOptions({
+  type,
+  data,
+  targetValue,
+  datasetColor,
+  isStriped,
+  isDark,
+  measureCount = 1,
+  datasetIdx = 0,
+}) {
+  let color = datasetColor;
+  let legendColor = datasetColor;
+  if (measureCount > 1) {
+    legendColor = color = ColorPicker.getGeneratedColors(measureCount)[datasetIdx];
+  } else if (['bar', 'number'].includes(type) && targetValue) {
+    color = determineBarColor(targetValue, data, datasetColor, isStriped, isDark);
+    legendColor = datasetColor;
+  }
+
   switch (type) {
     case 'pie':
       return {
@@ -210,20 +282,18 @@ export function createDatasetOptions(type, data, targetValue, datasetColor, isSt
       };
     case 'line':
       return {
-        borderColor: datasetColor,
-        backgroundColor: 'transparent',
+        borderColor: color,
+        backgroundColor: color,
+        fill: false,
         borderWidth: 2,
-        legendColor: datasetColor,
+        legendColor: color,
       };
     case 'bar':
     case 'number':
-      const barColor = targetValue
-        ? determineBarColor(targetValue, data, datasetColor, isStriped, isDark)
-        : datasetColor;
       return {
-        borderColor: barColor,
-        backgroundColor: barColor,
-        legendColor: datasetColor,
+        borderColor: color,
+        backgroundColor: color,
+        legendColor,
         borderWidth: 1,
       };
     default:

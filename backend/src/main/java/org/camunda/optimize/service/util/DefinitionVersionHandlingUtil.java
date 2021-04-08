@@ -12,6 +12,7 @@ import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -43,27 +44,32 @@ public class DefinitionVersionHandlingUtil {
     }
   }
 
-  private static String getLastEntryInList(@NonNull List<String> processDefinitionVersions) {
+  private static String getLastEntryInList(@NonNull final List<String> processDefinitionVersions) {
     return processDefinitionVersions.get(processDefinitionVersions.size() - 1);
   }
 
-  public static boolean isDefinitionVersionSetToAll(List<String> definitionVersions) {
+  public static boolean isDefinitionVersionSetToAll(final List<String> definitionVersions) {
     Optional<String> allVersionSelected = definitionVersions.stream()
       .filter(ReportConstants.ALL_VERSIONS::equalsIgnoreCase)
       .findFirst();
     return allVersionSelected.isPresent();
   }
 
-  public static boolean isDefinitionVersionSetToLatest(List<String> definitionVersions) {
+  public static boolean isDefinitionVersionSetToLatest(final List<String> definitionVersions) {
     Optional<String> allVersionSelected = definitionVersions.stream()
       .filter(ReportConstants.LATEST_VERSION::equalsIgnoreCase)
       .findFirst();
     return allVersionSelected.isPresent();
   }
 
-  public static boolean isDefinitionVersionSetToAllOrLatest(List<String> definitionVersions) {
+  public static boolean isDefinitionVersionSetToAllOrLatest(final String definitionVersion) {
+    return isDefinitionVersionSetToAllOrLatest(Collections.singletonList(definitionVersion));
+  }
+
+  public static boolean isDefinitionVersionSetToAllOrLatest(final List<String> definitionVersions) {
     return definitionVersions.stream()
-      .anyMatch(v -> v.equalsIgnoreCase(ReportConstants.ALL_VERSIONS) || v.equalsIgnoreCase(ReportConstants.LATEST_VERSION));
+      .anyMatch(v -> ReportConstants.ALL_VERSIONS.equalsIgnoreCase(v)
+        || ReportConstants.LATEST_VERSION.equalsIgnoreCase(v));
   }
 
 }

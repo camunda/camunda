@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +25,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 
 @Component
 @Slf4j
-public class RunningUserTaskInstanceWriter extends AbstractUserTaskWriter<UserTaskInstanceDto> {
+public class RunningUserTaskInstanceWriter extends AbstractUserTaskWriter {
   private static final ImmutableSet<String> FIELDS_TO_UPDATE = ImmutableSet.of(
     USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_INSTANCE_ID,
     USER_TASK_START_DATE, USER_TASK_DUE_DATE
@@ -34,13 +35,11 @@ public class RunningUserTaskInstanceWriter extends AbstractUserTaskWriter<UserTa
     .map(fieldKey -> String.format("existingTask.%s = newUserTask.%s;%n", fieldKey, fieldKey))
     .collect(Collectors.joining());
 
-  private final OptimizeElasticsearchClient esClient;
-
   @Autowired
   public RunningUserTaskInstanceWriter(final OptimizeElasticsearchClient esClient,
+                                       final ElasticSearchSchemaManager elasticSearchSchemaManager,
                                        final ObjectMapper objectMapper) {
-    super(objectMapper);
-    this.esClient = esClient;
+    super(esClient, elasticSearchSchemaManager, objectMapper);
   }
 
   public List<ImportRequestDto> generateUserTaskImports(final List<UserTaskInstanceDto> userTaskInstances) {

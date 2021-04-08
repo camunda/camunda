@@ -23,7 +23,7 @@ export const collectionItem = Selector('.ListItem').filter(
 export const edit = (element) => element.find('.DropdownOption').withText('Edit');
 export const copy = (element) => element.find('.DropdownOption').withText('Copy');
 export const del = (element) => element.find('.DropdownOption').withText('Delete');
-export const setupNotice = Selector('.SetupNotice');
+export const noDataNotice = Selector('.NoDataNotice');
 export const reportControlPanel = Selector('.ReportControlPanel');
 export const editButton = Selector('.edit-button');
 export const addButton = Selector('.AddButton');

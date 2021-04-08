@@ -20,6 +20,7 @@ import org.elasticsearch.search.aggregations.metrics.ScriptedMetric;
 import org.elasticsearch.search.aggregations.metrics.ScriptedMetricAggregationBuilder;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.NO_DATA_AVAILABLE_RESULT;
@@ -34,9 +35,13 @@ public class ProcessPartQueryUtil {
   private static final String SCRIPT_AGGREGATION = "scriptAggregation";
   private static final String NESTED_AGGREGATION = "nestedAggregation";
 
-  public static Double processProcessPartAggregationOperations(Aggregations aggs) {
+  public static Aggregations getProcessPartAggregations(final Aggregations aggs) {
+    return ((Nested) aggs.get(NESTED_AGGREGATION)).getAggregations();
+  }
+
+  public static Double getProcessPartAggregationResult(final Aggregations aggs, final AggregationType aggregationType) {
     Nested nested = aggs.get(NESTED_AGGREGATION);
-    ScriptedMetric scriptedMetric = nested.getAggregations().get(SCRIPT_AGGREGATION);
+    ScriptedMetric scriptedMetric = nested.getAggregations().get(getScriptAggregationName(aggregationType));
 
     if (scriptedMetric.aggregation() instanceof Number) {
       final Number scriptedResult = (Number) scriptedMetric.aggregation();
@@ -45,42 +50,48 @@ public class ProcessPartQueryUtil {
     return NO_DATA_AVAILABLE_RESULT;
   }
 
-  public static BoolQueryBuilder addProcessPartQuery(BoolQueryBuilder boolQueryBuilder,
-                                                     String startFlowNodeId,
-                                                     String endFlowNodeId) {
+  public static BoolQueryBuilder addProcessPartQuery(final BoolQueryBuilder boolQueryBuilder,
+                                                     final String startFlowNodeId,
+                                                     final String endFlowNodeId) {
     String termPath = ProcessInstanceIndex.EVENTS + "." + ProcessInstanceIndex.ACTIVITY_ID;
     boolQueryBuilder.must(nestedQuery(
       ProcessInstanceIndex.EVENTS,
       termQuery(termPath, startFlowNodeId),
       ScoreMode.None
-                          )
-    );
+    ));
     boolQueryBuilder.must(nestedQuery(
       ProcessInstanceIndex.EVENTS,
       termQuery(termPath, endFlowNodeId),
       ScoreMode.None
-                          )
-    );
+    ));
     return boolQueryBuilder;
   }
 
-  public static AggregationBuilder createProcessPartAggregation(String startFlowNodeId, String endFlowNodeId,
-                                                                final AggregationType aggregationType) {
-    Map<String, Object> params = new HashMap<>();
-    params.put("startFlowNodeId", startFlowNodeId);
-    params.put("endFlowNodeId", endFlowNodeId);
-    params.put("aggregationType", aggregationType.getId());
+  public static AggregationBuilder createProcessPartAggregation(final String startFlowNodeId,
+                                                                final String endFlowNodeId,
+                                                                final List<AggregationType> aggregationTypes) {
+    final NestedAggregationBuilder nestedFlowNodeAggregation = nested(NESTED_AGGREGATION, ProcessInstanceIndex.EVENTS);
+    aggregationTypes.forEach(aggregationType -> {
+      final Map<String, Object> params = new HashMap<>();
+      params.put("startFlowNodeId", startFlowNodeId);
+      params.put("endFlowNodeId", endFlowNodeId);
+      params.put("aggregationType", aggregationType.getId());
 
-    ScriptedMetricAggregationBuilder findStartAndEndDatesForEvents = scriptedMetric(SCRIPT_AGGREGATION)
-      .initScript(createInitScript())
-      .mapScript(createMapScript())
-      .combineScript(createCombineScript())
-      .reduceScript(getReduceScript())
-      .params(params);
-    NestedAggregationBuilder searchThroughTheEvents =
-      nested(NESTED_AGGREGATION, ProcessInstanceIndex.EVENTS);
-    return searchThroughTheEvents
-      .subAggregation(findStartAndEndDatesForEvents);
+      final ScriptedMetricAggregationBuilder findStartAndEndDatesForEvents =
+        scriptedMetric(getScriptAggregationName(aggregationType))
+          .initScript(createInitScript())
+          .mapScript(createMapScript())
+          .combineScript(createCombineScript())
+          .reduceScript(getReduceScript())
+          .params(params);
+      nestedFlowNodeAggregation.subAggregation(findStartAndEndDatesForEvents);
+    });
+
+    return nestedFlowNodeAggregation;
+  }
+
+  private static String getScriptAggregationName(final AggregationType aggregationType) {
+    return String.join("_", SCRIPT_AGGREGATION, aggregationType.getId());
   }
 
   private static Script createInitScript() {

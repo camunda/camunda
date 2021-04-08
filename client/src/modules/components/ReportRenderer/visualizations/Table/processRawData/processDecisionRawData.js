@@ -9,13 +9,18 @@ import {parseISO} from 'date-fns';
 import {format} from 'dates';
 import {t} from 'translation';
 
-import {
-  sortColumns,
-  cockpitLink,
-  getNoDataMessage,
-  isVisibleColumn,
-  getLabelWithType,
-} from './service';
+import {sortColumns} from '../service';
+import {cockpitLink, getNoDataMessage, isVisibleColumn, getLabelWithType} from './service';
+
+const instanceColumns = [
+  'decisionDefinitionKey',
+  'decisionDefinitionId',
+  'decisionInstanceId',
+  'processInstanceId',
+  'evaluationDateTime',
+  'engineName',
+  'tenantId',
+];
 
 export default function processDecisionRawData(
   {
@@ -28,21 +33,12 @@ export default function processDecisionRawData(
   },
   endpoints = {}
 ) {
-  if (result.length === 0) {
-    return {head: [], body: []};
-  }
+  const instanceProps = instanceColumns.filter((entry) => isVisibleColumn(entry, tableColumns));
 
-  const instanceProps = Object.keys(result[0]).filter(
-    (entry) =>
-      entry !== 'inputVariables' &&
-      entry !== 'outputVariables' &&
-      isVisibleColumn(entry, tableColumns)
-  );
-
-  const inputVariables = Object.keys(result[0].inputVariables).filter((entry) =>
+  const inputVariables = Object.keys(result[0]?.inputVariables || []).filter((entry) =>
     isVisibleColumn('input:' + entry, tableColumns)
   );
-  const outputVariables = Object.keys(result[0].outputVariables).filter((entry) =>
+  const outputVariables = Object.keys(result[0]?.outputVariables || []).filter((entry) =>
     isVisibleColumn('output:' + entry, tableColumns)
   );
 

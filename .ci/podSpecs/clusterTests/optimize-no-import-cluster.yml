@@ -1,8 +1,11 @@
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: cluster-optimize-no-import-camunda-cloud
   namespace: ${NAMESPACE}
+  labels:
+    team: optimize
 spec:
   selector:
     matchLabels:

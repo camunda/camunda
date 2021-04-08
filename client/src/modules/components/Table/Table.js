@@ -9,7 +9,7 @@ import classnames from 'classnames';
 import {useTable, useSortBy, usePagination, useResizeColumns, useFlexLayout} from 'react-table';
 
 import {t} from 'translation';
-import {Select, Icon, Button, LoadingIndicator, Tooltip} from 'components';
+import {Select, Icon, Button, LoadingIndicator, Tooltip, NoDataNotice} from 'components';
 
 import {flatten} from './service';
 
@@ -25,7 +25,7 @@ export default function Table({
   sorting,
   disablePagination,
   noHighlight,
-  noData = t('common.noData'),
+  noData = <NoDataNotice type="info" />,
   onScroll,
   fetchData = () => {},
   defaultPageSize = 20,
@@ -166,6 +166,7 @@ export default function Table({
                 <th
                   className={classnames('tableHeader', {placeholder: column.placeholderOf})}
                   {...column.getHeaderProps()}
+                  data-group={column.group}
                 >
                   <div className="cellContent" {...getSortingProps(column)} title={undefined}>
                     <Tooltip content={column.title} overflowOnly>
@@ -273,8 +274,8 @@ function formatSorting(sorting, resultType, columns) {
   return [{id, desc: order === 'desc'}];
 }
 
-Table.formatColumns = (head, ctx = '', columnWidths = {}) => {
-  return head.map((elem) => {
+Table.formatColumns = (head, ctx = '', columnWidths = {}, group) => {
+  return head.map((elem, idx) => {
     if (!elem.columns) {
       const id = convertHeaderNameToAccessor(ctx + (elem.id || elem));
       return {
@@ -285,11 +286,14 @@ Table.formatColumns = (head, ctx = '', columnWidths = {}) => {
         minWidth: elem.width || 100,
         disableSortBy: elem.sortable === false,
         width: columnWidths[id] || elem.width || 180,
+        group,
       };
     }
+
     return {
+      id: elem.id || elem.label,
       Header: elem.label,
-      columns: Table.formatColumns(elem.columns, ctx + (elem.id || elem.label), columnWidths),
+      columns: Table.formatColumns(elem.columns, ctx + (elem.id || elem.label), columnWidths, idx),
     };
   });
 };

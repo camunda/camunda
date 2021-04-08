@@ -7,6 +7,7 @@ metadata:
     app: "@BRANCH@-optimize-camunda-cloud"
     branch: "@BRANCH@"
     changed: "@CHANGED@"
+    team: optimize
 spec:
   replicas: 1
   revisionHistoryLimit: 0
@@ -153,7 +154,7 @@ spec:
             memory: "256Mi"
 ################################################################################
       - name: elasticsearch
-        image: "docker.elastic.co/elasticsearch/elasticsearch-oss:@ES_VERSION@"
+        image: "docker.elastic.co/elasticsearch/elasticsearch:@ES_VERSION@"
         env:
         - name: ES_JAVA_OPTS
           value: "-Xms512m -Xmx512m"

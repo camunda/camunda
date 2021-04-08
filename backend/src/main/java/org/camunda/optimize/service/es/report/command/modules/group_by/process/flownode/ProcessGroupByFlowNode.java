@@ -19,6 +19,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -47,15 +48,11 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    return Collections.singletonList(
-      createFilteredFlowNodeAggregation(
-        context,
-        terms(NESTED_EVENTS_AGGREGATION)
-          .size(configurationService.getEsAggregationBucketLimit())
-          .field(EVENTS + "." + ACTIVITY_ID)
-          .subAggregation(distributedByPart.createAggregation(context))
-      )
-    );
+    final TermsAggregationBuilder flowNodeTermsAggregation = terms(NESTED_EVENTS_AGGREGATION)
+      .size(configurationService.getEsAggregationBucketLimit())
+      .field(EVENTS + "." + ACTIVITY_ID);
+    distributedByPart.createAggregations(context).forEach(flowNodeTermsAggregation::subAggregation);
+    return Collections.singletonList(createFilteredFlowNodeAggregation(context, flowNodeTermsAggregation));
   }
 
   @Override
@@ -83,7 +80,8 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
       });
   }
 
-  private void addMissingGroupByKeys(final Map<String, String> flowNodeNames, final List<GroupByResult> groupedData,
+  private void addMissingGroupByKeys(final Map<String, String> flowNodeNames,
+                                     final List<GroupByResult> groupedData,
                                      final ExecutionContext<ProcessReportDataDto> context) {
     final boolean viewLevelFilterExists = context.getReportData()
       .getFilter()
@@ -94,11 +92,9 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
     if (!viewLevelFilterExists) {
       // If no view level filter exists, we enrich data with flow nodes that haven't been executed, but should still
       // show up in the result
-      flowNodeNames.keySet().forEach(flowNodeKey -> {
-        GroupByResult emptyResult = GroupByResult.createResultWithEmptyDistributedBy(flowNodeKey);
-        emptyResult.setLabel(flowNodeNames.get(flowNodeKey));
-        groupedData.add(emptyResult);
-      });
+      flowNodeNames.forEach((key, value) -> groupedData.add(
+        GroupByResult.createGroupByResult(key, value, distributedByPart.createEmptyResult(context))
+      ));
     }
   }
 

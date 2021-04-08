@@ -4,10 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {parseISO} from 'date-fns';
+
 import {drawHorizentalLine} from './service';
 import zoomIn from './zoomIn';
 import showAllTooltips from './showAllTooltips';
-import {parseISO} from 'date-fns';
+import drawPieEmptyState from './drawPieEmptyState';
 
 export default function createPlugins({updateReport, report: {combined, data, result}}) {
   const plugins = [
@@ -15,6 +17,7 @@ export default function createPlugins({updateReport, report: {combined, data, re
       afterDatasetsDraw: drawHorizentalLine,
     },
     showAllTooltips,
+    drawPieEmptyState,
   ];
 
   if (

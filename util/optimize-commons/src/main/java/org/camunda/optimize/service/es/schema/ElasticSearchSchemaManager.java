@@ -20,7 +20,6 @@ import org.camunda.optimize.service.es.schema.index.LicenseIndex;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.schema.index.OnboardingStateIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ReportShareIndex;
 import org.camunda.optimize.service.es.schema.index.SettingsIndex;
 import org.camunda.optimize.service.es.schema.index.TenantIndex;
@@ -166,10 +165,16 @@ public class ElasticSearchSchemaManager {
 
   public void createIndexIfMissing(final OptimizeElasticsearchClient esClient,
                                    final IndexMappingCreator indexMapping) {
+    createIndexIfMissing(esClient, indexMapping, Collections.emptySet());
+  }
+
+  public void createIndexIfMissing(final OptimizeElasticsearchClient esClient,
+                                   final IndexMappingCreator indexMapping,
+                                   final Set<String> additionalReadOnlyAliases) {
     try {
       final boolean indexAlreadyExists = indexExists(esClient, indexMapping);
       if (!indexAlreadyExists) {
-        createOrUpdateOptimizeIndex(esClient, indexMapping);
+        createOrUpdateOptimizeIndex(esClient, indexMapping, additionalReadOnlyAliases);
       }
     } catch (final Exception e) {
       log.error("Failed ensuring index is present: {}", indexMapping.getIndexName(), e);
@@ -432,7 +437,6 @@ public class ElasticSearchSchemaManager {
       new MetadataIndex(),
       new OnboardingStateIndex(),
       new ProcessDefinitionIndex(),
-      new ProcessInstanceIndex(),
       new ReportShareIndex(),
       new SettingsIndex(),
       new TenantIndex(),

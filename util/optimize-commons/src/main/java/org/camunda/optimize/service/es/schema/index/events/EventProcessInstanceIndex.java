@@ -28,7 +28,7 @@ public class EventProcessInstanceIndex extends ProcessInstanceIndex {
   private static final String ACTIVITY_UPDATE_DATE = FlowNodeInstanceUpdateDto.Fields.date;
 
   public EventProcessInstanceIndex(final String eventProcessId) {
-    super(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + eventProcessId.toLowerCase());
+    super(eventProcessId);
   }
 
   @Override
@@ -47,6 +47,11 @@ public class EventProcessInstanceIndex extends ProcessInstanceIndex {
       .endObject();
     return newBuilder;
     // @formatter:on
+  }
+
+  @Override
+  protected String getIndexPrefix(){
+    return EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
   }
 
   private XContentBuilder addPendingEventUpdateObjectFields(final XContentBuilder builder) throws IOException {

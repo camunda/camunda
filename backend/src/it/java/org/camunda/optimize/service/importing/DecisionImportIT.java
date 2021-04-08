@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.DecisionDefinitionFetcher;
@@ -25,6 +24,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -61,7 +61,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWithDate;
@@ -87,13 +87,18 @@ public class DecisionImportIT extends AbstractImportIT {
   protected final LogCapturer definitionFetcherLogCapturer =
     LogCapturer.create().captureForType(DecisionDefinitionFetcher.class);
 
+  @BeforeEach
+  public void cleanUpExistingDecisionInstanceIndices() {
+    elasticSearchIntegrationTestExtension.deleteAllProcessInstanceIndices();
+    elasticSearchIntegrationTestExtension.deleteAllDecisionInstanceIndices();
+  }
+
   @Test
   public void importOfDecisionDataCanBeDisabled() {
     // given
     embeddedOptimizeExtension.getConfigurationService().setImportDmnDataEnabled(false);
     embeddedOptimizeExtension.reloadConfiguration();
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
-      engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
     BpmnModelInstance exampleProcess = getSimpleBpmnDiagram();
     engineIntegrationExtension.deployAndStartProcess(exampleProcess);
 
@@ -102,8 +107,8 @@ public class DecisionImportIT extends AbstractImportIT {
 
     // then
     assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
-    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances()).isEmpty();
-    assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 1L);
+    assertThat(elasticSearchIntegrationTestExtension.indexExists(DECISION_INSTANCE_MULTI_ALIAS)).isFalse();
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_MULTI_ALIAS, 1L);
     assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 1L);
   }
 
@@ -142,7 +147,7 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances()).isEmpty();
+    assertThat(elasticSearchIntegrationTestExtension.indexExists(DECISION_INSTANCE_MULTI_ALIAS)).isFalse();
 
     // given failed ES update requests to store new instance
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
@@ -755,7 +760,10 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertAllEntriesInElasticsearchHaveAllDataWithCount(getDecisionInstanceIndexAliasName(decisionDefinitionDto.getKey()), 2L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(
+      getDecisionInstanceIndexAliasName(decisionDefinitionDto.getKey()),
+      2L
+    );
   }
 
   @Test
@@ -803,8 +811,14 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then
-    assertAllEntriesInElasticsearchHaveAllDataWithCount(getDecisionInstanceIndexAliasName(decisionDefinition1.getKey()), 1L);
-    assertAllEntriesInElasticsearchHaveAllDataWithCount(getDecisionInstanceIndexAliasName(decisionDefinition2.getKey()), 1L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(
+      getDecisionInstanceIndexAliasName(decisionDefinition1.getKey()),
+      1L
+    );
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(
+      getDecisionInstanceIndexAliasName(decisionDefinition2.getKey()),
+      1L
+    );
     embeddedOptimizeExtension.getConfigurationService().setEngineImportDecisionInstanceMaxPageSize(originalMaxPageSize);
   }
 
@@ -840,7 +854,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     // then no definition or instances are saved
     assertThat(definitionClient.getAllDecisionDefinitions()).isEmpty();
-    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionInstances()).isEmpty();
+    assertThat(elasticSearchIntegrationTestExtension.indexExists(DECISION_INSTANCE_MULTI_ALIAS)).isFalse();
     importServiceLogCapturer.assertContains(String.format(
       "Cannot retrieve definition for definition with ID %s.", decisionDefinitionEngineDto.getId()));
   }
@@ -1048,11 +1062,6 @@ public class DecisionImportIT extends AbstractImportIT {
       expectedDto.getId(),
       expectedDto
     );
-  }
-
-  private boolean indicesExist(final List<IndexMappingCreator> mappings) {
-    return embeddedOptimizeExtension.getElasticSearchSchemaManager()
-      .indicesExist(embeddedOptimizeExtension.getOptimizeElasticClient(), mappings);
   }
 
 }

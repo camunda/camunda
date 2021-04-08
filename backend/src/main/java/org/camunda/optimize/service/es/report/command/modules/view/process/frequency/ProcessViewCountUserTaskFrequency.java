@@ -24,4 +24,5 @@ public class ProcessViewCountUserTaskFrequency extends ProcessViewFrequency {
     view.setProperties(ViewProperty.FREQUENCY);
     dataForCommandKey.setView(view);
   }
+
 }

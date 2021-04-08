@@ -333,7 +333,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   private void changeUserClaimStartTimestamp(final Number durationInMs,
                                              final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
     try {
-      engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
+      engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
         historicUserTaskInstanceDto.getId(),
         historicUserTaskInstanceDto.getStartTime().plus(durationInMs.longValue(), ChronoUnit.MILLIS)
       );
@@ -380,7 +380,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
                                            final Number durationInMs) {
     try {
       if (userTaskInstance.getEndTime() != null) {
-        engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
+        engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
           userTaskInstance.getId(),
           userTaskInstance.getEndTime().minus(durationInMs.longValue(), ChronoUnit.MILLIS)
         );
@@ -414,7 +414,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       .forEach(
         historicUserTaskInstanceDto -> {
           try {
-            engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
+            engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
               historicUserTaskInstanceDto.getId(), now.minus(offsetDurationInMs.longValue(), ChronoUnit.MILLIS)
             );
           } catch (SQLException e) {

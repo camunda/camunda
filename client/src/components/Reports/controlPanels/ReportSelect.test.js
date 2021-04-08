@@ -31,12 +31,12 @@ jest.mock('services', () => {
                 {
                   key: 'pi_count',
                   group: 'pi_count',
-                  data: {property: 'frequency', entity: 'processInstance'},
+                  data: {properties: ['frequency'], entity: 'processInstance'},
                 },
                 {
                   key: 'pi_duration',
                   group: 'pi_duration',
-                  data: {property: 'duration', entity: 'processInstance'},
+                  data: {properties: ['duration'], entity: 'processInstance'},
                 },
               ],
             },
@@ -146,7 +146,7 @@ it('provide the correct payload for variable reports', async () => {
 
 it('should not show suboptions for view measures', () => {
   const node = shallow(
-    <ReportSelect {...config} value={{property: 'frequency', entity: 'processInstance'}} />
+    <ReportSelect {...config} value={{properties: ['frequency'], entity: 'processInstance'}} />
   );
 
   expect(

@@ -1,6 +1,6 @@
 # Camunda Optimize
 
-Camunda Optimize is an extension to Camunda BPM for enterprise customers,
+Camunda Optimize is an extension to Camunda Platform for enterprise customers,
 that provides continuous monitoring and insights about your deployed
 business processes.
 
@@ -48,7 +48,7 @@ If you need a postgres backend, you can use a different docker-compose
 file. In this case the command is: ``` docker-compose -f
 docker-compose.postgresql.yml up -d ```
 
-This will start Elasticsearch and a PostgreSQL-backed Camunda BPM instance.
+This will start Elasticsearch and a PostgreSQL-backed Camunda Platform instance.
 The services are exposed to localhost on the following ports:
 - Elasticsearch: 9200, 9300
 - PostgreSQL: 5432
@@ -73,9 +73,9 @@ docker login registry.camunda.cloud
 
 You can use your LDAP credentials to continue the authentication.
 
-# Supporting multiple versions of Cambpm
+# Supporting multiple versions of Camunda Platform
 
-Optimize supports multiple versions of CamBpm. It is possible to use these
+Optimize supports multiple versions of Camunda Platform. It is possible to use these
 versions by specifying different maven profiles. In particular you can
 have a look at the root pom.xml files. It contains a profile for every
 version that Optimize supports (e.s. engine-latest, engine-7.11).
@@ -89,10 +89,10 @@ tests is the following:
 mvn -Pit,engine-latest -pl backend -am clean install
 ```
 
-You can replace the profile `engine-latest` with the version of Cambpm you
+You can replace the profile `engine-latest` with the version of Camunda Platform you
 want to test against.
 
-## Modifying CamBpm version being tested
+## Modifying Camunda Platform version being tested
 
 Whenever there is a new release of the platform, we need to update the
 `pom.xml` file, in order to test against the latest codebase.

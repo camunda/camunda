@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.BUSINESS_KEY_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -49,6 +49,7 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
   public static void setUp() {
     embeddedOptimizeExtension.setupOptimize();
     // given
+    // Note that when these tests run on jenkins, data is usually imported already during the "import" stage of the job
     importEngineData();
   }
 
@@ -156,7 +157,7 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
 
   private Integer countFinishedProcessInstancedById(final Set<Object> processInstanceIds) {
     return elasticSearchIntegrationTestExtension.getDocumentCountOf(
-      PROCESS_INSTANCE_INDEX_NAME,
+      PROCESS_INSTANCE_MULTI_ALIAS,
       boolQuery()
         .filter(termsQuery(ProcessInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds))
         .filter(existsQuery(ProcessInstanceIndex.END_DATE))
@@ -164,12 +165,12 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
   }
 
   private Integer getCamundaProcessInstanceCount() {
-    return elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME);
+    return elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS);
   }
 
   private Integer getFinishedProcessInstanceCount() {
     return elasticSearchIntegrationTestExtension.getDocumentCountOf(
-      PROCESS_INSTANCE_INDEX_NAME, boolQuery().must(existsQuery(ProcessInstanceIndex.END_DATE))
+      PROCESS_INSTANCE_MULTI_ALIAS, boolQuery().must(existsQuery(ProcessInstanceIndex.END_DATE))
     );
   }
 

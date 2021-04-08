@@ -28,6 +28,8 @@ public class UserTaskInstanceDto implements OptimizeDto {
   @JsonIgnore
   private String processInstanceId;
   @JsonIgnore
+  private String processDefinitionKey;
+  @JsonIgnore
   private String engine;
 
   private String activityId;
@@ -36,7 +38,6 @@ public class UserTaskInstanceDto implements OptimizeDto {
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
   private OffsetDateTime dueDate;
-  private OffsetDateTime claimDate;
 
   private String deleteReason;
   private Boolean canceled;
@@ -50,12 +51,13 @@ public class UserTaskInstanceDto implements OptimizeDto {
   private Long idleDurationInMs;
   private Long workDurationInMs;
 
-  public UserTaskInstanceDto(final String id, final String processInstanceId, final String engine,
-                             final String assignee, final List<String> candidateGroups,
+  public UserTaskInstanceDto(final String id, final String processInstanceId, final String processDefinitionKey,
+                             final String engine, final String assignee, final List<String> candidateGroups,
                              final List<AssigneeOperationDto> assigneeOperations,
                              final List<CandidateGroupOperationDto> candidateGroupOperations) {
     this.id = id;
     this.processInstanceId = processInstanceId;
+    this.processDefinitionKey = processDefinitionKey;
     this.engine = engine;
     this.assignee = assignee;
     this.candidateGroups = candidateGroups;
@@ -63,12 +65,13 @@ public class UserTaskInstanceDto implements OptimizeDto {
     this.candidateGroupOperations = candidateGroupOperations;
   }
 
-  public UserTaskInstanceDto(final String id, final String processInstanceId, final String engine,
-                             final String activityId, final String activityInstanceId, final OffsetDateTime startDate,
-                             final OffsetDateTime endDate, final OffsetDateTime dueDate, final String deleteReason,
-                             final Long totalDurationInMs) {
+  public UserTaskInstanceDto(final String id, final String processInstanceId, final String processDefinitionKey,
+                             final String engine, final String activityId, final String activityInstanceId,
+                             final OffsetDateTime startDate, final OffsetDateTime endDate, final OffsetDateTime dueDate,
+                             final String deleteReason, final Long totalDurationInMs) {
     this.id = id;
     this.processInstanceId = processInstanceId;
+    this.processDefinitionKey = processDefinitionKey;
     this.engine = engine;
     this.activityId = activityId;
     this.activityInstanceId = activityInstanceId;

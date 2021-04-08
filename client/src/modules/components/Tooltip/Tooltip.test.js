@@ -4,12 +4,27 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runLastEffect, useRef} from 'react';
 import {shallow} from 'enzyme';
 
 import Tooltip from './Tooltip';
 
 jest.useFakeTimers();
+
+jest.mock('react', () => {
+  const outstandingEffects = [];
+  const mUseRef = jest.fn().mockReturnValue({current: {}});
+  return {
+    ...jest.requireActual('react'),
+    useEffect: (fn) => outstandingEffects.push(fn),
+    runLastEffect: () => {
+      if (outstandingEffects.length) {
+        outstandingEffects.pop()();
+      }
+    },
+    useRef: mUseRef,
+  };
+});
 
 const element = {
   getBoundingClientRect: () => ({
@@ -131,4 +146,31 @@ it('should call onMouseEnter and onMouseLeave functions if specified', () => {
 
   node.find('p').simulate('mouseLeave', evt);
   expect(leave).toHaveBeenCalledWith(evt);
+});
+
+it('should switch alignment and position if no space at the edges of the screen', () => {
+  jest.spyOn(document.body, 'clientHeight', 'get').mockReturnValueOnce(100);
+  jest.spyOn(document.body, 'clientWidth', 'get').mockReturnValueOnce(100);
+
+  const tooltip = {getBoundingClientRect: () => ({width: 50, height: 50})};
+  const hoverElement = {
+    getBoundingClientRect: () => ({x: 10, y: 10, width: 10, top: 10, bottom: 20}),
+  };
+
+  useRef.mockReturnValueOnce({current: hoverElement});
+  useRef.mockReturnValueOnce({current: tooltip});
+
+  const node = shallow(
+    <Tooltip content="tooltip content" position="top" align="right">
+      <p>child content</p>
+    </Tooltip>
+  );
+
+  runLastEffect();
+  node.find('p').simulate('mouseEnter', {currentTarget: element});
+  jest.runAllTimers();
+
+  expect(node.find('.Tooltip').prop('style').left).toBe('10px');
+  expect(node.find('.Tooltip')).toHaveClassName('bottom');
+  expect(node.find('.Tooltip')).toHaveClassName('left');
 });

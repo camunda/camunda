@@ -26,7 +26,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 public class CustomIndexPrefixIT extends AbstractIT {
   private static final String CUSTOM_PREFIX = UUID.randomUUID().toString().substring(0, 5);
@@ -69,7 +69,7 @@ public class CustomIndexPrefixIT extends AbstractIT {
 
     // then
     final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
-    assertThat(mappings).hasSize(25);
+    assertThat(mappings).hasSize(24);
     for (IndexMappingCreator mapping : mappings) {
       final String expectedAliasName = getOptimizeIndexAliasForIndexNameAndPrefix(
         mapping.getIndexName(),
@@ -94,7 +94,6 @@ public class CustomIndexPrefixIT extends AbstractIT {
   public void optimizeIndexDataIsIsolated() {
     // given
     deploySimpleProcess();
-
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -111,9 +110,10 @@ public class CustomIndexPrefixIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
     customPrefixElasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME)).isEqualTo(1);
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS)).isEqualTo(1);
     assertThat(
-      customPrefixElasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME)
+      customPrefixElasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS)
     ).isEqualTo(2);
   }
 

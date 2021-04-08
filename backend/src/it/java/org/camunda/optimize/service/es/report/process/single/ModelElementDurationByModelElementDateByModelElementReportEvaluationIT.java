@@ -76,6 +76,10 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
     assertThat(resultData).isEmpty();
   }
 
+  protected AggregationType[] getSupportedAggregationTypes() {
+    return AggregationType.getAggregationTypesAsListWithoutSum().toArray(new AggregationType[0]);
+  }
+
   protected ProcessReportDataDto createReportData(final ProcessDefinitionEngineDto processDefinition,
                                                   final AggregateByDateUnit groupByDateUnit) {
     return createReportData(

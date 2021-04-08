@@ -55,6 +55,8 @@ public class MigrateDecisionReportConfigurationIT extends AbstractUpgrade33IT {
     final SearchHit[] reportsAfterUpgrade = getAllDocumentsOfIndex(DECISION_REPORT_INDEX.getIndexName());
     assertThat(reportsAfterUpgrade)
       .hasSameSizeAs(reportHitsBeforeUpgrade)
+      // one report contains no view
+      .filteredOn(report -> !report.getSourceAsMap().get(SingleDecisionReportIndex.ID).equals("no-view"))
       .allSatisfy(report -> {
         // AND do not have the deprecated property anymore
         final Map<String, Object> reportAsMap = report.getSourceAsMap();

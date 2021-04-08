@@ -1,5 +1,18 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`NoDataNotice should display a notice based on error type if evaluation fails while loading the report 1`] = `
+<ReportErrorNotice
+  error={
+    Object {
+      "data": Object {
+        "errorMessage": "test error",
+      },
+      "status": 400,
+    }
+  }
+/>
+`;
+
 exports[`SetupNotice should instruct to add a process definition key if not available 1`] = `
 <SetupNotice>
   <p
@@ -58,16 +71,6 @@ exports[`SetupNotice should instruct to add visualization option if not availabl
     }
   />
 </SetupNotice>
-`;
-
-exports[`SetupNotice should instruct to click the edit button in report view 1`] = `
-<SetupNotice
-  dangerouslySetInnerHTML={
-    Object {
-      "__html": "<p>Select the <b>Edit</b> button above.</p>",
-    }
-  }
-/>
 `;
 
 exports[`SetupNotice should instruct to select one or more reports if no reports are selected for combined reports 1`] = `

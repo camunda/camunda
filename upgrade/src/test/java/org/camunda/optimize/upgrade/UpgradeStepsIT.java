@@ -32,6 +32,7 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.GetMappingsResponse;
+import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.search.SearchHit;
@@ -46,7 +47,6 @@ import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class UpgradeStepsIT extends AbstractUpgradeIT {
@@ -209,7 +209,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   @SneakyThrows
   @Test
-  public void executeUpdateIndexFromTemplateStep_preexistingIndexHadWriteAndReadAlias() {
+  public void executeUpdateIndexFromTemplateStep_preexistingIndexWasNotFromTemplateAndHadWriteAndReadAlias() {
     // given
     final String aliasForIndex = indexNameService.getOptimizeIndexAliasForIndex(TEST_INDEX_V1.getIndexName());
     final String readOnlyAliasForIndex = indexNameService.getOptimizeIndexAliasForIndex("im-read-only");
@@ -289,6 +289,12 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     assertThat(aliasMap.keySet()).hasSize(2);
     assertThat(indicesWithWriteAlias).hasSize(1);
     assertThat(indicesWithWriteAlias.get(0)).contains(expectedSuffixAfterRollover);
+    // old template is gone
+    assertThat(
+      prefixAwareClient.getHighLevelClient().indices().existsTemplate(new IndexTemplatesExistRequest(
+        indexNameService.getOptimizeIndexTemplateNameWithVersion(TEST_INDEX_WITH_TEMPLATE_V1)
+      ), RequestOptions.DEFAULT)
+    ).isFalse();
   }
 
   @Test

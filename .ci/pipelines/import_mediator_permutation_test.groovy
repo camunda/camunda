@@ -13,7 +13,7 @@ def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) {
 }
 
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
-  return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}"
+  return "docker.elastic.co/elasticsearch/elasticsearch:${esVersion}"
 }
 
 static String mavenElasticsearchAgent(esVersion, cambpmVersion) {
@@ -99,8 +99,6 @@ spec:
       value: elasticsearch
     - name: discovery.type
       value: single-node
-    - name: action.auto_create_index
-      value: false
     - name: bootstrap.memory_lock
       value: true
     securityContext:

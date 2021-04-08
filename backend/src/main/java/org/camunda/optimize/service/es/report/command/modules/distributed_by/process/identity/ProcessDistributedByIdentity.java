@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskIdentityAggregationFilter;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
-import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createResultWithEmptyValue;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 
 @RequiredArgsConstructor
@@ -54,18 +53,20 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
 
   @Override
-  public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
-    final TermsAggregationBuilder getIdentities = AggregationBuilders
+  public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
+    final TermsAggregationBuilder identityTermsAggregation = AggregationBuilders
       .terms(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
       .order(BucketOrder.key(true))
       .field(USER_TASKS + "." + getIdentityField())
-      .missing(DISTRIBUTE_BY_IDENTITY_MISSING_KEY)
-      .subAggregation(viewPart.createAggregation(context));
-    return AggregationBuilders.filter(
-      FILTERED_USER_TASKS_AGGREGATION,
-      createUserTaskIdentityAggregationFilter(context.getReportData(), getUserTaskIds(context.getReportData()))
-    ).subAggregation(getIdentities);
+      .missing(DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
+    viewPart.createAggregations(context).forEach(identityTermsAggregation::subAggregation);
+    return Collections.singletonList(
+      AggregationBuilders.filter(
+        FILTERED_USER_TASKS_AGGREGATION,
+        createUserTaskIdentityAggregationFilter(context.getReportData(), getUserTaskIds(context.getReportData()))
+      ).subAggregation(identityTermsAggregation)
+    );
   }
 
   private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
@@ -126,7 +127,7 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
       .stream()
       .filter(entry -> distributedByIdentityResultList.stream()
         .noneMatch(distributedByResult -> distributedByResult.getKey().equals(entry.getKey())))
-      .map(entry -> createResultWithEmptyValue(entry.getKey(), entry.getValue()))
+      .map(entry -> createDistributedByResult(entry.getKey(), entry.getValue(), viewPart.createEmptyResult(context)))
       .forEach(distributedByIdentityResultList::add);
   }
 

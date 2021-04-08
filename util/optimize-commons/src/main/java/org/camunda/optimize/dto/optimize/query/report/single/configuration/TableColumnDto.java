@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -22,6 +23,7 @@ import static java.util.stream.Collectors.toList;
 @FieldNameConstants
 @Builder
 @Data
+@Slf4j
 public class TableColumnDto {
   public static final String VARIABLE_PREFIX = "variable:";
   public static final String INPUT_PREFIX = "input:";
@@ -85,7 +87,7 @@ public class TableColumnDto {
   }
 
   private void sortIncludedColumns() {
-    includedColumns.sort(Comparator.comparingInt(this::getNumbersInColumnName));
+    includedColumns.sort(Comparator.comparingDouble(this::getNumbersInColumnName));
     includedColumns.sort(getStringColumnComparator());
   }
 
@@ -118,11 +120,19 @@ public class TableColumnDto {
       .replaceAll("[0-9]", "");
   }
 
-  private int getNumbersInColumnName(String columnName) {
+  private double getNumbersInColumnName(String columnName) {
     String digitsInString = columnName.replaceAll("\\D+", "");
-    return digitsInString.isEmpty()
-      ? 0
-      : Integer.parseInt(digitsInString);
+    try {
+      return digitsInString.isEmpty()
+        ? 0
+        : Double.parseDouble(digitsInString);
+    } catch (NumberFormatException e) {
+      log.debug(
+        "Cannot parse numbers in variable column names to double, ignoring and sorting by string.",
+        e
+      );
+      return Double.MAX_VALUE;
+    }
   }
 
   private List<String> getAllVariablePrefixedColumns(List<String> columns) {

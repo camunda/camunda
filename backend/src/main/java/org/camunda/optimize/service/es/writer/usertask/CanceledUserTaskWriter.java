@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -19,14 +20,12 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-public class CanceledUserTaskWriter extends AbstractUserTaskWriter<UserTaskInstanceDto> {
-
-  private final OptimizeElasticsearchClient esClient;
+public class CanceledUserTaskWriter extends AbstractUserTaskWriter {
 
   public CanceledUserTaskWriter(final OptimizeElasticsearchClient esClient,
+                                final ElasticSearchSchemaManager elasticSearchSchemaManager,
                                 final ObjectMapper objectMapper) {
-    super(objectMapper);
-    this.esClient = esClient;
+    super(esClient, elasticSearchSchemaManager, objectMapper);
   }
 
   public List<ImportRequestDto> generateUserTaskImports(final List<FlowNodeEventDto> activityInstances) {
@@ -42,6 +41,7 @@ public class CanceledUserTaskWriter extends AbstractUserTaskWriter<UserTaskInsta
     final UserTaskInstanceDto userTaskInstanceDto = new UserTaskInstanceDto();
     userTaskInstanceDto.setId(activityInstance.getTaskId());
     userTaskInstanceDto.setProcessInstanceId(activityInstance.getProcessInstanceId());
+    userTaskInstanceDto.setProcessDefinitionKey(activityInstance.getProcessDefinitionKey());
     userTaskInstanceDto.setCanceled(activityInstance.getCanceled());
     userTaskInstanceDto.setStartDate(activityInstance.getStartDate());
     userTaskInstanceDto.setEndDate(activityInstance.getEndDate());

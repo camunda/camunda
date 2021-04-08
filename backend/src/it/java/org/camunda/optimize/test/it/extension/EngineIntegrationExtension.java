@@ -47,7 +47,7 @@ import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
  * Extension that performs clean up of engine on integration test startup and one more clean up after integration test.
  * Includes configuration of retrievable Engine MockServer
  * <p>
- * Relies on it-plugin being deployed on cambpm platform Tomcat.
+ * Relies on it-plugin being deployed on Camunda Platform Tomcat.
  */
 @Slf4j
 public class EngineIntegrationExtension implements BeforeEachCallback, AfterEachCallback {
@@ -177,6 +177,10 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
 
   public void claimAllRunningUserTasks(final String processInstanceId) {
     engineClient.claimAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
+  }
+
+  public void claimAllRunningUserTasksWithAssignee(final String assigneeId, final String processInstanceId) {
+    engineClient.claimAllRunningUserTasksWithAssignee(assigneeId, DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
   }
 
   public void claimAllRunningUserTasks(final String user, final String password, final String processInstanceId) {

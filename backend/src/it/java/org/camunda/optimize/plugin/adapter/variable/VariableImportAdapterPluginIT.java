@@ -18,9 +18,11 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.util.DateFormatterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.MediaType;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -147,11 +149,11 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     String personAsString = objectMapper.writeValueAsString(person);
 
     ComplexVariableDto complexVariableDto = new ComplexVariableDto();
-    complexVariableDto.setType("Object");
+    complexVariableDto.setType(EngineConstants.VARIABLE_TYPE_OBJECT);
     complexVariableDto.setValue(personAsString);
     ComplexVariableDto.ValueInfo info = new ComplexVariableDto.ValueInfo();
     info.setObjectTypeName("org.camunda.foo.Person");
-    info.setSerializationDataFormat("application/json");
+    info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
     complexVariableDto.setValueInfo(info);
     Map<String, Object> variables = new HashMap<>();
     variables.put("person", complexVariableDto);

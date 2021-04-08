@@ -10,6 +10,7 @@ metadata:
     app: "@BRANCH@-optimize-camunda-cloud"
     branch: "@BRANCH@"
     changed: "@CHANGED@"
+    team: optimize
 spec:
   replicas: 1
   revisionHistoryLimit: 0
@@ -128,7 +129,7 @@ spec:
           mountPath: /camunda/configure-and-run.sh
           subPath: configure-and-run.sh
       - name: elasticsearch
-        image: "docker.elastic.co/elasticsearch/elasticsearch-oss:@ES_VERSION@"
+        image: "docker.elastic.co/elasticsearch/elasticsearch:@ES_VERSION@"
         env:
         - name: ES_JAVA_OPTS
           value: "-Xms4g -Xmx4g"
@@ -136,8 +137,6 @@ spec:
           value: elasticsearch
         - name: discovery.type
           value: single-node
-        - name: action.auto_create_index
-          value: "false"
         - name: bootstrap.memory_lock
           value: "true"
         securityContext:

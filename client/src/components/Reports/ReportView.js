@@ -36,7 +36,15 @@ export default class ReportView extends React.Component {
     this.setState({sharingEnabled});
   }
 
-  shouldShowCSVDownload = () => typeof this.props.report.result !== 'undefined';
+  shouldShowCSVDownload = () => {
+    const {report} = this.props;
+
+    if (report.combined && typeof report.result !== 'undefined') {
+      return true;
+    }
+
+    return this.props.report.result?.measures.length === 1;
+  };
 
   constructCSVDownloadLink = () => {
     return `api/export/csv/${this.props.report.id}/${encodeURIComponent(
@@ -45,7 +53,7 @@ export default class ReportView extends React.Component {
   };
 
   render() {
-    const {report} = this.props;
+    const {report, error} = this.props;
     const {redirect, sharingEnabled, deleting} = this.state;
 
     const {id, name, currentUserRole} = report;
@@ -111,7 +119,7 @@ export default class ReportView extends React.Component {
         </div>
         <div className="Report__view">
           <div className="Report__content">
-            <ReportRenderer report={report} loadReport={this.props.loadReport} />
+            <ReportRenderer error={error} report={report} loadReport={this.props.loadReport} />
           </div>
         </div>
         <Deleter

@@ -31,6 +31,7 @@ import {ReactComponent as settings} from './settings.svg';
 import {ReactComponent as error} from './error.svg';
 import {ReactComponent as warning} from './warning.svg';
 import {ReactComponent as closeLarge} from './close-large.svg';
+import {ReactComponent as closeSmall} from './close-small.svg';
 import {ReactComponent as checkLarge} from './check-large.svg';
 import {ReactComponent as checkCircle} from './check-circle.svg';
 import {ReactComponent as collection} from './collection.svg';
@@ -57,6 +58,8 @@ import {ReactComponent as sortMenu} from './sort-menu.svg';
 import {ReactComponent as info} from './info.svg';
 import {ReactComponent as show} from './show.svg';
 import {ReactComponent as hide} from './hide.svg';
+import {ReactComponent as warningOutline} from './warning-outline.svg';
+import {ReactComponent as infoOutline} from './info-outline.svg';
 
 const icons = {
   autorefresh,
@@ -88,6 +91,7 @@ const icons = {
   'check-large': checkLarge,
   'check-circle': checkCircle,
   'close-large': closeLarge,
+  'close-small': closeSmall,
   collection,
   search,
   'search-reset': searchReset,
@@ -112,6 +116,8 @@ const icons = {
   info,
   hide,
   show,
+  'warning-outline': warningOutline,
+  'info-outline': infoOutline,
 };
 
 export default icons;

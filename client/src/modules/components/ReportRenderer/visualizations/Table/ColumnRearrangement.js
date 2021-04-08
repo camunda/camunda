@@ -6,17 +6,14 @@
 
 import React from 'react';
 
-import processRawData from './processRawData';
-
 import './ColumnRearrangement.scss';
 
 export default class ColumnRearrangement extends React.Component {
   render() {
-    const {updateReport, report} = this.props;
-    // not raw data report
-    if (report.combined || report.data.view.property !== 'rawData' || !updateReport) {
+    if (!this.props.enabled) {
       return this.props.children;
     }
+
     return (
       <div className="ColumnRearrangement" onMouseDown={this.handleMouseDown}>
         {this.props.children}
@@ -29,15 +26,20 @@ export default class ColumnRearrangement extends React.Component {
       return;
     }
 
-    const columnHeader = evt.target.closest('.Table .tableHeader:not(.placeholder)');
+    const columnHeader = evt.target.closest('.Table .tableHeader');
 
     if (columnHeader) {
-      this.dragIdx = Array.from(columnHeader.parentNode.childNodes).indexOf(columnHeader);
-      forColumn(this.dragIdx)
-        .do(({classList}) => classList.add('ColumnRearrangement__draggedColumn'))
-        .usingEvent(evt);
+      const group = getGroup(columnHeader);
+      this.dragIdx = getIndex(group || columnHeader);
 
-      this.preview = createDragPreview(this.dragIdx, evt);
+      const subColumnsIndexes = group ? getSubColumnIndexes(group) : [this.dragIdx];
+      subColumnsIndexes.forEach((idx) => {
+        forColumn(idx)
+          .do(({classList}) => classList.add('ColumnRearrangement__draggedColumn'))
+          .usingEvent(evt);
+      });
+
+      this.preview = createDragPreview(subColumnsIndexes[0], evt);
 
       document.addEventListener('mousemove', this.handleMouseMove);
       document.addEventListener('mouseup', this.handleMouseUp);
@@ -69,16 +71,7 @@ export default class ColumnRearrangement extends React.Component {
     const targetIdx = this.processDrag(evt);
 
     if (typeof targetIdx !== 'undefined') {
-      const {reportType} = this.props.report;
-      const list = processRawData[reportType](this.props).head.map((el) => el.id);
-
-      // add the column at the specified position
-      list.splice(targetIdx + 1, 0, list[this.dragIdx]);
-
-      // remove the original column
-      list.splice(this.dragIdx + (this.dragIdx > targetIdx), 1);
-
-      this.props.updateReport({configuration: {tableColumns: {columnOrder: {$set: list}}}});
+      this.props.onChange(this.dragIdx, getGroupIdx(evt, targetIdx));
     }
 
     document.removeEventListener('mousemove', this.handleMouseMove);
@@ -86,18 +79,71 @@ export default class ColumnRearrangement extends React.Component {
   };
 
   processDrag = (evt) => {
-    const elem = evt.target.closest('.Table td, .Table .tableHeader');
+    const cellOrHeader = evt.target.closest('.Table td, .Table .tableHeader');
+    if (!cellOrHeader) {
+      return;
+    }
 
-    if (elem) {
-      let idx = Array.from(elem.parentNode.childNodes).indexOf(elem);
+    const group = getGroup(cellOrHeader);
 
-      if (evt.offsetX < elem.clientWidth / 2) {
-        idx--;
+    if (group) {
+      const subColumnsIndexes = getSubColumnIndexes(group);
+      const mouseOffset = evt.clientX - group.getBoundingClientRect().left;
+
+      if (mouseOffset < group.clientWidth / 2) {
+        return subColumnsIndexes[0] - 1;
       }
 
-      return idx;
+      return subColumnsIndexes[subColumnsIndexes.length - 1];
     }
+
+    const elemIndex = getIndex(cellOrHeader);
+
+    if (evt.offsetX < cellOrHeader.clientWidth / 2) {
+      return elemIndex - 1;
+    }
+
+    return elemIndex;
   };
+}
+
+function getSubColumnIndexes(group) {
+  return Array.from(
+    group
+      .closest('.Table')
+      .querySelectorAll(`thead tr:not(.groupRow) .tableHeader[data-group="${getIndex(group)}"]`)
+  ).map(getIndex);
+}
+
+function getIndex(el) {
+  return Array.from(el.parentNode.childNodes).indexOf(el);
+}
+
+function getHeader(el, idx, groupHeader = false) {
+  return el
+    .closest('.Table')
+    .querySelector(
+      `tr${groupHeader ? '.groupRow' : ':not(.groupRow)'} .tableHeader:nth-child(${idx + 1})`
+    );
+}
+
+function getGroupIdx(evt, idx) {
+  const headerElem = getHeader(evt.target, idx);
+  const groupIdx = headerElem?.dataset.group;
+  return typeof groupIdx !== 'undefined' ? Number(groupIdx) : idx;
+}
+
+function getGroup(cellOrHeader) {
+  if (cellOrHeader.closest('.groupRow')) {
+    return cellOrHeader;
+  }
+
+  const elemIndex = getIndex(cellOrHeader);
+  const headerOfCell = getHeader(cellOrHeader, elemIndex);
+  const groupIdx = headerOfCell?.dataset.group;
+  const groupOfHeader =
+    typeof groupIdx !== 'undefined' ? getHeader(cellOrHeader, Number(groupIdx), true) : null;
+  return groupOfHeader;
 }
 
 function forColumn(columnIdx) {
@@ -105,12 +151,18 @@ function forColumn(columnIdx) {
     do: (fct) => {
       if (columnIdx === 'all') {
         cellsForColumn(document, '1n').forEach(fct);
+        document.querySelectorAll('.groupRow .tableHeader').forEach(fct);
       } else {
         return {
-          usingEvent: ({target}) => {
-            const table = target.closest('.Table');
+          usingEvent: (evt) => {
+            const table = evt.target.closest('.Table');
 
             if (table) {
+              const groupIdx = getGroupIdx(evt, columnIdx);
+              const group = getHeader(evt.target, groupIdx, true);
+              if (group) {
+                fct(group);
+              }
               cellsForColumn(table, columnIdx + 1).forEach(fct);
             }
           },
@@ -122,7 +174,7 @@ function forColumn(columnIdx) {
 
 function cellsForColumn(target, matcher) {
   return target.querySelectorAll(
-    `.Table tbody tr td:nth-child(${matcher}),.Table thead tr .tableHeader:nth-child(${matcher})`
+    `.Table tbody tr td:nth-child(${matcher}),.Table thead tr:not(.groupRow) .tableHeader:nth-child(${matcher})`
   );
 }
 
@@ -141,6 +193,11 @@ function createDragPreview(idx, evt) {
   // then make this column follow mouse movements
   const preview = evt.target.closest('.Table').cloneNode(true);
   preview.classList.add('ColumnRearrangement__dragPreview');
+  preview
+    .querySelectorAll(
+      `thead tr.groupRow .tableHeader:not(:nth-child(${getGroupIdx(evt, idx) + 1}))`
+    )
+    .forEach(({style}) => (style.display = 'none'));
   cellsForColumn(preview, `-n+${idx}`).forEach(({style}) => (style.display = 'none'));
   cellsForColumn(preview, idx + 1).forEach(({style}) => {
     style.width = '250px';

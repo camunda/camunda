@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import equal from 'deep-equal';
+import equal from 'fast-deep-equal';
 
 import {Typeahead, LoadingIndicator, Labeled, Form, Checklist} from 'components';
 import {formatters} from 'services';

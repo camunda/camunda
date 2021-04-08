@@ -9,6 +9,10 @@ Object {
   },
   "legend": Object {
     "display": false,
+    "labels": Object {
+      "boxWidth": 12,
+    },
+    "onClick": [Function],
   },
   "lineAt": undefined,
   "scales": Object {
@@ -19,6 +23,7 @@ Object {
         },
         "scaleLabel": Object {
           "display": false,
+          "fontStyle": "bold",
           "labelString": undefined,
         },
         "stacked": undefined,
@@ -34,8 +39,10 @@ Object {
         "gridLines": Object {
           "color": "rgba(0,0,0,0.1)",
         },
+        "id": "axis-0",
         "scaleLabel": Object {
           "display": false,
+          "fontStyle": "bold",
           "labelString": undefined,
         },
         "ticks": Object {
@@ -50,9 +57,96 @@ Object {
 }
 `;
 
+exports[`should create correct options for multi-measure charts 1`] = `
+Object {
+  "animation": false,
+  "layout": Object {
+    "padding": Object {
+      "top": 0,
+    },
+  },
+  "legend": Object {
+    "display": true,
+    "labels": Object {
+      "boxWidth": 12,
+    },
+    "onClick": [Function],
+  },
+  "lineAt": undefined,
+  "maintainAspectRatio": false,
+  "responsive": true,
+  "scales": Object {
+    "xAxes": Array [
+      Object {
+        "gridLines": Object {
+          "color": "rgba(0,0,0,0.1)",
+        },
+        "scaleLabel": Object {
+          "display": false,
+          "fontStyle": "bold",
+          "labelString": undefined,
+        },
+        "stacked": false,
+        "ticks": Object {
+          "autoSkip": false,
+          "callback": [Function],
+          "fontColor": "#666",
+        },
+      },
+    ],
+    "yAxes": Array [
+      Object {
+        "gridLines": Object {
+          "color": "rgba(0,0,0,0.1)",
+        },
+        "id": "axis-0",
+        "scaleLabel": Object {
+          "display": true,
+          "fontStyle": "bold",
+          "labelString": "Flow Node Count",
+        },
+        "ticks": Object {
+          "beginAtZero": true,
+          "fontColor": "#666",
+          "suggestedMax": undefined,
+        },
+      },
+      Object {
+        "gridLines": Object {
+          "drawOnChartArea": false,
+        },
+        "id": "axis-1",
+        "position": "right",
+        "scaleLabel": Object {
+          "display": true,
+          "fontStyle": "bold",
+          "labelString": "Flow Node Duration",
+        },
+        "ticks": Object {
+          "beginAtZero": true,
+          "callback": [Function],
+          "fontColor": "#666",
+          "stepSize": 1000,
+          "suggestedMax": undefined,
+        },
+      },
+    ],
+  },
+  "showAllTooltips": undefined,
+  "spanGaps": true,
+  "tooltips": Object {
+    "callbacks": Object {
+      "label": [Function],
+      "labelColor": [Function],
+    },
+  },
+}
+`;
+
 exports[`should create default chart options 1`] = `
 Object {
   "animation": false,
+  "emptyBackgroundColor": "#efefef",
   "legend": Object {
     "display": true,
     "labels": Object {
@@ -64,9 +158,9 @@ Object {
   "showAllTooltips": undefined,
   "tooltips": Object {
     "callbacks": Object {
-      "beforeLabel": [Function],
       "label": [Function],
       "labelColor": [Function],
+      "title": [Function],
     },
   },
 }

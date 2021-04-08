@@ -61,6 +61,7 @@ export const processPartButton = Selector('.ReportControlPanel .Button').withTex
 );
 export const modalFlowNode = (id) => Selector(`.Modal [data-element-id="${id}"]`);
 export const selectSwitchLabel = (label) => Selector('.Switch .label').withText(label);
+export const tableGroup = (idx) => Selector('.Table thead tr.groupRow th').nth(idx);
 export const tableHeader = (idx) => Selector('.Table thead tr:last-child th').nth(idx);
 export const tableCell = (row, column) =>
   Selector('.Table tbody tr').nth(row).find('td').nth(column);
@@ -83,7 +84,6 @@ export const deselectAllButton = Selector('.Button').withText('Deselect All');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = (text) => Selector('.Table tbody td').withText(text);
 export const distributedBySelect = Selector('.label').withText('Distributed By').nextSibling();
-export const userTaskDurationSelect = Selector('.UserTaskDurationTime button');
 export const cyanColor = Selector('div[color="#00bcd4"]');
 export const axisInputs = (label) => Selector(`input[placeholder="${label}"]`);
 export const chartGoalInput = Selector('input[placeholder="Goal value"]');
@@ -100,9 +100,8 @@ export const versionCheckbox = (number) =>
   Selector('.specificVersions input[type="checkbox"]').nth(-number);
 export const tenantPopover = Selector('.TenantPopover');
 export const modalContainer = Selector('.Modal__content-container');
-export const aggregationTypeSelect = Selector('.AggregationType .Select');
-export const aggregationOption = (text) =>
-  Selector('.AggregationType .DropdownOption').withText(text);
+export const aggregationTypeSelect = Selector('.AggregationType');
+export const aggregationOption = (text) => Selector('.AggregationType .Switch').withText(text);
 export const detailsPopoverButton = Selector('.EntityName .Popover .Button');
 export const modalButton = (text) => Selector('.EntityName .modalsButtons .Button').withText(text);
 export const rawDataTable = Selector('.RawDataModal .Table');
@@ -113,3 +112,5 @@ export const bucketSizeUnitSelect = Selector('.BucketSize .Select').nth(0);
 export const submenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);
 export const nextPageButton = Selector('.Table .Button.next');
 export const rowsPerPageButton = Selector('.Table .size .Button');
+export const addMeasureButton = Selector('.addMeasure button');
+export const heatDropdown = Selector('.Heatmap .Select');

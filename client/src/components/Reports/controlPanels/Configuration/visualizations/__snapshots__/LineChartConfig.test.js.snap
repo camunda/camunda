@@ -36,7 +36,9 @@ exports[`it should display correct configuration for linechart 1`] = `
             "yLabel": "",
           },
           "view": Object {
-            "property": "frequency",
+            "properties": Array [
+              "frequency",
+            ],
           },
           "visualization": "line",
         },

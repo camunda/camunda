@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.writer.variable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -16,6 +15,8 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.writer.AbstractProcessInstanceDataWriter;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -35,27 +36,34 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
-@AllArgsConstructor
 @Component
 @Slf4j
-public class ProcessVariableUpdateWriter {
+public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWriter<ProcessVariableDto> {
 
   private static final Script VARIABLE_CLEAR_SCRIPT = new Script(
     MessageFormat.format("ctx._source.{0} = new ArrayList();\n", VARIABLES)
   );
   private static final String VARIABLE_UPDATES_FROM_ENGINE = "variableUpdatesFromEngine";
 
-  private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+
+  public ProcessVariableUpdateWriter(final OptimizeElasticsearchClient esClient,
+                                     final ElasticSearchSchemaManager elasticSearchSchemaManager,
+                                     final ObjectMapper objectMapper) {
+    super(esClient, elasticSearchSchemaManager);
+    this.objectMapper = objectMapper;
+  }
 
 
   public List<ImportRequestDto> generateVariableUpdateImports(List<ProcessVariableDto> variables) {
     String importItemName = "variables";
     log.debug("Creating imports for {} [{}].", variables.size(), importItemName);
+
+    createInstanceIndicesIfMissing(variables, ProcessVariableDto::getProcessDefinitionKey);
 
     Map<String, List<OptimizeDto>> processInstanceIdToVariables = groupVariablesByProcessInstanceIds(variables);
 
@@ -71,12 +79,13 @@ public class ProcessVariableUpdateWriter {
 
   private UpdateRequest createUpdateRequestForProcessInstanceVariables(
     final Map.Entry<String, List<OptimizeDto>> processInstanceIdToVariables) {
-    if (!(processInstanceIdToVariables.getValue().stream().allMatch(dto -> dto instanceof ProcessVariableDto))) {
+    if (!(processInstanceIdToVariables.getValue().stream().allMatch(ProcessVariableDto.class::isInstance))) {
       throw new InvalidParameterException("Method called with incorrect instance of DTO.");
     }
     final List<ProcessVariableDto> variablesWithAllInformation =
       (List<ProcessVariableDto>) (List<?>) processInstanceIdToVariables.getValue();
     final String processInstanceId = processInstanceIdToVariables.getKey();
+    final String processDefinitionKey = variablesWithAllInformation.get(0).getProcessDefinitionKey();
 
     List<SimpleProcessVariableDto> variables = mapToSimpleVariables(variablesWithAllInformation);
     Map<String, Object> params = buildParameters(variables);
@@ -88,11 +97,11 @@ public class ProcessVariableUpdateWriter {
     );
 
     if (variablesWithAllInformation.isEmpty()) {
-      //all is lost, no variables to persist, should have crashed before.
+      // all is lost, no variables to persist, should have crashed before.
       return null;
     }
     final ProcessVariableDto firstVariable = variablesWithAllInformation.get(0);
-    String newEntryIfAbsent = null;
+    String newEntryIfAbsent;
     try {
       newEntryIfAbsent = getNewProcessInstanceRecordString(
         processInstanceId,
@@ -111,7 +120,7 @@ public class ProcessVariableUpdateWriter {
 
     if (newEntryIfAbsent != null) {
       return new UpdateRequest()
-        .index(PROCESS_INSTANCE_INDEX_NAME)
+        .index(getProcessInstanceIndexAliasName(processDefinitionKey))
         .id(processInstanceId)
         .script(updateScript)
         .upsert(newEntryIfAbsent, XContentType.JSON)
@@ -120,16 +129,23 @@ public class ProcessVariableUpdateWriter {
     return null;
   }
 
-  public void deleteVariableDataByProcessInstanceIds(final List<String> processInstanceIds) {
+  public void deleteVariableDataByProcessInstanceIds(final String processDefinitionKey,
+                                                     final List<String> processInstanceIds) {
     final BulkRequest bulkRequest = new BulkRequest();
     log.debug(
       "Deleting variable data on [{}] process instance documents with bulk request.",
       processInstanceIds.size()
     );
     processInstanceIds.forEach(
-      id -> bulkRequest.add(new UpdateRequest(PROCESS_INSTANCE_INDEX_NAME, id).script(VARIABLE_CLEAR_SCRIPT))
+      id -> bulkRequest.add(
+        new UpdateRequest(getProcessInstanceIndexAliasName(processDefinitionKey), id).script(VARIABLE_CLEAR_SCRIPT)
+      )
     );
-    ElasticsearchWriterUtil.doBulkRequest(esClient, bulkRequest, PROCESS_INSTANCE_INDEX_NAME);
+    ElasticsearchWriterUtil.doBulkRequest(
+      esClient,
+      bulkRequest,
+      getProcessInstanceIndexAliasName(processDefinitionKey)
+    );
   }
 
   private Map<String, List<OptimizeDto>> groupVariablesByProcessInstanceIds(List<ProcessVariableDto> variableUpdates) {

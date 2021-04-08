@@ -90,8 +90,8 @@ public class ReportConstants {
   public static final String ALERT_THRESHOLD_OPERATOR_LESS = "<";
 
   // miscellaneous report constants
-  public static final String ALL_VERSIONS = "ALL";
-  public static final String LATEST_VERSION = "LATEST";
+  public static final String ALL_VERSIONS = "all";
+  public static final String LATEST_VERSION = "latest";
 
   // tenants
   public static final List<String> DEFAULT_TENANT_IDS = Collections.singletonList(null);

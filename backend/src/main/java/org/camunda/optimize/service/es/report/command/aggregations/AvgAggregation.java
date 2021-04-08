@@ -17,18 +17,19 @@ public class AvgAggregation implements AggregationStrategy {
   private static final String AVG_AGGREGATION = "avgAggregation";
 
   @Override
-  public Double getValue(final Aggregations aggs) {
-    final Avg aggregation = aggs.get(AVG_AGGREGATION);
+  public Double getValue(final String customIdentifier, final Aggregations aggs) {
+    final Avg aggregation = aggs.get(createAggregationName(customIdentifier, AVG_AGGREGATION));
     return mapToDoubleOrNull(aggregation.getValue());
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<?> getAggregationBuilder() {
-    return avg(AVG_AGGREGATION);
+  public ValuesSourceAggregationBuilder<?> createAggregationBuilder(final String customIdentifier) {
+    return avg(createAggregationName(customIdentifier, AVG_AGGREGATION));
   }
 
   @Override
   public AggregationType getAggregationType() {
     return AggregationType.AVERAGE;
   }
+
 }

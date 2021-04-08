@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
@@ -21,7 +21,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
-public abstract class AbstractGroupByFlowNode extends GroupByPart<ProcessReportDataDto> {
+public abstract class AbstractGroupByFlowNode extends ProcessGroupByPart {
 
   private static final String FLOW_NODES_AGGREGATION = "flowNodes";
   private static final String FILTERED_FLOW_NODES_AGGREGATION = "filteredFlowNodes";

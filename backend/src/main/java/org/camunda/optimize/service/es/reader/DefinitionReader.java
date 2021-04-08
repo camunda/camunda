@@ -78,6 +78,7 @@ import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionInd
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_TENANT_ID;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION_TAG;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
@@ -85,6 +86,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionInde
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.TENANT_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToLatestParticularVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -456,6 +458,14 @@ public class DefinitionReader {
                                                                              final boolean fullyImported,
                                                                              final boolean withXml,
                                                                              final boolean includeDeleted) {
+    return getDefinitions(type, Collections.emptySet(), fullyImported, withXml, includeDeleted);
+  }
+
+  protected <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
+                                                                             final Set<String> definitionKeys,
+                                                                             final boolean fullyImported,
+                                                                             final boolean withXml,
+                                                                             final boolean includeDeleted) {
     final String xmlField = resolveXmlFieldFromType(type);
     final BoolQueryBuilder rootQuery = boolQuery().must(
       fullyImported ? existsQuery(xmlField) : matchAllQuery()
@@ -464,9 +474,39 @@ public class DefinitionReader {
     if (!includeDeleted) {
       filteredQuery.must(termQuery(DEFINITION_DELETED, false));
     }
+    if (!definitionKeys.isEmpty()) {
+      filteredQuery.must(termsQuery(resolveDefinitionKeyFieldFromType(type), definitionKeys.toArray()));
+    }
+    return getDefinitions(type, filteredQuery, withXml);
+  }
+
+  protected <T extends DefinitionOptimizeResponseDto> List<T> getDefinitionsByIds(final DefinitionType type,
+                                                                                  final Set<String> definitionIds,
+                                                                                  final boolean fullyImported,
+                                                                                  final boolean withXml,
+                                                                                  final boolean includeDeleted) {
+
+    final String xmlField = resolveXmlFieldFromType(type);
+    final BoolQueryBuilder rootQuery = boolQuery().must(
+      fullyImported ? existsQuery(xmlField) : matchAllQuery()
+    );
+    final BoolQueryBuilder filteredQuery = rootQuery.must(matchAllQuery());
+    if (!includeDeleted) {
+      filteredQuery.must(termQuery(DEFINITION_DELETED, false));
+    }
+    if (!definitionIds.isEmpty()) {
+      filteredQuery.must(termsQuery(resolveDefinitionIdFieldFromType(type), definitionIds.toArray()));
+    }
+    return getDefinitions(type, filteredQuery, withXml);
+  }
+
+  private <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
+                                                                           final BoolQueryBuilder filterQuery,
+                                                                           final boolean withXml) {
+    final String xmlField = resolveXmlFieldFromType(type);
     final String[] fieldsToExclude = withXml ? null : new String[]{xmlField};
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(filteredQuery)
+      .query(filterQuery)
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, fieldsToExclude);
     final SearchRequest searchRequest =
@@ -859,6 +899,17 @@ public class DefinitionReader {
         return PROCESS_DEFINITION_KEY;
       case DECISION:
         return DECISION_DEFINITION_KEY;
+      default:
+        throw new IllegalStateException("Unknown DefinitionType:" + type);
+    }
+  }
+
+  private String resolveDefinitionIdFieldFromType(final DefinitionType type) {
+    switch (type) {
+      case PROCESS:
+        return PROCESS_DEFINITION_ID;
+      case DECISION:
+        return DECISION_DEFINITION_ID;
       default:
         throw new IllegalStateException("Unknown DefinitionType:" + type);
     }

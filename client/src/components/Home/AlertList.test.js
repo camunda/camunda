@@ -23,8 +23,24 @@ jest.mock('services', () => {
   return {
     ...rest,
     loadReports: jest.fn().mockReturnValue([
-      {id: '1', data: {visualization: 'table', view: {property: 'frequency'}}, name: 'Report 1'},
-      {id: '2', data: {visualization: 'number', view: {property: 'duration'}}, name: 'Report 2'},
+      {
+        id: '1',
+        data: {
+          visualization: 'table',
+          view: {properties: ['frequency']},
+          configuration: {aggregationTypes: ['avg']},
+        },
+        name: 'Report 1',
+      },
+      {
+        id: '2',
+        data: {
+          visualization: 'number',
+          view: {properties: ['duration']},
+          configuration: {aggregationTypes: ['avg']},
+        },
+        name: 'Report 2',
+      },
       {combined: true, id: '3', data: {visualization: 'number'}, name: 'Report 3'},
     ]),
   };
@@ -68,6 +84,42 @@ it('should only save single number reports', async () => {
   const node = shallow(<AlertList {...props} />);
 
   expect(node.state('reports').map((report) => report.id)).toEqual(['2']);
+});
+
+it('should not show multi-measure reports', async () => {
+  loadAlerts.mockReturnValueOnce([]);
+  loadReports.mockReturnValueOnce([
+    {
+      id: '1',
+      data: {
+        visualization: 'number',
+        view: {properties: ['frequency', 'duration']},
+        configuration: {aggregationTypes: ['avg']},
+      },
+      name: 'Report 1',
+    },
+    {
+      id: '2',
+      data: {
+        visualization: 'number',
+        view: {properties: ['duration']},
+        configuration: {aggregationTypes: ['avg', 'max']},
+      },
+      name: 'Report 2',
+    },
+    {
+      id: '3',
+      data: {
+        visualization: 'number',
+        view: {properties: ['frequency']},
+        configuration: {aggregationTypes: ['avg', 'max']},
+      },
+      name: 'Report 3',
+    },
+  ]);
+  const node = shallow(<AlertList {...props} />);
+
+  expect(node.state('reports').map((report) => report.id)).toEqual(['3']);
 });
 
 it('should format durations with value and unit', async () => {

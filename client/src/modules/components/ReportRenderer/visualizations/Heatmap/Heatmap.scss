@@ -2,6 +2,11 @@
   display: flex;
   flex-grow: 1;
 
+  > .Select {
+    position: absolute;
+    min-width: 210px;
+  }
+
   .Tooltip {
     text-align: left;
     line-height: 1.5em;
@@ -12,6 +17,15 @@
     .Button {
       margin: 10px 0;
       text-align: left;
+    }
+
+    table {
+      white-space: nowrap;
+
+      td:first-child {
+        text-align: right;
+        padding-right: 8px;
+      }
     }
   }
 }

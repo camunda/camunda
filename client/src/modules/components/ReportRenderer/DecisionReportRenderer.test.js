@@ -25,7 +25,7 @@ const report = {
     decisionDefinitionKey: 'aKey',
     decisionDefinitionVersion: '1',
     view: {
-      property: 'rawData',
+      properties: ['rawData'],
     },
     groupBy: {
       type: 'none',

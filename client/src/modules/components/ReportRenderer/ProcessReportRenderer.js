@@ -6,8 +6,9 @@
 
 import React from 'react';
 
-import {getFormatter, processResult} from './service';
+import {processResult} from 'services';
 
+import {getFormatter} from './service';
 import {Number, Table, Heatmap, Chart} from './visualizations';
 
 export default class ProcessReportRenderer extends React.Component {
@@ -16,7 +17,7 @@ export default class ProcessReportRenderer extends React.Component {
     const Component = this.getComponent();
     const props = {
       ...this.props,
-      formatter: getFormatter(report.data.view.property),
+      formatter: getFormatter(report.data.view.properties[0]),
       report: {...this.props.report, result: processResult(this.props.report)},
     };
 

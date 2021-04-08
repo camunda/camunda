@@ -177,7 +177,7 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
         historicUserTaskInstanceDto ->
         {
           try {
-            engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
+            engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
               historicUserTaskInstanceDto.getId(),
               historicUserTaskInstanceDto.getStartTime().plus(millis, ChronoUnit.MILLIS)
             );

@@ -13,7 +13,9 @@ import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.UserOperationLogFetcher;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.UserOperationLogEngineImportMediator;
+import org.camunda.optimize.service.importing.engine.service.ProcessInstanceResolverService;
 import org.camunda.optimize.service.importing.engine.service.UserOperationLogImportService;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
@@ -24,13 +26,19 @@ import java.util.List;
 @Component
 public class UserOperationLogEngineImportMediatorFactory extends AbstractImportMediatorFactory {
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
+  private final ProcessInstanceResolverService processInstanceResolverService;
 
   public UserOperationLogEngineImportMediatorFactory(final BeanFactory beanFactory,
                                                      final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService,
-                                                     final RunningProcessInstanceWriter runningProcessInstanceWriter) {
+                                                     final RunningProcessInstanceWriter runningProcessInstanceWriter,
+                                                     final ProcessDefinitionResolverService processDefinitionResolverService,
+                                                     final ProcessInstanceResolverService processInstanceResolverService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
+    this.processDefinitionResolverService = processDefinitionResolverService;
+    this.processInstanceResolverService = processInstanceResolverService;
   }
 
   @Override
@@ -51,7 +59,9 @@ public class UserOperationLogEngineImportMediatorFactory extends AbstractImportM
       new UserOperationLogImportService(
         elasticsearchImportJobExecutor,
         runningProcessInstanceWriter,
-        importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(engineContext.getEngineAlias())
+        importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(engineContext.getEngineAlias()),
+        processDefinitionResolverService,
+        processInstanceResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

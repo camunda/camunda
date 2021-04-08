@@ -23,28 +23,28 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.3.0</project.previousVersion>
+    <project.previousVersion>3.4.0</project.previousVersion>
 
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.compiler.source>1.8</maven.compiler.source>
-    <camunda.engine.version>7.14.0</camunda.engine.version>
-    <camunda.maven.artifacts.version>7.14.0-ee</camunda.maven.artifacts.version>
+    <camunda.engine.version>7.15.0</camunda.engine.version>
+    <camunda.maven.artifacts.version>7.15.0-ee</camunda.maven.artifacts.version>
 
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <!-- maven plugins -->
     <plugin.version.sonar>3.8.0.2131</plugin.version.sonar>
 
-    <jackson.version>2.12.1</jackson.version>
+    <jackson.version>2.12.2</jackson.version>
     <jsonpath.version>2.5.0</jsonpath.version>
     <elasticsearch.version>7.10.0</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
-    <elasticsearch.test.version>7.3.0</elasticsearch.test.version>
+    <elasticsearch.test.version>7.5.1</elasticsearch.test.version>
     <!--the ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>7.3.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
-    <elasticsearch.log4j.version>2.14.0</elasticsearch.log4j.version>
-    <guava.version>30.1-jre</guava.version>
-    <spring.version>5.3.4</spring.version>
+    <elasticsearch.log4j.version>2.14.1</elasticsearch.log4j.version>
+    <guava.version>30.1.1-jre</guava.version>
+    <spring.version>5.3.5</spring.version>
     <mockito.version>3.8.0</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
     <hamcrest.version>1.3</hamcrest.version>
@@ -54,7 +54,7 @@
     <quartz.version>2.3.2</quartz.version>
     <assertj.version>3.19.0</assertj.version>
 
-    <lombok.version>1.18.18</lombok.version>
+    <lombok.version>1.18.20</lombok.version>
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.30</slf4j.version>
 
@@ -115,6 +115,13 @@
     </profile>
 
     <profile>
+      <id>engine-7.15</id>
+      <properties>
+        <camunda.engine.version>7.15.0</camunda.engine.version>
+      </properties>
+    </profile>
+
+    <profile>
       <id>engine-7.14</id>
       <properties>
         <camunda.engine.version>7.14.0</camunda.engine.version>
@@ -125,13 +132,6 @@
       <id>engine-7.13</id>
       <properties>
         <camunda.engine.version>7.13.5</camunda.engine.version>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>engine-7.12</id>
-      <properties>
-        <camunda.engine.version>7.12.11</camunda.engine.version>
       </properties>
     </profile>
 
@@ -219,6 +219,10 @@
         <sonar.projectKey>camunda_camunda-optimize</sonar.projectKey>
         <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
         <sonar.login>${env.SONARCLOUD_TOKEN}</sonar.login>
+        <!-- sonar exclusions on duplication detection -->
+        <!-- As part of our migration testing we have to c&p index classes to have their old state -->
+        <!-- available during migration testing, we thus want to exlude them from duplication detection. -->
+        <sonar.cpd.exclusions>**/org/camunda/optimize/upgrade/**/*Old.java</sonar.cpd.exclusions>
       </properties>
       <build>
         <plugins>
@@ -431,12 +435,12 @@
         <plugin>
           <groupId>com.github.eirslett</groupId>
           <artifactId>frontend-maven-plugin</artifactId>
-          <version>1.11.2</version>
+          <version>1.11.3</version>
         </plugin>
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>3.0</version>
+          <version>4.0</version>
         </plugin>
         <!-- sonar relevant stuff -->
         <plugin>
@@ -456,7 +460,7 @@
       <plugin>
         <groupId>com.amashchenko.maven.plugin</groupId>
         <artifactId>gitflow-maven-plugin</artifactId>
-        <version>1.15.1</version>
+        <version>1.16.0</version>
         <configuration>
           <gitFlowConfig>
             <productionBranch>latest</productionBranch>

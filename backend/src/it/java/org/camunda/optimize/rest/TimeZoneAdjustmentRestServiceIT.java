@@ -5,7 +5,10 @@
  */
 package org.camunda.optimize.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
@@ -43,6 +46,7 @@ import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -52,6 +56,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -62,6 +68,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -69,11 +76,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.SPLITTING_GATEWAY_ID;
 
 public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT {
@@ -123,7 +130,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
   @MethodSource("allProcessDateReports")
   public void adjustReportEvaluationResultToTimezone_processDateReports(final ProcessReportDataType reportType) {
     // given
-    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    final String systemTimezone = "Europe/Berlin";
+    OffsetDateTime now = dateFreezer().timezone(systemTimezone).freezeDateAndReturn();
     final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
     final ProcessInstanceEngineDto processInstanceDto2 = deployAndStartSimpleUserTaskProcess();
@@ -148,14 +156,19 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .build();
 
     // when
-    final List<String> dateAsStringDateResultEntries = evaluateReportInLondonTimezoneAndReturnDateEntries(reportData);
+    final String clientTimezone = "Europe/London";
+    final List<String> dateAsStringDateResultEntries = evaluateReportInClientTimezoneAndReturnDateEntries(
+      reportData, clientTimezone);
 
     // then
     assertThat(dateAsStringDateResultEntries)
       .hasSize(1)
       .first()
       .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
-      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+      .satisfies(date -> assertThat(offsetDiffForZonedDateTimes(
+        toZonedDateTime(now, systemTimezone),
+        toZonedDateTime(date, clientTimezone)
+      )).isOne());
   }
 
   @ParameterizedTest
@@ -194,7 +207,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .build();
 
     // when
-    final List<String> dateAsStringDateResultEntries = evaluateReportInLondonTimezoneAndReturnDateEntries(reportData);
+    final List<String> dateAsStringDateResultEntries =
+      evaluateReportInClientTimezoneAndReturnDateEntries(reportData, "Europe/London");
 
     // then
     assertThat(dateAsStringDateResultEntries)
@@ -250,7 +264,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
   @MethodSource("allProcessDateReports")
   public void adjustReportEvaluationResultToTimezone_processDateReports_automaticInterval(final ProcessReportDataType reportType) {
     // given
-    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    final String systemTimezone = "Europe/Berlin";
+    OffsetDateTime now = dateFreezer().timezone(systemTimezone).freezeDateAndReturn();
     final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
     final ProcessInstanceEngineDto processInstanceDto2 = deployAndStartSimpleUserTaskProcess();
@@ -284,18 +299,23 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .build();
 
     // when
-    final List<String> dateAsStringDateResultEntries = evaluateReportInLondonTimezoneAndReturnDateEntries(reportData);
+    final String clientTimezone = "Europe/London";
+    final List<String> dateAsStringDateResultEntries = evaluateReportInClientTimezoneAndReturnDateEntries(
+      reportData, clientTimezone);
 
     // then
     assertThat(dateAsStringDateResultEntries)
       .hasSize(1)
       .first()
       .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
-      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+      .satisfies(date -> assertThat(offsetDiffForZonedDateTimes(
+        toZonedDateTime(now, systemTimezone),
+        toZonedDateTime(date, clientTimezone)
+      )).isOne());
   }
 
   @Test
-  public void unsavedReportEvaluationDoesNotFailWithZOffsetLastModifiedDateFormat() {
+  public void unsavedReportEvaluationDoesNotFailWithZOffsetLastModifiedDateFormat() throws JsonProcessingException {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
@@ -313,9 +333,19 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     reportDef.setLastModified(OffsetDateTime.parse("2021-01-05T10:25:16.161Z"));
 
     // when
+    final String requestBodyAsString = embeddedOptimizeExtension.getObjectMapper().copy()
+      // allow to overwrite previous registration of the JavaTimeModule with custom de-/serialization for OffsetDateTime
+      .disable(MapperFeature.IGNORE_DUPLICATE_MODULE_REGISTRATIONS)
+      .registerModule(new JavaTimeModule())
+      .writeValueAsString(reportDef);
+    // ensure the body is serialized as intended
+    assertThat(requestBodyAsString).contains("161Z");
+
     final Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportDef)
+      .buildGenericRequest(
+        "POST", "report/evaluate", Entity.entity(requestBodyAsString, MediaType.APPLICATION_JSON_TYPE)
+      )
       .execute();
 
     // then
@@ -330,7 +360,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
   @MethodSource("allProcessVariableReports")
   public void adjustReportEvaluationResultToTimezone_groupOrDistributedByDateVariable(final ProcessReportDataType reportType) {
     // given
-    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    final String systemTimezone = "Europe/Berlin";
+    OffsetDateTime now = dateFreezer().timezone(systemTimezone).freezeDateAndReturn();
     Map<String, Object> variables = ImmutableMap.of("dateVar", now);
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleProcessWithVariables(variables);
     importAllEngineEntitiesFromScratch();
@@ -349,14 +380,19 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .build();
 
     // when
-    final List<String> dateAsStringDateResultEntries = evaluateReportInLondonTimezoneAndReturnDateEntries(reportData);
+    final String clientTimezone = "Europe/London";
+    final List<String> dateAsStringDateResultEntries = evaluateReportInClientTimezoneAndReturnDateEntries(
+      reportData, clientTimezone);
 
     // then
     assertThat(dateAsStringDateResultEntries)
       .hasSize(1)
       .first()
       .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
-      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+      .satisfies(date -> assertThat(offsetDiffForZonedDateTimes(
+        toZonedDateTime(now, systemTimezone),
+        toZonedDateTime(date, clientTimezone)
+      )).isOne());
   }
 
   private static Stream<ProcessReportDataType> allProcessVariableReports() {
@@ -385,11 +421,13 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .build();
 
     // when
-    final List<String> dateAsStringDateResultEntries = evaluateReportInLondonTimezoneAndReturnDateEntries(reportData);
+    final String clientTimezone = "Europe/London";
+    final List<String> dateAsStringDateResultEntries = evaluateReportInClientTimezoneAndReturnDateEntries(
+      reportData, clientTimezone);
 
     // then
     String expectedDateAsString = embeddedOptimizeExtension.getDateTimeFormatter()
-      .format(now.atZoneSameInstant(ZoneId.of("Europe/London")).toOffsetDateTime());
+      .format(now.atZoneSameInstant(ZoneId.of(clientTimezone)).toOffsetDateTime());
     assertThat(dateAsStringDateResultEntries)
       .hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     final String firstElement = dateAsStringDateResultEntries.get(0);
@@ -403,7 +441,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
   @Test
   public void adjustReportEvaluationResultToTimezone_decisionReport() {
     // given
-    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    final String systemTimezone = "Europe/Berlin";
+    OffsetDateTime now = dateFreezer().timezone(systemTimezone).freezeDateAndReturn();
     final DecisionDefinitionEngineDto decisionDefinition =
       engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinition.getId());
@@ -417,11 +456,12 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .build();
 
     // when
+    final String clientTimezone = "Europe/London";
     final List<MapResultEntryDto> resultData = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, clientTimezone)
       .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>>>() {})
       .getResult()
       .getFirstMeasureData();
@@ -433,13 +473,17 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .extracting(MapResultEntryDto::getKey)
       .first()
       .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
-      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+      .satisfies(date -> assertThat(offsetDiffForZonedDateTimes(
+        toZonedDateTime(now, systemTimezone),
+        toZonedDateTime(date, clientTimezone)
+      )).isOne());
   }
 
   @Test
   public void adjustReportEvaluationResultToTimezone_combinedDateReport() {
     // given
-    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    final String systemTimezone = "Europe/Berlin";
+    OffsetDateTime now = dateFreezer().timezone(systemTimezone).freezeDateAndReturn();
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
     engineDatabaseExtension.changeProcessInstanceStartDate(engineDto.getId(), now.minusDays(2L));
@@ -458,15 +502,17 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       reportClient.createNewCombinedReport(singleProcessReportId1, singleProcessReportId2);
 
     // when
+    final String clientTimezone = "Europe/London";
     AuthorizedCombinedReportEvaluationResponseDto<List<MapResultEntryDto>> result = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(combinedReportId)
-      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, clientTimezone)
       // @formatter:off
       .execute(new TypeReference<AuthorizedCombinedReportEvaluationResponseDto<List<MapResultEntryDto>>>() {});
       // @formatter:on
     final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> resultData = result.getResult();
-    final Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> resultMap = resultData.getData();
+    final Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> resultMap =
+      resultData.getData();
 
     // then
     assertThat(resultMap).hasSize(2);
@@ -478,7 +524,10 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .hasSize(2)
       .first()
       .extracting(date -> OffsetDateTime.parse(date, embeddedOptimizeExtension.getDateTimeFormatter()))
-      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+      .satisfies(date -> assertThat(offsetDiffForZonedDateTimes(
+        toZonedDateTime(now, systemTimezone),
+        toZonedDateTime(date, clientTimezone)
+      )).isOne());
   }
 
   @Test
@@ -540,7 +589,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
   @Test
   public void adjustReportEvaluationResultToTimezone_evaluationById() {
     // given
-    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    final String systemTimezone = "Europe/Berlin";
+    OffsetDateTime now = dateFreezer().timezone(systemTimezone).freezeDateAndReturn();
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
     engineDatabaseExtension.changeProcessInstanceStartDate(engineDto.getId(), now.minusDays(2L));
@@ -556,10 +606,11 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     final String singleProcessReportId = reportClient.createSingleProcessReport(groupByDate);
 
     // when
+    final String clientTimezone = "Europe/London";
     final List<MapResultEntryDto> resultData = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(singleProcessReportId)
-      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, clientTimezone)
       // @formatter:off
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {})
       .getResult()
@@ -572,13 +623,17 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .first()
       .extracting(MapResultEntryDto::getKey)
       .extracting(date -> OffsetDateTime.parse(date, embeddedOptimizeExtension.getDateTimeFormatter()))
-      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+      .satisfies(date -> assertThat(offsetDiffForZonedDateTimes(
+        toZonedDateTime(now, systemTimezone),
+        toZonedDateTime(date, clientTimezone)
+      )).isOne());
   }
 
   @Test
   public void adjustReportEvaluationResultToTimezone_sharedReportEvaluation() {
     // given
-    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    final String systemTimezone = "Europe/Berlin";
+    OffsetDateTime now = dateFreezer().timezone(systemTimezone).freezeDateAndReturn();
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
     engineDatabaseExtension.changeProcessInstanceStartDate(engineDto.getId(), now.minusDays(2L));
@@ -596,10 +651,11 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
 
     // when
     // @formatter:off
+    final String clientTimezone = "Europe/London";
     final List<MapResultEntryDto> resultData = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSharedReportRequest(reportShareId)
-      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, clientTimezone)
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {})
       .getResult()
       .getFirstMeasureData();
@@ -611,13 +667,17 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .first()
       .extracting(MapResultEntryDto::getKey)
       .extracting(date -> OffsetDateTime.parse(date, embeddedOptimizeExtension.getDateTimeFormatter()))
-      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+      .satisfies(date -> assertThat(offsetDiffForZonedDateTimes(
+        toZonedDateTime(now, systemTimezone),
+        toZonedDateTime(date, clientTimezone)
+      )).isOne());
   }
 
   @Test
   public void adjustReportEvaluationResultToTimezone_reportEvaluationOfSharedDashboard() {
     // given
-    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    final String systemTimezone = "Europe/Berlin";
+    OffsetDateTime now = dateFreezer().timezone(systemTimezone).freezeDateAndReturn();
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
     engineDatabaseExtension.changeProcessInstanceStartDate(engineDto.getId(), now.minusDays(2L));
@@ -636,10 +696,11 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     final String dashboardShareId = sharingClient.shareDashboard(dashboardId);
 
     // when
+    final String clientTimezone = "Europe/London";
     final List<MapResultEntryDto> resultData = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId)
-      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, clientTimezone)
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {
       })
       .getResult()
@@ -651,13 +712,17 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .first()
       .extracting(MapResultEntryDto::getKey)
       .extracting(date -> OffsetDateTime.parse(date, embeddedOptimizeExtension.getDateTimeFormatter()))
-      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+      .satisfies(date -> assertThat(offsetDiffForZonedDateTimes(
+        toZonedDateTime(now, systemTimezone),
+        toZonedDateTime(date, clientTimezone)
+      )).isOne());
   }
 
   @Test
   public void adjustReportEvaluationResultToTimezone_rawProcessReport() {
     // given
-    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    final String systemTimezone = "Europe/Berlin";
+    OffsetDateTime now = dateFreezer().timezone(systemTimezone).freezeDateAndReturn();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstance.getId(), now);
@@ -671,10 +736,11 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .build();
 
     // when
+    final String clientTimezone = "Europe/London";
     final List<RawDataProcessInstanceDto> resultData = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(rawDataReport)
-      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, clientTimezone)
       // @formatter:off
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>>() {})
       // @formatter:on
@@ -684,14 +750,21 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     // then
     assertThat(resultData).hasSize(1);
     RawDataProcessInstanceDto rawInstance = resultData.get(0);
-    assertThat(getOffsetDiffInHours(rawInstance.getStartDate(), now)).isOne();
-    assertThat(getOffsetDiffInHours(rawInstance.getEndDate(), now)).isOne();
+    assertThat(offsetDiffForZonedDateTimes(
+      toZonedDateTime(now, systemTimezone),
+      toZonedDateTime(rawInstance.getStartDate(), clientTimezone)
+    )).isOne();
+    assertThat(offsetDiffForZonedDateTimes(
+      toZonedDateTime(now, systemTimezone),
+      toZonedDateTime(rawInstance.getEndDate(), clientTimezone)
+    )).isOne();
   }
 
   @Test
   public void adjustReportEvaluationResultToTimezone_rawDecisionReport() {
     // given
-    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    final String systemTimezone = "Europe/Berlin";
+    OffsetDateTime now = dateFreezer().timezone(systemTimezone).freezeDateAndReturn();
     DecisionDefinitionEngineDto decisionDefinition = engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(now, now);
     importAllEngineEntitiesFromScratch();
@@ -704,10 +777,11 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .build();
 
     // when
+    final String clientTimezone = "Europe/London";
     final List<RawDataDecisionInstanceDto> resultData = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(rawDataReport)
-      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, clientTimezone)
       // @formatter:off
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>>>() {})
       // @formatter:on
@@ -717,7 +791,10 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     // then
     assertThat(resultData).hasSize(1);
     RawDataDecisionInstanceDto rawInstance = resultData.get(0);
-    assertThat(getOffsetDiffInHours(rawInstance.getEvaluationDateTime(), now)).isOne();
+    assertThat(offsetDiffForZonedDateTimes(
+      toZonedDateTime(now, systemTimezone),
+      toZonedDateTime(rawInstance.getEvaluationDateTime(), clientTimezone)
+    )).isOne();
   }
 
   @Test
@@ -960,11 +1037,12 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     assertThat(result.getTotal()).isZero();
   }
 
-  private List<String> evaluateReportInLondonTimezoneAndReturnDateEntries(final ProcessReportDataDto reportData) {
+  private List<String> evaluateReportInClientTimezoneAndReturnDateEntries(final ProcessReportDataDto reportData,
+                                                                          final String clientTimezone) {
     final MeasureResponseDto<?> result = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, clientTimezone)
       // @formatter:off
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<?>>() {})
       // @formatter:on
@@ -998,8 +1076,13 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .startDate(date)
       .endDate(date)
       .build();
+    embeddedOptimizeExtension.getElasticSearchSchemaManager()
+      .createIndexIfMissing(
+        elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),
+        new ProcessInstanceIndex("aKey")
+      );
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      PROCESS_INSTANCE_INDEX_NAME,
+      getProcessInstanceIndexAliasName("aKey"),
       instanceDto.getProcessInstanceId(),
       instanceDto
     );
@@ -1007,7 +1090,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     instanceDto.setStartDate(date.plusHours(1));
     instanceDto.setEndDate(date.plusHours(1));
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      PROCESS_INSTANCE_INDEX_NAME,
+      getProcessInstanceIndexAliasName("aKey"),
       instanceDto.getProcessInstanceId(),
       instanceDto
     );
@@ -1027,6 +1110,26 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     expectedDateAsString = embeddedOptimizeExtension.getDateTimeFormatter()
       .format(lastDateOfAutomaticInterval.atZoneSameInstant(ZoneId.of("Europe/London")).toOffsetDateTime());
     return expectedDateAsString;
+  }
+
+  private ZonedDateTime toZonedDateTime(final OffsetDateTime offsetDateTime, final String timezone) {
+    return offsetDateTime.atZoneSameInstant(TimeZone.getTimeZone(timezone).toZoneId());
+  }
+
+  // Compares the first parameter to the second. So will be positive if the offset of z1 is greater than z2 after
+  // daylight savings have been considered, and negative if its offset is less than that of z2
+  private static double offsetDiffForZonedDateTimes(final ZonedDateTime z1, final ZonedDateTime z2) {
+    int offsetDiffInSeconds = z1.getOffset().getTotalSeconds() - z2.getOffset().getTotalSeconds();
+    double offsetInHours = offsetDiffInSeconds / 3600.0; // convert to hours
+    // We adjust the calculation to consider DST differences
+    final boolean z1IsDaylightSaving = z1.getZone().getRules().isDaylightSavings(z1.toInstant());
+    final boolean z2IsDaylightSaving = z2.getZone().getRules().isDaylightSavings(z2.toInstant());
+    if (z1IsDaylightSaving && !z2IsDaylightSaving) {
+      offsetInHours -= 1;
+    } else if (!z1IsDaylightSaving && z2IsDaylightSaving) {
+      offsetInHours += 1;
+    }
+    return offsetInHours;
   }
 
 }

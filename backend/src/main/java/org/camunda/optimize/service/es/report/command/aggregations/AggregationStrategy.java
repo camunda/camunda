@@ -9,10 +9,26 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Aggre
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
-public interface AggregationStrategy {
-  Double getValue(Aggregations aggs);
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
-  ValuesSourceAggregationBuilder<?> getAggregationBuilder();
+public interface AggregationStrategy {
+  default Double getValue(Aggregations aggs) {
+    return getValue(null, aggs);
+  }
+
+  Double getValue(String customIdentifier, Aggregations aggs);
+
+  default ValuesSourceAggregationBuilder<?> createAggregationBuilder() {
+    return createAggregationBuilder(null);
+  }
+
+  ValuesSourceAggregationBuilder<?> createAggregationBuilder(String customIdentifier);
 
   AggregationType getAggregationType();
+
+  default String createAggregationName(final String... segments) {
+    return Arrays.stream(segments).filter(Objects::nonNull).collect(Collectors.joining("_"));
+  }
 }

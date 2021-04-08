@@ -13,7 +13,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
-import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto;
@@ -24,6 +23,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
@@ -42,8 +42,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -179,12 +181,13 @@ public class BranchAnalysisReader {
     return executeQuery(request, query, timezone);
   }
 
-  private BoolQueryBuilder buildBaseQuery(final BranchAnalysisRequestDto request, final Set<String> activitiesToExclude) {
+  private BoolQueryBuilder buildBaseQuery(final BranchAnalysisRequestDto request,
+                                          final Set<String> activitiesToExclude) {
     final BoolQueryBuilder query = createDefinitionQuery(
       request.getProcessDefinitionKey(),
       request.getProcessDefinitionVersions(),
       request.getTenantIds(),
-      new ProcessInstanceIndex(),
+      new ProcessInstanceIndex(request.getProcessDefinitionKey()),
       processDefinitionReader::getLatestVersionToKey
     );
     excludeActivities(activitiesToExclude, query);
@@ -210,7 +213,8 @@ public class BranchAnalysisReader {
                             final BoolQueryBuilder query,
                             final ZoneId timezone) {
     queryFilterEnhancer.addFilterToQuery(query, request.getFilter(), timezone);
-    final CountRequest searchRequest = new CountRequest(PROCESS_INSTANCE_INDEX_NAME).query(query);
+    final CountRequest searchRequest =
+      new CountRequest(getProcessInstanceIndexAliasName(request.getProcessDefinitionKey())).query(query);
     try {
       final CountResponse countResponse = esClient.count(searchRequest, RequestOptions.DEFAULT);
       return countResponse.getCount();
@@ -222,6 +226,16 @@ public class BranchAnalysisReader {
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to perform branch analysis because the required instance index {} does not " +
+            "exist. Returning 0 instead.",
+          getProcessInstanceIndexAliasName(request.getProcessDefinitionKey())
+        );
+        return 0L;
+      }
+      throw e;
     }
   }
 
@@ -253,7 +267,7 @@ public class BranchAnalysisReader {
                                             final List<String> tenants) {
     final Optional<ProcessDefinitionOptimizeDto> definitionWithXmlAsService =
       definitionService.getDefinitionWithXmlAsService(
-        DefinitionType.PROCESS,
+        PROCESS,
         definitionKey,
         definitionVersions,
         tenants

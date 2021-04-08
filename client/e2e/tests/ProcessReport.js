@@ -176,6 +176,29 @@ test('sort table columns', async (t) => {
   await t.expect(b >= c).ok();
 });
 
+test('drag raw data table columns', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Raw Data');
+
+  const originalPositionText = await e.tableHeader(3).textContent;
+  await t.drag(e.tableHeader(3), 350, 0);
+  const newPositionText = await e.tableHeader(4).textContent;
+  await t.expect(originalPositionText).eql(newPositionText);
+});
+
+test('drag distributed table columns', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'User Task', 'Count');
+  await u.selectGroupby(t, 'Candidate Group');
+
+  const originalPositionText = await e.tableGroup(1).textContent;
+  await t.drag(e.tableHeader(1), 600, 0);
+  const newPositionText = await e.tableGroup(2).textContent;
+  await t.expect(originalPositionText).eql(newPositionText);
+});
+
 test('exclude raw data columns', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
@@ -324,7 +347,7 @@ test('select process instance count grouped by variable', async (t) => {
   await t.click(e.visualizationDropdown);
 
   await u.selectVisualization(t, 'Table');
-  await t.expect(e.reportTable.textContent).contains('Variable: amount');
+  await t.expect(e.reportTable.textContent).contains('Process Instance Var: amount');
 });
 
 test('variable report', async (t) => {
@@ -473,6 +496,7 @@ test('aggregators', async (t) => {
   await t.takeScreenshot('process/single-report/durationAggregation.png', {fullPage: true});
 
   await t.click(e.aggregationOption('Minimum'));
+  await t.click(e.aggregationOption('Average'));
 
   await t.click(e.configurationButton);
   await t.click(e.limitPrecisionSwitch);
@@ -482,7 +506,9 @@ test('aggregators', async (t) => {
 
   const min = await e.reportNumber.textContent;
 
-  await u.selectAggregation(t, 'Maximum');
+  await t.click(e.aggregationTypeSelect);
+  await t.click(e.aggregationOption('Maximum'));
+  await t.click(e.aggregationOption('Minimum'));
 
   const max = await e.reportNumber.textContent;
 
@@ -669,14 +695,15 @@ test('should be able to select how the time of the user task is calculated', asy
   await u.selectGroupby(t, 'Candidate Group');
   await u.selectVisualization(t, 'Table');
 
-  await t.click(e.userTaskDurationSelect);
+  await t.click(e.aggregationTypeSelect);
+  await t.click(e.aggregationOption('Idle'));
+  await t.click(e.aggregationOption('Total'));
 
-  await t.click(e.option('Idle'));
   await t.expect(e.reportTable.visible).ok();
 
-  await t.click(e.userTaskDurationSelect);
+  await t.click(e.aggregationOption('Work'));
+  await t.click(e.aggregationOption('Idle'));
 
-  await t.click(e.option('Work'));
   await t.expect(e.reportTable.visible).ok();
 });
 
@@ -728,6 +755,7 @@ test('deleting', async (t) => {
 
 test('show raw data and process model', async (t) => {
   await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.save(t);
 
   await t.click(e.detailsPopoverButton);
@@ -835,5 +863,96 @@ test('incident reports', async (t) => {
 
   await u.selectVisualization(t, 'Table');
 
-  await t.expect(e.reportRenderer.textContent).contains('Incident: Resolution Duration');
+  await t.expect(e.reportRenderer.textContent).contains('Resolution Duration');
+});
+
+test('multi-measure reports', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Hiring Demo 5 Tenants', 'All');
+  await u.selectView(t, 'Process Instance', 'Count');
+
+  await t.click(e.addMeasureButton);
+
+  await t.expect(e.reportNumber.visible).ok();
+  await t.expect(e.reportRenderer.textContent).contains('Process Instance Count');
+  await t.expect(e.reportRenderer.textContent).contains('Process Instance Duration');
+
+  await u.selectGroupby(t, 'Start Date', 'Automatic');
+
+  await t.expect(e.reportRenderer.textContent).contains('Count');
+  await t.expect(e.reportRenderer.textContent).contains('Duration');
+
+  await u.selectVisualization(t, 'Bar Chart');
+  await t.expect(e.reportChart.visible).ok();
+  await u.selectVisualization(t, 'Line Chart');
+  await t.expect(e.reportChart.visible).ok();
+  await u.selectVisualization(t, 'Pie Chart');
+  await t.expect(e.reportChart.visible).ok();
+
+  await u.selectView(t, 'Flow Node');
+  await u.selectGroupby(t, 'Flow Nodes');
+  await u.selectVisualization(t, 'Heatmap');
+
+  await t.expect(e.reportDiagram.visible).ok();
+
+  await t.click(e.heatDropdown);
+  await t.click(e.option('Heat: Duration - Avg'));
+
+  await t.expect(e.reportDiagram.visible).ok();
+});
+
+test('multi-aggregation reports', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Hiring Demo 5 Tenants', 'All');
+  await u.selectView(t, 'Process Instance', 'Duration');
+
+  await t.click(e.aggregationTypeSelect);
+  await t.click(e.aggregationOption('Maximum'));
+
+  await t.expect(e.reportNumber.visible).ok();
+  await t.expect(e.reportRenderer.textContent).contains('Avg');
+  await t.expect(e.reportRenderer.textContent).contains('Max');
+
+  await u.selectView(t, 'User Task', 'Duration');
+  await t.click(e.aggregationTypeSelect);
+  await t.click(e.aggregationOption('Work'));
+
+  await t.expect(e.reportRenderer.textContent).contains('Total Duration - Avg');
+  await t.expect(e.reportRenderer.textContent).contains('Total Duration - Max');
+  await t.expect(e.reportRenderer.textContent).contains('Work Duration - Avg');
+  await t.expect(e.reportRenderer.textContent).contains('Work Duration - Max');
+
+  await u.selectVisualization(t, 'Bar Chart');
+  await t.expect(e.reportChart.visible).ok();
+  await u.selectVisualization(t, 'Line Chart');
+  await t.expect(e.reportChart.visible).ok();
+  await u.selectVisualization(t, 'Pie Chart');
+  await t.expect(e.reportChart.visible).ok();
+  await u.selectVisualization(t, 'Heatmap');
+  await t.expect(e.reportDiagram.visible).ok();
+
+  await t.hover(e.flowNode('ConductPhoneInterview'));
+  await t.expect(e.tooltip.textContent).contains('Avg (Total)');
+  await t.expect(e.tooltip.textContent).contains('Max (Total)');
+  await t.expect(e.tooltip.textContent).contains('Avg (Work)');
+  await t.expect(e.tooltip.textContent).contains('Max (Work)');
+});
+
+test('distributed multi-measure reports', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+
+  await u.selectView(t, 'Process Instance', 'Duration');
+  await u.selectGroupby(t, 'Start Date', 'Automatic');
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.click(e.distributedBySelect);
+  await t.click(e.dropdownOption('Variable'));
+  await t.click(e.submenuOption('invoiceCategory'));
+
+  await t.click(e.addMeasureButton);
+
+  await t.expect(e.reportRenderer.textContent).contains('Count');
+  await t.expect(e.reportRenderer.textContent).contains('Duration');
+  await t.expect(e.reportRenderer.textContent).contains('Misc');
 });

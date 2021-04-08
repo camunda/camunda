@@ -65,6 +65,16 @@ it('should hide selectAll if there is only one item', () => {
   expect(node.find('.selectAll')).not.toExist();
 });
 
+it('should not highlight disabled items', () => {
+  props.formatter.mockReturnValueOnce([
+    {id: 'item1', checked: true, label: 'item 1', disabled: true},
+  ]);
+
+  const node = shallow(<Checklist {...props} />);
+
+  expect(node.find({label: 'item 1'}).hasClass('highlight')).toBe(false);
+});
+
 it('should filter items based on search', () => {
   const node = shallow(<Checklist {...props} />);
 

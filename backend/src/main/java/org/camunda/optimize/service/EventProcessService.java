@@ -315,7 +315,7 @@ public class EventProcessService {
     return EventImportSourceDto.builder()
       .firstEventForSourceAtTimeOfPublishTimestamp(minAndMaxEventTimestamps.getLeft().orElse(getEpochMilliTimestamp()))
       .lastEventForSourceAtTimeOfPublishTimestamp(minAndMaxEventTimestamps.getRight().orElse(getEpochMilliTimestamp()))
-      .lastImportedEventTimestamp(getEpochMilliTimestamp())
+      .lastImportedEventTimestamp(minAndMaxEventTimestamps.getLeft().orElse(getEpochMilliTimestamp()))
       .eventImportSourceType(EventSourceType.CAMUNDA)
       .eventSourceConfigurations(Collections.singletonList(camundaSourceEntry.getConfiguration()))
       .build();
@@ -338,7 +338,7 @@ public class EventProcessService {
     return EventImportSourceDto.builder()
       .firstEventForSourceAtTimeOfPublishTimestamp(minAndMaxEventTimestamps.getLeft().orElse(getEpochMilliTimestamp()))
       .lastEventForSourceAtTimeOfPublishTimestamp(minAndMaxEventTimestamps.getRight().orElse(getEpochMilliTimestamp()))
-      .lastImportedEventTimestamp(getEpochMilliTimestamp())
+      .lastImportedEventTimestamp(minAndMaxEventTimestamps.getLeft().orElse(getEpochMilliTimestamp()))
       .eventImportSourceType(EventSourceType.EXTERNAL)
       .eventSourceConfigurations(externalSources.stream().map(EventSourceEntryDto::getConfiguration).collect(toList()))
       .build();

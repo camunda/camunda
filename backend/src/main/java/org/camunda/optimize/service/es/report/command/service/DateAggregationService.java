@@ -16,6 +16,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
+import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregator;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.LongBounds;
@@ -190,14 +191,15 @@ public class DateAggregationService {
   }
 
   private DateHistogramAggregationBuilder createDateHistogramWithSubAggregation(final DateAggregationContext context) {
-    return AggregationBuilders
+    final DateHistogramAggregationBuilder dateHistogramAggregationBuilder = AggregationBuilders
       .dateHistogram(context.getDateAggregationName().orElse(DATE_AGGREGATION))
       .order(BucketOrder.key(false))
       .field(context.getDateField())
       .calendarInterval(mapToDateHistogramInterval(context.getAggregateByDateUnit()))
       .format(OPTIMIZE_DATE_FORMAT)
-      .timeZone(context.getTimezone())
-      .subAggregation(context.getSubAggregation());
+      .timeZone(context.getTimezone());
+    context.getSubAggregations().forEach(dateHistogramAggregationBuilder::subAggregation);
+    return dateHistogramAggregationBuilder;
   }
 
   private AggregationBuilder createRunningDateFilterAggregations(final DateAggregationContext context) {
@@ -236,9 +238,10 @@ public class DateAggregationService {
       filters.add(keyedFilter);
     }
 
-    return AggregationBuilders
-      .filters(FILTER_LIMITED_AGGREGATION, filters.toArray(new FiltersAggregator.KeyedFilter[]{}))
-      .subAggregation(context.getSubAggregation());
+    final FiltersAggregationBuilder limitingFilterAggregation = AggregationBuilders
+      .filters(FILTER_LIMITED_AGGREGATION, filters.toArray(new FiltersAggregator.KeyedFilter[]{}));
+    context.getSubAggregations().forEach(limitingFilterAggregation::subAggregation);
+    return limitingFilterAggregation;
   }
 
   private Optional<AggregationBuilder> createAutomaticIntervalAggregationOrFallbackToMonth(
@@ -248,11 +251,11 @@ public class DateAggregationService {
       createAutomaticIntervalAggregationWithSubAggregation(context);
 
     if (automaticIntervalAggregation.isPresent()) {
+      final AggregationBuilder automaticIntervalAggregationValue = automaticIntervalAggregation.get();
+      context.getSubAggregations().forEach(automaticIntervalAggregationValue::subAggregation);
       return Optional.of(
-        wrapWithFilterLimitedParentAggregation(
-          boolQuery().filter(matchAllQuery()),
-          automaticIntervalAggregation.get().subAggregation(context.getSubAggregation())
-        ));
+        wrapWithFilterLimitedParentAggregation(boolQuery().filter(matchAllQuery()), automaticIntervalAggregationValue)
+      );
     }
 
     // automatic interval not possible, return default aggregation with unit month instead
@@ -298,45 +301,32 @@ public class DateAggregationService {
 
     final BoolQueryBuilder limitFilterQuery =
       extendBoundsAndCreateDecisionDateHistogramLimitingFilterFor(
-        dateHistogramAggregation,
-        context,
-        dateTimeFormatter
+        dateHistogramAggregation, context, dateTimeFormatter
       );
 
-    return wrapWithFilterLimitedParentAggregation(
-      limitFilterQuery,
-      dateHistogramAggregation.subAggregation(context.getSubAggregation())
-    );
+    context.getSubAggregations().forEach(dateHistogramAggregation::subAggregation);
+    return wrapWithFilterLimitedParentAggregation(limitFilterQuery, dateHistogramAggregation);
   }
 
   private AggregationBuilder createFilterLimitedProcessDateHistogramWithSubAggregation(final DateAggregationContext context) {
     final DateHistogramAggregationBuilder dateHistogramAggregation = createDateHistogramAggregation(context);
 
     final BoolQueryBuilder limitFilterQuery = extendBoundsAndCreateProcessDateHistogramLimitingFilterFor(
-      dateHistogramAggregation,
-      context,
-      dateTimeFormatter
+      dateHistogramAggregation, context, dateTimeFormatter
     );
 
-    return wrapWithFilterLimitedParentAggregation(
-      limitFilterQuery,
-      dateHistogramAggregation.subAggregation(context.getSubAggregation())
-    );
+    context.getSubAggregations().forEach(dateHistogramAggregation::subAggregation);
+    return wrapWithFilterLimitedParentAggregation(limitFilterQuery, dateHistogramAggregation);
   }
 
   private AggregationBuilder createFilterLimitedModelElementDateHistogramWithSubAggregation(final DateAggregationContext context) {
     final DateHistogramAggregationBuilder dateHistogramAggregation = createDateHistogramAggregation(context);
 
     final BoolQueryBuilder limitFilterQuery =
-      createModelElementDateHistogramLimitingFilterFor(
-        context,
-        dateTimeFormatter
-      );
+      createModelElementDateHistogramLimitingFilterFor(context, dateTimeFormatter);
 
-    return wrapWithFilterLimitedParentAggregation(
-      limitFilterQuery,
-      dateHistogramAggregation.subAggregation(context.getSubAggregation())
-    );
+    context.getSubAggregations().forEach(dateHistogramAggregation::subAggregation);
+    return wrapWithFilterLimitedParentAggregation(limitFilterQuery, dateHistogramAggregation);
   }
 
   private ZonedDateTime getEndOfBucket(final ZonedDateTime startOfBucket,

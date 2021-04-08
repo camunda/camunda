@@ -26,6 +26,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -67,6 +68,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
@@ -74,9 +76,10 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_NAME;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_VALUE;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -108,7 +111,7 @@ public class DurationOutliersReader {
   public List<DurationChartEntryDto> getCountByDurationChart(final FlowNodeOutlierParametersDto outlierParams) {
     final BoolQueryBuilder query = createProcessDefinitionFilterQuery(outlierParams);
 
-    long interval = getInterval(query, outlierParams.getFlowNodeId());
+    long interval = getInterval(query, outlierParams.getFlowNodeId(), outlierParams.getProcessDefinitionKey());
     HistogramAggregationBuilder histogram = AggregationBuilders.histogram(AGG_HISTOGRAM)
       .field(EVENTS + "." + ACTIVITY_DURATION)
       .interval(interval);
@@ -122,7 +125,7 @@ public class DurationOutliersReader {
       .size(0);
 
     SearchRequest searchRequest =
-      new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+      new SearchRequest(getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey()))
         .source(searchSourceBuilder);
 
     SearchResponse search;
@@ -131,6 +134,16 @@ public class DurationOutliersReader {
     } catch (IOException e) {
       log.warn("Couldn't retrieve duration chart");
       throw new OptimizeRuntimeException(e.getMessage(), e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to evaluate count by duration chart because instance index with alias {} does not exist. " +
+            "Returning empty list.",
+          getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey())
+        );
+        return Collections.emptyList();
+      }
+      throw e;
     }
 
     return ((Histogram) ((Filter) ((Nested) search.getAggregations().get(EVENTS)).getAggregations()
@@ -170,8 +183,9 @@ public class DurationOutliersReader {
       .aggregation(nested)
       .size(0);
 
-    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest =
+      new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionParams.getProcessDefinitionKey()))
+        .source(searchSourceBuilder);
 
     final List<ParsedComposite.ParsedBucket> deviationForEachFlowNode = new ArrayList<>();
     CompositeAggregationScroller.create()
@@ -181,7 +195,11 @@ public class DurationOutliersReader {
       .setCompositeBucketConsumer(deviationForEachFlowNode::add)
       .consumeAllPages();
 
-    return createFlowNodeOutlierMap(deviationForEachFlowNode, processInstanceQuery);
+    return createFlowNodeOutlierMap(
+      deviationForEachFlowNode,
+      processInstanceQuery,
+      processDefinitionParams.getProcessDefinitionKey()
+    );
   }
 
   public List<VariableTermDto> getSignificantOutlierVariableTerms(final FlowNodeOutlierParametersDto outlierParams) {
@@ -235,6 +253,16 @@ public class DurationOutliersReader {
     } catch (IOException e) {
       log.warn("Couldn't determine significant outlier variable terms.");
       throw new OptimizeRuntimeException(e.getMessage(), e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to determine significant outlier variable terms because instance index with name {} does not " +
+            "exist. Returning empty list.",
+          getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey())
+        );
+        return Collections.emptyList();
+      }
+      throw e;
     }
   }
 
@@ -257,9 +285,10 @@ public class DurationOutliersReader {
       // size of each scroll page, needs to be capped to max size of elasticsearch
       .size(recordLimit > MAX_RESPONSE_SIZE_LIMIT ? MAX_RESPONSE_SIZE_LIMIT : recordLimit);
 
-    final SearchRequest scrollSearchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+    final SearchRequest scrollSearchRequest =
+      new SearchRequest(getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey()))
+        .source(searchSourceBuilder)
+        .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     try {
       final SearchResponse response = esClient.search(scrollSearchRequest, RequestOptions.DEFAULT);
@@ -273,6 +302,16 @@ public class DurationOutliersReader {
       );
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not obtain outlier instance ids.", e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to obtain outlier instance IDs because instance index with name {} does not exist. " +
+            "Returning empty list.",
+          getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey())
+        );
+        return Collections.emptyList();
+      }
+      throw e;
     }
   }
 
@@ -302,6 +341,7 @@ public class DurationOutliersReader {
     return extractNestedProcessInstanceAgg(
       esClient.search(nonOutliersTermOccurrencesRequest, RequestOptions.DEFAULT)
     );
+
   }
 
   private ParsedReverseNested getTopVariableTermsOfOutliers(final FlowNodeOutlierParametersDto outlierParams)
@@ -430,7 +470,7 @@ public class DurationOutliersReader {
       .aggregation(nestedFlowNodeAggregation)
       .size(0);
 
-    return new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+    return new SearchRequest(getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey()))
       .source(searchSourceBuilder);
   }
 
@@ -497,7 +537,8 @@ public class DurationOutliersReader {
   }
 
   private Map<String, FindingsDto> createFlowNodeOutlierMap(final List<ParsedComposite.ParsedBucket> deviationForEachFlowNode,
-                                                            final BoolQueryBuilder processInstanceQuery) {
+                                                            final BoolQueryBuilder processInstanceQuery,
+                                                            final String processDefinitionKey) {
     final Map<String, ExtendedStats> statsByFlowNodeId = new HashMap<>();
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(processInstanceQuery)
@@ -535,7 +576,7 @@ public class DurationOutliersReader {
         }
       });
 
-    final SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+    final SearchRequest searchRequest = new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
       .source(searchSourceBuilder);
     try {
       final Aggregations allFlowNodesPercentileRanks = esClient.search(searchRequest, RequestOptions.DEFAULT)
@@ -544,6 +585,16 @@ public class DurationOutliersReader {
       return mapToFlowNodeFindingsMap(statsByFlowNodeId, allFlowNodeFilterAggs);
     } catch (IOException e) {
       throw new OptimizeRuntimeException(e.getMessage(), e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to retrieve flownode outlier map because instance index with alias {} does not exist. " +
+            "Returning empty map.",
+          getProcessInstanceIndexAliasName(processDefinitionKey)
+        );
+        return Collections.emptyMap();
+      }
+      throw e;
     }
   }
 
@@ -614,7 +665,7 @@ public class DurationOutliersReader {
       || Optional.ofNullable(higherOutlierBound).map(value -> durationValue > value).orElse(false);
   }
 
-  private long getInterval(final BoolQueryBuilder query, final String flowNodeId) {
+  private long getInterval(final BoolQueryBuilder query, final String flowNodeId, final String processDefinitionKey) {
     StatsAggregationBuilder statsAgg = AggregationBuilders.stats(AGG_STATS)
       .field(EVENTS + "." + ACTIVITY_DURATION);
 
@@ -627,14 +678,22 @@ public class DurationOutliersReader {
       .size(0);
 
     SearchRequest searchRequest =
-      new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-        .source(searchSourceBuilder);
+      new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionKey)).source(searchSourceBuilder);
 
     SearchResponse search;
     try {
       search = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeRuntimeException(e.getMessage(), e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to determine interval because instance index {} does not exist. Returning 0.",
+          getProcessInstanceIndexAliasName(processDefinitionKey)
+        );
+        return 0L;
+      }
+      throw e;
     }
 
     double min = ((Stats) ((Filter) ((Nested) search.getAggregations()
@@ -674,7 +733,7 @@ public class DurationOutliersReader {
       processDefinitionParams.getProcessDefinitionKey(),
       processDefinitionParams.getProcessDefinitionVersions(),
       processDefinitionParams.getTenantIds(),
-      new ProcessInstanceIndex(),
+      new ProcessInstanceIndex(processDefinitionParams.getProcessDefinitionKey()),
       processDefinitionReader::getLatestVersionToKey
     );
   }

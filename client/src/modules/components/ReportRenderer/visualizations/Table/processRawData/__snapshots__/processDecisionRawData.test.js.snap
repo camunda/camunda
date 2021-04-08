@@ -1,18 +1,50 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should only show instance table column if result data is empty 1`] = `
+Object {
+  "body": Array [],
+  "head": Array [
+    Object {
+      "id": "decisionDefinitionId",
+      "label": "Decision Definition Id",
+      "title": "Decision Definition Id",
+    },
+    Object {
+      "id": "decisionInstanceId",
+      "label": "Decision Instance Id",
+      "title": "Decision Instance Id",
+    },
+    Object {
+      "id": "processInstanceId",
+      "label": "Process Instance Id",
+      "title": "Process Instance Id",
+    },
+    Object {
+      "id": "engineName",
+      "label": "Engine Name",
+      "title": "Engine Name",
+    },
+  ],
+}
+`;
+
 exports[`should return correct table props for decision tables 1`] = `
 Object {
   "body": Array [
     Array [
-      "foo",
       "bar",
+      "foo",
+      "456",
+      "1",
       "12",
       "",
       "1",
     ],
     Array [
-      "xyz",
       "abc",
+      "xyz",
+      "456",
+      "1",
       "",
       "true",
       "8",
@@ -20,14 +52,24 @@ Object {
   ],
   "head": Array [
     Object {
+      "id": "decisionDefinitionId",
+      "label": "Decision Definition Id",
+      "title": "Decision Definition Id",
+    },
+    Object {
       "id": "decisionInstanceId",
       "label": "Decision Instance Id",
       "title": "Decision Instance Id",
     },
     Object {
-      "id": "decisionDefinitionId",
-      "label": "Decision Definition Id",
-      "title": "Decision Definition Id",
+      "id": "processInstanceId",
+      "label": "Process Instance Id",
+      "title": "Process Instance Id",
+    },
+    Object {
+      "id": "engineName",
+      "label": "Engine Name",
+      "title": "Engine Name",
     },
     Object {
       "id": "inputVariable:var1",

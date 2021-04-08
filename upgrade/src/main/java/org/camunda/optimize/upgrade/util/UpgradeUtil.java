@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
@@ -42,9 +41,8 @@ public class UpgradeUtil {
     if (configLocations == null || configLocations.length == 0) {
       configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     } else {
-      configurationService = ConfigurationServiceBuilder.createConfigurationFromLocations(
-        ArrayUtils.addAll(ConfigurationServiceBuilder.DEFAULT_CONFIG_LOCATIONS.toArray(new String[]{}), configLocations)
-      );
+      configurationService = ConfigurationServiceBuilder
+        .createConfigurationWithDefaultAndAdditionalLocations(configLocations);
     }
     return createUpgradeDependenciesWithAConfigurationService(configurationService);
   }

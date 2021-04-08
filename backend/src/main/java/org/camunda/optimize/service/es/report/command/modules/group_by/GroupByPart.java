@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.group_by;
 
+import lombok.Getter;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
@@ -25,6 +26,7 @@ import java.util.function.Supplier;
 public abstract class GroupByPart<Data extends SingleReportDataDto> {
 
   @Setter
+  @Getter
   protected DistributedByPart<Data> distributedByPart;
 
   public void adjustSearchRequest(final SearchRequest searchRequest,
@@ -45,7 +47,9 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
 
   public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
                                                     final ExecutionContext<Data> executionContext) {
-    final CompositeCommandResult compositeCommandResult = new CompositeCommandResult(executionContext.getReportData());
+    final CompositeCommandResult compositeCommandResult = new CompositeCommandResult(
+      executionContext.getReportData(), distributedByPart.getViewPart().getViewProperty(executionContext)
+    );
     executionContext.getReportConfiguration().getSorting().ifPresent(compositeCommandResult::setGroupBySorting);
     addQueryResult(compositeCommandResult, response, executionContext);
     return compositeCommandResult;
@@ -63,6 +67,8 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
                                                 final BoolQueryBuilder baseQuery) {
     return Optional.empty();
   }
+
+  protected abstract String getIndexName(ExecutionContext<Data> context);
 
   protected abstract void addQueryResult(final CompositeCommandResult compositeCommandResult,
                                          final SearchResponse response,

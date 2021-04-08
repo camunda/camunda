@@ -90,6 +90,7 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
     return new IdentityLinkLogEntryDto(
       engineEntity.getId(),
       engineEntity.getProcessInstanceId(),
+      engineEntity.getProcessDefinitionKey(),
       engineContext.getEngineAlias(),
       Optional.ofNullable(engineEntity.getType())
         .map(String::toUpperCase)

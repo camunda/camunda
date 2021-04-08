@@ -145,6 +145,7 @@ class PostMigrationTest {
   @Test
   void retrieveAllEventBasedProcessesAndEnsureTheyArePublishedAndHaveInstanceData() {
     final List<EventProcessMappingDto> allEventProcessMappings = eventProcessClient.getAllEventProcessMappings();
+    assertThat(allEventProcessMappings).hasSize(2);
     assertEventProcessesArePublished(allEventProcessMappings);
 
     refreshAllElasticsearchIndices();
@@ -163,10 +164,13 @@ class PostMigrationTest {
   void republishAllEventBasedProcessesAndEnsureTheyArePublishedAndHaveInstanceData() {
     final List<EventProcessMappingDto> eventProcessMappingsBeforeRepublish =
       eventProcessClient.getAllEventProcessMappings();
-    assertThat(eventProcessMappingsBeforeRepublish).isNotEmpty();
+    assertThat(eventProcessMappingsBeforeRepublish).hasSize(2);
+    assertEventProcessesArePublished(eventProcessMappingsBeforeRepublish);
 
     final Map<String, Long> eventProcessInstanceCountsBeforeRepublish =
       retrieveEventProcessInstanceCounts(eventProcessMappingsBeforeRepublish);
+
+    assertThat(eventProcessInstanceCountsBeforeRepublish.values()).doesNotContain(0L);
 
     eventProcessMappingsBeforeRepublish.forEach(eventProcessMappingDto -> {
       final String currentEventProcessMappingId = eventProcessMappingDto.getId();
@@ -210,7 +214,7 @@ class PostMigrationTest {
     assertThat(allEventProcessMappings)
       .isNotEmpty()
       .extracting((Function<EventProcessMappingDto, EventProcessState>) EventProcessMappingDto::getState)
-      .allSatisfy(eventProcessState -> assertThat(eventProcessState).isEqualTo(EventProcessState.PUBLISHED));
+      .allSatisfy(eventProcessState -> assertThat(eventProcessState == EventProcessState.PUBLISHED));
   }
 
   private static AuthorizedProcessReportEvaluationResponseDto<List<RawDataInstanceDto>> evaluateRawDataReportForProcessKey(
@@ -228,7 +232,7 @@ class PostMigrationTest {
     final List<EntityResponseDto> entities = entitiesClient.getAllEntities();
 
     return entities.stream()
-      .filter(entityDto -> EntityType.COLLECTION.equals(entityDto.getEntityType()))
+      .filter(entityDto -> EntityType.COLLECTION == entityDto.getEntityType())
       .collect(Collectors.toList());
   }
 

@@ -91,7 +91,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
   }
 
   @Test
-  public void eventTracesAndCountsAreCreatedCorrectlyForProcessWithEventsWithIdenticalTimestamps() throws SQLException {
+  public void eventTracesAndCountsAreCreatedCorrectlyForProcessWithEventsWithIdenticalTimestamps() {
     // given
     final String definitionKey = "myCamundaProcess1";
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName(definitionKey);
@@ -127,8 +127,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
   }
 
   @Test
-  public void eventTracesAndCountsAreCreatedCorrectlyForProcessWithEventsWithIdenticalTimestamps_noOrderCountersFromEngine() throws
-                                                                                                                             SQLException {
+  public void eventTracesAndCountsAreCreatedCorrectlyForProcessWithEventsWithIdenticalTimestamps_noOrderCountersFromEngine() {
     // given
     final String definitionKey = "myCamundaProcess1";
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName(definitionKey);

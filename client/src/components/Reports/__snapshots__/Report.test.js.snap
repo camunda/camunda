@@ -21,7 +21,9 @@ Object {
   ],
   "view": Object {
     "entity": "flowNode",
-    "property": "frequency",
+    "properties": Array [
+      "frequency",
+    ],
   },
   "visualization": "heat",
 }

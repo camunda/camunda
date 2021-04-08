@@ -83,20 +83,29 @@ it('should display the name of a failing report', async () => {
   expect(node.find('EntityName').children()).toIncludeText('Failing Name');
 });
 
-it('should display an error message if there is an error and no report is returned', async () => {
-  loadReport.mockReturnValue({
+it('should pass an error message if there is an error and no report is returned', async () => {
+  loadReport.mockReturnValueOnce({
+    status: 400,
     json: () => ({
       errorMessage: 'Is failing',
       reportDefinition: null,
     }),
   });
 
-  const node = shallow(
+  const node = await shallow(
     <OptimizeReport {...props} mightFail={(data, success, fail) => fail(data)} disableNameLink />
   );
+  await flushPromises();
 
+  expect(node.find(ReportRenderer).prop('error')).toEqual({
+    status: 400,
+    data: {errorMessage: 'Is failing', reportDefinition: null},
+  });
+
+  node.setProps({mightFail: props.mightFail});
   await node.instance().loadReport();
-  expect(node.find('NoDataNotice').prop('children')).toBe('Is failing');
+
+  expect(node.find(ReportRenderer).prop('error')).toEqual(null);
 });
 
 it('should reload the report if the filter changes', async () => {

@@ -2,13 +2,12 @@ version: '2.4'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${ES_VERSION:-7.3.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.5.1}
     container_name: elasticsearch
     environment:
       - cluster.name=elasticsearch
       - bootstrap.memory_lock=true
       - discovery.type=single-node
-      - action.auto_create_index=true
       - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
     ulimits:
       memlock:

@@ -1,19 +1,51 @@
 .NoDataNotice {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  justify-content: center;
   height: 100%;
-  padding-top: 38px;
   border-radius: 8px;
-  color: var(--grey-lighten-56);
-  text-align: center;
+  padding-left: 25px;
+  overflow: auto;
 
-  h1 {
-    font-size: 16px;
-    font-weight: bold;
-    margin-bottom: 12px;
+  &.warning .Icon {
+    color: var(--orange-base-60);
   }
 
-  p {
-    font-size: 14px;
-    margin: 0;
+  &.error .Icon {
+    color: var(--red-darken-38);
+  }
+
+  &.info .Icon {
+    color: var(--grey-lighten-56);
+  }
+
+  .container {
+    align-self: center;
+    margin: 0 auto;
+
+    h1 {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 3px;
+      position: relative;
+      color: var(--grey-darken-36);
+
+      .Icon {
+        position: absolute;
+        left: -25px;
+        margin-right: 10px;
+
+        svg {
+          min-height: 20px;
+          min-width: 20px;
+        }
+      }
+    }
+
+    p {
+      font-size: 12px;
+      margin: 0;
+    }
   }
 }

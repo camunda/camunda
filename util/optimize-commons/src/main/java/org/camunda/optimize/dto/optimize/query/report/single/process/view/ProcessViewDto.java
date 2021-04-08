@@ -52,6 +52,10 @@ public class ProcessViewDto implements Combinable {
       return false;
     }
     ProcessViewDto viewDto = (ProcessViewDto) o;
+    if (getProperties().size() != 1 || viewDto.getProperties().size() != 1) {
+      // multiple properties are not supported for combined reports
+      return false;
+    }
     return isEntityCombinable(viewDto) && isPropertyCombinable(viewDto);
   }
 
@@ -67,20 +71,9 @@ public class ProcessViewDto implements Combinable {
     return createCommandKeys().get(0);
   }
 
-  // to be removed with OPT-4871 when the result evaluation needs to read all properties
-  @Deprecated
-  public ViewProperty getProperty() {
+  @JsonIgnore
+  public ViewProperty getFirstProperty() {
     return this.properties != null && !this.properties.isEmpty() ? properties.get(0) : null;
-  }
-
-  // to be removed with OPT-4872, just here for jackson and API backwards compatibility thus protected
-  @Deprecated
-  protected void setProperty(final ViewProperty property) {
-    if (this.properties == null || this.properties.isEmpty()) {
-      this.properties = Arrays.asList(property);
-    } else {
-      this.properties.set(0, property);
-    }
   }
 
   @JsonSetter
@@ -99,6 +92,6 @@ public class ProcessViewDto implements Combinable {
   }
 
   private boolean isPropertyCombinable(final ProcessViewDto viewDto) {
-    return Combinable.isCombinable(getProperty(), viewDto.getProperty());
+    return Combinable.isCombinable(getFirstProperty(), viewDto.getFirstProperty());
   }
 }

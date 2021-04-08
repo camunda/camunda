@@ -31,21 +31,28 @@ public class UpdateIndexStep extends UpgradeStep {
   private final Map<String, Object> parameters;
   // expected suffix: hyphen and numbers at end of index name
   private final Pattern indexSuffixPattern = Pattern.compile("-\\d+$");
+  private final Set<String> additionalReadAliases;
 
   public UpdateIndexStep(final IndexMappingCreator index) {
-    this(index, null);
+    this(index, null, Collections.emptyMap(), Collections.emptySet());
+  }
+
+  public UpdateIndexStep(final IndexMappingCreator index, final Set<String> additionalReadAliases) {
+    this(index, null, Collections.emptyMap(), additionalReadAliases);
   }
 
   public UpdateIndexStep(final IndexMappingCreator index, final String mappingScript) {
-    this(index, mappingScript, Collections.emptyMap());
+    this(index, mappingScript, Collections.emptyMap(), Collections.emptySet());
   }
 
   public UpdateIndexStep(final IndexMappingCreator index,
                          final String mappingScript,
-                         final Map<String, Object> parameters) {
+                         final Map<String, Object> parameters,
+                         final Set<String> additionalReadAliases) {
     super(index);
     this.mappingScript = mappingScript;
     this.parameters = parameters;
+    this.additionalReadAliases = additionalReadAliases;
   }
 
   @Override
@@ -92,6 +99,7 @@ public class UpdateIndexStep extends UpgradeStep {
       schemaUpgradeClient.createIndexFromTemplate(targetIndexName);
       schemaUpgradeClient.reindex(sourceIndex, targetIndexName, mappingScript, parameters);
       applyAliasesToIndex(schemaUpgradeClient, targetIndexName, existingAliases);
+      applyAdditionalReadOnlyAliasesToIndex(schemaUpgradeClient, targetIndexName);
       // for rolled over indices only the last one is eligible as writeIndex
       if (sortedIndices.indexOf(sourceIndex) == sortedIndices.size() - 1) {
         // in case of retries it might happen that the default write index flag is overwritten as the source index
@@ -99,6 +107,7 @@ public class UpdateIndexStep extends UpgradeStep {
         schemaUpgradeClient.addAlias(indexAlias, targetIndexName, true);
       }
       schemaUpgradeClient.deleteIndexIfExists(sourceIndex);
+      schemaUpgradeClient.deleteTemplateIfExists(sourceTemplateName);
     }
   }
 
@@ -122,6 +131,7 @@ public class UpdateIndexStep extends UpgradeStep {
       schemaUpgradeClient.createOrUpdateIndex(index);
       schemaUpgradeClient.reindex(sourceIndexName, targetIndexName, mappingScript, parameters);
       applyAliasesToIndex(schemaUpgradeClient, targetIndexName, existingAliases);
+      applyAdditionalReadOnlyAliasesToIndex(schemaUpgradeClient, targetIndexName);
       // in case of retries it might happen that the default write index flag is overwritten as the source index
       // was already set to be a read-only index for all associated indices
       schemaUpgradeClient.addAlias(indexAlias, targetIndexName, true);
@@ -150,6 +160,17 @@ public class UpdateIndexStep extends UpgradeStep {
         indexName,
         // defaulting to true if this flag is not set but only one index exists
         Optional.ofNullable(alias.writeIndex()).orElse(aliases.size() == 1)
+      );
+    }
+  }
+
+  private void applyAdditionalReadOnlyAliasesToIndex(final SchemaUpgradeClient schemaUpgradeClient,
+                                                     final String indexName) {
+    for (String alias : additionalReadAliases) {
+      schemaUpgradeClient.addAlias(
+        schemaUpgradeClient.getIndexNameService().getOptimizeIndexAliasForIndex(alias),
+        indexName,
+        false
       );
     }
   }

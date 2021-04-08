@@ -55,7 +55,14 @@ test('add sources, map and publish a process', async (t) => {
 
   await t.click(e.addSource);
   await t.click(e.externalEvents);
-  await t.click(e.allExternalEventsInput);
+  await t.click(e.externalEventgroup(2));
+  await t.click(e.externalEventgroup(3));
+  await t.takeElementScreenshot(e.modalContainer, 'event-based-processes/externalEvents.png');
+  await t.click(e.primaryModalButton);
+
+  await t.click(e.addSource);
+  await t.click(e.externalEvents);
+  await t.click(e.externalEventgroup(0));
   await t.click(e.primaryModalButton);
 
   await t.takeElementScreenshot(e.eventsTable, 'event-based-processes/eventsTable.png');
@@ -99,6 +106,7 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.primaryModalButton);
   await t.expect(e.notification.exists).ok({timeout: 5000});
   await t.click(e.notificationCloseButton(e.notification));
+  await t.expect(e.notification.exists).notOk({timeout: 5000});
 
   // Listing
   await t.click(e.navItem);

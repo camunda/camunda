@@ -22,12 +22,13 @@ jest.mock('./service', () => ({
     ['b', 2, '12.3%', 2, '12.3%'],
     ['c', 3, '12.3%', 3, '12.3%'],
   ]),
+  sortColumns: (head, body) => ({sortedHead: head, sortedBody: body}),
 }));
 
 const singleReport = {
   reportType: 'process',
   data: {
-    view: {property: 'frequency'},
+    view: {properties: ['frequency']},
     groupBy: {type: 'none'},
   },
 };
@@ -36,7 +37,7 @@ const combinedReport = {
   combined: true,
   data: {
     reports: [{id: 'reportA'}, {id: 'reportB'}],
-    configuration: {},
+    configuration: {tableColumns: {columnOrder: []}},
   },
   result: {
     data: {
@@ -62,7 +63,7 @@ const props = {
 it('should return correct labels and body when combining two table report', async () => {
   expect(processCombinedData(props)).toEqual({
     head: [
-      'key label',
+      {id: 'key label', label: ' ', columns: ['key label']},
       {label: 'Report A', columns: ['value', 'Relative Frequency']},
       {label: 'Report B', columns: ['value', 'Relative Frequency']},
     ],
@@ -87,7 +88,7 @@ it('should not include a column in a combined report if it is hidden in the conf
 
   expect(processCombinedData(props)).toEqual({
     head: [
-      'key label',
+      {id: 'key label', label: ' ', columns: ['key label']},
       {label: 'Report A', columns: ['value']},
       {label: 'Report B', columns: ['value']},
     ],

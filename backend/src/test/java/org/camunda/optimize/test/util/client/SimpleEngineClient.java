@@ -944,10 +944,15 @@ public class SimpleEngineClient {
   }
 
   public void claimAllRunningUserTasks(final String user, final String password, final String processInstanceId) {
+    claimAllRunningUserTasksWithAssignee(user, user, password, processInstanceId);
+  }
+
+  public void claimAllRunningUserTasksWithAssignee(final String assigneeId, final String user,
+                                                   final String password, final String processInstanceId) {
     try (final CloseableHttpClient httpClient = createClientWithBasicAuth(user, password)) {
       final List<org.camunda.optimize.rest.engine.dto.TaskDto> tasks = getUserTasks(httpClient, processInstanceId);
       for (org.camunda.optimize.rest.engine.dto.TaskDto task : tasks) {
-        claimUserTask(httpClient, user, task);
+        claimUserTask(httpClient, assigneeId, task);
       }
     } catch (IOException e) {
       log.error("Error while trying to create http client auth authentication!", e);

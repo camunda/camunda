@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {getFormattedLabels, getBodyRows, getCombinedTableProps} from './service';
+import {sortColumns, getFormattedLabels, getBodyRows, getCombinedTableProps} from './service';
 
 jest.mock('request', () => ({
   get: jest.fn(),
@@ -17,6 +17,7 @@ jest.mock('services', () => {
     reportConfig: {
       process: {
         getLabelFor: () => 'foo',
+        findSelectedOption: () => ({key: 'fn'}),
         options: {
           view: {foo: {data: 'foo', label: 'viewfoo'}},
           groupBy: {
@@ -28,19 +29,31 @@ jest.mock('services', () => {
   };
 });
 
+const unitedResults = [
+  [
+    {
+      property: 'frequency',
+      data: [
+        {key: 'a', value: 1},
+        {key: 'b', value: 2},
+      ],
+    },
+  ],
+  [
+    {
+      property: 'frequency',
+      data: [
+        {key: 'a', value: ''},
+        {key: 'b', value: 0},
+      ],
+    },
+  ],
+];
+
 it('should apply flow node names to the body rows', () => {
   expect(
     getBodyRows({
-      unitedResults: [
-        [
-          {key: 'a', value: 1},
-          {key: 'b', value: 2},
-        ],
-        [
-          {key: 'a', value: ''},
-          {key: 'b', value: 0},
-        ],
-      ],
+      unitedResults,
       allKeys: ['a', 'b'],
       formatter: (v) => v,
       displayRelativeValue: false,
@@ -53,24 +66,15 @@ it('should apply flow node names to the body rows', () => {
       groupedByDuration: false,
     })
   ).toEqual([
-    ['Flownode A', 1, ''],
-    ['Flownode B', 2, 0],
+    ['Flownode A', '1', '--'],
+    ['Flownode B', '2', '0'],
   ]);
 });
 
 it('should return correctly formatted body rows', () => {
   expect(
     getBodyRows({
-      unitedResults: [
-        [
-          {key: 'a', value: 1},
-          {key: 'b', value: 2},
-        ],
-        [
-          {key: 'a', value: ''},
-          {key: 'b', value: 0},
-        ],
-      ],
+      unitedResults,
       allKeys: ['a', 'b'],
       formatter: (v) => v,
       displayRelativeValue: false,
@@ -79,24 +83,15 @@ it('should return correctly formatted body rows', () => {
       groupedByDuration: false,
     })
   ).toEqual([
-    ['a', 1, ''],
-    ['b', 2, 0],
+    ['a', '1', '--'],
+    ['b', '2', '0'],
   ]);
 });
 
 it('should hide absolute values when sepcified from body rows', () => {
   expect(
     getBodyRows({
-      unitedResults: [
-        [
-          {key: 'a', value: 1},
-          {key: 'b', value: 2},
-        ],
-        [
-          {key: 'a', value: ''},
-          {key: 'b', value: 1},
-        ],
-      ],
+      unitedResults,
       allKeys: ['a', 'b'],
       formatter: (v) => v,
       displayRelativeValue: false,
@@ -125,31 +120,13 @@ it('should return correct table label structure', () => {
   ]);
 });
 
-it('should hide absolute values when specified from labels', () => {
-  expect(
-    getFormattedLabels(
-      [
-        ['key', 'value'],
-        ['key', 'value'],
-      ],
-      ['Report A', 'Report B'],
-      ['ReportIdA', 'ReportIdB'],
-      false,
-      false
-    )
-  ).toEqual([
-    {columns: [], label: 'Report A', id: 'ReportIdA'},
-    {columns: [], label: 'Report B', id: 'ReportIdB'},
-  ]);
-});
-
 it('should return correct combined table report data properties', () => {
   const report = {
     name: 'report A',
     combined: false,
     data: {
       view: {
-        property: 'foo',
+        properties: ['frequency'],
       },
       groupBy: {
         type: 'startDate',
@@ -162,9 +139,14 @@ it('should return correct combined table report data properties', () => {
     },
     result: {
       instanceCount: 100,
-      data: [
-        {key: '2015-03-25T12:00:00Z', label: '2015-03-25T12:00:00Z', value: 2},
-        {key: '2015-03-26T12:00:00Z', label: '2015-03-26T12:00:00Z', value: 3},
+      measures: [
+        {
+          property: 'frequency',
+          data: [
+            {key: '2015-03-25T12:00:00Z', label: '2015-03-25T12:00:00Z', value: 2},
+            {key: '2015-03-26T12:00:00Z', label: '2015-03-26T12:00:00Z', value: 3},
+          ],
+        },
       ],
     },
   };
@@ -180,25 +162,117 @@ it('should return correct combined table report data properties', () => {
       'report B': report,
     },
   };
-  const tableProps = getCombinedTableProps(combinedReport.result, combinedReport.data.reports);
+  const tableProps = getCombinedTableProps(
+    combinedReport.result,
+    combinedReport.data.reports,
+    false,
+    true
+  );
 
   expect(tableProps).toEqual({
     combinedResult: [
       [
-        {key: '2015-03-25T12:00:00Z', label: '2015-03-25', value: 2},
-        {key: '2015-03-26T12:00:00Z', label: '2015-03-26', value: 3},
+        {
+          property: 'frequency',
+          data: [
+            {key: '2015-03-25T12:00:00Z', label: '2015-03-25', value: 2},
+            {key: '2015-03-26T12:00:00Z', label: '2015-03-26', value: 3},
+          ],
+        },
       ],
       [
-        {key: '2015-03-25T12:00:00Z', label: '2015-03-25', value: 2},
-        {key: '2015-03-26T12:00:00Z', label: '2015-03-26', value: 3},
+        {
+          property: 'frequency',
+          data: [
+            {key: '2015-03-25T12:00:00Z', label: '2015-03-25', value: 2},
+            {key: '2015-03-26T12:00:00Z', label: '2015-03-26', value: 3},
+          ],
+        },
       ],
     ],
     labels: [
-      ['foo', 'foo'],
-      ['foo', 'foo'],
+      ['foo', 'Flow Node: Count'],
+      ['foo', 'Flow Node: Count'],
     ],
     instanceCount: [100, 100],
     reportsNames: ['report A', 'report A'],
     reportsIds: ['report A', 'report B'],
+  });
+});
+
+describe('sortColumns', () => {
+  const head = [
+    'processInstanceId',
+    'prop2',
+    {type: 'variables', id: 'variable:var1', label: 'Var: var1'},
+    {type: 'variables', id: 'variable:var2', label: 'Var: var2'},
+  ];
+  const body = [
+    ['foo', 'bar', '12', ''],
+    ['xyz', 'abc', '', 'true'],
+  ];
+
+  it('should apply column order', () => {
+    const columnOrder = ['prop2', 'processInstanceId', 'variable:var1', 'variable:var2'];
+
+    expect(sortColumns(head, body, columnOrder)).toEqual({
+      sortedHead: [
+        'prop2',
+        'processInstanceId',
+        {type: 'variables', id: 'variable:var1', label: 'Var: var1'},
+        {type: 'variables', id: 'variable:var2', label: 'Var: var2'},
+      ],
+      sortedBody: [
+        ['bar', 'foo', '12', ''],
+        ['abc', 'xyz', '', 'true'],
+      ],
+    });
+  });
+
+  it('should sort groups of columns', () => {
+    const head = [
+      'processInstanceId',
+      {id: 'prop2', columns: ['a']},
+      {id: 'variables', columns: ['var1', 'var2']},
+    ];
+    const columnOrder = ['variables', 'processInstanceId', 'prop2'];
+
+    expect(sortColumns(head, body, columnOrder)).toEqual({
+      sortedHead: [
+        {columns: ['var1', 'var2'], id: 'variables'},
+        'processInstanceId',
+        {columns: ['a'], id: 'prop2'},
+      ],
+      sortedBody: [
+        ['12', '', 'foo', 'bar'],
+        ['', 'true', 'xyz', 'abc'],
+      ],
+    });
+  });
+
+  it('should return the original head and body if no sorting is applied', () => {
+    const columnOrder = [];
+
+    const {sortedHead, sortedBody} = sortColumns(head, body, columnOrder);
+
+    expect(sortedHead).toBe(head);
+    expect(sortedBody).toBe(body);
+  });
+
+  it('should append columns without specified column order', () => {
+    const columnOrder = ['processInstanceId', 'variable:var1'];
+
+    expect(sortColumns(head, body, columnOrder)).toEqual({
+      sortedBody: [
+        ['foo', '12', 'bar', ''],
+        ['xyz', '', 'abc', 'true'],
+      ],
+      sortedHead: [
+        'processInstanceId',
+        {id: 'variable:var1', label: 'Var: var1', type: 'variables'},
+        'prop2',
+        {id: 'variable:var2', label: 'Var: var2', type: 'variables'},
+      ],
+    });
   });
 });

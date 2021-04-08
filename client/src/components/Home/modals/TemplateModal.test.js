@@ -7,7 +7,7 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {DefinitionSelection, Button, BPMNDiagram, LabeledInput} from 'components';
+import {DefinitionSelection, Button, BPMNDiagram} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 
 import {TemplateModal} from './TemplateModal';
@@ -28,7 +28,7 @@ const props = {
     {
       name: 'heatmap',
       img: <img alt="" />,
-      config: {view: {entity: 'flowNode', property: 'frequency'}},
+      config: {view: {entity: 'flowNode', properties: ['frequency']}},
     },
   ],
 };

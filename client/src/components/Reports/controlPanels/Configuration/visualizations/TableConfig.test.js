@@ -14,7 +14,7 @@ it('should render ColumnSelection for raw data views', () => {
     <TableConfig
       report={{
         combined: false,
-        data: {view: {property: 'rawData'}, groupBy: {type: 'none'}, configuration: {}},
+        data: {view: {properties: ['rawData']}, groupBy: {type: 'none'}, configuration: {}},
       }}
     />
   );
@@ -27,7 +27,7 @@ it('should render relative abolute selection for count views', () => {
     <TableConfig
       report={{
         combined: false,
-        data: {view: {property: 'frequency'}, groupBy: {type: 'startDate'}, configuration: {}},
+        data: {view: {properties: ['frequency']}, groupBy: {type: 'startDate'}, configuration: {}},
       }}
     />
   );
@@ -40,7 +40,11 @@ it('should render GradientBarsSwitch for group by rules', () => {
     <TableConfig
       report={{
         combined: false,
-        data: {view: {property: 'frequency'}, groupBy: {type: 'matchedRule'}, configuration: {}},
+        data: {
+          view: {properties: ['frequency']},
+          groupBy: {type: 'matchedRule'},
+          configuration: {},
+        },
       }}
     />
   );

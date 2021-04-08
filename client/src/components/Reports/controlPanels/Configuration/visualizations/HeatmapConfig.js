@@ -18,7 +18,7 @@ export default function HeatmapConfig(props) {
       <legend>{t('report.config.tooltips.legend')}</legend>
       <RelativeAbsoluteSelection
         reportType={reportType}
-        hideRelative={data.view.property !== 'frequency'}
+        hideRelative={data.view.properties[0] !== 'frequency'}
         absolute={data.configuration.alwaysShowAbsolute}
         relative={data.configuration.alwaysShowRelative}
         onChange={(type, value) => {

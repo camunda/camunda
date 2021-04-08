@@ -7,17 +7,17 @@ package org.camunda.optimize.service.importing.engine.handler;
 
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class CompletedProcessInstanceImportIndexHandler extends TimestampBasedEngineImportIndexHandler {
 
-  public static final String COMPLETED_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID =
-    ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+  public static final String COMPLETED_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID = PROCESS_INSTANCE_MULTI_ALIAS;
 
   private final EngineContext engineContext;
 

@@ -384,6 +384,11 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .orElseThrow(() -> new OptimizeIntegrationTestException("Could not get id of published process"));
   }
 
+  protected EventProcessPublishStateDto getEventPublishStateForEventProcessMappingId(final String eventProcessMappingId) {
+    return getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not get id of published process"));
+  }
+
   protected static EventMappingDto startMapping(final String eventName) {
     return EventMappingDto.builder()
       .start(

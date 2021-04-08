@@ -22,9 +22,10 @@ jest.mock('services', () => ({
 
 const data = {
   visualization: 'heat',
-  view: {entity: 'userTask'},
+  view: {entity: 'userTask', properties: ['frequency']},
   groupBy: {type: 'userTasks'},
   distributedBy: {},
+  configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
 };
 
 it('should match snapshot', () => {
@@ -112,7 +113,7 @@ it('should load and render variables for process instance count reports', () => 
       report={{
         data: {
           ...data,
-          view: {entity: 'processInstance'},
+          view: {entity: 'processInstance', properties: ['frequency']},
           groupBy: {type: 'startDate'},
         },
       }}
@@ -132,7 +133,7 @@ it('should invoke onChange with the selected variable', () => {
       report={{
         data: {
           ...data,
-          view: {entity: 'processInstance'},
+          view: {entity: 'processInstance', properties: ['frequency']},
           groupBy: {type: 'startDate'},
         },
       }}
@@ -160,7 +161,7 @@ it('should invoke onChange with correct start date configuration', () => {
       report={{
         data: {
           ...data,
-          view: {entity: 'processInstance'},
+          view: {entity: 'processInstance', properties: ['frequency']},
           groupBy: {type: 'variable'},
         },
       }}

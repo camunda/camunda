@@ -15,8 +15,10 @@ security:
       secret: null
     # List of user ids that are granted full permission to all collections, reports & dashboards
     # Note: For reports these users are still required to be granted access to the corresponding process/decision
-    # definitions in Camunda BPM Admin
+    # definitions in Camunda Platform Admin
     superUserIds: ${OPTIMIZE_SUPER_USER_IDS:[]}
+    # List of group ids that are granted full permission to all collections, reports & dashboards
+    superGroupIds: []
 
   # Here you can define HTTP response headers that Optimize can send in its responses
   # to increase the security of your application.
@@ -155,6 +157,10 @@ import:
     variable:
       # Determines the page size for historic variable instance fetching.
       maxPageSize: 10000
+      # Controls whether Optimize fetches the serialized value of object variables from the Camunda Runtime REST API.
+      # By default this is active for backwards compatibility. If no variable plugin to handle object
+      # variables is installed, it can be turned off to reduce the overhead of the variable import.
+      includeObjectVariableValue: true
     user-task-instance:
       # Determines the page size for historic user task instance fetching
       maxPageSize: 10000
@@ -224,7 +230,7 @@ import:
   #States how often the import index should be stored to Elasticsearch.
   importIndexStorageIntervalInSec: 10
   # the time interval the import backs off from the current tip of the time, to reread potentially missed concurrent writes
-  currentTimeBackoffMilliseconds: 10000
+  currentTimeBackoffMilliseconds: 300000
   # The identity sync enables Optimize to build up a in memory cache containing Optimize authorized users & groups.
   # This data is used in the collection permissions to allow convenient search capabilities
   # and to display member meta-data such as first name, last name or email.
@@ -303,7 +309,7 @@ es:
       # the schema/mapping is deployed on Elasticsearch. If you want to take
       # this property to take effect again, you need to delete all indexes (with it all data)
       # and restart Optimize.
-      number_of_shards: 5
+      number_of_shards: 1
       # How long Elasticsearch waits until the documents are available
       # for search. A positive value defines the duration in seconds.
       # A value of -1 means that a refresh needs to be done manually.

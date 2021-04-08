@@ -13,13 +13,14 @@ import DurationTargetInput from './subComponents/DurationTargetInput';
 import {t} from 'translation';
 
 export default function NumberConfig({report, onChange}) {
-  const {configuration} = report.data;
+  const {configuration, view} = report.data;
   const targetValue = configuration.targetValue;
 
   const precisionSet = typeof configuration.precision === 'number';
-  const countOperation =
-    report.data.view.property === 'frequency' || report.data.view.entity === 'variable';
+  const countOperation = view.properties.includes('frequency') || view.entity === 'variable';
   const goalSet = targetValue.active;
+
+  const isMultiMeasure = view.properties.length > 1 || configuration.aggregationTypes.length > 1;
 
   return (
     <div className="NumberConfig">
@@ -45,34 +46,36 @@ export default function NumberConfig({report, onChange}) {
           value={precisionSet ? configuration.precision : 1}
         />
       </fieldset>
-      <fieldset>
-        <legend>
-          <Switch
-            checked={goalSet}
-            onChange={(evt) => onChange({targetValue: {active: {$set: evt.target.checked}}})}
-            label={t('report.config.goal.legend')}
-          />
-        </legend>
-        {countOperation ? (
-          <CountTargetInput
-            baseline={targetValue.countProgress.baseline}
-            target={targetValue.countProgress.target}
-            disabled={!goalSet}
-            onChange={(type, value) =>
-              onChange({targetValue: {countProgress: {[type]: {$set: value}}}})
-            }
-          />
-        ) : (
-          <DurationTargetInput
-            baseline={targetValue.durationProgress.baseline}
-            target={targetValue.durationProgress.target}
-            disabled={!goalSet}
-            onChange={(type, subType, value) =>
-              onChange({targetValue: {durationProgress: {[type]: {[subType]: {$set: value}}}}})
-            }
-          />
-        )}
-      </fieldset>
+      {!isMultiMeasure && (
+        <fieldset>
+          <legend>
+            <Switch
+              checked={goalSet}
+              onChange={(evt) => onChange({targetValue: {active: {$set: evt.target.checked}}})}
+              label={t('report.config.goal.legend')}
+            />
+          </legend>
+          {countOperation ? (
+            <CountTargetInput
+              baseline={targetValue.countProgress.baseline}
+              target={targetValue.countProgress.target}
+              disabled={!goalSet}
+              onChange={(type, value) =>
+                onChange({targetValue: {countProgress: {[type]: {$set: value}}}})
+              }
+            />
+          ) : (
+            <DurationTargetInput
+              baseline={targetValue.durationProgress.baseline}
+              target={targetValue.durationProgress.target}
+              disabled={!goalSet}
+              onChange={(type, subType, value) =>
+                onChange({targetValue: {durationProgress: {[type]: {[subType]: {$set: value}}}}})
+              }
+            />
+          )}
+        </fieldset>
+      )}
     </div>
   );
 }

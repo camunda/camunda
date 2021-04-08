@@ -28,8 +28,7 @@ test('navigate to report view and edit pages', async (t) => {
 
   await t.click(e.reportItem);
 
-  await t.expect(e.setupNotice.visible).ok();
-  await t.expect(e.setupNotice.textContent).contains('Select the Edit button above');
+  await t.expect(e.noDataNotice.textContent).contains('Report configuration is incomplete');
 
   await t.click(e.homepageLink);
 

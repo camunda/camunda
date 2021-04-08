@@ -18,6 +18,7 @@ import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPa
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import java.util.ArrayList;
@@ -26,8 +27,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
 @Slf4j
 public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, ProcessReportDataDto> {
@@ -60,18 +60,18 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
 
   @Override
   protected BoolQueryBuilder setupUnfilteredBaseQuery(final ProcessReportDataDto reportData) {
-    return createDefinitionQuery(
+    return DefinitionQueryUtil.createDefinitionQuery(
       reportData.getDefinitionKey(),
       reportData.getDefinitionVersions(),
       reportData.getTenantIds(),
-      new ProcessInstanceIndex(),
+      new ProcessInstanceIndex(reportData.getProcessDefinitionKey()),
       processDefinitionReader::getLatestVersionToKey
     );
   }
 
   @Override
   protected String getIndexName(final ExecutionContext<ProcessReportDataDto> context) {
-    return PROCESS_INSTANCE_INDEX_NAME;
+    return getProcessInstanceIndexAliasName(context.getReportData().getProcessDefinitionKey());
   }
 
   @Override

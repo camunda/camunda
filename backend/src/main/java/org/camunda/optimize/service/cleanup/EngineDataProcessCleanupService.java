@@ -24,8 +24,8 @@ import org.springframework.stereotype.Component;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.cleanup.CleanupService.enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown;
 
 @AllArgsConstructor
@@ -104,7 +104,7 @@ public class EngineDataProcessCleanupService implements CleanupService {
       camundaActivityEventWriter.deleteByProcessInstanceIds(definitionKey, currentInstanceIds);
       businessKeyWriter.deleteByProcessInstanceIds(currentInstanceIds);
       variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentInstanceIds);
-      processInstanceWriter.deleteByIds(currentInstanceIds);
+      processInstanceWriter.deleteByIds(definitionKey, currentInstanceIds);
       currentPageOfProcessInstanceIds = processInstanceReader
         .getNextPageOfProcessInstanceIdsThatEndedBefore(
           definitionKey, endDate, batchSize, currentPageOfProcessInstanceIds
@@ -120,7 +120,7 @@ public class EngineDataProcessCleanupService implements CleanupService {
     while (!currentPageOfProcessInstanceIds.isEmpty()) {
       final List<String> currentInstanceIds = currentPageOfProcessInstanceIds.getEntities();
       variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentInstanceIds);
-      processVariableUpdateWriter.deleteVariableDataByProcessInstanceIds(currentInstanceIds);
+      processVariableUpdateWriter.deleteVariableDataByProcessInstanceIds(definitionKey, currentInstanceIds);
 
       currentPageOfProcessInstanceIds = processInstanceReader
         .getNextPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
@@ -130,11 +130,12 @@ public class EngineDataProcessCleanupService implements CleanupService {
   }
 
   private Set<String> getAllCamundaEngineProcessDefinitionKeys() {
-    return processDefinitionReader.getAllProcessDefinitions()
+    final Set<String> existingDefinitionKeys = processInstanceReader.getExistingProcessDefinitionKeysFromInstances();
+    return processDefinitionReader.getProcessDefinitions(existingDefinitionKeys)
       .stream()
       .filter(definition -> !definition.isEventBased())
       .map(ProcessDefinitionOptimizeDto::getKey)
-      .collect(Collectors.toSet());
+      .collect(toSet());
   }
 
   private CleanupConfiguration getCleanupConfiguration() {

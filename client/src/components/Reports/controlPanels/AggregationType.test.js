@@ -7,13 +7,17 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Select} from 'components';
-
 import AggregationType from './AggregationType';
 
 it('should render nothing if the current result is no duration and the view is not variable', () => {
   const node = shallow(
-    <AggregationType report={{data: {view: {entity: null}}, result: {type: 'rawData'}}} />
+    <AggregationType
+      report={{
+        configuration: {aggregationTypes: ['avg']},
+        view: {entity: null, properties: ['rawData']},
+        distributedBy: {type: 'none'},
+      }}
+    />
   );
 
   expect(node).toMatchSnapshot();
@@ -22,7 +26,25 @@ it('should render nothing if the current result is no duration and the view is n
 it('should render an aggregation selection for duration reports', () => {
   const node = shallow(
     <AggregationType
-      report={{data: {view: {property: 'duration'}, configuration: {aggregationType: 'median'}}}}
+      report={{
+        view: {properties: ['duration']},
+        distributedBy: {type: 'none'},
+        configuration: {aggregationTypes: ['median']},
+      }}
+    />
+  );
+
+  expect(node).toMatchSnapshot();
+});
+
+it('should render an user task duration selection for user task duration reports', () => {
+  const node = shallow(
+    <AggregationType
+      report={{
+        view: {entity: 'userTask', properties: ['duration']},
+        distributedBy: {type: 'none'},
+        configuration: {aggregationTypes: ['median'], userTaskDurationTimes: ['idle']},
+      }}
     />
   );
 
@@ -32,15 +54,15 @@ it('should render an aggregation selection for duration reports', () => {
 it('should render an additional sum field for variable reports', () => {
   const node = shallow(
     <AggregationType
-      report={{data: {view: {entity: 'variable'}, configuration: {aggregationType: 'sum'}}}}
+      report={{
+        view: {entity: 'variable', properties: [{}]},
+        distributedBy: {type: 'none'},
+        configuration: {aggregationTypes: ['sum']},
+      }}
     />
   );
 
-  expect(node.find(Select.Option).first()).toHaveProp('value', 'sum');
-});
-
-it('should not crash when no resultType is set (e.g. for combined reports)', () => {
-  shallow(<AggregationType report={{result: {}}} />);
+  expect(node.find('Switch').first()).toHaveProp('label', 'Sum');
 });
 
 it('should reevaluate the report when changing the aggregation type', () => {
@@ -48,14 +70,29 @@ it('should reevaluate the report when changing the aggregation type', () => {
 
   const node = shallow(
     <AggregationType
-      report={{data: {view: {property: 'duration'}, configuration: {aggregationType: 'median'}}}}
+      report={{
+        view: {properties: ['duration']},
+        distributedBy: {type: 'none'},
+        configuration: {aggregationTypes: ['median']},
+      }}
       onChange={spy}
     />
   );
 
-  node.find('Select').simulate('change', 'max');
+  node
+    .find('Switch')
+    .last()
+    .simulate('change', {target: {checked: true}});
 
-  expect(spy).toHaveBeenCalledWith({configuration: {aggregationType: {$set: 'max'}}}, true);
+  expect(spy).toHaveBeenCalledWith(
+    {
+      configuration: {
+        aggregationTypes: {$set: ['median', 'max']},
+        targetValue: {active: {$set: false}},
+      },
+    },
+    true
+  );
 });
 
 it('should hide median aggregation if processpart is defined', () => {
@@ -64,14 +101,36 @@ it('should hide median aggregation if processpart is defined', () => {
   const node = shallow(
     <AggregationType
       report={{
-        data: {
-          view: {property: 'duration'},
-          configuration: {aggregationType: 'avg', processPart: 'defined'},
-        },
+        view: {properties: ['duration']},
+        distributedBy: {type: 'none'},
+        configuration: {aggregationTypes: ['avg'], processPart: 'defined'},
       }}
       onChange={spy}
     />
   );
 
-  expect(node.find({value: 'median'})).not.toExist();
+  expect(node.find({label: 'Median'})).not.toExist();
+});
+
+it('should reset the visualization to table if the report is distributed', () => {
+  const spy = jest.fn();
+
+  const node = shallow(
+    <AggregationType
+      report={{
+        view: {properties: ['duration']},
+        distributedBy: {type: 'assignee'},
+        configuration: {aggregationTypes: ['avg']},
+        visualization: 'bar',
+      }}
+      onChange={spy}
+    />
+  );
+
+  node
+    .find('Switch')
+    .last()
+    .simulate('change', {target: {checked: true}});
+
+  expect(spy.mock.calls[0][0].visualization).toEqual({$set: 'table'});
 });

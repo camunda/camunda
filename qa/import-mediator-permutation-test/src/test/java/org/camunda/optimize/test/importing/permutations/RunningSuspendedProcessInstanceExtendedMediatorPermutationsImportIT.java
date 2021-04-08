@@ -77,7 +77,6 @@ public class RunningSuspendedProcessInstanceExtendedMediatorPermutationsImportIT
           .satisfies(userTask -> {
             assertThat(userTask.getStartDate()).isNotNull();
             assertThat(userTask.getEndDate()).isNull();
-            assertThat(userTask.getClaimDate()).isNull();
             assertThat(userTask.getIdleDurationInMs()).isNull();
             assertThat(userTask.getWorkDurationInMs()).isNull();
           });

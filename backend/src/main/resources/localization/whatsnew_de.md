@@ -1,11 +1,12 @@
-## Einfache Berichtserstellung
+## Multi-Measure- und Multi-Aggregation-Berichte
 
-Wählen Sie einfach die Ansicht Ihres Prozesses aus, um einen Bericht anzuzeigen. Jetzt ist es viel einfacher, Ihre Konfiguration zu verfeinern und Ihre Daten in verschiedenen Visualisierungen anzuzeigen.
+Betrachten Sie Dauer und Anzahl von Prozessinstanzen in einem einzigen Bericht. Es ist ebenfalls möglich verschiedene Aggregationswerte anzuzeigen.
 
-## Daten filtern
+## Dashboard-Berichte nach Assignee oder Kandidatengruppe filtern
 
-Mit dem neuen Filter "Flow Node Data" können Sie nur die Flow Nodes anzeigen, die die angegebenen Anforderungen für die jeweilige Ansicht erfüllen.
+Prozessinstanz- und Prozessknotenberichte zeigen Instanzen an, in denen der gewählten Assignee- oder Kandidatengruppe vorhanden war.
+Benutzeraufgabenberichte zeigen nur Daten von Flow Nodes an, die die Filteranforderung erfüllen.
 
-## Incident Filter
+## Prozessknoten Statusfilter
 
-Probieren Sie den neuen Incident Filter aus, um aktuell geöffnete oder gelöste Incidents anzuzeigen oder Prozessinstanzen, bei denen in der Vergangenheit Incidents aufgetreten sind, von Ihrer Analyse auszuschließen.
+Die Konfigurationseinstellung des Prozessknoten Status wurde zu einem vollwertigen Filter migriert.  Finden Sie diesen mit den anderen Filtern und zeigen Sie Berichtsdaten basierend auf dem Status eines Prozessknotens an.

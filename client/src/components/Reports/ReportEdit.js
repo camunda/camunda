@@ -6,7 +6,7 @@
 
 import React from 'react';
 import update from 'immutability-helper';
-import deepEqual from 'deep-equal';
+import deepEqual from 'fast-deep-equal';
 import {Redirect, withRouter} from 'react-router-dom';
 
 import {withErrorHandling} from 'HOC';
@@ -36,6 +36,7 @@ export class ReportEdit extends React.Component {
     updatePromise: null,
     optimizeVersion: 'latest',
     report: this.props.report,
+    serverError: this.props.error,
   };
 
   async componentDidMount() {
@@ -106,7 +107,10 @@ export class ReportEdit extends React.Component {
     }
     if (id) {
       nowPristine();
-      this.props.updateOverview(update(this.state.report, {id: {$set: id}}));
+      this.props.updateOverview(
+        update(this.state.report, {id: {$set: id}}),
+        this.state.serverError
+      );
 
       const params = new URLSearchParams(this.props.location.search);
       const returnTo = params.get('returnTo');
@@ -196,17 +200,44 @@ export class ReportEdit extends React.Component {
   setLoading = (value) => this.setState({loadingReportData: value});
 
   loadReport = (params, query = this.state.report) =>
-    this.props.mightFail(
-      evaluateReport(query, [], params),
-      (response) =>
-        this.setState({
-          report: response,
-        }),
-      showError
+    new Promise((resolve) =>
+      this.props.mightFail(
+        evaluateReport(query, [], params),
+        (response) =>
+          this.setState(
+            {
+              report: response,
+              serverError: null,
+            },
+            resolve
+          ),
+        async (e) => {
+          const errorData = await e.json();
+          if (errorData) {
+            this.setState(
+              {
+                report: errorData.reportDefinition,
+                serverError: {status: e.status, data: errorData},
+              },
+              resolve
+            );
+          } else {
+            this.setState(
+              {
+                serverError: {
+                  status: e.status,
+                  data: {errorMessage: t('apiErrors.reportEvaluationError')},
+                },
+              },
+              resolve
+            );
+          }
+        }
+      )
     );
 
   render() {
-    const {report, loadingReportData, conflict, redirect} = this.state;
+    const {report, serverError, loadingReportData, conflict, redirect} = this.state;
     const {name, data, combined, reportType} = report;
 
     if (redirect) {
@@ -266,6 +297,7 @@ export class ReportEdit extends React.Component {
               <LoadingIndicator />
             ) : (
               <ReportRenderer
+                error={serverError}
                 report={report}
                 updateReport={this.updateReport}
                 loadReport={this.loadReport}

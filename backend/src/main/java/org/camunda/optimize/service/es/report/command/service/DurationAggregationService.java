@@ -19,7 +19,7 @@ import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
-import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
+import org.camunda.optimize.service.es.report.command.util.DurationScriptUtil;
 import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
@@ -49,10 +49,11 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_START_DATE;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
 import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 
 @Component
@@ -72,7 +73,10 @@ public class DurationAggregationService {
     final Script durationCalculationScript) {
 
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForScriptedField(
-      context, searchSourceBuilder.query(), PROCESS_INSTANCE_INDEX_NAME, durationCalculationScript
+      context,
+      searchSourceBuilder.query(),
+      getIndexName(context),
+      durationCalculationScript
     );
     return createLimitedGroupByScriptedDurationAggregation(
       context, distributedByPart, durationCalculationScript, minMaxStats, this::createProcessInstanceLimitingFilterQuery
@@ -86,7 +90,7 @@ public class DurationAggregationService {
     final Script durationCalculationScript) {
 
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
-      context, searchSourceBuilder.query(), PROCESS_INSTANCE_INDEX_NAME, EVENTS, durationCalculationScript
+      context, searchSourceBuilder.query(), getIndexName(context), EVENTS, durationCalculationScript
     );
     return createLimitedGroupByScriptedDurationAggregation(
       context, distributedByPart, durationCalculationScript, minMaxStats, this::createEventLimitingFilterQuery
@@ -97,10 +101,11 @@ public class DurationAggregationService {
     final SearchSourceBuilder searchSourceBuilder,
     final ExecutionContext<ProcessReportDataDto> context,
     final DistributedByPart<ProcessReportDataDto> distributedByPart,
-    final Script durationCalculationScript) {
+    final Script durationCalculationScript,
+    final UserTaskDurationTime userTaskDurationTime) {
 
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
-      context, searchSourceBuilder.query(), PROCESS_INSTANCE_INDEX_NAME, USER_TASKS, durationCalculationScript
+      context, searchSourceBuilder.query(), getIndexName(context), USER_TASKS, durationCalculationScript
     );
     return createLimitedGroupByScriptedDurationAggregation(
       context,
@@ -108,7 +113,7 @@ public class DurationAggregationService {
       durationCalculationScript,
       minMaxStats,
       (filterOperator, filterValueInMillis) -> createUserTaskLimitingFilterQuery(
-        filterOperator, context.getReportConfiguration().getUserTaskDurationTime(), filterValueInMillis
+        filterOperator, userTaskDurationTime, filterValueInMillis
       )
     );
   }
@@ -171,7 +176,7 @@ public class DurationAggregationService {
       minValueInMillis,
       durationCalculationScript,
       maxValueInMillis,
-      distributedByPart.createAggregation(context)
+      distributedByPart.createAggregations(context)
     );
 
     return Optional.of(wrapWithFilterLimitedParentAggregation(limitingFilter, histogramAggregation));
@@ -210,7 +215,7 @@ public class DurationAggregationService {
       filterOperator,
       (long) filterValueInMillis,
       USER_TASKS + "." + userTaskDurationTime.getDurationFieldName(),
-      USER_TASKS + "." + userTaskDurationTime.getStartDateFieldName(),
+      USER_TASKS + "." + USER_TASK_START_DATE,
       // user task duration calculations can be null (e.g. work time if the userTask hasn't been claimed)
       true
     );
@@ -238,7 +243,7 @@ public class DurationAggregationService {
                                                        final String referenceDateFieldName,
                                                        final boolean includeNull) {
     return QueryBuilders.scriptQuery(
-      AggregationFilterUtil.getDurationFilterScript(
+      DurationScriptUtil.getDurationFilterScript(
         LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
         durationFieldName,
         referenceDateFieldName,
@@ -250,5 +255,9 @@ public class DurationAggregationService {
           .build()
       )
     );
+  }
+
+  private String getIndexName(final ExecutionContext<ProcessReportDataDto> context) {
+    return getProcessInstanceIndexAliasName(context.getReportData().getProcessDefinitionKey());
   }
 }

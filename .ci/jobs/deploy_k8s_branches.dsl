@@ -29,7 +29,7 @@ pipelineJob('deploy-optimize-branch-to-k8s') {
     pipelineTriggers {
       triggers {
         cron {
-          spec('H 3 * * *')
+          spec('H 22 * * *')
         }
       }
     }

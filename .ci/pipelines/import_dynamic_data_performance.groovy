@@ -13,7 +13,7 @@ def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${po
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}" }
 
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
-    return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}"
+    return "docker.elastic.co/elasticsearch/elasticsearch:${esVersion}"
 }
 
 static String mavenElasticsearchAgent(env, postgresVersion = '9.6-alpine', esVersion, cambpmVersion) {
@@ -139,8 +139,6 @@ spec:
       value: elasticsearch
     - name: discovery.type
       value: single-node
-    - name: action.auto_create_index
-      value: false
     - name: bootstrap.memory_lock
       value: true
     securityContext:

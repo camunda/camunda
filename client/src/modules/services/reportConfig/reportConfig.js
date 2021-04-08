@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import equal from 'deep-equal';
+import equal from 'fast-deep-equal';
 import {t} from 'translation';
 
 export default function reportConfig({view, groupBy, visualization, combinations}) {
@@ -17,11 +17,6 @@ export default function reportConfig({view, groupBy, visualization, combinations
    * @param subOption defines whethet the data entry we are searching for is a sub option or not
    */
   const getLabelFor = (type, menu, data, subOption = false) => {
-    // TODO remove this temporary hack done for OPT-4825 that allows to ignore the new `properties` property
-    if (data) {
-      delete data.properties;
-    }
-
     // special case: variables
     if (data && data.type && data.type.toLowerCase().includes('variable')) {
       return t(`report.${type}.${data.type}`) + ': ' + data.value.name;
@@ -54,20 +49,28 @@ export default function reportConfig({view, groupBy, visualization, combinations
    * Checks whether a certain combination of view, groupby and visualization is allowed.
    */
   const isAllowed = (report, targetView, targetGroupBy, targetVisualization) => {
-    // TODO remove this temporary hack done for OPT-4825 that allows to ignore the new `properties` property
-    if (targetView) {
-      delete targetView.properties;
-    }
-
     const viewGroup = getGroupFor(view, targetView);
     const groupGroup = getGroupFor(groupBy, targetGroupBy);
     const visualizationGroup = getGroupFor(visualization, targetVisualization);
 
-    if (
-      ['pie', 'heat'].includes(targetVisualization) &&
-      report.data.distributedBy.type !== 'none'
-    ) {
-      return false;
+    if (report.data.distributedBy.type !== 'none') {
+      if (['pie', 'heat'].includes(targetVisualization)) {
+        // pie charts and heatmaps generally do not support distributed reports
+        return false;
+      }
+
+      if (
+        (targetView?.properties.length > 1 ||
+          (report.data.configuration.aggregationTypes.length > 1 &&
+            targetView?.properties.includes('duration')) ||
+          (report.data.configuration.userTaskDurationTimes.length > 1 &&
+            targetView?.properties.includes('duration') &&
+            targetView?.entity === 'userTask')) &&
+        ['bar', 'line'].includes(targetVisualization)
+      ) {
+        // distributed multi-measure reports also do not support normal chart visualizatations
+        return false;
+      }
     }
 
     if (viewGroup && groupGroup && visualizationGroup) {
@@ -207,10 +210,6 @@ export default function reportConfig({view, groupBy, visualization, combinations
   }
 
   function findSelectedOption(options, compareProp, compareValue) {
-    // TODO remove this temporary hack done for OPT-4825 that allows to ignore the new `properties` property
-    if (compareValue) {
-      delete compareValue.properties;
-    }
     for (let i = 0; i < options.length; i++) {
       const option = options[i];
       if (option.options) {

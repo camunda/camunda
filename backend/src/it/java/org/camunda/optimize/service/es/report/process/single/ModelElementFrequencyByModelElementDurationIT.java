@@ -80,7 +80,7 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(definition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(getModelElementView());
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.DURATION);
 
     final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
@@ -113,7 +113,7 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(definition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(getModelElementView());
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.DURATION);
 
     final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();

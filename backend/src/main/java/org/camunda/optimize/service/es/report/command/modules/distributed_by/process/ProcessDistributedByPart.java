@@ -8,12 +8,29 @@ package org.camunda.optimize.service.es.report.command.modules.distributed_by.pr
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 
 public abstract class ProcessDistributedByPart extends DistributedByPart<ProcessReportDataDto> {
 
   @Override
   public boolean isKeyOfNumericType(final ExecutionContext<ProcessReportDataDto> context) {
     return false;
+  }
+
+  @Override
+  public List<CompositeCommandResult.DistributedByResult> createEmptyResult(final ExecutionContext<ProcessReportDataDto> context) {
+    return context.getAllDistributedByKeysAndLabels()
+      .entrySet()
+      .stream()
+      .map(entry -> createDistributedByResult(
+        entry.getKey(), entry.getValue(), this.viewPart.createEmptyResult(context)
+      ))
+      .collect(Collectors.toList());
   }
 
 }

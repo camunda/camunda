@@ -17,7 +17,7 @@ import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
@@ -38,11 +38,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
 @RequiredArgsConstructor
-public abstract class AbstractProcessGroupByProcessInstanceDate extends GroupByPart<ProcessReportDataDto> {
+public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessGroupByPart {
 
   protected final ConfigurationService configurationService;
   protected final DateAggregationService dateAggregationService;
@@ -93,7 +92,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends GroupByP
       .dateField(getDateField())
       .minMaxStats(stats)
       .timezone(context.getTimezone())
-      .subAggregation(distributedByPart.createAggregation(context))
+      .subAggregations(distributedByPart.createAggregations(context))
       .processGroupByType(getGroupByType().getType())
       .processFilters(context.getReportData().getFilter())
       .processQueryFilterEnhancer(queryFilterEnhancer)
@@ -107,7 +106,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends GroupByP
 
   private MinMaxStatDto getMinMaxDateStats(final ExecutionContext<ProcessReportDataDto> context,
                                            final QueryBuilder baseQuery) {
-    return minMaxStatsService.getMinMaxDateRange(context, baseQuery, PROCESS_INSTANCE_INDEX_NAME, getDateField());
+    return minMaxStatsService.getMinMaxDateRange(context, baseQuery, getIndexName(context), getDateField());
   }
 
   @Override
@@ -180,7 +179,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends GroupByP
     // add sibling distributedBy aggregation to enrich context with all distributed by keys,
     // required for variable distribution
     if (DistributedByType.VARIABLE.equals(getDistributedByType(context.getReportData()))) {
-      aggregationBuilder.subAggregation(distributedByPart.createAggregation(context));
+      distributedByPart.createAggregations(context).forEach(aggregationBuilder::subAggregation);
     }
     return aggregationBuilder;
   }

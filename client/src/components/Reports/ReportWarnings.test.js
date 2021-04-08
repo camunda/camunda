@@ -48,7 +48,7 @@ it('should show a warning message when there are incompatible filter ', async ()
           visualization: 'table',
           groupBy: {},
           view: {
-            property: 'rawData',
+            properties: ['rawData'],
           },
           filter: ['some data'],
         },
@@ -70,7 +70,7 @@ it('should show a warning when running node status filter is added on a grouped 
           visualization: 'table',
           view: {
             entity: 'userTask',
-            property: 'count',
+            properties: ['count'],
           },
           groupBy: {
             type: 'endDate',

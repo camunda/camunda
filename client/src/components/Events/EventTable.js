@@ -6,7 +6,7 @@
 
 import React from 'react';
 import classnames from 'classnames';
-import deepEqual from 'deep-equal';
+import deepEqual from 'fast-deep-equal';
 
 import {Table, LoadingIndicator, Input, Select, Switch, Icon, Button} from 'components';
 import {withErrorHandling} from 'HOC';

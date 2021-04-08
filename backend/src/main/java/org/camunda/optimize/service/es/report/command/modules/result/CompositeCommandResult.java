@@ -7,9 +7,12 @@ package org.camunda.optimize.service.es.report.command.modules.result;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.Singular;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
@@ -21,12 +24,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Distr
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.VariableViewPropertyDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.result.HyperMapCommandResult;
 import org.camunda.optimize.service.es.report.result.MapCommandResult;
 import org.camunda.optimize.service.es.report.result.NumberCommandResult;
@@ -36,9 +40,12 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
@@ -46,70 +53,126 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Data
+@RequiredArgsConstructor
 @Accessors(chain = true)
 public class CompositeCommandResult {
-
   private final SingleReportDataDto reportDataDto;
+  private final ViewProperty viewProperty;
+
   private ReportSortingDto groupBySorting = new ReportSortingDto();
   private ReportSortingDto distributedBySorting = new ReportSortingDto();
   private boolean isGroupByKeyOfNumericType = false;
   private boolean isDistributedByKeyOfNumericType = false;
-  private ViewProperty viewProperty;
+  private Supplier<Double> defaultNumberValueSupplier = () -> 0.;
 
   private List<GroupByResult> groups = new ArrayList<>();
 
-  public void setGroup(GroupByResult groupByResult) {
+  public CompositeCommandResult(final SingleReportDataDto reportDataDto,
+                                final ViewProperty viewProperty,
+                                final Double defaultNumberValue) {
+    this.reportDataDto = reportDataDto;
+    this.viewProperty = viewProperty;
+    this.defaultNumberValueSupplier = () -> defaultNumberValue;
+  }
+
+  public void setGroup(final GroupByResult groupByResult) {
     this.groups = singletonList(groupByResult);
   }
 
   public CommandEvaluationResult<List<HyperMapResultEntryDto>> transformToHyperMap() {
-    List<HyperMapResultEntryDto> hyperMapData = new ArrayList<>();
+    final Map<ViewMeasureIdentifier, List<HyperMapResultEntryDto>> measureDataSets = createMeasureMap(ArrayList::new);
     for (GroupByResult group : groups) {
-      List<MapResultEntryDto> distribution = group.distributions.stream()
-        .map(DistributedByResult::getValueAsMapResultEntry)
-        .sorted(getSortingComparator(distributedBySorting, isDistributedByKeyOfNumericType))
-        .collect(Collectors.toList());
-      hyperMapData.add(new HyperMapResultEntryDto(group.getKey(), distribution, group.getLabel()));
+      final Map<ViewMeasureIdentifier, List<MapResultEntryDto>> distributionsByAggregationType =
+        createMeasureMap(ArrayList::new);
+      group.distributions.forEach(distributedByResult -> distributedByResult.getViewResult().getViewMeasures()
+        .forEach(viewMeasure -> distributionsByAggregationType.get(viewMeasure.getViewMeasureIdentifier())
+          .add(new MapResultEntryDto(
+            distributedByResult.getKey(), viewMeasure.getValue(), distributedByResult.getLabel()
+          ))
+        ));
+
+      distributionsByAggregationType.forEach((type, mapResultEntryDtos) -> {
+        mapResultEntryDtos.sort(getSortingComparator(distributedBySorting, isDistributedByKeyOfNumericType));
+        measureDataSets.get(type).add(new HyperMapResultEntryDto(group.getKey(), mapResultEntryDtos, group.getLabel()));
+      });
     }
-    sortHypermapResultData(groupBySorting, isGroupByKeyOfNumericType, hyperMapData);
+    measureDataSets.values().forEach(
+      hyperMapData -> sortHypermapResultData(groupBySorting, isGroupByKeyOfNumericType, hyperMapData)
+    );
     return new HyperMapCommandResult(
-      Collections.singletonList(createMeasureDto(hyperMapData)),
+      measureDataSets.entrySet().stream()
+        .map(measureDataEntry -> createMeasureDto(measureDataEntry.getKey(), measureDataEntry.getValue()))
+        .collect(Collectors.toList()),
       (ProcessReportDataDto) reportDataDto
     );
   }
 
   public CommandEvaluationResult<List<MapResultEntryDto>> transformToMap() {
-    List<MapResultEntryDto> mapData = new ArrayList<>();
+    final Map<ViewMeasureIdentifier, List<MapResultEntryDto>> measureDataSets = createMeasureMap(ArrayList::new);
     for (GroupByResult group : groups) {
-      final List<DistributedByResult> distributions = group.getDistributions();
-      if (distributions.size() == 1) {
-        final Double value = distributions.get(0).getValueAsDouble();
-        mapData.add(new MapResultEntryDto(group.getKey(), value, group.getLabel()));
-      } else {
-        throw new OptimizeRuntimeException(createErrorMessage(MapCommandResult.class, DistributedByType.class));
-      }
+      group.getDistributions().forEach(distributedByResult -> distributedByResult.getViewResult().getViewMeasures()
+        .forEach(viewMeasure -> measureDataSets.get(viewMeasure.getViewMeasureIdentifier()).add(
+          new MapResultEntryDto(group.getKey(), viewMeasure.getValue(), group.getLabel())
+        ))
+      );
     }
-    mapData.sort(getSortingComparator(groupBySorting, isGroupByKeyOfNumericType));
-    return new MapCommandResult(Collections.singletonList(createMeasureDto(mapData)), reportDataDto);
+    measureDataSets.values().forEach(
+      mapData -> mapData.sort(getSortingComparator(groupBySorting, isGroupByKeyOfNumericType))
+    );
+
+    return new MapCommandResult(
+      measureDataSets.entrySet()
+        .stream()
+        .map(measureEntry -> createMeasureDto(measureEntry.getKey(), measureEntry.getValue()))
+        .collect(Collectors.toList()),
+      reportDataDto
+    );
   }
 
   public CommandEvaluationResult<Double> transformToNumber() {
-    final NumberCommandResult numberResultDto = new NumberCommandResult(reportDataDto);
-    if (groups.isEmpty()) {
-      numberResultDto.addMeasure(createMeasureDto(0.));
-      return numberResultDto;
-    } else if (groups.size() == 1) {
+    final Map<ViewMeasureIdentifier, Double> measureDataSets = createMeasureMap(defaultNumberValueSupplier);
+    if (groups.size() == 1) {
       final List<DistributedByResult> distributions = groups.get(0).distributions;
       if (distributions.size() == 1) {
-        final Double value = distributions.get(0).getViewResult().getNumber();
-        numberResultDto.addMeasure(createMeasureDto(value));
-        return numberResultDto;
+        final List<ViewMeasure> measures = distributions.get(0).getViewResult().getViewMeasures();
+        for (final ViewMeasure viewMeasure : measures) {
+          measureDataSets.put(viewMeasure.getViewMeasureIdentifier(), viewMeasure.getValue());
+        }
       } else {
         throw new OptimizeRuntimeException(createErrorMessage(NumberCommandResult.class, DistributedByType.class));
       }
-    } else {
-      throw new OptimizeRuntimeException(createErrorMessage(NumberCommandResult.class, GroupByResult.class));
     }
+    return new NumberCommandResult(
+      measureDataSets.entrySet()
+        .stream()
+        .map(measureEntry -> createMeasureDto(measureEntry.getKey(), measureEntry.getValue()))
+        .collect(Collectors.toList()),
+      reportDataDto
+    );
+  }
+
+  private <T> Map<ViewMeasureIdentifier, T> createMeasureMap(final Supplier<T> defaultValueSupplier) {
+    final Map<ViewMeasureIdentifier, T> measureMap = new LinkedHashMap<>();
+
+    // if this is a frequency view only null key is expected
+    if (ViewProperty.FREQUENCY.equals(viewProperty)) {
+      measureMap.put(new ViewMeasureIdentifier(), defaultValueSupplier.get());
+    }
+
+    if (isUserTaskDurationResult()) {
+      reportDataDto.getConfiguration().getUserTaskDurationTimes()
+        .forEach(userTaskDurationTime -> reportDataDto.getConfiguration().getAggregationTypes()
+          .forEach(aggregationType -> measureMap.put(
+            new ViewMeasureIdentifier(aggregationType, userTaskDurationTime), defaultValueSupplier.get())
+          ));
+    } else if (ViewProperty.DURATION.equals(viewProperty) || isNumberVariableView()) {
+      // if this is duration view property an entry per aggregationType is expected
+      reportDataDto.getConfiguration().getAggregationTypes()
+        .forEach(aggregationType -> measureMap.put(
+          new ViewMeasureIdentifier(aggregationType, null), defaultValueSupplier.get()
+        ));
+    }
+    return measureMap;
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
@@ -134,24 +197,27 @@ public class CompositeCommandResult {
   }
 
   private <T> MeasureDto<T> createMeasureDto(final T value) {
-    return new MeasureDto<>(viewProperty, getAggregationType(), getUserTaskDurationTime(), value);
+    return createMeasureDto(new ViewMeasureIdentifier(), value);
   }
 
-  private AggregationType getAggregationType() {
-    return ViewProperty.DURATION.equals(viewProperty)
-      ? reportDataDto.getConfiguration().getAggregationTypes().get(0)
-      : null;
+  private <T> MeasureDto<T> createMeasureDto(final ViewMeasureIdentifier viewMeasureIdentifier, final T value) {
+    return new MeasureDto<>(
+      viewProperty, viewMeasureIdentifier.getAggregationType(), viewMeasureIdentifier.getUserTaskDurationTime(), value
+    );
   }
 
-  private UserTaskDurationTime getUserTaskDurationTime() {
-    if (reportDataDto instanceof ProcessReportDataDto) {
-      return ProcessViewEntity.USER_TASK.equals(((ProcessReportDataDto) reportDataDto).getView().getEntity())
-        && ViewProperty.DURATION.equals(viewProperty)
-        ? reportDataDto.getConfiguration().getUserTaskDurationTimes().get(0)
-        : null;
-    } else {
-      return null;
-    }
+  private boolean isUserTaskDurationResult() {
+    return reportDataDto instanceof ProcessReportDataDto
+      && ProcessViewEntity.USER_TASK.equals(((ProcessReportDataDto) reportDataDto).getView().getEntity())
+      && ViewProperty.DURATION.equals(viewProperty);
+  }
+
+  private boolean isNumberVariableView() {
+    return Optional.ofNullable(viewProperty)
+      .flatMap(value -> value.getViewPropertyDtoIfOfType(VariableViewPropertyDto.class))
+      .map(VariableViewPropertyDto::getType)
+      .filter(propertyType -> VariableType.getNumericTypes().contains(propertyType))
+      .isPresent();
   }
 
   private Comparator<MapResultEntryDto> getSortingComparator(
@@ -241,7 +307,7 @@ public class CompositeCommandResult {
     );
   }
 
-  private String createErrorMessage(Class resultClass, Class resultPartClass) {
+  private String createErrorMessage(final Class<?> resultClass, final Class<?> resultPartClass) {
     return String.format(
       "Could not transform the result of command to a %s since the result has not the right structure. For %s the %s " +
         "result is supposed to contain just one value!",
@@ -258,30 +324,24 @@ public class CompositeCommandResult {
     private String label;
     private List<DistributedByResult> distributions;
 
-    public static GroupByResult createResultWithEmptyDistributedBy(final String key) {
-      return new GroupByResult(key, null, singletonList(DistributedByResult.createResultWithEmptyValue(key)));
-    }
-
-    public static GroupByResult createResultWithEmptyDistributedBy(final String key,
-                                                                   final ExecutionContext<ProcessReportDataDto> context) {
-      return new GroupByResult(
-        key,
-        null,
-        DistributedByResult.createEmptyDistributedByResultsForAllPossibleKeys(context)
-      );
-    }
-
-    public static GroupByResult createEmptyGroupBy(List<DistributedByResult> distributions) {
+    public static GroupByResult createGroupByNone(final List<DistributedByResult> distributions) {
       return new GroupByResult(null, null, distributions);
     }
 
-    public static GroupByResult createGroupByResult(final String key, final String label,
-                                                    final List<DistributedByResult> distributions) {
-      return new GroupByResult(key, label, distributions);
+    public static GroupByResult createGroupByResult(final String key,
+                                                    final String label,
+                                                    final DistributedByResult distribution) {
+      return new GroupByResult(key, label, Collections.singletonList(distribution));
     }
 
     public static GroupByResult createGroupByResult(final String key, final List<DistributedByResult> distributions) {
       return new GroupByResult(key, null, distributions);
+    }
+
+    public static GroupByResult createGroupByResult(final String key,
+                                                    final String label,
+                                                    final List<DistributedByResult> distributions) {
+      return new GroupByResult(key, label, distributions);
     }
 
     public String getLabel() {
@@ -293,30 +353,11 @@ public class CompositeCommandResult {
   @Data
   @EqualsAndHashCode
   public static class DistributedByResult {
-
     private String key;
     private String label;
     private ViewResult viewResult;
 
-    public static DistributedByResult createResultWithEmptyValue(String key) {
-      return new DistributedByResult(key, null, new ViewResult());
-    }
-
-    public static DistributedByResult createResultWithZeroValue(String key) {
-      return createResultWithZeroValue(key, null);
-    }
-
-    public static DistributedByResult createResultWithZeroValue(String key, String label) {
-      ViewResult viewResult = new ViewResult();
-      viewResult.setNumber(0.0);
-      return new DistributedByResult(key, label, viewResult);
-    }
-
-    public static DistributedByResult createResultWithEmptyValue(String key, String label) {
-      return new DistributedByResult(key, label, new ViewResult());
-    }
-
-    public static DistributedByResult createEmptyDistributedBy(ViewResult viewResult) {
+    public static DistributedByResult creatDistributedByNoneResult(ViewResult viewResult) {
       return new DistributedByResult(null, null, viewResult);
     }
 
@@ -324,33 +365,46 @@ public class CompositeCommandResult {
       return new DistributedByResult(key, label, viewResult);
     }
 
-    public static List<DistributedByResult> createEmptyDistributedByResultsForAllPossibleKeys(
-      final ExecutionContext<ProcessReportDataDto> context) {
-      return context.getAllDistributedByKeysAndLabels()
-        .entrySet()
-        .stream()
-        .map(entry -> createResultWithEmptyValue(entry.getKey(), entry.getValue()))
-        .collect(Collectors.toList());
-    }
-
     public String getLabel() {
       return label != null && !label.isEmpty() ? label : key;
     }
 
-    public Double getValueAsDouble() {
-      return this.getViewResult().getNumber();
+    public List<Double> getValuesAsDouble() {
+      return this.getViewResult().getViewMeasures().stream().map(ViewMeasure::getValue).collect(Collectors.toList());
     }
 
-    public MapResultEntryDto getValueAsMapResultEntry() {
-      return new MapResultEntryDto(this.key, getValueAsDouble(), this.label);
+    public List<MapResultEntryDto> getValuesAsMapResultEntries() {
+      return getValuesAsDouble().stream()
+        .map(value -> new MapResultEntryDto(this.key, value, this.label))
+        .collect(Collectors.toList());
     }
   }
 
-  @NoArgsConstructor
-  @Accessors(chain = true)
+  @Builder
   @Data
   public static class ViewResult {
-    private Double number;
+    @Singular
+    private List<ViewMeasure> viewMeasures;
     private List<? extends RawDataInstanceDto> rawData;
+  }
+
+  @Builder
+  @Data
+  public static class ViewMeasure {
+    private AggregationType aggregationType;
+    private UserTaskDurationTime userTaskDurationTime;
+    private final Double value;
+
+    public ViewMeasureIdentifier getViewMeasureIdentifier() {
+      return new ViewMeasureIdentifier(aggregationType, userTaskDurationTime);
+    }
+  }
+
+  @Data
+  @AllArgsConstructor
+  @NoArgsConstructor
+  public static class ViewMeasureIdentifier {
+    private AggregationType aggregationType;
+    private UserTaskDurationTime userTaskDurationTime;
   }
 }

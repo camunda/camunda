@@ -67,7 +67,6 @@ public class RunningProcessInstanceMediatorPermutationsImportIT extends Abstract
           .singleElement()
           .satisfies(userTask -> {
             assertThat(userTask.getStartDate()).isNotNull();
-            assertThat(userTask.getClaimDate()).isNotNull();
             assertThat(userTask.getEndDate()).isNull();
             assertThat(userTask.getAssignee()).isEqualTo(DEFAULT_USERNAME);
             assertThat(userTask.getCandidateGroups()).containsOnly(CANDIDATE_GROUP);

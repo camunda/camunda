@@ -20,15 +20,19 @@ import org.camunda.optimize.service.es.report.command.service.VariableAggregatio
 import org.camunda.optimize.service.es.report.command.util.VariableAggregationContext;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.ParsedNested;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
+import org.elasticsearch.search.aggregations.bucket.nested.ReverseNestedAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.util.ArrayList;
@@ -77,8 +81,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   protected abstract String getVariablePath();
 
-  protected abstract String getIndexName(ExecutionContext<Data> context);
-
   protected abstract BoolQueryBuilder getVariableUndefinedOrNullQuery(final ExecutionContext<Data> context);
 
   @Override
@@ -106,6 +108,9 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     // base query used for distrBy date reports
     context.setDistributedByMinMaxBaseQuery(searchSourceBuilder.query());
 
+    final ReverseNestedAggregationBuilder reverseNestedAggregationBuilder =
+      reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION);
+    createDistributedBySubAggregations(context).forEach(reverseNestedAggregationBuilder::subAggregation);
     final VariableAggregationContext varAggContext = VariableAggregationContext.builder()
       .variableName(getVariableName(context))
       .variableType(getVariableType(context))
@@ -117,14 +122,15 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       .customBucketDto(context.getReportData().getConfiguration().getCustomBucket())
       .dateUnit(getGroupByDateUnit(context))
       .baseQueryForMinMaxStats(searchSourceBuilder.query())
-      .subAggregation(
-        reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
-          .subAggregation(createDistributedBySubAggregation(context)))
+      .subAggregations(Collections.singletonList(reverseNestedAggregationBuilder))
       .combinedRangeMinMaxStats(context.getCombinedRangeMinMaxStats().orElse(null))
       .build();
 
     final Optional<AggregationBuilder> variableSubAggregation =
       variableAggregationService.createVariableSubAggregation(varAggContext);
+
+    final Optional<QueryBuilder> variableFilterQueryBuilder =
+      variableAggregationService.createVariableFilterQuery(varAggContext);
 
     if (!variableSubAggregation.isPresent()) {
       // if the report contains no instances and is grouped by date variable, this agg will not be present
@@ -140,6 +146,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
             .must(termQuery(getNestedVariableNameFieldLabel(), getVariableName(context)))
             .must(termQuery(getNestedVariableTypeField(), getVariableType(context).getId()))
             .must(existsQuery(getNestedVariableValueFieldLabel(VariableType.STRING)))
+            .must(variableFilterQueryBuilder.orElseGet(QueryBuilders::matchAllQuery))
         )
           .subAggregation(variableSubAggregation.get())
           .subAggregation(reverseNested(FILTERED_INSTANCE_COUNT_AGGREGATION))
@@ -149,23 +156,29 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     return Arrays.asList(variableAggregation, undefinedOrNullVariableAggregation);
   }
 
-  private AggregationBuilder createDistributedBySubAggregation(final ExecutionContext<Data> context) {
+  private List<AggregationBuilder> createDistributedBySubAggregations(final ExecutionContext<Data> context) {
     if (distributedByPart.isFlownodeReport()) {
       // Nest the distributed by part to ensure the aggregation is on flownode level
-      return nested(NESTED_FLOWNODE_AGGREGATION, EVENTS)
-        .subAggregation(
-          filter(
-            FILTERED_FLOW_NODE_AGGREGATION,
-            createFlowNodeAggregationFilter((ProcessReportDataDto) context.getReportData())
-          )
-            .subAggregation(distributedByPart.createAggregation(context)));
+      final FilterAggregationBuilder filterAggregationBuilder = filter(
+        FILTERED_FLOW_NODE_AGGREGATION,
+        createFlowNodeAggregationFilter((ProcessReportDataDto) context.getReportData())
+      );
+      distributedByPart.createAggregations(context).forEach(filterAggregationBuilder::subAggregation);
+      return Collections.singletonList(
+        nested(NESTED_FLOWNODE_AGGREGATION, EVENTS)
+        .subAggregation(filterAggregationBuilder)
+      );
     }
-    return distributedByPart.createAggregation(context);
+    return distributedByPart.createAggregations(context);
   }
 
   private AggregationBuilder createUndefinedOrNullVariableAggregation(final ExecutionContext<Data> context) {
-    return filter(MISSING_VARIABLES_AGGREGATION, getVariableUndefinedOrNullQuery(context))
-      .subAggregation(createDistributedBySubAggregation(context));
+    final FilterAggregationBuilder filterAggregationBuilder = filter(
+      MISSING_VARIABLES_AGGREGATION,
+      getVariableUndefinedOrNullQuery(context)
+    );
+    createDistributedBySubAggregations(context).forEach(filterAggregationBuilder::subAggregation);
+    return filterAggregationBuilder;
   }
 
   @Override

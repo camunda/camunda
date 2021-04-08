@@ -32,7 +32,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static org.camunda.optimize.service.util.InstanceIndexUtil.isDecisionInstanceIndexNotFoundException;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 
 @Slf4j
 public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
@@ -93,13 +93,22 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
-      if (isDecisionInstanceIndexNotFoundException(e)) {
-        log.warn(
-          "Could not evaluate report. Required instance index does not exist, no instances have been imported yet" +
-            " for the specified definition. Returning empty result instead",
-          e
+      if (isInstanceIndexNotFoundException(e)) {
+        log.info(
+          "Could not evaluate report because required instance index {} does not exist. Returning empty result instead",
+          getIndexName(executionContext)
         );
-        return mapToReportResult.apply(new CompositeCommandResult(executionContext.getReportData()));
+        return mapToReportResult.apply(new CompositeCommandResult(
+          executionContext.getReportData(),
+          viewPart.getViewProperty(executionContext),
+          // the default number value differs across views, see the corresponding createEmptyResult implementations
+          // thus we refer to it here in order to create an appropriate empty result
+          // see https://jira.camunda.com/browse/OPT-3336
+          viewPart.createEmptyResult(executionContext).getViewMeasures().stream()
+            .findFirst()
+            .map(CompositeCommandResult.ViewMeasure::getValue)
+            .orElse(null)
+        ));
       } else {
         throw e;
       }
@@ -131,7 +140,6 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
   private CommandEvaluationResult<T> retrieveQueryResult(final SearchResponse response,
                                                          final ExecutionContext<D> executionContext) {
     final CompositeCommandResult result = groupByPart.retrieveQueryResult(response, executionContext);
-    result.setViewProperty(viewPart.getViewProperty(executionContext));
     final CommandEvaluationResult<T> reportResult = mapToReportResult.apply(result);
     reportResult.setInstanceCount(response.getHits().getTotalHits().value);
     reportResult.setInstanceCountWithoutFilters(executionContext.getUnfilteredInstanceCount());

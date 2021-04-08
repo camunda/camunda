@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
@@ -151,9 +152,9 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     assertThat(actualXml).isEqualTo(expectedDto.getBpmn20Xml());
   }
 
-  @ParameterizedTest(name = "Get the latest XML of {0} process definition.")
+  @ParameterizedTest(name = "Get the latest XML of {0} process definition for ALL version selection.")
   @MethodSource("processDefinitionTypes")
-  public void getLatestProcessDefinitionXml(final String processDefinitionType) {
+  public void getAllProcessDefinitionXml(final String processDefinitionType) {
     // given
     ProcessDefinitionOptimizeDto expectedDto1 = addDefinitionToElasticsearch(KEY, "1", processDefinitionType);
     ProcessDefinitionOptimizeDto expectedDto2 = addDefinitionToElasticsearch(KEY, "2", processDefinitionType);
@@ -163,6 +164,20 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
 
     // then
     assertThat(actualXml).isEqualTo(expectedDto2.getBpmn20Xml());
+  }
+
+  @ParameterizedTest(name = "Get the latest XML of {0} process definition for LATEST version selection.")
+  @MethodSource("processDefinitionTypes")
+  public void getLatestProcessDefinitionXml(final String processDefinitionType) {
+    // given
+    addDefinitionToElasticsearch(KEY, "1", processDefinitionType);
+    ProcessDefinitionOptimizeDto expectedDto = addDefinitionToElasticsearch(KEY, "2", processDefinitionType);
+
+    // when
+    String actualXml = definitionClient.getProcessDefinitionXml(KEY, LATEST_VERSION, null);
+
+    // then
+    assertThat(actualXml).isEqualTo(expectedDto.getBpmn20Xml());
   }
 
   @Test

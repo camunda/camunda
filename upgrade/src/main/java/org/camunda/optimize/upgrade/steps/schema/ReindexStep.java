@@ -22,6 +22,12 @@ public class ReindexStep extends UpgradeStep {
   @Getter
   private final IndexMappingCreator targetIndex;
   private final QueryBuilder sourceIndexFilterQuery;
+  private final String mappingScript;
+
+  public ReindexStep(final IndexMappingCreator sourceIndex, final IndexMappingCreator targetIndex,
+                     final QueryBuilder sourceIndexFilterQuery) {
+    this(sourceIndex, targetIndex, sourceIndexFilterQuery, null);
+  }
 
   @Override
   public UpgradeStepType getType() {
@@ -30,7 +36,7 @@ public class ReindexStep extends UpgradeStep {
 
   @Override
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
-    schemaUpgradeClient.reindex(sourceIndex, targetIndex, sourceIndexFilterQuery);
+    schemaUpgradeClient.reindex(sourceIndex, targetIndex, sourceIndexFilterQuery, mappingScript);
   }
 
 }

@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
@@ -37,13 +37,12 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 @Slf4j
 @RequiredArgsConstructor
-public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart<ProcessReportDataDto> {
+public abstract class AbstractProcessGroupByModelElementDate extends ProcessGroupByPart {
 
   private static final String ELEMENT_AGGREGATION = "elementAggregation";
   private static final String FILTERED_ELEMENTS_AGGREGATION = "filteredElements";
@@ -61,7 +60,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
           minMaxStatsService.getMinMaxDateRangeForNestedField(
             context,
             baseQuery,
-            PROCESS_INSTANCE_INDEX_NAME,
+            getIndexName(context),
             getDateField(),
             getPathToElementField(),
             getFilterQuery(context)
@@ -81,7 +80,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
     final MinMaxStatDto stats = minMaxStatsService.getMinMaxDateRangeForNestedField(
       context,
       searchSourceBuilder.query(),
-      PROCESS_INSTANCE_INDEX_NAME,
+      getIndexName(context),
       getDateField(),
       getPathToElementField(),
       getFilterQuery(context)
@@ -92,7 +91,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
       .dateField(getDateField())
       .minMaxStats(stats)
       .timezone(context.getTimezone())
-      .subAggregation(distributedByPart.createAggregation(context))
+      .subAggregations(distributedByPart.createAggregations(context))
       .build();
 
     final Optional<AggregationBuilder> bucketLimitedHistogramAggregation =
@@ -103,7 +102,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
         wrapInNestedElementAggregation(
           context,
           bucketLimitedHistogramAggregation.get(),
-          distributedByPart.createAggregation(context)
+          distributedByPart.createAggregations(context)
         );
       return Collections.singletonList(groupByFlowNodeDateAggregation);
     }
@@ -113,15 +112,16 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
 
   private NestedAggregationBuilder wrapInNestedElementAggregation(final ExecutionContext<ProcessReportDataDto> context,
                                                                   final AggregationBuilder aggregationToWrap,
-                                                                  final AggregationBuilder distributedBySubAggregation) {
-    return nested(ELEMENT_AGGREGATION, getPathToElementField())
+                                                                  final List<AggregationBuilder> distributedBySubAggregations) {
+    final NestedAggregationBuilder nestedAggregationBuilder = nested(ELEMENT_AGGREGATION, getPathToElementField())
       .subAggregation(
         filter(FILTERED_ELEMENTS_AGGREGATION, getFilterQuery(context))
           .subAggregation(aggregationToWrap)
-      )
-      // sibling aggregation for distributedByPart for retrieval of all keys that
-      // should be present in distributedBy result
-      .subAggregation(distributedBySubAggregation);
+      );
+    // sibling aggregation for distributedByPart for retrieval of all keys that
+    // should be present in distributedBy result
+    distributedBySubAggregations.forEach(nestedAggregationBuilder::subAggregation);
+    return nestedAggregationBuilder;
   }
 
   @Override

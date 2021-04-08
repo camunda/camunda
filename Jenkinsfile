@@ -137,7 +137,7 @@ String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Intege
   Integer jvmMemory = memoryLimitInGb / 2
   return """
   - name: elasticsearch-${httpPort}
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${esVersion}
     securityContext:
       privileged: true
       capabilities:
@@ -167,6 +167,11 @@ String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Intege
         value: ${httpPort}
       - name: cluster.name
         value: elasticsearch
+      # We usually run our integration tests concurrently, as some cleanup methods like #deleteAllOptimizeData
+      # internally make usage of scroll contexts this lead to hits on the scroll limit.
+      # Thus this increased scroll context limit.
+      - name: search.max_open_scroll_context
+        value: 1000
       - name: path.repo
         value: /var/tmp
    """
@@ -176,7 +181,7 @@ String elasticSearchUpgradeContainerSpec(String esVersion) {
   String httpPort = "9250"
   return """
   - name: elasticsearch-old
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${esVersion}
     securityContext:
       privileged: true
       capabilities:

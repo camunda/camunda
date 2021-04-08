@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableMap;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -38,7 +37,6 @@ import org.quartz.SchedulerException;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,9 +44,6 @@ import java.util.Map;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
-import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
@@ -396,16 +391,6 @@ public abstract class AbstractAlertIT extends AbstractIT {
     greenMail.setUser("test@camunda.com", "test@camunda.com", "test@camunda.com");
     greenMail.start();
     return greenMail;
-  }
-
-  protected void grantSingleDefinitionAuthorizationsForUser(String userId, String definitionKey) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(RESOURCE_TYPE_PROCESS_DEFINITION);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(definitionKey);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
-    authorizationDto.setUserId(userId);
-    engineIntegrationExtension.createAuthorization(authorizationDto);
   }
 
   private DecisionDefinitionEngineDto deployAndStartSimpleDecisionDefinition(String definitionKey) {

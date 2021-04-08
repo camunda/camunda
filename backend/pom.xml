@@ -11,7 +11,7 @@
   <artifactId>optimize-backend</artifactId>
 
   <properties>
-    <jetty.version>9.4.38.v20210224</jetty.version>
+    <jetty.version>9.4.39.v20210325</jetty.version>
     <jersey.version>2.32</jersey.version>
     <it.test.excludedGroups />
     <test.forkCount />
@@ -166,7 +166,7 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>3.13.0</version>
+      <version>3.15.0</version>
       <exclusions>
         <exclusion>
           <artifactId>jackson-databind</artifactId>
@@ -209,7 +209,7 @@
     <dependency>
       <groupId>com.opencsv</groupId>
       <artifactId>opencsv</artifactId>
-      <version>5.3</version>
+      <version>5.4</version>
     </dependency>
 
     <!-- Utilities -->
@@ -233,7 +233,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.102</version>
+      <version>4.8.104</version>
     </dependency>
 
     <!--Test dependencies-->
@@ -269,7 +269,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>1.6.2</version>
+      <version>1.6.3</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -522,16 +522,16 @@
                 <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skip.docker}</skip>
-                  <target name="check-cambpm-is-running" description="Check whether CamBPM is running">
-                    <echo message="Check CamBPM Tomcat is running..." />
+                  <target name="check-cambpm-is-running" description="Check whether Camunda Platform is running">
+                    <echo message="Check Camunda Platform Tomcat is running..." />
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
                       <socket server="localhost" port="${tomcat.connector.http.port}" />
                     </waitfor>
-                    <echo message="CamBPM Tomcat socket is open. Checking for manager app to become available..." />
+                    <echo message="Camunda Platform Tomcat socket is open. Checking for manager app to become available..." />
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
                       <http url="http://admin:admin@localhost:${tomcat.connector.http.port}/manager/text/list" />
                     </waitfor>
-                    <echo message="CamBPM Tomcat manager app is running." />
+                    <echo message="Camunda Platform Tomcat manager app is running." />
                   </target>
                 </configuration>
                 <goals>

@@ -94,7 +94,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   @JsonIgnore
   public boolean isFrequencyReport() {
     return Optional.ofNullable(view)
-      .map(ProcessViewDto::getProperty)
+      .map(ProcessViewDto::getFirstProperty)
       .map(p -> p.equals(ViewProperty.FREQUENCY))
       .orElse(false);
   }
@@ -139,10 +139,11 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       return false;
     }
     ProcessReportDataDto that = (ProcessReportDataDto) o;
-    return Combinable.isCombinable(view, that.view) &&
-      isGroupByCombinable(that) &&
-      Combinable.isCombinable(getDistributedBy(), that.getDistributedBy()) &&
-      Objects.equals(visualization, that.visualization);
+    return Combinable.isCombinable(getView(), that.getView())
+      && isGroupByCombinable(that)
+      && Combinable.isCombinable(getDistributedBy(), that.getDistributedBy())
+      && Objects.equals(getVisualization(), that.getVisualization())
+      && getConfiguration().isCombinable(that.getConfiguration());
   }
 
   public List<String> getTenantIds() {
@@ -155,6 +156,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       return ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList();
     }
     return Collections.emptyList();
+  }
+
+  public boolean isUserTaskReport() {
+    return nonNull(view) && ProcessViewEntity.USER_TASK.equals(view.getEntity());
   }
 
   private boolean isGroupByCombinable(final ProcessReportDataDto that) {

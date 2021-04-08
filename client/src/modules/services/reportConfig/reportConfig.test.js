@@ -16,14 +16,19 @@ const {
   update,
 } = reportConfig(process);
 
-const report = {data: {distributedBy: {type: 'none', value: null}}};
+const report = {
+  data: {
+    distributedBy: {type: 'none', value: null},
+    configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
+  },
+};
 
 it('should get a label for a simple visualization', () => {
   expect(getLabelFor('visualization', visualization, 'heat')).toBe('Heatmap');
 });
 
 it('should get a label for a complex view', () => {
-  expect(getLabelFor('view', view, {entity: 'processInstance', property: 'frequency'})).toBe(
+  expect(getLabelFor('view', view, {entity: 'processInstance', properties: ['frequency']})).toBe(
     'Process Instance: Count'
   );
 });
@@ -44,41 +49,41 @@ it('should get a label for group by variables for dmn', () => {
 });
 
 it('should always allow view selection', () => {
-  expect(isAllowed(report, {property: 'rawData', entity: null})).toBe(true);
+  expect(isAllowed(report, {properties: ['rawData'], entity: null})).toBe(true);
 });
 
 it('should allow only groupBy options that make sense for the selected view', () => {
   expect(
-    isAllowed(report, {property: 'rawData', entity: null}, {type: 'none', value: null})
+    isAllowed(report, {properties: ['rawData'], entity: null}, {type: 'none', value: null})
   ).toBeTruthy();
   expect(
-    isAllowed(report, {property: 'rawData', entity: null}, {type: 'flowNodes', value: null})
+    isAllowed(report, {properties: ['rawData'], entity: null}, {type: 'flowNodes', value: null})
   ).toBeFalsy();
   expect(
     isAllowed(
       report,
-      {property: 'frequency', entity: 'processInstance'},
+      {properties: ['frequency'], entity: 'processInstance'},
       {type: 'runningDate', value: {unit: 'automatic'}}
     )
   ).toBeTruthy();
   expect(
     isAllowed(
       report,
-      {property: 'duration', entity: 'processInstance'},
+      {properties: ['duration'], entity: 'processInstance'},
       {type: 'runningDate', value: {unit: 'automatic'}}
     )
   ).toBeFalsy();
   expect(
     isAllowed(
       report,
-      {property: {name: 'doubleVar', type: 'Double'}, entity: 'variable'},
+      {properties: [{name: 'doubleVar', type: 'Double'}], entity: 'variable'},
       {type: 'flowNodes', value: null}
     )
   ).toBeFalsy();
   expect(
     isAllowed(
       report,
-      {property: {name: 'doubleVar', type: 'Double'}, entity: 'variable'},
+      {properties: [{name: 'doubleVar', type: 'Double'}], entity: 'variable'},
       {type: 'none', value: null}
     )
   ).toBeTruthy();
@@ -86,10 +91,10 @@ it('should allow only groupBy options that make sense for the selected view', ()
 
 it('should allow only visualization options that make sense for the selected view and group', () => {
   expect(
-    isAllowed(report, {property: 'rawData', entity: null}, {type: 'none', value: null}, 'table')
+    isAllowed(report, {properties: ['rawData'], entity: null}, {type: 'none', value: null}, 'table')
   ).toBeTruthy();
   expect(
-    isAllowed(report, {property: 'rawData', entity: null}, {type: 'none', value: null}, 'heat')
+    isAllowed(report, {properties: ['rawData'], entity: null}, {type: 'none', value: null}, 'heat')
   ).toBeFalsy();
 
   expect(
@@ -97,7 +102,7 @@ it('should allow only visualization options that make sense for the selected vie
       report,
       {
         entity: 'processInstance',
-        property: 'duration',
+        properties: ['duration'],
       },
       {
         type: 'startDate',
@@ -113,7 +118,7 @@ it('should allow only visualization options that make sense for the selected vie
       report,
       {
         entity: 'processInstance',
-        property: 'duration',
+        properties: ['duration'],
       },
       {
         type: 'none',
@@ -125,8 +130,13 @@ it('should allow only visualization options that make sense for the selected vie
 });
 
 it('should forbid pie charts for distributed user task reports', () => {
-  const report = {data: {distributedBy: {type: 'userTask', value: null}}};
-  const view = {entity: 'userTask', property: 'frequency'};
+  const report = {
+    data: {
+      distributedBy: {type: 'userTask', value: null},
+      configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
+    },
+  };
+  const view = {entity: 'userTask', properties: ['frequency']};
   const groupBy = {type: 'assignee', value: null};
 
   expect(isAllowed(report, view, groupBy, 'bar')).toBeTruthy();
@@ -135,8 +145,13 @@ it('should forbid pie charts for distributed user task reports', () => {
 });
 
 it('should forbid pie charts and heatmap for distributed userTask reports', () => {
-  const report = {data: {distributedBy: {type: 'assignee', value: null}}};
-  const view = {entity: 'userTask', property: 'frequency'};
+  const report = {
+    data: {
+      distributedBy: {type: 'assignee', value: null},
+      configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
+    },
+  };
+  const view = {entity: 'userTask', properties: ['frequency']};
   const groupBy = {type: 'userTasks', value: null};
 
   expect(isAllowed(report, view, groupBy, 'table')).toBeTruthy();
@@ -146,16 +161,16 @@ it('should forbid pie charts and heatmap for distributed userTask reports', () =
 });
 
 it('should find a selected option based on property', () => {
-  expect(findSelectedOption(view, 'data', {property: 'frequency', entity: 'processInstance'})).toBe(
-    view[1].options[0]
-  );
+  expect(
+    findSelectedOption(view, 'data', {properties: ['frequency'], entity: 'processInstance'})
+  ).toBe(view[1].options[0]);
   expect(findSelectedOption(groupBy, 'key', 'startDate_day')).toBe(groupBy[4].options[4]);
 });
 
 describe('update', () => {
   const countProcessInstances = {
     entity: 'processInstance',
-    property: 'frequency',
+    properties: ['frequency'],
   };
 
   const startDate = {
@@ -174,6 +189,8 @@ describe('update', () => {
           data: {
             view: countProcessInstances,
             visualization: 'bar',
+            distributedBy: {type: 'none', value: null},
+            configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
           },
         },
       })
@@ -187,6 +204,8 @@ describe('update', () => {
           data: {
             view: countProcessInstances,
             visualization: 'number',
+            distributedBy: {type: 'none', value: null},
+            configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
           },
         },
       }).visualization
@@ -204,6 +223,7 @@ describe('update', () => {
               view: countProcessInstances,
               visualization: 'heat',
               distributedBy: {type: 'none'},
+              configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
             },
           },
         }
@@ -218,6 +238,8 @@ describe('update', () => {
           data: {
             groupBy: startDate,
             visualization: 'bar',
+            distributedBy: {type: 'none', value: null},
+            configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
           },
         },
       })
@@ -235,6 +257,7 @@ describe('update', () => {
             groupBy: {type: 'flowNodes', value: null},
             visualization: 'heat',
             distributedBy: {type: 'none'},
+            configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
           },
         },
       })

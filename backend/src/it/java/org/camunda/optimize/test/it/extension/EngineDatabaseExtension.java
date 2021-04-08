@@ -8,6 +8,7 @@ package org.camunda.optimize.test.it.extension;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogType;
 import org.junit.jupiter.api.extension.Extension;
 
@@ -26,6 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+
+import static org.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.CLAIM_OPERATION_TYPE;
+import static org.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.UNCLAIM_OPERATION_TYPE;
 
 /**
  * Engine Database Extension
@@ -359,7 +363,7 @@ public class EngineDatabaseExtension implements Extension {
 
   @SneakyThrows
   public void changeUserTaskStartDate(final String processInstanceId,
-                                      final String taskId,
+                                      final String userTaskId,
                                       final OffsetDateTime startDate) {
     String sql = "UPDATE ACT_HI_TASKINST " +
       "SET START_TIME_ = ? WHERE " +
@@ -368,14 +372,14 @@ public class EngineDatabaseExtension implements Extension {
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
     statement.setString(2, processInstanceId);
-    statement.setString(3, taskId);
+    statement.setString(3, userTaskId);
     statement.executeUpdate();
     connection.commit();
   }
 
   @SneakyThrows
   public void changeUserTaskEndDate(final String processInstanceId,
-                                    final String taskId,
+                                    final String userTaskId,
                                     final OffsetDateTime endDate) {
     String sql = "UPDATE ACT_HI_TASKINST " +
       "SET END_TIME_ = ? WHERE " +
@@ -384,22 +388,57 @@ public class EngineDatabaseExtension implements Extension {
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
     statement.setString(2, processInstanceId);
-    statement.setString(3, taskId);
+    statement.setString(3, userTaskId);
     statement.executeUpdate();
     connection.commit();
   }
 
-  public void changeUserTaskAssigneeOperationTimestamp(final String taskId,
-                                                       final OffsetDateTime timestamp) throws SQLException {
+  public void changeUserTaskAssigneeClaimOperationTimestamp(final String taskId,
+                                                            final OffsetDateTime timestamp) throws SQLException {
     String sql = "UPDATE ACT_HI_IDENTITYLINK " +
       "SET TIMESTAMP_ = ? WHERE " +
-      "TYPE_ = ?" +
-      "AND TASK_ID_ = ?" +
-      "AND OPERATION_TYPE_ = 'add'";
+      "TYPE_ = ? " +
+      "AND TASK_ID_ = ? " +
+      "AND OPERATION_TYPE_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     statement.setTimestamp(1, toLocalTimestampWithoutNanos(timestamp));
     statement.setString(2, IdentityLinkLogType.ASSIGNEE.getId());
     statement.setString(3, taskId);
+    statement.setString(4, CLAIM_OPERATION_TYPE.getId());
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void changeUserTaskAssigneeAddOperationWithAssigneeIdTimestamp(final String taskId,
+                                                                        final OffsetDateTime timestamp,
+                                                                        final String assigneeId) throws SQLException {
+    changeUserTaskAssigneeOperationWithAssigneeIdTimestamp(taskId, timestamp, assigneeId, CLAIM_OPERATION_TYPE);
+  }
+
+  public void changeUserTaskAssigneeDeleteOperationWithAssigneeIdTimestamp(final String taskId,
+                                                                           final OffsetDateTime timestamp,
+                                                                           final String assigneeId)
+    throws SQLException {
+    changeUserTaskAssigneeOperationWithAssigneeIdTimestamp(taskId, timestamp, assigneeId, UNCLAIM_OPERATION_TYPE);
+  }
+
+  public void changeUserTaskAssigneeOperationWithAssigneeIdTimestamp(final String taskId,
+                                                                     final OffsetDateTime timestamp,
+                                                                     final String assigneeId,
+                                                                     final IdentityLinkLogOperationType operationType)
+    throws SQLException {
+    String sql = "UPDATE ACT_HI_IDENTITYLINK " +
+      "SET TIMESTAMP_ = ? WHERE " +
+      "TYPE_ = ?" +
+      "AND TASK_ID_ = ?" +
+      "AND OPERATION_TYPE_ = ?" +
+      "AND USER_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(timestamp));
+    statement.setString(2, IdentityLinkLogType.ASSIGNEE.getId());
+    statement.setString(3, taskId);
+    statement.setString(4, operationType.getId());
+    statement.setString(5, assigneeId);
     statement.executeUpdate();
     connection.commit();
   }

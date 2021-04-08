@@ -77,6 +77,7 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
     return new UserTaskInstanceDto(
       engineEntity.getId(),
       engineEntity.getProcessInstanceId(),
+      engineEntity.getProcessDefinitionKey(),
       engineContext.getEngineAlias(),
       engineEntity.getTaskDefinitionKey(),
       engineEntity.getActivityInstanceId(),

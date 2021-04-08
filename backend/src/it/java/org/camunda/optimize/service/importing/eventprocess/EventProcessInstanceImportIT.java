@@ -9,13 +9,13 @@ import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
@@ -33,6 +33,8 @@ import java.util.function.BiConsumer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
@@ -47,23 +49,28 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final String eventProcessPublishStateId = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId);
+    final EventProcessPublishStateDto eventProcessPublishState = getEventPublishStateForEventProcessMappingId(
+      eventProcessMappingId);
 
     final Map<String, List<AliasMetadata>> eventProcessInstanceIndicesAndAliases =
       getEventProcessInstanceIndicesWithAliasesFromElasticsearch();
     assertThat(eventProcessInstanceIndicesAndAliases)
       .hasSize(1)
       .hasEntrySatisfying(
-        getVersionedEventProcessInstanceIndexNameForPublishedStateId(eventProcessPublishStateId),
+        getVersionedEventProcessInstanceIndexNameForPublishedStateId(eventProcessPublishState.getId()),
         aliases -> assertThat(aliases)
           .extracting(AliasMetadata::alias, AliasMetadata::writeIndex)
           .containsExactlyInAnyOrder(
             Tuple.tuple(
-              getOptimizeIndexAliasForIndexName(new EventProcessInstanceIndex(eventProcessPublishStateId).getIndexName()),
+              getOptimizeIndexAliasForIndexName(new EventProcessInstanceIndex(eventProcessPublishState.getId()).getIndexName()),
               true
             ),
             Tuple.tuple(
-              getOptimizeIndexAliasForIndexName(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME), false
+              getOptimizeIndexAliasForIndexName(PROCESS_INSTANCE_MULTI_ALIAS), false
+            ),
+            Tuple.tuple(
+              getOptimizeIndexAliasForIndexName(PROCESS_INSTANCE_INDEX_PREFIX + eventProcessPublishState.getProcessKey()),
+              false
             )
           )
       );

@@ -5,79 +5,87 @@
 }
 
 .ProgressBar {
-  height: 65px;
-  position: relative;
-  border-radius: 4px;
-  background-color: var(--silver-darken-94);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
-  margin-top: 24px;
+  overflow: auto;
 
-  .goalOverlay {
-    height: 100%;
-    position: absolute;
-    color: var(--red-darken-38);
+  .barContainer {
+    height: 65px;
+    position: relative;
     border-radius: 4px;
-    background: linear-gradient(to bottom, var(--blue-lighten-75) 0%, var(--blue-base-65) 100%);
+    background-color: var(--silver-darken-94);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
+    margin-top: 24px;
 
-    .goalLabel {
-      display: block;
+    .goalOverlay {
       height: 100%;
-      text-align: right;
-      margin-left: 100%;
-      margin-top: -28px;
-      padding-right: 10px;
-      padding-left: 10px;
-      white-space: nowrap;
+      position: absolute;
+      color: var(--red-darken-38);
+      border-radius: 4px;
+      background: linear-gradient(to bottom, var(--blue-lighten-75) 0%, var(--blue-base-65) 100%);
+
+      .goalLabel {
+        display: block;
+        height: 100%;
+        text-align: right;
+        margin-left: 100%;
+        margin-top: -28px;
+        padding-right: 10px;
+        padding-left: 10px;
+        white-space: nowrap;
+        font-size: 1.3em;
+
+        &.rightSide {
+          margin-left: 0%;
+        }
+
+        &:after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 135%;
+          border-right: 2px solid var(--red-darken-38);
+        }
+      }
+    }
+
+    .progressLabel {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      line-height: 65px;
+      font-size: 2.5em;
+      color: var(--silver-lighten-99);
+      text-shadow: -1px -1px 0 var(--black), 1px -1px 0 var(--black), -1px 1px 0 var(--black),
+        1px 1px 0 var(--black);
+      padding: 0 0.5em;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .filledOverlay {
+      height: 100%;
+      background: linear-gradient(to bottom, var(--blue-lighten-75) 0%, var(--blue-base-65) 100%);
+      border-radius: 4px;
+      min-width: 5px;
+
+      &.goalExceeded {
+        background: linear-gradient(
+          to bottom,
+          var(--blue-darken-62) 0%,
+          var(--blue-darken-55) 100%
+        );
+      }
+    }
+
+    .rangeLabels {
+      height: 25px;
+      line-height: 28px;
       font-size: 1.3em;
 
-      &.rightSide {
-        margin-left: 0%;
+      .rightLabel {
+        float: right;
       }
-
-      &:after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 135%;
-        border-right: 2px solid var(--red-darken-38);
-      }
-    }
-  }
-
-  .progressLabel {
-    position: absolute;
-    width: 100%;
-    text-align: center;
-    line-height: 65px;
-    font-size: 2.5em;
-    color: var(--silver-lighten-99);
-    text-shadow: -1px -1px 0 var(--black), 1px -1px 0 var(--black), -1px 1px 0 var(--black),
-      1px 1px 0 var(--black);
-    padding: 0 0.5em;
-    text-overflow: ellipsis;
-    overflow: hidden;
-  }
-
-  .filledOverlay {
-    height: 100%;
-    background: linear-gradient(to bottom, var(--blue-lighten-75) 0%, var(--blue-base-65) 100%);
-    border-radius: 4px;
-    min-width: 5px;
-
-    &.goalExceeded {
-      background: linear-gradient(to bottom, var(--blue-darken-62) 0%, var(--blue-darken-55) 100%);
-    }
-  }
-
-  .rangeLabels {
-    height: 25px;
-    line-height: 28px;
-    font-size: 1.3em;
-
-    .rightLabel {
-      float: right;
     }
   }
 }

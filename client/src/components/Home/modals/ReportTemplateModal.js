@@ -24,7 +24,7 @@ export default function ReportTemplateModal({onClose}) {
       name: 'heatmap',
       img: heatmapImg,
       config: {
-        view: {entity: 'flowNode', property: 'frequency'},
+        view: {entity: 'flowNode', properties: ['frequency']},
         groupBy: {type: 'flowNodes', value: null},
         visualization: 'heat',
         configuration: {
@@ -37,7 +37,7 @@ export default function ReportTemplateModal({onClose}) {
       name: 'number',
       img: durationImg,
       config: {
-        view: {entity: 'processInstance', property: 'duration'},
+        view: {entity: 'processInstance', properties: ['duration']},
         groupBy: {type: 'none', value: null},
         visualization: 'number',
         configuration: {
@@ -49,7 +49,7 @@ export default function ReportTemplateModal({onClose}) {
       name: 'table',
       img: tableImg,
       config: {
-        view: {entity: 'userTask', property: 'frequency'},
+        view: {entity: 'userTask', properties: ['frequency']},
         groupBy: {type: 'userTasks', value: null},
         visualization: 'table',
         configuration: {
@@ -62,7 +62,7 @@ export default function ReportTemplateModal({onClose}) {
       name: 'chart',
       img: chartImg,
       config: {
-        view: {entity: 'processInstance', property: 'frequency'},
+        view: {entity: 'processInstance', properties: ['frequency']},
         groupBy: {type: 'startDate', value: {unit: 'automatic'}},
         visualization: 'bar',
         configuration: {

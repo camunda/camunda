@@ -30,7 +30,7 @@ export default function Number({report, formatter}) {
 
   if (targetValue && targetValue.active) {
     let min, max;
-    if (data.view.property === 'frequency' || data.view.entity === 'variable') {
+    if (data.view.properties[0] === 'frequency' || data.view.entity === 'variable') {
       min = targetValue.countProgress.baseline;
       max = targetValue.countProgress.target;
     } else {
@@ -49,28 +49,40 @@ export default function Number({report, formatter}) {
     );
   }
 
-  let viewString;
-
-  if (data.view.entity === 'variable') {
-    viewString = data.view.property.name;
-  } else {
-    const config = reportConfig[reportType];
-    const selectedView = config.findSelectedOption(config.options.view, 'data', data.view);
-    viewString = selectedView.key
-      .split('_')
-      .map((key) => t('report.view.' + key))
-      .join(' ');
-  }
-
-  if (data.view.property === 'duration' || data.view.entity === 'variable') {
-    viewString += ' - ' + t('report.config.aggregationShort.' + data.configuration.aggregationType);
-  }
-
   return (
     <div className="Number">
       <div className="container" ref={numberText}>
-        <div className="data">{formatter(result.data, precision)}</div>
-        <div className="label">{viewString}</div>
+        {result.measures.map((measure, idx) => {
+          let viewString;
+
+          if (data.view.entity === 'variable') {
+            viewString = data.view.properties[0].name;
+          } else {
+            const config = reportConfig[reportType];
+            const selectedView = config.findSelectedOption(config.options.view, 'data', {
+              ...data.view,
+              properties: [measure.property],
+            });
+            viewString = selectedView.key
+              .split('_')
+              .map((key) => t('report.view.' + key))
+              .join(' ');
+          }
+
+          if (measure.property === 'duration' || data.view.entity === 'variable') {
+            viewString += ' - ' + t('report.config.aggregationShort.' + measure.aggregationType);
+          }
+
+          const formatter =
+            formatters[typeof measure.property === 'string' ? measure.property : 'frequency'];
+
+          return (
+            <React.Fragment key={idx}>
+              <div className="data">{formatter(measure.data, precision)}</div>
+              <div className="label">{viewString}</div>
+            </React.Fragment>
+          );
+        })}
       </div>
     </div>
   );
