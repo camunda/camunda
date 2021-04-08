@@ -259,6 +259,25 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldNotCompactTheLastSegmentWhenNonExistingHigherIndex() {
+    final int entryPerSegment = 2;
+    final SegmentedJournal journal = openJournal(entryPerSegment);
+    final JournalReader reader = journal.openReader();
+
+    // when
+    long lastIndex = -1;
+    for (int i = 0; i < entryPerSegment * 2; i++) {
+      lastIndex = journal.append(i + 1, data).index();
+    }
+    assertThat(reader.hasNext()).isTrue();
+    journal.deleteUntil(lastIndex + 1);
+
+    // then
+    assertThat(journal.getFirstIndex()).isEqualTo(lastIndex - 1);
+    assertThat(reader.next().index()).isEqualTo(lastIndex - 1);
+  }
+
+  @Test
   void shouldReturnCorrectFirstIndexAfterCompaction() {
     final int entryPerSegment = 2;
     final SegmentedJournal journal = openJournal(2);
