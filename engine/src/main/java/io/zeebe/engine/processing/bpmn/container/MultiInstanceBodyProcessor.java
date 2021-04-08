@@ -23,6 +23,7 @@ import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.util.Either;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -167,6 +168,66 @@ public final class MultiInstanceBodyProcessor
   }
 
   @Override
+  public void onChildActivating(
+      final ExecutableMultiInstanceBody multiInstanceBody,
+      final BpmnElementContext flowScopeContext,
+      final BpmnElementContext childContext) {
+
+    final var bodyInstance = stateBehavior.getElementInstance(flowScopeContext);
+    final var loopCounter = bodyInstance.getMultiInstanceLoopCounter();
+
+    readInputCollectionVariable(multiInstanceBody, childContext)
+        .flatMap(
+            collection -> {
+              // the loop counter starts by 1
+              final var index = loopCounter - 1;
+              if (index < collection.size()) {
+                final var item = collection.get(index);
+                return Either.right(item);
+              } else {
+                final var incidentMessage =
+                    String.format(
+                        "Expected to read item at index %d of the multiInstanceBody input collection but it contains only %d elements. The input collection might be modified while iterating over it.",
+                        index, collection.size());
+                final var failure = new Failure(incidentMessage, ErrorType.EXTRACT_VALUE_ERROR);
+                return Either.left(failure);
+              }
+            })
+        .ifRightOrLeft(
+            inputElement ->
+                setLoopVariables(multiInstanceBody, childContext, loopCounter, inputElement),
+            failure -> incidentBehavior.createIncident(failure, childContext));
+  }
+
+  private void setLoopVariables(
+      final ExecutableMultiInstanceBody multiInstanceBody,
+      final BpmnElementContext childContext,
+      final int loopCounter,
+      final DirectBuffer inputElement) {
+
+    final var loopCharacteristics = multiInstanceBody.getLoopCharacteristics();
+    loopCharacteristics
+        .getInputElement()
+        .ifPresent(
+            variableName ->
+                stateBehavior.setLocalVariable(childContext, variableName, inputElement));
+
+    // Output multiInstanceBody expressions that are just a variable or nested property of a
+    // variable need to
+    // be initialised with a nil-value. This makes sure that they are not written at a non-local
+    // scope.
+    loopCharacteristics
+        .getOutputElement()
+        .flatMap(Expression::getVariableName)
+        .map(BufferUtil::wrapString)
+        .ifPresent(
+            variableName -> stateBehavior.setLocalVariable(childContext, variableName, NIL_VALUE));
+
+    stateBehavior.setLocalVariable(
+        childContext, LOOP_COUNTER_VARIABLE, wrapLoopCounter(loopCounter));
+  }
+
+  @Override
   public void onChildCompleted(
       final ExecutableMultiInstanceBody element,
       final BpmnElementContext flowScopeContext,
@@ -235,43 +296,26 @@ public final class MultiInstanceBodyProcessor
         stateTransitionBehavior.activateChildInstanceWithKey(
             context, multiInstanceBody.getInnerActivity());
 
-    final var innerInstance = stateBehavior.getElementInstance(innerInstanceKey);
-    final var innerInstanceContext =
-        context.copy(innerInstanceKey, innerInstance.getValue(), innerInstance.getState());
+    // for migrated processors, the state changes happens on the ACTIVATING event applier
+    // and on processing the ACTIVATE command by calling onChildActivating()
+    if (!MigratedStreamProcessors.isMigrated(
+        multiInstanceBody.getInnerActivity().getElementType())) {
 
-    // update loop counters
-    // todo(zell): updating the elemint instance can be moved in the activating of the child
-    final var bodyInstance = stateBehavior.getElementInstance(context);
-    bodyInstance.incrementMultiInstanceLoopCounter();
-    stateBehavior.updateElementInstance(bodyInstance);
+      final var innerInstance = stateBehavior.getElementInstance(innerInstanceKey);
+      final var innerInstanceContext =
+          context.copy(innerInstanceKey, innerInstance.getValue(), innerInstance.getState());
 
-    innerInstance.setMultiInstanceLoopCounter(bodyInstance.getMultiInstanceLoopCounter());
-    stateBehavior.updateElementInstance(innerInstance);
+      // update loop counters
+      final var bodyInstance = stateBehavior.getElementInstance(context);
+      bodyInstance.incrementMultiInstanceLoopCounter();
+      stateBehavior.updateElementInstance(bodyInstance);
 
-    // set instance variables
-    final var loopCharacteristics = multiInstanceBody.getLoopCharacteristics();
+      final var loopCounter = bodyInstance.getMultiInstanceLoopCounter();
+      innerInstance.setMultiInstanceLoopCounter(loopCounter);
+      stateBehavior.updateElementInstance(innerInstance);
 
-    loopCharacteristics
-        .getInputElement()
-        .ifPresent(
-            variableName ->
-                stateBehavior.setLocalVariable(innerInstanceContext, variableName, item));
-
-    // Output element expressions that are just a variable or nested property of a variable need to
-    // be initialised with a nil-value. This makes sure that they are not written at a non-local
-    // scope.
-    loopCharacteristics
-        .getOutputElement()
-        .flatMap(Expression::getVariableName)
-        .map(BufferUtil::wrapString)
-        .ifPresent(
-            variableName ->
-                stateBehavior.setLocalVariable(innerInstanceContext, variableName, NIL_VALUE));
-
-    stateBehavior.setLocalVariable(
-        innerInstanceContext,
-        LOOP_COUNTER_VARIABLE,
-        wrapLoopCounter(innerInstance.getMultiInstanceLoopCounter()));
+      setLoopVariables(multiInstanceBody, innerInstanceContext, loopCounter, item);
+    }
   }
 
   private DirectBuffer wrapLoopCounter(final int loopCounter) {

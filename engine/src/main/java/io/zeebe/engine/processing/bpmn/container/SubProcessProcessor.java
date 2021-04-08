@@ -126,6 +126,12 @@ public final class SubProcessProcessor
   }
 
   @Override
+  public void onChildActivating(
+      final ExecutableFlowElementContainer element,
+      final BpmnElementContext flowScopeContext,
+      final BpmnElementContext childContext) {}
+
+  @Override
   public void onChildCompleted(
       final ExecutableFlowElementContainer element,
       final BpmnElementContext flowScopeContext,
