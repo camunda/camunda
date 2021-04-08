@@ -9,7 +9,7 @@
   "data": {
     "filter": [],
     "view": {
-      "property": "frequency",
+      "properties": ["frequency"],
       "operation": "count",
       "entity": "processInstance"
     },
