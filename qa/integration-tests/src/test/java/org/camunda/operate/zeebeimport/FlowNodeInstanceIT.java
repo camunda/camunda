@@ -25,6 +25,8 @@ import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
+import org.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -33,6 +35,14 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private IncidentReader incidentReader;
+
+  @Autowired
+  private CancelProcessInstanceHandler cancelProcessInstanceHandler;
+
+  @Before
+  public void setup() {
+    cancelProcessInstanceHandler.setZeebeClient(getClient());
+  }
 
   @Test
   public void testFlowNodeInstanceTreeForNonInterruptingBoundaryEvent() throws Exception {
@@ -531,6 +541,35 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     assertFlowNodeState(flowNodeStates, "innerSubprocess", FlowNodeState.ACTIVE);
     assertFlowNodeState(flowNodeStates, "startEventInnerSubprocess", FlowNodeState.COMPLETED);
     assertFlowNodeState(flowNodeStates, "taskB", FlowNodeState.ACTIVE);
+  }
+
+  @Test
+  public void testFlowNodeStatesTerminated() throws Exception {
+
+    final String bpmnProcessId = "process";
+    final String flowNodeId = "taskA";
+    final Long processInstanceKey = tester.createAndDeploySimpleProcess(bpmnProcessId, flowNodeId)
+        .waitUntil()
+        .processIsDeployed()
+        .and()
+        .startProcessInstance(bpmnProcessId)
+        .waitUntil()
+        .flowNodeIsActive(flowNodeId)
+        .and()
+        .cancelProcessInstanceOperation()
+        .executeOperations()
+        .waitUntil()
+        .processInstanceIsFinished()
+        .getProcessInstanceKey();
+
+    //when
+    final Map<String, FlowNodeState> flowNodeStates = getFlowNodeStatesFromRest(
+        String.valueOf(processInstanceKey));
+
+    //then
+    assertThat(flowNodeStates).hasSize(2);
+    assertFlowNodeState(flowNodeStates, "start", FlowNodeState.COMPLETED);
+    assertFlowNodeState(flowNodeStates, "taskA", FlowNodeState.TERMINATED);
   }
 
   private void assertFlowNodeState(Map<String, FlowNodeState> flowNodeStates, String flowNodeId, FlowNodeState... states) {

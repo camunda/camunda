@@ -8,6 +8,7 @@ package org.camunda.operate.webapp.es.reader;
 import static org.camunda.operate.entities.FlowNodeState.ACTIVE;
 import static org.camunda.operate.entities.FlowNodeState.COMPLETED;
 import static org.camunda.operate.entities.FlowNodeState.INCIDENT;
+import static org.camunda.operate.entities.FlowNodeState.TERMINATED;
 import static org.camunda.operate.schema.templates.FlowNodeInstanceTemplate.END_DATE;
 import static org.camunda.operate.schema.templates.FlowNodeInstanceTemplate.FLOW_NODE_ID;
 import static org.camunda.operate.schema.templates.FlowNodeInstanceTemplate.ID;
@@ -563,8 +564,8 @@ public class FlowNodeInstanceReader extends AbstractReader {
     final ConstantScoreQueryBuilder query = constantScoreQuery(
         termQuery(PROCESS_INSTANCE_KEY, processInstanceId));
 
-    final AggregationBuilder activeFlowNodesAggs =
-        filter(activeFlowNodesAggName, termsQuery(STATE, ACTIVE, INCIDENT))
+    final AggregationBuilder notCompletedFlowNodesAggs =
+        filter(activeFlowNodesAggName, termsQuery(STATE, ACTIVE, INCIDENT, TERMINATED))
         .subAggregation(
           terms(activeFlowNodesBucketsAggName)
           .field(FLOW_NODE_ID)
@@ -586,7 +587,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
         .createSearchRequest(flowNodeInstanceTemplate)
         .source(new SearchSourceBuilder()
             .query(query)
-            .aggregation(activeFlowNodesAggs)
+            .aggregation(notCompletedFlowNodesAggs)
             .aggregation(getIncidentsAgg())
             .aggregation(finishedFlowNodesAggs)
             .size(0));
