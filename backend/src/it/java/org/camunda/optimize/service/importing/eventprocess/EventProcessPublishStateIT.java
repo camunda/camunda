@@ -230,17 +230,9 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
 
-    // when the second import cycle completes only the first event has been considered, which we use as the starting
-    // timestamp and which gets ignored for publish progress calculations - so will be zero
-    executeImportCycle();
-    // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
-      .get()
-      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
-      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
-
-    // when the third import cycle completes the first event considered for publish progress has been ingested so the
-    // publish progress is updated accordingly
+    // when the second import cycle completes only the first and second event for each source have been processed
+    // as the import fetches all events with the exact firstEvent Timestamp + a maxPageSize amount of events after it
+    // so the publish progress is updated accordingly
     executeImportCycle();
     // then
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
@@ -248,7 +240,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 25.0D);
 
-    // when the fourth import cycle completes another event considered for publish progress has been ingested so the
+    // when the third import cycle completes another event considered for publish progress has been ingested so the
     // publish progress is updated accordingly
     executeImportCycle();
     // then
@@ -257,7 +249,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 66.6D);
 
-    // when the fifth import cycle completes the status is updated to Published as all events have been processed
+    // when the fourth import cycle completes the status is updated to Published as all events have been processed
     executeImportCycle();
     // then
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
@@ -298,7 +290,6 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     ingestTestEvent(STARTED_EVENT, LocalDateUtil.getCurrentDateTime());
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    executeImportCycle();
     executeImportCycle();
     executeImportCycle();
 
@@ -442,17 +433,9 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
 
-    // when the second import cycle completes only the first event has been considered, which we use as the starting
-    // timestamp and which gets ignored for publish progress calculations - so will be zero
-    executeImportCycle();
-    // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
-      .get()
-      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
-      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
-
-    // when the third import cycle completes another event considered for publish progress has been ingested so the
-    // publish progress is updated accordingly
+    // when the second import cycle completes only the first and second event for each source have been processed
+    // as the import fetches all events with the exact firstEvent Timestamp + a maxPageSize amount of events after it
+    // so the publish progress is updated accordingly
     executeImportCycle();
     // then
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
@@ -460,7 +443,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 50.0);
 
-    // when the fourth import cycle completes the status is updated to Published as all events have been processed
+    // when the third import cycle completes the status is updated to Published as all events have been processed
     executeImportCycle();
     // then
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
@@ -660,17 +643,9 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
 
-    // when the second import cycle completes only the first event for each source have been considered, which we use
-    // as the starting timestamps and which get ignored for publish progress calculations - so the average will be zero
-    executeImportCycle();
-    // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
-      .get()
-      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
-      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
-
-    // when the third import cycle completes another event considered for publish progress has been ingested for each
-    // source so the publish progress is updated accordingly
+    // when the second import cycle completes only the first and second event for each source have been processed
+    // as the import fetches all events with the exact firstEvent Timestamp + a maxPageSize amount of events after it
+    // so the publish progress is updated accordingly
     executeImportCycle();
     // then
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
@@ -680,7 +655,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       // is taken
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 41.6);
 
-    // when the fourth import cycle completes another event considered for publish progress has been ingested for
+    // when the third import cycle completes another event considered for publish progress has been ingested for
     // each source so the publish progress is updated accordingly
     executeImportCycle();
     // then
@@ -691,7 +666,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       // is taken
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 83.3D);
 
-    // when the fifth import cycle completes the status is updated to Published as all events have been processed
+    // when the fourth import cycle completes the status is updated to Published as all events have been processed
     executeImportCycle();
     // then
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
@@ -752,17 +727,9 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
 
-    // when the second import cycle completes only the first event for the source has been considered, which we use
-    // as the starting timestamps and which get ignored for publish progress calculations - so the progress will be zero
-    executeImportCycle();
-    // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
-      .get()
-      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
-      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
-
-    // when the third import cycle completes another event considered for publish progress has been ingested. The events
-    // from the second group are ignored and not considered for progress calculation
+    // when the second import cycle completes only the first and second event for each source have been processed
+    // as the import fetches all events with the exact firstEvent Timestamp + a maxPageSize amount of events after it
+    // so the publish progress is updated accordingly
     executeImportCycle();
     // then
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
@@ -770,7 +737,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 50.0D);
 
-    // when the fourth import cycle completes another event considered for publish progress has been ingested. The
+    // when the third import cycle completes another event considered for publish progress has been ingested. The
     // events
     // from the second group are ignored and not considered for progress calculation
     executeImportCycle();
@@ -870,17 +837,9 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
 
-    // when the second import cycle completes only the first event for each source have been considered, which we use
-    // as the starting timestamps and which get ignored for publish progress calculations - so the average will be zero
-    executeImportCycle();
-    // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
-      .get()
-      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
-      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
-
-    // when the third import cycle completes another event considered for publish progress has been ingested for each
-    // source so the publish progress is updated accordingly
+    // when the second import cycle completes only the first and second event for each source have been processed
+    // as the import fetches all events with the exact firstEvent Timestamp + a maxPageSize amount of events after it
+    // so the publish progress is updated accordingly
     executeImportCycle();
     // then
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
@@ -890,7 +849,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       // is taken
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 29.1);
 
-    // when the fourth import cycle completes another event considered for publish progress has been ingested for
+    // when the third import cycle completes another event considered for publish progress has been ingested for
     // each source so the publish progress is updated accordingly
     executeImportCycle();
     // then
@@ -901,7 +860,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       // is taken
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 58.3D);
 
-    // when the fifth import cycle completes the status is updated to Published as all events have been processed
+    // when the fourth import cycle completes the status is updated to Published as all events have been processed
     executeImportCycle();
     // then
     final EventProcessPublishStateDto publishedMapping =

@@ -65,9 +65,11 @@ public class MigrateProcessReportConfigurationIT extends AbstractUpgrade33IT {
         // AND do not have the deprecated properties anymore
         final Map<String, Object> reportAsMap = report.getSourceAsMap();
         final Map<String, Object> reportData = (Map<String, Object>) reportAsMap.get(SingleProcessReportIndex.DATA);
-        final Map<String, Object> reportDataView =
-          (Map<String, Object>) reportData.get(ProcessReportDataDto.Fields.view);
-        assertThat(reportDataView.containsKey(PROCESS_VIEW_PROPERTY_PROPERTY_NAME)).isFalse();
+        if (!reportAsMap.get(SingleDecisionReportIndex.ID).equals("no-view")) {
+          final Map<String, Object> reportDataView =
+            (Map<String, Object>) reportData.get(ProcessReportDataDto.Fields.view);
+          assertThat(reportDataView.containsKey(PROCESS_VIEW_PROPERTY_PROPERTY_NAME)).isFalse();
+        }
         final Map<String, Object> reportConfig =
           (Map<String, Object>) reportData.get(SingleProcessReportIndex.CONFIGURATION);
         assertThat(reportConfig.containsKey(PROCESS_REPORT_CONFIG_AGGREGATION_TYPE_PROPERTY_NAME)).isFalse();

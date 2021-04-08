@@ -154,7 +154,7 @@ it('should switch alignment and position if no space at the edges of the screen'
 
   const tooltip = {getBoundingClientRect: () => ({width: 50, height: 50})};
   const hoverElement = {
-    getBoundingClientRect: () => ({x: 10, y: 10, width: 10, top: 10, bottom: 90}),
+    getBoundingClientRect: () => ({x: 10, y: 10, width: 10, top: 10, bottom: 20}),
   };
 
   useRef.mockReturnValueOnce({current: hoverElement});

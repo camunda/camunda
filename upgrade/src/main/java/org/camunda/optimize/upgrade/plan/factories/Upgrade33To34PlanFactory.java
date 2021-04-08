@@ -32,6 +32,7 @@ import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.ReindexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -66,6 +67,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
@@ -113,34 +115,38 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
   private static String createMigrateFlowNodeStatusConfigToFiltersScript() {
     //@formatter:off
     return
-      "def reportEntityType = ctx._source.data.view.entity;\n" +
-      "def currentFilters = ctx._source.data.filter;\n" +
-      "if (reportEntityType == 'userTask' || reportEntityType == 'flowNode') {\n" +
-      "  def executionState = ctx._source.data.configuration.flowNodeExecutionState;\n" +
-      "  if (executionState == 'completed') {\n" +
-      "    def newFilter = [\n" +
-      "      'type': 'completedOrCanceledFlowNodesOnly',\n" +
-      "      'filterLevel': 'view'\n" +
-      "     ];" +
-      "    newFilter.data = null;" +
-      "    currentFilters.add(newFilter);\n" +
-      "  } else if (executionState == 'running') {\n" +
-      "    def newFilter = [\n" +
-      "      'type': 'runningFlowNodesOnly',\n" +
-      "      'filterLevel': 'view'\n" +
-      "     ];" +
-      "    newFilter.data = null;" +
-      "    currentFilters.add(newFilter);\n" +
-      "  } else if (executionState == 'canceled') {\n" +
-      "    def newFilter = [\n" +
-      "      'type': 'canceledFlowNodesOnly',\n" +
-      "      'filterLevel': 'view'\n" +
-      "     ];" +
-      "    newFilter.data = null;" +
-      "    currentFilters.add(newFilter);\n" +
+      "if (ctx._source.data.view != null) {\n" +
+      "  def reportEntityType = ctx._source.data.view.entity;\n" +
+      "  def currentFilters = ctx._source.data.filter;\n" +
+      "  if (reportEntityType == 'userTask' || reportEntityType == 'flowNode') {\n" +
+      "    def executionState = ctx._source.data.configuration.flowNodeExecutionState;\n" +
+      "    if (executionState == 'completed') {\n" +
+      "      def newFilter = [\n" +
+      "        'type': 'completedOrCanceledFlowNodesOnly',\n" +
+      "        'filterLevel': 'view'\n" +
+      "       ];" +
+      "      newFilter.data = null;" +
+      "      currentFilters.add(newFilter);\n" +
+      "    } else if (executionState == 'running') {\n" +
+      "      def newFilter = [\n" +
+      "        'type': 'runningFlowNodesOnly',\n" +
+      "        'filterLevel': 'view'\n" +
+      "       ];" +
+      "      newFilter.data = null;" +
+      "     currentFilters.add(newFilter);\n" +
+      "    } else if (executionState == 'canceled') {\n" +
+      "      def newFilter = [\n" +
+      "        'type': 'canceledFlowNodesOnly',\n" +
+      "        'filterLevel': 'view'\n" +
+      "       ];" +
+      "      newFilter.data = null;" +
+      "     currentFilters.add(newFilter);\n" +
+      "    }\n" +
       "  }\n" +
       "}\n" +
-      "ctx._source.data.configuration.remove(\"flowNodeExecutionState\");\n";
+      "if (ctx._source.data.configuration.flowNodeExecutionState != null) {\n" +
+      "  ctx._source.data.configuration.remove(\"flowNodeExecutionState\");\n" +
+      "}\n";
     //@formatter:on
   }
 
@@ -158,12 +164,14 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
       "  reportConfiguration.userTaskDurationTimes.add(reportConfiguration.userTaskDurationTime);\n" +
       "}\n" +
       "reportConfiguration.remove(\"userTaskDurationTime\");\n" +
-      "def reportView = ctx._source.data.view;\n" +
-      "reportView.properties = [];\n" +
-      "if (reportView.property != null) {\n" +
-      "  reportView.properties.add(reportView.property);\n" +
-      "}\n" +
-      "reportView.remove(\"property\");\n";
+      "if (ctx._source.data.view != null) {\n" +
+      "  def reportView = ctx._source.data.view;\n" +
+      "  reportView.properties = [];\n" +
+      "  if (reportView.property != null) {\n" +
+      "    reportView.properties.add(reportView.property);\n" +
+      "  }\n" +
+      "  reportView.remove(\"property\");\n" +
+      "}\n";
     //@formatter:on
   }
 
@@ -191,12 +199,14 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
   private static String createDecisionReportViewScript() {
     //@formatter:off
     return
-      "def reportView = ctx._source.data.view;\n" +
-      "reportView.properties = [];\n" +
-      "if (reportView.property != null) {\n" +
-      "  reportView.properties.add(reportView.property);\n" +
-      "}\n" +
-      "reportView.remove(\"property\");\n";
+      "if (ctx._source.data.view != null) {\n" +
+      "  def reportView = ctx._source.data.view;\n" +
+      "  reportView.properties = [];\n" +
+      "  if (reportView.property != null) {\n" +
+      "    reportView.properties.add(reportView.property);\n" +
+      "  }\n" +
+      "  reportView.remove(\"property\");\n" +
+      "}\n";
     //@formatter:on
   }
 
@@ -393,7 +403,11 @@ public class Upgrade33To34PlanFactory implements UpgradePlanFactory {
     final SearchResponse response;
     try {
       response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
+    } catch (Exception e) {
+      if (e instanceof ElasticsearchStatusException
+        && isInstanceIndexNotFoundException((ElasticsearchStatusException) e)) {
+        return Collections.emptySet();
+      }
       throw new UpgradeRuntimeException(String.format("Was not able to retrieve instances of type %s", type), e);
     }
     final Terms definitionKeyTerms = response.getAggregations().get(defKeyAggName);
