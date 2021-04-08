@@ -114,7 +114,7 @@ public final class BpmnStateTransitionBehavior {
       stateTransitionGuard.registerStateTransition(
           context, ProcessInstanceIntent.ELEMENT_ACTIVATED);
     }
-    metrics.elementInstanceActivated(context.getBpmnElementType());
+    metrics.elementInstanceActivated(context);
     return transitionedContext;
   }
 
@@ -171,7 +171,7 @@ public final class BpmnStateTransitionBehavior {
       stateTransitionGuard.registerStateTransition(
           context, ProcessInstanceIntent.ELEMENT_COMPLETED);
     }
-    metrics.elementInstanceCompleted(context.getBpmnElementType());
+    metrics.elementInstanceCompleted(context);
     return transitionedContext;
   }
 
@@ -201,7 +201,7 @@ public final class BpmnStateTransitionBehavior {
       stateTransitionGuard.registerStateTransition(
           context, ProcessInstanceIntent.ELEMENT_TERMINATED);
     }
-    metrics.elementInstanceTerminated(context.getBpmnElementType());
+    metrics.elementInstanceTerminated(context);
     return transitionedContext;
   }
 
