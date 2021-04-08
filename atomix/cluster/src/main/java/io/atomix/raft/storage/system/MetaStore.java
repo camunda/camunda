@@ -25,10 +25,12 @@ import io.atomix.storage.StorageException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.IoUtil;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,10 +45,12 @@ import org.slf4j.LoggerFactory;
  * Configuration}, including cluster membership.
  */
 public class MetaStore implements AutoCloseable {
+  private static final byte VERSION = 1;
+  private static final int VERSION_LENGTH = Byte.BYTES;
 
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final FileChannel metaFileChannel;
-  private final ByteBuffer metaBuffer = ByteBuffer.allocate(256);
+  private final ByteBuffer metaBuffer = ByteBuffer.allocate(256).order(ByteOrder.LITTLE_ENDIAN);
   private final FileChannel configurationChannel;
   private final File metaFile;
   private final File confFile;
@@ -76,6 +80,17 @@ public class MetaStore implements AutoCloseable {
       configurationChannel =
           FileChannel.open(confFile.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE);
     }
+
+    // Read existing meta info and rewrite with the current version
+    initializeMetaBuffer();
+  }
+
+  private void initializeMetaBuffer() {
+    final var term = loadTerm();
+    final var voted = loadVote();
+    metaBuffer.put(0, VERSION);
+    storeTerm(term);
+    storeVote(voted);
   }
 
   /**
@@ -85,9 +100,11 @@ public class MetaStore implements AutoCloseable {
    */
   public synchronized void storeTerm(final long term) {
     log.trace("Store term {}", term);
-    serializer.writeTerm(term, new UnsafeBuffer(metaBuffer));
+    final MutableDirectBuffer directBuffer = new UnsafeBuffer(metaBuffer);
+    serializer.writeTerm(term, directBuffer, VERSION_LENGTH);
     try {
       metaFileChannel.write(metaBuffer, 0);
+      metaBuffer.position(0);
       metaFileChannel.force(true);
     } catch (final IOException e) {
       throw new StorageException(e);
@@ -102,10 +119,11 @@ public class MetaStore implements AutoCloseable {
   public synchronized long loadTerm() {
     try {
       metaFileChannel.read(metaBuffer, 0);
+      metaBuffer.position(0);
     } catch (final IOException e) {
       throw new StorageException(e);
     }
-    return serializer.readTerm(new UnsafeBuffer(metaBuffer));
+    return serializer.readTerm(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
   }
 
   /**
@@ -117,9 +135,10 @@ public class MetaStore implements AutoCloseable {
     log.trace("Store vote {}", vote);
     try {
       final String id = vote == null ? null : vote.id();
-      serializer.writeVotedFor(id, new UnsafeBuffer(metaBuffer));
+      serializer.writeVotedFor(id, new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
       metaFileChannel.write(metaBuffer, 0);
       metaFileChannel.force(true);
+      metaBuffer.position(0);
     } catch (final IOException e) {
       throw new StorageException(e);
     }
@@ -133,10 +152,11 @@ public class MetaStore implements AutoCloseable {
   public synchronized MemberId loadVote() {
     try {
       metaFileChannel.read(metaBuffer, 0);
+      metaBuffer.position(0);
     } catch (final IOException e) {
       throw new StorageException(e);
     }
-    final String id = serializer.readVotedFor(new UnsafeBuffer(metaBuffer));
+    final String id = serializer.readVotedFor(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
     return id.isEmpty() ? null : MemberId.from(id);
   }
 
@@ -148,10 +168,12 @@ public class MetaStore implements AutoCloseable {
   public synchronized void storeConfiguration(final Configuration configuration) {
     log.trace("Store configuration {}", configuration);
     final ExpandableArrayBuffer serializedBuffer = new ExpandableArrayBuffer();
-    final var serializedLength = serializer.writeConfiguration(configuration, serializedBuffer, 0);
+    serializedBuffer.putByte(0, VERSION);
+    final var serializedLength =
+        serializer.writeConfiguration(configuration, serializedBuffer, VERSION_LENGTH);
 
-    final ByteBuffer buffer = ByteBuffer.allocate(serializedLength);
-    serializedBuffer.getBytes(0, buffer, 0, serializedLength);
+    final ByteBuffer buffer = ByteBuffer.allocate(VERSION_LENGTH + serializedLength);
+    serializedBuffer.getBytes(0, buffer, 0, VERSION_LENGTH + serializedLength);
     try {
       configurationChannel.write(buffer, 0);
       configurationChannel.force(true);
@@ -171,7 +193,7 @@ public class MetaStore implements AutoCloseable {
       final ByteBuffer buffer = ByteBuffer.allocate((int) confFile.length());
       configurationChannel.read(buffer);
       buffer.position(0);
-      return serializer.readConfiguration(new UnsafeBuffer(buffer), 0);
+      return serializer.readConfiguration(new UnsafeBuffer(buffer), VERSION_LENGTH);
     } catch (final IOException e) {
       throw new StorageException(e);
     }
