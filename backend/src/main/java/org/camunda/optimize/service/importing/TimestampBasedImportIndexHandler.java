@@ -30,7 +30,7 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
   @Autowired
   protected ConfigurationService configurationService;
 
-  private OffsetDateTime timestampOfLastEntity = BEGINNING_OF_TIME;
+  protected OffsetDateTime timestampOfLastEntity = BEGINNING_OF_TIME;
 
   public void updateTimestampOfLastEntity(final OffsetDateTime timestamp) {
     final OffsetDateTime backOffWindowStart = reduceByCurrentTimeBackoff(
@@ -92,11 +92,11 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
     this.timestampOfLastEntity = timestamp;
   }
 
-  private int getTipOfTimeBackoffMilliseconds() {
-    return configurationService.getCurrentTimeBackoffMilliseconds();
+  protected OffsetDateTime reduceByCurrentTimeBackoff(OffsetDateTime currentDateTime) {
+    return currentDateTime.minus(getTipOfTimeBackoffMilliseconds(), ChronoUnit.MILLIS);
   }
 
-  private OffsetDateTime reduceByCurrentTimeBackoff(OffsetDateTime currentDateTime) {
-    return currentDateTime.minus(getTipOfTimeBackoffMilliseconds(), ChronoUnit.MILLIS);
+  protected int getTipOfTimeBackoffMilliseconds() {
+    return configurationService.getCurrentTimeBackoffMilliseconds();
   }
 }
