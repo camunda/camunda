@@ -111,7 +111,7 @@ elasticsearch:
     storageClassName: "ssd"
     resources:
       requests:
-        storage: 600Gi
+        storage: 50Gi
 
   esJavaOpts: "-Xmx4g -Xms4g"
 
