@@ -13,6 +13,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import java.util.stream.Collectors;
 import org.camunda.operate.entities.FlowNodeInstanceEntity;
 import org.camunda.operate.entities.FlowNodeState;
 import org.camunda.operate.entities.FlowNodeType;
@@ -638,6 +639,29 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final ProcessInstanceForListViewEntity processInstanceById = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceById).isNotNull();
     assertThat(processInstanceById.getState()).isEqualTo(ProcessInstanceState.INCIDENT);
+  }
+
+  @Test
+  public void testEventSubprocess() {
+    // having
+    final OffsetDateTime testStartTime = OffsetDateTime.now();
+
+    String processId = "eventSubProcess";
+    deployProcess("eventSubProcess.bpmn");
+    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
+    sleepFor(2000);
+
+    //when
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsTerminatedCheck, processInstanceKey, "taskA");
+
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(processInstanceKey);
+    assertThat(allFlowNodeInstances).hasSize(5);
+    final List<FlowNodeInstanceEntity> eventSP = allFlowNodeInstances.stream()
+        .filter(fn -> fn.getType().equals(FlowNodeType.EVENT_SUB_PROCESS))
+        .collect(Collectors.toList());
+    assertThat(eventSP).hasSize(1);
   }
 
   @Test(expected = NotFoundException.class)
