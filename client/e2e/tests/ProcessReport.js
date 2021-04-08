@@ -215,9 +215,7 @@ test('exclude raw data columns', async (t) => {
   await t.click(e.selectSwitchLabel('End Date'));
   await t.click(e.selectSwitchLabel('approved'));
 
-  await t
-    .takeElementScreenshot(e.controlPanel, 'process/single-report/rawdata.png')
-    .maximizeWindow();
+  await t.takeScreenshot('process/single-report/rawdata.png').maximizeWindow();
 
   await t.expect(e.reportRenderer.textContent).notContains('Start Date');
 });
@@ -525,7 +523,7 @@ test('progress bar and reset to default', async (t) => {
   await t.click(e.configurationButton);
 
   await t.click(e.goalSwitch);
-  await t.typeText(e.goalTargetInput, '100', {replace: true});
+  await t.typeText(e.goalTargetInput, '200', {replace: true});
 
   await t.click(e.configurationButton);
 
@@ -533,7 +531,7 @@ test('progress bar and reset to default', async (t) => {
 
   await t
     .resizeWindow(1000, 530)
-    .takeElementScreenshot(e.reportRenderer, 'process/single-report/progressbar.png')
+    .takeElementScreenshot(e.reportProgressBar, 'process/single-report/progressbar.png')
     .maximizeWindow();
 
   await t.click(e.configurationButton);
@@ -542,7 +540,7 @@ test('progress bar and reset to default', async (t) => {
 
   await t
     .resizeWindow(1000, 530)
-    .takeElementScreenshot(e.reportRenderer, 'process/single-report/progressbarExceeded.png')
+    .takeElementScreenshot(e.reportProgressBar, 'process/single-report/progressbarExceeded.png')
     .maximizeWindow();
 
   await t.click(e.configurationButton);

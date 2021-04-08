@@ -105,7 +105,7 @@ test('should apply a filter to the report result', async (t) => {
     .resizeWindow(1400, 850)
     .click(Report.filterButton)
     .takeElementScreenshot(Report.controlPanel, 'process/filter/report-with-filterlist-open.png', {
-      crop: {bottom: -250},
+      crop: {top: 220},
     })
     .maximizeWindow();
 
