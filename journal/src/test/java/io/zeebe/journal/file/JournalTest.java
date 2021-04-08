@@ -24,6 +24,9 @@ import io.zeebe.journal.JournalException.InvalidIndex;
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
 import io.zeebe.journal.file.record.JournalRecordReaderUtil;
+import io.zeebe.journal.file.record.PersistedJournalRecord;
+import io.zeebe.journal.file.record.RecordData;
+import io.zeebe.journal.file.record.RecordMetadata;
 import io.zeebe.journal.file.record.SBESerializer;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -426,7 +429,7 @@ class JournalTest {
   @Test
   void shouldReadReopenedJournal() throws Exception {
     // given
-    final var appendedRecord = journal.append(data);
+    final var appendedRecord = copyRecord(journal.append(data));
     journal.close();
 
     // when
@@ -442,7 +445,7 @@ class JournalTest {
   @Test
   void shouldWriteToReopenedJournalAtNextIndex() throws Exception {
     // given
-    final var firstRecord = journal.append(data);
+    final var firstRecord = copyRecord(journal.append(data));
     journal.close();
 
     // when
@@ -489,14 +492,15 @@ class JournalTest {
   public void shouldInvalidateAllEntries() throws Exception {
     // given
     data.wrap("000".getBytes(StandardCharsets.UTF_8));
-    final var firstRecord = journal.append(data);
+    final var firstRecord = copyRecord(journal.append(data));
+
     journal.append(data);
     journal.append(data);
 
     // when
     journal.deleteAfter(firstRecord.index());
     data.wrap("111".getBytes(StandardCharsets.UTF_8));
-    final var secondRecord = journal.append(data);
+    final var secondRecord = copyRecord(journal.append(data));
 
     journal.close();
     journal = openJournal();
@@ -512,8 +516,8 @@ class JournalTest {
   public void shouldTruncateCorruptedEntriesOnStartup() throws Exception {
     // given
     data.wrap("000".getBytes(StandardCharsets.UTF_8));
-    final var firstRecord = journal.append(data);
-    final var secondRecord = journal.append(data);
+    final var firstRecord = copyRecord(journal.append(data));
+    final var secondRecord = copyRecord(journal.append(data));
     assertThat(directory.toFile().listFiles()).hasSize(1);
     assertThat(directory.toFile().listFiles()[0].listFiles()).hasSize(1);
     final File log = directory.toFile().listFiles()[0].listFiles()[0];
@@ -537,8 +541,8 @@ class JournalTest {
   public void shouldWriteEntriesAfterTruncatedCorruptedEntries() throws Exception {
     // given
     data.wrap("000".getBytes(StandardCharsets.UTF_8));
-    final var firstRecord = journal.append(data);
-    final var secondRecord = journal.append(data);
+    final var firstRecord = copyRecord(journal.append(data));
+    final var secondRecord = copyRecord(journal.append(data));
     assertThat(directory.toFile().listFiles()).hasSize(1);
     assertThat(directory.toFile().listFiles()[0].listFiles()).hasSize(1);
     final File log = directory.toFile().listFiles()[0].listFiles()[0];
@@ -602,6 +606,18 @@ class JournalTest {
     }
 
     return false;
+  }
+
+  private PersistedJournalRecord copyRecord(final JournalRecord record) {
+    final DirectBuffer data = record.data();
+    final byte[] buffer = new byte[data.capacity()];
+    data.getBytes(0, buffer);
+
+    final UnsafeBuffer copiedData = new UnsafeBuffer(buffer);
+    final RecordData copiedRecord = new RecordData(record.index(), record.asqn(), copiedData);
+
+    return new PersistedJournalRecord(
+        new RecordMetadata(record.checksum(), copiedRecord.data().capacity()), copiedRecord);
   }
 
   private SegmentedJournal openJournal() {
