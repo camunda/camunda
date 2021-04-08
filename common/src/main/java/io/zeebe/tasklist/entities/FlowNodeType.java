@@ -17,6 +17,7 @@ public enum FlowNodeType {
   BOUNDARY_EVENT,
   END_EVENT,
   SERVICE_TASK,
+  USER_TASK,
   RECEIVE_TASK,
   EXCLUSIVE_GATEWAY,
   PARALLEL_GATEWAY,
@@ -36,7 +37,7 @@ public enum FlowNodeType {
       return FlowNodeType.valueOf(bpmnElementType);
     } catch (IllegalArgumentException ex) {
       LOGGER.error(
-          "Activity type not found for value [{}]. UNKNOWN type will be assigned.",
+          "Flow node type not found for value [{}]. UNKNOWN type will be assigned.",
           bpmnElementType);
       return UNKNOWN;
     }

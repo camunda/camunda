@@ -23,7 +23,6 @@ import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.entities.TaskState;
 import io.zeebe.tasklist.property.TasklistProperties;
@@ -116,8 +115,7 @@ public class TasklistTester {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
-            .serviceTask(flowNodeBpmnId)
-            .zeebeJobType(Protocol.USER_TASK_JOB_TYPE)
+            .userTask(flowNodeBpmnId)
             .endEvent()
             .done();
     processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");

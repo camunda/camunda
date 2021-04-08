@@ -51,6 +51,7 @@ public class ProcessInstanceZeebeRecordProcessor {
           BpmnElementType.PROCESS,
           BpmnElementType.SUB_PROCESS,
           BpmnElementType.SERVICE_TASK,
+          BpmnElementType.USER_TASK,
           BpmnElementType.MULTI_INSTANCE_BODY);
 
   static {
