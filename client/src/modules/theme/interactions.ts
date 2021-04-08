@@ -35,16 +35,16 @@ const focus = {
 };
 
 type ErrorBorderProps = {
-  hasError?: boolean;
+  $hasError?: boolean;
 };
 
 const errorBorders: ThemedInterpolationFunction<ErrorBorderProps> = ({
   theme,
-  hasError,
+  $hasError,
 }) => {
   return css`
     &:not(:focus) {
-      ${hasError
+      ${$hasError
         ? css`
             border-color: ${theme.colors.incidentsAndErrors};
           `
@@ -52,7 +52,7 @@ const errorBorders: ThemedInterpolationFunction<ErrorBorderProps> = ({
     }
 
     &:focus {
-      ${hasError
+      ${$hasError
         ? css`
             box-shadow: 0 0 0 1px ${theme.colors.incidentsAndErrors},
               0 0 0 4px ${theme.colors.outlineError};

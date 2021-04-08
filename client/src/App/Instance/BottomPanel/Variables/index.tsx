@@ -197,7 +197,7 @@ const Variables: React.FC = observer(() => {
             data-testid="edit-value"
             placeholder="Value"
             value={value}
-            hasError={errorMessage !== undefined}
+            $hasError={errorMessage !== undefined}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
               setValue(e.target.value)
             }
@@ -220,7 +220,7 @@ const Variables: React.FC = observer(() => {
             type="text"
             placeholder="Name"
             value={name}
-            hasError={validateName() !== undefined}
+            $hasError={validateName() !== undefined}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setName(e.target.value)
             }
@@ -233,7 +233,7 @@ const Variables: React.FC = observer(() => {
             minRows={1}
             maxRows={4}
             value={value}
-            hasError={validateValue() !== undefined}
+            $hasError={validateValue() !== undefined}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
               setValue(e.target.value)
             }

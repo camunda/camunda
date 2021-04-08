@@ -121,21 +121,23 @@ const THead = styled.thead<THeadProps>`
       }
 
       ${isVariableHeaderVisible &&
-      `      tr:last-child {
-        position: absolute;
-        width: 100%;
-        top: 35px;
-        border-bottom: 1px solid ${colors.borderColor};
-        background: ${colors.backgroundColor};
-        border-top: none;
-        height: 45px;
-        > th {
-          padding-top: 21px;
+      css`
+        tr:last-child {
+          position: absolute;
+          width: 100%;
+          top: 35px;
+          border-bottom: 1px solid ${colors.borderColor};
+          background: ${colors.backgroundColor};
+          border-top: none;
+          height: 45px;
+          > th {
+            padding-top: 21px;
+          }
+          > th:first-child {
+            min-width: 230px;
+          }
         }
-        > th:first-child {
-          min-width: 230px;
-        }
-      }`}
+      `}
     `;
   }}
 `;

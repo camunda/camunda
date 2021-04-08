@@ -69,7 +69,7 @@ function ValidationTextInput({
           value,
           onChange: handleChange,
           onBlur: handleBlur,
-          hasError: !isValid || !isComplete,
+          $hasError: !isValid || !isComplete,
         })
       )}
       {(!isComplete || !isValid) && <Warning title={errorMessage} />}
