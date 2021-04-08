@@ -24,7 +24,6 @@ import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.primitive.TestMember;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
@@ -483,8 +482,7 @@ public final class RaftRule extends ExternalResource {
             .withSnapshotStore(
                 snapshotStores.compute(
                     memberId.id(),
-                    (k, v) -> new TestSnapshotStore(getOrCreatePersistedSnapshot(memberId.id()))))
-            .withNamespace(RaftNamespaces.RAFT_STORAGE);
+                    (k, v) -> new TestSnapshotStore(getOrCreatePersistedSnapshot(memberId.id()))));
     return configurator.apply(defaults).build();
   }
 

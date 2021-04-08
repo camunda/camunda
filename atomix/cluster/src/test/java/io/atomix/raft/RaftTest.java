@@ -35,7 +35,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.metrics.RaftRoleMetrics;
-import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.primitive.TestMember;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
@@ -191,8 +190,7 @@ public class RaftTest extends ConcurrentTestCase {
         RaftStorage.builder()
             .withDirectory(directory)
             .withSnapshotStore(new TestSnapshotStore(new AtomicReference<>()))
-            .withMaxSegmentSize(1024 * 10)
-            .withNamespace(RaftNamespaces.RAFT_STORAGE);
+            .withMaxSegmentSize(1024 * 10);
     return configurator.apply(defaults).build();
   }
 

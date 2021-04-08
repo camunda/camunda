@@ -9,7 +9,6 @@ package io.zeebe.logstreams.util;
 
 import static org.mockito.Mockito.spy;
 
-import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
@@ -237,10 +236,7 @@ public final class AtomixLogStorageRule extends ExternalResource
   }
 
   private RaftStorage.Builder buildDefaultStorage() {
-    return RaftStorage.builder()
-        .withFlushExplicitly(true)
-        .withNamespace(RaftNamespaces.RAFT_STORAGE)
-        .withJournalIndexDensity(1);
+    return RaftStorage.builder().withFlushExplicitly(true).withJournalIndexDensity(1);
   }
 
   private static final class NoopListener implements AppendListener {

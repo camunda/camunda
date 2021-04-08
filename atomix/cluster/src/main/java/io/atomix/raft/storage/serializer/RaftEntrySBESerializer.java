@@ -13,27 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.atomix.raft.storage.log;
+package io.atomix.raft.storage.serializer;
+
+import static io.atomix.raft.storage.serializer.SerializerUtil.getRaftMemberType;
+import static io.atomix.raft.storage.serializer.SerializerUtil.getSBEType;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
-import io.atomix.raft.storage.log.entry.ApplicationEntryDecoder;
-import io.atomix.raft.storage.log.entry.ApplicationEntryEncoder;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
-import io.atomix.raft.storage.log.entry.ConfigurationEntryDecoder;
-import io.atomix.raft.storage.log.entry.ConfigurationEntryDecoder.RaftMemberDecoder;
-import io.atomix.raft.storage.log.entry.ConfigurationEntryEncoder;
-import io.atomix.raft.storage.log.entry.EntryType;
 import io.atomix.raft.storage.log.entry.InitialEntry;
-import io.atomix.raft.storage.log.entry.MemberType;
-import io.atomix.raft.storage.log.entry.MessageHeaderDecoder;
-import io.atomix.raft.storage.log.entry.MessageHeaderEncoder;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.raft.storage.log.entry.RaftLogEntryDecoder;
-import io.atomix.raft.storage.log.entry.RaftLogEntryEncoder;
+import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.RaftMemberDecoder;
 import java.time.Instant;
 import java.util.ArrayList;
 import org.agrona.DirectBuffer;
@@ -166,36 +159,6 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
     raftLogEntryEncoder.type(entryType);
 
     return headerEncoder.encodedLength() + raftLogEntryEncoder.encodedLength();
-  }
-
-  private MemberType getSBEType(final RaftMember.Type type) {
-    switch (type) {
-      case ACTIVE:
-        return MemberType.ACTIVE;
-      case PASSIVE:
-        return MemberType.PASSIVE;
-      case INACTIVE:
-        return MemberType.INACTIVE;
-      case PROMOTABLE:
-        return MemberType.PROMOTABLE;
-      default:
-        throw new IllegalStateException("Unexpected member type");
-    }
-  }
-
-  private RaftMember.Type getRaftMemberType(final MemberType type) {
-    switch (type) {
-      case ACTIVE:
-        return RaftMember.Type.ACTIVE;
-      case PASSIVE:
-        return RaftMember.Type.PASSIVE;
-      case INACTIVE:
-        return RaftMember.Type.INACTIVE;
-      case PROMOTABLE:
-        return RaftMember.Type.PROMOTABLE;
-      default:
-        throw new IllegalStateException("Unexpected member type " + type);
-    }
   }
 
   private ApplicationEntry readApplicationEntry(final DirectBuffer buffer, final int entryOffset) {

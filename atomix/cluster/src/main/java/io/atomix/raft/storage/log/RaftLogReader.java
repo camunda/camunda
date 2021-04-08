@@ -17,6 +17,8 @@
 package io.atomix.raft.storage.log;
 
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
+import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
 import java.util.NoSuchElementException;

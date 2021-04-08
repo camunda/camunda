@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude"
-  package="io.atomix.raft.storage.log.entry" id="8" version="1"
+  package="io.atomix.raft.storage.serializer" id="8" version="1"
   semanticVersion="0.1.0" description="Raft Entry" byteOrder="littleEndian">
 
   <xi:include href="../../../../../protocol/src/main/resources/common-types.xml"/>
@@ -15,6 +15,7 @@
     </enum>
   </types>
 
+  <!--  Raft log entries -->
   <types>
     <enum name="EntryType" encodingType="uint8">
       <validValue name="ApplicationEntry">0</validValue>
@@ -51,4 +52,22 @@
       <data name="memberId" id="3" type="varDataEncoding"/>
     </group>
   </sbe:message>
+
+  <!-- MetaStore -->
+  <sbe:message name="Configuration" id="5">
+    <field name="index" id="0" type="uint64"/>
+    <field name="term" id="1" type="uint64"/>
+    <field name="timestamp" id="2" type="uint64"/>
+    <group name="RaftMember" id="3">
+      <field name="type" id="1" type="MemberType"/>
+      <field name="updated" id="2" type="int64"/>
+      <data name="memberId" id="3" type="varDataEncoding"/>
+    </group>
+  </sbe:message>
+
+  <sbe:message name="Meta" id="6">
+    <field name="term" id="0" type="uint64"/>
+    <data name="votedFor" id="1" type="varDataEncoding"/>
+  </sbe:message>
+
 </sbe:messageSchema>
