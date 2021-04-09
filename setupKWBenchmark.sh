@@ -34,10 +34,10 @@ cd "$benchmark"
 
 sed_inplace 's/camunda\/zeebe/gcr.io\/zeebe-io\/zeebe/' zeebe-values.yaml
 sed_inplace "s/SNAPSHOT/$benchmark/" zeebe-values.yaml
-sed_inplace "s/starter:zeebe/starter:$benchmark/" starter.yaml
-sed_inplace "s/starter:zeebe/starter:$benchmark/" simpleStarter.yaml
-sed_inplace "s/starter:zeebe/starter:$benchmark/" timer.yaml
-sed_inplace "s/worker:zeebe/worker:$benchmark/" worker.yaml
+sed_inplace "s/starter:SNAPSHOT/starter:$benchmark/" starter.yaml
+sed_inplace "s/starter:SNAPSHOT/starter:$benchmark/" simpleStarter.yaml
+sed_inplace "s/starter:SNAPSHOT/starter:$benchmark/" timer.yaml
+sed_inplace "s/worker:SNAPSHOT/worker:$benchmark/" worker.yaml
 
 make zeebe starter worker
 
