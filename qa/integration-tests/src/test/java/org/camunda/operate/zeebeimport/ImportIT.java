@@ -649,7 +649,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     String processId = "eventSubProcess";
     deployProcess("eventSubProcess.bpmn");
     final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
-    sleepFor(2000);
+    sleepFor(5_000);
 
     //when
     elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsTerminatedCheck, processInstanceKey, "taskA");
