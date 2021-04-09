@@ -22,7 +22,7 @@ spec:
           - name: JAVA_OPTIONS
             value: >-
               -Dapp.brokerUrl=medic-cw-11-71214ff1c-benchmark-zeebe-gateway:26500
-              -Dapp.starter.rate=300
+              -Dapp.starter.rate=200
               -Dapp.starter.durationLimit=0
               -Dzeebe.client.requestTimeout=62000
               -XX:+HeapDumpOnOutOfMemoryError
