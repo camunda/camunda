@@ -35,6 +35,7 @@ import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -642,6 +643,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("not yet released on zeebe side")
   public void testEventSubprocess() {
     // having
     final OffsetDateTime testStartTime = OffsetDateTime.now();
@@ -649,7 +651,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     String processId = "eventSubProcess";
     deployProcess("eventSubProcess.bpmn");
     final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
-    sleepFor(2000);
+    sleepFor(5_000);
 
     //when
     elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsTerminatedCheck, processInstanceKey, "taskA");
