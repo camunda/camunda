@@ -437,7 +437,7 @@ public final class RaftMemberContext {
   }
 
   public void reset(final long index) {
-    final var nextIndex = reader.reset(index - 1);
+    final var nextIndex = reader.seek(index - 1);
     if (nextIndex == index - 1) {
       currentEntry = reader.next();
     } else {

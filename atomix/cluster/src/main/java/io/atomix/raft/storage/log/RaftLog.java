@@ -59,13 +59,26 @@ public class RaftLog implements Closeable {
     return new Builder();
   }
 
+  /**
+   * Opens the reader with {@link Mode} ALL and seek to the given index.
+   *
+   * @param index index at which the reader starts
+   * @return the reader
+   */
   public RaftLogReader openReader(final long index) {
     return openReader(index, Mode.ALL);
   }
 
+  /**
+   * Opens the reader with given {@link Mode} and seek to the given index.
+   *
+   * @param index index at which the reader starts
+   * @param mode the mode of the reader
+   * @return the reader
+   */
   public RaftLogReader openReader(final long index, final Mode mode) {
     final RaftLogReader reader = new RaftLogReader(this, journal.openReader(), mode);
-    reader.reset(index);
+    reader.seek(index);
 
     return reader;
   }
@@ -81,7 +94,7 @@ public class RaftLog implements Closeable {
    *
    * @param index The index up to which to compact the journal.
    */
-  public void compact(final long index) {
+  public void deleteUntil(final long index) {
     journal.deleteUntil(index);
   }
 
@@ -176,7 +189,7 @@ public class RaftLog implements Closeable {
     lastAppendedEntry = null;
   }
 
-  public void truncate(final long index) {
+  public void deleteAfter(final long index) {
     journal.deleteAfter(index);
     lastAppendedEntry = null;
   }
@@ -201,7 +214,7 @@ public class RaftLog implements Closeable {
         + serializer
         + ", flushExplicitly="
         + flushExplicitly
-        + ", lastWrittenEntry="
+        + ", lastAppendedEntry="
         + lastAppendedEntry
         + ", commitIndex="
         + commitIndex
@@ -313,6 +326,16 @@ public class RaftLog implements Closeable {
       return this;
     }
 
+    /**
+     * Sets the index density of the journal.
+     *
+     * <p>When journalIndexDensity is set to n, every n'th record is indexed. So higher this value,
+     * longer a seek operation takes. Lower this value more memory is required to store the index
+     * mappings.
+     *
+     * @param journalIndexDensity
+     * @return this builder for chaining
+     */
     public Builder withJournalIndexDensity(final int journalIndexDensity) {
       journalBuilder.withJournalIndexDensity(journalIndexDensity);
       return this;

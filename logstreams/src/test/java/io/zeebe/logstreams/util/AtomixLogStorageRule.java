@@ -156,7 +156,7 @@ public final class AtomixLogStorageRule extends ExternalResource
   }
 
   public CompletableFuture<Void> compact(final long index) {
-    raftLog.compact(index);
+    raftLog.deleteUntil(index);
     return CompletableFuture.completedFuture(null);
   }
 

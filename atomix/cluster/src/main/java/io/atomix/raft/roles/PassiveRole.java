@@ -96,7 +96,7 @@ public class PassiveRole extends InactiveRole {
   /** Truncates uncommitted entries from the log. */
   private void truncateUncommittedEntries() {
     if (role() == RaftServer.Role.PASSIVE) {
-      raft.getLog().truncate(raft.getCommitIndex());
+      raft.getLog().deleteAfter(raft.getCommitIndex());
     }
 
     // to fix the edge case where we might have been stopped
@@ -465,7 +465,7 @@ public class PassiveRole extends InactiveRole {
     // If the previous log index is less than the last written entry index, look up the entry.
     if (request.prevLogIndex() < lastEntryIndex) {
       // Reset the reader to the previous log index.
-      reader.reset(request.prevLogIndex());
+      reader.seek(request.prevLogIndex());
 
       // The previous entry should exist in the log if we've gotten this far.
       if (!reader.hasNext()) {
@@ -580,7 +580,7 @@ public class PassiveRole extends InactiveRole {
         // If the last entry term doesn't match the leader's term for the same entry, truncate
         // the log and append the leader's entry.
         if (lastEntry.term() != entry.term()) {
-          raft.getLog().truncate(index - 1);
+          raft.getLog().deleteAfter(index - 1);
           failedToAppend = !appendEntry(index, entry, future);
         }
       } else { // Otherwise, this entry is being appended at the end of the log.
@@ -614,7 +614,7 @@ public class PassiveRole extends InactiveRole {
       final PersistedRaftRecord entry,
       final long index) {
     // Reset the reader to the current entry index.
-    reader.reset(index);
+    reader.seek(index);
 
     // If the reader does not have any next entry, that indicates an inconsistency between
     // the reader and writer.
@@ -629,7 +629,7 @@ public class PassiveRole extends InactiveRole {
     // truncate
     // the log and append the leader's entry.
     if (existingEntry.term() != entry.term()) {
-      raft.getLog().truncate(index - 1);
+      raft.getLog().deleteAfter(index - 1);
       if (!appendEntry(index, entry, future)) {
         return false;
       }

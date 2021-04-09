@@ -369,7 +369,7 @@ public class RaftTest extends ConcurrentTestCase {
     if (role == Role.LEADER) {
       final RaftLog raftLog = server.getContext().getLog();
       final RaftLogReader raftLogReader = raftLog.openReader(0, Mode.COMMITS);
-      raftLogReader.reset(raftLog.getLastIndex());
+      raftLogReader.seek(raftLog.getLastIndex());
       final IndexedRaftLogEntry entry = raftLogReader.next();
 
       assertThat(entry.entry()).isInstanceOf(InitialEntry.class);

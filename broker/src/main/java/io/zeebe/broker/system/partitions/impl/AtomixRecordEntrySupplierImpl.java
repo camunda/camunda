@@ -25,7 +25,7 @@ public final class AtomixRecordEntrySupplierImpl implements AtomixRecordEntrySup
     // to be not very efficient.
     final long recordIndex = reader.seekToAsqn(position);
     final long prevIndex = recordIndex - 1;
-    if (reader.reset(prevIndex) == prevIndex) {
+    if (reader.seek(prevIndex) == prevIndex) {
       return Optional.of(reader.next());
     }
 
