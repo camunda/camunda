@@ -13,6 +13,7 @@ import io.zeebe.snapshots.raft.PersistedSnapshotStore;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStoreFactory;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.SchedulingHints;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,7 +60,7 @@ public final class FileBasedSnapshotStoreFactory
     final var snapshotStore =
         new FileBasedSnapshotStore(
             new SnapshotMetrics(partitionName), snapshotDirectory, pendingDirectory);
-    actorScheduler.submitActor(snapshotStore).join();
+    actorScheduler.submitActor(snapshotStore, SchedulingHints.ioBound()).join();
     return snapshotStore;
   }
 
