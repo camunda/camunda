@@ -57,26 +57,22 @@ public class RaftLog implements Closeable {
   }
 
   /**
-   * Opens the reader with {@link Mode} ALL and seek to the given index.
+   * Opens the reader with {@link Mode} ALL.
    *
-   * @param index index at which the reader starts
    * @return the reader
    */
-  public RaftLogReader openReader(final long index) {
-    return openReader(index, Mode.ALL);
+  public RaftLogReader openReader() {
+    return openReader(Mode.ALL);
   }
 
   /**
-   * Opens the reader with given {@link Mode} and seek to the given index.
+   * Opens the reader with given {@link Mode}.
    *
-   * @param index index at which the reader starts
    * @param mode the mode of the reader
    * @return the reader
    */
-  public RaftLogReader openReader(final long index, final Mode mode) {
+  public RaftLogReader openReader(final Mode mode) {
     final RaftLogReader reader = new RaftLogReader(this, journal.openReader(), mode);
-    reader.seek(index);
-
     return reader;
   }
 
@@ -134,7 +130,8 @@ public class RaftLog implements Closeable {
   }
 
   private void readLastEntry() {
-    try (final var reader = openReader(journal.getLastIndex())) {
+    try (final var reader = openReader()) {
+      reader.seekToLast();
       if (reader.hasNext()) {
         lastAppendedEntry = reader.next();
       }
@@ -217,5 +214,4 @@ public class RaftLog implements Closeable {
         + commitIndex
         + '}';
   }
-
 }

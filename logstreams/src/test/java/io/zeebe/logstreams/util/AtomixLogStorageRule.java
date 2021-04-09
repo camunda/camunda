@@ -161,8 +161,8 @@ public final class AtomixLogStorageRule extends ExternalResource
   }
 
   @Override
-  public RaftLogReader create(final long index, final Mode mode) {
-    return raftLog.openReader(index, mode);
+  public RaftLogReader create(final Mode mode) {
+    return raftLog.openReader(mode);
   }
 
   public void setPositionListener(final LongConsumer positionListener) {

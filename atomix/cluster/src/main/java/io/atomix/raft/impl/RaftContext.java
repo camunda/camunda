@@ -153,7 +153,7 @@ public class RaftContext implements AutoCloseable {
 
     // Construct the core log, reader, writer, and compactor.
     raftLog = storage.openLog();
-    logReader = raftLog.openReader(1, RaftLogReader.Mode.ALL);
+    logReader = raftLog.openReader(RaftLogReader.Mode.ALL);
 
     // Open the snapshot store.
     persistedSnapshotStore = storage.getPersistedSnapshotStore();

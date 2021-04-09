@@ -95,7 +95,8 @@ public final class RaftMemberContext {
   }
 
   private void openReaderAtEndOfLog(final RaftLog log, final Mode all) {
-    reader = log.openReader(log.getLastIndex(), all);
+    reader = log.openReader(all);
+    reader.seekToLast();
     if (reader.hasNext()) {
       currentEntry = reader.next();
     }

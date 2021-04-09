@@ -1,3 +1,18 @@
+/*
+ * Copyright © 2020 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.atomix.raft.storage.log;
 
 import io.zeebe.journal.Journal;
@@ -10,8 +25,7 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
   private final SegmentedJournalBuilder journalBuilder = SegmentedJournal.builder();
   private boolean flushExplicitly = true;
 
-  protected RaftLogBuilder() {
-  }
+  protected RaftLogBuilder() {}
 
   /**
    * Sets the storage name.
@@ -55,10 +69,9 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
   /**
    * Sets the maximum segment size in bytes, returning the builder for method chaining.
    *
-   * <p>The maximum segment size dictates when logs should roll over to new segments. As entries
-   * are written to a segment of the log, once the size of the segment surpasses the configured
-   * maximum segment size, the log will create a new segment and append new entries to that
-   * segment.
+   * <p>The maximum segment size dictates when logs should roll over to new segments. As entries are
+   * written to a segment of the log, once the size of the segment surpasses the configured maximum
+   * segment size, the log will create a new segment and append new entries to that segment.
    *
    * <p>By default, the maximum segment size is {@code 1024 * 1024 * 32}.
    *

@@ -12,13 +12,9 @@ import io.atomix.raft.storage.log.RaftLogReader.Mode;
 
 @FunctionalInterface
 public interface AtomixReaderFactory {
-  RaftLogReader create(long index, Mode mode);
-
-  default RaftLogReader create(final long index) {
-    return create(index, Mode.COMMITS);
-  }
+  RaftLogReader create(Mode mode);
 
   default RaftLogReader create() {
-    return create(0);
+    return create(Mode.COMMITS);
   }
 }

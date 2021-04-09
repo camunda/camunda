@@ -49,7 +49,7 @@ public class BrokerSnapshotTest {
                 .getPartitionService()
                 .getPartitionGroup(AtomixFactory.GROUP_NAME)
                 .getPartition(PartitionId.from(AtomixFactory.GROUP_NAME, PARTITION_ID));
-    journalReader = raftPartition.getServer().openReader(1, Mode.COMMITS);
+    journalReader = raftPartition.getServer().openReader(Mode.COMMITS);
     brokerAdminService = brokerRule.getBroker().getBrokerAdminService();
 
     final String contactPoint =

@@ -299,7 +299,7 @@ public final class ControllableRaftContexts {
     final var readers =
         raftServers.values().stream()
             .collect(
-                Collectors.toMap(Function.identity(), s -> s.getLog().openReader(0, Mode.COMMITS)));
+                Collectors.toMap(Function.identity(), s -> s.getLog().openReader(Mode.COMMITS)));
     long index = 0;
     while (true) {
       final var entries =

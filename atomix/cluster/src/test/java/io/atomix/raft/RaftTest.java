@@ -368,7 +368,7 @@ public class RaftTest extends ConcurrentTestCase {
       final CountDownLatch transitionCompleted) {
     if (role == Role.LEADER) {
       final RaftLog raftLog = server.getContext().getLog();
-      final RaftLogReader raftLogReader = raftLog.openReader(0, Mode.COMMITS);
+      final RaftLogReader raftLogReader = raftLog.openReader(Mode.COMMITS);
       raftLogReader.seek(raftLog.getLastIndex());
       final IndexedRaftLogEntry entry = raftLogReader.next();
 
