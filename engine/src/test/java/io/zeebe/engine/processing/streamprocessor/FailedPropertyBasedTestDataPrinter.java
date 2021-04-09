@@ -7,8 +7,9 @@
  */
 package io.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.test.util.bpmn.random.TestDataGenerator.TestDataRecord;
 import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -20,23 +21,22 @@ final class FailedPropertyBasedTestDataPrinter extends TestWatcher {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FailedPropertyBasedTestDataPrinter.class);
 
-  private final PropertyBasedTest propertyBasedTest;
+  private final Supplier<TestDataRecord> testDataRecordSupplier;
 
-  public FailedPropertyBasedTestDataPrinter(final PropertyBasedTest propertyBasedTest) {
-    this.propertyBasedTest = propertyBasedTest;
+  public FailedPropertyBasedTestDataPrinter(final Supplier<TestDataRecord> testDataRecordSupplier) {
+    this.testDataRecordSupplier = testDataRecordSupplier;
   }
 
   @Override
   protected void failed(final Throwable e, final Description description) {
-    LOGGER.info("Data of failed test case: {}", propertyBasedTest.getDataRecord());
-    LOGGER.info(
-        "Process of failed test case:{}{}",
-        System.lineSeparator(),
-        Bpmn.convertToString(propertyBasedTest.getDataRecord().getBpmnModel()));
+    final var record = testDataRecordSupplier.get();
+
+    LOGGER.info("Data of failed test case: {}", record);
+
     LOGGER.info(
         "Execution path of failed test case:{}{}",
         System.lineSeparator(),
-        propertyBasedTest.getDataRecord().getExecutionPath().getSteps().stream()
+        record.getExecutionPath().getSteps().stream()
             .map(AbstractExecutionStep::toString)
             .collect(Collectors.joining(System.lineSeparator())));
   }

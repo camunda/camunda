@@ -9,9 +9,13 @@ package io.zeebe.test.util.bpmn.random;
 
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.instance.BaseElement;
+import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.test.util.bpmn.random.blocks.BlockSequenceBuilder.BlockSequenceBuilderFactory;
 import io.zeebe.test.util.bpmn.random.blocks.ProcessBuilder;
+import io.zeebe.util.collection.Tuple;
 import java.io.File;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
@@ -50,7 +54,8 @@ public final class RandomProcessGenerator {
     processBuilder = new ProcessBuilder(context);
   }
 
-  public BpmnModelInstance buildProcess() {
+  /** @return the build process and any potentially called child processes */
+  public List<BpmnModelInstance> buildProcesses() {
     return processBuilder.buildProcess();
   }
 
@@ -63,13 +68,16 @@ public final class RandomProcessGenerator {
     final Random random = new Random();
 
     for (int i = 0; i < 10; i++) {
-      System.out.println("Generating process " + i);
-
-      final String id = "process" + i;
+      final int index = i;
+      System.out.println("Generating process " + index);
 
       final RandomProcessGenerator builder = new RandomProcessGenerator(random.nextLong(), 5, 3, 3);
 
-      Bpmn.writeModelToFile(new File(id + ".bpmn"), builder.buildProcess());
+      final var bpmnModelInstances = builder.buildProcesses();
+
+      bpmnModelInstances.stream()
+          .map(modelInstance -> new Tuple<>(createFile(modelInstance, index), modelInstance))
+          .forEach(tuple -> Bpmn.writeModelToFile(tuple.getLeft(), tuple.getRight()));
 
       for (int p = 0; p < 5; p++) {
         final ExecutionPath path = builder.findRandomExecutionPath(random.nextLong());
@@ -77,5 +85,14 @@ public final class RandomProcessGenerator {
         System.out.println("Execution path " + p + " :" + path);
       }
     }
+  }
+
+  private static File createFile(final BpmnModelInstance bpmnModelInstance, final int index) {
+    return bpmnModelInstance.getDefinitions().getChildElementsByType(Process.class).stream()
+        .map(BaseElement::getId)
+        .map(id -> index + "-" + id + ".bpmn")
+        .map(File::new)
+        .findFirst()
+        .orElseThrow();
   }
 }

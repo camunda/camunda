@@ -49,7 +49,7 @@ public final class MultipleEventSubprocessTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(wfInstanceKey)
-                .withElementType(BpmnElementType.SUB_PROCESS)
+                .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
                 .limit(8))
         .extracting(r -> tuple(r.getValue().getElementId(), r.getIntent()))
         .containsSubsequence(
@@ -90,7 +90,6 @@ public final class MultipleEventSubprocessTest {
         .containsSubsequence(
             tuple("event_sub_proc_timer", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("event_sub_task_timer", ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("event_sub_start_msg", ProcessInstanceIntent.EVENT_OCCURRED),
             tuple("event_sub_proc_timer", ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple("event_sub_task_timer", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple("event_sub_proc_timer", ProcessInstanceIntent.ELEMENT_TERMINATED),
@@ -209,10 +208,10 @@ public final class MultipleEventSubprocessTest {
         .containsSubsequence(
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
@@ -230,7 +229,7 @@ public final class MultipleEventSubprocessTest {
             .create();
 
     triggerTimerStart(wfInstanceKey);
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.EVENT_OCCURRED)
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ACTIVATE_ELEMENT)
         .withProcessInstanceKey(wfInstanceKey)
         .withElementId("event_sub_start_timer")
         .await();
@@ -246,7 +245,7 @@ public final class MultipleEventSubprocessTest {
                 .withProcessInstanceKey(wfInstanceKey)
                 .limitToProcessInstanceCompleted()
                 .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withElementType(BpmnElementType.SUB_PROCESS))
+                .withElementType(BpmnElementType.EVENT_SUB_PROCESS))
         .extracting(r -> r.getValue().getElementId())
         .containsExactly("event_sub_proc_timer");
   }

@@ -126,6 +126,12 @@ public final class CallActivityProcessor
   }
 
   @Override
+  public void onChildActivating(
+      final ExecutableCallActivity element,
+      final BpmnElementContext flowScopeContext,
+      final BpmnElementContext childContext) {}
+
+  @Override
   public void onChildCompleted(
       final ExecutableCallActivity element,
       final BpmnElementContext callActivityContext,

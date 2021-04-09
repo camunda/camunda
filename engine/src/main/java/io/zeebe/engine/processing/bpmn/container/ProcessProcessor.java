@@ -60,21 +60,22 @@ public final class ProcessProcessor
   public void onActivated(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
 
-    boolean triggeredByEvent = false;
     if (element.hasMessageStartEvent() || element.hasTimerStartEvent()) {
-
-      triggeredByEvent = eventSubscriptionBehavior.publishTriggeredStartEvent(context);
-    }
-
-    if (!triggeredByEvent) {
-
-      final var noneStartEvent = element.getNoneStartEvent();
-      if (noneStartEvent == null) {
-        throw new BpmnProcessingException(
-            context, "Expected to activate the none start event of the process but not found.");
+      // when the process element has a message or timer start event we
+      // need to verify whether it was triggered by one of them.
+      // For that we check the state whether there exist a event trigger and activate the
+      // corresponding
+      // start event
+      //
+      // We try to trigger this start event - if no trigger exist in the state then
+      // the none start event need to be activated wi triggered by timer or message then we need to
+      // write the activate command for the start event
+      if (!eventSubscriptionBehavior.tryToActivateTriggeredStartEvent(context)) {
+        // if we were not able to trigger the start event we need to activate the none start event
+        activateNoneStartEvent(element, context);
       }
-
-      stateTransitionBehavior.activateChildInstance(context, noneStartEvent);
+    } else {
+      activateNoneStartEvent(element, context);
     }
   }
 
@@ -146,6 +147,23 @@ public final class ProcessProcessor
         context,
         "Expected to handle occurred event on process, but events should not occur on process.");
   }
+
+  private void activateNoneStartEvent(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    final var noneStartEvent = element.getNoneStartEvent();
+    if (noneStartEvent == null) {
+      throw new BpmnProcessingException(
+          context, "Expected to activate the none start event of the process but not found.");
+    }
+
+    stateTransitionBehavior.activateChildInstance(context, noneStartEvent);
+  }
+
+  @Override
+  public void onChildActivating(
+      final ExecutableFlowElementContainer element,
+      final BpmnElementContext flowScopeContext,
+      final BpmnElementContext childContext) {}
 
   @Override
   public void onChildCompleted(

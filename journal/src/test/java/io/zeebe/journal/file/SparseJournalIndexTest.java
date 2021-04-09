@@ -56,6 +56,7 @@ public class SparseJournalIndexTest {
     // then
     assertEquals(5, index.lookup(5).index());
     assertEquals(10, index.lookup(5).position());
+    assertEquals(5, index.lookupAsqn(5));
   }
 
   @Test
@@ -77,6 +78,7 @@ public class SparseJournalIndexTest {
     // then
     assertEquals(5, index.lookup(8).index());
     assertEquals(10, index.lookup(8).position());
+    assertEquals(5, index.lookupAsqn(8));
   }
 
   @Test
@@ -100,6 +102,7 @@ public class SparseJournalIndexTest {
     // then
     assertEquals(10, index.lookup(10).index());
     assertEquals(20, index.lookup(10).position());
+    assertEquals(10, index.lookupAsqn(10));
   }
 
   @Test
@@ -211,5 +214,28 @@ public class SparseJournalIndexTest {
     assertNull(index.lookupAsqn(40));
     assertNull(index.lookupAsqn(50));
     assertNull(index.lookupAsqn(80));
+  }
+
+  @Test
+  public void shouldFindAsqnWithInBound() {
+    // given - every 2nd index is added
+    final JournalIndex index = new SparseJournalIndex(2);
+
+    // when
+    index.index(asJournalRecord(1, 1), 2);
+    index.index(asJournalRecord(2, 2), 4);
+    index.index(asJournalRecord(3, 3), 6);
+    index.index(asJournalRecord(4, 4), 8);
+    index.index(asJournalRecord(5, 5), 10);
+    index.index(asJournalRecord(6, 6), 10);
+
+    // then
+    assertNull(index.lookupAsqn(5, 1));
+    assertEquals(2, index.lookupAsqn(5, 3));
+    assertEquals(2, index.lookupAsqn(5, 3));
+    assertEquals(4, index.lookupAsqn(5, 4));
+    assertEquals(4, index.lookupAsqn(5, 5));
+    assertEquals(4, index.lookupAsqn(Long.MAX_VALUE, 5));
+    assertEquals(6, index.lookupAsqn(Long.MAX_VALUE, 6));
   }
 }

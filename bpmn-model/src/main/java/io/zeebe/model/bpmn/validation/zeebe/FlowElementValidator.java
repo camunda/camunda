@@ -31,6 +31,7 @@ import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.SubProcess;
+import io.zeebe.model.bpmn.instance.UserTask;
 import java.util.HashSet;
 import java.util.Set;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
@@ -55,6 +56,7 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
     SUPPORTED_ELEMENT_TYPES.add(StartEvent.class);
     SUPPORTED_ELEMENT_TYPES.add(SubProcess.class);
     SUPPORTED_ELEMENT_TYPES.add(CallActivity.class);
+    SUPPORTED_ELEMENT_TYPES.add(UserTask.class);
 
     NON_EXECUTABLE_ELEMENT_TYPES.add(DataObject.class);
     NON_EXECUTABLE_ELEMENT_TYPES.add(DataObjectReference.class);

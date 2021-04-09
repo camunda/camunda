@@ -20,12 +20,14 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.zeebe.protocol.record.value.ErrorRecordValue;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.record.value.MessageRecordValue;
 import io.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
@@ -56,11 +58,21 @@ public class CompactRecordLogger {
   private static final Map<String, String> ABBREVIATIONS =
       ofEntries(
           entry("PROCESS", "PROC"),
+          entry("INSTANCE", "INST"),
           entry("MESSAGE", "MSG"),
           entry("SUBSCRIPTION", "SUB"),
           entry("SEQUENCE", "SEQ"),
           entry("DISTRIBUTED", "DISTR"),
-          entry("ELEMENT", "ELMNT"));
+          entry("VARIABLE", "VAR"),
+          entry("ELEMENT_", ""),
+          entry("_ELEMENT", ""),
+          entry("EVENT", "EVNT"));
+
+  private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
+      ofEntries(
+          entry(RecordType.COMMAND, 'C'),
+          entry(RecordType.EVENT, 'E'),
+          entry(RecordType.COMMAND_REJECTION, 'R'));
 
   private final Map<ValueType, Function<Record<?>, String>> valueLoggers = new HashMap<>();
   private final int keyDigits;
@@ -69,6 +81,8 @@ public class CompactRecordLogger {
   private final boolean singlePartition;
   private final Map<Long, String> substitutions = new HashMap<>();
   private final ArrayList<Record<?>> records;
+
+  private final Map<String, String> processes = new HashMap<>();
 
   {
     valueLoggers.put(ValueType.DEPLOYMENT, this::summarizeDeployment);
@@ -86,6 +100,8 @@ public class CompactRecordLogger {
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION, this::summarizeProcessInstanceSubscription);
     valueLoggers.put(ValueType.VARIABLE, this::summarizeVariable);
     valueLoggers.put(ValueType.TIMER, this::summarizeTimer);
+    valueLoggers.put(ValueType.ERROR, this::summarizeError);
+    valueLoggers.put(ValueType.PROCESS_EVENT, this::summarizeProcessEvent);
     // TODO please extend list
   }
 
@@ -133,6 +149,16 @@ public class CompactRecordLogger {
 
   public void log() {
     final var bulkMessage = new StringBuilder().append("Compact log representation:\n");
+    addSummarizedRecords(bulkMessage);
+
+    addDeployedProcesses(bulkMessage);
+
+    addDecomposedKeys(bulkMessage);
+
+    LOG.info(bulkMessage.toString());
+  }
+
+  private void addSummarizedRecords(final StringBuilder bulkMessage) {
     bulkMessage
         .append("--------\n")
         .append(
@@ -149,8 +175,16 @@ public class CompactRecordLogger {
         record -> {
           bulkMessage.append(summarizeRecord(record)).append("\n");
         });
+  }
 
-    bulkMessage.append("--------\n").append("Decomposed keys (for debugging):\n");
+  private void addDeployedProcesses(final StringBuilder bulkMessage) {
+    bulkMessage.append("\n-------------- Deployed Processes ----------------------\n");
+    processes.forEach(
+        (name, resource) -> bulkMessage.append(name).append(" ------ \n").append(resource));
+  }
+
+  private void addDecomposedKeys(final StringBuilder bulkMessage) {
+    bulkMessage.append("\n--------------- Decomposed keys (for debugging) -----------------\n");
 
     substitutions.entrySet().stream()
         .sorted(comparing(Entry::getValue))
@@ -161,20 +195,18 @@ public class CompactRecordLogger {
                     .append(" <-> ")
                     .append(entry.getKey())
                     .append("\n"));
-
-    LOG.info(bulkMessage.toString());
   }
 
   private StringBuilder summarizeRecord(final Record<?> record) {
     final StringBuilder message = new StringBuilder();
 
-    if (record.getRecordType() != RecordType.COMMAND_REJECTION) {
-      message.append(summarizeIntent(record));
-      message.append(summarizePositionFields(record));
-      message.append(summarizeValue(record));
-    } else {
+    message.append(summarizeIntent(record));
+    message.append(summarizePositionFields(record));
+    message.append(summarizeValue(record));
+
+    if (record.getRecordType() == RecordType.COMMAND_REJECTION) {
+      message.append(" ");
       message.append(summarizeRejection(record));
-      message.append(summarizePositionFields(record));
     }
 
     return message;
@@ -194,7 +226,7 @@ public class CompactRecordLogger {
     final var valueType = record.getValueType();
 
     return new StringBuilder()
-        .append(record.getRecordType().toString().charAt(0))
+        .append(RECORD_TYPE_ABBREVIATIONS.get(record.getRecordType()))
         .append(" ")
         .append(rightPad(abbreviate(valueType.name()), valueTypeChars))
         .append(" ")
@@ -214,6 +246,7 @@ public class CompactRecordLogger {
     final var value = (DeploymentRecordValue) record.getValue();
 
     return value.getResources().stream()
+        .peek(res -> processes.put(res.getResourceName(), new String(res.getResource())))
         .map(DeploymentResource::getResourceName)
         .collect(Collectors.joining());
   }
@@ -224,13 +257,22 @@ public class CompactRecordLogger {
   }
 
   private String summarizeProcessInformation(
-      final String bpmnProcessId, final long processInstancekey) {
-    if (!StringUtils.isEmpty(bpmnProcessId)) {
-      return String.format(
-          " in <process %s[%s]>", formatId(bpmnProcessId), shortenKey(processInstancekey));
-    } else {
-      return " in <process ?>";
-    }
+      final String bpmnProcessId, final long processInstanceKey) {
+
+    final var formattedProcessId =
+        StringUtils.isEmpty(bpmnProcessId) ? "?" : formatId(bpmnProcessId);
+    final var formattedInstanceKey = processInstanceKey < 0 ? "?" : shortenKey(processInstanceKey);
+
+    return String.format(" in <process %s[%s]>", formattedProcessId, formattedInstanceKey);
+  }
+
+  private String summarizeProcessInformation(
+      final long processDefinitionKey, final long processInstanceKey) {
+    final var formattedDefinitionKey =
+        processDefinitionKey < 0 ? "?" : shortenKey(processDefinitionKey);
+    final var formattedInstanceKey = processInstanceKey < 0 ? "?" : shortenKey(processInstanceKey);
+
+    return String.format(" in <process %s[%s]>", formattedDefinitionKey, formattedInstanceKey);
   }
 
   private String summarizeVariables(final Map<String, Object> variables) {
@@ -454,9 +496,11 @@ public class CompactRecordLogger {
 
   private StringBuilder summarizeRejection(final Record<?> record) {
     return new StringBuilder()
+        .append("!")
         .append(record.getRejectionType())
-        .append(" ")
-        .append(record.getRejectionReason());
+        .append(" (")
+        .append(StringUtils.abbreviate(record.getRejectionReason(), "..", 200))
+        .append(")");
   }
 
   private String summarizeTimer(final Record<?> record) {
@@ -479,6 +523,28 @@ public class CompactRecordLogger {
     }
 
     return builder.toString();
+  }
+
+  private String summarizeError(final Record<?> record) {
+    final var value = (ErrorRecordValue) record.getValue();
+    return new StringBuilder()
+        .append("\"")
+        .append(value.getExceptionMessage())
+        .append("\"")
+        .append(" ")
+        .append(summarizeProcessInformation(null, value.getProcessInstanceKey()))
+        .append(" (")
+        .append(StringUtils.abbreviate(value.getStacktrace(), "..", 100))
+        .append(")")
+        .toString();
+  }
+
+  private String summarizeProcessEvent(final Record<?> record) {
+    final ProcessEventRecordValue value = (ProcessEventRecordValue) record.getValue();
+    return summarizeElementInformation(value.getTargetElementId(), value.getScopeKey())
+        + summarizeProcessInformation(
+            value.getProcessDefinitionKey(), value.getProcessInstanceKey())
+        + summarizeVariables(value.getVariables());
   }
 
   private String shortenKey(final long input) {

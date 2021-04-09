@@ -21,6 +21,8 @@ import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
+import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.zeebe.journal.Journal;
 import io.zeebe.journal.JournalRecord;
 import io.zeebe.journal.file.SegmentedJournal;

@@ -14,6 +14,7 @@ data:
     # want to use this action as a template, be sure to set this to False after
     # copying it.
     actions:
+      # delete indicies which are older then one day
       1:
         action: delete_indices
         description: "Clean up ES by deleting old indices"
@@ -33,6 +34,20 @@ data:
           stats_result:
           epoch:
           exclude: False
+      # or delete indicies which exceed the total size of 10 gig
+      2:
+        action: delete_indices
+        description: "Clean up ES by deleting old indices"
+        options:
+          timeout_override:
+          continue_if_exception: False
+          disable_action: False
+          ignore_empty_list: True
+        filters:
+        - filtertype: space
+          disk_space: 10
+          source: name
+          timestring: '%Y-%m-%d'
   config.yml: |-
     ---
     # Remember, leave a key empty if there is no value.  None will be a string,

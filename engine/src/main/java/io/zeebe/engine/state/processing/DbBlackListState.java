@@ -13,6 +13,7 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.engine.Loggers;
+import io.zeebe.engine.metrics.BlacklistMetrics;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.mutable.MutableBlackListState;
@@ -32,13 +33,17 @@ public final class DbBlackListState implements MutableBlackListState {
 
   private final ColumnFamily<DbLong, DbNil> blackListColumnFamily;
   private final DbLong processInstanceKey;
+  private final BlacklistMetrics blacklistMetrics;
 
   public DbBlackListState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final int partitionId) {
     processInstanceKey = new DbLong();
     blackListColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.BLACKLIST, transactionContext, processInstanceKey, DbNil.INSTANCE);
+    blacklistMetrics = new BlacklistMetrics(partitionId);
   }
 
   private void blacklist(final long key) {
@@ -47,6 +52,7 @@ public final class DbBlackListState implements MutableBlackListState {
 
       processInstanceKey.wrapLong(key);
       blackListColumnFamily.put(processInstanceKey, DbNil.INSTANCE);
+      blacklistMetrics.countBlacklistedInstance();
     }
   }
 

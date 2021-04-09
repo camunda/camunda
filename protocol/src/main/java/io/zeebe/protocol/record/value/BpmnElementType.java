@@ -23,6 +23,7 @@ public enum BpmnElementType {
   // Containers
   PROCESS,
   SUB_PROCESS,
+  EVENT_SUB_PROCESS,
 
   // Events
   START_EVENT,
@@ -33,6 +34,7 @@ public enum BpmnElementType {
   // Tasks
   SERVICE_TASK,
   RECEIVE_TASK,
+  USER_TASK,
 
   // Gateways
   EXCLUSIVE_GATEWAY,
@@ -75,6 +77,8 @@ public enum BpmnElementType {
         return BpmnElementType.SEQUENCE_FLOW;
       case "callActivity":
         return BpmnElementType.CALL_ACTIVITY;
+      case "userTask":
+        return BpmnElementType.USER_TASK;
       default:
         throw new RuntimeException("Unsupported BPMN element of type " + elementTypeName);
     }

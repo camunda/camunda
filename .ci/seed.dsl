@@ -31,8 +31,10 @@ def seedJob = job('seed-job-zeebe') {
     }
   }
 
-  triggers {
-    githubPush()
+  if (ENVIRONMENT == 'prod') {
+    triggers {
+      githubPush()
+    }
   }
 
   label 'master'

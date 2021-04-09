@@ -7,10 +7,13 @@
  */
 package io.zeebe.engine.util;
 
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
+import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
@@ -24,17 +27,23 @@ import io.zeebe.test.util.bpmn.random.steps.StepPickDefaultCase;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
+import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerStartEvent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
+import org.awaitility.Awaitility;
 
 /** This class executes individual {@link AbstractExecutionStep} for a given process */
 public class ProcessExecutor {
 
   private final EngineRule engineRule;
+  private long lastProcessedPosition = -1L;
 
   public ProcessExecutor(final EngineRule engineRule) {
-    this.engineRule = engineRule;
+    this.engineRule =
+        engineRule
+            .withOnProcessedCallback(r -> lastProcessedPosition = r.getPosition())
+            .withOnSkippedCallback(r -> lastProcessedPosition = r.getPosition());
   }
 
   public void applyStep(final AbstractExecutionStep step) {
@@ -72,6 +81,9 @@ public class ProcessExecutor {
     } else if (step instanceof StepExpressionIncidentCase) {
       final var expressionIncident = (StepExpressionIncidentCase) step;
       resolveExpressionIncident(expressionIncident);
+    } else if (step instanceof StepTriggerTimerStartEvent) {
+      final StepTriggerTimerStartEvent timerStep = (StepTriggerTimerStartEvent) step;
+      triggerTimerStartEvent(timerStep);
     } else {
       throw new IllegalStateException("Not yet implemented: " + step);
     }
@@ -80,13 +92,14 @@ public class ProcessExecutor {
   private void activateAndCompleteJob(final StepActivateAndCompleteJob activateAndCompleteJob) {
     waitForJobToBeCreated(activateAndCompleteJob.getJobType());
 
+    final Map<String, Object> variables = activateAndCompleteJob.getVariables();
     engineRule
         .jobs()
         .withType(activateAndCompleteJob.getJobType())
         .activate()
         .getValue()
         .getJobKeys()
-        .forEach(jobKey -> engineRule.job().withKey(jobKey).complete());
+        .forEach(jobKey -> engineRule.job().withKey(jobKey).withVariables(variables).complete());
   }
 
   private void activateAndFailJob(final StepActivateAndFailJob activateAndFailJob) {
@@ -219,6 +232,19 @@ public class ProcessExecutor {
         .create();
   }
 
+  private void triggerTimerStartEvent(final StepTriggerTimerStartEvent timerStep) {
+    final Record<TimerRecordValue> timerSchedulingRecord =
+        RecordingExporter.timerRecords(TimerIntent.CREATE).getFirst();
+    waitUntilRecordIsProcessed("until start timer is scheduled", timerSchedulingRecord);
+
+    engineRule.increaseTime(timerStep.getTimeToAdd());
+
+    // await that the timer is triggered or otherwise there may be a race condition where a test may
+    // think we've already reached a wait state, when in truth the timer trigger hasn't even been
+    // processed and so we haven't actually moved on from the previous wait state
+    RecordingExporter.timerRecords(TimerIntent.TRIGGERED).await();
+  }
+
   private void resolveExpressionIncident(final StepExpressionIncidentCase expressionIncident) {
     final var incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -245,5 +271,9 @@ public class ProcessExecutor {
     RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
         .withElementId(expressionIncident.getGatewayElementId())
         .await();
+  }
+
+  private void waitUntilRecordIsProcessed(final String condition, final Record<?> record) {
+    Awaitility.await(condition).until(() -> lastProcessedPosition >= record.getPosition());
   }
 }

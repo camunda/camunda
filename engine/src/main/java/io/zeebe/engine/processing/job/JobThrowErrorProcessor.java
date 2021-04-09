@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.job;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
@@ -30,7 +31,6 @@ import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
 import org.agrona.DirectBuffer;
 
@@ -52,8 +52,12 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   private final CatchEventAnalyzer stateAnalyzer;
   private final KeyGenerator keyGenerator;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final EventTriggerBehavior eventTriggerBehavior;
 
-  public JobThrowErrorProcessor(final ZeebeState state, final KeyGenerator keyGenerator) {
+  public JobThrowErrorProcessor(
+      final ZeebeState state,
+      final EventTriggerBehavior eventTriggerBehavior,
+      final KeyGenerator keyGenerator) {
     this.keyGenerator = keyGenerator;
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
@@ -64,6 +68,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
             "throw an error for", jobState, this::acceptCommand);
 
     stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
+    this.eventTriggerBehavior = eventTriggerBehavior;
   }
 
   @Override
@@ -139,19 +144,14 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
     eventOccurredRecord.wrap(eventScopeInstance.getValue());
 
-    final long eventOccurredKey;
     if (isEventSubprocess(catchEvent)) {
-      eventOccurredKey = keyGenerator.nextKey();
-      eventOccurredRecord
-          .setElementId(catchEvent.getId())
-          .setBpmnElementType(BpmnElementType.START_EVENT)
-          .setFlowScopeKey(eventScopeInstance.getKey());
+      final var executableStartEvent = (ExecutableStartEvent) catchEvent;
+      eventTriggerBehavior.triggerEventSubProcess(
+          executableStartEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue());
     } else {
-      eventOccurredKey = eventScopeInstance.getKey();
+      stateWriter.appendFollowUpEvent(
+          eventScopeInstance.getKey(), ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
     }
-
-    stateWriter.appendFollowUpEvent(
-        eventOccurredKey, ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
   }
 
   private boolean isEventSubprocess(final ExecutableFlowElement catchEvent) {

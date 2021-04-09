@@ -11,9 +11,10 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventE
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.immutable.ProcessState;
+import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
@@ -61,29 +62,29 @@ final class ProcessInstanceElementActivatingApplier
 
     decrementActiveSequenceFlow(value, flowScopeInstance, flowScopeElementType, currentElementType);
 
-    if (isStartEventInSubProcess(flowScopeElementType, currentElementType)) {
+    if (currentElementType == BpmnElementType.START_EVENT
+        && flowScopeElementType == BpmnElementType.EVENT_SUB_PROCESS) {
+      // the event variables are stored as temporary variables in the scope of the subprocess
+      // - move them to the scope of the start event to apply the output variable mappings
+      final var variables = variableState.getTemporaryVariables(flowScopeInstance.getKey());
 
-      final var executableStartEvent =
-          processState.getFlowElement(
-              value.getProcessDefinitionKey(),
-              value.getElementIdBuffer(),
-              ExecutableStartEvent.class);
-      if (!executableStartEvent.isNone()) {
-        // IF the current element is a start event and the flow scope is a sub process
-        // then it is either a none start event, which means it is a normal *embedded sub process*
-        // or an timer/message start event, which means it is a *event sub process*
-        // *Only for event sub processes we transfer variables*
-
-        // the event variables are stored as temporary variables in the scope of the
-        // subprocess
-        // - move them to the scope of the start event to apply the output variable mappings
-        final var variables = variableState.getTemporaryVariables(flowScopeInstance.getKey());
-
-        if (variables != null) {
-          variableState.setTemporaryVariables(elementInstanceKey, variables);
-          variableState.removeTemporaryVariables(flowScopeInstance.getKey());
-        }
+      if (variables != null) {
+        variableState.setTemporaryVariables(elementInstanceKey, variables);
+        variableState.removeTemporaryVariables(flowScopeInstance.getKey());
       }
+    }
+
+    // manage the multi-instance loop counter
+    if (flowScopeElementType == BpmnElementType.MULTI_INSTANCE_BODY
+        && MigratedStreamProcessors.isMigrated(currentElementType)) {
+      // update the loop counter of the multi-instance body (starting by 1)
+      elementInstanceState.updateInstance(
+          value.getFlowScopeKey(), ElementInstance::incrementMultiInstanceLoopCounter);
+
+      // set the loop counter of the inner instance
+      final var loopCounter = flowScopeInstance.getMultiInstanceLoopCounter();
+      elementInstanceState.updateInstance(
+          elementInstanceKey, instance -> instance.setMultiInstanceLoopCounter(loopCounter));
     }
   }
 
@@ -93,7 +94,7 @@ final class ProcessInstanceElementActivatingApplier
       final BpmnElementType flowScopeElementType,
       final BpmnElementType currentElementType) {
 
-    final boolean isEventSubProcess = isEventSubProcess(currentElementType, value);
+    final boolean isEventSubProcess = currentElementType == BpmnElementType.EVENT_SUB_PROCESS;
 
     // We don't want to decrement the active sequence flow for elements which have no incoming
     // sequence flow and for interrupting event sub processes we reset the count completely.
@@ -156,28 +157,12 @@ final class ProcessInstanceElementActivatingApplier
     }
   }
 
-  private boolean isEventSubProcess(
-      final BpmnElementType currentElementType, final ProcessInstanceRecord processInstanceRecord) {
-    if (currentElementType == BpmnElementType.SUB_PROCESS) {
-      final var executableFlowElementContainer =
-          getExecutableFlowElementContainer(processInstanceRecord);
-      return !executableFlowElementContainer.hasNoneStartEvent();
-    }
-    return false;
-  }
-
   private ExecutableFlowElementContainer getExecutableFlowElementContainer(
       final ProcessInstanceRecord value) {
     return processState.getFlowElement(
         value.getProcessDefinitionKey(),
         value.getElementIdBuffer(),
         ExecutableFlowElementContainer.class);
-  }
-
-  private boolean isStartEventInSubProcess(
-      final BpmnElementType flowScopeElementType, final BpmnElementType currentElementType) {
-    return currentElementType == BpmnElementType.START_EVENT
-        && flowScopeElementType == BpmnElementType.SUB_PROCESS;
   }
 
   private void createEventScope(

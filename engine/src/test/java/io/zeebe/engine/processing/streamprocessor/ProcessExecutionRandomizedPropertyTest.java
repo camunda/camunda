@@ -9,7 +9,6 @@ package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.engine.util.ProcessExecutor;
-import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.bpmn.random.ExecutionPath;
@@ -26,7 +25,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ProcessExecutionRandomizedPropertyTest implements PropertyBasedTest {
+public class ProcessExecutionRandomizedPropertyTest {
 
   /*
    * Some notes on scaling of these tests:
@@ -44,14 +43,16 @@ public class ProcessExecutionRandomizedPropertyTest implements PropertyBasedTest
   private static final int PROCESS_COUNT = 10;
   private static final int EXECUTION_PATH_COUNT = 100;
 
-  @Rule public TestWatcher failedTestDataPrinter = new FailedPropertyBasedTestDataPrinter(this);
+  @Rule
+  public TestWatcher failedTestDataPrinter =
+      new FailedPropertyBasedTestDataPrinter(this::getDataRecord);
+
   @Rule public final EngineRule engineRule = EngineRule.singlePartition();
 
   @Parameter public TestDataRecord record;
 
   private final ProcessExecutor processExecutor = new ProcessExecutor(engineRule);
 
-  @Override
   public TestDataRecord getDataRecord() {
     return record;
   }
@@ -63,8 +64,9 @@ public class ProcessExecutionRandomizedPropertyTest implements PropertyBasedTest
    */
   @Test
   public void shouldExecuteProcessToEnd() {
-    final BpmnModelInstance model = record.getBpmnModel();
-    engineRule.deployment().withXmlResource(model).deploy();
+    final var deployment = engineRule.deployment();
+    record.getBpmnModels().forEach(deployment::withXmlResource);
+    deployment.deploy();
 
     final ExecutionPath path = record.getExecutionPath();
 

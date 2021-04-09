@@ -21,6 +21,7 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.ProcessIntent;
 import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -68,6 +69,7 @@ public final class EventAppliers implements EventApplier {
     registerIncidentEventAppliers(state);
     registerProcessMessageSubscriptionEventAppliers(state);
     registerTimeEventAppliers(state);
+    registerProcessEventAppliers(state);
   }
 
   private void registerTimeEventAppliers(final MutableZeebeState state) {
@@ -109,8 +111,7 @@ public final class EventAppliers implements EventApplier {
             elementInstanceState, processState, variableState, eventScopeInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_ACTIVATED,
-        new ProcessInstanceElementActivatedApplier(
-            elementInstanceState, processState, eventScopeInstanceState));
+        new ProcessInstanceElementActivatedApplier(elementInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_COMPLETING,
         new ProcessInstanceElementCompletingApplier(elementInstanceState));
@@ -203,6 +204,12 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessMessageSubscriptionIntent.DELETED,
         new ProcessMessageSubscriptionDeletedApplier(state.getProcessMessageSubscriptionState()));
+  }
+
+  private void registerProcessEventAppliers(final MutableZeebeState state) {
+    register(
+        ProcessEventIntent.TRIGGERED,
+        new ProcessEventTriggeredApplier(state.getEventScopeInstanceState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

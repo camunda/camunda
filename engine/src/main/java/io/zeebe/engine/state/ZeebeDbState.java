@@ -95,7 +95,7 @@ public class ZeebeDbState implements MutableZeebeState {
     processMessageSubscriptionState =
         new DbProcessMessageSubscriptionState(zeebeDb, transactionContext);
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
-    blackListState = new DbBlackListState(zeebeDb, transactionContext);
+    blackListState = new DbBlackListState(zeebeDb, transactionContext, partitionId);
     lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, transactionContext);
   }
 

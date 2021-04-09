@@ -214,7 +214,6 @@ public final class ErrorCatchEventTest {
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
-            tuple(expectedEventOccurredElementId, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(TASK_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(TASK_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(expectedActivatedElement, ProcessInstanceIntent.ELEMENT_ACTIVATING),

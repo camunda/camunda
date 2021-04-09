@@ -10,6 +10,7 @@ package io.zeebe.engine.processing.message;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.engine.processing.common.EventHandle;
+import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -25,6 +26,7 @@ import io.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableMessageState;
 import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.zeebe.engine.state.mutable.MutableProcessState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageIntent;
@@ -58,15 +60,18 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final MutableEventScopeInstanceState eventScopeInstanceState,
       final SubscriptionCommandSender commandSender,
       final KeyGenerator keyGenerator,
-      final Writers writers) {
+      final Writers writers,
+      final MutableProcessState processState,
+      final EventTriggerBehavior eventTriggerBehavior) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.startEventSubscriptionState = startEventSubscriptionState;
     this.commandSender = commandSender;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
-
-    eventHandle = new EventHandle(keyGenerator, eventScopeInstanceState, writers);
+    eventHandle =
+        new EventHandle(
+            keyGenerator, eventScopeInstanceState, writers, processState, eventTriggerBehavior);
   }
 
   @Override
@@ -181,10 +186,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             stateWriter.appendFollowUpEvent(
                 -1L, MessageStartEventSubscriptionIntent.CORRELATED, subscription);
 
-            eventHandle.activateStartEvent(
-                subscription.getProcessDefinitionKey(),
-                processInstanceKey,
-                subscription.getStartEventIdBuffer());
+            eventHandle.activateProcessInstanceForStartEvent(
+                subscription.getProcessDefinitionKey(), processInstanceKey);
           }
         });
   }

@@ -9,23 +9,21 @@ package io.zeebe.engine.processing.bpmn.gateway;
 
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnElementProcessor;
+import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
-import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableEventBasedGateway;
 
 public final class EventBasedGatewayProcessor
     implements BpmnElementProcessor<ExecutableEventBasedGateway> {
 
-  private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
 
   public EventBasedGatewayProcessor(final BpmnBehaviors bpmnBehaviors) {
-    stateBehavior = bpmnBehaviors.stateBehavior();
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
@@ -37,7 +35,7 @@ public final class EventBasedGatewayProcessor
   }
 
   @Override
-  public void onActivating(
+  public void onActivate(
       final ExecutableEventBasedGateway element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior
@@ -48,56 +46,34 @@ public final class EventBasedGatewayProcessor
   }
 
   @Override
-  public void onActivated(
-      final ExecutableEventBasedGateway element, final BpmnElementContext context) {
-
-    // nothing to do - await that an event occurs
-  }
-
-  @Override
-  public void onCompleting(
+  public void onComplete(
       final ExecutableEventBasedGateway element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
 
-    stateTransitionBehavior.transitionToCompleted(context);
+    final var eventTrigger =
+        eventSubscriptionBehavior
+            .findEventTrigger(context)
+            .orElseThrow(
+                () ->
+                    new BpmnProcessingException(
+                        context,
+                        "Expected an event trigger to complete the event-based gateway but not found."));
+
+    // transition to completed and continue on the event of the gateway that was triggered
+    // - according to the BPMN specification, the sequence flow to this event is not taken
+    final var completed = stateTransitionBehavior.transitionToCompleted(context);
+    eventSubscriptionBehavior.activateTriggeredEvent(completed, eventTrigger);
   }
 
   @Override
-  public void onCompleted(
-      final ExecutableEventBasedGateway element, final BpmnElementContext context) {
-
-    // continue on the event of the gateway that was triggered
-    // according to the BPMN specification, the sequence flow to this event is not taken
-    eventSubscriptionBehavior.publishTriggeredEventBasedGateway(context);
-
-    stateBehavior.removeElementInstance(context);
-  }
-
-  @Override
-  public void onTerminating(
+  public void onTerminate(
       final ExecutableEventBasedGateway element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
-
-    stateTransitionBehavior.transitionToTerminated(context);
-  }
-
-  @Override
-  public void onTerminated(
-      final ExecutableEventBasedGateway element, final BpmnElementContext context) {
-
     incidentBehavior.resolveIncidents(context);
 
-    stateTransitionBehavior.onElementTerminated(element, context);
-
-    stateBehavior.removeElementInstance(context);
-  }
-
-  @Override
-  public void onEventOccurred(
-      final ExecutableEventBasedGateway element, final BpmnElementContext context) {
-
-    eventSubscriptionBehavior.triggerEventBasedGateway(element, context);
+    final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+    stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 }

@@ -88,29 +88,5 @@ public final class RaftNamespaces {
           .name("RaftProtocol")
           .build();
 
-  /**
-   * Raft storage namespace.
-   *
-   * <p>*Be aware* we use the Void type for replaced/removed types to keep the id's of used types,
-   * otherwise we break compatibility.
-   */
-  public static final Namespace RAFT_STORAGE =
-      new Builder()
-          .register(Namespaces.BASIC)
-          .nextId(Namespaces.BEGIN_USER_CUSTOM_ID + 100)
-          .register(ConfigurationEntry.class)
-          .register(InitialEntry.class)
-          .register(ArrayList.class)
-          .register(HashSet.class)
-          .register(DefaultRaftMember.class)
-          .register(MemberId.class)
-          .register(RaftMember.Type.class)
-          .register(Instant.class)
-          .register(Configuration.class)
-          .register(ApplicationEntry.class)
-          .register(RaftLogEntry.class)
-          .name("RaftStorage")
-          .build();
-
   private RaftNamespaces() {}
 }

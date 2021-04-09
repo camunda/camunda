@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedList;
 import org.camunda.bpm.model.xml.impl.util.ModelUtil;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 /**
  * Walks the elements of a {@link BpmnModelInstance} and invokes the provided {@link
@@ -58,12 +59,21 @@ public class ModelWalker {
     BpmnModelElementInstance currentElement;
     while ((currentElement = elementsToVisit.poll()) != null) {
       visitor.visit(currentElement);
-      final Collection<BpmnModelElementInstance> children = getChildElements(currentElement);
-      children.forEach(c -> elementsToVisit.addFirst(c)); // depth-first
+      final Collection<ModelElementInstance> children = getChildElements(currentElement);
+      children.forEach(
+          c -> {
+            try {
+              elementsToVisit.addFirst((BpmnModelElementInstance) c);
+            } catch (ClassCastException e) {
+              throw new RuntimeException(
+                  "Unable to process unknown element with name " + c.getDomElement().getLocalName(),
+                  e);
+            }
+          }); // depth-first
     }
   }
 
-  private Collection<BpmnModelElementInstance> getChildElements(
+  private Collection<ModelElementInstance> getChildElements(
       final BpmnModelElementInstance element) {
     return ModelUtil.getModelElementCollection(
         element.getDomElement().getChildElements(), modelInstance);

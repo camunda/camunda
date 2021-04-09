@@ -7,12 +7,20 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
+import java.util.Collections;
+import java.util.Map;
+
 public final class StepActivateAndCompleteJob extends AbstractExecutionStep {
 
   private final String jobType;
 
   public StepActivateAndCompleteJob(final String jobType) {
+    this(jobType, Collections.emptyMap());
+  }
+
+  public StepActivateAndCompleteJob(final String jobType, final Map<String, Object> variables) {
     this.jobType = jobType;
+    this.variables.putAll(variables);
   }
 
   public String getJobType() {

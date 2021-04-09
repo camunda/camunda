@@ -13,7 +13,6 @@ import io.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.engine.util.ProcessExecutor;
-import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.bpmn.random.ExecutionPath;
@@ -32,21 +31,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @RunWith(Parameterized.class)
-public class ReplayStateRandomizedPropertyTest implements PropertyBasedTest {
+public class ReplayStateRandomizedPropertyTest {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(ReplayStateRandomizedPropertyTest.class);
-
-  private static final int PROCESS_COUNT = 5;
+  private static final int PROCESS_COUNT = 10;
   private static final int EXECUTION_PATH_COUNT = 5;
 
-  @Rule public TestWatcher failedTestDataPrinter = new FailedPropertyBasedTestDataPrinter(this);
-  @Parameter public TestDataRecord record;
-  private long lastProcessedPosition = -1L;
+  @Rule
+  public TestWatcher failedTestDataPrinter =
+      new FailedPropertyBasedTestDataPrinter(this::getDataRecord);
 
   @Rule
   public final EngineRule engineRule =
@@ -54,6 +48,9 @@ public class ReplayStateRandomizedPropertyTest implements PropertyBasedTest {
           .withOnProcessedCallback(record -> lastProcessedPosition = record.getPosition())
           .withOnSkippedCallback(record -> lastProcessedPosition = record.getPosition());
 
+  @Parameter public TestDataRecord record;
+
+  private long lastProcessedPosition = -1L;
   private final ProcessExecutor processExecutor = new ProcessExecutor(engineRule);
 
   @Before
@@ -61,7 +58,6 @@ public class ReplayStateRandomizedPropertyTest implements PropertyBasedTest {
     lastProcessedPosition = -1L;
   }
 
-  @Override
   public TestDataRecord getDataRecord() {
     return record;
   }
@@ -78,8 +74,9 @@ public class ReplayStateRandomizedPropertyTest implements PropertyBasedTest {
    */
   @Test
   public void shouldRestoreStateAtEachStepInExecution() {
-    final BpmnModelInstance model = record.getBpmnModel();
-    engineRule.deployment().withXmlResource(model).deploy();
+    final var deployment = engineRule.deployment();
+    record.getBpmnModels().forEach(deployment::withXmlResource);
+    deployment.deploy();
 
     final ExecutionPath path = record.getExecutionPath();
 

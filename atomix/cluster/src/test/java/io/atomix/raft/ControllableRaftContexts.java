@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.protocol.ControllableRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
@@ -187,8 +186,7 @@ public final class ControllableRaftContexts {
             .withDirectory(memberDirectory)
             .withMaxSegmentSize(1024 * 10)
             .withFreeDiskSpace(100)
-            .withSnapshotStore(new TestSnapshotStore(new AtomicReference<>()))
-            .withNamespace(RaftNamespaces.RAFT_STORAGE);
+            .withSnapshotStore(new TestSnapshotStore(new AtomicReference<>()));
     return configurator.apply(defaults).build();
   }
 

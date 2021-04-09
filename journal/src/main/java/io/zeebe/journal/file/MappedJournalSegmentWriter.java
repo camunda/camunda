@@ -16,10 +16,10 @@
  */
 package io.zeebe.journal.file;
 
-import io.zeebe.journal.JournalException;
 import io.zeebe.journal.JournalException.InvalidChecksum;
 import io.zeebe.journal.JournalException.InvalidIndex;
 import io.zeebe.journal.JournalRecord;
+import io.zeebe.journal.file.record.CorruptedLogException;
 import io.zeebe.journal.file.record.JournalRecordReaderUtil;
 import io.zeebe.journal.file.record.JournalRecordSerializer;
 import io.zeebe.journal.file.record.PersistedJournalRecord;
@@ -60,7 +60,7 @@ class MappedJournalSegmentWriter {
     firstIndex = segment.index();
     this.buffer = buffer;
     writeBuffer.wrap(buffer);
-    reset(0);
+    reset(0, true);
   }
 
   public long getLastIndex() {
@@ -90,7 +90,6 @@ class MappedJournalSegmentWriter {
     final int metadataLength = serializer.getMetadataLength();
 
     final RecordData indexedRecord = new RecordData(recordIndex, asqn, data);
-    checkCanWrite(indexedRecord);
 
     final int recordLength;
     try {
@@ -128,7 +127,6 @@ class MappedJournalSegmentWriter {
     final int metadataLength = serializer.getMetadataLength();
 
     final RecordData indexedRecord = new RecordData(record.index(), record.asqn(), record.data());
-    checkCanWrite(indexedRecord);
 
     final int recordLength;
     try {
@@ -182,27 +180,6 @@ class MappedJournalSegmentWriter {
     return recordLength;
   }
 
-  private void checkCanWrite(final RecordData indexedRecord) {
-    final var recordOffset = serializer.getMetadataLength();
-
-    final int estimatedRecordLength =
-        indexedRecord
-            .data()
-            .capacity(); // approximate as Kryo cannot pre-calculate the size without serializing
-    // the entry.
-    if (estimatedRecordLength > maxEntrySize) {
-      throw new JournalException.TooLarge(
-          "Entry size "
-              + estimatedRecordLength
-              + " exceeds maximum allowed bytes ("
-              + maxEntrySize
-              + ")");
-    }
-    if (buffer.position() + recordOffset + estimatedRecordLength > buffer.limit()) {
-      throw new BufferOverflowException();
-    }
-  }
-
   private void invalidateNextEntry(final int position) {
     if (position >= buffer.capacity()) {
       return;
@@ -212,11 +189,16 @@ class MappedJournalSegmentWriter {
   }
 
   private void reset(final long index) {
+    reset(index, false);
+  }
+
+  private void reset(final long index, final boolean startup) {
     long nextIndex = firstIndex;
 
     // Clear the buffer indexes.
     buffer.position(JournalSegmentDescriptor.BYTES);
     buffer.mark();
+    int position = buffer.position();
     try {
       while ((index == 0 || nextIndex <= index) && FrameUtil.readVersion(buffer).isPresent()) {
         final var nextEntry = recordUtil.read(buffer, nextIndex);
@@ -226,9 +208,19 @@ class MappedJournalSegmentWriter {
         lastEntry = nextEntry;
         nextIndex++;
         buffer.mark();
+        position = buffer.position();
       }
     } catch (final BufferUnderflowException e) {
       // Reached end of the segment
+    } catch (final CorruptedLogException e) {
+      // if at startup, assume record was partially written due to crash and mark as ignored
+      if (!startup) {
+        throw e;
+      }
+
+      FrameUtil.markAsIgnored(buffer, position);
+      buffer.position(position);
+      buffer.mark();
     } finally {
       buffer.reset();
     }

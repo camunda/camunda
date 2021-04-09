@@ -83,14 +83,6 @@ public final class ExclusiveGatewayProcessor
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 
-  @Override
-  public void onEventOccurred(
-      final ExecutableExclusiveGateway element, final BpmnElementContext context) {
-    throw new BpmnProcessingException(
-        context,
-        "Expected to handle occurred event on exclusive gateway, but events should not occur on exclusive gateway.");
-  }
-
   private BpmnElementContext transitionToCompleted(final BpmnElementContext activating) {
     if (activating.getIntent() != ProcessInstanceIntent.ELEMENT_ACTIVATING) {
       throw new BpmnProcessingException(activating, TRANSITION_TO_COMPLETED_PRECONDITION_ERROR);

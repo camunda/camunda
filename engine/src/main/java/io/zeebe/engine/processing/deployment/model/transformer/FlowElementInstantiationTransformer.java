@@ -38,6 +38,7 @@ import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.SubProcess;
+import io.zeebe.model.bpmn.instance.UserTask;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.HashMap;
 import java.util.Map;
@@ -61,6 +62,7 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES.put(ParallelGateway.class, ExecutableFlowNode::new);
     ELEMENT_FACTORIES.put(SequenceFlow.class, ExecutableSequenceFlow::new);
     ELEMENT_FACTORIES.put(ServiceTask.class, ExecutableServiceTask::new);
+    ELEMENT_FACTORIES.put(UserTask.class, ExecutableServiceTask::new);
     ELEMENT_FACTORIES.put(ReceiveTask.class, ExecutableReceiveTask::new);
     ELEMENT_FACTORIES.put(StartEvent.class, ExecutableStartEvent::new);
     ELEMENT_FACTORIES.put(SubProcess.class, ExecutableFlowElementContainer::new);

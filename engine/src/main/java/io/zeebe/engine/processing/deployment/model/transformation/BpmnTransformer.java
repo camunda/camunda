@@ -28,6 +28,7 @@ import io.zeebe.engine.processing.deployment.model.transformer.SequenceFlowTrans
 import io.zeebe.engine.processing.deployment.model.transformer.ServiceTaskTransformer;
 import io.zeebe.engine.processing.deployment.model.transformer.StartEventTransformer;
 import io.zeebe.engine.processing.deployment.model.transformer.SubProcessTransformer;
+import io.zeebe.engine.processing.deployment.model.transformer.UserTaskTransformer;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.traversal.ModelWalker;
 import java.util.List;
@@ -75,6 +76,7 @@ public final class BpmnTransformer {
     step2Visitor.registerHandler(new SequenceFlowTransformer());
     step2Visitor.registerHandler(new ServiceTaskTransformer());
     step2Visitor.registerHandler(new ReceiveTaskTransformer());
+    step2Visitor.registerHandler(new UserTaskTransformer());
     step2Visitor.registerHandler(new StartEventTransformer());
 
     step3Visitor = new TransformationVisitor();

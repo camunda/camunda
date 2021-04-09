@@ -39,10 +39,6 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
         singletonList(expect("process", "Must have at least one start event"))
       },
       {
-        Bpmn.createExecutableProcess("process").startEvent().userTask("task").endEvent().done(),
-        singletonList(expect("task", "Elements of this type are not supported"))
-      },
-      {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .endEvent("end")

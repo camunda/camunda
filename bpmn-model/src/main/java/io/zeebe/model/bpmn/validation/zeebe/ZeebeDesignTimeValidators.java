@@ -70,6 +70,8 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new ZeebeLoopCharacteristicsValidator());
     validators.add(new ZeebeTaskDefinitionValidator());
     validators.add(new ZeebeSubscriptionValidator());
+    validators.add(new ZeebeFormDefinitionValidator());
+    validators.add(new ZeebeUserTaskFormValidator());
 
     VALIDATORS = Collections.unmodifiableList(validators);
   }

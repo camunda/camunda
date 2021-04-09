@@ -286,7 +286,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
         .withMaxEntrySize((int) storageConfig.getMaxEntrySize().bytes())
         .withFlushExplicitly(storageConfig.shouldFlushExplicitly())
         .withFreeDiskSpace(storageConfig.getFreeDiskSpace())
-        .withNamespace(RaftNamespaces.RAFT_STORAGE)
         .withSnapshotStore(persistedSnapshotStore)
         .withJournalIndexDensity(storageConfig.getJournalIndexDensity())
         .build();

@@ -26,10 +26,6 @@ import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.PersistedRaftRecord;
 import io.atomix.raft.storage.log.RaftLog;
-import io.atomix.raft.storage.log.entry.ApplicationEntry;
-import io.atomix.utils.serializer.Namespace;
-import io.atomix.utils.serializer.Namespace.Builder;
-import io.atomix.utils.serializer.Namespaces;
 import io.zeebe.snapshots.raft.PersistedSnapshot;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.io.IOException;
@@ -45,8 +41,6 @@ import org.junit.rules.Timeout;
 
 public class PassiveRoleTest {
 
-  private static final Namespace NAMESPACE =
-      new Builder().register(Namespaces.BASIC).register(ApplicationEntry.class).build();
   @Rule public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private RaftLog log;
@@ -55,7 +49,6 @@ public class PassiveRoleTest {
   @Before
   public void setup() throws IOException {
     final RaftStorage storage = mock(RaftStorage.class);
-    when(storage.namespace()).thenReturn(NAMESPACE);
 
     log = RaftLog.builder().withDirectory(temporaryFolder.newFolder("data")).build();
 

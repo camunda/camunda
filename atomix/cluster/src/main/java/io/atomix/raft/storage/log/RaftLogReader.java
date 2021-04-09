@@ -17,6 +17,8 @@
 package io.atomix.raft.storage.log;
 
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
+import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
 import java.util.NoSuchElementException;
@@ -92,12 +94,11 @@ public class RaftLogReader implements java.util.Iterator<IndexedRaftLogEntry>, A
   }
 
   public long seekToAsqn(final long asqn) {
-    nextIndex = journalReader.seekToAsqn(asqn);
-
-    if (nextIndex > log.getCommitIndex() && !log.isEmpty()) {
-      throw new UnsupportedOperationException("Cannot seek to an ASQN that is not yet committed");
+    if (mode == Mode.COMMITS) {
+      nextIndex = journalReader.seekToAsqn(asqn, log.getCommitIndex());
+    } else {
+      nextIndex = journalReader.seekToAsqn(asqn);
     }
-
     return nextIndex;
   }
 

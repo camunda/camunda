@@ -11,6 +11,7 @@ import io.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
+import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
@@ -46,6 +47,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final MutableZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
       final VariableBehavior variableBehavior,
+      final EventTriggerBehavior eventTriggerBehavior,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookup,
       final Writers writers) {
@@ -74,16 +76,19 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             stateTransitionBehavior,
             catchEventBehavior,
+            variableBehavior,
+            eventTriggerBehavior,
             stateWriter,
             commandWriter,
             sideEffects,
             zeebeState);
     incidentBehavior = new BpmnIncidentBehavior(zeebeState, commandWriter, stateWriter);
     deferredRecordsBehavior = new BpmnDeferredRecordsBehavior(zeebeState);
-    eventPublicationBehavior = new BpmnEventPublicationBehavior(zeebeState, streamWriter, writers);
+    eventPublicationBehavior =
+        new BpmnEventPublicationBehavior(zeebeState, eventTriggerBehavior, writers);
     processResultSenderBehavior = new BpmnProcessResultSenderBehavior(zeebeState, responseWriter);
     bufferedMessageStartEventBehavior =
-        new BpmnBufferedMessageStartEventBehavior(zeebeState, writers);
+        new BpmnBufferedMessageStartEventBehavior(zeebeState, eventTriggerBehavior, writers);
   }
 
   @Override

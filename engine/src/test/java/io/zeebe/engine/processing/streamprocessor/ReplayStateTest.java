@@ -22,9 +22,9 @@ import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 import org.assertj.core.api.SoftAssertions;
 import org.awaitility.Awaitility;
@@ -40,6 +40,7 @@ import org.junit.runners.Parameterized.Parameters;
 public final class ReplayStateTest {
 
   private static final String PROCESS_ID = "process";
+  private static final String PROCESS_CHILD_ID = "child_process";
   @Parameter public TestCase testCase;
 
   private long lastProcessedPosition = -1L;
@@ -140,6 +141,31 @@ public final class ReplayStateTest {
                       .withElementType(BpmnElementType.PROCESS)
                       .getFirst();
                 }),
+        // TODO(@korthout): remove after https://github.com/camunda-cloud/zeebe/issues/6197
+        testCase("interrupting timer boundary event on call activity")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_CHILD_ID)
+                    .startEvent()
+                    .serviceTask("task", b -> b.zeebeJobType("type"))
+                    .endEvent()
+                    .done())
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .callActivity("call-child", b -> b.zeebeProcessId(PROCESS_CHILD_ID))
+                    .boundaryEvent("timer", b -> b.cancelActivity(true))
+                    .timerWithDuration("PT0S")
+                    .endEvent("end")
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.PROCESS)
+                      .getFirst();
+                }),
         // TODO(npepinpe): remove after https://github.com/camunda-cloud/zeebe/issues/6568
         testCase("non-interrupting timer boundary event")
             .withProcess(
@@ -159,6 +185,33 @@ public final class ReplayStateTest {
                       .withElementType(BpmnElementType.END_EVENT)
                       .withElementId("end")
                       .getFirst();
+                }),
+        testCase("throw error end event")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .subProcess("subProcess")
+                    .embeddedSubProcess()
+                    .startEvent()
+                    .endEvent("errorEndEvent", b -> b.error("error"))
+                    .subProcessDone()
+                    .boundaryEvent("errorCatchEvent", b -> b.error("error").cancelActivity(true))
+                    .endEvent()
+                    .moveToActivity("subProcess")
+                    .intermediateCatchEvent("neverProcessed")
+                    .message(m -> m.name("message").zeebeCorrelationKey("=\"key\""))
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+                  // the process will only finish if it goes through the error catch event boundary
+                  // event, which simplifies verification
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withElementType(BpmnElementType.PROCESS)
+                      .withRecordKey(piKey)
+                      .getFirst();
                 }));
   }
 
@@ -170,13 +223,15 @@ public final class ReplayStateTest {
   @Test
   public void shouldRestoreState() {
     // given
-    testCase.process.ifPresent(process -> engine.deployment().withXmlResource(process).deploy());
+    testCase.processes.forEach(process -> engine.deployment().withXmlResource(process).deploy());
 
     final Record<?> finalRecord = testCase.execution.apply(engine);
 
     Awaitility.await("await until the last record is processed")
         .untilAsserted(
-            () -> assertThat(lastProcessedPosition).isEqualTo(finalRecord.getPosition()));
+            () ->
+                assertThat(lastProcessedPosition)
+                    .isGreaterThanOrEqualTo(finalRecord.getPosition()));
 
     final var processingState = engine.collectState();
     engine.stop();
@@ -225,7 +280,7 @@ public final class ReplayStateTest {
 
   private static final class TestCase {
     private final String description;
-    private Optional<BpmnModelInstance> process = Optional.empty();
+    private final List<BpmnModelInstance> processes = new ArrayList<>();
     private Function<EngineRule, Record<?>> execution =
         engine -> RecordingExporter.records().getFirst();
 
@@ -234,7 +289,7 @@ public final class ReplayStateTest {
     }
 
     private TestCase withProcess(final BpmnModelInstance process) {
-      this.process = Optional.of(process);
+      processes.add(process);
       return this;
     }
 

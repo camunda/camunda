@@ -14,6 +14,7 @@ import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTr
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.SubProcess;
+import io.zeebe.protocol.record.value.BpmnElementType;
 
 public final class SubProcessTransformer implements ModelElementTransformer<SubProcess> {
 
@@ -37,6 +38,9 @@ public final class SubProcessTransformer implements ModelElementTransformer<SubP
       final SubProcess element,
       final ExecutableProcess currentProcess,
       final ExecutableFlowElementContainer subprocess) {
+
+    // set the element type explicitly because the element name is equal to an embedded subprocess
+    subprocess.setElementType(BpmnElementType.EVENT_SUB_PROCESS);
 
     if (element.getScope() instanceof FlowNode) {
       final FlowNode scope = (FlowNode) element.getScope();
