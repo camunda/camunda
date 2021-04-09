@@ -326,7 +326,7 @@ pipeline {
                 TAG = "${env.VERSION}-${env.GIT_COMMIT}"
                 DOCKER_GCR = credentials("zeebe-gcr-serviceaccount-json")
                 ZEEBE_AUTHORIZATION_SERVER_URL = 'https://login.cloud.ultrawombat.com/oauth/token'
-                ZEEBE_CLIENT_ID = 'W5a4JUc3I1NIetNnodo3YTvdsRIFb12w'
+                ZEEBE_CLIENT_ID = 'ELL8eP0qDkl6dxXVps0t51x2VkCkWf~p'
                 QA_RUN_VARIABLES = "{\"zeebeImage\": \"${env.IMAGE}:${env.TAG}\", \"generationTemplate\": \"${params.GENERATION_TEMPLATE}\", " +
                                     "\"channel\": \"Internal Dev\", \"branch\": \"${env.BRANCH_NAME}\", \"build\": \"${currentBuild.absoluteUrl}\", " +
                                     "\"businessKey\": \"${currentBuild.absoluteUrl}\", \"processId\": \"qa-protocol\"}"
@@ -341,7 +341,7 @@ pipeline {
                     withVault(
                         [vaultSecrets:
                              [
-                                 [path        : 'secret/common/ci-zeebe/testbench-secrets-int',
+                                 [path        : 'secret/common/ci-zeebe/testbench-secrets-1.x-prod',
                                   secretValues:
                                       [
                                           [envVar: 'ZEEBE_CLIENT_SECRET', vaultKey: 'clientSecret'],
