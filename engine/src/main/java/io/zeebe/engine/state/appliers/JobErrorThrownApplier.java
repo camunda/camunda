@@ -47,9 +47,6 @@ public class JobErrorThrownApplier implements TypedEventApplier<JobIntent, JobRe
       final var serviceTaskInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
 
       removeJobReference(jobKey, job, serviceTaskInstance);
-
-      // TODO (#6472) remove this after the right event is being written
-      triggerEvent(jobKey, job, serviceTaskInstance);
     }
   }
 
@@ -60,17 +57,5 @@ public class JobErrorThrownApplier implements TypedEventApplier<JobIntent, JobRe
     elementInstanceState.updateInstance(serviceTaskInstance);
 
     jobState.delete(jobKey, job);
-  }
-
-  private void triggerEvent(
-      final long jobKey, final JobRecord job, final ElementInstance serviceTaskInstance) {
-    final var foundCatchEvent =
-        stateAnalyzer.findCatchEvent(job.getErrorCodeBuffer(), serviceTaskInstance);
-
-    final var eventScopeInstance = foundCatchEvent.getElementInstance();
-    final var catchEvent = foundCatchEvent.getCatchEvent();
-
-    eventScopeInstanceState.triggerEvent(
-        eventScopeInstance.getKey(), jobKey, catchEvent.getId(), NO_VARIABLES);
   }
 }
