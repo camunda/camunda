@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.processing.common;
 
+import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
@@ -93,19 +94,22 @@ public final class EventHandle {
 
     if (MigratedStreamProcessors.isMigrated(elementRecord.getBpmnElementType())) {
 
-      if (catchEvent.getElementType() == BpmnElementType.INTERMEDIATE_CATCH_EVENT
-          || catchEvent.getElementType() == BpmnElementType.RECEIVE_TASK
-          || catchEvent.getElementType() == BpmnElementType.EVENT_BASED_GATEWAY) {
+      if (isElementActivated(catchEvent)) {
         commandWriter.appendFollowUpCommand(
             eventScopeKey, ProcessInstanceIntent.COMPLETE_ELEMENT, elementRecord);
 
+      } else if (isInterrupting(catchEvent)) {
+        // terminate the activated element and then activate the triggered catch event
+        commandWriter.appendFollowUpCommand(
+            eventScopeKey, ProcessInstanceIntent.TERMINATE_ELEMENT, elementRecord);
+
       } else {
-        commandWriter.appendNewCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
+        activateCatchEvent(catchEvent, eventScopeKey, elementRecord);
       }
 
     } else {
-
-      if (isEventSubprocess(catchEvent)) {
+      // --- legacy behavior ---
+      if (catchEvent.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS) {
         final var executableStartEvent = (ExecutableStartEvent) catchEvent;
 
         eventTriggerBehavior.triggerEventSubProcess(
@@ -118,6 +122,35 @@ public final class EventHandle {
             eventScopeKey, ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
       }
     }
+  }
+
+  private boolean isElementActivated(final ExecutableFlowElement catchEvent) {
+    return catchEvent.getElementType() == BpmnElementType.INTERMEDIATE_CATCH_EVENT
+        || catchEvent.getElementType() == BpmnElementType.RECEIVE_TASK
+        || catchEvent.getElementType() == BpmnElementType.EVENT_BASED_GATEWAY;
+  }
+
+  private boolean isInterrupting(final ExecutableFlowElement catchEvent) {
+    if (catchEvent instanceof ExecutableCatchEvent) {
+      final var event = (ExecutableCatchEvent) catchEvent;
+      return event.isInterrupting();
+    } else {
+      return false;
+    }
+  }
+
+  private void activateCatchEvent(
+      final ExecutableFlowElement catchEvent,
+      final long eventScopeKey,
+      final ProcessInstanceRecord elementRecord) {
+
+    elementRecord
+        .setBpmnElementType(catchEvent.getElementType())
+        .setElementId(catchEvent.getId())
+        .setFlowScopeKey(eventScopeKey);
+
+    // TODO (saig0): pass message variables for output mappings (temp/as local vars) (#6187)
+    commandWriter.appendNewCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
   }
 
   public long triggerStartEvent(
@@ -156,10 +189,5 @@ public final class EventHandle {
 
     stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, recordForPICreation);
-  }
-
-  private boolean isEventSubprocess(final ExecutableFlowElement catchEvent) {
-    return catchEvent instanceof ExecutableStartEvent
-        && ((ExecutableStartEvent) catchEvent).getEventSubProcess() != null;
   }
 }

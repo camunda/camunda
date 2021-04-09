@@ -9,7 +9,6 @@ package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -27,10 +26,6 @@ public final class MigratedStreamProcessors {
   private static final Map<ValueType, Function<TypedRecord<?>, Boolean>> MIGRATED_VALUE_TYPES =
       new EnumMap<>(ValueType.class);
 
-  private static final Function<List<Intent>, Function<TypedRecord<?>, Boolean>>
-      MIGRATED_INTENT_FILTER_FACTORY =
-          (intents) -> (record) -> intents.contains(record.getIntent());
-
   static {
     MIGRATED_VALUE_TYPES.put(
         ValueType.PROCESS_INSTANCE,
@@ -45,6 +40,7 @@ public final class MigratedStreamProcessors {
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.INTERMEDIATE_CATCH_EVENT);
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.EVENT_BASED_GATEWAY);
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.START_EVENT);
+    MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.RECEIVE_TASK);
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.END_EVENT);
 
     MIGRATED_VALUE_TYPES.put(ValueType.JOB, MIGRATED);
