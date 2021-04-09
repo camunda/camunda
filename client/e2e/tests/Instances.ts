@@ -21,18 +21,17 @@ fixture('Instances')
     await wait();
   })
   .beforeEach(async (t) => {
-    await t
-      .useRole(demoUser)
-      .navigateTo('/')
-      .click(
-        screen.getByRole('listitem', {
-          name: /running instances/i,
-        })
-      );
+    await t.useRole(demoUser).navigateTo('/');
   });
 
 test('Instances Page Initial Load', async (t) => {
   const {initialData} = t.fixtureCtx;
+
+  await t.click(
+    screen.getByRole('listitem', {
+      name: /running instances/i,
+    })
+  );
 
   await t
     .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
@@ -88,6 +87,12 @@ test('Instances Page Initial Load', async (t) => {
 test('Select flow node in diagram', async (t) => {
   const {initialData} = t.fixtureCtx;
   const instance = initialData.instanceWithoutAnIncident;
+
+  await t.click(
+    screen.getByRole('listitem', {
+      name: /running instances/i,
+    })
+  );
 
   // Filter by Instance ID
   await t.typeText(
@@ -160,8 +165,8 @@ test('Select flow node in diagram', async (t) => {
 });
 
 test('Wait for process creation', async (t) => {
-  await t.openWindow(
-    `${config.endpoint}/#/instances?active=true&incidents=true&process=testProcess&version=1`
+  await t.navigateTo(
+    '/#/instances?active=true&incidents=true&process=testProcess&version=1'
   );
 
   await t.expect(screen.queryByTestId('listpanel-skeleton').exists).ok();
