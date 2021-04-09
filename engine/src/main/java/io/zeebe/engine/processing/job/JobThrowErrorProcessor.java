@@ -9,9 +9,8 @@ package io.zeebe.engine.processing.job;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -25,12 +24,10 @@ import io.zeebe.engine.state.immutable.ZeebeState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import org.agrona.DirectBuffer;
 
@@ -44,7 +41,6 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   public static final String NO_CATCH_EVENT_FOUND = "NO_CATCH_EVENT_FOUND";
 
   private final IncidentRecord incidentEvent = new IncidentRecord();
-  private final ProcessInstanceRecord eventOccurredRecord = new ProcessInstanceRecord();
 
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
@@ -53,10 +49,12 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   private final KeyGenerator keyGenerator;
   private final EventScopeInstanceState eventScopeInstanceState;
   private final EventTriggerBehavior eventTriggerBehavior;
+  private final BpmnEventPublicationBehavior eventPublicationBehavior;
 
   public JobThrowErrorProcessor(
       final ZeebeState state,
       final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnEventPublicationBehavior eventPublicationBehavior,
       final KeyGenerator keyGenerator) {
     this.keyGenerator = keyGenerator;
     jobState = state.getJobState();
@@ -69,6 +67,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
     stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
     this.eventTriggerBehavior = eventTriggerBehavior;
+    this.eventPublicationBehavior = eventPublicationBehavior;
   }
 
   @Override
@@ -96,8 +95,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     final var errorCode = job.getErrorCodeBuffer();
 
     final var foundCatchEvent = stateAnalyzer.findCatchEvent(errorCode, serviceTaskInstance);
-    // TODO (#6472) send TERMINATE_ELEMENT command instead
-    writeEventOccurredRecord(stateWriter, foundCatchEvent);
+    eventPublicationBehavior.throwErrorEvent(foundCatchEvent);
   }
 
   private void acceptCommand(
@@ -135,28 +133,6 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
   private boolean serviceTaskInstanceIsActive(final ElementInstance serviceTaskInstance) {
     return serviceTaskInstance != null && serviceTaskInstance.isActive();
-  }
-
-  private void writeEventOccurredRecord(
-      final StateWriter stateWriter, final CatchEventAnalyzer.CatchEventTuple foundCatchEvent) {
-    final var eventScopeInstance = foundCatchEvent.getElementInstance();
-    final var catchEvent = foundCatchEvent.getCatchEvent();
-
-    eventOccurredRecord.wrap(eventScopeInstance.getValue());
-
-    if (isEventSubprocess(catchEvent)) {
-      final var executableStartEvent = (ExecutableStartEvent) catchEvent;
-      eventTriggerBehavior.triggerEventSubProcess(
-          executableStartEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue());
-    } else {
-      stateWriter.appendFollowUpEvent(
-          eventScopeInstance.getKey(), ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
-    }
-  }
-
-  private boolean isEventSubprocess(final ExecutableFlowElement catchEvent) {
-    return catchEvent instanceof ExecutableStartEvent
-        && ((ExecutableStartEvent) catchEvent).getEventSubProcess() != null;
   }
 
   private void raiseIncident(
