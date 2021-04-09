@@ -21,6 +21,9 @@ yarn
 
 ## Login to GCP
 
+GCP is used to store artifacts that will be downloaded automatically.
+First, a login to GCP is needed (if you don't have access, ask the infra team for it).
+
 ```bash
 gcloud auth application-default login
 ```
