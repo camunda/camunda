@@ -17,7 +17,7 @@ import {createForm} from '@bpmn-io/form-js';
 import '@bpmn-io/form-js/dist/assets/form-js.css';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {Button} from 'modules/components/Button';
-import {Container, FormCustomStyling} from './styled';
+import {Container, FormContainer, FormCustomStyling} from './styled';
 import {PanelTitle} from 'modules/components/PanelTitle';
 import {PanelHeader} from 'modules/components/PanelHeader';
 
@@ -117,7 +117,7 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
         <PanelTitle>Embedded Form</PanelTitle>
       </PanelHeader>
       <FormCustomStyling />
-      <div ref={containerRef} className="form-container" />
+      <FormContainer ref={containerRef} />
       {canCompleteTask && (
         <DetailsFooter>
           <Button

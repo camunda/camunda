@@ -15,11 +15,20 @@ const Container = styled.div<ContainerProps>`
     display: grid;
     grid-template-columns: 100%;
     grid-template-rows: ${hasFooter ? 'auto 1fr 62px' : 'auto 1fr'};
+    overflow-y: hidden;
   `}
+`;
+
+const FormContainer = styled.div`
+  overflow-y: auto;
 `;
 
 const FormCustomStyling = createGlobalStyle`
   ${({theme}) => css`
+    .fjs-container {
+      height: min-content;
+    }
+
     .fjs-container .fjs-form-field-label {
       color: ${theme.colors.label01};
       font-size: 14px;
@@ -58,4 +67,4 @@ const FormCustomStyling = createGlobalStyle`
   `}
 `;
 
-export {Container, FormCustomStyling};
+export {Container, FormCustomStyling, FormContainer};
