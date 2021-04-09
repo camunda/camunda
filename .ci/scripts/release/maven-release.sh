@@ -2,9 +2,7 @@
 
 export ZBCTL_ROOT_DIR=${PWD}
 
-# single quote the !development profile as this can cause issues with shell substitution
 mvn -s ${MAVEN_SETTINGS_XML} release:prepare release:perform -B \
-    -P '!development' \
     -Dgpg.passphrase="${GPG_PASS}" \
     -Dresume=false \
     -Dtag=${RELEASE_VERSION} \
