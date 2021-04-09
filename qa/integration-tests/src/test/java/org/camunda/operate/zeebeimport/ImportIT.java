@@ -35,6 +35,7 @@ import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -642,6 +643,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("not yet released on zeebe side")
   public void testEventSubprocess() {
     // having
     final OffsetDateTime testStartTime = OffsetDateTime.now();
