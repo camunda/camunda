@@ -123,15 +123,18 @@ public final class MultiInstanceBodyProcessor
         .getOutputCollection()
         .ifPresent(variableName -> stateBehavior.propagateVariable(context, variableName));
 
-    stateTransitionBehavior.transitionToCompleted(context);
+    stateTransitionBehavior.transitionToCompletedWithParentNotification(element, context);
   }
 
   @Override
   public void onCompleted(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
-
+    if (element.getOutgoing().isEmpty()) {
+      /* can be dropped during migration; after migration this is done as part of
+      stateTransitionBehavior.transitionToCompletedWithParentNotification(...)*/
+      stateTransitionBehavior.afterExecutionPathCompleted(element, context);
+    }
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
-
     stateBehavior.removeElementInstance(context);
   }
 
@@ -199,50 +202,27 @@ public final class MultiInstanceBodyProcessor
             failure -> incidentBehavior.createIncident(failure, childContext));
   }
 
-  private void setLoopVariables(
-      final ExecutableMultiInstanceBody multiInstanceBody,
-      final BpmnElementContext childContext,
-      final int loopCounter,
-      final DirectBuffer inputElement) {
-
-    final var loopCharacteristics = multiInstanceBody.getLoopCharacteristics();
-    loopCharacteristics
-        .getInputElement()
-        .ifPresent(
-            variableName ->
-                stateBehavior.setLocalVariable(childContext, variableName, inputElement));
-
-    // Output multiInstanceBody expressions that are just a variable or nested property of a
-    // variable need to
-    // be initialised with a nil-value. This makes sure that they are not written at a non-local
-    // scope.
-    loopCharacteristics
-        .getOutputElement()
-        .flatMap(Expression::getVariableName)
-        .map(BufferUtil::wrapString)
-        .ifPresent(
-            variableName -> stateBehavior.setLocalVariable(childContext, variableName, NIL_VALUE));
-
-    stateBehavior.setLocalVariable(
-        childContext, LOOP_COUNTER_VARIABLE, wrapLoopCounter(loopCounter));
-  }
-
   @Override
-  public void onChildCompleted(
+  public void beforeExecutionPathCompleted(
       final ExecutableMultiInstanceBody element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
-
     final var updatedOrFailure = updateOutputCollection(element, childContext, flowScopeContext);
     if (updatedOrFailure.isLeft()) {
       incidentBehavior.createIncident(updatedOrFailure.getLeft(), childContext);
       return;
     }
+  }
 
+  @Override
+  public void afterExecutionPathCompleted(
+      final ExecutableMultiInstanceBody element,
+      final BpmnElementContext flowScopeContext,
+      final BpmnElementContext childContext) {
     final var loopCharacteristics = element.getLoopCharacteristics();
     if (loopCharacteristics.isSequential()) {
 
-      final var inputCollectionOrFailure = readInputCollectionVariable(element, childContext);
+      final var inputCollectionOrFailure = readInputCollectionVariable(element, flowScopeContext);
       if (inputCollectionOrFailure.isLeft()) {
         incidentBehavior.createIncident(inputCollectionOrFailure.getLeft(), childContext);
         return;
@@ -251,7 +231,8 @@ public final class MultiInstanceBodyProcessor
       final var inputCollection = inputCollectionOrFailure.get();
 
       final var loopCounter =
-          stateBehavior.getFlowScopeInstance(childContext).getMultiInstanceLoopCounter();
+          stateBehavior.getElementInstance(flowScopeContext).getMultiInstanceLoopCounter();
+
       if (loopCounter < inputCollection.size()) {
 
         final var item = inputCollection.get(loopCounter);
@@ -278,6 +259,34 @@ public final class MultiInstanceBodyProcessor
       eventSubscriptionBehavior.publishTriggeredEventSubProcess(
           MigratedStreamProcessors.isMigrated(childContext.getBpmnElementType()), flowScopeContext);
     }
+  }
+
+  private void setLoopVariables(
+      final ExecutableMultiInstanceBody multiInstanceBody,
+      final BpmnElementContext childContext,
+      final int loopCounter,
+      final DirectBuffer inputElement) {
+
+    final var loopCharacteristics = multiInstanceBody.getLoopCharacteristics();
+    loopCharacteristics
+        .getInputElement()
+        .ifPresent(
+            variableName ->
+                stateBehavior.setLocalVariable(childContext, variableName, inputElement));
+
+    // Output multiInstanceBody expressions that are just a variable or nested property of a
+    // variable need to
+    // be initialised with a nil-value. This makes sure that they are not written at a non-local
+    // scope.
+    loopCharacteristics
+        .getOutputElement()
+        .flatMap(Expression::getVariableName)
+        .map(BufferUtil::wrapString)
+        .ifPresent(
+            variableName -> stateBehavior.setLocalVariable(childContext, variableName, NIL_VALUE));
+
+    stateBehavior.setLocalVariable(
+        childContext, LOOP_COUNTER_VARIABLE, wrapLoopCounter(loopCounter));
   }
 
   private Either<Failure, List<DirectBuffer>> readInputCollectionVariable(

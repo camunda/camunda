@@ -93,13 +93,18 @@ public final class CallActivityProcessor
         .ifRightOrLeft(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              stateTransitionBehavior.transitionToCompleted(context);
+              stateTransitionBehavior.transitionToCompletedWithParentNotification(element, context);
             },
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
   public void onCompleted(final ExecutableCallActivity element, final BpmnElementContext context) {
+    if (element.getOutgoing().isEmpty()) {
+      /* can be dropped during migration; after migration this is done as part of
+      stateTransitionBehavior.transitionToCompletedWithParentNotification(...)*/
+      stateTransitionBehavior.afterExecutionPathCompleted(element, context);
+    }
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
     stateBehavior.removeElementInstance(context);
   }
@@ -132,7 +137,7 @@ public final class CallActivityProcessor
       final BpmnElementContext childContext) {}
 
   @Override
-  public void onChildCompleted(
+  public void beforeExecutionPathCompleted(
       final ExecutableCallActivity element,
       final BpmnElementContext callActivityContext,
       final BpmnElementContext childContext) {
@@ -156,6 +161,12 @@ public final class CallActivityProcessor
         throw new BpmnProcessingException(callActivityContext, message);
     }
   }
+
+  @Override
+  public void afterExecutionPathCompleted(
+      final ExecutableCallActivity element,
+      final BpmnElementContext flowScopeContext,
+      final BpmnElementContext childContext) {}
 
   @Override
   public void onChildTerminated(

@@ -55,7 +55,9 @@ public class IntermediateCatchEventProcessor
         .ifRightOrLeft(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(completing);
-              final var completed = stateTransitionBehavior.transitionToCompleted(completing);
+              final var completed =
+                  stateTransitionBehavior.transitionToCompletedWithParentNotification(
+                      element, completing);
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             },
             failure -> incidentBehavior.createIncident(failure, completing));

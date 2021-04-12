@@ -57,13 +57,19 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToCompleted(context),
+            ok ->
+                stateTransitionBehavior.transitionToCompletedWithParentNotification(
+                    element, context),
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
   public void onCompleted(final ExecutableBoundaryEvent element, final BpmnElementContext context) {
-
+    if (element.getOutgoing().isEmpty()) {
+      /* can be dropped during migration; after migration this is done as part of
+      stateTransitionBehavior.transitionToCompletedWithParentNotification(...)*/
+      stateTransitionBehavior.afterExecutionPathCompleted(element, context);
+    }
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
 
     stateBehavior.removeElementInstance(context);

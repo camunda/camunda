@@ -34,7 +34,8 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
     // incoming sequence flows are taken
     final var activated = stateTransitionBehavior.transitionToActivated(context);
     final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-    final var completed = stateTransitionBehavior.transitionToCompleted(completing);
+    final var completed =
+        stateTransitionBehavior.transitionToCompletedWithParentNotification(element, completing);
     // fork the process processing by taking all outgoing sequence flows of the parallel gateway
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
   }
