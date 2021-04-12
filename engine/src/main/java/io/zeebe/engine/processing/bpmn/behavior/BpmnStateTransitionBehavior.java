@@ -539,14 +539,17 @@ public final class BpmnStateTransitionBehavior {
     return processInstanceKey;
   }
 
-  public void terminateChildProcessInstance(final BpmnElementContext context) {
+  public <T extends ExecutableFlowElement> void terminateChildProcessInstance(
+      final BpmnElementContainerProcessor<T> containerProcessor,
+      final T element,
+      final BpmnElementContext context) {
     stateBehavior
         .getCalledChildInstance(context)
         .filter(ElementInstance::canTerminate)
-        .map(instance -> context.copy(instance.getKey(), instance.getValue(), instance.getState()))
+        .map(child -> context.copy(child.getKey(), child.getValue(), child.getState()))
         .ifPresentOrElse(
             childInstanceContext -> terminate(childInstanceContext),
-            () -> transitionToTerminated(context));
+            () -> containerProcessor.onChildTerminated(element, context, null));
   }
 
   @FunctionalInterface

@@ -112,7 +112,7 @@ public final class CallActivityProcessor
   @Override
   public void onTerminating(
       final ExecutableCallActivity element, final BpmnElementContext context) {
-    stateTransitionBehavior.terminateChildProcessInstance(context);
+    stateTransitionBehavior.terminateChildProcessInstance(this, element, context);
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
   }
 
