@@ -75,36 +75,55 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   }
 
   private void calculateHealth() {
-    final var status =
-        componentHealth.containsValue(HealthStatus.UNHEALTHY)
-            ? HealthStatus.UNHEALTHY
-            : HealthStatus.HEALTHY;
     final var previousStatus = healthStatus;
-    healthStatus = status;
+    healthStatus = calculateStatus();
 
-    if (previousStatus != status) {
-      switch (status) {
-        case HEALTHY:
-          if (failureListener != null) {
-            failureListener.onRecovered();
-          }
-          log.debug(
-              "The components are healthy. The current health status of components: {}",
-              componentHealth);
-          break;
-        case UNHEALTHY:
-          if (failureListener != null) {
-            failureListener.onFailure();
-          }
-          log.debug(
-              "Detected unhealthy components. The current health status of components: {}",
-              componentHealth);
-          break;
-        default:
-          log.warn("Unknown health status {}", status);
-          break;
-      }
+    if (previousStatus == healthStatus) {
+      return;
     }
+
+    switch (healthStatus) {
+      case HEALTHY:
+        if (failureListener != null) {
+          failureListener.onRecovered();
+        }
+        break;
+
+      case UNHEALTHY:
+        if (failureListener != null) {
+          failureListener.onFailure();
+        }
+        break;
+
+      case DEAD:
+        if (failureListener != null) {
+          failureListener.onUnrecoverableFailure();
+        }
+        break;
+
+      default:
+        log.warn("Unknown health status {}", healthStatus);
+        break;
+    }
+
+    logComponentStatus(healthStatus);
+  }
+
+  private void logComponentStatus(final HealthStatus status) {
+    log.debug(
+        "Detected '{}' components. The current health status of components: {}",
+        status,
+        componentHealth);
+  }
+
+  private HealthStatus calculateStatus() {
+    if (componentHealth.containsValue(HealthStatus.DEAD)) {
+      return HealthStatus.DEAD;
+    } else if (componentHealth.containsValue(HealthStatus.UNHEALTHY)) {
+      return HealthStatus.UNHEALTHY;
+    }
+
+    return HealthStatus.HEALTHY;
   }
 
   private HealthStatus getHealth(final String componentName) {
@@ -132,6 +151,11 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
       actor.run(this::onComponentRecovered);
     }
 
+    @Override
+    public void onUnrecoverableFailure() {
+      actor.run(this::onComponentDied);
+    }
+
     private void onComponentFailure() {
       log.error("{} failed, marking it as unhealthy", componentName);
       componentHealth.computeIfPresent(componentName, (k, v) -> HealthStatus.UNHEALTHY);
@@ -141,6 +165,12 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     private void onComponentRecovered() {
       log.info("{} recovered, marking it as healthy", componentName);
       componentHealth.computeIfPresent(componentName, (k, v) -> HealthStatus.HEALTHY);
+      calculateHealth();
+    }
+
+    private void onComponentDied() {
+      log.error("{} failed, marking it as dead", componentName);
+      componentHealth.computeIfPresent(componentName, (k, v) -> HealthStatus.DEAD);
       calculateHealth();
     }
   }

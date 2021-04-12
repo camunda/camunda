@@ -63,7 +63,6 @@ public class StreamProcessorPartitionStep implements PartitionStep {
   }
 
   private StreamProcessor createStreamProcessor(final PartitionContext state) {
-
     return StreamProcessor.builder()
         .logStream(state.getLogStream())
         .actorScheduler(state.getScheduler())

@@ -19,4 +19,10 @@ public interface FailureListener {
    * expected to call {#onRecovered} when it is marked as healthy.
    */
   void onRecovered();
+
+  /**
+   * Invoked when the health status becomes dead and the system can't becomes healthy again without
+   * external intervention.
+   */
+  void onUnrecoverableFailure();
 }

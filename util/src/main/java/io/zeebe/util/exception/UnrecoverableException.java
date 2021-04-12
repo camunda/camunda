@@ -5,10 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.health;
+package io.zeebe.util.exception;
 
-public enum HealthStatus {
-  UNHEALTHY,
-  HEALTHY,
-  DEAD
+public class UnrecoverableException extends RuntimeException {
+
+  public UnrecoverableException(final String message) {
+    super(message);
+  }
 }

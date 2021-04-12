@@ -32,6 +32,11 @@ public final class PartitionHealthBroadcaster implements FailureListener {
     delegate.onHealthChanged(partitionId, HealthStatus.HEALTHY);
   }
 
+  @Override
+  public void onUnrecoverableFailure() {
+    delegate.onHealthChanged(partitionId, HealthStatus.DEAD);
+  }
+
   @FunctionalInterface
   public interface PartitionHealthListener {
 

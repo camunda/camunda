@@ -235,7 +235,15 @@ public final class ClusteringRule extends ExternalResource {
   @Override
   protected void after() {
     LOG.debug("Closing ClusteringRule...");
-    brokers.values().parallelStream().forEach(Broker::close);
+    brokers.values().parallelStream()
+        .forEach(
+            b -> {
+              try {
+                b.close();
+              } catch (final Exception e) {
+                LOG.error("Failed to close broker: ", e);
+              }
+            });
     brokers.clear();
     brokerCfgs.clear();
     logstreams.clear();

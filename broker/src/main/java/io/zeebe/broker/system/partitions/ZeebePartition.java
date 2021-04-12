@@ -15,6 +15,7 @@ import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.zeebe.broker.system.monitoring.HealthMetrics;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.snapshots.raft.PersistedSnapshotStore;
+import io.zeebe.util.exception.UnrecoverableException;
 import io.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.zeebe.util.health.FailureListener;
 import io.zeebe.util.health.HealthMonitorable;
@@ -122,13 +123,13 @@ public final class ZeebePartition extends Actor
                 t -> {
                   // Compare with the current term in case a new role transition happened
                   if (t != null && term == newTerm) {
-                    onInstallFailure(newTerm);
+                    onInstallFailure(newTerm, t);
                   }
                 });
             onRecoveredInternal();
           } else {
             LOG.error("Failed to install leader partition {}", context.getPartitionId(), error);
-            onInstallFailure(newTerm);
+            onInstallFailure(newTerm, error);
           }
         });
     return leaderTransitionFuture;
@@ -148,13 +149,13 @@ public final class ZeebePartition extends Actor
                 t -> {
                   // Compare with the current term in case a new role transition happened
                   if (t != null && term == newTerm) {
-                    onInstallFailure(newTerm);
+                    onInstallFailure(newTerm, t);
                   }
                 });
             onRecoveredInternal();
           } else {
             LOG.error("Failed to install follower partition {}", context.getPartitionId(), error);
-            onInstallFailure(newTerm);
+            onInstallFailure(newTerm, error);
           }
         });
     return followerTransitionFuture;
@@ -249,7 +250,7 @@ public final class ZeebePartition extends Actor
     LOG.warn("Uncaught exception in {}.", actorName, failure);
     // Most probably exception happened in the middle of installing leader or follower services
     // because this actor is not doing anything else
-    onInstallFailure(term);
+    onInstallFailure(term, failure);
   }
 
   @Override
@@ -270,7 +271,24 @@ public final class ZeebePartition extends Actor
         });
   }
 
-  private void onInstallFailure(final long term) {
+  @Override
+  public void onUnrecoverableFailure() {
+    actor.run(() -> handleUnrecoverableFailure());
+  }
+
+  private void onInstallFailure(final long term, final Throwable error) {
+    if (error instanceof UnrecoverableException) {
+      LOG.error(
+          "Failed to install partition {} with unrecoverable failure: ",
+          context.getPartitionId(),
+          error);
+      handleUnrecoverableFailure();
+    } else {
+      handleRecoverableFailure(term);
+    }
+  }
+
+  private void handleRecoverableFailure(final long term) {
     zeebePartitionHealth.setServicesInstalled(false);
     context
         .getPartitionListeners()
@@ -284,6 +302,17 @@ public final class ZeebePartition extends Actor
           "Unexpected failures occurred when installing follower services, transitioning to inactive");
       context.getRaftPartition().goInactive();
     }
+  }
+
+  private void handleUnrecoverableFailure() {
+    // TODO(#6664): set health metrics to dead
+    zeebePartitionHealth.onUnrecoverableFailure();
+    transitionToInactive();
+    context.getRaftPartition().goInactive();
+    failureListeners.forEach(FailureListener::onUnrecoverableFailure);
+    context
+        .getPartitionListeners()
+        .forEach(l -> l.onBecomingInactive(context.getPartitionId(), term));
   }
 
   private void onRecoveredInternal() {
