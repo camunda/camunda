@@ -114,7 +114,7 @@
           </executableDependency>
           <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
           <arguments>
-            <argument>${project.build.resources[0].directory}/journal-record-schema.xml</argument>
+            <argument>${project.build.resources[0].directory}/journal-schema.xml</argument>
           </arguments>
           <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
           <!-- system properties defined in zeebe-parent -->

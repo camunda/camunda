@@ -47,7 +47,8 @@ class SegmentedJournalReaderTest {
     journal =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data").toFile())
-            .withMaxSegmentSize(entrySize * ENTRIES_PER_SEGMENT + JournalSegmentDescriptor.BYTES)
+            .withMaxSegmentSize(
+                entrySize * ENTRIES_PER_SEGMENT + JournalSegmentDescriptor.getEncodingLength())
             .withMaxEntrySize(entrySize)
             .withJournalIndexDensity(5)
             .build();

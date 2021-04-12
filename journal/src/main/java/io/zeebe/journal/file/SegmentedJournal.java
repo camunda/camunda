@@ -220,7 +220,6 @@ public class SegmentedJournal implements Journal {
               .build();
 
       currentSegment = createSegment(descriptor);
-      currentSegment.descriptor().update(System.currentTimeMillis());
 
       segments.put(1L, currentSegment);
       journalMetrics.incSegmentCount();
@@ -409,9 +408,8 @@ public class SegmentedJournal implements Journal {
       throw new JournalException(e);
     }
 
-    final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.BYTES);
+    final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
     descriptor.copyTo(buffer);
-    buffer.flip();
     try {
       channel.write(buffer);
     } catch (final IOException e) {
@@ -444,10 +442,9 @@ public class SegmentedJournal implements Journal {
   /** Loads a segment. */
   private JournalSegment loadSegment(final long segmentId) {
     final File segmentFile = JournalSegmentFile.createSegmentFile(name, directory, segmentId);
-    final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.BYTES);
+    final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
     try (final FileChannel channel = openChannel(segmentFile)) {
       channel.read(buffer);
-      buffer.flip();
       final JournalSegmentDescriptor descriptor = new JournalSegmentDescriptor(buffer);
       final JournalSegment segment = newSegment(new JournalSegmentFile(segmentFile), descriptor);
       log.debug("Loaded disk segment: {} ({})", descriptor.id(), segmentFile.getName());
@@ -486,7 +483,7 @@ public class SegmentedJournal implements Journal {
       // If the file looks like a segment file, attempt to load the segment.
       if (JournalSegmentFile.isSegmentFile(name, file)) {
         final JournalSegmentFile segmentFile = new JournalSegmentFile(file);
-        final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.BYTES);
+        final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
         try (final FileChannel channel = openChannel(file)) {
           channel.read(buffer);
           buffer.flip();
