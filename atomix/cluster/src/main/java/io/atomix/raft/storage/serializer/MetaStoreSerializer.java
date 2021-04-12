@@ -97,46 +97,47 @@ public class MetaStoreSerializer {
     return new Configuration(index, term, timestamp, members);
   }
 
-  public void writeTerm(final long term, final MutableDirectBuffer buffer) {
+  public void writeTerm(final long term, final MutableDirectBuffer buffer, final int offset) {
     headerEncoder
-        .wrap(buffer, 0)
+        .wrap(buffer, offset)
         .blockLength(metaEncoder.sbeBlockLength())
         .templateId(metaEncoder.sbeTemplateId())
         .schemaId(metaEncoder.sbeSchemaId())
         .version(metaEncoder.sbeSchemaVersion());
 
-    metaEncoder.wrap(buffer, headerEncoder.encodedLength());
+    metaEncoder.wrap(buffer, offset + headerEncoder.encodedLength());
     metaEncoder.term(term);
   }
 
-  public long readTerm(final MutableDirectBuffer buffer) {
-    headerDecoder.wrap(buffer, 0);
+  public long readTerm(final MutableDirectBuffer buffer, final int offset) {
+    headerDecoder.wrap(buffer, offset);
     metaDecoder.wrap(
         buffer,
-        headerDecoder.encodedLength(),
+        offset + headerDecoder.encodedLength(),
         headerDecoder.blockLength(),
         headerDecoder.version());
 
     return metaDecoder.term();
   }
 
-  public void writeVotedFor(final String memberId, final MutableDirectBuffer buffer) {
+  public void writeVotedFor(
+      final String memberId, final MutableDirectBuffer buffer, final int offset) {
     headerEncoder
-        .wrap(buffer, 0)
+        .wrap(buffer, offset)
         .blockLength(metaEncoder.sbeBlockLength())
         .templateId(metaEncoder.sbeTemplateId())
         .schemaId(metaEncoder.sbeSchemaId())
         .version(metaEncoder.sbeSchemaVersion());
 
-    metaEncoder.wrap(buffer, headerEncoder.encodedLength());
+    metaEncoder.wrap(buffer, offset + headerEncoder.encodedLength());
     metaEncoder.votedFor(memberId);
   }
 
-  public String readVotedFor(final MutableDirectBuffer buffer) {
-    headerDecoder.wrap(buffer, 0);
+  public String readVotedFor(final MutableDirectBuffer buffer, final int offset) {
+    headerDecoder.wrap(buffer, offset);
     metaDecoder.wrap(
         buffer,
-        headerDecoder.encodedLength(),
+        offset + headerDecoder.encodedLength(),
         headerDecoder.blockLength(),
         headerDecoder.version());
 
