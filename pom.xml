@@ -9,7 +9,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.26.3</version>
+    <version>0.26.4-SNAPSHOT</version>
     <relativePath>parent/</relativePath>
   </parent>
 
@@ -53,7 +53,7 @@
     <url>https://github.com/camunda-cloud/zeebe</url>
     <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda-cloud/zeebe.git</connection>
     <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda-cloud/zeebe.git</developerConnection>
-    <tag>0.26.3</tag>
+    <tag>0.26.0</tag>
   </scm>
 
 </project>
