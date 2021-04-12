@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
  * Configuration}, including cluster membership.
  */
 public class MetaStore implements AutoCloseable {
+
   private static final byte VERSION = 1;
   private static final int VERSION_LENGTH = Byte.BYTES;
 
@@ -87,9 +88,11 @@ public class MetaStore implements AutoCloseable {
 
   private void initializeMetaBuffer() {
     final var term = loadTerm();
+    final long index = loadFlushedIndex();
     final var voted = loadVote();
     metaBuffer.put(0, VERSION);
     storeTerm(term);
+    storeFlushedIndex(index);
     storeVote(voted);
   }
 
@@ -158,6 +161,27 @@ public class MetaStore implements AutoCloseable {
     }
     final String id = serializer.readVotedFor(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
     return id.isEmpty() ? null : MemberId.from(id);
+  }
+
+  public synchronized long loadFlushedIndex() {
+    try {
+      metaFileChannel.read(metaBuffer, 0);
+    } catch (final IOException e) {
+      throw new StorageException(e);
+    }
+    return serializer.readFlushedIndex(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
+  }
+
+  public synchronized void storeFlushedIndex(final long index) {
+    log.trace("Store last flushed index {}", index);
+
+    try {
+      serializer.writeFlushedIndex(index, new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
+      metaFileChannel.write(metaBuffer, 0);
+      metaFileChannel.force(true);
+    } catch (final IOException e) {
+      throw new StorageException(e);
+    }
   }
 
   /**

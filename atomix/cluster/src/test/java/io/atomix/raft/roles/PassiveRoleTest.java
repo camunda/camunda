@@ -17,6 +17,7 @@ package io.atomix.raft.roles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -48,12 +49,11 @@ public class PassiveRoleTest {
   @Rule public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
   private RaftLog log;
   private PassiveRole role;
+  private RaftContext ctx;
 
   @Before
   public void setup() throws IOException {
-
-    final RaftContext ctx = mock(RaftContext.class);
-    final RaftStorage storage = mock(RaftStorage.class);
+    ctx = mock(RaftContext.class);
 
     log = mock(RaftLog.class);
     when(log.shouldFlushExplicitly()).thenReturn(true);
@@ -66,6 +66,7 @@ public class PassiveRoleTest {
     final ReceivableSnapshotStore store = mock(ReceivableSnapshotStore.class);
     when(store.getLatestSnapshot()).thenReturn(Optional.of(snapshot));
 
+    final RaftStorage storage = mock(RaftStorage.class);
     when(ctx.getStorage()).thenReturn(storage);
     when(ctx.getLog()).thenReturn(log);
     when(ctx.getPersistedSnapshotStore()).thenReturn(store);
@@ -150,5 +151,45 @@ public class PassiveRoleTest {
     // then
     verify(log, never()).flush();
     assertThat(response.lastLogIndex()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldStoreLastFlushedIndex() {
+    // given
+    final List<PersistedRaftRecord> entries =
+        List.of(new PersistedRaftRecord(1, 1, 1, 1, new byte[1]));
+    final AppendRequest request = new AppendRequest(2, "", 0, 0, entries, 1);
+
+    when(log.append(any(PersistedRaftRecord.class))).thenReturn(mock(IndexedRaftLogEntry.class));
+    when(ctx.getLog()).thenReturn(log);
+
+    // when
+    role.handleAppend(request).join();
+
+    // then
+    verify(ctx).setFlushedIndex(eq(1L));
+  }
+
+  @Test
+  public void shouldStoreLastFlushedWithSomeFailure() {
+    // given
+    final List<PersistedRaftRecord> entries =
+        List.of(
+            new PersistedRaftRecord(1, 1, 1, 1, new byte[1]),
+            new PersistedRaftRecord(1, 2, 2, 1, new byte[1]),
+            new PersistedRaftRecord(1, 3, 3, 1, new byte[1]));
+    final AppendRequest request = new AppendRequest(1, "", 0, 0, entries, 3);
+
+    when(log.append(any(PersistedRaftRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class))
+        .thenReturn(mock(IndexedRaftLogEntry.class))
+        .thenThrow(new InvalidChecksum("expected"));
+    when(ctx.getLog()).thenReturn(log);
+
+    // when
+    role.handleAppend(request).join();
+
+    // then
+    verify(ctx).setFlushedIndex(eq(2L));
   }
 }

@@ -373,6 +373,7 @@ public class RaftContext implements AutoCloseable {
       if (raftLog.shouldFlushExplicitly() && isLeader()) {
         // leader counts itself in quorum, so in order to commit the leader must persist
         raftLog.flush();
+        setFlushedIndex(commitIndex);
       }
       final long configurationIndex = cluster.getConfiguration().index();
       if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
@@ -898,6 +899,10 @@ public class RaftContext implements AutoCloseable {
       meta.storeVote(lastVotedFor);
       log.debug("Set term {}", term);
     }
+  }
+
+  public void setFlushedIndex(final long index) {
+    meta.storeFlushedIndex(index);
   }
 
   /**
