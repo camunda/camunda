@@ -9,7 +9,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.26.3-SNAPSHOT</version>
+    <version>0.26.4-SNAPSHOT</version>
     <relativePath>parent/</relativePath>
   </parent>
 
@@ -44,22 +44,10 @@
     <module>zb-db</module>
     <module>expression-language</module>
     <module>snapshot</module>
+    <module>qa</module>
+    <module>update-tests</module>
+    <module>benchmarks/project</module>
   </modules>
-
-  <profiles>
-    <profile>
-      <id>development</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-
-      <modules>
-        <module>qa</module>
-        <module>update-tests</module>
-        <module>benchmarks/project</module>
-      </modules>
-    </profile>
-  </profiles>
 
   <scm>
     <url>https://github.com/camunda-cloud/zeebe</url>
