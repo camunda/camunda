@@ -25,10 +25,6 @@
       <groupId>io.zeebe</groupId>
     </dependency>
     <dependency>
-      <artifactId>atomix-storage</artifactId>
-      <groupId>io.zeebe</groupId>
-    </dependency>
-    <dependency>
       <artifactId>zeebe-util</artifactId>
       <groupId>io.zeebe</groupId>
     </dependency>

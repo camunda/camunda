@@ -41,7 +41,6 @@
 
   <modules>
     <module>utils</module>
-    <module>storage</module>
     <module>cluster</module>
     <module>core</module>
   </modules>
