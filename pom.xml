@@ -44,22 +44,10 @@
     <module>zb-db</module>
     <module>expression-language</module>
     <module>snapshot</module>
+    <module>qa</module>
+    <module>update-tests</module>
+    <module>benchmarks/project</module>
   </modules>
-
-  <profiles>
-    <profile>
-      <id>development</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-
-      <modules>
-        <module>qa</module>
-        <module>update-tests</module>
-        <module>benchmarks/project</module>
-      </modules>
-    </profile>
-  </profiles>
 
   <scm>
     <url>https://github.com/camunda-cloud/zeebe</url>
