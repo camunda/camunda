@@ -5806,10 +5806,10 @@ dmn-js-decision-table@^10.1.0:
     selection-ranges "^3.0.2"
     table-js "^7.1.0"
 
-dmn-js-drd@^10.1.0:
-  version "10.1.0"
-  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-10.1.0.tgz#2337c558befad15d7dda9c90f4b6d82c7414f7d0"
-  integrity sha512-INjLhBAUweKIC511SwjMQOgEz6azf52cU0OsUctJNBp6z35WBNSiJdqNYn1BXzy5wMxWZAz+90x+7DaDUw/63Q==
+dmn-js-drd@^10.2.0:
+  version "10.2.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-10.2.0.tgz#2ac674c09bf77fb88ea964d12ee4f9bb788289f9"
+  integrity sha512-X7VWX0/FL87HJxZ6Fc7r8tdyzBNFGL+BNU95o95UG4R8ftho++WsCYkDf0NEh4iAE0uzTcSJm9KDsQ1dJEX1Ag==
   dependencies:
     diagram-js "^7.2.0"
     diagram-js-direct-editing "^1.6.2"
@@ -5849,13 +5849,13 @@ dmn-js-shared@^10.1.0:
     selection-update "^0.1.2"
     table-js "^7.1.0"
 
-dmn-js@^10.1.0:
-  version "10.1.0"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-10.1.0.tgz#0472f379cd97696984242d0967ba87209cfc4f9c"
-  integrity sha512-pITnc9SiIOFpT0u+MDQtfsxynCiFqqCPMfPhXcVMBsHYczSxQgbBP9CSCtkqKVskknTD3Kxreq1nLXORK4hdPA==
+dmn-js@^10.2.0:
+  version "10.2.0"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-10.2.0.tgz#0a302c50c20485c9c76b96b482d322b7ace8f513"
+  integrity sha512-M94vHW0vY/hnAE+tRLaLH5jA90QpS1Z/99Qf/HUF+X3eRc6/QFCmd3DlV5e34Q4pfCvd6nlX/g/k3n7xiRYOCQ==
   dependencies:
     dmn-js-decision-table "^10.1.0"
-    dmn-js-drd "^10.1.0"
+    dmn-js-drd "^10.2.0"
     dmn-js-literal-expression "^10.1.0"
     dmn-js-shared "^10.1.0"
 
