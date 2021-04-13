@@ -643,7 +643,6 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("not yet released on zeebe side")
   public void testEventSubprocess() {
     // having
     final OffsetDateTime testStartTime = OffsetDateTime.now();
