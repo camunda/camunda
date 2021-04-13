@@ -63,7 +63,7 @@
     "@testing-library/jest-dom": "^5.11.10",
     "@testing-library/react": "^11.2.6",
     "@testing-library/react-hooks": "^5.1.1",
-    "@testing-library/testcafe": "^4.3.1",
+    "@testing-library/testcafe": "^4.4.0",
     "@types/node-fetch": "^2.5.10",
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.6",
