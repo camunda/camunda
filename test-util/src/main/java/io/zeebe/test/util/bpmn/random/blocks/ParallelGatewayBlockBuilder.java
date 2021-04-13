@@ -15,6 +15,8 @@ import io.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.zeebe.test.util.bpmn.random.IDGenerator;
 import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
+import io.zeebe.test.util.bpmn.random.steps.StepEnterParallelGateway;
+import io.zeebe.test.util.bpmn.random.steps.StepLeaveParallelGateway;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -75,6 +77,8 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
   public ExecutionPathSegment findRandomExecutionPath(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
+    result.append(new StepEnterParallelGateway(forkGatewayId));
+
     final List<List<AbstractExecutionStep>> stepsOfParallelPaths = new ArrayList<>();
 
     blockBuilders.forEach(
@@ -86,6 +90,8 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
         shuffleStepsFromDifferentLists(random, stepsOfParallelPaths);
 
     shuffledSteps.forEach(result::append);
+
+    result.append(new StepLeaveParallelGateway(forkGatewayId));
 
     return result;
   }

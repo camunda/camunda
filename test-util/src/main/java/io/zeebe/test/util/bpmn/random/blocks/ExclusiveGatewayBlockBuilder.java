@@ -15,6 +15,7 @@ import io.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.zeebe.test.util.bpmn.random.IDGenerator;
 import io.zeebe.test.util.bpmn.random.steps.StepExpressionIncidentCase;
+import io.zeebe.test.util.bpmn.random.steps.StepLeaveExclusiveGateway;
 import io.zeebe.test.util.bpmn.random.steps.StepPickConditionCase;
 import io.zeebe.test.util.bpmn.random.steps.StepPickDefaultCase;
 import java.util.ArrayList;
@@ -113,6 +114,8 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
     final BlockBuilder blockBuilder = blockBuilders.get(branch);
 
     result.append(blockBuilder.findRandomExecutionPath(random));
+
+    result.append(new StepLeaveExclusiveGateway(joinGatewayId));
 
     return result;
   }
