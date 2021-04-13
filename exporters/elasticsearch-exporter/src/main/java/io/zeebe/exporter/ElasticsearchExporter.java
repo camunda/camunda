@@ -111,8 +111,7 @@ public class ElasticsearchExporter implements Exporter {
     try {
       flush();
     } catch (final Exception e) {
-      log.error(
-          "Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
+      log.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
     }
     scheduleDelayedFlush();
   }
