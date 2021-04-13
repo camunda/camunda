@@ -51,15 +51,13 @@ public final class ExclusiveGatewayProcessor
       final ExecutableExclusiveGateway element, final BpmnElementContext activating) {
     if (element.getOutgoing().isEmpty()) {
       // there are no flows to take: the gateway is an implicit end for the flow scope
-      final BpmnElementContext completed = transitionToCompleted(activating);
-      stateTransitionBehavior.onElementCompleted(element, completed);
-
+      transitionToCompleted(element, activating);
     } else {
       // find outgoing sequence flow with fulfilled condition or the default
       findSequenceFlowToTake(element, activating)
           .ifRightOrLeft(
               sequenceFlow -> {
-                final BpmnElementContext completed = transitionToCompleted(activating);
+                final BpmnElementContext completed = transitionToCompleted(element, activating);
                 stateTransitionBehavior.takeSequenceFlow(completed, sequenceFlow);
               },
               failure -> incidentBehavior.createIncident(failure, activating));
@@ -83,13 +81,14 @@ public final class ExclusiveGatewayProcessor
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 
-  private BpmnElementContext transitionToCompleted(final BpmnElementContext activating) {
+  private BpmnElementContext transitionToCompleted(
+      final ExecutableExclusiveGateway element, final BpmnElementContext activating) {
     if (activating.getIntent() != ProcessInstanceIntent.ELEMENT_ACTIVATING) {
       throw new BpmnProcessingException(activating, TRANSITION_TO_COMPLETED_PRECONDITION_ERROR);
     }
     final var activated = stateTransitionBehavior.transitionToActivated(activating);
     final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-    return stateTransitionBehavior.transitionToCompleted(completing);
+    return stateTransitionBehavior.transitionToCompletedWithParentNotification(element, completing);
   }
 
   private Either<Failure, ExecutableSequenceFlow> findSequenceFlowToTake(

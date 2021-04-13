@@ -79,7 +79,7 @@ public final class SubProcessProcessor
         .ifRightOrLeft(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              stateTransitionBehavior.transitionToCompleted(context);
+              stateTransitionBehavior.transitionToCompletedWithParentNotification(element, context);
             },
             failure -> incidentBehavior.createIncident(failure, context));
   }
@@ -87,7 +87,12 @@ public final class SubProcessProcessor
   @Override
   public void onCompleted(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-
+    if (element.getOutgoing().isEmpty()) {
+      /* can be dropped during migration; after migration this is done as part of
+      stateTransitionBehavior.transitionToCompletedWithParentNotification(...)*/
+      stateTransitionBehavior.afterExecutionPathCompleted(element, context);
+    }
+    // call after here (unmigrated processor)
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
 
     stateBehavior.removeElementInstance(context);
@@ -132,11 +137,16 @@ public final class SubProcessProcessor
       final BpmnElementContext childContext) {}
 
   @Override
-  public void onChildCompleted(
+  public void beforeExecutionPathCompleted(
+      final ExecutableFlowElementContainer element,
+      final BpmnElementContext flowScopeContext,
+      final BpmnElementContext childContext) {}
+
+  @Override
+  public void afterExecutionPathCompleted(
       final ExecutableFlowElementContainer element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
-
     if (stateBehavior.canBeCompleted(childContext)) {
       stateTransitionBehavior.transitionToCompleting(flowScopeContext);
     }
