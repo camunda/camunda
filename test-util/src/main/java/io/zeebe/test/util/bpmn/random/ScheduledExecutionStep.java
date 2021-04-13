@@ -108,10 +108,7 @@ public class ScheduledExecutionStep {
    */
   @Override
   public int hashCode() {
-    int result = logicalPredecessor != null ? logicalPredecessor.hashCode() : 0;
-    result = 31 * result + (executionPredecessor != null ? executionPredecessor.hashCode() : 0);
-    result = 31 * result + step.hashCode();
-    return result;
+    return step.hashCode();
   }
 
   @Override
