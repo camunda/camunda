@@ -58,12 +58,14 @@ it('should display an error message if evaluation was unsuccessful', () => {
 });
 
 it('should pass the error to reportRenderer if evaluation fails', async () => {
-  const testError = {errorMessage: 'testError', reportDefinition: {}};
+  props.match.params.type = 'report';
+  const testError = {message: 'testError', reportDefinition: {}};
   const mightFail = (promise, cb, err) => err({status: 400, json: () => testError});
 
   const node = await shallow(<Sharing {...props} mightFail={mightFail} />);
+  await flushPromises();
 
-  expect(node.find(ReportRenderer).prop('error')).toEqual({status: 400, data: testError});
+  expect(node.find(ReportRenderer).prop('error')).toEqual({status: 400, ...testError});
 });
 
 it('should display an error message if type is invalid', () => {

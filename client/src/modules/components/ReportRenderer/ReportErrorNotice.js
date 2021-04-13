@@ -15,12 +15,12 @@ export default function ReportErrorNotice({error}) {
 
   return (
     <NoDataNotice type={formattedError.type} title={formattedError.title}>
-      {formattedError.text}
+      {formattedError.message}
     </NoDataNotice>
   );
 }
 
-function formatError({status, data: {errorCode, errorMessage}}) {
+function formatError({status, message}) {
   if (status === 403) {
     return {
       type: 'info',
@@ -32,6 +32,6 @@ function formatError({status, data: {errorCode, errorMessage}}) {
   return {
     type: 'error',
     title: t('report.errorNotice'),
-    text: errorCode ? t('apiErrors.' + errorCode) : errorMessage,
+    message,
   };
 }

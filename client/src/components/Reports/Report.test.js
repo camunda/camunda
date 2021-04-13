@@ -68,13 +68,13 @@ it("should show an error page if report doesn't exist", () => {
 });
 
 it('should pass the error to report view and edit mode if evaluation fails', async () => {
-  const testError = {errorMessage: 'testError', reportDefinition: report};
+  const testError = {message: 'testError', reportDefinition: report};
   const mightFail = (promise, cb, err) => err({status: 400, json: () => testError});
 
   const node = shallow(<Report {...props} mightFail={mightFail} />);
   await node.instance().loadReport();
 
-  expect(node.find('ReportView').prop('error')).toEqual({status: 400, data: testError});
+  expect(node.find('ReportView').prop('error')).toEqual({status: 400, ...testError});
 });
 
 it('should initially evaluate the report', () => {

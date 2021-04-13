@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import {Button} from 'components';
 
-import Login from './Login';
+import {Login} from './Login';
 
 import {login} from './service';
 
@@ -19,12 +19,16 @@ jest.mock('./service', () => {
   };
 });
 
+const props = {
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+};
+
 it('renders without crashing', () => {
-  shallow(<Login />);
+  shallow(<Login {...props} />);
 });
 
 it('should have entered values in the input fields', () => {
-  const node = shallow(<Login />);
+  const node = shallow(<Login {...props} />);
   const input = 'asdf';
   const field = 'username';
 
@@ -34,7 +38,7 @@ it('should have entered values in the input fields', () => {
 });
 
 it('should call the login function when submitting the form', async () => {
-  const node = shallow(<Login onLogin={jest.fn()} />);
+  const node = shallow(<Login {...props} onLogin={jest.fn()} />);
 
   const username = 'david';
   const password = 'dennis';
@@ -49,7 +53,7 @@ it('should call the login function when submitting the form', async () => {
 
 it('should call the onLogin callback after login', async () => {
   const spy = jest.fn();
-  const node = shallow(<Login onLogin={spy} />);
+  const node = shallow(<Login {...props} onLogin={spy} />);
 
   await node.find(Button).simulate('click', {preventDefault: jest.fn()});
 
@@ -57,7 +61,8 @@ it('should call the onLogin callback after login', async () => {
 });
 
 it('should display error message on failed login', async () => {
-  const node = shallow(<Login />);
+  const mightFail = (promise, cb, err) => err({status: 400, message: 'test error'});
+  const node = shallow(<Login {...props} mightFail={mightFail} />);
 
   login.mockReturnValueOnce({errorMessage: 'Failed'});
 
@@ -67,7 +72,7 @@ it('should display error message on failed login', async () => {
 });
 
 it('should disable the login button when waiting for server response', () => {
-  const node = shallow(<Login onLogin={jest.fn()} />);
+  const node = shallow(<Login {...props} mightFail={() => {}} onLogin={jest.fn()} />);
 
   node.find(Button).simulate('click', {preventDefault: jest.fn()});
 

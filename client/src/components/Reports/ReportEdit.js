@@ -12,7 +12,14 @@ import {Redirect, withRouter} from 'react-router-dom';
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {ReportRenderer, LoadingIndicator, EntityNameForm, InstanceCount} from 'components';
-import {updateEntity, createEntity, evaluateReport, getCollection, reportConfig} from 'services';
+import {
+  updateEntity,
+  createEntity,
+  evaluateReport,
+  getCollection,
+  reportConfig,
+  parseError,
+} from 'services';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {withDocs} from 'HOC';
@@ -62,7 +69,7 @@ export class ReportEdit extends React.Component {
         () => resolve(id),
         async (error) => {
           if (error.status === 409) {
-            const {conflictedItems} = await error.json();
+            const {conflictedItems} = await parseError(error);
             this.setState({
               report: update(this.state.report, {name: {$set: name}}),
               conflict: conflictedItems.reduce(
@@ -212,25 +219,17 @@ export class ReportEdit extends React.Component {
             resolve
           ),
         async (e) => {
-          const errorData = await e.json();
-          if (errorData) {
+          const serverError = await parseError(e, t('apiErrors.reportEvaluationError'));
+          if (serverError.reportDefinition) {
             this.setState(
               {
-                report: errorData.reportDefinition,
-                serverError: {status: e.status, data: errorData},
+                report: serverError.reportDefinition,
+                serverError,
               },
               resolve
             );
           } else {
-            this.setState(
-              {
-                serverError: {
-                  status: e.status,
-                  data: {errorMessage: t('apiErrors.reportEvaluationError')},
-                },
-              },
-              resolve
-            );
+            this.setState({serverError}, resolve);
           }
         }
       )

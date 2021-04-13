@@ -99,7 +99,8 @@ it('should pass an error message if there is an error and no report is returned'
 
   expect(node.find(ReportRenderer).prop('error')).toEqual({
     status: 400,
-    data: {errorMessage: 'Is failing', reportDefinition: null},
+    message: 'Is failing',
+    reportDefinition: null,
   });
 
   node.setProps({mightFail: props.mightFail});

@@ -15,6 +15,7 @@ import {
 } from 'components';
 import {withErrorHandling} from 'HOC';
 import deepEqual from 'fast-deep-equal';
+import {parseError} from 'services';
 
 import {themed} from 'theme';
 
@@ -62,11 +63,11 @@ export class OptimizeReport extends React.Component {
         ),
         (data) => this.setState({data, error: null}, resolve),
         async (e) => {
-          const errorData = await e.json();
+          const error = await parseError(e);
           this.setState(
             {
-              data: errorData.reportDefinition,
-              error: {status: e.status, data: errorData},
+              data: error.reportDefinition,
+              error,
             },
             resolve
           );

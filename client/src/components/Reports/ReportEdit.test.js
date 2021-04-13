@@ -320,11 +320,11 @@ it('should show loading indicator if specified by children components', () => {
 });
 
 it('should pass the error to reportRenderer if evaluation fails', async () => {
-  const testError = {errorMessage: 'testError', reportDefinition: report};
+  const testError = {message: 'testError', reportDefinition: report};
   const mightFail = (promise, cb, err) => err({status: 400, json: () => testError});
 
   const node = shallow(<ReportEdit {...props} mightFail={mightFail} />);
   await node.instance().loadReport(undefined, report);
 
-  expect(node.find(ReportRenderer).prop('error')).toEqual({status: 400, data: testError});
+  expect(node.find(ReportRenderer).prop('error')).toEqual({status: 400, ...testError});
 });

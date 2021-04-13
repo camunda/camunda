@@ -8,7 +8,7 @@ import React, {useEffect, useState, useCallback} from 'react';
 
 import {Modal, Button, ReportRenderer, LoadingIndicator} from 'components';
 import {withErrorHandling} from 'HOC';
-import {evaluateReport} from 'services';
+import {evaluateReport, parseError} from 'services';
 import {t} from 'translation';
 import {newReport} from 'config';
 
@@ -48,7 +48,7 @@ export function RawDataModal({name, report, close, mightFail}) {
           query
         ),
         setRawDataReport,
-        async (e) => setError({status: e.status, data: await e.json()})
+        async (e) => setError(await parseError(e))
       );
     },
     [mightFail, report]

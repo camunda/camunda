@@ -20,8 +20,10 @@ import {
   DiagramScrollLock,
 } from 'components';
 import {withErrorHandling} from 'HOC';
-import {evaluateEntity, createLoadReportCallback} from './service';
 import {t} from 'translation';
+import {parseError} from 'services';
+
+import {evaluateEntity, createLoadReportCallback} from './service';
 
 import './Sharing.scss';
 
@@ -58,10 +60,10 @@ export class Sharing extends React.Component {
         });
       },
       async (e) => {
-        const errorData = await e.json();
+        const error = await parseError(e);
         this.setState({
-          evaluationResult: errorData.reportDefinition,
-          error: {status: e.status, data: errorData},
+          evaluationResult: error.reportDefinition,
+          error,
           loading: false,
         });
       }

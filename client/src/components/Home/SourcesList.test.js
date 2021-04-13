@@ -148,6 +148,7 @@ it('should pass conflict to confirmation modal if update failed', async () => {
   node.find(EditSourceModal).prop('onConfirm')(updatedTenants);
 
   await node.update();
+  await flushPromises();
   expect(node.find(Modal.Content)).toMatchSnapshot();
 
   node.setProps({mightFail: props.mightFail});
