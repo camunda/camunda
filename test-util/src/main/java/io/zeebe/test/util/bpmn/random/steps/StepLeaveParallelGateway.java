@@ -7,6 +7,8 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
+import java.time.Duration;
+
 public final class StepLeaveParallelGateway extends AbstractExecutionStep {
 
   private final String joiningGatewayId;
@@ -21,9 +23,14 @@ public final class StepLeaveParallelGateway extends AbstractExecutionStep {
   }
 
   @Override
+  public Duration getDeltaTime() {
+    return VIRTUALLY_NO_TIME;
+  }
+
+  @Override
   public int hashCode() {
-    int result = joiningGatewayId != null ? joiningGatewayId.hashCode() : 0;
-    result = 31 * result + variables.hashCode();
+    int result = super.hashCode();
+    result = 31 * result + joiningGatewayId.hashCode();
     return result;
   }
 
@@ -35,14 +42,12 @@ public final class StepLeaveParallelGateway extends AbstractExecutionStep {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    if (!super.equals(o)) {
+      return false;
+    }
 
     final StepLeaveParallelGateway that = (StepLeaveParallelGateway) o;
 
-    if (joiningGatewayId != null
-        ? !joiningGatewayId.equals(that.joiningGatewayId)
-        : that.joiningGatewayId != null) {
-      return false;
-    }
-    return variables.equals(that.variables);
+    return joiningGatewayId.equals(that.joiningGatewayId);
   }
 }

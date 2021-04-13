@@ -16,9 +16,9 @@ import io.zeebe.engine.util.ProcessExecutor;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.bpmn.random.ExecutionPath;
+import io.zeebe.test.util.bpmn.random.ScheduledExecutionStep;
 import io.zeebe.test.util.bpmn.random.TestDataGenerator;
 import io.zeebe.test.util.bpmn.random.TestDataGenerator.TestDataRecord;
-import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Collection;
 import org.assertj.core.api.SoftAssertions;
@@ -37,10 +37,13 @@ public class ReplayStateRandomizedPropertyTest {
 
   private static final int PROCESS_COUNT = 10;
   private static final int EXECUTION_PATH_COUNT = 5;
+  @Parameter public TestDataRecord record;
 
   @Rule
   public TestWatcher failedTestDataPrinter =
       new FailedPropertyBasedTestDataPrinter(this::getDataRecord);
+
+  private long lastProcessedPosition = -1L;
 
   @Rule
   public final EngineRule engineRule =
@@ -48,9 +51,6 @@ public class ReplayStateRandomizedPropertyTest {
           .withOnProcessedCallback(record -> lastProcessedPosition = record.getPosition())
           .withOnSkippedCallback(record -> lastProcessedPosition = record.getPosition());
 
-  @Parameter public TestDataRecord record;
-
-  private long lastProcessedPosition = -1L;
   private final ProcessExecutor processExecutor = new ProcessExecutor(engineRule);
 
   @Before
@@ -80,9 +80,9 @@ public class ReplayStateRandomizedPropertyTest {
 
     final ExecutionPath path = record.getExecutionPath();
 
-    for (final AbstractExecutionStep step : path.getSteps()) {
+    for (final ScheduledExecutionStep scheduledStep : path.getSteps()) {
 
-      processExecutor.applyStep(step);
+      processExecutor.applyStep(scheduledStep.getStep());
 
       stopAndRestartEngineAndCompareStates();
     }

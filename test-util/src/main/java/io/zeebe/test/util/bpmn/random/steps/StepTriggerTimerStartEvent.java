@@ -17,18 +17,21 @@ public final class StepTriggerTimerStartEvent extends AbstractExecutionStep {
     this.timeToAdd = timeToAdd;
   }
 
-  public Duration getTimeToAdd() {
-    return timeToAdd;
-  }
-
   @Override
   public boolean isAutomatic() {
     return false;
   }
 
   @Override
+  public Duration getDeltaTime() {
+    return timeToAdd;
+  }
+
+  @Override
   public int hashCode() {
-    return getTimeToAdd() != null ? getTimeToAdd().hashCode() : 0;
+    int result = super.hashCode();
+    result = 31 * result + timeToAdd.hashCode();
+    return result;
   }
 
   @Override
@@ -39,11 +42,12 @@ public final class StepTriggerTimerStartEvent extends AbstractExecutionStep {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    if (!super.equals(o)) {
+      return false;
+    }
 
     final StepTriggerTimerStartEvent that = (StepTriggerTimerStartEvent) o;
 
-    return getTimeToAdd() != null
-        ? getTimeToAdd().equals(that.getTimeToAdd())
-        : that.getTimeToAdd() == null;
+    return timeToAdd.equals(that.timeToAdd);
   }
 }

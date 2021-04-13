@@ -7,6 +7,8 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
+import java.time.Duration;
+
 public final class StepActivateAndTimeoutJob extends AbstractExecutionStep {
 
   private final String jobType;
@@ -25,9 +27,14 @@ public final class StepActivateAndTimeoutJob extends AbstractExecutionStep {
   }
 
   @Override
+  public Duration getDeltaTime() {
+    return DEFAULT_DELTA;
+  }
+
+  @Override
   public int hashCode() {
-    int result = jobType != null ? jobType.hashCode() : 0;
-    result = 31 * result + variables.hashCode();
+    int result = super.hashCode();
+    result = 31 * result + jobType.hashCode();
     return result;
   }
 
@@ -39,12 +46,12 @@ public final class StepActivateAndTimeoutJob extends AbstractExecutionStep {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    if (!super.equals(o)) {
+      return false;
+    }
 
     final StepActivateAndTimeoutJob that = (StepActivateAndTimeoutJob) o;
 
-    if (jobType != null ? !jobType.equals(that.jobType) : that.jobType != null) {
-      return false;
-    }
-    return variables.equals(that.variables);
+    return jobType.equals(that.jobType);
   }
 }

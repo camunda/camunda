@@ -27,7 +27,6 @@ import io.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
 import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerStartEvent;
 import io.zeebe.test.util.record.RecordingExporter;
-import java.time.Duration;
 import java.util.Map;
 import org.awaitility.Awaitility;
 
@@ -142,7 +141,7 @@ public class ProcessExecutor {
 
     engineRule.jobs().withType(activateAndTimeoutJob.getJobType()).withTimeout(100).activate();
 
-    engineRule.getClock().addTime(Duration.ofSeconds(150));
+    engineRule.getClock().addTime(activateAndTimeoutJob.getDeltaTime());
 
     RecordingExporter.jobRecords(JobIntent.TIME_OUT)
         .withType(activateAndTimeoutJob.getJobType())
@@ -229,7 +228,7 @@ public class ProcessExecutor {
         RecordingExporter.timerRecords(TimerIntent.CREATE).getFirst();
     waitUntilRecordIsProcessed("until start timer is scheduled", timerSchedulingRecord);
 
-    engineRule.increaseTime(timerStep.getTimeToAdd());
+    engineRule.increaseTime(timerStep.getDeltaTime());
 
     // await that the timer is triggered or otherwise there may be a race condition where a test may
     // think we've already reached a wait state, when in truth the timer trigger hasn't even been

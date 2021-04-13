@@ -7,8 +7,8 @@
  */
 package io.zeebe.engine.processing.streamprocessor;
 
+import io.zeebe.test.util.bpmn.random.ScheduledExecutionStep;
 import io.zeebe.test.util.bpmn.random.TestDataGenerator.TestDataRecord;
-import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.junit.rules.TestWatcher;
@@ -37,7 +37,7 @@ final class FailedPropertyBasedTestDataPrinter extends TestWatcher {
         "Execution path of failed test case:{}{}",
         System.lineSeparator(),
         record.getExecutionPath().getSteps().stream()
-            .map(AbstractExecutionStep::toString)
+            .map(ScheduledExecutionStep::toString)
             .collect(Collectors.joining(System.lineSeparator())));
   }
 }

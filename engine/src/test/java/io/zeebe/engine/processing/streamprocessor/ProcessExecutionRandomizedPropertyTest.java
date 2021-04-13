@@ -12,6 +12,7 @@ import io.zeebe.engine.util.ProcessExecutor;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.bpmn.random.ExecutionPath;
+import io.zeebe.test.util.bpmn.random.ScheduledExecutionStep;
 import io.zeebe.test.util.bpmn.random.TestDataGenerator;
 import io.zeebe.test.util.bpmn.random.TestDataGenerator.TestDataRecord;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -42,14 +43,12 @@ public class ProcessExecutionRandomizedPropertyTest {
    */
   private static final int PROCESS_COUNT = 10;
   private static final int EXECUTION_PATH_COUNT = 100;
+  @Rule public final EngineRule engineRule = EngineRule.singlePartition();
+  @Parameter public TestDataRecord record;
 
   @Rule
   public TestWatcher failedTestDataPrinter =
       new FailedPropertyBasedTestDataPrinter(this::getDataRecord);
-
-  @Rule public final EngineRule engineRule = EngineRule.singlePartition();
-
-  @Parameter public TestDataRecord record;
 
   private final ProcessExecutor processExecutor = new ProcessExecutor(engineRule);
 
@@ -70,7 +69,9 @@ public class ProcessExecutionRandomizedPropertyTest {
 
     final ExecutionPath path = record.getExecutionPath();
 
-    path.getSteps().forEach(processExecutor::applyStep);
+    path.getSteps().stream()
+        .map(ScheduledExecutionStep::getStep)
+        .forEach(processExecutor::applyStep);
 
     // wait for the completion of the process
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)

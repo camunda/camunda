@@ -7,6 +7,7 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
+import java.time.Duration;
 import java.util.Map;
 
 public final class StepStartProcessInstance extends AbstractExecutionStep {
@@ -28,9 +29,14 @@ public final class StepStartProcessInstance extends AbstractExecutionStep {
   }
 
   @Override
+  public Duration getDeltaTime() {
+    return VIRTUALLY_NO_TIME;
+  }
+
+  @Override
   public int hashCode() {
-    int result = processId != null ? processId.hashCode() : 0;
-    result = 31 * result + variables.hashCode();
+    int result = super.hashCode();
+    result = 31 * result + processId.hashCode();
     return result;
   }
 
@@ -42,12 +48,12 @@ public final class StepStartProcessInstance extends AbstractExecutionStep {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    if (!super.equals(o)) {
+      return false;
+    }
 
     final StepStartProcessInstance that = (StepStartProcessInstance) o;
 
-    if (processId != null ? !processId.equals(that.processId) : that.processId != null) {
-      return false;
-    }
-    return variables.equals(that.variables);
+    return processId.equals(that.processId);
   }
 }

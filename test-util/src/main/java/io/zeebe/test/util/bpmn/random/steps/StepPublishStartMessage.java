@@ -7,6 +7,7 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
+import java.time.Duration;
 import java.util.Map;
 
 public final class StepPublishStartMessage extends AbstractExecutionStep {
@@ -28,9 +29,14 @@ public final class StepPublishStartMessage extends AbstractExecutionStep {
   }
 
   @Override
+  public Duration getDeltaTime() {
+    return VIRTUALLY_NO_TIME;
+  }
+
+  @Override
   public int hashCode() {
-    int result = messageName != null ? messageName.hashCode() : 0;
-    result = 31 * result + variables.hashCode();
+    int result = super.hashCode();
+    result = 31 * result + messageName.hashCode();
     return result;
   }
 
@@ -42,12 +48,12 @@ public final class StepPublishStartMessage extends AbstractExecutionStep {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    if (!super.equals(o)) {
+      return false;
+    }
 
     final StepPublishStartMessage that = (StepPublishStartMessage) o;
 
-    if (messageName != null ? !messageName.equals(that.messageName) : that.messageName != null) {
-      return false;
-    }
-    return variables.equals(that.variables);
+    return messageName.equals(that.messageName);
   }
 }

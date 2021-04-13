@@ -7,6 +7,8 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
+import java.time.Duration;
+
 // this class could also be called "Set variables when starting the process so that the engine
 // will select a certain condition"
 public final class StepPickConditionCase extends AbstractExecutionStep {
@@ -27,10 +29,15 @@ public final class StepPickConditionCase extends AbstractExecutionStep {
   }
 
   @Override
+  public Duration getDeltaTime() {
+    return VIRTUALLY_NO_TIME;
+  }
+
+  @Override
   public int hashCode() {
-    int result = forkingGatewayId != null ? forkingGatewayId.hashCode() : 0;
-    result = 31 * result + (edgeId != null ? edgeId.hashCode() : 0);
-    result = 31 * result + variables.hashCode();
+    int result = super.hashCode();
+    result = 31 * result + forkingGatewayId.hashCode();
+    result = 31 * result + edgeId.hashCode();
     return result;
   }
 
@@ -42,18 +49,16 @@ public final class StepPickConditionCase extends AbstractExecutionStep {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    if (!super.equals(o)) {
+      return false;
+    }
 
     final StepPickConditionCase that = (StepPickConditionCase) o;
 
-    if (forkingGatewayId != null
-        ? !forkingGatewayId.equals(that.forkingGatewayId)
-        : that.forkingGatewayId != null) {
+    if (!forkingGatewayId.equals(that.forkingGatewayId)) {
       return false;
     }
-    if (edgeId != null ? !edgeId.equals(that.edgeId) : that.edgeId != null) {
-      return false;
-    }
-    return variables.equals(that.variables);
+    return edgeId.equals(that.edgeId);
   }
 
   public void removeVariable(final String variable) {

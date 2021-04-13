@@ -7,6 +7,7 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,10 +16,10 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Abstract implementation of execution steps. Each execution step has a map of variables. These
- * variables need to be set before the execution step can be executed (e.g. setting the variables
- * when process is created)
+ * variables need to be set before the execution step can be executed (e.g. setting variables when
+ * process is created)
  *
- * <p>New implementations should also extends the execution logic in {@link
+ * <p>New implementations should also extends the execution logic in {@code
  * io.zeebe.engine.util.ProcessExecutor}
  *
  * <p>Contract: each implementing class must implement {@code equals(...)/hashCode()} This is mostly
@@ -26,9 +27,18 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  */
 public abstract class AbstractExecutionStep {
 
+  public static final Duration VIRTUALLY_NO_TIME = Duration.ofMillis(0);
+  public static final Duration DEFAULT_DELTA = Duration.ofHours(1);
+
   protected final Map<String, Object> variables = new HashMap<>();
 
   public Map<String, Object> getVariables() {
+    // TODO
+    return Collections.unmodifiableMap(variables);
+  }
+
+  public Map<String, Object> getVariables(final Duration activationDuration) {
+    // TODO
     return Collections.unmodifiableMap(variables);
   }
 
@@ -41,11 +51,31 @@ public abstract class AbstractExecutionStep {
    */
   public abstract boolean isAutomatic();
 
-  @Override
-  public abstract int hashCode();
+  /**
+   * Returns the time this step will take
+   *
+   * @return time this step will take
+   */
+  public abstract Duration getDeltaTime();
 
   @Override
-  public abstract boolean equals(final Object o);
+  public int hashCode() {
+    return variables.hashCode();
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final AbstractExecutionStep that = (AbstractExecutionStep) o;
+
+    return variables.equals(that.variables);
+  }
 
   @Override
   public String toString() {
