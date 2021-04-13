@@ -16,7 +16,7 @@ import io.atomix.utils.logging.LoggerContext;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
-public final class LogCompactor {
+public class LogCompactor {
   private final RaftContext raft;
 
   // hard coupled state
