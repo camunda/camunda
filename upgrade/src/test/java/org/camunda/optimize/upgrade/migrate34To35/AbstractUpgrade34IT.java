@@ -8,25 +8,14 @@ package org.camunda.optimize.upgrade.migrate34To35;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
-import org.camunda.optimize.upgrade.migrate33To34.indices.EventProcessMappingIndexV3Old;
-import org.camunda.optimize.upgrade.migrate33To34.indices.EventProcessPublishStateIndexV3Old;
-import org.camunda.optimize.upgrade.migrate33To34.indices.SingleDecisionReportIndexV5Old;
-import org.camunda.optimize.upgrade.migrate33To34.indices.SingleProcessReportIndexV5Old;
-import org.camunda.optimize.upgrade.plan.indices.DecisionInstanceIndexV4Old;
 import org.camunda.optimize.upgrade.plan.indices.EventProcessDefinitionIndexV3Old;
-import org.camunda.optimize.upgrade.plan.indices.EventProcessInstanceIndexV5Old;
 import org.camunda.optimize.upgrade.plan.indices.ProcessDefinitionIndexV4Old;
-import org.camunda.optimize.upgrade.plan.indices.ProcessInstanceIndexV5Old;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class AbstractUpgrade34IT extends AbstractUpgradeIT {
   protected static final String FROM_VERSION = "3.4.0";
