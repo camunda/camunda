@@ -9,24 +9,20 @@ package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
 
-// This class removes the variable set by the `StepPickConditionCase` to make sure an incident is
+// This class does not provide the edge variable at start to make sure an incident is
 // raised. This same variable can later be provided (through variable update) and the incident can
 // then be resolved
-public final class StepExpressionIncidentCase extends AbstractExecutionStep {
+public final class StepRaiseIncidentThenResolveAndPickConditionCase extends AbstractExecutionStep {
 
   private final String forkingGatewayId;
   private final String edgeId;
   private final String gatewayConditionVariable;
 
-  public StepExpressionIncidentCase(
-      final String forkingGatewayId,
-      final String gatewayConditionVariable,
-      final String edgeId,
-      final StepPickConditionCase pickConditionCase) {
+  public StepRaiseIncidentThenResolveAndPickConditionCase(
+      final String forkingGatewayId, final String gatewayConditionVariable, final String edgeId) {
     this.forkingGatewayId = forkingGatewayId;
     this.edgeId = edgeId;
     this.gatewayConditionVariable = gatewayConditionVariable;
-    pickConditionCase.removeVariable(gatewayConditionVariable);
   }
 
   @Override
@@ -60,7 +56,8 @@ public final class StepExpressionIncidentCase extends AbstractExecutionStep {
       return false;
     }
 
-    final StepExpressionIncidentCase that = (StepExpressionIncidentCase) o;
+    final StepRaiseIncidentThenResolveAndPickConditionCase that =
+        (StepRaiseIncidentThenResolveAndPickConditionCase) o;
 
     if (!forkingGatewayId.equals(that.forkingGatewayId)) {
       return false;

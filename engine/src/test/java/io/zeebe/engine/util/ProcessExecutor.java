@@ -21,9 +21,9 @@ import io.zeebe.test.util.bpmn.random.steps.StepActivateAndCompleteJob;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateAndFailJob;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateAndTimeoutJob;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateJobAndThrowError;
-import io.zeebe.test.util.bpmn.random.steps.StepExpressionIncidentCase;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
+import io.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
 import io.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
 import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerStartEvent;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -69,8 +69,8 @@ public class ProcessExecutor {
       final StepActivateJobAndThrowError activateJobAndThrowError =
           (StepActivateJobAndThrowError) step;
       activateJobAndThrowError(activateJobAndThrowError);
-    } else if (step instanceof StepExpressionIncidentCase) {
-      final var expressionIncident = (StepExpressionIncidentCase) step;
+    } else if (step instanceof StepRaiseIncidentThenResolveAndPickConditionCase) {
+      final var expressionIncident = (StepRaiseIncidentThenResolveAndPickConditionCase) step;
       resolveExpressionIncident(expressionIncident);
     } else if (step instanceof StepTriggerTimerStartEvent) {
       final StepTriggerTimerStartEvent timerStep = (StepTriggerTimerStartEvent) step;
@@ -236,7 +236,8 @@ public class ProcessExecutor {
     RecordingExporter.timerRecords(TimerIntent.TRIGGERED).await();
   }
 
-  private void resolveExpressionIncident(final StepExpressionIncidentCase expressionIncident) {
+  private void resolveExpressionIncident(
+      final StepRaiseIncidentThenResolveAndPickConditionCase expressionIncident) {
     final var incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withElementId(expressionIncident.getGatewayElementId())
