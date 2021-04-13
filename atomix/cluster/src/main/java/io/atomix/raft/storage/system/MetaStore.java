@@ -20,8 +20,8 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.serializer.MetaStoreSerializer;
-import io.atomix.storage.StorageException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
