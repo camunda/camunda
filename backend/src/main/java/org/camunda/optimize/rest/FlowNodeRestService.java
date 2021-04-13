@@ -21,7 +21,10 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+
+import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
 
 @AllArgsConstructor
 @Path("/flow-node")
@@ -49,12 +52,13 @@ public class FlowNodeRestService {
 
     if (processDefinitionXmlDto.isPresent()) {
       List<String> nodeIds = request.getNodeIds();
+      Map<String, String> flowNodeIdsToNames = extractFlowNodeNames(processDefinitionXmlDto.get().getFlowNodeData());
       if (nodeIds != null && !nodeIds.isEmpty()) {
         for (String id : nodeIds) {
-          result.getFlowNodeNames().put(id, processDefinitionXmlDto.get().getFlowNodeNames().get(id));
+          result.getFlowNodeNames().put(id, flowNodeIdsToNames.get(id));
         }
       } else {
-        result.setFlowNodeNames(processDefinitionXmlDto.get().getFlowNodeNames());
+        result.setFlowNodeNames(flowNodeIdsToNames);
       }
     } else {
       log.debug(
@@ -63,7 +67,6 @@ public class FlowNodeRestService {
         request.getProcessDefinitionVersion()
       );
     }
-
     return result;
   }
 }

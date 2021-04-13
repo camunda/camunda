@@ -20,7 +20,7 @@ import org.camunda.optimize.service.importing.engine.service.ImportService;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
+import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeData;
 import static org.camunda.optimize.service.util.BpmnModelUtil.extractUserTaskNames;
 import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
 
@@ -79,10 +79,8 @@ public class ProcessDefinitionXmlImportService implements ImportService<ProcessD
       engineEntity.getId(),
       engineContext.getEngineAlias(),
       engineEntity.getBpmn20Xml(),
-      extractFlowNodeNames(bpmnModelInstance),
+      extractFlowNodeData(bpmnModelInstance),
       extractUserTaskNames(bpmnModelInstance)
     );
   }
-
-
 }

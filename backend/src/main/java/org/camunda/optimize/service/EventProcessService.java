@@ -16,6 +16,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.BaseElement;
 import org.camunda.bpm.model.bpmn.instance.Event;
 import org.camunda.bpm.model.xml.ModelParseException;
+import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -75,6 +76,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
@@ -84,7 +86,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.rest.ConflictedItemType.COMBINED_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.ConflictedItemType.REPORT;
-import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
+import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeData;
 
 @RequiredArgsConstructor
 @Component
@@ -576,7 +578,10 @@ public class EventProcessService {
   private void validateMappingsAndXmlCompatibility(final EventProcessMappingDto eventProcessMappingDto) {
     final Optional<BpmnModelInstance> modelInstance = Optional.ofNullable(eventProcessMappingDto.getXml())
       .map(this::parseXmlIntoBpmnModel);
-    Set<String> flowNodeIds = modelInstance.map(instance -> extractFlowNodeNames(instance).keySet())
+
+    Set<String> flowNodeIds = modelInstance.map(instance -> extractFlowNodeData(instance).stream()
+      .map(FlowNodeDataDto::getId)
+      .collect(Collectors.toSet()))
       .orElse(Collections.emptySet());
 
     Map<String, EventMappingDto> eventMappings = eventProcessMappingDto.getMappings();
@@ -612,5 +617,4 @@ public class EventProcessService {
       throw new BadRequestException("The provided xml is not valid");
     }
   }
-
 }

@@ -51,5 +51,4 @@ public class AbstractUpgrade33IT extends AbstractUpgradeIT {
     );
     setMetadataVersion(FROM_VERSION);
   }
-
 }

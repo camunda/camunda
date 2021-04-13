@@ -80,7 +80,7 @@ public class EventProcessDefinitionImportService {
       .engine(null)
       .bpmn20Xml(eventProcessPublishStateDto.getXml())
       .deleted(false)
-      .flowNodeNames(BpmnModelUtil.extractFlowNodeNames(bpmnModelInstance))
+      .flowNodeData(BpmnModelUtil.extractFlowNodeData(bpmnModelInstance))
       .userTaskNames(BpmnModelUtil.extractUserTaskNames(bpmnModelInstance))
       .build();
   }

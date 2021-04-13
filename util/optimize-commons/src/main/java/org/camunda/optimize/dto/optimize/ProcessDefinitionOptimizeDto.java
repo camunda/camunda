@@ -12,7 +12,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @AllArgsConstructor
@@ -21,7 +23,7 @@ import java.util.Map;
 @FieldNameConstants
 public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto {
   private String bpmn20Xml;
-  private Map<String, String> flowNodeNames = new HashMap<>();
+  private List<FlowNodeDataDto> flowNodeData = new ArrayList<>();
   private Map<String, String> userTaskNames = new HashMap<>();
   @JsonIgnore
   private boolean eventBased;
@@ -43,11 +45,11 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
   public ProcessDefinitionOptimizeDto(final String id,
                                       final String engine,
                                       final String bpmn20Xml,
-                                      final Map<String, String> flowNodeNames,
+                                      final List<FlowNodeDataDto> flowNodeData,
                                       final Map<String, String> userTaskNames) {
     super(id, engine);
     this.bpmn20Xml = bpmn20Xml;
-    this.flowNodeNames = flowNodeNames;
+    this.flowNodeData = flowNodeData;
     this.userTaskNames = userTaskNames;
   }
 
@@ -61,18 +63,18 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
                                       final String tenantId,
                                       final String bpmn20Xml,
                                       final boolean deleted,
-                                      final Map<String, String> flowNodeNames,
+                                      final List<FlowNodeDataDto> flowNodeData,
                                       final Map<String, String> userTaskNames) {
     super(id, key, version, versionTag, name, engine, tenantId, deleted, DefinitionType.PROCESS);
     this.bpmn20Xml = bpmn20Xml;
-    this.flowNodeNames = flowNodeNames;
+    this.flowNodeData = flowNodeData;
     this.userTaskNames = userTaskNames;
   }
 
-  public Map<String, String> getFlowNodeNames() {
-    return flowNodeNames == null
-      ? new HashMap<>()
-      : new HashMap<>(flowNodeNames);
+  public final List<FlowNodeDataDto> getFlowNodeData() {
+    return flowNodeData == null
+      ? new ArrayList<>()
+      : flowNodeData;
   }
 
   public Map<String, String> getUserTaskNames() {

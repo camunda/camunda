@@ -239,7 +239,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // when
     importAllEngineEntitiesFromScratch();
-
+    
     // then
     assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
   }

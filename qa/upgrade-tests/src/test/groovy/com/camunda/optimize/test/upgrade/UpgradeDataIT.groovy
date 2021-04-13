@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 
 class UpgradeDataIT extends BaseUpgradeIT {
   private static final Logger log = LoggerFactory.getLogger(UpgradeDataIT.class);
-  
+
   @Test
   void upgradeWithDataAndPerformRegressionTest() {
     // generate engine data to get some variance into the process data

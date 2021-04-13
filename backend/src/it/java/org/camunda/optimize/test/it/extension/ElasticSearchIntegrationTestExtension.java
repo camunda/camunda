@@ -86,6 +86,7 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -723,7 +724,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       .version(versionValue)
       .bpmn20Xml(key + versionValue)
       .deleted(false)
-      .flowNodeNames(Collections.emptyMap())
+      .flowNodeData(new ArrayList<>())
       .userTaskNames(Collections.emptyMap())
       .build();
     addEntryToElasticsearch(

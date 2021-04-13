@@ -10,8 +10,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 
+import java.util.List;
 import java.util.Map;
 
 @NoArgsConstructor
@@ -24,8 +26,8 @@ public class EventProcessDefinitionDto extends ProcessDefinitionOptimizeDto {
                                    @NonNull final String version,
                                    final String versionTag, @NonNull final String name, final String engine,
                                    final String tenantId, @NonNull final String bpmn20Xml, final boolean deleted,
-                                   @NonNull final Map<String, String> flowNodeNames,
+                                   @NonNull final List<FlowNodeDataDto> flowNodeData,
                                    @NonNull final Map<String, String> userTaskNames) {
-    super(id, key, version, versionTag, name, engine, tenantId, bpmn20Xml, deleted, flowNodeNames, userTaskNames);
+    super(id, key, version, versionTag, name, engine, tenantId, bpmn20Xml, deleted, flowNodeData, userTaskNames);
   }
 }

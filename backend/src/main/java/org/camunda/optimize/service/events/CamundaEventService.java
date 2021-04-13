@@ -10,8 +10,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
@@ -26,9 +27,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -81,7 +80,6 @@ import static org.camunda.bpm.engine.ActivityTypes.TASK_SEND_TASK;
 import static org.camunda.bpm.engine.ActivityTypes.TASK_SERVICE;
 import static org.camunda.bpm.engine.ActivityTypes.TASK_USER_TASK;
 import static org.camunda.bpm.engine.ActivityTypes.TRANSACTION;
-import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaEventTypeDto;
@@ -164,16 +162,16 @@ public class CamundaEventService {
                                                                   final CamundaEventSourceEntryDto camundaEventSourceEntryDto) {
     List<EventTypeDto> result = new ArrayList<>();
     if (camundaEventSourceEntryDto.getConfiguration().getEventScope().contains(EventScopeType.ALL)) {
-      result.addAll(extractLabeledEventTypeDtos(
+      result.addAll(extractEventTypesFromProcessDefinitionDto(
         camundaEventSourceEntryDto.getConfiguration().getProcessDefinitionKey(),
         ALL_MAPPED_TYPES,
-        getBpmnModelInstance(userId, camundaEventSourceEntryDto)
+        getProcessDefinition(userId, camundaEventSourceEntryDto)
       ));
     } else if (camundaEventSourceEntryDto.getConfiguration().getEventScope().contains(EventScopeType.START_END)) {
-      result.addAll(extractLabeledEventTypeDtos(
+      result.addAll(extractEventTypesFromProcessDefinitionDto(
         camundaEventSourceEntryDto.getConfiguration().getProcessDefinitionKey(),
         START_AND_END_EVENT_TYPES,
-        getBpmnModelInstance(userId, camundaEventSourceEntryDto)
+        getProcessDefinition(userId, camundaEventSourceEntryDto)
       ));
     }
     if (camundaEventSourceEntryDto.getConfiguration().getEventScope().contains(EventScopeType.PROCESS_INSTANCE)) {
@@ -199,21 +197,18 @@ public class CamundaEventService {
     );
   }
 
-  private List<EventTypeDto> extractLabeledEventTypeDtos(final String definitionKey,
-                                                         final Set<String> typesToInclude,
-                                                         final BpmnModelInstance bpmnModel) {
-    return bpmnModel.getModel().getTypes().stream()
-      .filter(modelElementType -> typesToInclude.contains(modelElementType.getTypeName()))
-      .map(bpmnModel::getModelElementsByType)
-      .filter(Objects::nonNull)
-      .flatMap(Collection::stream)
-      .distinct()
-      .flatMap(modelElementInstance -> {
+  private List<EventTypeDto> extractEventTypesFromProcessDefinitionDto(final String definitionKey,
+                                                                       final Set<String> typesToInclude,
+                                                                       final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto) {
+
+    return processDefinitionOptimizeDto.getFlowNodeData()
+      .stream()
+      .filter(flowNode -> typesToInclude.contains(flowNode.getType()))
+      .flatMap(flowNode -> {
         final List<EventTypeDto> eventDtos = new ArrayList<>();
-        final String elementId = modelElementInstance.getAttributeValue("id");
-        final String elementName = Optional.ofNullable(modelElementInstance.getAttributeValue("name"))
-          .orElse(elementId);
-        if (SPLIT_START_END_MAPPED_TYPES.contains(modelElementInstance.getElementType().getTypeName())) {
+        final String elementId = flowNode.getId();
+        final String elementName = Optional.ofNullable(flowNode.getName()).orElse(elementId);
+        if (SPLIT_START_END_MAPPED_TYPES.contains(flowNode.getType())) {
           eventDtos.add(
             createCamundaEventTypeDto(
               definitionKey,
@@ -236,18 +231,18 @@ public class CamundaEventService {
       .collect(Collectors.toList());
   }
 
-  private BpmnModelInstance getBpmnModelInstance(final String userId,
-                                                 final CamundaEventSourceEntryDto camundaEventSourceEntryDto) {
+  private ProcessDefinitionOptimizeDto getProcessDefinition(final String userId,
+                                                            final CamundaEventSourceEntryDto camundaEventSourceEntryDto) {
     final CamundaEventSourceConfigDto eventSourceConfig = camundaEventSourceEntryDto.getConfiguration();
-    final String processDefinitionXml = definitionService
-      .getDefinitionXml(DefinitionType.PROCESS, userId, eventSourceConfig.getProcessDefinitionKey(),
-                        eventSourceConfig.getVersions(), eventSourceConfig.getTenants()
+    final DefinitionOptimizeResponseDto processDefinitionWithXml = definitionService
+      .getDefinitionWithXml(DefinitionType.PROCESS, userId, eventSourceConfig.getProcessDefinitionKey(),
+                            eventSourceConfig.getVersions(), eventSourceConfig.getTenants()
       )
       .orElseThrow(() -> new OptimizeValidationException(String.format(
         "Could not find process definition for eventSource entry: [key: %s, versions: %s, tenants: %s].",
         eventSourceConfig.getProcessDefinitionKey(), eventSourceConfig.getVersions(), eventSourceConfig.getTenants()
       )));
-    return parseBpmnModel(processDefinitionXml);
+    return (ProcessDefinitionOptimizeDto) processDefinitionWithXml;
   }
 
   private OrderedEventDto mapToEventDto(final CamundaActivityEventDto camundaActivityEventDto) {

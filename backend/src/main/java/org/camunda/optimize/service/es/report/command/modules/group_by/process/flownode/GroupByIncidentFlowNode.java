@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -35,6 +36,7 @@ import java.util.Map;
 import static org.camunda.optimize.service.es.filter.util.IncidentFilterQueryUtil.createIncidentAggregationFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENT_ACTIVITY_ID;
+import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
@@ -74,7 +76,8 @@ public class GroupByIncidentFlowNode extends ProcessGroupByPart {
     final Filter filterAgg = nestedAgg.getAggregations().get(FILTERED_INCIDENT_AGGREGATION);
     final Terms groupedByFlowNodeId = filterAgg.getAggregations().get(GROUPED_BY_FLOW_NODE_ID_AGGREGATION);
 
-    final Map<String, String> flowNodeNames = getFlowNodeNames(context.getReportData());
+    final List<FlowNodeDataDto> flowNodeData = getFlowNodeData(context.getReportData());
+    final Map<String, String> flowNodeNames = extractFlowNodeNames(flowNodeData);
     final List<CompositeCommandResult.GroupByResult> groupedData = new ArrayList<>();
     for (Terms.Bucket flowNodeBucket : groupedByFlowNodeId.getBuckets()) {
       final String flowNodeKey = flowNodeBucket.getKeyAsString();
@@ -87,7 +90,6 @@ public class GroupByIncidentFlowNode extends ProcessGroupByPart {
       }
     }
     addMissingGroupByIncidentKeys(flowNodeNames, groupedData, context);
-
     compositeCommandResult.setGroups(groupedData);
   }
 
@@ -113,7 +115,7 @@ public class GroupByIncidentFlowNode extends ProcessGroupByPart {
     }
   }
 
-  private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {
+  private List<FlowNodeDataDto> getFlowNodeData(final ProcessReportDataDto reportData) {
     return definitionService
       .getDefinition(
         DefinitionType.PROCESS,
@@ -121,8 +123,8 @@ public class GroupByIncidentFlowNode extends ProcessGroupByPart {
         reportData.getDefinitionVersions(),
         reportData.getTenantIds()
       )
-      .map(def -> ((ProcessDefinitionOptimizeDto) def).getFlowNodeNames())
-      .orElse(Collections.emptyMap());
+      .map(def -> ((ProcessDefinitionOptimizeDto) def).getFlowNodeData())
+      .orElse(Collections.emptyList());
   }
 
   @Override
