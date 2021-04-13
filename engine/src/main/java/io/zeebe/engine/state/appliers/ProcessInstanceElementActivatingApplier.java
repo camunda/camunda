@@ -60,6 +60,21 @@ final class ProcessInstanceElementActivatingApplier
 
     if (flowScopeInstance == null) {
       // process instance level
+      final var parentElementInstance =
+          elementInstanceState.getInstance(value.getParentElementInstanceKey());
+      if (parentElementInstance == null) {
+        // root process (not a child process)
+        return;
+      }
+
+      // this check is not really necessary: if parentElementInstance exists,
+      // it should always be a call-activity, but let's try to be safe
+      final var parentElementType = parentElementInstance.getValue().getBpmnElementType();
+      if (parentElementType == BpmnElementType.CALL_ACTIVITY) {
+        parentElementInstance.setCalledChildInstanceKey(elementInstanceKey);
+        elementInstanceState.updateInstance(parentElementInstance);
+      }
+
       return;
     }
 

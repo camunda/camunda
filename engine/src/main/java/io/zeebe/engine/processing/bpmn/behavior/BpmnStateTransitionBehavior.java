@@ -24,7 +24,6 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedProcess;
-import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -193,21 +192,6 @@ public final class BpmnStateTransitionBehavior {
   }
 
   /** @return context with updated intent */
-  public BpmnElementContext terminate(final BpmnElementContext context) {
-    final var isMigrated = MigratedStreamProcessors.isMigrated(context.getBpmnElementType());
-
-    if (isMigrated) {
-      commandWriter.appendFollowUpCommand(
-          context.getElementInstanceKey(),
-          ProcessInstanceIntent.TERMINATE_ELEMENT,
-          context.getRecordValue());
-      return context;
-    } else {
-      return transitionToTerminating(context);
-    }
-  }
-
-  /** @return context with updated intent */
   public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
     final var isMigrated = MigratedStreamProcessors.isMigrated(context.getBpmnElementType());
     if (isMigrated && context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
@@ -297,6 +281,19 @@ public final class BpmnStateTransitionBehavior {
 
     } else {
       transitionToCompleting(context);
+    }
+  }
+
+  public void terminateElement(final BpmnElementContext context) {
+
+    if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      commandWriter.appendFollowUpCommand(
+          context.getElementInstanceKey(),
+          ProcessInstanceIntent.TERMINATE_ELEMENT,
+          context.getRecordValue());
+
+    } else {
+      transitionToTerminating(context);
     }
   }
 
@@ -545,10 +542,16 @@ public final class BpmnStateTransitionBehavior {
       final BpmnElementContext context) {
     stateBehavior
         .getCalledChildInstance(context)
-        .filter(ElementInstance::canTerminate)
-        .map(child -> context.copy(child.getKey(), child.getValue(), child.getState()))
         .ifPresentOrElse(
-            childInstanceContext -> terminate(childInstanceContext),
+            child -> {
+              if (!MigratedStreamProcessors.isMigrated(child.getValue().getBpmnElementType())) {
+                // can't use transitionToTerminating because it would register the state transition
+                streamWriter.appendFollowUpEvent(
+                    child.getKey(), ProcessInstanceIntent.ELEMENT_TERMINATING, child.getValue());
+              } else {
+                terminateElement(context.copy(child.getKey(), child.getValue(), child.getState()));
+              }
+            },
             () -> containerProcessor.onChildTerminated(element, context, null));
   }
 
