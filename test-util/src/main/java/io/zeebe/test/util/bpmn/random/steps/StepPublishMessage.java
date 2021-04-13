@@ -31,6 +31,19 @@ public final class StepPublishMessage extends AbstractExecutionStep {
   }
 
   @Override
+  public boolean isAutomatic() {
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = messageName != null ? messageName.hashCode() : 0;
+    result = 31 * result + (correlationKeyValue != null ? correlationKeyValue.hashCode() : 0);
+    result = 31 * result + variables.hashCode();
+    return result;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -51,13 +64,5 @@ public final class StepPublishMessage extends AbstractExecutionStep {
     }
 
     return variables.equals(that.variables);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = messageName != null ? messageName.hashCode() : 0;
-    result = 31 * result + (correlationKeyValue != null ? correlationKeyValue.hashCode() : 0);
-    result = 31 * result + variables.hashCode();
-    return result;
   }
 }

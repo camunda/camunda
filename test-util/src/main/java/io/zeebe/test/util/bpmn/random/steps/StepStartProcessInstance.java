@@ -23,6 +23,18 @@ public final class StepStartProcessInstance extends AbstractExecutionStep {
   }
 
   @Override
+  public boolean isAutomatic() {
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = processId != null ? processId.hashCode() : 0;
+    result = 31 * result + variables.hashCode();
+    return result;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -37,12 +49,5 @@ public final class StepStartProcessInstance extends AbstractExecutionStep {
       return false;
     }
     return variables.equals(that.variables);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = processId != null ? processId.hashCode() : 0;
-    result = 31 * result + variables.hashCode();
-    return result;
   }
 }

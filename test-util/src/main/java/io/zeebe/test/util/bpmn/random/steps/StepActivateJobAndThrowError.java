@@ -27,6 +27,19 @@ public class StepActivateJobAndThrowError extends AbstractExecutionStep {
   }
 
   @Override
+  public boolean isAutomatic() {
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = jobType != null ? jobType.hashCode() : 0;
+    result = 31 * result + (errorCode != null ? errorCode.hashCode() : 0);
+    result = 31 * result + variables.hashCode();
+    return result;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -44,13 +57,5 @@ public class StepActivateJobAndThrowError extends AbstractExecutionStep {
       return false;
     }
     return variables.equals(that.variables);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = jobType != null ? jobType.hashCode() : 0;
-    result = 31 * result + (errorCode != null ? errorCode.hashCode() : 0);
-    result = 31 * result + variables.hashCode();
-    return result;
   }
 }

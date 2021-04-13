@@ -22,8 +22,6 @@ import io.zeebe.test.util.bpmn.random.steps.StepActivateAndFailJob;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateAndTimeoutJob;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateJobAndThrowError;
 import io.zeebe.test.util.bpmn.random.steps.StepExpressionIncidentCase;
-import io.zeebe.test.util.bpmn.random.steps.StepPickConditionCase;
-import io.zeebe.test.util.bpmn.random.steps.StepPickDefaultCase;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
@@ -48,7 +46,9 @@ public class ProcessExecutor {
 
   public void applyStep(final AbstractExecutionStep step) {
 
-    if (step instanceof StepStartProcessInstance) {
+    if (step.isAutomatic()) {
+      // Nothing to do here, as the step execution is controlled by the engine
+    } else if (step instanceof StepStartProcessInstance) {
       final StepStartProcessInstance startProcess = (StepStartProcessInstance) step;
       createProcessInstance(startProcess);
     } else if (step instanceof StepPublishStartMessage) {
@@ -70,14 +70,6 @@ public class ProcessExecutor {
       final StepActivateJobAndThrowError activateJobAndThrowError =
           (StepActivateJobAndThrowError) step;
       activateJobAndThrowError(activateJobAndThrowError);
-    } else if ((step instanceof StepPickDefaultCase) || (step instanceof StepPickConditionCase)) {
-      /*
-       * Nothing to do here, as the choice is made by the engine. The default case is for debugging
-       * purposes only The condition case is implemented by starting the process with the right
-       * variables;
-       *
-       * One thing that might be a useful addition here is to wait until a certain path was taken to improve debugging
-       */
     } else if (step instanceof StepExpressionIncidentCase) {
       final var expressionIncident = (StepExpressionIncidentCase) step;
       resolveExpressionIncident(expressionIncident);

@@ -22,6 +22,16 @@ public final class StepTriggerTimerStartEvent extends AbstractExecutionStep {
   }
 
   @Override
+  public boolean isAutomatic() {
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return getTimeToAdd() != null ? getTimeToAdd().hashCode() : 0;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -35,10 +45,5 @@ public final class StepTriggerTimerStartEvent extends AbstractExecutionStep {
     return getTimeToAdd() != null
         ? getTimeToAdd().equals(that.getTimeToAdd())
         : that.getTimeToAdd() == null;
-  }
-
-  @Override
-  public int hashCode() {
-    return getTimeToAdd() != null ? getTimeToAdd().hashCode() : 0;
   }
 }
