@@ -154,12 +154,14 @@ public final class ReplayStateTest {
                     .startEvent()
                     .callActivity("call-child", b -> b.zeebeProcessId(PROCESS_CHILD_ID))
                     .boundaryEvent("timer", b -> b.cancelActivity(true))
-                    .timerWithDuration("PT0S")
+                    .timerWithDuration("PT1M")
                     .endEvent("end")
                     .done())
             .withExecution(
                 engine -> {
                   final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                  RecordingExporter.jobRecords(JobIntent.CREATED).await();
+                  engine.getClock().addTime(Duration.ofMinutes(1));
                   return RecordingExporter.processInstanceRecords(
                           ProcessInstanceIntent.ELEMENT_COMPLETED)
                       .withProcessInstanceKey(piKey)
