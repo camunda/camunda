@@ -156,13 +156,13 @@ public final class AtomixLogStorageRule extends ExternalResource
   }
 
   public CompletableFuture<Void> compact(final long index) {
-    raftLog.compact(index);
+    raftLog.deleteUntil(index);
     return CompletableFuture.completedFuture(null);
   }
 
   @Override
-  public RaftLogReader create(final long index, final Mode mode) {
-    return raftLog.openReader(index, mode);
+  public RaftLogReader create(final Mode mode) {
+    return raftLog.openReader(mode);
   }
 
   public void setPositionListener(final LongConsumer positionListener) {
