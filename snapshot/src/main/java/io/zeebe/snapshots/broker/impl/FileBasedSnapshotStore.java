@@ -82,7 +82,9 @@ public final class FileBasedSnapshotStore extends Actor
   private FileBasedSnapshot loadLatestSnapshot(final Path snapshotDirectory) {
     FileBasedSnapshot latestPersistedSnapshot = null;
     final List<FileBasedSnapshot> snapshots = new ArrayList<>();
-    try (final var stream = Files.newDirectoryStream(snapshotDirectory)) {
+    try (final var stream =
+        Files.newDirectoryStream(
+            snapshotDirectory, path -> !path.toString().endsWith(CHECKSUM_SUFFIX))) {
       for (final var path : stream) {
         final var snapshot = collectSnapshot(path);
         if (snapshot != null) {
@@ -93,6 +95,7 @@ public final class FileBasedSnapshotStore extends Actor
           }
         }
       }
+
       // Delete older snapshots
       if (latestPersistedSnapshot != null) {
         snapshots.remove(latestPersistedSnapshot);
