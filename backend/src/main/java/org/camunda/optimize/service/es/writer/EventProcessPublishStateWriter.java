@@ -123,7 +123,7 @@ public class EventProcessPublishStateWriter {
     }
   }
 
-  public boolean deleteAllEventProcessPublishStatesForEventProcessMappingId(final String eventProcessMappingId) {
+  public boolean markAsDeletedAllEventProcessPublishStatesForEventProcessMappingId(final String eventProcessMappingId) {
     final String updateItem = String.format(
       "event process publish state with %s [%s]",
       EventProcessPublishStateIndex.PROCESS_MAPPING_ID,
@@ -149,7 +149,7 @@ public class EventProcessPublishStateWriter {
     );
   }
 
-  public boolean deleteAllEventProcessPublishStatesForEventProcessMappingIdExceptOne(
+  public void markAsDeletedPublishStatesForEventProcessMappingIdExcludingPublishStateId(
     final String eventProcessMappingId,
     final String publishStateIdToExclude) {
     final String updateItem = String.format(
@@ -173,8 +173,7 @@ public class EventProcessPublishStateWriter {
       .must(termQuery(EventProcessPublishStateIndex.PROCESS_MAPPING_ID, eventProcessMappingId))
       .mustNot(termQuery(EventProcessPublishStateIndex.ID, publishStateIdToExclude));
 
-
-    return ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
       updateItem,
       updateScript,

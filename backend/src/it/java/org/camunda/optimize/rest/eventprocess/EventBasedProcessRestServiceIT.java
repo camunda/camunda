@@ -33,12 +33,16 @@ import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.camunda.optimize.service.util.configuration.EventBasedProcessConfiguration;
 import org.camunda.optimize.util.BpmnModels;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -958,7 +962,9 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
 
     // when
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    publishMappingAndExecuteImport(eventProcessId);
+    final EventProcessPublishStateDto publishState = getEventProcessPublishStateDto(eventProcessId);
+    assertThat(eventInstanceIndexForPublishStateExists(publishState)).isTrue();
 
     final EventProcessMappingDto updateDto = eventProcessClient
       .buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
@@ -967,11 +973,14 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     eventProcessClient.updateEventProcessMapping(eventProcessId, updateDto);
 
     LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusSeconds(1));
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    publishMappingAndExecuteImport(eventProcessId);
+    assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();
 
     final EventProcessMappingResponseDto republishedEventProcessMapping = eventProcessClient.getEventProcessMapping(
       eventProcessId
     );
+    final EventProcessPublishStateDto republishedPublishState = getEventProcessPublishStateDto(eventProcessId);
+    assertThat(eventInstanceIndexForPublishStateExists(republishedPublishState)).isTrue();
 
     // then
     assertThat(republishedEventProcessMapping.getState()).isEqualTo(EventProcessState.PUBLISH_PENDING);
@@ -1207,13 +1216,17 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
     String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
 
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    publishMappingAndExecuteImport(eventProcessId);
+    final EventProcessPublishStateDto publishState = getEventProcessPublishStateDto(eventProcessId);
+    assertThat(eventInstanceIndexForPublishStateExists(publishState)).isTrue();
 
     // when
     eventProcessClient.deleteEventProcessMapping(eventProcessId);
+    embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler().runImportRound();
 
     // then
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).isEmpty();
+    assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();
   }
 
   @Test
@@ -1223,7 +1236,9 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
     String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
 
-    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
+    publishMappingAndExecuteImport(eventProcessDefinitionKey);
+    EventProcessPublishStateDto publishState = getEventProcessPublishStateDto(eventProcessDefinitionKey);
+    assertThat(eventInstanceIndexForPublishStateExists(publishState)).isTrue();
 
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -1261,6 +1276,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
     // when the event process is deleted
     eventProcessClient.deleteEventProcessMapping(eventProcessDefinitionKey);
+    embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler().runImportRound();
 
     // then the event process is deleted and the associated resources are cleaned up
     eventProcessClient.createGetEventProcessMappingRequest(eventProcessDefinitionKey)
@@ -1279,6 +1295,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .extracting("id")
       .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey)).isEmpty();
+    assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();
   }
 
   @Test
@@ -1388,7 +1405,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   public void deleteEventProcessMapping_notExists() {
     // when
     Response response = eventProcessClient
-      .createDeleteEventProcessMappingRequest("doesNotMatter")
+      .createDeleteEventProcessMappingRequest("doesNotExist")
       .execute();
 
     // then
@@ -1456,6 +1473,31 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
         }
       })
       .collect(Collectors.toList());
+  }
+
+  private EventProcessPublishStateDto getEventProcessPublishStateDto(final String processMappingId) {
+    return getEventProcessPublishStateDtoFromElasticsearch(processMappingId)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not fetch publish state for process mapping"));
+  }
+
+  private boolean eventInstanceIndexForPublishStateExists(final EventProcessPublishStateDto publishState) {
+    Map<String, List<AliasMetadata>> currentIndices = new HashMap<>();
+    try {
+      currentIndices = getEventProcessInstanceIndicesWithAliasesFromElasticsearch();
+    } catch (ElasticsearchStatusException ex) {
+      if (InstanceIndexUtil.isInstanceIndexNotFoundException(ex)) {
+        return false;
+      }
+    }
+    return currentIndices.containsKey(
+      embeddedOptimizeExtension.getIndexNameService()
+        .getOptimizeIndexNameWithVersion(new EventProcessInstanceIndex(publishState.getId())));
+  }
+
+  private void publishMappingAndExecuteImport(final String eventProcessId) {
+    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    // we execute the import cycle so the event instance index gets created
+    executeImportCycle();
   }
 
 }

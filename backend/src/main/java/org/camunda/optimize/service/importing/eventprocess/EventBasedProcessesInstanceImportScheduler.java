@@ -66,7 +66,6 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
 
   public Future<Void> runImportRound(final boolean forceImport) {
     eventBasedProcessIndexManager.syncAvailableIndices();
-    eventBasedProcessIndexManager.cleanupIndexes();
     instanceImportMediatorManager.refreshMediators();
     publishStateUpdateService.updateEventProcessPublishStates();
     eventProcessDefinitionImportService.syncPublishedEventProcessDefinitions();

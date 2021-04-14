@@ -205,7 +205,8 @@ public class EventProcessService {
     reportService.deleteAllReportsForProcessDefinitionKey(eventProcessMappingId);
     collectionWriter.deleteScopeEntryFromAllCollections(CollectionScopeEntryDto.convertTypeAndKeyToScopeEntryId(
       PROCESS, eventProcessMappingId));
-    eventProcessPublishStateWriter.deleteAllEventProcessPublishStatesForEventProcessMappingId(eventProcessMappingId);
+    eventProcessPublishStateWriter.markAsDeletedAllEventProcessPublishStatesForEventProcessMappingId(
+      eventProcessMappingId);
     return eventProcessMappingWriter.deleteEventProcessMapping(eventProcessMappingId);
   }
 
@@ -287,7 +288,7 @@ public class EventProcessService {
 
     final IdResponseDto processPublishStateId =
       eventProcessPublishStateWriter.createEventProcessPublishState(processPublishState);
-    eventProcessPublishStateWriter.deleteAllEventProcessPublishStatesForEventProcessMappingIdExceptOne(
+    eventProcessPublishStateWriter.markAsDeletedPublishStatesForEventProcessMappingIdExcludingPublishStateId(
       eventProcessMappingId,
       processPublishStateId.getId()
     );
@@ -360,7 +361,7 @@ public class EventProcessService {
     }
 
     final boolean publishWasCanceledSuccessfully = eventProcessPublishStateWriter
-      .deleteAllEventProcessPublishStatesForEventProcessMappingId(eventProcessMappingId);
+      .markAsDeletedAllEventProcessPublishStatesForEventProcessMappingId(eventProcessMappingId);
 
     if (!publishWasCanceledSuccessfully) {
       final String message = String.format(

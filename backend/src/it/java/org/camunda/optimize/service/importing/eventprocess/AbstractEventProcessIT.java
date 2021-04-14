@@ -288,7 +288,6 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
         EsEventProcessPublishStateDto.class
       ).toEventProcessPublishStateDto();
     }
-
     return Optional.ofNullable(result);
   }
 
