@@ -32,6 +32,7 @@ spec:
       containers:
         - name: cambpm
           image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION}
+          imagePullPolicy: Always
           env:
             - name: JAVA_OPTS
               value: "-Xms4g -Xmx4g -XX:MaxMetaspaceSize=256m"

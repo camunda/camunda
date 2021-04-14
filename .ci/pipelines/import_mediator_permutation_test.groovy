@@ -73,6 +73,7 @@ spec:
         mountPath: /cambpm-storage
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
+    imagePullPolicy: Always
     tty: true
     env:
       - name: JAVA_OPTS

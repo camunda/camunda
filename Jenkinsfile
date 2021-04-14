@@ -108,6 +108,7 @@ String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false, In
   return """
   - name: cambpm
     image: ${camBpmDockerImage}
+    imagePullPolicy: Always
     tty: true
     env:
       - name: JAVA_OPTS

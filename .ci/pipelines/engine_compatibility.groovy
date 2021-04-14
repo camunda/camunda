@@ -101,6 +101,7 @@ String camBpmContainerSpec(String camBpmVersion) {
   return """
   - name: cambpm
     image: ${camBpmDockerImage}
+    imagePullPolicy: Always
     tty: true
     env:
       - name: JAVA_OPTS

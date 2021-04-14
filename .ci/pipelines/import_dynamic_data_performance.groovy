@@ -105,6 +105,7 @@ spec:
         memory: 1Gi
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
+    imagePullPolicy: Always
     env:
       - name: DB_DRIVER
         value: org.postgresql.Driver

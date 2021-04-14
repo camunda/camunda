@@ -61,6 +61,7 @@ spec:
         memory: 8Gi
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
+    imagePullPolicy: Always
     env:
       - name: JAVA_OPTS
         value: "-Xms3g -Xmx3g -XX:MaxMetaspaceSize=256m"

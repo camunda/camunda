@@ -84,6 +84,7 @@ spec:
 ################################################################################
       - name: cambpm
         image: "camunda/camunda-bpm-platform:@CAMBPM_VERSION@"
+        imagePullPolicy: Always
         command: ["/camunda/configure-and-run.sh"]
         env:
         - name: JAVA_OPTS

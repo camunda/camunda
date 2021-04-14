@@ -133,6 +133,7 @@ static String camBpmContainerSpec(String camBpmVersion) {
   return """
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(camBpmVersion)}
+    imagePullPolicy: Always
     tty: true
     env:
       - name: JAVA_OPTS

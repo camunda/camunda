@@ -66,6 +66,7 @@ static String camBpmContainerSpec(String camBpmVersion) {
   return """
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(camBpmVersion)}
+    imagePullPolicy: Always
     env:
       - name: JAVA_OPTS
         value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"

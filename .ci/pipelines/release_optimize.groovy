@@ -160,6 +160,7 @@ spec:
         memory: 2Gi
   - name: cambpm
     image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}
+    imagePullPolicy: Always
     tty: true
     env:
     - name: JAVA_OPTS
