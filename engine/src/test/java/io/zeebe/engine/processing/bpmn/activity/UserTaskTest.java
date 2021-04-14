@@ -19,6 +19,7 @@ import io.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -70,10 +71,12 @@ public final class UserTaskTest {
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.USER_TASK)
-                .limit(2))
-        .extracting(Record::getIntent)
+                .limit(3))
+        .extracting(Record::getRecordType, Record::getIntent)
         .containsSequence(
-            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+            tuple(RecordType.COMMAND, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(RecordType.EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(RecordType.EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED));
 
     final Record<ProcessInstanceRecordValue> userTask =
         RecordingExporter.processInstanceRecords()

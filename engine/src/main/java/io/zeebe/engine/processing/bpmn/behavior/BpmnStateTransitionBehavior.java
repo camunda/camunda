@@ -37,6 +37,10 @@ public final class BpmnStateTransitionBehavior {
       "The Processor for the element type %s is already migrated no need to call %s again this is already done in the BpmnStreamProcessor for you. Happy to help :) ";
   private static final String NO_PROCESS_FOUND_MESSAGE =
       "Expected to find a deployed process for process id '%s', but none found.";
+
+  private final ProcessInstanceRecord childInstanceRecord = new ProcessInstanceRecord();
+  private final ProcessInstanceRecord followUpInstanceRecord = new ProcessInstanceRecord();
+
   private final TypedStreamWriter streamWriter;
   private final KeyGenerator keyGenerator;
   private final BpmnStateBehavior stateBehavior;
@@ -45,7 +49,6 @@ public final class BpmnStateTransitionBehavior {
 
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final ProcessEngineMetrics metrics;
-  private final ProcessInstanceRecord childInstanceRecord = new ProcessInstanceRecord();
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final MutableElementInstanceState elementInstanceState;
@@ -250,11 +253,10 @@ public final class BpmnStateTransitionBehavior {
       final BpmnElementContext context, final ExecutableSequenceFlow sequenceFlow) {
     verifyTransition(context, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
-    final var record =
-        context
-            .getRecordValue()
-            .setElementId(sequenceFlow.getId())
-            .setBpmnElementType(sequenceFlow.getElementType());
+    followUpInstanceRecord.wrap(context.getRecordValue());
+    followUpInstanceRecord
+        .setElementId(sequenceFlow.getId())
+        .setBpmnElementType(sequenceFlow.getElementType());
 
     final var sequenceFlowKey = keyGenerator.nextKey();
 
@@ -264,10 +266,10 @@ public final class BpmnStateTransitionBehavior {
       elementInstanceState.updateInstance(flowScopeInstance);
 
       streamWriter.appendFollowUpEvent(
-          sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
+          sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, followUpInstanceRecord);
     } else {
       stateWriter.appendFollowUpEvent(
-          sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, record);
+          sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, followUpInstanceRecord);
     }
   }
 
@@ -300,12 +302,11 @@ public final class BpmnStateTransitionBehavior {
   public void activateChildInstance(
       final BpmnElementContext context, final ExecutableFlowElement childElement) {
 
-    final var childInstanceRecord =
-        context
-            .getRecordValue()
-            .setFlowScopeKey(context.getElementInstanceKey())
-            .setElementId(childElement.getId())
-            .setBpmnElementType(childElement.getElementType());
+    childInstanceRecord.wrap(context.getRecordValue());
+    childInstanceRecord
+        .setFlowScopeKey(context.getElementInstanceKey())
+        .setElementId(childElement.getId())
+        .setBpmnElementType(childElement.getElementType());
 
     if (MigratedStreamProcessors.isMigrated(childElement.getElementType())) {
       commandWriter.appendNewCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
@@ -318,12 +319,11 @@ public final class BpmnStateTransitionBehavior {
   public long activateChildInstanceWithKey(
       final BpmnElementContext context, final ExecutableFlowElement childElement) {
 
-    final var childInstanceRecord =
-        context
-            .getRecordValue()
-            .setFlowScopeKey(context.getElementInstanceKey())
-            .setElementId(childElement.getId())
-            .setBpmnElementType(childElement.getElementType());
+    childInstanceRecord.wrap(context.getRecordValue());
+    childInstanceRecord
+        .setFlowScopeKey(context.getElementInstanceKey())
+        .setElementId(childElement.getId())
+        .setBpmnElementType(childElement.getElementType());
 
     final long childInstanceKey = keyGenerator.nextKey();
     if (MigratedStreamProcessors.isMigrated(childElement.getElementType())) {
@@ -340,18 +340,17 @@ public final class BpmnStateTransitionBehavior {
   public void activateElementInstanceInFlowScope(
       final BpmnElementContext context, final ExecutableFlowElement element) {
 
-    final var elementInstanceRecord =
-        context
-            .getRecordValue()
-            .setFlowScopeKey(context.getFlowScopeKey())
-            .setElementId(element.getId())
-            .setBpmnElementType(element.getElementType());
+    followUpInstanceRecord.wrap(context.getRecordValue());
+    followUpInstanceRecord
+        .setFlowScopeKey(context.getFlowScopeKey())
+        .setElementId(element.getId())
+        .setBpmnElementType(element.getElementType());
 
     final var elementInstanceKey = keyGenerator.nextKey();
 
     if (MigratedStreamProcessors.isMigrated(element.getElementType())) {
       commandWriter.appendFollowUpCommand(
-          elementInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, elementInstanceRecord);
+          elementInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, followUpInstanceRecord);
     } else {
       // For migrated processors the active sequence flow count is decremented in the
       // *ActivatingApplier. For non migrated we do it here, otherwise we can't complete the process
@@ -362,10 +361,10 @@ public final class BpmnStateTransitionBehavior {
       elementInstanceState.updateInstance(flowScopeInstance);
 
       streamWriter.appendFollowUpEvent(
-          elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, elementInstanceRecord);
+          elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, followUpInstanceRecord);
 
       stateBehavior.createElementInstanceInFlowScope(
-          context, elementInstanceKey, elementInstanceRecord);
+          context, elementInstanceKey, followUpInstanceRecord);
     }
   }
 

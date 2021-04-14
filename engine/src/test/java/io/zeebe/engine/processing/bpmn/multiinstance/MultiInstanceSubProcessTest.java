@@ -19,6 +19,7 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -162,7 +163,7 @@ public final class MultiInstanceSubProcessTest {
     RecordingExporter.jobRecords(JobIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .limit(3)
-        .exists();
+        .await();
 
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
@@ -172,16 +173,16 @@ public final class MultiInstanceSubProcessTest {
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceTerminated())
-        .extracting(r -> r.getValue().getElementId())
+        .extracting(r -> r.getValue().getBpmnElementType())
         .containsExactly(
-            TASK_ELEMENT_ID,
-            TASK_ELEMENT_ID,
-            TASK_ELEMENT_ID,
-            SUB_PROCESS_ELEMENT_ID,
-            SUB_PROCESS_ELEMENT_ID,
-            SUB_PROCESS_ELEMENT_ID,
-            SUB_PROCESS_ELEMENT_ID,
-            PROCESS_ID);
+            BpmnElementType.SERVICE_TASK,
+            BpmnElementType.SUB_PROCESS,
+            BpmnElementType.SERVICE_TASK,
+            BpmnElementType.SUB_PROCESS,
+            BpmnElementType.SERVICE_TASK,
+            BpmnElementType.SUB_PROCESS,
+            BpmnElementType.MULTI_INSTANCE_BODY,
+            BpmnElementType.PROCESS);
   }
 
   @Test

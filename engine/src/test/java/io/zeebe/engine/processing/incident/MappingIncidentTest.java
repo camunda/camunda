@@ -74,10 +74,10 @@ public final class MappingIncidentTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
     // then
-    final Record failureEvent =
+    final Record failureCommand =
         RecordingExporter.processInstanceRecords()
             .withElementId("failingTask")
-            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withIntent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     final Record createIncidentEvent =
@@ -94,10 +94,11 @@ public final class MappingIncidentTest {
             .getFirst();
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertThat(createIncidentEvent.getSourceRecordPosition()).isEqualTo(failureEvent.getPosition());
+    assertThat(createIncidentEvent.getSourceRecordPosition())
+        .isEqualTo(failureCommand.getPosition());
     assertThat(incidentEvent.getSourceRecordPosition())
         .isEqualTo(createIncidentEvent.getPosition());
-    assertThat(incidentEvent.getValue().getVariableScopeKey()).isEqualTo(failureEvent.getKey());
+    assertThat(incidentEvent.getValue().getVariableScopeKey()).isEqualTo(failureCommand.getKey());
 
     final IncidentRecordValue incidentEventValue = incidentEvent.getValue();
     Assertions.assertThat(incidentEventValue)
@@ -106,8 +107,8 @@ public final class MappingIncidentTest {
         .hasProcessDefinitionKey(processDefinitionKey)
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
-        .hasElementInstanceKey(failureEvent.getKey())
-        .hasVariableScopeKey(failureEvent.getKey());
+        .hasElementInstanceKey(failureCommand.getKey())
+        .hasVariableScopeKey(failureCommand.getKey());
 
     assertThat(incidentEventValue.getErrorMessage()).contains("no variable found for name 'foo'");
   }
@@ -179,10 +180,10 @@ public final class MappingIncidentTest {
         .complete();
 
     // then
-    final Record failureEvent =
+    final Record failureCommand =
         RecordingExporter.processInstanceRecords()
             .withElementType(BpmnElementType.SERVICE_TASK)
-            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETING)
+            .withIntent(ProcessInstanceIntent.COMPLETE_ELEMENT)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
@@ -198,7 +199,8 @@ public final class MappingIncidentTest {
             .getFirst();
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertThat(createIncidentEvent.getSourceRecordPosition()).isEqualTo(failureEvent.getPosition());
+    assertThat(createIncidentEvent.getSourceRecordPosition())
+        .isEqualTo(failureCommand.getPosition());
     assertThat(incidentEvent.getSourceRecordPosition())
         .isEqualTo(createIncidentEvent.getPosition());
 
@@ -207,8 +209,8 @@ public final class MappingIncidentTest {
         .hasBpmnProcessId("process")
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
-        .hasElementInstanceKey(failureEvent.getKey())
-        .hasVariableScopeKey(failureEvent.getKey());
+        .hasElementInstanceKey(failureCommand.getKey())
+        .hasVariableScopeKey(failureCommand.getKey());
 
     assertThat(incidentEvent.getValue().getErrorMessage())
         .contains("no variable found for name 'foo'");
@@ -506,11 +508,11 @@ public final class MappingIncidentTest {
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
-    final Record activityTerminated =
+    final Record terminateActivity =
         RecordingExporter.processInstanceRecords()
             .withElementId("failingTask")
             .withProcessInstanceKey(processInstanceKey)
-            .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .withIntent(ProcessInstanceIntent.TERMINATE_ELEMENT)
             .getFirst();
 
     final Record<IncidentRecordValue> incidentResolvedEvent =
@@ -520,7 +522,7 @@ public final class MappingIncidentTest {
             .getFirst();
 
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
-    assertThat(activityTerminated.getPosition())
+    assertThat(terminateActivity.getPosition())
         .isEqualTo(incidentResolvedEvent.getSourceRecordPosition());
 
     Assertions.assertThat(incidentResolvedEvent.getValue())

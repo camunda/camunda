@@ -219,6 +219,9 @@ public final class MultiInstanceBodyProcessor
       final ExecutableMultiInstanceBody element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
+
+    boolean childInstanceCreated = false;
+
     final var loopCharacteristics = element.getLoopCharacteristics();
     if (loopCharacteristics.isSequential()) {
 
@@ -237,10 +240,14 @@ public final class MultiInstanceBodyProcessor
 
         final var item = inputCollection.get(loopCounter);
         createInnerInstance(element, flowScopeContext, item);
+
+        // canBeCompleted() doesn't take the created child instance into account because
+        // it wrote just a ACTIVATE command that create no new instance immediately
+        childInstanceCreated = true;
       }
     }
 
-    if (stateBehavior.canBeCompleted(childContext)) {
+    if (!childInstanceCreated && stateBehavior.canBeCompleted(childContext)) {
       stateTransitionBehavior.transitionToCompleting(flowScopeContext);
     }
   }

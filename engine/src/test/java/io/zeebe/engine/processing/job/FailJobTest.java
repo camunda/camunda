@@ -139,11 +139,10 @@ public final class FailJobTest {
     assertThat(jobBatchActivations.get(1).getValue().getJobKeys().get(0)).isEqualTo(jobKey);
 
     // and the job lifecycle is correct
-    final List<Record> jobEvents = jobRecords().limit(4).collect(Collectors.toList());
+    final List<Record> jobEvents = jobRecords().limit(3).collect(Collectors.toList());
     assertThat(jobEvents)
         .extracting(Record::getRecordType, Record::getValueType, Record::getIntent)
         .containsExactly(
-            tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.CREATED),
             tuple(RecordType.COMMAND, ValueType.JOB, FAIL),
             tuple(RecordType.EVENT, ValueType.JOB, FAILED));

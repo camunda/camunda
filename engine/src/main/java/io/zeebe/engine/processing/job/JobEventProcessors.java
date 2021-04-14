@@ -34,7 +34,6 @@ public final class JobEventProcessors {
     final var keyGenerator = zeebeState.getKeyGenerator();
 
     typedRecordProcessors
-        .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor())
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new JobCompleteProcessor(zeebeState, writers))
         .onCommand(ValueType.JOB, JobIntent.FAIL, new JobFailProcessor(zeebeState))
         .onCommand(
