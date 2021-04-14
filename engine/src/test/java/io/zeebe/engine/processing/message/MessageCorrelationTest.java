@@ -800,7 +800,9 @@ public final class MessageCorrelationTest {
             .endEvent("taskEnd")
             .done();
     engine.deployment().withXmlResource(process).deploy();
-    engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
+
+    final var processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     final PublishMessageClient messageClient =
@@ -820,7 +822,11 @@ public final class MessageCorrelationTest {
                 .count())
         .isEqualTo(3);
 
-    assertThat(RecordingExporter.variableRecords().withName("foo").limit(3))
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withName("foo")
+                .withScopeKey(processInstanceKey)
+                .limit(3))
         .extracting(r -> r.getValue().getValue())
         .containsExactly("0", "1", "2");
   }

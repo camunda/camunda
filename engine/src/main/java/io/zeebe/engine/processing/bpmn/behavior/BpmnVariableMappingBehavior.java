@@ -18,6 +18,7 @@ import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.Either;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -110,7 +111,8 @@ public final class BpmnVariableMappingBehavior {
 
       variablesState.removeTemporaryVariables(elementInstanceKey);
 
-    } else if (isConnectedToEventBasedGateway(element)) {
+    } else if (isConnectedToEventBasedGateway(element)
+        || element.getElementType() == BpmnElementType.BOUNDARY_EVENT) {
       // event variables are set local variables instead of temporary variables
       final var localVariables = variablesState.getVariablesLocalAsDocument(elementInstanceKey);
       variableBehavior.mergeDocument(

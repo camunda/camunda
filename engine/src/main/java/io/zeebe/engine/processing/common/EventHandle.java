@@ -24,8 +24,11 @@ import io.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class EventHandle {
+
+  private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
   private final ProcessInstanceRecord recordForPICreation = new ProcessInstanceRecord();
   private final ProcessInstanceRecord eventOccurredRecord = new ProcessInstanceRecord();
@@ -91,6 +94,14 @@ public final class EventHandle {
       final ExecutableFlowElement catchEvent,
       final long eventScopeKey,
       final ProcessInstanceRecord elementRecord) {
+    activateElement(catchEvent, eventScopeKey, elementRecord, NO_VARIABLES);
+  }
+
+  public void activateElement(
+      final ExecutableFlowElement catchEvent,
+      final long eventScopeKey,
+      final ProcessInstanceRecord elementRecord,
+      final DirectBuffer variables) {
 
     if (MigratedStreamProcessors.isMigrated(elementRecord.getBpmnElementType())) {
 
@@ -104,7 +115,8 @@ public final class EventHandle {
             eventScopeKey, ProcessInstanceIntent.TERMINATE_ELEMENT, elementRecord);
 
       } else {
-        activateCatchEvent(catchEvent, eventScopeKey, elementRecord);
+        eventTriggerBehavior.activateTriggeredEvent(
+            catchEvent, eventScopeKey, elementRecord, variables);
       }
 
     } else {
@@ -137,20 +149,6 @@ public final class EventHandle {
     } else {
       return false;
     }
-  }
-
-  private void activateCatchEvent(
-      final ExecutableFlowElement catchEvent,
-      final long eventScopeKey,
-      final ProcessInstanceRecord elementRecord) {
-
-    elementRecord
-        .setBpmnElementType(catchEvent.getElementType())
-        .setElementId(catchEvent.getId())
-        .setFlowScopeKey(eventScopeKey);
-
-    // TODO (saig0): pass message variables for output mappings (temp/as local vars) (#6187)
-    commandWriter.appendNewCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
   }
 
   public long triggerStartEvent(

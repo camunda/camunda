@@ -17,6 +17,7 @@ import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
+import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
@@ -48,6 +49,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final MutableElementInstanceState elementInstanceState;
+
+  private boolean reprocessingMode = true;
 
   public BpmnStreamProcessor(
       final ExpressionProcessor expressionProcessor,
@@ -83,6 +86,11 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   }
 
   @Override
+  public void onRecovered(final ReadonlyProcessingContext context) {
+    reprocessingMode = false;
+  }
+
+  @Override
   public void processRecord(
       final TypedRecord<ProcessInstanceRecord> record,
       final TypedResponseWriter responseWriter,
@@ -100,6 +108,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     final var recordValue = record.getValue();
 
     context.init(record.getKey(), recordValue, intent);
+    context.setReprocessingMode(reprocessingMode);
 
     final var bpmnElementType = recordValue.getBpmnElementType();
     final var processor = processors.getProcessor(bpmnElementType);

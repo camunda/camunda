@@ -41,4 +41,7 @@ public interface BpmnElementContext {
 
   BpmnElementContext copy(
       long elementInstanceKey, ProcessInstanceRecord recordValue, ProcessInstanceIntent intent);
+
+  // TODO (saig0): remove when all processors are migrated (#6202)
+  boolean isInReprocessingMode();
 }
