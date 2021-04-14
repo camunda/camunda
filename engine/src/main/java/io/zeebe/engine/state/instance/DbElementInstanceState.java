@@ -154,9 +154,14 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       if (parentKey > 0) {
         final ElementInstance parentInstance = getInstance(parentKey);
         if (parentInstance == null) {
-          final var errorMsg =
-              "Expected to find parent instance for element instance with key %d, but none was found.";
-          throw new IllegalStateException(String.format(errorMsg, parentKey));
+          /// todo(zell): bring it back https://github.com/camunda-cloud/zeebe/issues/6202
+          // For now it is fine that parents might be not existing since they are already deleted,
+          // due to the migration
+          return;
+          //          final var errorMsg =
+          //              "Expected to find parent instance for element instance with key %d, but
+          // none was found.";
+          //          throw new IllegalStateException(String.format(errorMsg, parentKey));
         }
         parentInstance.decrementChildCount();
         updateInstance(parentInstance);
