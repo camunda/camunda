@@ -150,11 +150,23 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       }
 
       final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
-      elementInstanceState.newInstance(
-          flowScopeInstance,
-          context.getElementInstanceKey(),
-          context.getRecordValue(),
-          ProcessInstanceIntent.ELEMENT_ACTIVATING);
+      final var elementInstance =
+          elementInstanceState.newInstance(
+              flowScopeInstance,
+              context.getElementInstanceKey(),
+              context.getRecordValue(),
+              ProcessInstanceIntent.ELEMENT_ACTIVATING);
+
+      final var parentElementInstance =
+          elementInstanceState.getInstance(context.getRecordValue().getParentElementInstanceKey());
+      if (parentElementInstance == null
+          || context.getBpmnElementType() != BpmnElementType.PROCESS) {
+        // only connect to call activity for child processes
+        return;
+      }
+
+      parentElementInstance.setCalledChildInstanceKey(elementInstance.getKey());
+      elementInstanceState.updateInstance(parentElementInstance);
       return;
     }
 
