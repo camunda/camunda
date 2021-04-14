@@ -14,7 +14,6 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
@@ -78,8 +77,8 @@ final class ProcessInstanceElementActivatingApplier
     if (flowScopeElementType == BpmnElementType.MULTI_INSTANCE_BODY
         && MigratedStreamProcessors.isMigrated(currentElementType)) {
       // update the loop counter of the multi-instance body (starting by 1)
-      elementInstanceState.updateInstance(
-          value.getFlowScopeKey(), ElementInstance::incrementMultiInstanceLoopCounter);
+      flowScopeInstance.incrementMultiInstanceLoopCounter();
+      elementInstanceState.updateInstance(flowScopeInstance);
 
       // set the loop counter of the inner instance
       final var loopCounter = flowScopeInstance.getMultiInstanceLoopCounter();
