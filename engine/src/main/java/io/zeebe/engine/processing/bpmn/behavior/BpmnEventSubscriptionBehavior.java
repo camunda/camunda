@@ -278,7 +278,14 @@ public final class BpmnEventSubscriptionBehavior {
     }
   }
 
-  public boolean tryToActivateTriggeredStartEvent(final BpmnElementContext context) {
+  public Optional<EventTrigger> getEventTriggerForProcessDefinition(
+      final long processDefinitionKey) {
+    final var eventTrigger = eventScopeInstanceState.peekEventTrigger(processDefinitionKey);
+    return Optional.ofNullable(eventTrigger);
+  }
+
+  public void activateTriggeredStartEvent(
+      final BpmnElementContext context, final EventTrigger triggeredEvent) {
     final long processDefinitionKey = context.getProcessDefinitionKey();
     final long processInstanceKey = context.getProcessInstanceKey();
 
@@ -287,11 +294,6 @@ public final class BpmnEventSubscriptionBehavior {
       // this should never happen because processes are never deleted.
       throw new BpmnProcessingException(
           context, String.format(NO_PROCESS_FOUND_MESSAGE, processDefinitionKey));
-    }
-
-    final var triggeredEvent = eventScopeInstanceState.peekEventTrigger(processDefinitionKey);
-    if (triggeredEvent == null) {
-      return false;
     }
 
     final var record =
@@ -304,11 +306,6 @@ public final class BpmnEventSubscriptionBehavior {
     final var newEventInstanceKey = keyGenerator.nextKey();
     commandWriter.appendFollowUpCommand(
         newEventInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, record);
-
-    variablesState.setTemporaryVariables(newEventInstanceKey, triggeredEvent.getVariables());
-
-    eventScopeInstanceState.deleteTrigger(processDefinitionKey, triggeredEvent.getEventKey());
-    return true;
   }
 
   public void publishTriggeredEventSubProcess(

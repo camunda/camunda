@@ -108,7 +108,11 @@ public final class EventHandle {
       if (isElementActivated(catchEvent)) {
         commandWriter.appendFollowUpCommand(
             eventScopeKey, ProcessInstanceIntent.COMPLETE_ELEMENT, elementRecord);
+      } else if (catchEvent.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS) {
+        final var executableStartEvent = (ExecutableStartEvent) catchEvent;
 
+        eventTriggerBehavior.triggerEventSubProcess(
+            executableStartEvent, eventScopeKey, elementRecord);
       } else if (isInterrupting(catchEvent)) {
         // terminate the activated element and then activate the triggered catch event
         commandWriter.appendFollowUpCommand(
@@ -172,9 +176,6 @@ public final class EventHandle {
   public void activateProcessInstanceForStartEvent(
       final long processDefinitionKey, final long processInstanceKey) {
 
-    // todo: after migrating Process Processor we can write here the ACTIVATE command
-    // https://github.com/camunda-cloud/zeebe/issues/6194
-
     final var process = processState.getProcessByKey(processDefinitionKey);
 
     recordForPICreation
@@ -185,7 +186,7 @@ public final class EventHandle {
         .setElementId(process.getProcess().getId())
         .setBpmnElementType(process.getProcess().getElementType());
 
-    stateWriter.appendFollowUpEvent(
-        processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, recordForPICreation);
+    commandWriter.appendFollowUpCommand(
+        processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);
   }
 }

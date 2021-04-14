@@ -46,39 +46,30 @@ public final class ProcessProcessor
   }
 
   @Override
-  public void onActivating(
+  public void onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior
         .subscribeToEvents(element, context)
+        .map(o -> stateTransitionBehavior.transitionToActivated(context))
         .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToActivated(context),
+            activated -> {
+              if (element.hasMessageStartEvent() || element.hasTimerStartEvent()) {
+                eventSubscriptionBehavior
+                    .getEventTriggerForProcessDefinition(context.getProcessDefinitionKey())
+                    .ifPresentOrElse(
+                        eventTrigger ->
+                            eventSubscriptionBehavior.activateTriggeredStartEvent(
+                                context, eventTrigger),
+                        () -> activateNoneStartEvent(element, context));
+              } else {
+                activateNoneStartEvent(element, context);
+              }
+            },
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
-  public void onActivated(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-
-    if (element.hasMessageStartEvent() || element.hasTimerStartEvent()) {
-      // when the process element has a message or timer start event we
-      // need to verify whether it was triggered by one of them.
-      // For that we check the state whether there exist a event trigger and activate the
-      // corresponding
-      // start event
-      //
-      // We try to trigger this start event - if no trigger exist in the state then
-      // the none start event need to be activated wi triggered by timer or message then we need to
-      // write the activate command for the start event
-      if (!eventSubscriptionBehavior.tryToActivateTriggeredStartEvent(context)) {
-        // if we were not able to trigger the start event we need to activate the none start event
-        activateNoneStartEvent(element, context);
-      }
-    } else {
-      activateNoneStartEvent(element, context);
-    }
-  }
-
   @Override
   public void onCompleting(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
@@ -140,13 +131,6 @@ public final class ProcessProcessor
 
     stateBehavior.removeElementInstance(context);
   }
-
-  @Override
-  public void onEventOccurred(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-    throw new BpmnProcessingException(
-        context,
-        "Expected to handle occurred event on process, but events should not occur on process.");
   }
 
   private void activateNoneStartEvent(
