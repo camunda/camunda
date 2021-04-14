@@ -386,7 +386,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     final GraphQLResponse response =
         tester
             .having()
-            .deployProcess("eventSubProcess_v_1.bpmn")
+            .deployProcess("eventSubProcessWithTimers.bpmn")
             .waitUntil()
             .processIsDeployed()
             .and()
@@ -395,9 +395,9 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
             .taskIsCreated("parentProcessTask")
             .claimAndCompleteHumanTask("parentProcessTask")
             .waitUntil()
-            .taskIsCreated("taskInSubprocess")
-            .waitUntil()
             .taskIsCreated("subprocessTask")
+            .waitUntil()
+            .taskIsCreated("taskInSubprocess")
             .and()
             .taskIsCanceled("subprocessTask")
             .then()

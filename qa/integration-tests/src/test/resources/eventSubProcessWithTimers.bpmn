@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0uef7zo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.10.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0uef7zo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.9.1">
   <bpmn:process id="eventSubprocessProcess" name="Event Subprocess Process" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1vnazga">
       <bpmn:outgoing>SequenceFlow_0b1strv</bpmn:outgoing>
@@ -8,13 +8,10 @@
       <bpmn:incoming>SequenceFlow_0ogmd2w</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_0b1strv" sourceRef="StartEvent_1vnazga" targetRef="parentProcessTask" />
-    <bpmn:serviceTask id="parentProcessTask" name="Parent process task">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="humanTask" />
-      </bpmn:extensionElements>
+    <bpmn:userTask id="parentProcessTask" name="Parent process task">
       <bpmn:incoming>SequenceFlow_0b1strv</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1aytoqp</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:userTask>
     <bpmn:sequenceFlow id="SequenceFlow_1aytoqp" sourceRef="parentProcessTask" targetRef="ServiceTask_0ruokei" />
     <bpmn:subProcess id="ServiceTask_0ruokei">
       <bpmn:incoming>SequenceFlow_1aytoqp</bpmn:incoming>
@@ -22,13 +19,10 @@
       <bpmn:startEvent id="StartEvent_1dgs6mf">
         <bpmn:outgoing>SequenceFlow_03jyud1</bpmn:outgoing>
       </bpmn:startEvent>
-      <bpmn:serviceTask id="subprocessTask" name="Subprocess task">
-        <bpmn:extensionElements>
-          <zeebe:taskDefinition type="humanTask" />
-        </bpmn:extensionElements>
+      <bpmn:userTask id="subprocessTask" name="Subprocess task">
         <bpmn:incoming>SequenceFlow_03jyud1</bpmn:incoming>
         <bpmn:outgoing>SequenceFlow_1ey1yvq</bpmn:outgoing>
-      </bpmn:serviceTask>
+      </bpmn:userTask>
       <bpmn:sequenceFlow id="SequenceFlow_03jyud1" sourceRef="StartEvent_1dgs6mf" targetRef="subprocessTask" />
       <bpmn:endEvent id="EndEvent_171a64z">
         <bpmn:incoming>SequenceFlow_1ey1yvq</bpmn:incoming>
@@ -38,19 +32,16 @@
         <bpmn:endEvent id="EndEvent_0dq3i8l">
           <bpmn:incoming>SequenceFlow_0vkqogh</bpmn:incoming>
         </bpmn:endEvent>
-        <bpmn:serviceTask id="taskInSubprocess" name="Task in sub-subprocess">
-          <bpmn:extensionElements>
-            <zeebe:taskDefinition type="humanTask" />
-          </bpmn:extensionElements>
+        <bpmn:userTask id="taskInSubprocess" name="Task in sub-subprocess">
           <bpmn:incoming>SequenceFlow_1c82aad</bpmn:incoming>
           <bpmn:outgoing>SequenceFlow_0vkqogh</bpmn:outgoing>
-        </bpmn:serviceTask>
+        </bpmn:userTask>
         <bpmn:sequenceFlow id="SequenceFlow_1c82aad" sourceRef="StartEvent_0kpitfv" targetRef="taskInSubprocess" />
         <bpmn:sequenceFlow id="SequenceFlow_0vkqogh" sourceRef="taskInSubprocess" targetRef="EndEvent_0dq3i8l" />
         <bpmn:startEvent id="StartEvent_0kpitfv" name="Timer in sub-subprocess" isInterrupting="false">
           <bpmn:outgoing>SequenceFlow_1c82aad</bpmn:outgoing>
           <bpmn:timerEventDefinition>
-            <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R2/PT5S</bpmn:timeCycle>
+            <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R2/PT2S</bpmn:timeCycle>
           </bpmn:timerEventDefinition>
         </bpmn:startEvent>
       </bpmn:subProcess>
@@ -59,7 +50,7 @@
     <bpmn:boundaryEvent id="cancelTimerEvent" attachedToRef="ServiceTask_0ruokei">
       <bpmn:outgoing>Flow_1h1lp70</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_0ky4clc">
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT2S</bpmn:timeDuration>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT6S</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:boundaryEvent>
     <bpmn:endEvent id="Canceled">
@@ -79,6 +70,11 @@
   </bpmn:message>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="eventSubprocessProcess">
+      <bpmndi:BPMNEdge id="Flow_1h1lp70_di" bpmnElement="Flow_1h1lp70">
+        <di:waypoint x="910" y="473" />
+        <di:waypoint x="910" y="540" />
+        <di:waypoint x="1132" y="540" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SequenceFlow_0ogmd2w_di" bpmnElement="SequenceFlow_0ogmd2w">
         <di:waypoint x="1060" y="260" />
         <di:waypoint x="1142" y="260" />
@@ -91,19 +87,11 @@
         <di:waypoint x="188" y="270" />
         <di:waypoint x="284" y="270" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1h1lp70_di" bpmnElement="Flow_1h1lp70">
-        <di:waypoint x="910" y="473" />
-        <di:waypoint x="910" y="540" />
-        <di:waypoint x="1132" y="540" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="StartEvent_1vnazga_di" bpmnElement="StartEvent_1vnazga">
         <dc:Bounds x="152" y="252" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_03acvim_di" bpmnElement="EndEvent_03acvim">
         <dc:Bounds x="1142" y="242" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_00h4qe2_di" bpmnElement="Canceled">
-        <dc:Bounds x="1132" y="522" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ServiceTask_1daop2o_di" bpmnElement="parentProcessTask">
         <dc:Bounds x="284" y="230" width="100" height="80" />
@@ -150,6 +138,9 @@
         <bpmndi:BPMNLabel>
           <dc:Bounds x="610" y="360" width="64" height="27" />
         </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_00h4qe2_di" bpmnElement="Canceled">
+        <dc:Bounds x="1132" y="522" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0v1s39r_di" bpmnElement="cancelTimerEvent">
         <dc:Bounds x="892" y="437" width="36" height="36" />

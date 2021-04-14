@@ -217,4 +217,33 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
     assertEquals("var", taskResponse.get("$.data.task.variables[0].name"));
     assertEquals("111", taskResponse.get("$.data.task.variables[0].value"));
   }
+
+  @Test
+  public void shouldReturnEventSubprocessVariable() throws IOException {
+    // having
+    final GraphQLResponse response =
+        tester
+            .deployProcess("eventSubProcess.bpmn")
+            .waitUntil()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance("eventSubprocessProcess", "{\"processVar\": 111}")
+            .waitUntil()
+            .taskIsCreated("subProcessTask")
+            .and()
+            .getAllTasks();
+    final String taskId = response.get("$.data.tasks[0].id");
+
+    // when
+    final GraphQLResponse taskResponse =
+        graphQLTestTemplate.postMultipart(String.format(GET_TASK_QUERY_PATTERN, taskId), "{}");
+
+    // then
+    assertEquals(taskId, taskResponse.get("$.data.task.id"));
+    assertEquals("2", taskResponse.get("$.data.task.variables.length()"));
+    assertEquals("processVar", taskResponse.get("$.data.task.variables[0].name"));
+    assertEquals("111", taskResponse.get("$.data.task.variables[0].value"));
+    assertEquals("subprocessVar", taskResponse.get("$.data.task.variables[1].name"));
+    assertEquals("111", taskResponse.get("$.data.task.variables[1].value"));
+  }
 }

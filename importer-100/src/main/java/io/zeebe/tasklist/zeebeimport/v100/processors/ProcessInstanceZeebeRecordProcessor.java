@@ -50,6 +50,7 @@ public class ProcessInstanceZeebeRecordProcessor {
       Arrays.asList(
           BpmnElementType.PROCESS,
           BpmnElementType.SUB_PROCESS,
+          BpmnElementType.EVENT_SUB_PROCESS,
           BpmnElementType.SERVICE_TASK,
           BpmnElementType.USER_TASK,
           BpmnElementType.MULTI_INSTANCE_BODY);
