@@ -7,12 +7,12 @@ package org.camunda.operate.util;
 
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.response.Topology;
+import java.net.InetSocketAddress;
 import java.util.function.Consumer;
 import org.junit.rules.ExternalResource;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.test.EmbeddedBrokerRule;
-import io.zeebe.util.SocketUtil;
 
 public class ZeebeClientRule extends ExternalResource {
 
@@ -28,9 +28,15 @@ public class ZeebeClientRule extends ExternalResource {
     final EmbeddedBrokerRule brokerRule, final Consumer<ZeebeClientBuilder> configurator) {
     this(
       config -> {
-        config.brokerContactPoint(SocketUtil.toHostAndPortString(brokerRule.getGatewayAddress()));
+        config.brokerContactPoint(toHostAndPortString(brokerRule.getGatewayAddress()));
         configurator.accept(config);
       });
+  }
+
+  private static String toHostAndPortString(InetSocketAddress inetSocketAddress) {
+    final String host = inetSocketAddress.getHostString();
+    final int port = inetSocketAddress.getPort();
+    return host + ":" + port;
   }
 
   private ZeebeClientRule(final Consumer<ZeebeClientBuilder> configurator) {

@@ -6,6 +6,7 @@
 package org.camunda.operate.util;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -34,7 +35,6 @@ import io.zeebe.client.ClientProperties;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
-import io.zeebe.util.SocketUtil;
 
 public class OperateZeebeRule extends TestWatcher {
 
@@ -155,10 +155,16 @@ public class OperateZeebeRule extends TestWatcher {
 
   private Properties newClientProperties() {
     final Properties properties = new Properties();
-    properties.put(ClientProperties.BROKER_CONTACTPOINT, SocketUtil.toHostAndPortString(brokerRule.getGatewayAddress()));
+    properties.put(ClientProperties.BROKER_CONTACTPOINT, toHostAndPortString(brokerRule.getGatewayAddress()));
     properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, true);
     properties.setProperty(ClientProperties.DEFAULT_REQUEST_TIMEOUT, REQUEST_TIMEOUT_IN_MILLISECONDS);
     return properties;
+  }
+
+  private static String toHostAndPortString(InetSocketAddress inetSocketAddress) {
+    final String host = inetSocketAddress.getHostString();
+    final int port = inetSocketAddress.getPort();
+    return host + ":" + port;
   }
 
   public String getPrefix() {
