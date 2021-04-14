@@ -6,9 +6,7 @@
 
 import {useEffect} from 'react';
 import Variables from '../Variables';
-import {FAILED_PLACEHOLDER, MULTI_SCOPE_PLACEHOLDER} from './constants';
 import {variablesStore} from 'modules/stores/variables';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
@@ -26,24 +24,21 @@ const VariablePanel = observer(function VariablePanel() {
     };
   }, [processInstanceId]);
 
-  const {
-    state: {status},
-  } = variablesStore;
+  const {displayStatus} = variablesStore;
 
   return (
     <Styled.VariablesPanel>
-      {status === 'error' ? (
-        <StatusMessage variant="error">{FAILED_PLACEHOLDER}</StatusMessage>
+      {displayStatus === 'error' ? (
+        <StatusMessage variant="error">
+          Variables could not be fetched
+        </StatusMessage>
+      ) : displayStatus === 'multi-instances' ? (
+        <StatusMessage variant="default">
+          To view the Variables, select a single Flow Node Instance in the
+          Instance History.
+        </StatusMessage>
       ) : (
-        <>
-          {flowNodeSelectionStore.areMultipleInstancesSelected ? (
-            <StatusMessage variant="default">
-              {MULTI_SCOPE_PLACEHOLDER}
-            </StatusMessage>
-          ) : (
-            <Variables />
-          )}
-        </>
+        <Variables />
       )}
     </Styled.VariablesPanel>
   );

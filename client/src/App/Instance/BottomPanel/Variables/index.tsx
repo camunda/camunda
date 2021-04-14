@@ -27,6 +27,7 @@ const Variables: React.FC = observer(() => {
   const {
     state: {items: variables, status},
     hasNoVariables,
+    displayStatus,
   } = variablesStore;
   const {processInstanceId} = useInstancePageParams();
   const notifications = useNotifications();
@@ -328,20 +329,20 @@ const Variables: React.FC = observer(() => {
   return (
     <>
       <Styled.VariablesContent ref={variablesContentRef}>
-        {status === 'fetching' && (
+        {displayStatus === 'spinner' && (
           <Styled.EmptyPanel
             data-testid="variables-spinner"
             type="skeleton"
             Skeleton={SpinnerSkeleton}
           />
         )}
-        {!editMode && ['initial', 'first-fetch'].includes(status) && (
+        {editMode === '' && displayStatus === 'skeleton' && (
           <Skeleton type="skeleton" rowHeight={32} />
         )}
-        {!editMode && hasNoVariables && (
+        {editMode === '' && displayStatus === 'no-variables' && (
           <Skeleton type="info" label="The Flow Node has no Variables" />
         )}
-        {renderContent()}
+        {(editMode !== '' || displayStatus === 'variables') && renderContent()}
       </Styled.VariablesContent>
       <Styled.Footer>
         <Styled.Button

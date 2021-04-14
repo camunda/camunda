@@ -20,6 +20,7 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {STATE} from 'modules/constants';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 import {logger} from 'modules/logger';
+import {flowNodeMetaDataStore} from './flowNodeMetaData';
 
 type State = {
   items: VariableEntity[];
@@ -56,6 +57,7 @@ class Variables {
       hasNoVariables: computed,
       hasActiveOperation: computed,
       scopeId: computed,
+      displayStatus: computed,
     });
   }
 
@@ -68,7 +70,7 @@ class Variables {
     this.disposer = autorun(() => {
       if (
         isInstanceRunning(currentInstanceStore.state.instance) &&
-        this.scopeId !== undefined
+        this.scopeId !== null
       ) {
         if (this.intervalId === null) {
           this.startPolling(instanceId);
@@ -79,7 +81,7 @@ class Variables {
     });
 
     this.fetchVariablesDisposer = autorun(() => {
-      if (this.scopeId !== undefined) {
+      if (this.scopeId !== null) {
         this.clearItems();
         this.fetchVariables(instanceId);
       }
@@ -115,14 +117,20 @@ class Variables {
   };
 
   get scopeId() {
-    return flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
+    const {selection} = flowNodeSelectionStore.state;
+    const {metaData} = flowNodeMetaDataStore.state;
+
+    return (
+      (selection && selection.flowNodeInstanceId) ||
+      (metaData && metaData.flowNodeInstanceId)
+    );
   }
 
   handlePolling = async (processInstanceId: ProcessInstanceEntity['id']) => {
     try {
       const response = await fetchVariables({
         instanceId: processInstanceId,
-        scopeId: this.scopeId !== undefined ? this.scopeId : processInstanceId,
+        scopeId: this.scopeId || processInstanceId,
       });
 
       if (this.shouldCancelOngoingRequests) {
@@ -221,7 +229,7 @@ class Variables {
     try {
       const response = await applyOperation(id, {
         operationType: 'UPDATE_VARIABLE',
-        variableScopeId: this.scopeId,
+        variableScopeId: this.scopeId || undefined,
         variableName: name,
         variableValue: value,
       });
@@ -263,7 +271,7 @@ class Variables {
     try {
       const response = await applyOperation(id, {
         operationType: 'UPDATE_VARIABLE',
-        variableScopeId: this.scopeId,
+        variableScopeId: this.scopeId || undefined,
         variableName: name,
         variableValue: value,
       });
@@ -308,6 +316,32 @@ class Variables {
       this.intervalId = null;
     }
   };
+
+  get displayStatus() {
+    const {status, items} = this.state;
+
+    if (status === 'error') {
+      return 'error';
+    }
+    if (['initial', 'first-fetch'].includes(status)) {
+      return 'skeleton';
+    }
+    if (flowNodeMetaDataStore.hasMultipleInstances) {
+      return 'multi-instances';
+    }
+    if (status === 'fetching' || this.scopeId === null) {
+      return 'spinner';
+    }
+    if (this.hasNoVariables) {
+      return 'no-variables';
+    }
+    if (status === 'fetched' && items.length > 0) {
+      return 'variables';
+    }
+
+    logger.error('Failed to show Variables');
+    return 'error';
+  }
 
   reset = () => {
     if (['first-fetch', 'fetching'].includes(this.state.status)) {

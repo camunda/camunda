@@ -18,7 +18,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {variablesStore} from 'modules/stores/variables';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import Variables from './index';
-import {mockVariables} from './index.setup';
+import {mockVariables, mockMetaData} from './index.setup';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -63,10 +63,11 @@ describe('Variables', () => {
       );
 
       render(<Variables />, {wrapper: Wrapper});
+      flowNodeMetaDataStore.setMetaData(mockMetaData);
       variablesStore.fetchVariables('1');
 
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
-      expect(screen.getByText(EMPTY_PLACEHOLDER)).toBeInTheDocument();
+      expect(await screen.findByText(EMPTY_PLACEHOLDER)).toBeInTheDocument();
     });
 
     it('should display skeleton on initial load', async () => {

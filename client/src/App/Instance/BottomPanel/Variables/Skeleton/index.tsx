@@ -10,7 +10,7 @@ import {Rows} from './Rows';
 import EmptyPanel from 'modules/components/EmptyPanel';
 
 type Props = {
-  type?: string;
+  type: 'info' | 'warning' | 'skeleton';
   label?: string;
   rowHeight?: number;
 };
@@ -22,7 +22,6 @@ const Skeleton = ({type, label, rowHeight}: Props) => {
         <tr>
           <Styled.SkeletonTD>
             <EmptyPanel
-              // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type '"info" | ... Remove this comment to see the full error message
               type={type}
               label={label}
               Skeleton={Rows}

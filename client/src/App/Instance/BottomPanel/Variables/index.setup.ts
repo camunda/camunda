@@ -31,4 +31,13 @@ const mockVariables = [
   },
 ];
 
-export {mockVariables};
+const mockMetaData = {
+  breadcrumb: [],
+  flowNodeId: null,
+  flowNodeInstanceId: '123',
+  flowNodeType: 'start-event',
+  instanceCount: null,
+  instanceMetadata: null,
+};
+
+export {mockVariables, mockMetaData};

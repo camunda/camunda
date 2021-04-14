@@ -8,10 +8,10 @@ import React from 'react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {VariablePanel} from './index';
 import {render, screen, waitFor} from '@testing-library/react';
-import {FAILED_PLACEHOLDER, MULTI_SCOPE_PLACEHOLDER} from './constants';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route} from 'react-router-dom';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
@@ -50,6 +50,15 @@ describe('VariablePanel', () => {
       )
     );
 
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) => res.once(ctx.json(null))
+      )
+    );
+
+    flowNodeMetaDataStore.init();
+
     currentInstanceStore.setCurrentInstance(
       createInstance({
         id: 'instance_id',
@@ -66,16 +75,38 @@ describe('VariablePanel', () => {
   afterEach(() => {
     variablesStore.reset();
     flowNodeSelectionStore.reset();
+    flowNodeMetaDataStore.reset();
   });
 
-  it('should show multiple scope placeholder when multiple nodes are selected', () => {
+  it('should show multiple scope placeholder when multiple nodes are selected', async () => {
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              flowNodeInstanceId: null,
+              instanceCount: 2,
+            })
+          )
+      )
+    );
+
+    render(<VariablePanel />, {wrapper: Wrapper});
+
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+
     flowNodeSelectionStore.setSelection({
       flowNodeId: '1',
     });
 
-    render(<VariablePanel />, {wrapper: Wrapper});
-
-    expect(screen.getByText(MULTI_SCOPE_PLACEHOLDER)).toBeInTheDocument();
+    expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'To view the Variables, select a single Flow Node Instance in the Instance History.'
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
   });
 
   it('should show failed placeholder if server error occurs while fetching variables', async () => {
@@ -92,7 +123,9 @@ describe('VariablePanel', () => {
 
     variablesStore.fetchVariables('invalid_instance');
 
-    expect(await screen.findByText(FAILED_PLACEHOLDER)).toBeInTheDocument();
+    expect(
+      await screen.findByText('Variables could not be fetched')
+    ).toBeInTheDocument();
   });
 
   it('should show failed placeholder if network error occurs while fetching variables', async () => {
@@ -108,7 +141,9 @@ describe('VariablePanel', () => {
 
     variablesStore.fetchVariables('invalid_instance');
 
-    expect(await screen.findByText(FAILED_PLACEHOLDER)).toBeInTheDocument();
+    expect(
+      await screen.findByText('Variables could not be fetched')
+    ).toBeInTheDocument();
   });
 
   it('should render variables', async () => {
