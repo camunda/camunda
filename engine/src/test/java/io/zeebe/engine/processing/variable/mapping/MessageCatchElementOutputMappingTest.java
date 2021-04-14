@@ -134,6 +134,32 @@ public final class MessageCatchElementOutputMappingTest {
           .endEvent()
           .done();
 
+  private static final BpmnModelInstance INTERRUPTING_BOUNDARY_EVENT_ON_RECEIVE_TASK_PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .receiveTask(
+              "task",
+              t ->
+                  t.message(
+                      m -> m.name("other").zeebeCorrelationKeyExpression(CORRELATION_VARIABLE)))
+          .boundaryEvent(MAPPING_ELEMENT_ID)
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
+          .endEvent()
+          .done();
+
+  private static final BpmnModelInstance NON_INTERRUPTING_BOUNDARY_EVENT_ON_RECEIVE_TASK_PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .receiveTask(
+              "task",
+              t ->
+                  t.message(
+                      m -> m.name("other").zeebeCorrelationKeyExpression(CORRELATION_VARIABLE)))
+          .boundaryEvent(MAPPING_ELEMENT_ID, b -> b.cancelActivity(false))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
+          .endEvent()
+          .done();
+
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -155,7 +181,15 @@ public final class MessageCatchElementOutputMappingTest {
       {"interrupting boundary event", INTERRUPTING_BOUNDARY_EVENT_PROCESS},
       {"non-interrupting boundary event", NON_INTERRUPTING_BOUNDARY_EVENT_PROCESS},
       {"interrupting event subprocess", INTERRUPTING_EVENT_SUBPROCESS_PROCESS},
-      {"non-interrupting event subprocess", NON_INTERRUPTING_EVENT_SUBPROCESS_PROCESS}
+      {"non-interrupting event subprocess", NON_INTERRUPTING_EVENT_SUBPROCESS_PROCESS},
+      {
+        "interrupting boundary event on receive task",
+        INTERRUPTING_BOUNDARY_EVENT_ON_RECEIVE_TASK_PROCESS
+      },
+      {
+        "non-interrupting boundary event on receive task",
+        NON_INTERRUPTING_BOUNDARY_EVENT_ON_RECEIVE_TASK_PROCESS
+      }
     };
   }
 

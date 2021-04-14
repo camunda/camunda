@@ -20,6 +20,8 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
   private ProcessInstanceRecord recordValue;
   private ProcessInstanceIntent intent;
 
+  private boolean reprocessingMode = false;
+
   @Override
   public long getElementInstanceKey() {
     return elementInstanceKey;
@@ -88,6 +90,7 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
 
     final var copy = new BpmnElementContextImpl();
     copy.init(elementInstanceKey, recordValue, intent);
+    copy.reprocessingMode = reprocessingMode;
     return copy;
   }
 
@@ -98,6 +101,15 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
     this.elementInstanceKey = elementInstanceKey;
     this.recordValue = recordValue;
     this.intent = intent;
+  }
+
+  public void setReprocessingMode(final boolean reprocessingMode) {
+    this.reprocessingMode = reprocessingMode;
+  }
+
+  @Override
+  public boolean isInReprocessingMode() {
+    return reprocessingMode;
   }
 
   @Override

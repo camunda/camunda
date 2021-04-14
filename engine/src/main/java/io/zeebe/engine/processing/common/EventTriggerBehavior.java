@@ -11,12 +11,14 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.zeebe.engine.processing.variable.VariableBehavior;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.instance.EventTrigger;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
@@ -29,6 +31,7 @@ import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 
 public class EventTriggerBehavior {
   private final ProcessInstanceRecord eventRecord = new ProcessInstanceRecord();
@@ -40,6 +43,8 @@ public class EventTriggerBehavior {
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variablesState;
+
+  private final VariableBehavior variableBehavior;
 
   public EventTriggerBehavior(
       final KeyGenerator keyGenerator,
@@ -54,6 +59,8 @@ public class EventTriggerBehavior {
     elementInstanceState = zeebeState.getElementInstanceState();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
     variablesState = zeebeState.getVariableState();
+
+    variableBehavior = new VariableBehavior(variablesState, writers.state(), keyGenerator);
   }
 
   private ProcessInstanceRecord getEventRecord(
@@ -273,11 +280,45 @@ public class EventTriggerBehavior {
     final var eventElementInstanceKey = eventHandler.applyAsLong(eventTrigger);
 
     final var eventVariables = eventTrigger.getVariables();
-    if (eventVariables != null && eventVariables.capacity() > 0) {
+    if (eventElementInstanceKey > 0 && eventVariables != null && eventVariables.capacity() > 0) {
       variablesState.setTemporaryVariables(eventElementInstanceKey, eventVariables);
     }
 
     eventScopeInstanceState.deleteTrigger(
         context.getElementInstanceKey(), eventTrigger.getEventKey());
+  }
+
+  public void activateTriggeredEvent(
+      final ExecutableFlowElement catchEvent,
+      final long eventScopeKey,
+      final ProcessInstanceRecord elementRecord,
+      final DirectBuffer variables) {
+
+    eventRecord.reset();
+    eventRecord.wrap(elementRecord);
+    eventRecord
+        .setBpmnElementType(catchEvent.getElementType())
+        .setElementId(catchEvent.getId())
+        .setFlowScopeKey(eventScopeKey);
+
+    final var eventInstanceKey = keyGenerator.nextKey();
+    // transition to activating and activated directly to pass the variables to this instance
+    stateWriter.appendFollowUpEvent(
+        eventInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
+    stateWriter.appendFollowUpEvent(
+        eventInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, eventRecord);
+
+    if (variables.capacity() > 0) {
+      // set as local variables of the element instance to use them for the variable output
+      // mapping
+      variableBehavior.mergeLocalDocument(
+          eventInstanceKey,
+          elementRecord.getProcessDefinitionKey(),
+          elementRecord.getProcessInstanceKey(),
+          variables);
+    }
+
+    commandWriter.appendFollowUpCommand(
+        eventInstanceKey, ProcessInstanceIntent.COMPLETE_ELEMENT, eventRecord);
   }
 }

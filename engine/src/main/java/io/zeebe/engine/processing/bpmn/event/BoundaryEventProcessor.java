@@ -12,20 +12,17 @@ import io.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
-import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 
 public final class BoundaryEventProcessor implements BpmnElementProcessor<ExecutableBoundaryEvent> {
 
-  private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
 
   public BoundaryEventProcessor(final BpmnBehaviors bpmnBehaviors) {
-    stateBehavior = bpmnBehaviors.stateBehavior();
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
@@ -37,68 +34,35 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
-  public void onActivating(
-      final ExecutableBoundaryEvent element, final BpmnElementContext context) {
-    // the boundary event is already triggered when the activating event is written
-
-    stateTransitionBehavior.transitionToActivated(context);
+  public void onActivate(final ExecutableBoundaryEvent element, final BpmnElementContext context) {
+    // the boundary event is activated by writing an ACTIVATING and ACTIVATED event to pass the
+    // variables from the event for the output mapping
+    throw new BpmnProcessingException(
+        context,
+        "Expected an ACTIVATING and ACTIVATED event for the boundary event but found an ACTIVATE command.");
   }
 
   @Override
-  public void onActivated(final ExecutableBoundaryEvent element, final BpmnElementContext context) {
-
-    stateTransitionBehavior.transitionToCompleting(context);
-  }
-
-  @Override
-  public void onCompleting(
-      final ExecutableBoundaryEvent element, final BpmnElementContext context) {
+  public void onComplete(final ExecutableBoundaryEvent element, final BpmnElementContext context) {
 
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .ifRightOrLeft(
-            ok ->
-                stateTransitionBehavior.transitionToCompletedWithParentNotification(
-                    element, context),
+            ok -> {
+              final var completed =
+                  stateTransitionBehavior.transitionToCompletedWithParentNotification(
+                      element, context);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+            },
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
-  public void onCompleted(final ExecutableBoundaryEvent element, final BpmnElementContext context) {
-    if (element.getOutgoing().isEmpty()) {
-      /* can be dropped during migration; after migration this is done as part of
-      stateTransitionBehavior.transitionToCompletedWithParentNotification(...)*/
-      stateTransitionBehavior.afterExecutionPathCompleted(element, context);
-    }
-    stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
-
-    stateBehavior.removeElementInstance(context);
-  }
-
-  @Override
-  public void onTerminating(
-      final ExecutableBoundaryEvent element, final BpmnElementContext context) {
-
-    stateTransitionBehavior.transitionToTerminated(context);
-  }
-
-  @Override
-  public void onTerminated(
-      final ExecutableBoundaryEvent element, final BpmnElementContext context) {
+  public void onTerminate(final ExecutableBoundaryEvent element, final BpmnElementContext context) {
 
     incidentBehavior.resolveIncidents(context);
 
-    stateTransitionBehavior.onElementTerminated(element, context);
-
-    stateBehavior.removeElementInstance(context);
-  }
-
-  @Override
-  public void onEventOccurred(
-      final ExecutableBoundaryEvent element, final BpmnElementContext context) {
-
-    throw new BpmnProcessingException(
-        context,
-        "Expected to handle occurred event on a boundary event, but events should not occur on a boundary event.");
+    final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+    stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 }

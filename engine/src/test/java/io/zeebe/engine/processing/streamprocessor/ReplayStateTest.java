@@ -212,6 +212,50 @@ public final class ReplayStateTest {
                       .withElementType(BpmnElementType.PROCESS)
                       .withRecordKey(piKey)
                       .getFirst();
+                }),
+        testCase("interrupting message boundary event on receive task")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .receiveTask(
+                        "task",
+                        t -> t.message(m -> m.name("task").zeebeCorrelationKeyExpression("1")))
+                    .boundaryEvent(
+                        "event",
+                        b ->
+                            b.cancelActivity(true)
+                                .message(m -> m.name("event").zeebeCorrelationKeyExpression("1")))
+                    .endEvent("end")
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                  engine.message().withName("event").withCorrelationKey("1").publish();
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.PROCESS)
+                      .getFirst();
+                }),
+        testCase("non-interrupting timer boundary event on receive task")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .receiveTask(
+                        "task",
+                        t -> t.message(m -> m.name("task").zeebeCorrelationKeyExpression("1")))
+                    .boundaryEvent("event", b -> b.cancelActivity(false).timerWithDuration("PT0S"))
+                    .endEvent("end")
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.END_EVENT)
+                      .withElementId("end")
+                      .getFirst();
                 }));
   }
 
@@ -246,32 +290,39 @@ public final class ReplayStateTest {
                     .isEqualTo(Phase.PROCESSING));
 
     // then
-    final var replayState = engine.collectState();
+    Awaitility.await("await that the replay state is equal to the processing state")
+        .untilAsserted(
+            () -> {
+              final var replayState = engine.collectState();
 
-    final var softly = new SoftAssertions();
+              final var softly = new SoftAssertions();
 
-    processingState.entrySet().stream()
-        .filter(entry -> entry.getKey() != ZbColumnFamilies.DEFAULT)
-        .forEach(
-            entry -> {
-              final var column = entry.getKey();
-              final var processingEntries = entry.getValue();
-              final var replayEntries = replayState.get(column);
+              processingState.entrySet().stream()
+                  .filter(entry -> entry.getKey() != ZbColumnFamilies.DEFAULT)
+                  .forEach(
+                      entry -> {
+                        final var column = entry.getKey();
+                        final var processingEntries = entry.getValue();
+                        final var replayEntries = replayState.get(column);
 
-              if (processingEntries.isEmpty()) {
-                softly
-                    .assertThat(replayEntries)
-                    .describedAs("The state column '%s' should be empty after replay", column)
-                    .isEmpty();
-              } else {
-                softly
-                    .assertThat(replayEntries)
-                    .describedAs("The state column '%s' has different entries after replay", column)
-                    .containsExactlyInAnyOrderEntriesOf(processingEntries);
-              }
+                        if (processingEntries.isEmpty()) {
+                          softly
+                              .assertThat(replayEntries)
+                              .describedAs(
+                                  "The state column '%s' should be empty after replay", column)
+                              .isEmpty();
+                        } else {
+                          softly
+                              .assertThat(replayEntries)
+                              .describedAs(
+                                  "The state column '%s' has different entries after replay",
+                                  column)
+                              .containsExactlyInAnyOrderEntriesOf(processingEntries);
+                        }
+                      });
+
+              softly.assertAll();
             });
-
-    softly.assertAll();
   }
 
   private static TestCase testCase(final String description) {
