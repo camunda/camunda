@@ -15,7 +15,6 @@ import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.tasklist.entities.TaskState;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
@@ -200,10 +199,8 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(bpmnProcessId)
             .startEvent()
-            .serviceTask(flowNodeBpmnIdA)
-            .zeebeJobType(Protocol.USER_TASK_JOB_TYPE)
-            .serviceTask(flowNodeBpmnIdB)
-            .zeebeJobType(Protocol.USER_TASK_JOB_TYPE)
+            .userTask(flowNodeBpmnIdA)
+            .userTask(flowNodeBpmnIdB)
             .endEvent()
             .done();
     tester

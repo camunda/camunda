@@ -16,7 +16,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.tasklist.archiver.Archiver;
 import io.zeebe.tasklist.archiver.ProcessInstanceArchiverJob;
 import io.zeebe.tasklist.archiver.TaskArchiverJob;
@@ -251,8 +250,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
-            .serviceTask(flowNodeBpmnId)
-            .zeebeJobType(Protocol.USER_TASK_JOB_TYPE)
+            .userTask(flowNodeBpmnId)
             .endEvent()
             .done();
     tester.deployProcess(process, processId + ".bpmn").waitUntil().processIsDeployed();

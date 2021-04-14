@@ -4,13 +4,10 @@
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_0vyfb4y</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:serviceTask id="noTimeToComplete" name="No time to complete">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="humanTask" />
-      </bpmn:extensionElements>
+    <bpmn:userTask id="noTimeToComplete" name="No time to complete">
       <bpmn:incoming>Flow_0vyfb4y</bpmn:incoming>
       <bpmn:outgoing>Flow_0wnyva1</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:userTask>
     <bpmn:boundaryEvent id="Event_1lirwbf" name="Interrupt after 1s" attachedToRef="noTimeToComplete">
       <bpmn:outgoing>Flow_0m12tkp</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_0stw5br">

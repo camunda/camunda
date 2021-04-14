@@ -80,14 +80,12 @@ public class XMLUtil {
     }
 
     @Override
-    public void startElement(String uri, String localName, String qName, Attributes attributes)
-        throws SAXException {
+    public void startElement(String uri, String localName, String qName, Attributes attributes) {
       if ("process".equalsIgnoreCase(localName)) {
         if (attributes.getValue("name") != null) {
           nameConsumer.accept(attributes.getValue("name"));
         }
-      } else if ("userTask".equalsIgnoreCase(localName)
-          || "serviceTask".equalsIgnoreCase(localName)) {
+      } else if ("userTask".equalsIgnoreCase(localName)) {
         if (attributes.getValue("name") != null) {
           final ProcessFlowNodeEntity flowNodeEntity =
               new ProcessFlowNodeEntity(attributes.getValue("id"), attributes.getValue("name"));
@@ -102,8 +100,7 @@ public class XMLUtil {
     }
 
     @Override
-    public void endElement(final String uri, final String localName, final String qName)
-        throws SAXException {
+    public void endElement(final String uri, final String localName, final String qName) {
       if ("userTaskForm".equalsIgnoreCase(localName)) {
         userTaskFormConsumer.accept(userTaskFormId, userTaskFormJson.toString());
         isUserTaskForm = false;
@@ -112,7 +109,7 @@ public class XMLUtil {
     }
 
     @Override
-    public void characters(final char[] ch, final int start, final int length) throws SAXException {
+    public void characters(final char[] ch, final int start, final int length) {
       if (isUserTaskForm) {
         userTaskFormJson.append(new String(ch, start, length));
       }

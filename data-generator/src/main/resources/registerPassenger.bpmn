@@ -95,13 +95,10 @@
     </bpmn:userTask>
     <bpmn:sequenceFlow id="SequenceFlow_1n3aihd" sourceRef="registerPassenger" targetRef="registerCabinBag" />
     <bpmn:sequenceFlow id="SequenceFlow_04tw8w0" sourceRef="registerCabinBag" targetRef="ExclusiveGateway_0dhe4io" />
-    <bpmn:serviceTask id="determineLuggageWeight" name="Determine luggage weight">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="humanTask" />
-      </bpmn:extensionElements>
+    <bpmn:userTask id="determineLuggageWeight" name="Determine luggage weight">
       <bpmn:incoming>SequenceFlow_06gtrty</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_15ihg55</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:userTask>
     <bpmn:sequenceFlow id="SequenceFlow_06gtrty" name="yes" sourceRef="ExclusiveGateway_0dhe4io" targetRef="determineLuggageWeight">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=luggage = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
@@ -113,25 +110,19 @@
     <bpmn:sequenceFlow id="SequenceFlow_15n7i0o" name="no" sourceRef="ExclusiveGateway_0dhe4io" targetRef="ExclusiveGateway_1ow3snl">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=luggage = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:serviceTask id="printOutBoardingPass" name="Print out boarding pass">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="humanTask" />
-      </bpmn:extensionElements>
+    <bpmn:userTask id="printOutBoardingPass" name="Print out boarding pass">
       <bpmn:incoming>SequenceFlow_13ky0da</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0yeajob</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:userTask>
     <bpmn:sequenceFlow id="SequenceFlow_13ky0da" sourceRef="ExclusiveGateway_1ow3snl" targetRef="printOutBoardingPass" />
     <bpmn:endEvent id="EndEvent_0ms0n8v" name="Passender is registered">
       <bpmn:incoming>SequenceFlow_0yeajob</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_0yeajob" sourceRef="printOutBoardingPass" targetRef="EndEvent_0ms0n8v" />
-    <bpmn:serviceTask id="registerLuggage" name="Register the luggage">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="humanTask" />
-      </bpmn:extensionElements>
+    <bpmn:userTask id="registerLuggage" name="Register the luggage">
       <bpmn:incoming>SequenceFlow_1jhsymx</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_180gn6e</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:userTask>
     <bpmn:sequenceFlow id="SequenceFlow_180gn6e" sourceRef="registerLuggage" targetRef="ExclusiveGateway_1ow3snl" />
     <bpmn:exclusiveGateway id="ExclusiveGateway_0rpoeeq">
       <bpmn:incoming>SequenceFlow_1le3lya</bpmn:incoming>
@@ -139,13 +130,10 @@
       <bpmn:outgoing>SequenceFlow_1jhsymx</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_1jhsymx" sourceRef="ExclusiveGateway_0rpoeeq" targetRef="registerLuggage" />
-    <bpmn:serviceTask id="processPayment" name="Process payment">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="humanTask" />
-      </bpmn:extensionElements>
+    <bpmn:userTask id="processPayment" name="Process payment">
       <bpmn:incoming>SequenceFlow_12jenme</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1le3lya</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:userTask>
     <bpmn:sequenceFlow id="SequenceFlow_1le3lya" sourceRef="processPayment" targetRef="ExclusiveGateway_0rpoeeq" />
     <bpmn:exclusiveGateway id="ExclusiveGateway_0cm4qq4" name="Exceeds the limit?">
       <bpmn:incoming>SequenceFlow_15ihg55</bpmn:incoming>

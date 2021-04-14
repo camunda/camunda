@@ -5,13 +5,10 @@
       <bpmn:outgoing>SequenceFlow_1issdlh</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="SequenceFlow_1issdlh" sourceRef="startEvent" targetRef="task1" />
-    <bpmn:serviceTask id="task1" name="Task 1">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="humanTask" />
-      </bpmn:extensionElements>
+    <bpmn:userTask id="task1" name="Task 1">
       <bpmn:incoming>SequenceFlow_1issdlh</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1v948ap</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:userTask>
     <bpmn:endEvent id="end1" name="end 1">
       <bpmn:incoming>SequenceFlow_1v948ap</bpmn:incoming>
     </bpmn:endEvent>
@@ -21,13 +18,10 @@
       <bpmn:incoming>SequenceFlow_1e3y75x</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_1e3y75x" sourceRef="task2" targetRef="end2" />
-    <bpmn:serviceTask id="task2" name="Task 2">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="humanTask" />
-      </bpmn:extensionElements>
+    <bpmn:userTask id="task2" name="Task 2">
       <bpmn:incoming>SequenceFlow_19k42lo</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1e3y75x</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:userTask>
     <bpmn:boundaryEvent id="BoundaryEvent_09kzmc3" attachedToRef="task1">
       <bpmn:outgoing>SequenceFlow_19k42lo</bpmn:outgoing>
       <bpmn:timerEventDefinition>

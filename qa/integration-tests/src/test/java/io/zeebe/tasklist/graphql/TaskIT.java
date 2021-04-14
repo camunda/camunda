@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.tasklist.entities.TaskState;
 import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
@@ -445,37 +444,6 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldNotImportWrongJobType() throws IOException {
-    // having
-    final String bpmnProcessId = "testProcess";
-    final String wrongFlowNodeBpmnId = "taskA";
-    final String wrongJobType = "serviceTask";
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(bpmnProcessId)
-            .startEvent()
-            .serviceTask(wrongFlowNodeBpmnId)
-            .zeebeJobType(wrongJobType)
-            .endEvent()
-            .done();
-
-    final GraphQLResponse response =
-        tester
-            .having()
-            .deployProcess(process, bpmnProcessId + ".bpmn")
-            .waitUntil()
-            .processIsDeployed()
-            .and()
-            .startProcessInstance(bpmnProcessId)
-            .waitUntil()
-            .taskIsCreated(wrongFlowNodeBpmnId) // this waiting must time out
-            .when()
-            .getAllTasks();
-    // then
-    assertTrue(response.isOk());
-    assertEquals("0", response.get("$.data.tasks.length()"));
-  }
-
-  @Test
   public void shouldReturnAllOpenTasks() throws IOException {
     final List<TaskDTO> createdTasks =
         tester
@@ -626,8 +594,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
       final BpmnModelInstance process =
           Bpmn.createExecutableProcess(bpmnProcessId)
               .startEvent()
-              .serviceTask(flowNodeBpmnId)
-              .zeebeJobType(Protocol.USER_TASK_JOB_TYPE)
+              .userTask(flowNodeBpmnId)
               .endEvent()
               .done();
       tester
@@ -655,9 +622,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
         Bpmn.createExecutableProcess(bpmnProcessId)
             .name(processName)
             .startEvent("start")
-            .serviceTask(taskId)
+            .userTask(taskId)
             .name(taskName)
-            .zeebeJobType(Protocol.USER_TASK_JOB_TYPE)
             .endEvent()
             .done();
 
@@ -688,11 +654,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     final String taskId = "taskA";
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(bpmnProcessId)
-            // .name("Test process name")
             .startEvent("start")
-            .serviceTask(taskId)
-            // .name("Task A")
-            .zeebeJobType(Protocol.USER_TASK_JOB_TYPE)
+            .userTask(taskId)
             .endEvent()
             .done();
 

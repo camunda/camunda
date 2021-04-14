@@ -10,20 +10,14 @@
       <bpmn:incoming>Flow_0lsd3t8</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_0lsd3t8" sourceRef="taskB" targetRef="Event_0692jdh" />
-    <bpmn:serviceTask id="taskA" name="Task A">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="humanTask" />
-      </bpmn:extensionElements>
+    <bpmn:userTask id="taskA" name="Task A">
       <bpmn:incoming>Flow_007nkah</bpmn:incoming>
       <bpmn:outgoing>Flow_0qc07xr</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="taskB" name="Task B">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="humanTask" />
-      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="taskB" name="Task B">
       <bpmn:incoming>Flow_0qc07xr</bpmn:incoming>
       <bpmn:outgoing>Flow_0lsd3t8</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:userTask>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1g4wt4m">

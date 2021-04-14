@@ -23,6 +23,7 @@ import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.entities.TaskState;
 import io.zeebe.tasklist.property.TasklistProperties;
@@ -360,8 +361,9 @@ public class TasklistTester {
     return result;
   }
 
-  public TasklistTester completeServiceTask(String jobType) {
-    ZeebeTestUtil.completeTask(zeebeClient, jobType, TestUtil.createRandomString(10), null);
+  public TasklistTester completeUserTask() {
+    ZeebeTestUtil.completeTask(
+        zeebeClient, Protocol.USER_TASK_JOB_TYPE, TestUtil.createRandomString(10), null);
     return this;
   }
 
