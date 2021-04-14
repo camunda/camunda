@@ -4,9 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {default as process} from './processRawData';
-import {default as decision} from './processDecisionRawData';
-
-const processRawData = {process, decision};
+import {default as processRawData} from './processRawData';
 
 export default processRawData;
