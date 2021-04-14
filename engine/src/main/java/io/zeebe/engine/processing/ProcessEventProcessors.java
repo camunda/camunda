@@ -213,11 +213,7 @@ public final class ProcessEventProcessors {
 
     final CreateProcessInstanceProcessor createProcessor =
         new CreateProcessInstanceProcessor(
-            zeebeState.getProcessState(),
-            elementInstanceState,
-            keyGenerator,
-            writers,
-            variableBehavior);
+            zeebeState.getProcessState(), keyGenerator, writers, variableBehavior);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 
