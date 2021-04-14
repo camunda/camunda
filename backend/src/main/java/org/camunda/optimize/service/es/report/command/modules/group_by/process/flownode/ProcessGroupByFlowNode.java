@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -16,6 +15,7 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
+import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -34,7 +34,6 @@ import java.util.Map;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
-import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @RequiredArgsConstructor
@@ -64,8 +63,7 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
     getFilteredFlowNodesAggregation(response)
       .map(filteredFlowNodes -> (Terms) filteredFlowNodes.getAggregations().get(NESTED_EVENTS_AGGREGATION))
       .ifPresent(byFlowNodeIdAggregation -> {
-        final List<FlowNodeDataDto> flowNodeData = getFlowNodeData(context.getReportData());
-        final Map<String, String> flowNodeNames = extractFlowNodeNames(flowNodeData);
+        final Map<String, String> flowNodeNames = getFlowNodeNames(context.getReportData());
         final List<GroupByResult> groupedData = new ArrayList<>();
         for (Terms.Bucket flowNodeBucket : byFlowNodeIdAggregation.getBuckets()) {
           final String flowNodeKey = flowNodeBucket.getKeyAsString();
@@ -100,16 +98,16 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
     }
   }
 
-  private List<FlowNodeDataDto> getFlowNodeData(final ProcessReportDataDto reportData) {
-    return definitionService
-      .getDefinition(
+  private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {
+    return BpmnModelUtil.extractFlowNodeNames(
+      definitionService.getDefinition(
         DefinitionType.PROCESS,
         reportData.getDefinitionKey(),
         reportData.getDefinitionVersions(),
         reportData.getTenantIds()
       )
-      .map(def -> ((ProcessDefinitionOptimizeDto) def).getFlowNodeData())
-      .orElse(Collections.emptyList());
+        .map(def -> ((ProcessDefinitionOptimizeDto) def).getFlowNodeData())
+        .orElse(Collections.emptyList()));
   }
 
   @Override

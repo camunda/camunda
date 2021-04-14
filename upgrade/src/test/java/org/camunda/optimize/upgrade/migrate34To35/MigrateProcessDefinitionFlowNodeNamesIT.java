@@ -73,13 +73,6 @@ class MigrateProcessDefinitionFlowNodeNamesIT extends AbstractUpgrade34IT {
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
-    List<ProcessDefinitionOptimizeDto> processDefinitionsAfterUpgrade = getAllDocumentsOfIndexAs(
-      new ProcessDefinitionIndex().getIndexName(),
-      ProcessDefinitionOptimizeDto.class
-    );
-    List<FlowNodeDataDto> flowNodesAfterUpgrade1 = processDefinitionsAfterUpgrade.get(0).getFlowNodeData();
-    List<FlowNodeDataDto> flowNodesAfterUpgrade2 = processDefinitionsAfterUpgrade.get(1).getFlowNodeData();
-    List<FlowNodeDataDto> flowNodesAfterUpgrade3 = processDefinitionsAfterUpgrade.get(2).getFlowNodeData();
     final SearchHit[] processDefinitionHitsAfterUpgrade =
       getAllDocumentsOfIndex(new ProcessDefinitionIndex().getIndexName());
 
@@ -89,19 +82,18 @@ class MigrateProcessDefinitionFlowNodeNamesIT extends AbstractUpgrade34IT {
     assertThat(getAllDocumentsOfIndexAs(
       new ProcessDefinitionIndex().getIndexName(),
       ProcessDefinitionOptimizeDto.class
-    ))
-      .extracting(ProcessDefinitionOptimizeDto::getFlowNodeData)
+    )).extracting(ProcessDefinitionOptimizeDto::getFlowNodeData)
       .containsExactly(
         instanceWithMixedFlowNodesExpectedFlowNode,
         instanceWithFlowNodesWithSameName,
         instanceWithEmptyFlowNodesExpectedFlowNode
       );
-    assertThat(processDefinitionHitsAfterUpgrade).hasSize(3).allSatisfy(processDefinition -> {
-      assertProcessDefinitionsHaveBeenUpgraded(processDefinition);
-    });
+    assertThat(processDefinitionHitsAfterUpgrade)
+      .hasSize(3)
+      .allSatisfy(this::assertProcessDefinitionsHaveBeenUpgraded);
   }
 
-  protected void assertProcessDefinitionsHaveBeenUpgraded(final SearchHit processDefinitions) {
+  private void assertProcessDefinitionsHaveBeenUpgraded(final SearchHit processDefinitions) {
     final Map<String, Object> processDefinition = processDefinitions.getSourceAsMap();
     assertThat(processDefinition.get("flowNodeNames")).isNull();
   }

@@ -6,18 +6,17 @@
 package org.camunda.optimize.service.es.report.command.modules.distributed_by.process;
 
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
-import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.FlowNodeDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.service.DefinitionService;
+import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
@@ -38,8 +37,7 @@ public class ProcessDistributedByFlowNode extends ProcessDistributedByModelEleme
 
   @Override
   protected Map<String, String> extractModelElementNames(DefinitionOptimizeResponseDto def) {
-    return ((ProcessDefinitionOptimizeDto) def).getFlowNodeData().stream()
-      .collect(Collectors.toMap(FlowNodeDataDto::getId, FlowNodeDataDto::getName));
+    return BpmnModelUtil.extractFlowNodeNames(((ProcessDefinitionOptimizeDto) def).getFlowNodeData());
   }
 
   @Override

@@ -73,15 +73,8 @@ public class MigrateEventProcessDefinitionFlowNodeNamesIT extends AbstractUpgrad
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
-    List<EventProcessDefinitionDto> processDefinitionsAfterUpgrade = getAllDocumentsOfIndexAs(
-      new EventProcessDefinitionIndex().getIndexName(),
-      EventProcessDefinitionDto.class
-    );
-    List<FlowNodeDataDto> flowNdesAfterUpgrade1 = processDefinitionsAfterUpgrade.get(0).getFlowNodeData();
-    List<FlowNodeDataDto> flowNdesAfterUpgrade2 = processDefinitionsAfterUpgrade.get(1).getFlowNodeData();
-    List<FlowNodeDataDto> flowNdesAfterUpgrade3 = processDefinitionsAfterUpgrade.get(2).getFlowNodeData();
-    final SearchHit[] eventProcessDefinitionHitsAfterUpgrade = getAllDocumentsOfIndex(new EventProcessDefinitionIndex().getIndexName());
-
+    final SearchHit[] eventProcessDefinitionHitsAfterUpgrade =
+      getAllDocumentsOfIndex(new EventProcessDefinitionIndex().getIndexName());
 
     //then
     assertThat(indexExists(new EventProcessDefinitionIndexV3Old())).isFalse();
@@ -89,19 +82,18 @@ public class MigrateEventProcessDefinitionFlowNodeNamesIT extends AbstractUpgrad
     assertThat(getAllDocumentsOfIndexAs(
       new EventProcessDefinitionIndex().getIndexName(),
       EventProcessDefinitionDto.class
-    ))
-      .extracting(EventProcessDefinitionDto::getFlowNodeData)
+    )).extracting(EventProcessDefinitionDto::getFlowNodeData)
       .containsExactly(
         instanceWithMixedFlowNodesExpectedFlowNode,
         instanceWithFlowNodesWithSameName,
         instanceWithEmptyFlowNodesExpectedFlowNode
       );
-    assertThat(eventProcessDefinitionHitsAfterUpgrade).hasSize(3).allSatisfy(eventProcessDefinition -> {
-      assertEventProcessDefinitionsHaveBeenUpgraded(eventProcessDefinition);
-    });
+    assertThat(eventProcessDefinitionHitsAfterUpgrade)
+      .hasSize(3)
+      .allSatisfy(this::assertEventProcessDefinitionsHaveBeenUpgraded);
   }
 
-  protected void assertEventProcessDefinitionsHaveBeenUpgraded(final SearchHit eventProcessDefinitions) {
+  private void assertEventProcessDefinitionsHaveBeenUpgraded(final SearchHit eventProcessDefinitions) {
     final Map<String, Object> processDefinition = eventProcessDefinitions.getSourceAsMap();
     assertThat(processDefinition.get("flowNodeNames")).isNull();
   }
