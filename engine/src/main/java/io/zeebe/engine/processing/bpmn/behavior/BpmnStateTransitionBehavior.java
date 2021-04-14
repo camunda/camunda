@@ -193,6 +193,21 @@ public final class BpmnStateTransitionBehavior {
   }
 
   /** @return context with updated intent */
+  public BpmnElementContext terminate(final BpmnElementContext context) {
+    final var isMigrated = MigratedStreamProcessors.isMigrated(context.getBpmnElementType());
+
+    if (isMigrated) {
+      commandWriter.appendFollowUpCommand(
+          context.getElementInstanceKey(),
+          ProcessInstanceIntent.TERMINATE_ELEMENT,
+          context.getRecordValue());
+      return context;
+    } else {
+      return transitionToTerminating(context);
+    }
+  }
+
+  /** @return context with updated intent */
   public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
     final var isMigrated = MigratedStreamProcessors.isMigrated(context.getBpmnElementType());
     if (isMigrated && context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
@@ -408,6 +423,24 @@ public final class BpmnStateTransitionBehavior {
                 containerScope, containerContext, childContext));
   }
 
+  // CALL ACTIVITY SPECIFIC
+  public void onCalledProcessCompleted(
+      final BpmnElementContext childContext, final BpmnElementContext parentInstanceContext) {
+    final var containerScope = getParentProcessScope(parentInstanceContext, childContext);
+    final var containerProcessor = processorLookUp.apply(containerScope.getElementType());
+    containerProcessor.beforeExecutionPathCompleted(
+        containerScope, parentInstanceContext, childContext);
+    containerProcessor.afterExecutionPathCompleted(
+        containerScope, parentInstanceContext, childContext);
+  }
+
+  public void onCalledProcessTerminated(
+      final BpmnElementContext childContext, final BpmnElementContext parentInstanceContext) {
+    final var containerScope = getParentProcessScope(parentInstanceContext, childContext);
+    final var containerProcessor = processorLookUp.apply(containerScope.getElementType());
+    containerProcessor.onChildTerminated(containerScope, parentInstanceContext, childContext);
+  }
+
   public void afterExecutionPathCompleted(
       final ExecutableFlowElement element, final BpmnElementContext childContext) {
 
@@ -500,10 +533,8 @@ public final class BpmnStateTransitionBehavior {
         .setElementId(process.getProcess().getId())
         .setBpmnElementType(process.getProcess().getElementType());
 
-    streamWriter.appendFollowUpEvent(
-        processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, childInstanceRecord);
-
-    stateBehavior.createElementInstance(processInstanceKey, childInstanceRecord);
+    commandWriter.appendFollowUpCommand(
+        processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
 
     return processInstanceKey;
   }
@@ -514,7 +545,7 @@ public final class BpmnStateTransitionBehavior {
         .filter(ElementInstance::canTerminate)
         .map(instance -> context.copy(instance.getKey(), instance.getValue(), instance.getState()))
         .ifPresentOrElse(
-            childInstanceContext -> transitionToTerminating(childInstanceContext) /* TERMINATING */,
+            childInstanceContext -> terminate(childInstanceContext) /* TERMINATING */,
             () -> transitionToTerminated(context) /* TERMINATED */);
   }
 

@@ -70,67 +70,62 @@ public final class ProcessProcessor
   }
 
   @Override
-  @Override
-  public void onCompleting(
+  public void onComplete(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
-    stateTransitionBehavior.transitionToCompleted(context);
-  }
-
-  @Override
-  public void onCompleted(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
 
     final var parentProcessInstanceKey = context.getParentProcessInstanceKey();
+    BpmnElementContext parentElementInstanceContext = null;
     if (parentProcessInstanceKey > 0) {
-      // process instance is created by a call activity
-      stateTransitionBehavior.beforeExecutionPathCompleted(element, context);
-      stateTransitionBehavior.afterExecutionPathCompleted(element, context);
+      // needs to be done before we delete the Process element instance
+      parentElementInstanceContext = stateBehavior.getParentElementInstanceContext(context);
     }
 
-    if (element.hasNoneStartEvent()) {
-      processResultSenderBehavior.sendResult(context);
+    // we need to send the result before we transition to completed, since the
+    // event applier will delete the element instance
+    processResultSenderBehavior.sendResult(context);
+
+    final var completed = stateTransitionBehavior.transitionToCompleted(context);
+
+    if (parentElementInstanceContext != null) {
+      stateTransitionBehavior.onCalledProcessCompleted(completed, parentElementInstanceContext);
     }
 
     if (element.hasMessageStartEvent()) {
-      bufferedMessageStartEventBehavior.correlateMessage(context);
+      bufferedMessageStartEventBehavior.correlateMessage(completed);
     }
-
-    stateBehavior.removeElementInstance(context);
   }
 
   @Override
-  public void onTerminating(
+  public void onTerminate(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
 
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
+
     if (noActiveChildInstances) {
-      stateTransitionBehavior.transitionToTerminated(context);
-    }
-  }
 
-  @Override
-  public void onTerminated(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+      final var parentProcessInstanceKey = context.getParentProcessInstanceKey();
+      BpmnElementContext parentElementInstanceContext = null;
+      if (parentProcessInstanceKey > 0) {
+        // needs to be done before we delete the Process element instance
+        parentElementInstanceContext = stateBehavior.getParentElementInstanceContext(context);
+      }
 
-    incidentBehavior.resolveIncidents(context);
+      final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+      incidentBehavior.resolveIncidents(terminated);
 
-    final var parentProcessInstanceKey = context.getParentProcessInstanceKey();
-
-    if (parentProcessInstanceKey > 0) {
-      // process instance is created by a call activity
-      stateTransitionBehavior.onElementTerminated(element, context);
+      if (parentElementInstanceContext != null) {
+        stateTransitionBehavior.onCalledProcessTerminated(terminated, parentElementInstanceContext);
+      }
+    } else {
+      incidentBehavior.resolveIncidents(context);
     }
 
     if (element.hasMessageStartEvent()) {
       bufferedMessageStartEventBehavior.correlateMessage(context);
     }
-
-    stateBehavior.removeElementInstance(context);
-  }
   }
 
   private void activateNoneStartEvent(
@@ -162,7 +157,7 @@ public final class ProcessProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
     if (stateBehavior.canBeCompleted(childContext)) {
-      stateTransitionBehavior.transitionToCompleting(flowScopeContext);
+      stateTransitionBehavior.completeElement(flowScopeContext);
     }
   }
 
@@ -174,8 +169,23 @@ public final class ProcessProcessor
 
     if (flowScopeContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
         && stateBehavior.canBeTerminated(childContext)) {
+
+      final var parentProcessInstanceKey = flowScopeContext.getParentProcessInstanceKey();
+      BpmnElementContext parentElementInstanceContext = null;
+      if (parentProcessInstanceKey > 0) {
+        // needs to be done before we delete the Process element instance
+        parentElementInstanceContext =
+            stateBehavior.getParentElementInstanceContext(flowScopeContext);
+      }
+
+      // the event appliers will remove the process instance, this is the reason
+      // why we need to extract the parent element instance before the reference is deleted
       stateTransitionBehavior.transitionToTerminated(flowScopeContext);
 
+      if (parentElementInstanceContext != null) {
+        stateTransitionBehavior.onCalledProcessTerminated(
+            flowScopeContext, parentElementInstanceContext);
+      }
     } else {
       eventSubscriptionBehavior.publishTriggeredEventSubProcess(
           MigratedStreamProcessors.isMigrated(childContext.getBpmnElementType()), flowScopeContext);
