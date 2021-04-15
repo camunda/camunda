@@ -12,14 +12,12 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.variable.VariableBehavior;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedProcess;
 import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.msgpack.spec.MsgpackReaderException;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -49,22 +47,19 @@ public final class CreateProcessInstanceProcessor
 
   private final ProcessInstanceRecord newProcessInstance = new ProcessInstanceRecord();
   private final ProcessState processState;
-  private final MutableElementInstanceState elementInstanceState;
   private final VariableBehavior variableBehavior;
   private final KeyGenerator keyGenerator;
-  private final TypedEventWriter eventWriter;
+  private final TypedCommandWriter commandWriter;
 
   public CreateProcessInstanceProcessor(
       final ProcessState processState,
-      final MutableElementInstanceState elementInstanceState,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final VariableBehavior variableBehavior) {
     this.processState = processState;
-    this.elementInstanceState = elementInstanceState;
     this.variableBehavior = variableBehavior;
     this.keyGenerator = keyGenerator;
-    eventWriter = writers.events();
+    commandWriter = writers.command();
   }
 
   @Override
@@ -82,9 +77,9 @@ public final class CreateProcessInstanceProcessor
       return true;
     }
 
-    final ElementInstance processInstance = createElementInstance(process, processInstanceKey);
-    eventWriter.appendFollowUpEvent(
-        processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, processInstance.getValue());
+    final var processInstance = initProcessInstanceRecord(process, processInstanceKey);
+    commandWriter.appendFollowUpCommand(
+        processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, processInstance);
 
     record
         .setProcessInstanceKey(processInstanceKey)
@@ -129,7 +124,7 @@ public final class CreateProcessInstanceProcessor
     return true;
   }
 
-  private ElementInstance createElementInstance(
+  private ProcessInstanceRecord initProcessInstanceRecord(
       final DeployedProcess process, final long processInstanceKey) {
     newProcessInstance.reset();
     newProcessInstance.setBpmnProcessId(process.getBpmnProcessId());
@@ -139,9 +134,7 @@ public final class CreateProcessInstanceProcessor
     newProcessInstance.setBpmnElementType(BpmnElementType.PROCESS);
     newProcessInstance.setElementId(process.getProcess().getId());
     newProcessInstance.setFlowScopeKey(-1);
-
-    return elementInstanceState.newInstance(
-        processInstanceKey, newProcessInstance, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    return newProcessInstance;
   }
 
   private DeployedProcess getProcess(

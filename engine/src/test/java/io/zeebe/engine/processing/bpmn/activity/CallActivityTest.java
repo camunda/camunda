@@ -101,9 +101,10 @@ public final class CallActivityTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withParentProcessInstanceKey(processInstanceKey)
-                .limit(5))
+                .limit(6))
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsExactly(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ACTIVATE_ELEMENT),
@@ -168,6 +169,8 @@ public final class CallActivityTest {
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
             tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.COMPLETE_ELEMENT),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_COMPLETED),
@@ -391,6 +394,7 @@ public final class CallActivityTest {
         .containsSubsequence(
             tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
