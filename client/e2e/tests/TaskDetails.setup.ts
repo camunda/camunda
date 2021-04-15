@@ -6,6 +6,18 @@
 
 import {deploy, createInstances} from './utils/zeebeUtilities';
 export async function setup() {
-  await deploy('./e2e/tests/resources/usertask_to_be_completed.bpmn');
-  await createInstances('usertask_to_be_completed', 1, 1);
+  await deploy([
+    './e2e/tests/resources/usertask_to_be_completed.bpmn',
+    './e2e/tests/resources/user_task_with_form.bpmn',
+    './e2e/tests/resources/user_task_with_form_and_vars.bpmn',
+  ]);
+
+  await Promise.all([
+    createInstances('usertask_to_be_completed', 1, 1),
+    createInstances('user_registration', 1, 1),
+    createInstances('user_registration_with_vars', 1, 1, {
+      name: 'Jane',
+      age: '50',
+    }),
+  ]);
 }

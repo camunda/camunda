@@ -153,3 +153,41 @@ test('complete task', async (t) => {
     )
     .ok();
 });
+
+test('task completion with form', async (t) => {
+  await t
+    .click(screen.findByText(/^user registration$/i))
+    .click(screen.findByRole('button', {name: /claim/i}))
+    .typeText(screen.findByLabelText(/name/i), 'Jon')
+    .typeText(screen.findByLabelText(/address/i), 'Earth')
+    .typeText(screen.findByLabelText(/age/i), '21')
+    .click(screen.getByRole('button', {name: /complete task/i}))
+    .click(screen.getByRole('combobox', {name: /filter/i}))
+    .click(screen.findByRole('option', {name: /completed/i}))
+    .click(screen.findByText(/^user registration$/i))
+    .expect(screen.findByLabelText(/name/i).value)
+    .eql('Jon')
+    .expect(screen.findByLabelText(/address/i).value)
+    .eql('Earth')
+    .expect(screen.findByLabelText(/age/i).value)
+    .eql('21');
+});
+
+test('task completion with prefilled form', async (t) => {
+  await t
+    .click(screen.findByText(/user registration with vars/i))
+    .click(screen.findByRole('button', {name: /claim/i}))
+    .typeText(screen.findByDisplayValue(/jane/i), 'Jon', {replace: true})
+    .typeText(screen.findByLabelText(/address/i), 'Earth')
+    .typeText(screen.findByDisplayValue(/50/i), '21', {replace: true})
+    .click(screen.getByRole('button', {name: /complete task/i}))
+    .click(screen.getByRole('combobox', {name: /filter/i}))
+    .click(screen.findByRole('option', {name: /completed/i}))
+    .click(screen.findByText(/user registration with vars/i))
+    .expect(screen.findByLabelText(/name/i).value)
+    .eql('Jon')
+    .expect(screen.findByLabelText(/address/i).value)
+    .eql('Earth')
+    .expect(screen.findByLabelText(/age/i).value)
+    .eql('21');
+});
