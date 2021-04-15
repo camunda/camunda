@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.bpmn;
 
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.zeebe.engine.processing.bpmn.container.CallActivityProcessor;
+import io.zeebe.engine.processing.bpmn.container.EventSubProcessProcessor;
 import io.zeebe.engine.processing.bpmn.container.MultiInstanceBodyProcessor;
 import io.zeebe.engine.processing.bpmn.container.ProcessProcessor;
 import io.zeebe.engine.processing.bpmn.container.SubProcessProcessor;
@@ -47,8 +48,7 @@ public final class BpmnElementProcessors {
     // containers
     processors.put(BpmnElementType.PROCESS, new ProcessProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.SUB_PROCESS, new SubProcessProcessor(bpmnBehaviors));
-    // TODO (saig0): extract the logic for event subprocesses into its own processor (#6196)
-    processors.put(BpmnElementType.EVENT_SUB_PROCESS, new SubProcessProcessor(bpmnBehaviors));
+    processors.put(BpmnElementType.EVENT_SUB_PROCESS, new EventSubProcessProcessor(bpmnBehaviors));
     processors.put(
         BpmnElementType.MULTI_INSTANCE_BODY, new MultiInstanceBodyProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.CALL_ACTIVITY, new CallActivityProcessor(bpmnBehaviors));
